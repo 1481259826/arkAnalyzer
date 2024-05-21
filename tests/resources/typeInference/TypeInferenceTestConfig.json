@@ -1,0 +1,27 @@
+{
+    "targetProjectName": "TypeInferenceTest",    
+    "targetProjectDirectory": "tests/resources/typeInference/multi_module/main_module",
+
+    "logPath": "out/TypeInferenceTest.log",
+
+    "etsSdkPath": "",
+    
+    "otherSdks": [
+        {
+            "name": "",
+            "path": ""
+        },
+        {
+            "name": "sdk2",
+            "path": ""
+        },
+        {
+            "name": "",
+            "path": "/opt/yy"
+        },
+        {
+            "name": "",
+            "path": ""
+        }
+    ]
+}
