@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-
-import { NodeA } from "../base/Ast";
 import { ArkBody } from "../model/ArkBody";
 import { ArkMethod } from "../model/ArkMethod";
 import { MethodSignature } from "../model/ArkSignature";
