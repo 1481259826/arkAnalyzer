@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { NodeA } from "../base/Ast";
 import { ArkParameterRef, ArkThisRef } from "../base/Ref";
 import { ArkAssignStmt, ArkReturnStmt } from "../base/Stmt";
 import { LineColPosition } from "../base/Position";
