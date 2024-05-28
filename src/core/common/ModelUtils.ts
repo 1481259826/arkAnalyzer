@@ -1,4 +1,20 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {Scene} from "../../Scene";
+import { Local } from "../base/Local";
 import {ArkClass} from "../model/ArkClass";
 import {ArkFile} from "../model/ArkFile";
 import {ArkMethod} from "../model/ArkMethod";
@@ -257,7 +273,7 @@ export class ModelUtils {
         if (thisNamespace) {
             const defaultClass = thisNamespace.getClassWithName('_DEFAULT_ARK_CLASS');
             if (defaultClass) {
-                const method = defaultClass.getStaticMethodWithName(methodName);
+                const method = defaultClass.getMethodWithName(methodName);
                 if (method) {
                     return method;
                 }
@@ -269,7 +285,7 @@ export class ModelUtils {
     public static getStaticMethodInFileWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
         const defaultClass = arkFile.getClasses().find(cls => cls.getName() == '_DEFAULT_ARK_CLASS') || null;
         if (defaultClass) {
-            let method = defaultClass.getStaticMethodWithName(methodName);
+            let method = defaultClass.getMethodWithName(methodName);
             if (method) {
                 return method;
             }
@@ -303,7 +319,7 @@ export class ModelUtils {
                     if (nameBefroreAs != undefined) {
                         methodName = nameBefroreAs;
                     }
-                    let method = defaultClass.getStaticMethodWithName(methodName);
+                    let method = defaultClass.getMethodWithName(methodName);
                     if (method) {
                         return method;
                     }
@@ -328,6 +344,41 @@ export class ModelUtils {
         }
         return null;
     }
+
+    public static getLocalInImportInfoWithName(localName: string, arkFile: ArkFile): Local | null {
+        for (const importInfo of arkFile.getImportInfos()) {
+            if (importInfo.getImportClauseName() == localName) {
+                const importFrom = this.getFileFromImportInfo(importInfo, arkFile.getScene());
+                if (importFrom) {
+                    const nameBefroreAs = importInfo.getNameBeforeAs();
+                    if (nameBefroreAs != undefined) {
+                        localName = nameBefroreAs;
+                    }
+                    return this.getLocalInImportFileWithName(localName, importFrom);
+                }
+            }
+        }
+        return null;
+    }
+
+    public static getLocalInImportFileWithName(localName: string, arkFile: ArkFile): Local | null {
+        for (const exportInfo of arkFile.getExportInfos()) {
+            if (exportInfo.getExportClauseName() == localName) {
+                const nameBefroreAs = exportInfo.getNameBeforeAs();
+                if (nameBefroreAs != undefined) {
+                    localName = nameBefroreAs;
+                }
+                for (const local of arkFile.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+                    if (local.getName() == localName) {
+                        return local;
+                    }
+                }
+                return this.getLocalInImportInfoWithName(localName, arkFile);
+            }
+        }
+        return null;
+    }
+
 
     /* get nested namespaces in a file */
     public static getAllNamespacesInFile(arkFile: ArkFile): ArkNamespace[] {

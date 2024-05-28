@@ -1,8 +1,24 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
+import * as crypto from 'crypto';
 import Logger, { LOG_LEVEL } from "./logger";
-import { fetchDependenciesFromFile } from './json5parser';
+import { fetchDependenciesFromFile, parseJsonText } from './json5parser';
 
 const logger = Logger.getLogger();
 
@@ -16,6 +32,107 @@ const CONFIG = {
     include: /(?<!\.d)\.(ets|ts|json5)$/
 }
 
+interface CacheItem {
+    srcHash: string;
+    dstFile: string;
+    dstHash: string;
+}
+
+interface CacheFile {
+    versionCode: number;
+    files: Map<string, CacheItem>;
+}
+
+class Ets2tsCache {
+    cacheFilePath: string;
+    versionCode: number = 1;
+    cache: CacheFile;
+    hashCache: Map<string, string> = new Map();
+
+    constructor(projectPath:string, saveTsPath: string, cachePath: string) {
+        this.cacheFilePath = path.join(cachePath, this.sha256(`${projectPath}:${saveTsPath}`));
+        if (!fs.existsSync(cachePath)) {
+            fs.mkdirSync(cachePath, {recursive: true});
+        }
+        this.loadCache();
+    }
+
+    public filesHasModify(files: string[]): boolean {
+        if (!files) {
+            return false;
+        }
+        for (const file of files) {
+            if (this.oneFileHasModify(file)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public oneFileHasModify(srcFile: string): boolean {
+        let files: Map<string, CacheItem> = this.cache.files;
+        if (!files.has(srcFile)) {
+            return true;
+        }
+
+        let item: CacheItem = this.cache.files.get(srcFile) as CacheItem;
+        if (!fs.existsSync(item.dstFile)) {
+            return true;
+        }
+
+        if (item.srcHash == this.shaFile(srcFile) && item.dstHash == this.shaFile(item.dstFile)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public updateCache(srcFile: string, dstFile: string) {
+        this.cache.files.set(srcFile, {srcHash: this.shaFile(srcFile), dstFile: dstFile, dstHash: this.shaFile(dstFile)});
+    }
+
+    public saveCache() {
+        let obj = new Object();
+        for (const [k, v] of this.cache.files) {
+            //@ts-ignore
+            obj[k] = v;
+        }
+        //@ts-ignore
+        this.cache.files = obj;
+        fs.writeFileSync(this.cacheFilePath, JSON.stringify(this.cache));
+    }
+
+    private loadCache() {
+        if (fs.existsSync(this.cacheFilePath)) {
+            this.cache = JSON.parse(fs.readFileSync(this.cacheFilePath, 'utf-8')) as CacheFile;
+            if (this.cache.versionCode != this.versionCode) {
+                this.cache = {versionCode: this.versionCode, files: new Map()};
+            } else {
+                this.cache.files = new Map(Object.entries(this.cache.files));
+            }
+        } else {
+            this.cache = {versionCode: this.versionCode, files: new Map()};
+        }
+    }
+
+    private sha256(content: string): string {
+        let sha256 = crypto.createHash('sha256');
+        sha256.update(content);
+        return sha256.digest('hex');
+    }
+
+    private shaFile(file: string): string {
+        if (this.hashCache.has(file)) {
+            return this.hashCache.get(file) as string;
+        }
+        let hash = this.sha256(fs.readFileSync(file, 'utf-8'));
+        if (file.endsWith('oh-package.json5')) {
+            this.hashCache.set(file, hash);
+        }
+        return hash;
+    }
+}
+
 /**
  *  let ets2ts = new Ets2ts();
  *  await ets2ts.init(etsLoaderPath, projectPath, output);
@@ -24,6 +141,7 @@ const CONFIG = {
 export class Ets2ts {
     processUIModule: any;
     tsModule: any;
+    etsCheckerModule: any;
     preProcessModule: Function;
 
     compilerOptions: any;
@@ -32,26 +150,40 @@ export class Ets2ts {
     ohPkgContentMap: Map<string, Object>;
 
     statistics: Array<Array<number>> = [[0, 0], [0, 0]];
+    cache: Ets2tsCache;
 
     public async init(etsLoaderPath: string, projectPath: string, output: string, projectName: string) {
         this.tsModule = await require(path.join(etsLoaderPath, 'node_modules/typescript'));
         this.processUIModule = await require(path.join(etsLoaderPath, 'lib/process_ui_syntax'));
         this.preProcessModule = await require(path.join(etsLoaderPath, 'lib/pre_process.js'));
+        this.etsCheckerModule =  await require(path.join(etsLoaderPath, 'lib/ets_checker'));
         this.compilerOptions = this.tsModule.readConfigFile(
             path.resolve(etsLoaderPath, 'tsconfig.json'), this.tsModule.sys.readFile).config.compilerOptions;
         this.compilerOptions.target = 'ESNext';
         this.compilerOptions.sourceMap = false;
 
-        let module = await require(path.join(etsLoaderPath, 'main'));
-        // module.partialUpdateConfig.partialUpdateMode = true;
-        this.projectConfig = module.projectConfig;
-        // this.projectConfig.compileMode = 'esmodule';
-
+        let mainModule = await require(path.join(etsLoaderPath, 'main'));
+        mainModule.partialUpdateConfig.partialUpdateMode = true;
+        this.projectConfig = mainModule.projectConfig;
         this.projectConfig.projectPath = path.resolve(projectPath);
+        this.projectConfig.cachePath = path.resolve(output, '.cache');
         this.projectConfig.saveTsPath = path.resolve(output, projectName);
         this.projectConfig.buildMode = "release";
         this.projectConfig.projectRootPath = ".";
+        this.resolveSdkApi();
+        
+        let languageService = this.etsCheckerModule.createLanguageService([]);
+        if (languageService.getBuilderProgram) {
+            mainModule.globalProgram.builderProgram = languageService.getBuilderProgram(/*withLinterProgram*/ true);
+            mainModule.globalProgram.program = mainModule.globalProgram.builderProgram.getProgram();
+            mainModule.globalProgram.checker = mainModule.globalProgram.program.getTypeChecker();
+        } else {
+            mainModule.globalProgram.program = languageService.getProgram();
+            mainModule.globalProgram.checker = mainModule.globalProgram.program.getTypeChecker();
+        }
+
         this.ohPkgContentMap = new Map();
+        this.cache = new Ets2tsCache(this.projectConfig.projectPath, this.projectConfig.saveTsPath, this.projectConfig.cachePath);
     }
 
     public async compileProject() {
@@ -65,12 +197,25 @@ export class Ets2ts {
         }
         logger.info('Ets2ts-getAllEts done');
         sources.forEach((value, key) => {
+            let dstFile = this.getOutputPath(key);
+            if (dstFile.endsWith('.ets')) {
+                dstFile = dstFile.replace(/\.ets$/, '.ts');
+            }
+
             if (key.endsWith('.ets')) {
-                this.compileEts(key, value);
+                if (this.cache.oneFileHasModify(key) || this.cache.filesHasModify(value)) {
+                    this.compileEts(key, value);
+                    this.cache.updateCache(key, dstFile);
+                    logger.info(`compile ${key}`);
+                }
             } else {
-                this.cp2output(key);
+                if (this.cache.oneFileHasModify(key) ) {
+                    this.cp2output(key);
+                    this.cache.updateCache(key, dstFile);
+                }
             }
         })
+        this.cache.saveCache();
 
         logger.info(`Ets2ts-compileEtsTime: ${this.statistics[0][1] / 1000}s, cnt: ${this.statistics[0][0]}, avg time: ${this.statistics[0][1] / this.statistics[0][0]}ms`);
         logger.info(`Ets2ts-copyTsTime: ${this.statistics[1][1] / 1000}s, cnt: ${this.statistics[1][0]}, avg time: ${this.statistics[1][1] / this.statistics[1][0]}ms`);
@@ -268,6 +413,29 @@ export class Ets2ts {
         }
     }
 
+    private resolveSdkApi() {
+        let buildProfile = path.join(this.projectConfig.projectPath, 'build-profile.json5');
+        if (fs.existsSync(buildProfile)) {
+            let profile = parseJsonText(fs.readFileSync(buildProfile, 'utf-8'));
+            let compileSdkVersion = (profile.app as any)?.compileSdkVersion || (profile.app as any)?.products[0]?.compileSdkVersion;
+            let compatibleSdkVersion = (profile.app as any)?.compatibleSdkVersion || (profile.app as any)?.products[0]?.compatibleSdkVersion;
+            this.projectConfig.minAPIVersion = this.parseApiVersion(compatibleSdkVersion || compileSdkVersion);
+        }
+    }
+
+    private parseApiVersion(version: string|number): number{
+        if (typeof version === 'number') {
+            return version;
+        }
+
+        const match = /\s*([1-9].[0-9].[0-9])\s*\(\s*(\d+)\s*\)\s*$/g.exec(version);
+        if (match) {
+            return parseInt(match[2]);
+        }
+
+        return 9;
+    }
+
 }
 
 export async function runEts2Ts(hosEtsLoaderPath: string, targetProjectOriginDirectory: string, targetProjectDirectory: string, targetProjectName: string) {
@@ -277,14 +445,10 @@ export async function runEts2Ts(hosEtsLoaderPath: string, targetProjectOriginDir
 }
 
 (async function () {
-    Logger.configure(process.argv[6], LOG_LEVEL.TRACE);
+    Logger.configure(process.argv[6], LOG_LEVEL.INFO);
     logger.info('start ets2ts ', process.argv);
     const startTime = new Date().getTime();
     await runEts2Ts(process.argv[2], process.argv[3], process.argv[4], process.argv[5]);
     const endTime = new Date().getTime();
     logger.info(`ets2ts took: ${(endTime - startTime) / 1000}s`);
 })();
-
-
-
-

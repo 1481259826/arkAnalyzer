@@ -1,24 +1,40 @@
-import {SceneConfig} from "../src/Config";
-import {Scene} from "../src/Scene";
-import Logger, {LOG_LEVEL} from "../src/utils/logger";
-import * as ts from "typescript";
-import convertCompilerOptions = ts.server.convertCompilerOptions;
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {SceneConfig} from "../src_refactoring/Config";
+import {Scene} from "../src_refactoring/Scene";
+import Logger, {LOG_LEVEL} from "../src_refactoring/utils/logger";
 
 const logPath = 'out\\SceneTest.log';
 const logger = Logger.getLogger();
 Logger.configure(logPath, LOG_LEVEL.INFO);
 
 class SceneTest {
-    public testTsWholePipline(): void {
+    public async testTsWholePipline() {
         logger.error('testTsWholePipline start');
         const buildConfigStartTime = new Date().getTime();
         logger.error(`memoryUsage before buildConfig in bytes:`);
         logger.error(process.memoryUsage());
 
         // build config
+        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/ohos-beacon-library_
+        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/HarmonyTranslator_
+        // tests/resources/scene/mainModule
         const configPath = "tests\\resources\\scene\\SceneTestConfig.json";
         let sceneConfig: SceneConfig = new SceneConfig();
-        sceneConfig.buildFromJson(configPath);
+        await sceneConfig.buildFromJson(configPath);
 
         logger.error(`memoryUsage after buildConfig in bytes:`);
         logger.error(process.memoryUsage());
@@ -61,12 +77,13 @@ class SceneTest {
         const outputPath = 'out/ets2ts';
         const sdkEtsPath = 'C:\\Users\\kubrick\\AppData\\Local\\Huawei\\Sdk\\openharmony\\9\\ets';
         const projectName = 'applications_photos';
+        const nodePath = 'node';
         const buildConfigStartTime = new Date().getTime();
         logger.info(`memoryUsage before EtsConfig in bytes:`);
         logger.info(process.memoryUsage());
 
         const sceneConfig: SceneConfig = new SceneConfig();
-        await sceneConfig.buildFromIde(projectName, etsProjectPath, outputPath, sdkEtsPath, logPath);
+        await sceneConfig.buildConfig(projectName, etsProjectPath, outputPath, sdkEtsPath, logPath, nodePath);
 
         logger.info(`memoryUsage after EtsConfig in bytes:`);
         logger.info(process.memoryUsage());
@@ -110,15 +127,16 @@ class SceneTest {
         let etsConfigStartTime = new Date().getTime();
 
         const etsProjectPath = 'D:\\Codes\\openharmony\\applications\\applications_photos';
-        const outputPath = 'out/ets2ts';
-        const sdkEtsPath = 'C:\\Users\\kubrick\\AppData\\Local\\Huawei\\Sdk\\openharmony\\9\\ets';
-        const projectName = 'applications_photos';
+        const outputPath = 'D:\\Codes\\resources\\applications';
+        const sdkEtsPath = 'C:\\Users\\kubrick\\AppData\\Local\\OpenHarmony\\Sdk\\11\\ets';
+        const projectName = 'applications_photos_ts';
+        const nodePath = 'node';
 
         logger.info(`memoryUsage before EtsConfig in bytes:`);
         logger.info(process.memoryUsage());
 
         const sceneConfig: SceneConfig = new SceneConfig();
-        await sceneConfig.buildFromIde(projectName, etsProjectPath, outputPath, sdkEtsPath, logPath);
+        // await sceneConfig.buildFromIde(projectName, etsProjectPath, outputPath, sdkEtsPath, logPath, nodePath);
 
         logger.info(`memoryUsage after EtsConfig in bytes:`);
         logger.info(process.memoryUsage());
@@ -132,6 +150,6 @@ class SceneTest {
 }
 
 let sceneTest = new SceneTest();
-sceneTest.testETsWholePipline();
-// sceneTest.testTsWholePipline();
+// sceneTest.testETsWholePipline();
+sceneTest.testTsWholePipline();
 // sceneTest.testEtsConfig();

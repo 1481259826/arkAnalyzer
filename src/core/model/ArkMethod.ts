@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { NodeA } from "../base/Ast";
 import { ArkParameterRef, ArkThisRef } from "../base/Ref";
 import { ArkAssignStmt, ArkReturnStmt } from "../base/Stmt";
@@ -37,6 +52,8 @@ export class ArkMethod {
     private methodSubSignature: MethodSubSignature;
 
     private body: ArkBody;
+    private loadStateDecorators: boolean = false;
+    private viewTree: ViewTree;
 
     constructor() {
     }
@@ -236,6 +253,54 @@ export class ArkMethod {
         }
         return resultValues
     }
+
+    public async getDecorators(): Promise<Decorator[]> {
+        await this.loadStateDecoratorFromEts();
+
+        return Array.from(this.modifiers).filter((item) => {
+            return item instanceof Decorator;
+        }) as Decorator[];
+    }
+
+    public async hasBuilderDecorator(): Promise<boolean> {
+        let decorators = await this.getDecorators();
+        return decorators.filter((value) => {
+            return value.getKind() == 'Builder';
+        }).length != 0;
+    }
+
+    private async loadStateDecoratorFromEts() {
+        if (this.loadStateDecorators) {
+            return;
+        }
+
+        let position = await this.getEtsPositionInfo();
+        let content = await this.getDeclaringArkFile().getEtsSource(position.getLineNo() + 1);
+        let regex = new RegExp(`@([\\w]*)[export|default|function|public|static|private|async\\s]*${this.getName()}`, 'gi');
+        let match = regex.exec(content);
+        if (match) {
+            let decorator = new Decorator(match[1]);
+            decorator.setContent(match[1]);
+            this.addModifier(decorator);
+        }
+        this.loadStateDecorators = true;
+    }
+
+    public async getViewTree(): Promise<ViewTree> {
+        if (await this.hasViewTree()) {
+            if (!this.viewTree) {
+                this.viewTree = new ViewTree(this);
+            }
+            if (!this.viewTree.isInitialized()) {
+                await this.viewTree.buildViewTree();
+            }
+        }
+        return this.viewTree;
+    }
+
+    public async hasViewTree(): Promise<boolean> {
+        return await this.hasBuilderDecorator();
+    }
 }
 
 export function buildArkMethodFromArkClass(methodNode: NodeA, declaringClass: ArkClass, mtd: ArkMethod) {
@@ -258,7 +323,8 @@ export function buildArkMethodFromArkClass(methodNode: NodeA, declaringClass: Ar
     if (mtd.getName() == 'constructor' && mtd.getDeclaringArkClass()) {
         mtd.getCfg().constructorAddInit(mtd);
     }
-    if (mtd.getSubSignature().toString() == 'render()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'View') {
+    if ((mtd.getSubSignature().toString() == 'render()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'View')
+        || (mtd.getSubSignature().toString() == 'initialRender()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'ViewPU')) {
         declaringClass.setViewTree(new ViewTree(mtd));
     }
 }

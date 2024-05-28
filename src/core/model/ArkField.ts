@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { Decorator } from "../base/Decorator";
 import { LineColPosition } from "../base/Position";
 import { Type } from "../base/Type";
@@ -5,6 +20,12 @@ import { Value } from "../base/Value";
 import { MethodParameter } from "../common/MethodInfoBuilder";
 import { ArkClass } from "./ArkClass";
 import { FieldSignature, MethodSignature } from "./ArkSignature";
+
+const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
+    'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
+    'Provide', 'Consume', 'ObjectLink', 'BuilderParam',
+    'LocalStorageLink', 'LocalStorageProp'
+])
 
 export class ArkField {
     private name: string = "";
@@ -28,8 +49,7 @@ export class ArkField {
 
     //private initializer, TODO
     private initializer: Value;
-
-    private decorators: Decorator[] = [];
+    private loadStateDecorators: boolean = false;
 
     constructor() { }
 
@@ -210,11 +230,39 @@ export class ArkField {
     }
 
     public getDecorators(): Decorator[] {
-        return this.decorators;
+        return Array.from(this.modifiers).filter((item) => {
+            return item instanceof Decorator;
+        }) as Decorator[];
     }
 
-    public setDecorators(decorators: Decorator[]) {
-        this.decorators = decorators;
+    public async getStateDecorators(): Promise<Decorator[]> {
+        await this.loadStateDecoratorFromEts();
+        return Array.from(this.modifiers).filter((item) => {
+            return (item instanceof Decorator) && (COMPONENT_MEMBER_DECORATORS.has(item.getKind()));
+        }) as Decorator[];
     }
 
+    private async loadStateDecoratorFromEts() {
+        if (this.loadStateDecorators) {
+            return;
+        }
+
+        let position = await this.getEtsPositionInfo();
+        let content = await this.getDeclaringClass().getDeclaringArkFile().getEtsSource(position.getLineNo() + 1);
+        let regex;
+        if (this.getName().startsWith('__')) {
+            regex = new RegExp('@([\\w]*)\\(?[\\w\']*\\)?[\\s]*' +this.getName().slice(2), 'gi');
+        } else {
+            regex = new RegExp('@([\\w]*)\\(?[\\w\']*\\)?[\\s]*' +this.getName(), 'gi');
+        }
+
+
+        let match = regex.exec(content);
+        if (match) {
+            let decorator = new Decorator(match[1]);
+            decorator.setContent(match[1]);
+            this.addModifier(decorator);
+        }
+        this.loadStateDecorators = true;
+    }
 }

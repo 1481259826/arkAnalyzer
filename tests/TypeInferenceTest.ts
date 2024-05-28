@@ -1,7 +1,22 @@
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { ArkBody } from "../src/core/model/ArkBody";
-import Logger, { LOG_LEVEL } from "../src/utils/logger";
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { SceneConfig } from "../src_refactoring/Config";
+import { Scene } from "../src_refactoring/Scene";
+import { ArkBody } from "../src_refactoring/core/model/ArkBody";
+import Logger, { LOG_LEVEL } from "../src_refactoring/utils/logger";
 
 const logger = Logger.getLogger();
 Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN);
@@ -10,9 +25,10 @@ export class TypeInferenceTest {
     public buildScene(): Scene {
         // tests/resources/typeInference/multi_module/main_module
         // out/ets2ts/applications_photos/common/src/main/ets/default/model/browser/photo
-        const config_path = "tests\\resources\\typeInference\\ProjectTypeInferenceTestConfig.json";
+        // const config_path = "tests\\resources\\ifds\\project\\ETS2TS.json";
+        const config_path = "tests\\resources\\type\\TypeTestConfig.json";
         let config: SceneConfig = new SceneConfig();
-        config.buildFromJson(config_path);
+        config.buildFromJson2(config_path);
         // Logger.setLogLevel(LOG_LEVEL.INFO);
         return new Scene(config);
     }

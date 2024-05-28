@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import ts from "typescript";
 import { AnyType, ArrayType, ClassType, LiteralType, NumberType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../core/base/Type";
 import { ArrayBindingPatternParameter, MethodParameter, ObjectBindingPatternParameter, buildMethodInfo4MethodNode } from "../core/common/MethodInfoBuilder";
@@ -426,6 +441,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile): ArkField {
     let field = new ArkField();
     field.setFieldType(ts.SyntaxKind[member.kind]);
+    field.setCode(member.getText(sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
     // construct initializer
@@ -486,6 +502,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
 export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile): ArkField {
     let field = new ArkField();
     field.setFieldType(ts.SyntaxKind[member.kind]);
+    field.setCode(member.getText(sourceFile));
     //parameters
     field.setParameters(buildParameters(member, sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
@@ -502,6 +519,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
 
 export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, sourceFile: ts.SourceFile): ArkField {
     let field = new ArkField();
+    field.setCode(member.getText(sourceFile));
     if (ts.isIdentifier(member.name)) {
         field.setName(member.name.text);
     }
