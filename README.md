@@ -86,7 +86,7 @@ npm install
 ```
 
 ## ArkAnalyzer 代码上库
-遵守openharmony-sig代码上库规范：[规范链接](https://gitee.com/openharmony-sig/sig-content/blob/master/Infrastructure/docs/manual/gitee%E6%8F%90pr%E5%B8%B8%E8%A7%84%E6%93%8D%E4%BD%9C.md)
+遵守openharmony-sig代码上库规范, 操作方法请参考：[链接](docs/HowToCreatePR.md#中文)
 
 ## ArkAnalyzer 调试
 将调试配置文件`.vscode/launch.json`中`args`参数数组修改为想要调试的文件路径，然后启动调试。
