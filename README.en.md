@@ -79,7 +79,7 @@ npm install
 ```
 
 ## Commit codes
-Follow the [code repository standards of Openharmony-Sig](https://gitee.com/openharmony-sig/sig-content/blob/master/Infrastructure/docs/manual/gitee%E6%8F%90pr%E5%B8%B8%E8%A7%84%E6%93%8D%E4%BD%9C.md)
+Follow the code repository standards of Openharmony-Sig, refer to the [link](docs/HowToCreatePR.md#english)
 
 ## Debug
 Modify the `args` parameter array in the debug configuration file `.vscode/launch.json` to the path of the test file you want to debug, and then start the debugging process.
