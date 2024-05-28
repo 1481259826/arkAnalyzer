@@ -1,6 +1,6 @@
 # sig_programanalysis
 
-English | [简体中文](./sig_programanalysis_cn.md)
+English | [简体中文](./README.md)
 
 ## SIG Group Work Objectives and Scope
 
