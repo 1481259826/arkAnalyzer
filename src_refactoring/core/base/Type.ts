@@ -20,7 +20,6 @@ export abstract class Type {
     abstract toString(): string;
 }
 
-
 /** any type */
 export class AnyType extends Type {
     private static readonly INSTANCE = new AnyType();
