@@ -14,13 +14,12 @@
  */
 
 import ts from "typescript";
-import { ArrayType, Type, UnclearReferenceType, UnionType } from "../../base/Type";
 import { ArkField } from "../ArkField";
 import Logger from "../../../utils/logger";
 import { LineColPosition } from "../../base/Position";
 import { ArkClass } from "../ArkClass";
 import { ArkMethod } from "../ArkMethod";
-import { buildModifiers, buildParameters, buildReturnType, buildTypeFromPreStr, handlePropertyAccessExpression, handleQualifiedName, tsNode2Type, tsNode2Value } from "./builderUtils";
+import { buildModifiers, handlePropertyAccessExpression, tsNode2Type, tsNode2Value } from "./builderUtils";
 
 const logger = Logger.getLogger();
 
@@ -32,10 +31,6 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     field.setFieldType(ts.SyntaxKind[member.kind]);
     field.setCode(member.getText(sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-    if (cls) {
-        cls.addField(field);
-        field.setDeclaringClass(cls);
-    }
 
     // construct initializer
     if (ts.isPropertyDeclaration(member) || ts.isPropertyAssignment(member) || ts.isEnumMember(member)) {
@@ -54,19 +49,15 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         if (ts.isIdentifier(member.name.expression)) {
             let propertyName = member.name.expression.text;
             field.setName(propertyName);
-        }
-        else if (ts.isPropertyAccessExpression(member.name.expression)) {
+        } else if (ts.isPropertyAccessExpression(member.name.expression)) {
             field.setName(handlePropertyAccessExpression(member.name.expression));
-        }
-        else {
+        } else {
             logger.warn("Other property expression type found!");
         }
-    }
-    else if (member.name && ts.isIdentifier(member.name)) {
+    } else if (member.name && ts.isIdentifier(member.name)) {
         let propertyName = member.name.text;
         field.setName(propertyName);
-    }
-    else {
+    } else {
         logger.warn("Other property type found!");
     }
 
@@ -87,6 +78,11 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
 
     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
         field.setExclamationToken(true);
+    }
+
+    if (cls) {
+        cls.addField(field);
+        field.setDeclaringClass(cls);
     }
 
     field.genSignature();
