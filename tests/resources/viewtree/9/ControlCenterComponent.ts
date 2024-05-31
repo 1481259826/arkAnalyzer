@@ -13,10 +13,6 @@
  * limitations under the License.
  */
 
-interface OutComponent_Params {
-}
-interface SubComponent_Params {
-}
 interface ControlCenterSimpleToggleLayout_Params {
     mColumnCount?: number;
     mSimpleToggleLayout?: string[];
@@ -41,7 +37,7 @@ interface ControlCenterComponent_Params {
     moduleName?: string;
 }
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -642,109 +638,6 @@ class ControlCenterSimpleToggleLayout extends ViewPU {
                 ViewStackProcessor.StopGetAccessRecording();
             });
         }
-    }
-    rerender() {
-        this.updateDirtyElements();
-    }
-}
-class SubComponent extends ViewPU {
-    constructor(parent, params, __localStorage, elmtId = -1) {
-        super(parent, __localStorage, elmtId);
-        this.setInitiallyProvidedValue(params);
-    }
-    setInitiallyProvidedValue(params: SubComponent_Params) {
-    }
-    updateStateVars(params: SubComponent_Params) {
-    }
-    purgeVariableDependenciesOnElmtId(rmElmtId) {
-    }
-    aboutToBeDeleted() {
-        SubscriberManager.Get().delete(this.id__());
-        this.aboutToBeDeletedInternal();
-    }
-    initialRender() {
-        this.observeComponentCreation((elmtId, isInitialRender) => {
-            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-            Column.create();
-            if (!isInitialRender) {
-                Column.pop();
-            }
-            ViewStackProcessor.StopGetAccessRecording();
-        });
-        this.observeComponentCreation((elmtId, isInitialRender) => {
-            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-            Text.create('Inner Text');
-            if (!isInitialRender) {
-                Text.pop();
-            }
-            ViewStackProcessor.StopGetAccessRecording();
-        });
-        Text.pop();
-        Column.pop();
-    }
-    rerender() {
-        this.updateDirtyElements();
-    }
-}
-class OutComponent extends ViewPU {
-    constructor(parent, params, __localStorage, elmtId = -1) {
-        super(parent, __localStorage, elmtId);
-        this.setInitiallyProvidedValue(params);
-    }
-    setInitiallyProvidedValue(params: OutComponent_Params) {
-    }
-    updateStateVars(params: OutComponent_Params) {
-    }
-    purgeVariableDependenciesOnElmtId(rmElmtId) {
-    }
-    aboutToBeDeleted() {
-        SubscriberManager.Get().delete(this.id__());
-        this.aboutToBeDeletedInternal();
-    }
-    initialRender() {
-        this.observeComponentCreation((elmtId, isInitialRender) => {
-            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-            __Common__.create();
-            __Common__.width(100);
-            __Common__.height(200);
-            if (!isInitialRender) {
-                __Common__.pop();
-            }
-            ViewStackProcessor.StopGetAccessRecording();
-        });
-        {
-            this.observeComponentCreation((elmtId, isInitialRender) => {
-                ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-                if (isInitialRender) {
-                    ViewPU.create(new SubComponent(this, {}, undefined, elmtId));
-                }
-                else {
-                    this.updateStateVarsOfChildByElmtId(elmtId, {});
-                }
-                ViewStackProcessor.StopGetAccessRecording();
-            });
-        }
-        __Common__.pop();
-    }
-    builderTest(parent = null) {
-        this.observeComponentCreation((elmtId, isInitialRender) => {
-            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-            Column.create();
-            if (!isInitialRender) {
-                Column.pop();
-            }
-            ViewStackProcessor.StopGetAccessRecording();
-        });
-        this.observeComponentCreation((elmtId, isInitialRender) => {
-            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-            Text.create('@Builder Test Text');
-            if (!isInitialRender) {
-                Text.pop();
-            }
-            ViewStackProcessor.StopGetAccessRecording();
-        });
-        Text.pop();
-        Column.pop();
     }
     rerender() {
         this.updateDirtyElements();

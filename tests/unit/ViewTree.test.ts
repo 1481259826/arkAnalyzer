@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../../src/Config";
+import { SceneConfig } from "../../src_refactoring/Config";
 import { assert, describe, it, expect } from "vitest";
-import { Scene } from "../../src/Scene";
+import { Scene } from "../../src_refactoring/Scene";
 import path from "path";
-import { Decorator } from "../../src/core/base/Decorator";
-import { ArkField } from "../../src/core/model/ArkField";
+import { Decorator } from "../../src_refactoring/core/base/Decorator";
+import { ArkField } from "../../src_refactoring/core/model/ArkField";
 
 describe("ViewTree Test API12", () => {
     let config: SceneConfig = new SceneConfig();
@@ -63,12 +63,12 @@ describe("ViewTree Test API12", () => {
             return;
         }
         
-        let isEntry = await arkClass.hasEntryDecorator();
+        // let isEntry = await arkClass.hasEntryDecorator();
         // expect(isEntry).eq(true);
     })
 
     it('test __Common__', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ControlCenterComponent.ts');
+        let arkFile =  scene.getFiles().find(file => file.getName() == 'Common.ts');
         let arkClass = arkFile?.getClassWithName('OutComponent');
         if (arkClass == null) {
             assert.isNotNull(arkClass);
@@ -200,7 +200,7 @@ describe("ViewTree Test API9", () => {
     scene.inferTypes();
 
     it('test __Common__', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ControlCenterComponent.ts');
+        let arkFile =  scene.getFiles().find(file => file.getName() == 'Common.ts');
         let arkClass = arkFile?.getClassWithName('OutComponent');
         if (arkClass == null) {
             assert.isNotNull(arkClass);

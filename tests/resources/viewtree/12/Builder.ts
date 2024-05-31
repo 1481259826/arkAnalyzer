@@ -40,6 +40,20 @@ interface HelloComponent_Params {
 interface Parent_Params {
     label?: string;
 }
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 namespace Case1 {
     class Tmp {
         paramA1: string = '';
@@ -127,7 +141,7 @@ namespace Case2 {
         {
             (parent ? parent : this).observeComponentCreation2((elmtId, isInitialRender, $$ = __$$__) => {
                 if (isInitialRender) {
-                    let componentCall = new HelloComponent(parent ? parent : this, { message: $$.paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 38, col: 9 });
+                    let componentCall = new HelloComponent(parent ? parent : this, { message: $$.paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 53, col: 9 });
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
@@ -318,7 +332,7 @@ function parentBuilder($$: Tmp, parent = null) {
     {
         (parent ? parent : this).observeComponentCreation2((elmtId, isInitialRender, $$ = __$$__) => {
             if (isInitialRender) {
-                let componentCall = new HelloComponent(parent ? parent : this, { message: $$.paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 99, col: 7 });
+                let componentCall = new HelloComponent(parent ? parent : this, { message: $$.paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 114, col: 7 });
                 ViewPU.create(componentCall);
                 let paramsLambda = () => {
                     return {
@@ -404,7 +418,7 @@ function childBuilder($$: Tmp, parent = null) {
     {
         (parent ? parent : this).observeComponentCreation2((elmtId, isInitialRender, $$ = __$$__) => {
             if (isInitialRender) {
-                let componentCall = new HelloChildComponent(parent ? parent : this, { message: $$.paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 125, col: 7 });
+                let componentCall = new HelloChildComponent(parent ? parent : this, { message: $$.paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 140, col: 7 });
                 ViewPU.create(componentCall);
                 let paramsLambda = () => {
                     return {
@@ -487,7 +501,7 @@ function grandsonBuilder($$: Tmp, parent = null) {
     {
         (parent ? parent : this).observeComponentCreation2((elmtId, isInitialRender, $$ = __$$__) => {
             if (isInitialRender) {
-                let componentCall = new HelloGrandsonComponent(parent ? parent : this, { message: $$.__paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 149, col: 7 });
+                let componentCall = new HelloGrandsonComponent(parent ? parent : this, { message: $$.__paramA1 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Builder.ets", line: 164, col: 7 });
                 ViewPU.create(componentCall);
                 let paramsLambda = () => {
                     return {

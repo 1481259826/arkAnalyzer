@@ -1419,6 +1419,10 @@ export class CfgBuilder {
             } else if (methodValue instanceof ArkStaticFieldRef) {
                 methodSubSignature.setMethodName(methodValue.getFieldName());
                 value = new ArkStaticInvokeExpr(methodSignature, args);
+            } else if (methodValue instanceof ArkInstanceInvokeExpr) {
+                let tempCallee = this.generateAssignStmtForValue(methodValue);
+                methodSubSignature.setMethodName(tempCallee.getName());
+                value = new ArkStaticInvokeExpr(methodSignature, args);
             } else {
                 methodSubSignature.setMethodName(calleeNode.getText(this.sourceFile));
                 value = new ArkStaticInvokeExpr(methodSignature, args);
