@@ -13,21 +13,14 @@
  * limitations under the License.
  */
 
-if (!("finalizeConstruction" in ViewPU.prototype)) {
-    Reflect.set(ViewPU.prototype, "finalizeConstruction", () => { });
-}
 interface OutComponent_Params {
 }
 interface SubComponent_Params {
 }
 class SubComponent extends ViewPU {
-    constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
-        super(parent, __localStorage, elmtId, extraInfo);
-        if (typeof paramsLambda === "function") {
-            this.paramsGenerator_ = paramsLambda;
-        }
+    constructor(parent, params, __localStorage, elmtId = -1) {
+        super(parent, __localStorage, elmtId);
         this.setInitiallyProvidedValue(params);
-        this.finalizeConstruction();
     }
     setInitiallyProvidedValue(params: SubComponent_Params) {
     }
@@ -40,12 +33,22 @@ class SubComponent extends ViewPU {
         this.aboutToBeDeletedInternal();
     }
     initialRender() {
-        this.observeComponentCreation2((elmtId, isInitialRender) => {
+        this.observeComponentCreation((elmtId, isInitialRender) => {
+            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
             Column.create();
-        }, Column);
-        this.observeComponentCreation2((elmtId, isInitialRender) => {
+            if (!isInitialRender) {
+                Column.pop();
+            }
+            ViewStackProcessor.StopGetAccessRecording();
+        });
+        this.observeComponentCreation((elmtId, isInitialRender) => {
+            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
             Text.create('Inner Text');
-        }, Text);
+            if (!isInitialRender) {
+                Text.pop();
+            }
+            ViewStackProcessor.StopGetAccessRecording();
+        });
         Text.pop();
         Column.pop();
     }
@@ -54,13 +57,9 @@ class SubComponent extends ViewPU {
     }
 }
 class OutComponent extends ViewPU {
-    constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
-        super(parent, __localStorage, elmtId, extraInfo);
-        if (typeof paramsLambda === "function") {
-            this.paramsGenerator_ = paramsLambda;
-        }
+    constructor(parent, params, __localStorage, elmtId = -1) {
+        super(parent, __localStorage, elmtId);
         this.setInitiallyProvidedValue(params);
-        this.finalizeConstruction();
     }
     setInitiallyProvidedValue(params: OutComponent_Params) {
     }
@@ -73,25 +72,27 @@ class OutComponent extends ViewPU {
         this.aboutToBeDeletedInternal();
     }
     initialRender() {
-        this.observeComponentCreation2((elmtId, isInitialRender) => {
+        this.observeComponentCreation((elmtId, isInitialRender) => {
+            ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
             __Common__.create();
             __Common__.width(100);
             __Common__.height(200);
-        }, __Common__);
+            if (!isInitialRender) {
+                __Common__.pop();
+            }
+            ViewStackProcessor.StopGetAccessRecording();
+        });
         {
-            this.observeComponentCreation2((elmtId, isInitialRender) => {
+            this.observeComponentCreation((elmtId, isInitialRender) => {
+                ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
                 if (isInitialRender) {
-                    let componentCall = new SubComponent(this, {}, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/Common.ets", line: 13, col: 5 });
-                    ViewPU.create(componentCall);
-                    let paramsLambda = () => {
-                        return {};
-                    };
-                    componentCall.paramsGenerator_ = paramsLambda;
+                    ViewPU.create(new SubComponent(this, {}, undefined, elmtId));
                 }
                 else {
                     this.updateStateVarsOfChildByElmtId(elmtId, {});
                 }
-            }, { name: "SubComponent" });
+                ViewStackProcessor.StopGetAccessRecording();
+            });
         }
         __Common__.pop();
     }
@@ -99,3 +100,6 @@ class OutComponent extends ViewPU {
         this.updateDirtyElements();
     }
 }
+ViewStackProcessor.StartGetAccessRecordingFor(ViewStackProcessor.AllocateNewElmetIdForNextComponent());
+loadDocument(new CustomContainerUser(undefined, {}));
+ViewStackProcessor.StopGetAccessRecording();

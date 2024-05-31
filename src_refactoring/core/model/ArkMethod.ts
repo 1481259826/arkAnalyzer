@@ -19,6 +19,7 @@ import { LineColPosition } from "../base/Position";
 import { Type, UnknownType } from "../base/Type";
 import { Value } from "../base/Value";
 import { Cfg } from "../graph/Cfg";
+import { ViewTree } from "../graph/ViewTree";
 import { ArkBody } from "./ArkBody";
 import { ArkClass } from "./ArkClass";
 import { ArkFile } from "./ArkFile";
@@ -49,6 +50,8 @@ export class ArkMethod {
     private methodSubSignature: MethodSubSignature;
 
     private body: ArkBody;
+    private loadStateDecorators: boolean = false;
+    private viewTree: ViewTree;
 
     constructor() {
     }
@@ -249,9 +252,51 @@ export class ArkMethod {
         return resultValues
     }
 
-    public getDecorators(): Decorator[] {
+    public async getDecorators(): Promise<Decorator[]> {
+        await this.loadStateDecoratorFromEts();
+
         return Array.from(this.modifiers).filter((item) => {
             return item instanceof Decorator;
         }) as Decorator[];
+    }
+
+    public async hasBuilderDecorator(): Promise<boolean> {
+        let decorators = await this.getDecorators();
+        return decorators.filter((value) => {
+            return value.getKind() == 'Builder';
+        }).length != 0;
+    }
+
+    private async loadStateDecoratorFromEts() {
+        if (this.loadStateDecorators) {
+            return;
+        }
+
+        let position = await this.getEtsPositionInfo();
+        let content = await this.getDeclaringArkFile().getEtsSource(position.getLineNo() + 1);
+        let regex = new RegExp(`@([\\w]*)[export|default|function|public|static|private|async\\s]*${this.getName()}`, 'gi');
+        let match = regex.exec(content);
+        if (match) {
+            let decorator = new Decorator(match[1]);
+            decorator.setContent(match[1]);
+            this.addModifier(decorator);
+        }
+        this.loadStateDecorators = true;
+    }
+
+    public async getViewTree(): Promise<ViewTree> {
+        if (await this.hasViewTree()) {
+            if (!this.viewTree) {
+                this.viewTree = new ViewTree(this);
+            }
+            if (!this.viewTree.isInitialized()) {
+                await this.viewTree.buildViewTree();
+            }
+        }
+        return this.viewTree;
+    }
+
+    public async hasViewTree(): Promise<boolean> {
+        return await this.hasBuilderDecorator();
     }
 }

@@ -93,7 +93,7 @@ class ParentComponent extends ViewPU {
                     // when creatng ChildComponent, the initial value of its @Prop variable must be supplied
                     // in a named constructor parameter
                     // also regular costOfOneAttempt (non-Prop) variable is initialied
-                    CountDownComponent(this, { count: this.countDownStartValue, costOfOneAttempt: 2 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/ParentComponent.ets", line: 21, col: 13 });
+                    CountDownComponent(this, { count: this.countDownStartValue, costOfOneAttempt: 2 }, undefined, elmtId, () => { }, { page: "tests/resources/viewtree/ParentComponent.ets", line: 36, col: 13 });
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {

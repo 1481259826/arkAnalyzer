@@ -37,6 +37,7 @@ struct ParentComponent {
         }
     }
 }
+
 @Component
 struct CountDownComponent {
     @Prop count: number
