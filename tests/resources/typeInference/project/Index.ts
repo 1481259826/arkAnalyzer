@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +14,12 @@
  * limitations under the License.
  */
 
-import { MacDonlad } from './lib/c';
 import taskpool from '@ohos.taskpool';
 import AbilityDelegatorRegistry from '@ohos.app.ability.abilityDelegatorRegistry';
+import {a} from "vitest/dist/suite-ynYMzeLu";
 
 
 let task: taskpool.Task = new taskpool.Task("10",a, 100);
 
 abilityDelegatorArguments = AbilityDelegatorRegistry.getArguments()
 abilityDelegator = AbilityDelegatorRegistry.getAbilityDelegator()
-
-function a(){}
