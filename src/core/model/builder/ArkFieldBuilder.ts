@@ -62,7 +62,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
-        let modifiers = buildModifiers(member.modifiers, sourceFile);
+        let modifiers = buildModifiers(member, sourceFile);
         modifiers.forEach((modifier) => {
             field.addModifier(modifier);
         });
@@ -100,7 +100,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
 
     //modifiers
     if (member.modifiers) {
-        buildModifiers(member.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(member, sourceFile).forEach((modifier) => {
             field.addModifier(modifier);
         });
     }

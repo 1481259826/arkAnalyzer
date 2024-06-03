@@ -131,7 +131,7 @@ export function buildNormalArkClass(clsNode: ClassLikeNode,
     }
 
     if (!ts.isTypeLiteralNode(clsNode) && clsNode.modifiers) {
-        buildModifiers(clsNode.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(clsNode, sourceFile).forEach((modifier) => {
             cls.addModifier(modifier);
         });
     }

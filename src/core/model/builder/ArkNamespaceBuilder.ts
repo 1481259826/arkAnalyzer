@@ -34,7 +34,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
 
     // modifiers
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             ns.addModifier(modifier);
         });
     }

@@ -41,7 +41,7 @@ function buildExportDeclarationNode(node: ts.ExportDeclaration, sourceFile: ts.S
 
     const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
         });
     }
@@ -99,7 +99,7 @@ function buildExportAssignmentNode(node: ts.ExportAssignment, sourceFile: ts.Sou
     let exportInfos: ExportInfo[] = [];
     const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
         });
     }

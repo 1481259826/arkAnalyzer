@@ -46,7 +46,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
 
     const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
         });
     }
@@ -118,7 +118,7 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
     let importType = "EqualsImport";
     const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
         });
     }
