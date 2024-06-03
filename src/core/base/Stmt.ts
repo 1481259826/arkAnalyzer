@@ -15,7 +15,6 @@
 
 import {StmtUseReplacer} from "../common/StmtUseReplacer";
 import {Cfg} from "../graph/Cfg";
-import {ArkFile} from "../model/ArkFile";
 import {AbstractExpr, AbstractInvokeExpr, ArkConditionExpr} from "./Expr";
 import {LineColPosition} from "./Position";
 import {AbstractFieldRef, ArkArrayRef} from "./Ref";
@@ -27,7 +26,6 @@ export class Stmt {
     private uses: Value[] = [];
     private originPosition: number = 0;
     private position: number = 0;
-    private etsPosition: LineColPosition;
     private cfg: Cfg | null = null;
 
     private originColumn: number = -1;
@@ -193,18 +191,6 @@ export class Stmt {
 
     public getOriginPositionInfo(): number {
         return this.originPosition;
-    }
-
-    public setEtsPositionInfo(position: LineColPosition) {
-        this.etsPosition = position;
-    }
-
-    public async getEtsPositionInfo(arkFile: ArkFile): Promise<LineColPosition> {
-        if (!this.etsPosition) {
-            const etsPosition = await arkFile.getEtsOriginalPositionFor(new LineColPosition(this.originPosition, this.originColumn));
-            this.setEtsPositionInfo(etsPosition);
-        }
-        return this.etsPosition;
     }
 
     public setColumn(nweColumn: number) {
