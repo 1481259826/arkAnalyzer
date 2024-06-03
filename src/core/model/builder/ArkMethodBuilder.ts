@@ -94,6 +94,9 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
             modifiers = buildModifiers(methodNode.modifiers, sourceFile);
         }
     }
+    modifiers.forEach((modifier) => {
+        mtd.addModifier(modifier);
+    });
 
     if (methodNode.type) {
         mtd.setReturnType(buildReturnType(methodNode.type, sourceFile, mtd));
