@@ -19,7 +19,7 @@ import { ArkMethod, arkMethodNodeKind } from "../ArkMethod";
 import { ArkNamespace } from "../ArkNamespace";
 import Logger from "../../../utils/logger";
 import { ObjectLiteralExpr } from "../../base/Expr";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import { ArkClass } from "../ArkClass";
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass } from "./ArkMethodBuilder";
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from "./builderUtils";
@@ -131,7 +131,7 @@ export function buildNormalArkClass(clsNode: ClassLikeNode,
     }
 
     if (!ts.isTypeLiteralNode(clsNode) && clsNode.modifiers) {
-        buildModifiers(clsNode.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(clsNode, sourceFile).forEach((modifier) => {
             cls.addModifier(modifier);
         });
     }

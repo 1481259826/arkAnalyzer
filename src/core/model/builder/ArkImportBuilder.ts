@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from "typescript";
+import * as ts from "ohos-typescript";
 import path from 'path';
 import fs from 'fs';
 import { transfer2UnixPath } from "../../../utils/pathTransfer";
@@ -46,7 +46,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
 
     const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
         });
     }
@@ -94,7 +94,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
         }
     }
 
-    // just like: import * as ts from 'typescript'
+    // just like: import * as ts from 'ohos-typescript'
     if (node.importClause && node.importClause.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings)) {
         let importType = "NamespaceImport";
         if (node.importClause.namedBindings.name && ts.isIdentifier(node.importClause.namedBindings.name)) {
@@ -118,7 +118,7 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
     let importType = "EqualsImport";
     const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
         });
     }

@@ -111,23 +111,6 @@ export class SceneConfig {
         this.logPath = logPath;
 
         Logger.configure(this.logPath, LOG_LEVEL.ERROR);
-        logger.info("Path of Node is: ", nodePath);
-        if (nodePath != '') {
-            let nodeVersion = spawnSync(nodePath, ['-v']).stdout.toString();
-            logger.info('Node version is: ', nodeVersion);
-        }
-        else {
-            logger.error('nodePath is empty!');
-        }
-
-        let output = spawnSync(nodePath,
-            [path.join(__dirname, 'ets2ts.js'), this.hosEtsLoaderPath, this.targetProjectOriginDirectory, targetProjectDirectory, this.targetProjectName, this.logPath],
-            { encoding: 'utf-8' }
-        );
-        if (output.status != 0) {
-            logger.error('ets2ts err is: ', output.stderr);
-        }
-
         this.getAllFiles();
     }
 
@@ -255,7 +238,7 @@ function getFiles2PkgMap(srcPath: string, ohPkgFiles: string[], ohPkgContentMap:
         if (fs.statSync(realFile).isDirectory()) {
             getFiles2PkgMap(realFile, ohPkgFilesOfThisDir, ohPkgContentMap, tmpMap);
         } else {
-            const extReg = new RegExp("\\.ts\$");
+            const extReg = new RegExp("\\.(ts|ets)\$");
             if (extReg.test(realFile)) {
                 tmpMap.set(realFile, ohPkgFilesOfThisDir);
             }

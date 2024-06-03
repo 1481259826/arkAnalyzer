@@ -85,7 +85,7 @@ export class SourceImportInfo extends SourceBase{
                 this.printer.writeIndent().writeLine(`import {${this.info.getImportClauseName()}} from '${this.info.getImportFrom() as string}';`);
             }
         } else if (this.info.getImportType() === 'NamespaceImport') {
-            // import * as ts from 'typescript'
+            // import * as ts from 'ohos-typescript'
             this.printer.writeIndent().writeLine(`import * as ${this.info.getImportClauseName()} from '${this.info.getImportFrom() as string}';`);
         } else if (this.info.getImportType() == 'EqualsImport') {
             // import mmmm = require('./xxx')

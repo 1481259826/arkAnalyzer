@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from "typescript";
+import * as ts from "ohos-typescript";
 import path from 'path';
 import fs from 'fs';
 import { transfer2UnixPath } from "../../utils/pathTransfer";

@@ -15,7 +15,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import ts from 'typescript';
+import ts from 'ohos-typescript';
 import { ArkFile } from '../ArkFile';
 import { ArkNamespace } from '../ArkNamespace';
 import Logger from "../../../utils/logger";

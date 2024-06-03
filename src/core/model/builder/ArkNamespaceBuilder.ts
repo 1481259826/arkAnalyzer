@@ -18,7 +18,7 @@ import { ExportInfo } from "../ArkExport";
 import { buildDefaultArkClassFromArkNamespace, buildNormalArkClassFromArkNamespace } from "./ArkClassBuilder";
 import { ArkFile } from "../ArkFile";
 import { buildArkMethodFromArkClass } from "./ArkMethodBuilder";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import { ArkNamespace } from "../ArkNamespace";
 import { buildModifiers } from "./builderUtils";
 import Logger from "../../../utils/logger";
@@ -34,7 +34,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
 
     // modifiers
     if (node.modifiers) {
-        buildModifiers(node.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(node, sourceFile).forEach((modifier) => {
             ns.addModifier(modifier);
         });
     }
@@ -66,27 +66,25 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
 
     // build ns member
     if (node.body) {
-        if (ts.isModuleBody(node.body)) {
-            if (ts.isModuleBlock(node.body)) {
-                buildNamespaceMembers(node.body, ns, sourceFile);
-            }
-            // NamespaceDeclaration extends ModuleDeclaration
-            //TODO: Check
-            else if (ts.isModuleDeclaration(node.body)) {
-                logger.warn("This ModuleBody is an NamespaceDeclaration.");
-                let childNs: ArkNamespace = new ArkNamespace();
-                buildArkNamespace(node.body, ns, childNs, sourceFile)
-            }
-            else if (ts.isIdentifier(node.body)) {
-                logger.warn("ModuleBody is Identifier.");
-            }
-            else {
-                logger.warn("JSDocNamespaceDeclaration found.");
-            }
+        if (ts.isModuleBlock(node.body)) {
+            buildNamespaceMembers(node.body, ns, sourceFile);
+        }
+        // NamespaceDeclaration extends ModuleDeclaration
+        //TODO: Check
+        else if (ts.isModuleDeclaration(node.body)) {
+            logger.warn("This ModuleBody is an NamespaceDeclaration.");
+            let childNs: ArkNamespace = new ArkNamespace();
+            buildArkNamespace(node.body, ns, childNs, sourceFile)
+        }
+        else if (ts.isIdentifier(node.body)) {
+            logger.warn("ModuleBody is Identifier.");
         }
         else {
             logger.warn("JSDocNamespaceDeclaration found.");
         }
+    }
+    else {
+        logger.warn("JSDocNamespaceDeclaration found.");
     }
 }
 

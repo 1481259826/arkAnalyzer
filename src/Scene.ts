@@ -32,9 +32,7 @@ import { ArkNamespace } from "./core/model/ArkNamespace";
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
 import Logger from "./utils/logger";
 import { transfer2UnixPath } from './utils/pathTransfer';
-import ts from "typescript";
 import { Local } from './core/base/Local';
-import nullTypingsInstaller = ts.server.nullTypingsInstaller;
 import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 
 const logger = Logger.getLogger();

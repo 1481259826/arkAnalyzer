@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "typescript";
+import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "ohos-typescript";
 import { AnyType, ArrayType, ClassType, LiteralType, NumberType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
 import { TypeInference } from "../../common/TypeInference";
 import { ArkField } from "../ArkField";
@@ -63,46 +63,48 @@ export function handlePropertyAccessExpression(node: ts.PropertyAccessExpression
     return propertyAccessExpressionName;
 }
 
-export function buildModifiers(modifierArray: ts.NodeArray<ts.ModifierLike>, sourceFile: ts.SourceFile): Set<string | Decorator> {
+export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<string | Decorator> {
     let modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    modifierArray.forEach((modifier) => {
-        //TODO: find reason!!
+
+    function parseModifier(modifier: ts.ModifierLike) {
         if (ts.SyntaxKind[modifier.kind] == 'FirstContextualKeyword') {
             modifiers.add('AbstractKeyword');
-        }
-        else if (ts.isDecorator(modifier)) {
-            if (ts.isDecorator(modifier)) {
-                if (modifier.expression) {
-                    let kind = "";
-                    if (ts.isIdentifier(modifier.expression)) {
-                        kind = modifier.expression.text;
+        } else if (ts.isDecorator(modifier)) {
+            if (modifier.expression) {
+                let kind = "";
+                if (ts.isIdentifier(modifier.expression)) {
+                    kind = modifier.expression.text;
+                } else if (ts.isCallExpression(modifier.expression)) {
+                    if (ts.isIdentifier(modifier.expression.expression)) {
+                        kind = modifier.expression.expression.text;
                     }
-                    else if (ts.isCallExpression(modifier.expression)) {
-                        if (ts.isIdentifier(modifier.expression.expression)) {
-                            kind = modifier.expression.expression.text;
-                        }
-                    }
-                    if (kind != "Type") {
-                        const decorator = new Decorator(kind);
-                        decorator.setContent(modifier.expression.getText(sourceFile));
-                        modifiers.add(decorator);
-                    } else {
-                        const arg = (modifier.expression as ts.CallExpression).arguments[0];
-                        const body = (arg as ts.ArrowFunction).body;
-                        if (ts.isIdentifier(body)) {
-                            const typeDecorator = new TypeDecorator();
-                            typeDecorator.setType(body.text);
-                            typeDecorator.setContent(modifier.expression.getText(sourceFile));
-                            modifiers.add(typeDecorator);
-                        }
+                }
+                if (kind != "Type") {
+                    const decorator = new Decorator(kind);
+                    decorator.setContent(modifier.expression.getText(sourceFile));
+                    modifiers.add(decorator);
+                } else {
+                    const arg = (modifier.expression as ts.CallExpression).arguments[0];
+                    const body = (arg as ts.ArrowFunction).body;
+                    if (ts.isIdentifier(body)) {
+                        const typeDecorator = new TypeDecorator();
+                        typeDecorator.setType(body.text);
+                        typeDecorator.setContent(modifier.expression.getText(sourceFile));
+                        modifiers.add(typeDecorator);
                     }
                 }
             }
-        }
-        else {
+        } else {
             modifiers.add(ts.SyntaxKind[modifier.kind]);
         }
-    });
+    }
+
+    if (ts.canHaveModifiers(node)) {
+        ts.getModifiers(node)?.forEach(parseModifier);
+    }
+
+    ts.getAllDecorators(node).forEach(parseModifier);
+   
     return modifiers;
 }
 

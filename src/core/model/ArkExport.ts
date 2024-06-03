@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from "typescript";
+import * as ts from "ohos-typescript";
 import { ImportInfo } from "./ArkImport";
 import { LineColPosition } from "../base/Position";
 import { Decorator } from "../base/Decorator";

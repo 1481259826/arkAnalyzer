@@ -19,7 +19,7 @@ import { ViewTree } from "../../graph/ViewTree";
 import { ArkClass } from "../ArkClass";
 import { Decorator } from "../../base/Decorator";
 import { ArkMethod } from "../ArkMethod";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import {
     buildModifiers,
     buildParameters,
@@ -83,18 +83,10 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         mtd.addParameter(parameter);
     });
 
-    //TODO: remember to test abstract method
-    let modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    if (
-        (!ts.isConstructSignatureDeclaration(methodNode)) &&
-        (!ts.isCallSignatureDeclaration(methodNode)) &&
-        (!ts.isFunctionTypeNode(methodNode))
-    ) {
-        if (methodNode.modifiers) {
-            modifiers = buildModifiers(methodNode.modifiers, sourceFile);
-        }
-    }
-
+    buildModifiers(methodNode, sourceFile).forEach((value) => {
+        mtd.addModifier(value);
+    })
+    
     if (methodNode.type) {
         mtd.setReturnType(buildReturnType(methodNode.type, sourceFile, mtd));
     }

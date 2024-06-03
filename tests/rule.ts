@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
+import * as ts from 'ohos-typescript';
 let text = `
 for (let x of a) {
     x++
