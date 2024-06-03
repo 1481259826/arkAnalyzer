@@ -32,7 +32,8 @@ export type ClassLikeNode =
     ts.InterfaceDeclaration |
     ts.EnumDeclaration |
     ts.ClassExpression |
-    ts.TypeLiteralNode;
+    ts.TypeLiteralNode |
+    ts.StructDeclaration;
 
 export function buildDefaultArkClassFromArkFile(arkFile: ArkFile, defaultClass: ArkClass, astRoot: ts.SourceFile) {
     defaultClass.setDeclaringArkFile(arkFile);
@@ -136,7 +137,7 @@ export function buildNormalArkClass(clsNode: ClassLikeNode,
         });
     }
 
-    if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode)) {
+    if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
         cls.setOriginType("Class");
     }
     else if (ts.isInterfaceDeclaration(clsNode)) {

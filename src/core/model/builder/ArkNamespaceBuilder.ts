@@ -111,7 +111,8 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
         else if (
             ts.isClassDeclaration(child) ||
             ts.isInterfaceDeclaration(child) ||
-            ts.isEnumDeclaration(child)
+            ts.isEnumDeclaration(child) ||
+            ts.isStructDeclaration(child)
             //child.kind === ts.SyntaxKind.ClassDeclaration
             //child.kind === ts.SyntaxKind.InterfaceDeclaration
             //child.kind === ts.SyntaxKind.EnumDeclaration
