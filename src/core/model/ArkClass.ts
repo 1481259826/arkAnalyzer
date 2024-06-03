@@ -21,7 +21,6 @@ import { ArkMethod } from "./ArkMethod";
 import { ArkNamespace } from "./ArkNamespace";
 import { ClassSignature, FieldSignature, MethodSignature } from "./ArkSignature";
 import Logger from "../../utils/logger";
-import { LineColPosition } from "../base/Position";
 import { FileSignature, NamespaceSignature } from "./ArkSignature";
 import { Local } from "../base/Local";
 import { Decorator } from "../base/Decorator";
@@ -34,8 +33,6 @@ export class ArkClass {
     private code: string;
     private line: number = -1;
     private column: number = -1;
-
-    private etsPosition: LineColPosition;
 
     private declaringArkFile: ArkFile;
     private declaringArkNamespace: ArkNamespace;
@@ -93,19 +90,6 @@ export class ArkClass {
 
     public setColumn(column: number) {
         this.column = column;
-    }
-
-    public setEtsPositionInfo(position: LineColPosition) {
-        this.etsPosition = position;
-    }
-
-    public async getEtsPositionInfo(): Promise<LineColPosition> {
-        if (!this.etsPosition) {
-            let arkFile = this.declaringArkFile;
-            const etsPosition = await arkFile.getEtsOriginalPositionFor(new LineColPosition(this.line, this.column));
-            this.setEtsPositionInfo(etsPosition);
-        }
-        return this.etsPosition;
     }
 
     public getOriginType() {
@@ -337,6 +321,20 @@ export class ArkClass {
         return Array.from(this.modifiers).filter((item) => {
             return item instanceof Decorator;
         }) as Decorator[];
+    }
+
+    public hasEntryDecorator(): boolean {
+        let decorators = this.getDecorators();
+        return decorators.filter((value) => {
+            return value.getKind() == 'Entry';
+        }).length != 0;
+    }
+
+    public hasComponentDecorator(): boolean {
+        let decorators = this.getDecorators();
+        return decorators.filter((value) => {
+            return value.getKind() == 'Component';
+        }).length != 0;
     }
 
     public getAnonymousMethodNumber() {
