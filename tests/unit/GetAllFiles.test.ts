@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { getAllFiles } from "../../src/utils/getAllFiles";
+import { getAllFiles } from "../../src_refactoring/utils/getAllFiles";
 import { assert, describe, expect, it } from "vitest";
 
 describe("getAllFiles Test", () => {
