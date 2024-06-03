@@ -324,16 +324,17 @@ export class ArkClass {
     }
 
     public hasEntryDecorator(): boolean {
-        let decorators = this.getDecorators();
-        return decorators.filter((value) => {
-            return value.getKind() == 'Entry';
-        }).length != 0;
+        return this.hasDecorator('Entry');
     }
 
     public hasComponentDecorator(): boolean {
+        return this.hasDecorator('Component');
+    }
+
+    private hasDecorator(kind: string): boolean {
         let decorators = this.getDecorators();
         return decorators.filter((value) => {
-            return value.getKind() == 'Component';
+            return value.getKind() == kind;
         }).length != 0;
     }
 
