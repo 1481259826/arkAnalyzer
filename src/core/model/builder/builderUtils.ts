@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "typescript";
+import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "ohos-typescript";
 import { AnyType, ArrayType, ClassType, LiteralType, NumberType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
 import { TypeInference } from "../../common/TypeInference";
 import { ArkField } from "../ArkField";

@@ -19,7 +19,7 @@ import { ArkMethod, arkMethodNodeKind } from "../ArkMethod";
 import { ArkNamespace } from "../ArkNamespace";
 import Logger from "../../../utils/logger";
 import { ObjectLiteralExpr } from "../../base/Expr";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import { ArkClass } from "../ArkClass";
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass } from "./ArkMethodBuilder";
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from "./builderUtils";

@@ -19,7 +19,7 @@ import { ViewTree } from "../../graph/ViewTree";
 import { ArkClass } from "../ArkClass";
 import { Decorator } from "../../base/Decorator";
 import { ArkMethod } from "../ArkMethod";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import {
     buildModifiers,
     buildParameters,

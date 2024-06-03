@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts from "typescript";
+import ts from "ohos-typescript";
 
 export abstract class Position {
     public abstract getFirstLine(): number;

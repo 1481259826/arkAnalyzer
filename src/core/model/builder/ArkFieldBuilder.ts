@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts from "typescript";
+import ts from "ohos-typescript";
 import { ArkField } from "../ArkField";
 import Logger from "../../../utils/logger";
 import { LineColPosition } from "../../base/Position";
