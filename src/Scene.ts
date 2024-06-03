@@ -21,12 +21,12 @@ import { AbstractCallGraph } from "./callgraph/AbstractCallGraphAlgorithm";
 import { ClassHierarchyAnalysisAlgorithm } from "./callgraph/ClassHierarchyAnalysisAlgorithm";
 import { RapidTypeAnalysisAlgorithm } from "./callgraph/RapidTypeAnalysisAlgorithm";
 import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
-import { ImportInfo, updateSdkConfigPrefix } from './core/common/ImportBuilder';
+import { ImportInfo, updateSdkConfigPrefix } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
 import { ArkClass } from "./core/model/ArkClass";
-import { ArkFile, buildArkFileFromFile } from "./core/model/ArkFile";
+import { ArkFile } from "./core/model/ArkFile";
 import { ArkMethod } from "./core/model/ArkMethod";
 import { ArkNamespace } from "./core/model/ArkNamespace";
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
@@ -34,6 +34,8 @@ import Logger from "./utils/logger";
 import { transfer2UnixPath } from './utils/pathTransfer';
 import ts from "typescript";
 import { Local } from './core/base/Local';
+import nullTypingsInstaller = ts.server.nullTypingsInstaller;
+import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 
 const logger = Logger.getLogger();
 
@@ -327,7 +329,7 @@ export class Scene {
 
     public getClassMap(): Map<FileSignature | NamespaceSignature, ArkClass[]> {
         const classMap: Map<FileSignature | NamespaceSignature, ArkClass[]> = new Map();
-        for (const file of this.getFiles()){
+        for (const file of this.getFiles()) {
             const fileClass: ArkClass[] = [];
             const namespaceStack: ArkNamespace[] = [];
             const parentMap: Map<ArkNamespace, ArkNamespace | ArkFile> = new Map();
@@ -352,8 +354,7 @@ export class Scene {
                 classMap.set(ns.getNamespaceSignature(), nsClass);
                 if (ns.getNamespaces().length == 0) {
                     finalNamespaces.push(ns);
-                }
-                else {
+                } else {
                     for (const nsns of ns.getNamespaces()) {
                         namespaceStack.push(nsns);
                         parentMap.set(nsns, ns);
@@ -391,17 +392,17 @@ export class Scene {
                 }
             }
         }
-        
+
         for (const file of this.getFiles()) {
             // 文件加上import的class，包括ns的
             const importClasses: ArkClass[] = [];
             const importNameSpaces: ArkNamespace[] = [];
-            for (const importInfo of file.getImportInfos()){
+            for (const importInfo of file.getImportInfos()) {
                 const importClass = ModelUtils.getClassInImportInfoWithName(importInfo.getImportClauseName(), file);
                 if (importClass && !importClasses.includes(importClass)) {
                     importClasses.push(importClass);
                 }
-                const importNameSpace = ModelUtils.getNamespaceInImportInfoWithName(importInfo.getImportClauseName(),file);
+                const importNameSpace = ModelUtils.getNamespaceInImportInfoWithName(importInfo.getImportClauseName(), file);
                 if (importNameSpace && !importNameSpaces.includes(importNameSpace)) {
                     try {
                         // 遗留问题：只统计了项目文件的namespace，没统计sdk文件内部的引入
@@ -410,7 +411,7 @@ export class Scene {
                     } catch {
                         // logger.log(importNameSpace)
                     }
-                    
+
                 }
             }
             const fileClasses = classMap.get(file.getFileSignature())!;
@@ -559,4 +560,44 @@ export class Scene {
         }
         return globalVariableMap;
     }
+
+    // public getGlobalVariableMap(): Map<FileSignature | NamespaceSignature, Local[]> {
+    //     const globalVariableMap: Map<FileSignature | NamespaceSignature, Local[]> = new Map();
+    //     for (const file of this.getFiles()) {
+    //         const globalLocals: Local[] = [];
+    //         for (const local of file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+    //             if (local.getName() != "this" && local.getName()[0] != "$") {
+    //                 globalLocals.push(local);
+    //             }
+    //         }
+    //         globalVariableMap.set(file.getFileSignature(), globalLocals);
+    //     }
+    //     for (const file of this.getFiles()) {
+    //         for (const ns of file.getNamespaces()) {
+    //             const globalLocals: Local[] = [];
+    //             for (const local of ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+    //                 if (local.getName() != "this" && local.getName()[0] != "$") {
+    //                     globalLocals.push(local);
+    //                 }
+    //             }
+    //             globalLocals.push(...globalVariableMap.get(file.getFileSignature())!);
+    //             globalVariableMap.set(ns.getNamespaceSignature(), globalLocals);
+    //         }
+    //         const namespaceStack = [...file.getNamespaces()];
+    //         while (namespaceStack.length > 0) {
+    //             const ns = namespaceStack.shift()!;
+    //             for (const nsns of ns.getNamespaces()) {
+    //                 const globalLocals: Local[] = [];
+    //                 for (const local of nsns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+    //                     if (local.getName() != "this" && local.getName()[0] != "$") {
+    //                         globalLocals.push(local);
+    //                     }
+    //                 }
+    //                 globalLocals.push(...globalVariableMap.get(ns.getNamespaceSignature())!);
+    //                 globalVariableMap.set(ns.getNamespaceSignature(), globalLocals);
+    //             }
+    //         }
+    //     }
+    //     return globalVariableMap;
+    // }
 }

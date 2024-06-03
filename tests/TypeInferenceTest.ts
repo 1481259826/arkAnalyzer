@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src_refactoring/Config";
-import { Scene } from "../src_refactoring/Scene";
-import { ArkBody } from "../src_refactoring/core/model/ArkBody";
-import Logger, { LOG_LEVEL } from "../src_refactoring/utils/logger";
+import { SceneConfig } from "../src/Config";
+import { Scene } from "../src/Scene";
+import { ArkBody } from "../src/core/model/ArkBody";
+import Logger, { LOG_LEVEL } from "../src/utils/logger";
 
 const logger = Logger.getLogger();
 Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN);
