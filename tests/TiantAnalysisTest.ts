@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src_refactoring/Config";
-import { Scene } from "../src_refactoring/Scene";
-import { ModelUtils } from "../src_refactoring/core/common/ModelUtils";
-import { TiantAnalysisChecker, TiantAnalysisSolver } from "../src_refactoring/core/dataflow/TiantAnalysis";
+import { SceneConfig } from "../src/Config";
+import { Scene } from "../src/Scene";
+import { ModelUtils } from "../src/core/common/ModelUtils";
+import { TiantAnalysisChecker, TiantAnalysisSolver } from "../src/core/dataflow/TiantAnalysis";
 
 
 // const config_path = "tests\\resources\\ifds\\project\\ifdsProjectConfig.json";

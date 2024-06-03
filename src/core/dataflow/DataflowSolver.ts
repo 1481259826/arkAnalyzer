@@ -13,18 +13,13 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../Scene";
-import { ClassHierarchyAnalysisAlgorithm } from "../../callgraph/ClassHierarchyAnalysisAlgorithm";
-import { StmtReader } from "../../save/source/SourceBody";
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
-import { ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from "../base/Stmt";
-import { Type } from "../base/Type";
-import { Value } from "../base/Value";
-import { ModelUtils } from "../common/ModelUtils";
-import { ArkClass } from "../model/ArkClass";
-import { ArkMethod } from "../model/ArkMethod";
-import { DataflowProblem, FlowFunction } from "./DataflowProblem";
-import { DataflowResult } from "./DataflowResult";
+import {Scene} from "../../Scene";
+import {ClassHierarchyAnalysisAlgorithm} from "../../callgraph/ClassHierarchyAnalysisAlgorithm";
+import {ArkInstanceFieldRef, ArkStaticFieldRef} from "../base/Ref";
+import {ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt} from "../base/Stmt";
+import {ArkClass} from "../model/ArkClass";
+import {ArkMethod} from "../model/ArkMethod";
+import {DataflowProblem, FlowFunction} from "./DataflowProblem";
 import {PathEdge, PathEdgePoint} from "./Edge"
 
 /*
@@ -46,7 +41,7 @@ export abstract class DataflowSolver<D> {
     private zeroFact: D;
     private inComing: Map<PathEdgePoint<D>, Set<PathEdgePoint<D>>>;
     private endSummary: Map<PathEdgePoint<D>, Set<PathEdgePoint<D>>>;
-    private summaryEdge: Set<CallToReturnCacheEdge<D>>;
+    private summaryEdge: Set<CallToReturnCacheEdge<D>>; // summaryEdge不是加速一个函数内多次调用同一个函数，而是加速多次调用同一个函数f时，f内的函数调用
     private scene: Scene;
     private CHA: ClassHierarchyAnalysisAlgorithm;
     private stmtNexts: Map<Stmt, Set<Stmt>>;
@@ -153,13 +148,12 @@ export abstract class DataflowSolver<D> {
     }
 
 
-
-    protected pathEdgeSetHasEdge(edge :PathEdge<D>) {
-        for (const path of this.pathEdgeSet){
+    protected pathEdgeSetHasEdge(edge: PathEdge<D>) {
+        for (const path of this.pathEdgeSet) {
             if (path.edgeEnd.node == edge.edgeEnd.node && factEqual(path.edgeEnd.fact, edge.edgeEnd.fact) &&
-                 path.edgeStart.node == edge.edgeStart.node && factEqual(path.edgeStart.fact, edge.edgeStart.fact)){
-                    return true;
-                 }
+                path.edgeStart.node == edge.edgeStart.node && factEqual(path.edgeStart.fact, edge.edgeStart.fact)) {
+                return true;
+            }
         }
         return false;
     }
@@ -275,7 +269,7 @@ export abstract class DataflowSolver<D> {
         }
         for (let cacheEdge of this.summaryEdge) {
             if (cacheEdge.edgeStart == edge.edgeEnd && cacheEdge.edgeEnd.node == returnSite) {
-                this.propagate(new PathEdge<D>(start, cacheEdge.edgeEnd));//什么时候执行
+                this.propagate(new PathEdge<D>(start, cacheEdge.edgeEnd));
             }
         }
 
@@ -308,8 +302,9 @@ export abstract class DataflowSolver<D> {
     }
 }
 
+
 export function factEqual<D>(fact1: D, fact2: D): boolean {
-    if (fact1 instanceof ArkInstanceFieldRef && fact2 instanceof ArkInstanceFieldRef){
+    if (fact1 instanceof ArkInstanceFieldRef && fact2 instanceof ArkInstanceFieldRef) {
         return fact1.getFieldSignature().getFieldName() == fact2.getFieldSignature().getFieldName() && fact1.getBase().getName() == fact2.getBase().getName();
     } else if (fact1 instanceof ArkStaticFieldRef && fact2 instanceof ArkStaticFieldRef) {
         return fact1.getFieldSignature() == fact2.getFieldSignature()

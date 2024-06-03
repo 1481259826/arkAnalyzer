@@ -13,25 +13,23 @@
  * limitations under the License.
  */
 
-import {NodeA} from "../base/Ast";
-import {Type} from "../base/Type";
-import {ViewTree} from "../graph/ViewTree";
-import {ArkField} from "./ArkField";
-import {ArkFile} from "./ArkFile";
-import {ArkMethod, arkMethodNodeKind, buildArkMethodFromArkClass} from "./ArkMethod";
-import {ArkNamespace} from "./ArkNamespace";
-import {ClassSignature, FieldSignature, MethodSignature} from "./ArkSignature";
+import { Type } from "../base/Type";
+import { ViewTree } from "../graph/ViewTree";
+import { ArkField } from "./ArkField";
+import { ArkFile } from "./ArkFile";
+import { ArkMethod } from "./ArkMethod";
+import { ArkNamespace } from "./ArkNamespace";
+import { ClassSignature, FieldSignature, MethodSignature } from "./ArkSignature";
 import Logger from "../../utils/logger";
-import {LineColPosition} from "../base/Position";
-import {ObjectLiteralExpr} from "../base/Expr";
-import {FileSignature, NamespaceSignature} from "./ArkSignature";
-import {Local} from "../base/Local";
-import {Decorator} from "../base/Decorator";
+import { LineColPosition } from "../base/Position";
+import { FileSignature, NamespaceSignature } from "./ArkSignature";
+import { Local } from "../base/Local";
+import { Decorator } from "../base/Decorator";
 
 const logger = Logger.getLogger();
 
 export class ArkClass {
-    private name: string;
+    private name: string = '';
     private originType: string = "Class";
     private code: string;
     private line: number = -1;
@@ -58,8 +56,9 @@ export class ArkClass {
     private staticMethods: Map<string, ArkMethod> = new Map<string, ArkMethod>();
     private staticFields: Map<string, ArkField> = new Map<string, ArkField>();
 
+    private anonymousMethodNumber: number = 0;
+
     private viewTree: ViewTree;
-    private loadEntryDecorator: boolean = false;
 
     constructor() {
     }
@@ -334,147 +333,13 @@ export class ArkClass {
         return globalMap.get(this.declaringArkFile.getFileSignature())!;
     }
 
-    public async getDecorators(): Promise<Decorator[]> {
-        await this.loadEntryDecoratorFromEts();
+    public getDecorators(): Decorator[] {
         return Array.from(this.modifiers).filter((item) => {
             return item instanceof Decorator;
         }) as Decorator[];
     }
 
-    public async hasEntryDecorator(): Promise<boolean> {
-        let decorators = await this.getDecorators();
-        return decorators.filter((value) => {
-            return value.getKind() == 'Entry';
-        }).length != 0;
+    public getAnonymousMethodNumber() {
+        return this.anonymousMethodNumber++;
     }
-
-    private async loadEntryDecoratorFromEts() {
-        if (this.loadEntryDecorator) {
-            return;
-        }
-
-        let position = await this.getEtsPositionInfo();
-        let content = await this.getDeclaringArkFile().getEtsSource(position.getLineNo() + 1);
-        let regex = new RegExp(`@Entry[@[\\w]*]*[export|default|class|public|static|private\\s]*$${this.getName()}`, 'gi');
-        let match = regex.exec(content);
-        if (match) {
-            let decorator = new Decorator(match[1]);
-            decorator.setContent(match[1]);
-            this.addModifier(decorator);
-        }
-        this.loadEntryDecorator = true;
-    }
-}
-
-export function buildDefaultArkClassFromArkFile(defaultlassNode: NodeA, arkFile: ArkFile, defaultClass: ArkClass) {
-    defaultClass.setDeclaringArkFile(arkFile);
-    buildDefaultArkClass(defaultlassNode, defaultClass);
-}
-
-export function buildDefaultArkClassFromArkNamespace(defaultClassNode: NodeA, arkNamespace: ArkNamespace, defaultClass: ArkClass) {
-    defaultClass.setDeclaringArkNamespace(arkNamespace);
-    defaultClass.setDeclaringArkFile(arkNamespace.getDeclaringArkFile());
-    buildDefaultArkClass(defaultClassNode, defaultClass);
-}
-
-export function buildNormalArkClassFromArkFile(clsNode: NodeA, arkFile: ArkFile, cls: ArkClass) {
-    cls.setDeclaringArkFile(arkFile);
-    cls.setCode(clsNode.text);
-    cls.setLine(clsNode.line + 1);
-    cls.setColumn(clsNode.character + 1);
-    buildNormalArkClass(clsNode, cls);
-}
-
-export function buildNormalArkClassFromArkNamespace(clsNode: NodeA, arkNamespace: ArkNamespace, cls: ArkClass) {
-    cls.setDeclaringArkNamespace(arkNamespace);
-    cls.setDeclaringArkFile(arkNamespace.getDeclaringArkFile());
-    cls.setCode(clsNode.text);
-    cls.setLine(clsNode.line + 1);
-    cls.setColumn(clsNode.character + 1);
-    buildNormalArkClass(clsNode, cls);
-}
-
-function buildDefaultArkClass(defaultClassNode: NodeA, cls: ArkClass) {
-    cls.setName("_DEFAULT_ARK_CLASS");
-    cls.genSignature();
-    genDefaultArkMethod(defaultClassNode, cls);
-}
-
-function buildNormalArkClass(clsNode: NodeA, cls: ArkClass) {
-    if (!clsNode.classNodeInfo) {
-        throw new Error('Error: There is no classNodeInfo for this ClassDeclaration!');
-    }
-    cls.setName(clsNode.classNodeInfo.getClassName());
-    cls.setOriginType(clsNode.classNodeInfo.getOriginType());
-    cls.genSignature();
-
-    clsNode.classNodeInfo.getmodifiers().forEach((modifier) => {
-        cls.addModifier(modifier);
-    });
-
-    for (let [key, value] of clsNode.classNodeInfo.getHeritageClauses()) {
-        if (value == 'ExtendsKeyword') {
-            cls.setSuperClassName(key);
-        } else {
-            cls.addImplementedInterfaceName(key);
-        }
-    }
-
-    cls.addFields(clsNode.classNodeInfo.getMembers());
-    cls.getFields().forEach((field) => {
-        field.setDeclaringClass(cls);
-        field.genSignature();
-        let initializer = field.getInitializer();
-        if (initializer instanceof ObjectLiteralExpr) {
-            let anonymousClass = initializer.getAnonymousClass();
-            let newName = 'AnonymousClass-' + cls.getName() + '-' + field.getName();
-            anonymousClass.setName(newName);
-            anonymousClass.setDeclaringArkNamespace(cls.getDeclaringArkNamespace());
-            anonymousClass.setDeclaringArkFile(cls.getDeclaringArkFile());
-            anonymousClass.genSignature();
-            anonymousClass.getMethods().forEach((mtd) => {
-                mtd.setDeclaringArkClass(anonymousClass);
-                mtd.setDeclaringArkFile();
-                mtd.genSignature();
-            });
-        }
-    });
-
-    clsNode.classNodeInfo.getTypeParameters().forEach((typeParameter) => {
-        cls.addTypeParameter(typeParameter);
-    });
-
-    // generate ArkMethods of this class
-    for (let child of clsNode.children) {
-        if (child.kind == 'SyntaxList') {
-            for (let cld of child.children) {
-                if (arkMethodNodeKind.indexOf(cld.kind) > -1) {
-                    let mthd: ArkMethod = new ArkMethod();
-                    buildArkMethodFromArkClass(cld, cls, mthd);
-                    cls.addMethod(mthd);
-                    if (cld.kind == 'GetAccessor') {
-                        let getAccessorName = cld.methodNodeInfo?.getAccessorName;
-                        if (!getAccessorName) {
-                            logger.warn("Cannot get GetAccessorName for method: ", mthd.getSignature().toString());
-                        } else {
-                            cls.getFields().forEach((field) => {
-                                if (field.getName() === getAccessorName) {
-                                    field.setParameters(mthd.getParameters());
-                                    field.setType(mthd.getReturnType());
-                                    field.setTypeParameters(mthd.getTypeParameter());
-                                    field.setArkMethodSignature(mthd.getSignature());
-                                }
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-function genDefaultArkMethod(defaultMethodNode: NodeA, cls: ArkClass) {
-    let defaultMethod = new ArkMethod();
-    buildArkMethodFromArkClass(defaultMethodNode, cls, defaultMethod);
-    cls.setDefaultArkMethod(defaultMethod);
 }

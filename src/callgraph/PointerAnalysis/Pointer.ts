@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { Local } from "../../core/base/Local";
 import { Stmt } from "../../core/base/Stmt";
 import { Type } from "../../core/base/Type";
 import { Value } from "../../core/base/Value";

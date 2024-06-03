@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-import * as fs from 'fs';
+import * as ts from 'typescript';
 import Logger from "../../utils/logger";
-import {ASTree, NodeA} from '../base/Ast';
 import {Constant} from '../base/Constant';
 import {
     AbstractInvokeExpr,
@@ -71,13 +70,15 @@ import {
 import {Value} from '../base/Value';
 import {BasicBlock} from '../graph/BasicBlock';
 import {Cfg} from '../graph/Cfg';
-import {ArkClass, buildNormalArkClassFromArkFile} from '../model/ArkClass';
-import {ArkMethod, buildArkMethodFromArkClass} from '../model/ArkMethod';
+import {ArkClass} from '../model/ArkClass';
+import {ArkMethod} from '../model/ArkMethod';
 import {ClassSignature, FieldSignature, MethodSignature, MethodSubSignature} from '../model/ArkSignature';
-import {ExportInfo} from './ExportBuilder';
+import {ExportInfo} from '../model/ArkExport';
 import {IRUtils} from './IRUtils';
 import {TypeInference} from './TypeInference';
 import {LineColPosition} from "../base/Position";
+import {MethodLikeNode, buildArkMethodFromArkClass} from "../model/builder/ArkMethodBuilder";
+import {buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace} from "../model/builder/ArkClassBuilder";
 
 const logger = Logger.getLogger();
 
@@ -92,10 +93,10 @@ class StatementBuilder {
     // TODO:以下两个属性需要获取    
     line: number;//行号//ast节点存了一个start值为这段代码的起始地址，可以从start开始往回查原文有几个换行符确定行号    
     column: number; // 列  
-    astNode: NodeA | null;//ast节点对象
-    use: Set<Variable>;
-    def: Set<Variable>;
-    defspecial: Set<Variable>;
+    astNode: ts.Node | null;//ast节点对象
+    // use: Set<Variable>;
+    // def: Set<Variable>;
+    // defspecial: Set<Variable>;
     scopeID: number;
     addressCode3: string[];
     threeAddressStmts: Stmt[];
@@ -106,7 +107,7 @@ class StatementBuilder {
     numOfIdentifier: number = 0;
     isDoWhile: boolean = false;
 
-    constructor(type: string, code: string, astNode: NodeA | null, scopeID: number) {
+    constructor(type: string, code: string, astNode: ts.Node | null, scopeID: number) {
         this.type = type;
         this.code = code;
         this.next = null;
@@ -116,10 +117,10 @@ class StatementBuilder {
         this.line = 0;
         this.astNode = astNode;
         this.scopeID = scopeID;
-        this.use = new Set<Variable>;
-        this.def = new Set<Variable>;
-        this.defspecial = new Set<Variable>;
-        this.addressCode3 = [];
+        // this.use = new Set<Variable>;
+        // this.def = new Set<Variable>;
+        // this.defspecial = new Set<Variable>;
+        // this.addressCode3 = [];
         this.threeAddressStmts = [];
         this.haveCall = false;
         this.block = null;
@@ -134,7 +135,7 @@ class ConditionStatementBuilder extends StatementBuilder {
     condition: string;
     doStatement: StatementBuilder | null = null;
 
-    constructor(type: string, code: string, astNode: NodeA, scopeID: number) {
+    constructor(type: string, code: string, astNode: ts.Node, scopeID: number) {
         super(type, code, astNode, scopeID);
         this.nextT = null;
         this.nextF = null;
@@ -148,7 +149,7 @@ class SwitchStatementBuilder extends StatementBuilder {
     cases: Case[] = [];
     default: StatementBuilder | null = null;
 
-    constructor(type: string, code: string, astNode: NodeA, scopeID: number) {
+    constructor(type: string, code: string, astNode: ts.Node, scopeID: number) {
         super(type, code, astNode, scopeID);
         this.nexts = [];
     }
@@ -161,7 +162,7 @@ class TryStatementBuilder extends StatementBuilder {
     catchError: string = "";
     finallyStatement: StatementBuilder | null = null;
 
-    constructor(type: string, code: string, astNode: NodeA, scopeID: number) {
+    constructor(type: string, code: string, astNode: ts.Node, scopeID: number) {
         super(type, code, astNode, scopeID);
     }
 }
@@ -202,13 +203,11 @@ class Variable {
 
 class Scope {
     id: number;
-    variable: Set<String>;
     level: number;
     parent: Scope | null;
 
     constructor(id: number, variable: Set<String>, level: number) {
         this.id = id;
-        this.variable = variable;
         this.level = level;
         this.parent = null;
     }
@@ -255,18 +254,18 @@ class textError extends Error {
     }
 }
 
-function getNumOfIdentifier(node: NodeA): number {
+function getNumOfIdentifier(node: ts.Node, sourceFile: ts.SourceFile): number {
     let num = 0;
-    if (node.kind == "Identifier")
+    if (ts.SyntaxKind[node.kind] == "Identifier")
         return 1;
-    for (let child of node.children)
-        num += getNumOfIdentifier(child);
+    for (let child of node.getChildren(sourceFile))
+        num += getNumOfIdentifier(child, sourceFile);
     return num;
 }
 
 export class CfgBuilder {
     name: string;
-    astRoot: NodeA;
+    astRoot: ts.Node;
     entry: StatementBuilder;
     exit: StatementBuilder;
     loopStack: ConditionStatementBuilder[];
@@ -292,14 +291,14 @@ export class CfgBuilder {
     anonymousFunctions: CfgBuilder[];
 
     anonymousClassIndex: number;
-
+    private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
 
     private locals: Set<Local> = new Set();
     private thisLocal: Local = new Local('this');
     private paraLocals: Local[] = [];
 
-    constructor(ast: NodeA, name: string, declaringMethod: ArkMethod) {
+    constructor(ast: ts.Node, name: string, declaringMethod: ArkMethod, sourceFile: ts.SourceFile) {
         this.name = name;
         this.astRoot = ast;
         this.declaringMethod = declaringMethod;
@@ -326,10 +325,11 @@ export class CfgBuilder {
         this.anonymousFuncIndex = 0;
         this.anonymousFunctions = [];
         this.anonymousClassIndex = 0;
+        this.sourceFile = sourceFile;
         this.buildCfgBuilder();
     }
 
-    walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, node: NodeA) {
+    walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
         function judgeLastType(s: StatementBuilder) {
             if (lastStatement.type == "ifStatement") {
                 let lastIf = lastStatement as ConditionStatementBuilder;
@@ -350,38 +350,38 @@ export class CfgBuilder {
 
         }
 
-        function checkBlock(node: NodeA): NodeA | null {
-            if (node.kind == "Block")
+        function checkBlock(node: ts.Node, sourceFile: ts.SourceFile): ts.Node | null {
+            if (ts.SyntaxKind[node.kind] == "Block")
                 return node;
             else {
-                let ret: NodeA | null = null;
-                for (let child of node.children) {
-                    ret = ret || checkBlock(child);
+                let ret: ts.Node | null = null;
+                for (let child of node.getChildren(sourceFile)) {
+                    ret = ret || checkBlock(child, sourceFile);
                 }
                 return ret;
             }
         }
 
-        function getAnonymous(node: NodeA): NodeA | null {
-            const stack: NodeA[] = [];
+        function getAnonymous(node: ts.Node, sourceFile: ts.SourceFile): ts.Node | null {
+            const stack: ts.Node[] = [];
             stack.push(node);
             while (stack.length > 0) {
                 const n = stack.pop();
                 if (!n)
                     return null;
-                if (n?.kind == "FunctionExpression" || n?.kind == "ArrowFunction") {
+                if (ts.SyntaxKind[n?.kind] == "FunctionExpression" || ts.SyntaxKind[n?.kind] == "ArrowFunction") {
                     return n;
                 }
-                if (n.children) {
-                    for (let i = n.children.length - 1; i >= 0; i--) {
-                        stack.push(n.children[i]);
+                if (n.getChildren(sourceFile)) {
+                    for (let i = n.getChildren(sourceFile).length - 1; i >= 0; i--) {
+                        stack.push(n.getChildren(sourceFile)[i]);
                     }
                 }
             }
             return null;
         }
 
-        // logger.info(node.text)
+        // logger.info(node.getText(this.sourceFile))
 
         this.scopeLevel++;
         let scope = new Scope(this.scopes.length, new Set(), this.scopeLevel);
@@ -393,119 +393,77 @@ export class CfgBuilder {
         }
         this.scopes.push(scope)
 
-        for (let i = 0; i < node?.children.length; i++) {
-            let c = node.children[i];
-            if (c.kind == "FirstStatement" || c.kind == "VariableStatement" || c.kind == "ExpressionStatement" || c.kind == "ThrowStatement") {
-                if (c.kind == "FirstStatement" || c.kind == "VariableStatement") {
-                    let declList = c.children[this.findChildIndex(c, "VariableDeclarationList")];
-                    declList = declList.children[this.findChildIndex(declList, "SyntaxList")];
-                    for (let decl of declList.children) {
-                        scope.variable.add(decl.children[0]?.text);
-                    }
-                }
-                let s = new StatementBuilder("statement", c.text, c, scope.id);
+        for (let i = 0; i < nodes.length; i++) {
+            let c = nodes[i];
+            if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c)) {
+                let s = new StatementBuilder("statement", c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
                 lastStatement = s;
-            }
-            if (c.kind == "ImportDeclaration") {
-                let stm = new StatementBuilder("statement", c.text, c, scope.id);
-                judgeLastType(stm);
-                lastStatement = stm;
-                stm.astNode = c;
-                let indexPath = this.findChildIndex(c, "FromKeyword") + 1;
-                this.importFromPath.push(c.children[indexPath].text);
-            }
-            if (c.kind == "ReturnStatement") {
-                let s = new StatementBuilder("returnStatement", c.text, c, scope.id);
+            } else if (ts.isReturnStatement(c)) {
+                let s = new StatementBuilder("returnStatement", c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
                 s.astNode = c;
                 lastStatement = s;
                 break;
-            }
-            if (c.kind == "BreakStatement") {
+            } else if (ts.isBreakStatement(c)) {
                 let brstm = new StatementBuilder("breakStatement", "break;", c, scope.id);
                 judgeLastType(brstm);
-                let p: NodeA | null = c;
+                let p: ts.Node | null = c;
                 while (p) {
-                    if (p.kind.includes("While") || p.kind.includes("For")) {
+                    if (ts.SyntaxKind[p.kind].includes("While") || ts.SyntaxKind[p.kind].includes("For")) {
                         brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
                         break;
                     }
-                    if (p.kind.includes("CaseClause") || p.kind.includes("DefaultClause")) {
+                    if (ts.SyntaxKind[p.kind].includes("CaseClause") || ts.SyntaxKind[p.kind].includes("DefaultClause")) {
                         brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
                         break;
                     }
                     p = p.parent;
                 }
                 lastStatement = brstm;
-            }
-            if (c.kind == "ContinueStatement") {
+            } else if (ts.isContinueStatement(c)) {
                 let constm = new StatementBuilder("continueStatement", "continue;", c, scope.id);
                 judgeLastType(constm);
                 constm.next = this.loopStack[this.loopStack.length - 1];
                 lastStatement = constm;
-            }
-            if (c.kind == "IfStatement") {
+            } else if (ts.isIfStatement(c)) {
                 let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder("ifStatement", "", c, scope.id);
                 judgeLastType(ifstm);
                 let ifexit: StatementBuilder = new StatementBuilder("ifExit", "", c, scope.id);
-                let elsed: boolean = false;
-                for (let j = 0; j < c.children.length; j++) {
-                    let ifchild = c.children[j];
-                    if (ifchild.kind == "OpenParenToken") {
-                        ifstm.condition = c.children[j + 1].text;
-                        // expressionCondition=true;
-                        ifstm.code = "if (" + ifstm.condition + ")";
-                    }
-                    if ((ifchild.kind == "CloseParenToken" || ifchild.kind == "ElseKeyword") && c.children[j + 1].kind != "Block") {
-                        let tempBlock = new NodeA(undefined, c, [], "undefined", 0, "Block");
-                        tempBlock.kind = "Block";
-                        tempBlock.text = "tempBlock";
-                        let temp0 = new NodeA(undefined, tempBlock, [], "undefined", 0, "undefined");
-                        let temp1 = new NodeA(undefined, tempBlock, [c.children[j + 1]], "undefined", 0, "undefined");
-                        tempBlock.children = [temp0, temp1];
-                        c.children[j + 1] = tempBlock;
-                    }
-                    if (ifchild.kind == "ElseKeyword")
-                        elsed = true;
-                    if (ifchild.kind == "Block") {
-                        this.walkAST(ifstm, ifexit, ifchild.children[1])
-                    }
+                ifstm.condition = c.expression.getText(this.sourceFile);
+                ifstm.code = "if (" + ifstm.condition + ")";
+                if (ts.isBlock(c.thenStatement)) {
+                    this.walkAST(ifstm, ifexit, [...c.thenStatement.statements]);
+                } else {
+                    this.walkAST(ifstm, ifexit, [c.thenStatement]);
                 }
-                if (!elsed || !ifstm.nextF) {
-                    ifstm.nextF = ifexit;
+                if (c.elseStatement) {
+                    if (ts.isBlock(c.elseStatement)) {
+                        this.walkAST(ifstm, ifexit, [...c.elseStatement.statements]);
+                    } else {
+                        this.walkAST(ifstm, ifexit, [c.elseStatement]);
+                    }
                 }
                 if (!ifstm.nextT) {
                     ifstm.nextT = ifexit;
                 }
+                if (!ifstm.nextF) {
+                    ifstm.nextF = ifexit;
+                }
                 lastStatement = ifexit;
-            }
-            if (c.kind == "WhileStatement") {
+            } else if (ts.isWhileStatement(c)) {
                 this.breakin = "loop";
                 let loopstm = new ConditionStatementBuilder("loopStatement", "", c, scope.id);
                 this.loopStack.push(loopstm);
                 judgeLastType(loopstm);
                 let loopExit = new StatementBuilder("loopExit", "", c, scope.id);
                 loopstm.nextF = loopExit;
-                for (let j = 0; j < c.children.length; j++) {
-                    let loopchild = c.children[j];
-                    if (loopchild.kind == "OpenParenToken") {
-                        // expressionCondition=true;
-                        loopstm.condition = c.children[j + 1].text;
-                        loopstm.code = "while (" + loopstm.condition + ")";
-                    }
-                    if ((loopchild.kind == "CloseParenToken") && c.children[j + 1].kind != "Block") {
-                        let tempBlock = new NodeA(undefined, c, [], "undefined", 0, "Block");
-                        tempBlock.kind = "Block";
-                        tempBlock.text = "tempBlock";
-                        let temp0 = new NodeA(undefined, tempBlock, [], "undefined", 0, "undefined");
-                        let temp1 = new NodeA(undefined, tempBlock, [c.children[j + 1]], "undefined", 0, "undefined");
-                        tempBlock.children = [temp0, temp1];
-                        c.children[j + 1] = tempBlock;
-                    }
-                    if (loopchild.kind == "Block") {
-                        this.walkAST(loopstm, loopstm, loopchild.children[1]);
-                    }
+                loopstm.condition = c.expression.getText(this.sourceFile);
+                loopstm.code = "if (" + loopstm.condition + ")";
+                if (ts.isBlock(c.statement)) {
+                    this.walkAST(loopstm, loopExit, [...c.statement.statements]);
+                } else {
+                    this.walkAST(loopstm, loopExit, [c.statement]);
                 }
                 if (!loopstm.nextF) {
                     loopstm.nextF = loopExit;
@@ -516,25 +474,24 @@ export class CfgBuilder {
                 lastStatement = loopExit;
                 this.loopStack.pop();
             }
-            if (c.kind == "ForStatement" || c.kind == "ForInStatement" || c.kind == "ForOfStatement") {
+            if (ts.isForStatement(c) || ts.isForInStatement(c) || ts.isForOfStatement(c)) {
                 this.breakin = "loop";
                 let loopstm = new ConditionStatementBuilder("loopStatement", "", c, scope.id);
                 this.loopStack.push(loopstm);
                 judgeLastType(loopstm);
                 let loopExit = new StatementBuilder("loopExit", "", c, scope.id);
                 loopstm.nextF = loopExit;
-                let code: string = "";
-                for (let loopchild of c.children) {
-                    if (loopchild.kind != "Block") {
-                        code += loopchild.text;
-                        const nextChild = c.children[c.children.indexOf(loopchild) + 1];
-                        if (nextChild && loopchild.text != "(" && nextChild.text != ")" && nextChild.text != ";") {
-                            code += ' ';
-                        }
-                    } else {
-                        loopstm.code = code;
-                        this.walkAST(loopstm, loopstm, loopchild.children[1]);
-                    }
+                if (ts.isForStatement(c)) {
+                    loopstm.code = c.initializer?.getText(this.sourceFile) + "; " + c.condition?.getText(this.sourceFile) + "; " + c.incrementor?.getText(this.sourceFile);
+                } else if (ts.isForOfStatement(c)) {
+                    loopExit.code = c.initializer?.getText(this.sourceFile) + " of " + c.expression.getText(this.sourceFile);
+                } else {
+                    loopExit.code = c.initializer?.getText(this.sourceFile) + " in " + c.expression.getText(this.sourceFile);
+                }
+                if (ts.isBlock(c.statement)) {
+                    this.walkAST(loopstm, loopExit, [...c.statement.statements]);
+                } else {
+                    this.walkAST(loopstm, loopExit, [c.statement]);
                 }
                 if (!loopstm.nextF) {
                     loopstm.nextF = loopExit;
@@ -544,24 +501,18 @@ export class CfgBuilder {
                 }
                 lastStatement = loopExit;
                 this.loopStack.pop();
-            }
-            if (c.kind == "DoStatement") {
+            } else if (ts.isDoStatement(c)) {
                 this.breakin = "loop";
                 let loopstm = new ConditionStatementBuilder("loopStatement", "", c, scope.id);
                 this.loopStack.push(loopstm);
                 let loopExit = new StatementBuilder("loopExit", "", c, scope.id);
                 loopstm.nextF = loopExit;
-                // let expressionCondition=false;
-                for (let j = 0; j < c.children.length; j++) {
-                    let loopchild = c.children[j]
-                    if (loopchild.kind == "OpenParenToken") {
-                        // expressionCondition=true;
-                        loopstm.condition = c.children[j + 1].text;
-                        loopstm.code = "while (" + loopstm.condition + ")";
-                    }
-                    if (loopchild.kind == "Block") {
-                        this.walkAST(lastStatement, loopstm, loopchild.children[1]);
-                    }
+                loopstm.condition = c.expression.getText(this.sourceFile);
+                loopstm.code = "while (" + loopstm.condition + ")";
+                if (ts.isBlock(c.statement)) {
+                    this.walkAST(lastStatement, loopstm, [...c.statement.statements]);
+                } else {
+                    this.walkAST(lastStatement, loopstm, [c.statement]);
                 }
                 let lastType = lastStatement.type;
                 if (lastType == "ifStatement" || lastType == "loopStatement") {
@@ -576,144 +527,81 @@ export class CfgBuilder {
                 }
                 lastStatement = loopExit;
                 this.loopStack.pop();
-            }
-            if (c.kind == "SwitchStatement") {
+            } else if (ts.isSwitchStatement(c)) {
                 this.breakin = "switch";
                 let switchstm = new SwitchStatementBuilder("switchStatement", "", c, scope.id);
                 judgeLastType(switchstm);
                 let switchExit = new StatementBuilder("switchExit", "", null, scope.id);
                 this.switchExitStack.push(switchExit);
-                for (let schild of c.children) {
-                    if (schild.kind != "CaseBlock") {
-                        switchstm.code += schild.text;
+                switchExit.code = "switch (" + c.expression + ")";
+                let lastCaseExit: StatementBuilder | null = null;
+                for (let i = 0; i < c.caseBlock.clauses.length; i++) {
+                    const clause = c.caseBlock.clauses[i];
+                    let casestm: StatementBuilder;
+                    if (ts.isCaseClause(clause)) {
+                        casestm = new StatementBuilder("statement", "case " + clause.expression + ":", clause, scope.id);
                     } else {
-                        let lastCaseExit: StatementBuilder | null = null;
-                        let preCases: string[] = [];
-                        for (let j = 0; j < schild.children[1].children.length; j++) {
-                            let caseClause = schild.children[1].children[j];
-                            let syntaxList: NodeA | null = null;
-                            let caseWords = "";
-                            for (let caseChild of caseClause.children) {
-                                if (caseChild.kind == "SyntaxList") {
-                                    syntaxList = caseChild;
-                                    break;
-                                } else {
-                                    caseWords += caseChild.text + " ";
-                                }
-                            }
-                            if (syntaxList == null) {
-                                logger.warn("caseClause without syntaxList");
-                                process.exit();
-                            }
-                            if (syntaxList.children.length == 0) {
-                                preCases.push(caseWords);
-                            } else {
-                                let thisCase = caseWords;
-                                for (let w of preCases) {
-                                    caseWords += w + " ";
-                                }
-                                let casestm = new StatementBuilder("statement", caseWords, caseClause, scope.id);
-                                switchstm.nexts.push(casestm);
-                                let caseExit = new StatementBuilder("caseExit", "", null, scope.id);
-                                this.walkAST(casestm, caseExit, syntaxList);
-                                for (let w of preCases) {
-                                    if (casestm.next) {
-                                        let cas = new Case(w, casestm.next);
-                                        switchstm.cases.push(cas);
-                                    }
-                                }
-                                if (casestm.next) {
-                                    if (caseClause.kind == "CaseClause") {
-                                        let cas = new Case(thisCase, casestm.next);
-                                        switchstm.cases.push(cas);
-                                    } else
-                                        switchstm.default = casestm.next;
-                                }
-                                if (lastCaseExit) {
-                                    lastCaseExit.next = casestm.next;
-                                }
-                                if (j == schild.children[1].children.length - 1) {
-                                    caseExit.next = switchExit;
-                                } else {
-                                    lastCaseExit = caseExit;
-                                }
-                                preCases = [];
-                            }
+                        casestm = new StatementBuilder("statement", "default:", clause, scope.id);
+                    }
 
-                        }
-                        if (lastCaseExit && !lastCaseExit.next) {
-                            lastCaseExit.next = switchExit;
-                        }
+                    switchstm.nexts.push(casestm);
+                    let caseExit = new StatementBuilder("caseExit", "", null, scope.id);
+                    this.walkAST(casestm, caseExit, [...clause.statements]);
+                    if (ts.isCaseClause(clause)) {
+                        const cas = new Case(casestm.code, casestm.next!);
+                        switchstm.cases.push(cas);
+                    } else {
+                        switchstm.default = casestm.next;
+                    }
+
+                    if (lastCaseExit) {
+                        lastCaseExit.next = casestm.next;
+                    }
+                    lastCaseExit = caseExit;
+                    if (i == c.caseBlock.clauses.length - 1) {
+                        caseExit.next = switchExit;
                     }
                 }
+
                 lastStatement = switchExit;
                 this.switchExitStack.pop();
-            }
-            if (c.kind == "Block") {
+            } else if (ts.isBlock(c)) {
                 let blockExit = new StatementBuilder("blockExit", "", c, scope.id);
-                this.walkAST(lastStatement, blockExit, c.children[1]);
+                this.walkAST(lastStatement, blockExit, c.getChildren(this.sourceFile)[1].getChildren(this.sourceFile));
                 lastStatement = blockExit;
-            }
-            if (c.kind == "TryStatement") {
+            } else if (ts.isTryStatement(c)) {
                 let trystm = new TryStatementBuilder("tryStatement", "try", c, scope.id);
                 judgeLastType(trystm);
                 let tryExit = new StatementBuilder("try exit", "", c, scope.id);
                 trystm.tryExit = tryExit;
-                this.walkAST(trystm, tryExit, c.children[1].children[1]);
+                this.walkAST(trystm, tryExit, [...c.tryBlock.statements]);
                 trystm.tryFirst = trystm.next;
-                // lastStatement=tryExit;
-                let catchClause: NodeA | null = null;
-                let finalBlock: NodeA | null = null;
-                let haveFinal = false;
-                for (let trychild of c.children) {
-                    if (haveFinal) {
-                        finalBlock = trychild;
-                        break;
+                if (c.catchClause) {
+                    let text = "catch";
+                    if (c.catchClause.variableDeclaration) {
+                        text += "(" + c.catchClause.variableDeclaration.getText(this.sourceFile) + ")";
                     }
-                    if (trychild.kind == "CatchClause") {
-                        catchClause = trychild;
-                        let text = "catch";
-                        if (catchClause.children.length > 2) {
-                            text = catchClause.children[0].text + catchClause.children[1].text + catchClause.children[2].text + catchClause.children[3].text
-                        }
-                        let catchOrNot = new ConditionStatementBuilder("catchOrNot", text, c, scope.id);
-                        // judgeLastType(catchOrNot);
-                        let catchExit = new StatementBuilder("catch exit", "", c, scope.id);
-                        catchOrNot.nextF = catchExit;
-                        let block = catchClause.children[this.findChildIndex(catchClause, "Block")];
-                        this.walkAST(catchOrNot, catchExit, block.children[1]);
-                        if (!catchOrNot.nextT) {
-                            catchOrNot.nextT = catchExit;
-                        }
-                        const catchStatement = new StatementBuilder("statement", catchOrNot.code, trychild, catchOrNot.nextT.scopeID);
-                        catchStatement.next = catchOrNot.nextT;
-                        trystm.catchStatement = catchStatement;
-                        let VD = catchClause.children[this.findChildIndex(catchClause, "VariableDeclaration")];
-                        if (VD) {
-                            if (VD.children[0].kind == "Identifier") {
-                                trystm.catchError = VD.children[0].text;
-                            } else {
-                                let error = VD.children[this.findChildIndex(VD, "TypeReference")];
-                                if (error) {
-                                    trystm.catchError = error.text;
-                                } else {
-                                    trystm.catchError = "Error";
-                                }
-                            }
+                    let catchOrNot = new ConditionStatementBuilder("catchOrNot", text, c, scope.id);
+                    let catchExit = new StatementBuilder("catch exit", "", c, scope.id);
+                    catchOrNot.nextF = catchExit;
+                    this.walkAST(catchOrNot, catchExit, [...c.catchClause.block.statements]);
+                    if (!catchOrNot.nextT) {
+                        catchOrNot.nextT = catchExit;
+                    }
+                    const catchStatement = new StatementBuilder("statement", catchOrNot.code, c.catchClause, catchOrNot.nextT.scopeID);
+                    catchStatement.next = catchOrNot.nextT;
+                    trystm.catchStatement = catchStatement;
+                    if (c.catchClause.variableDeclaration) {
+                        trystm.catchError = c.catchClause.variableDeclaration.getText(this.sourceFile);
+                    } else {
+                        trystm.catchError = "Error";
+                    }
 
-                        } else {
-                            trystm.catchError = "Error";
-                        }
-                    }
-                    if (trychild.kind == "FinallyKeyword") {
-                        haveFinal = true;
-                    }
                 }
-                if (finalBlock && finalBlock.children[1].children.length > 0) {
+                if (c.finallyBlock && c.finallyBlock.statements.length > 0) {
                     let final = new StatementBuilder("statement", "finally", c, scope.id);
                     let finalExit = new StatementBuilder("finally exit", "", c, scope.id);
-                    this.walkAST(final, finalExit, finalBlock.children[1]);
-
+                    this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
                     trystm.finallyStatement = final.next;
                 }
                 lastStatement = trystm;
@@ -795,6 +683,9 @@ export class CfgBuilder {
             }
             if (trystm.finallyStatement) {
                 this.deleteExit(trystm.finallyStatement);
+            }
+            if (trystm.next) {
+                this.deleteExit(trystm.next);
             }
         } else {
             if (stm.next?.type.includes("Exit")) {
@@ -1036,13 +927,13 @@ export class CfgBuilder {
         }
     }
 
-    nodeHaveCall(node: NodeA): boolean {
-        if (node.kind == "CallExpression" || node.kind == "NewExpression") {
+    nodeHaveCall(node: ts.Node): boolean {
+        if (ts.SyntaxKind[node.kind] == "CallExpression" || ts.SyntaxKind[node.kind] == "NewExpression") {
             return true;
         }
         let haveCall = false;
-        for (let child of node.children) {
-            if (child.kind == "Block")
+        for (let child of node.getChildren(this.sourceFile)) {
+            if (ts.SyntaxKind[child.kind] == "Block")
                 continue;
             haveCall = haveCall || this.nodeHaveCall(child);
         }
@@ -1055,8 +946,10 @@ export class CfgBuilder {
         stm.walked = true;
         if (stm.astNode) {
             stm.haveCall = this.nodeHaveCall(stm.astNode);
-            stm.line = stm.astNode.line + 1; // ast的行号是从0开始
-            stm.column = stm.astNode.character + 1;
+            const start = stm.astNode.getStart(this.sourceFile);
+            const position = ts.getLineAndCharacterOfPosition(this.sourceFile, start);
+            stm.line = position.line + 1; // ast的行号是从0开始
+            stm.column = position.character + 1;
         }
 
         if (stm.type == "ifStatement" || stm.type == "loopStatement" || stm.type == "catchOrNot") {
@@ -1086,6 +979,9 @@ export class CfgBuilder {
             if (trystm.finallyStatement) {
                 this.buildLastAndHaveCall(trystm.finallyStatement);
             }
+            if (trystm.next) {
+                this.buildLastAndHaveCall(trystm.next);
+            }
         } else {
             if (stm.next) {
                 stm.next?.lasts.push(stm);
@@ -1100,42 +996,6 @@ export class CfgBuilder {
             stm.walked = false;
         }
     }
-
-    resetWalkedPartial(stm: StatementBuilder) {
-        if (!stm.walked)
-            return;
-        stm.walked = false;
-        if (stm.type == "ifStatement" || stm.type == "loopStatement" || stm.type == "catchOrNot") {
-            let cstm = stm as ConditionStatementBuilder;
-            if (cstm.nextT == null || cstm.nextF == null) {
-                this.errorTest(cstm);
-                return;
-            }
-            this.resetWalkedPartial(cstm.nextF);
-            this.resetWalkedPartial(cstm.nextT);
-        } else if (stm.type == "switchStatement") {
-            let sstm = stm as SwitchStatementBuilder;
-            for (let j in sstm.nexts) {
-                this.resetWalkedPartial(sstm.nexts[j]);
-            }
-        } else if (stm.type == "tryStatement") {
-            let trystm = stm as TryStatementBuilder;
-            if (trystm.tryFirst) {
-                this.resetWalkedPartial(trystm.tryFirst);
-            }
-            if (trystm.catchStatement) {
-                this.resetWalkedPartial(trystm.catchStatement);
-            }
-            if (trystm.finallyStatement) {
-                this.resetWalkedPartial(trystm.finallyStatement);
-            }
-        } else {
-            if (stm.next != null)
-                this.resetWalkedPartial(stm.next);
-        }
-
-    }
-
 
     CfgBuilder2Array(stm: StatementBuilder) {
 
@@ -1168,6 +1028,9 @@ export class CfgBuilder {
             }
             if (trystm.finallyStatement) {
                 this.CfgBuilder2Array(trystm.finallyStatement);
+            }
+            if (trystm.next) {
+                this.CfgBuilder2Array(trystm.next);
             }
         } else {
             if (stm.next != null)
@@ -1209,262 +1072,44 @@ export class CfgBuilder {
         }
     }
 
-    generateDot() {
-        this.resetWalked();
-        this.getDotEdges(this.entry);
-        const filename = this.name + ".dot";
-
-
-        let fileContent = "digraph G {\n";
-
-        for (let stm of this.statementArray) {
-            if (stm.type == "entry" || stm.type == "exit")
-                fileContent += "Node" + stm.index + " [label=\"" + stm.type.replace(/"/g, '\\"') + "\"];\n";
-            else
-                fileContent += "Node" + stm.index + " [label=\"" + stm.code.replace(/"/g, '\\"') + "\"];\n";
-        }
-        for (let edge of this.dotEdges) {
-            fileContent += "Node" + edge[0] + " -> " + "Node" + edge[1] + ";\n";
-        }
-        fileContent += "}";
-        fs.writeFile(filename, fileContent, (err) => {
-            if (err) {
-                logger.error(`Error writing to file: ${err.message}`);
-            }
-        });
-
-    }
-
-    dfsUseDef(stm: StatementBuilder, node: NodeA, mode: string) {
-        let set: Set<Variable> = new Set();
-        if (mode == "use")
-            set = stm.use;
-        else if (mode == "def")
-            set = stm.def;
-
-        if (node.kind == "Identifier") {
-            for (let v of this.variables) {
-                if (v.name == node.text) {
-                    set.add(v);
-                    if (mode == "use") {
-                        let chain = new DefUseChain(v.lastDef, stm);
-                        v.defUse.push(chain);
-                    } else {
-                        v.lastDef = stm;
-                        for (let p of v.properties) {
-                            p.lastDef = stm;
-                        }
-                    }
-                    return;
-                }
-            }
-        }
-        if (node.kind == "PropertyAccessExpression") {
-            for (let v of this.variables) {
-                if (v.name == node.children[0].text) {
-                    if (mode == "use") {
-                        for (let prop of this.variables) {
-                            if (prop.name == node.text) {
-                                set.add(prop);
-                                let chain = new DefUseChain(prop.lastDef, stm);
-                                prop.defUse.push(chain);
-                                if (prop.lastDef == v.lastDef) {
-                                    set.add(v);
-                                    chain = new DefUseChain(v.lastDef, stm);
-                                    v.defUse.push(chain);
-                                }
-                                return;
-                            }
-                        }
-                        set.add(v);
-                        let chain = new DefUseChain(v.lastDef, stm);
-                        v.defUse.push(chain);
-                    } else {
-                        for (let v of this.variables) {
-                            if (v.name == node.text) {
-                                v.lastDef = stm;
-                                return;
-                            }
-                        }
-                        const property = new Variable(node.text, stm);
-                        this.variables.push(property);
-                        for (let v of this.variables) {
-                            if (v.name == node.children[0].text) {
-                                v.properties.push(property);
-                                property.propOf = v;
-                            }
-                        }
-                    }
-                    return;
-                }
-            }
-        }
-        let indexOfDef = -1;
-        if (node.kind == "VariableDeclaration") {
-            indexOfDef = 0;
-            this.dfsUseDef(stm, node.children[indexOfDef], "def");
-        }
-        if (node.kind == "BinaryExpression" && node.children[1].kind == "FirstAssignment") {
-            indexOfDef = 0;
-        }
-        if (node.kind == "BinaryExpression" && node.children[1].kind == "FirstAssignment") {
-            indexOfDef = 0;
-        }
-        for (let i = 0; i < node.children.length; i++) {
-            if (i == indexOfDef)
-                continue;
-            let child = node.children[i];
-            this.dfsUseDef(stm, child, mode);
-        }
-        for (let i = 0; i < node.children.length; i++) {
-            let child = node.children[i];
-            if (child.kind == "FirstAssignment") {
-                if (i >= 2 && node.children[i - 2].kind == "ColonToken") {
-                    indexOfDef = i - 3;
-                    this.dfsUseDef(stm, node.children[indexOfDef], "def");
-                } else {
-                    indexOfDef = i - 1;
-                    this.dfsUseDef(stm, node.children[indexOfDef], "def");
-                }
-            }
-            if (child.kind.includes("EqualsToken") && child.kind != "EqualsEqualsToken") {
-                this.dfsUseDef(stm, node.children[i - 1], "def");
-            } else if (child.kind == "PlusPlusToken" || child.kind == "MinusMinusToken") {
-                if (i == 0)
-                    this.dfsUseDef(stm, node.children[i + 1], "def");
-                else
-                    this.dfsUseDef(stm, node.children[i - 1], "def");
-            }
-        }
-    }
-
-    findChildIndex(node: NodeA, kind: string): number {
-        for (let i = 0; i < node.children.length; i++) {
-            if (node.children[i].kind == kind)
+    findChildIndex(node: ts.Node, kind: string): number {
+        for (let i = 0; i < node.getChildren(this.sourceFile).length; i++) {
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[i].kind] == kind)
                 return i;
         }
         return -1;
     }
 
-    generateUseDef() {
-        for (let stm of this.statementArray) {
-            if (stm.astNode == null) continue;
-            let node: NodeA = stm.astNode;
-            let c = stm.astNode;
-            switch (stm.astNode?.kind) {
-                case "FirstStatement":
-                case "VariableStatement":
-                    let declList = c.children[this.findChildIndex(c, "VariableDeclarationList")];
-                    declList = declList.children[this.findChildIndex(declList, "SyntaxList")];
-                    for (let decl of declList.children) {
-                        if (decl.children[0]) {
-                            const v = new Variable(decl.children[0]?.text, stm);
-                            this.variables.push(v);
-                            this.dfsUseDef(stm, decl, "use");
-                        }
-                    }
-                    break;
-                case "ImportDeclaration":
-                    let importClause = c.children[this.findChildIndex(c, "ImportClause")];
-                    let nameImport = importClause.children[0]
-                    if (nameImport.kind == "NamedImports") {
-                        let syntaxList = nameImport.children[this.findChildIndex(nameImport, "SyntaxList")];
-                        for (let importSpecifier of syntaxList.children) {
-                            if (importSpecifier.kind != "ImportSpecifier")
-                                continue;
-                            const v = new Variable(importSpecifier.text, stm);
-                            this.variables.push(v);
-                            stm.def.add(v);
-                        }
-                    } else if (nameImport.kind == "NamespaceImport") {
-                        let identifier = nameImport.children[this.findChildIndex(nameImport, "Identifier")];
-                        const v = new Variable(identifier.text, stm);
-                        this.variables.push(v);
-                        stm.def.add(v);
-                    }
-                    break;
-                case "IfStatement":
-                case "WhileStatement":
-                case "DoStatement":
-                    for (let child of node.children) {
-                        if (child.kind == "Identifier") {
-                            for (let v of this.variables) {
-                                if (v.name == child.text)
-                                    stm.use.add(v);
-                            }
-                        } else if (child.kind == "BinaryExpression") {
-                            this.dfsUseDef(stm, child, "use");
-                        }
-                    }
-                    break;
-                case "ForStatement":
-                    let semicolon = 0;
-                    let beforeDef = new Set<Variable>;
-                    for (let child of node.children) {
-                        if (child.kind == "SemicolonToken") {
-                            semicolon++;
-                            if (semicolon == 2) {
-                                beforeDef = new Set(stm.def);
-                            }
-                        }
-                        if (child.kind == "Block") {
-                            break;
-                        }
-                        this.dfsUseDef(stm, child, "use");
-                    }
-                    for (let element of stm.def) {
-                        if (!beforeDef.has(element)) {
-                            stm.defspecial.add(element)
-                        }
-                    }
-                    break;
-                case "ForInStatement":
-                    let indexOfIn = this.findChildIndex(node, "InKeyword");
-                    this.dfsUseDef(stm, node.children[indexOfIn + 1], "use");
-                    this.dfsUseDef(stm, node.children[indexOfIn - 1], "use");
-                    break;
-                case "ForOfStatement":
-                    let indexOfOf = this.findChildIndex(node, "LastContextualKeyword");//of
-                    this.dfsUseDef(stm, node.children[indexOfOf + 1], "use");
-                    this.dfsUseDef(stm, node.children[indexOfOf - 1], "use");
-                    break;
-                default:
-                    if (stm.type != "entry" && stm.type != "exit")
-                        this.dfsUseDef(stm, node, "use");
-            }
-        }
-    }
-
 
     // utils begin
-    private getChild(node: NodeA, childKind: string): NodeA | null {
-        for (let i = 0; i < node.children.length; i++) {
-            if (node.children[i].kind == childKind)
-                return node.children[i];
+    private getChild(node: ts.Node, childKind: string): ts.Node | null {
+        for (let i = 0; i < node.getChildren(this.sourceFile).length; i++) {
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[i].kind] == childKind)
+                return node.getChildren(this.sourceFile)[i];
         }
         return null;
     }
 
-    private needExpansion(node: NodeA): boolean {
-        let nodeKind = node.kind;
+    private needExpansion(node: ts.Node): boolean {
+        let nodeKind = ts.SyntaxKind[node.kind];
         if (nodeKind == 'PropertyAccessExpression' || nodeKind == 'CallExpression') {
             return true;
         }
         return false;
     }
 
-    private support(node: NodeA): boolean {
-        let nodeKind = node.kind;
+    private support(node: ts.Node): boolean {
+        let nodeKind = ts.SyntaxKind[node.kind];
         if (nodeKind == 'ImportDeclaration' || nodeKind == 'TypeAliasDeclaration') {
             return false;
         }
         return true;
     }
 
-    private getSyntaxListItems(node: NodeA): NodeA[] {
-        let items: NodeA[] = [];
-        for (const child of node.children) {
-            if (child.kind != 'CommaToken') {
+    private getSyntaxListItems(node: ts.Node): ts.Node[] {
+        let items: ts.Node[] = [];
+        for (const child of node.getChildren(this.sourceFile)) {
+            if (ts.SyntaxKind[child.kind] != 'CommaToken') {
                 items.push(child);
             }
         }
@@ -1472,16 +1117,16 @@ export class CfgBuilder {
     }
 
     // temp function
-    private nopStmt(node: NodeA): boolean {
-        let nodeKind = node.kind;
+    private nopStmt(node: ts.Node): boolean {
+        let nodeKind = ts.SyntaxKind[node.kind];
         if (nodeKind == 'BinaryExpression' || nodeKind == 'VoidExpression') {
             return true;
         }
         return false;
     }
 
-    private shouldBeConstant(node: NodeA): boolean {
-        let nodeKind = node.kind;
+    private shouldBeConstant(node: ts.Node): boolean {
+        let nodeKind = ts.SyntaxKind[node.kind];
         if (nodeKind == 'FirstTemplateToken' ||
             (nodeKind.includes('Literal') && nodeKind != 'ArrayLiteralExpression' && nodeKind != 'ObjectLiteralExpression') ||
             nodeKind == 'NullKeyword' || nodeKind == 'TrueKeyword' || nodeKind == 'FalseKeyword') {
@@ -1514,19 +1159,14 @@ export class CfgBuilder {
         return tempLeftOp;
     }
 
-    private generateAssignStmt(node: NodeA | Value): Local {
+    private generateAssignStmtForValue(value: Value): Local {
         let leftOp = this.generateTempValue();
-        let rightOp: any;
-        if (node instanceof NodeA) {
-            rightOp = this.astNodeToValue(node);
-        } else {
-            rightOp = node;
-        }
+        let rightOp = value;
         this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(leftOp, rightOp));
         return leftOp;
     }
 
-    private objectLiteralNodeToLocal(objectLiteralNode: NodeA): Local {
+    private objectLiteralNodeToLocal(objectLiteralNode: ts.Node): Local {
         let anonymousClassName = 'AnonymousClass$' + this.name + '$' + this.anonymousClassIndex;
         this.anonymousClassIndex++;
 
@@ -1535,15 +1175,19 @@ export class CfgBuilder {
         arkClass.setName(anonymousClassName);
         let arkFile = this.declaringClass.getDeclaringArkFile();
         arkClass.setDeclaringArkFile(arkFile);
-        arkClass.setLine(objectLiteralNode.line + 1);
-        arkClass.setColumn(objectLiteralNode.character + 1);
+        const {line, character} = ts.getLineAndCharacterOfPosition(
+            this.sourceFile,
+            objectLiteralNode.getStart(this.sourceFile)
+        );
+        arkClass.setLine(line + 1);
+        arkClass.setColumn(character + 1);
         arkClass.genSignature();
         arkFile.addArkClass(arkClass);
         const classSignature = arkClass.getSignature();
         const classType = new ClassType(classSignature);
 
         let newExpr = new ArkNewExpr(classType);
-        let tempObj = this.generateAssignStmt(newExpr);
+        let tempObj = this.generateAssignStmtForValue(newExpr);
         let methodSubSignature = new MethodSubSignature();
         methodSubSignature.setMethodName('constructor');
         let methodSignature = new MethodSignature();
@@ -1555,13 +1199,13 @@ export class CfgBuilder {
         return tempObj;
     }
 
-    private templateSpanNodeToValue(templateSpanExprNode: NodeA): Value {
-        let exprNode = templateSpanExprNode.children[0];
+    private templateSpanNodeToValue(templateSpanExprNode: ts.Node): Value {
+        let exprNode = templateSpanExprNode.getChildren(this.sourceFile)[0];
         let expr = this.astNodeToValue(exprNode);
-        let literalNode = templateSpanExprNode.children[1];
-        let oriLiteralText = literalNode.text;
+        let literalNode = templateSpanExprNode.getChildren(this.sourceFile)[1];
+        let oriLiteralText = literalNode.getText(this.sourceFile);
         let literalText = '';
-        if (literalNode.kind == 'TemplateMiddle') {
+        if (ts.SyntaxKind[literalNode.kind] == 'TemplateMiddle') {
             literalText = oriLiteralText.substring(1, oriLiteralText.length - 2);
         } else {
             literalText = oriLiteralText.substring(1, oriLiteralText.length - 1);
@@ -1571,38 +1215,38 @@ export class CfgBuilder {
             return expr;
         }
         let combinationExpr = new ArkBinopExpr(expr, new Constant(literalText, StringType.getInstance()), '+');
-        return this.generateAssignStmt(combinationExpr);
+        return this.generateAssignStmtForValue(combinationExpr);
     }
 
-    private astNodeToTemplateExpr(templateExprNode: NodeA): Value {
+    private astNodeToTemplateExpr(templateExprNode: ts.Node): Value {
         let subValues: Value[] = [];
-        let templateHeadNode = templateExprNode.children[0];
-        let templateHeadText = templateHeadNode.text;
+        let templateHeadNode = templateExprNode.getChildren(this.sourceFile)[0];
+        let templateHeadText = templateHeadNode.getText(this.sourceFile);
         subValues.push(new Constant(templateHeadText.substring(1, templateHeadText.length - 2), StringType.getInstance()));
 
-        let syntaxListNode = templateExprNode.children[1];
-        for (const child of syntaxListNode.children) {
+        let syntaxListNode = templateExprNode.getChildren(this.sourceFile)[1];
+        for (const child of syntaxListNode.getChildren(this.sourceFile)) {
             subValues.push(this.templateSpanNodeToValue(child));
         }
 
         let combinationExpr = new ArkBinopExpr(subValues[0], subValues[1], '+');
-        let prevCombination = this.generateAssignStmt(combinationExpr);
+        let prevCombination = this.generateAssignStmtForValue(combinationExpr);
         for (let i = 2; i < subValues.length; i++) {
             combinationExpr = new ArkBinopExpr(prevCombination, subValues[i], '+');
-            prevCombination = this.generateAssignStmt(combinationExpr);
+            prevCombination = this.generateAssignStmtForValue(combinationExpr);
         }
         return prevCombination;
     }
 
     // TODO:支持更多场景
-    private astNodeToConditionExpr(conditionExprNode: NodeA): ArkConditionExpr {
+    private astNodeToConditionExpr(conditionExprNode: ts.Node): ArkConditionExpr {
         let conditionValue = this.astNodeToValue(conditionExprNode);
         let conditionExpr: ArkConditionExpr;
         if ((conditionValue instanceof ArkBinopExpr) && isRelationalOperator(conditionValue.getOperator())) {
             conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), flipOperator(conditionValue.getOperator()));
         } else {
             if (IRUtils.moreThanOneAddress(conditionValue)) {
-                conditionValue = this.generateAssignStmt(conditionValue);
+                conditionValue = this.generateAssignStmtForValue(conditionValue);
             }
             conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), '==');
         }
@@ -1647,55 +1291,55 @@ export class CfgBuilder {
         }
     }
 
-    private astNodeToValue(node: NodeA): Value {
+    private astNodeToValue(node: ts.Node): Value {
         let value: any;
-        if (node.kind == 'Identifier' || node.kind == 'ThisKeyword' || node.kind == 'SuperKeyword') {
+        if (ts.SyntaxKind[node.kind] == 'Identifier' || ts.SyntaxKind[node.kind] == 'ThisKeyword' || ts.SyntaxKind[node.kind] == 'SuperKeyword') {
             // TODO:识别外部变量
-            value = new Local(node.text);
+            value = new Local(node.getText(this.sourceFile));
             value = this.getOriginalLocal(value);
-        } else if (node.kind == 'Parameter') {
-            let identifierNode = node.children[0];
-            let typeNode = node.children[2];
-            value = new Local(identifierNode.text);
+        } else if (ts.SyntaxKind[node.kind] == 'Parameter') {
+            let identifierNode = node.getChildren(this.sourceFile)[0];
+            let typeNode = node.getChildren(this.sourceFile)[2];
+            value = new Local(identifierNode.getText(this.sourceFile));
             value = this.getOriginalLocal(value);
         } else if (this.shouldBeConstant(node)) {
             const typeStr = this.resolveKeywordType(node);
-            let constant = new Constant(node.text, TypeInference.buildTypeFromStr(typeStr));
-            value = this.generateAssignStmt(constant);
-        } else if (node.kind == 'BinaryExpression') {
-            let op1 = this.astNodeToValue(node.children[0]);
-            let operator = node.children[1].text;
-            let op2 = this.astNodeToValue(node.children[2]);
+            let constant = new Constant(node.getText(this.sourceFile), TypeInference.buildTypeFromStr(typeStr));
+            value = this.generateAssignStmtForValue(constant);
+        } else if (ts.SyntaxKind[node.kind] == 'BinaryExpression') {
+            let op1 = this.astNodeToValue(node.getChildren(this.sourceFile)[0]);
+            let operator = node.getChildren(this.sourceFile)[1].getText(this.sourceFile);
+            let op2 = this.astNodeToValue(node.getChildren(this.sourceFile)[2]);
             if (IRUtils.moreThanOneAddress(op1)) {
-                op1 = this.generateAssignStmt(op1);
+                op1 = this.generateAssignStmtForValue(op1);
             }
             if (IRUtils.moreThanOneAddress(op2)) {
-                op2 = this.generateAssignStmt(op2);
+                op2 = this.generateAssignStmtForValue(op2);
             }
             value = new ArkBinopExpr(op1, op2, operator);
         }
         // TODO:属性访问需要展开
-        else if (node.kind == 'PropertyAccessExpression') {
-            let baseValue = this.astNodeToValue(node.children[0]);
+        else if (ts.SyntaxKind[node.kind] == 'PropertyAccessExpression') {
+            let baseValue = this.astNodeToValue(node.getChildren(this.sourceFile)[0]);
             if (IRUtils.moreThanOneAddress(baseValue)) {
-                baseValue = this.generateAssignStmt(baseValue);
+                baseValue = this.generateAssignStmtForValue(baseValue);
             }
             let base = baseValue as Local;
 
-            let fieldName = node.children[2].text;
+            let fieldName = node.getChildren(this.sourceFile)[2].getText(this.sourceFile);
             const fieldSignature = new FieldSignature();
             fieldSignature.setFieldName(fieldName);
             value = new ArkInstanceFieldRef(base, fieldSignature);
-        } else if (node.kind == 'ElementAccessExpression') {
-            let baseValue = this.astNodeToValue(node.children[0]);
+        } else if (ts.SyntaxKind[node.kind] == 'ElementAccessExpression') {
+            let baseValue = this.astNodeToValue(node.getChildren(this.sourceFile)[0]);
             if (!(baseValue instanceof Local)) {
-                baseValue = this.generateAssignStmt(baseValue);
+                baseValue = this.generateAssignStmtForValue(baseValue);
             }
 
             let elementNodeIdx = this.findChildIndex(node, 'OpenBracketToken') + 1;
-            let elementValue = this.astNodeToValue(node.children[elementNodeIdx]);
+            let elementValue = this.astNodeToValue(node.getChildren(this.sourceFile)[elementNodeIdx]);
             if (IRUtils.moreThanOneAddress(elementValue)) {
-                elementValue = this.generateAssignStmt(elementValue);
+                elementValue = this.generateAssignStmtForValue(elementValue);
             }
 
             // temp
@@ -1718,20 +1362,20 @@ export class CfgBuilder {
                 fieldSignature.setFieldName(fieldName);
                 value = new ArkInstanceFieldRef(baseLocal, fieldSignature);
             }
-        } else if (node.kind == "CallExpression") {
-            let syntaxListNode = node.children[this.findChildIndex(node, 'OpenParenToken') + 1];
+        } else if (ts.SyntaxKind[node.kind] == "CallExpression") {
+            let syntaxListNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'OpenParenToken') + 1];
             let argNodes = this.getSyntaxListItems(syntaxListNode);
             let args: Value[] = [];
             for (const argNode of argNodes) {
                 let argValue = this.astNodeToValue(argNode);
                 if (IRUtils.moreThanOneAddress(argValue)) {
-                    argValue = this.generateAssignStmt(argValue);
+                    argValue = this.generateAssignStmtForValue(argValue);
                 }
 
                 args.push(argValue);
             }
 
-            let calleeNode = node.children[0];
+            let calleeNode = node.getChildren(this.sourceFile)[0];
             let methodValue = this.astNodeToValue(calleeNode);
 
             let classSignature = new ClassSignature();
@@ -1749,32 +1393,29 @@ export class CfgBuilder {
                 methodSubSignature.setMethodName(methodValue.getFieldName());
                 value = new ArkStaticInvokeExpr(methodSignature, args);
             } else if (methodValue instanceof ArkInstanceInvokeExpr) {
-                let tempCallee = this.generateAssignStmt(methodValue);
+                let tempCallee = this.generateAssignStmtForValue(methodValue);
                 methodSubSignature.setMethodName(tempCallee.getName());
                 value = new ArkStaticInvokeExpr(methodSignature, args);
             } else {
-                methodSubSignature.setMethodName(calleeNode.text);
+                methodSubSignature.setMethodName(calleeNode.getText(this.sourceFile));
                 value = new ArkStaticInvokeExpr(methodSignature, args);
             }
-        } else if (node.kind == "ArrowFunction") {
+        } else if (ts.SyntaxKind[node.kind] == "ArrowFunction") {
             let arrowFuncName = 'AnonymousFunc$' + this.name + '$' + this.anonymousFuncIndex;
-            if (node.methodNodeInfo) {
-                node.methodNodeInfo.updateName4anonymousFunc(arrowFuncName);
-            } else {
-                throw new Error('No MethodNodeInfo found for ArrowFunction node. Please check.');
-            }
             this.anonymousFuncIndex++;
 
-            let argsNode = node.children[1];
+            let argsNode = node.getChildren(this.sourceFile)[1];
             let args: Value[] = [];
-            for (let argNode of argsNode.children) {
-                if (argNode.kind != 'CommaToken') {
+            for (let argNode of argsNode.getChildren(this.sourceFile)) {
+                if (ts.SyntaxKind[argNode.kind] != 'CommaToken') {
                     args.push(this.astNodeToValue(argNode));
                 }
             }
             let arrowArkMethod = new ArkMethod();
-            buildArkMethodFromArkClass(node, this.declaringClass, arrowArkMethod);
+            arrowArkMethod.setName(arrowFuncName);
+            buildArkMethodFromArkClass(node as ts.ArrowFunction, this.declaringClass, arrowArkMethod, this.sourceFile);
             arrowArkMethod.genSignature();
+
             this.declaringClass.addMethod(arrowArkMethod);
 
             let callableType = new CallableType(arrowArkMethod.getSignature());
@@ -1782,77 +1423,78 @@ export class CfgBuilder {
             this.locals.add(value);
         }
         // TODO:函数表达式视作静态方法还是普通方法
-        else if (node.kind == 'FunctionExpression') {
+        else if (ts.SyntaxKind[node.kind] == 'FunctionExpression') {
             let funcExprName = '';
-            if (node.children[1].kind != 'OpenParenToken') {
-                funcExprName = node.children[1].text;
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[1].kind] != 'OpenParenToken') {
+                funcExprName = node.getChildren(this.sourceFile)[1].getText(this.sourceFile);
             } else {
                 funcExprName = 'AnonymousFunc-' + this.name + '-' + this.anonymousFuncIndex;
                 this.anonymousFuncIndex++;
             }
 
-            if (node.methodNodeInfo) {
-                node.methodNodeInfo.updateName4anonymousFunc(funcExprName);
-            } else {
-                throw new Error('No MethodNodeInfo found for ArrowFunction node. Please check.');
-            }
-
-            let argsNode = this.getChild(node, 'SyntaxList') as NodeA;
+            let argsNode = this.getChild(node, 'SyntaxList') as ts.Node;
             let args: Value[] = [];
-            for (let argNode of argsNode.children) {
-                if (argNode.kind != 'CommaToken') {
+            for (let argNode of argsNode.getChildren(this.sourceFile)) {
+                if (ts.SyntaxKind[argNode.kind] != 'CommaToken') {
                     args.push(this.astNodeToValue(argNode));
                 }
             }
             let exprArkMethod = new ArkMethod();
-            buildArkMethodFromArkClass(node, this.declaringClass, exprArkMethod);
+            buildArkMethodFromArkClass(node as ts.FunctionExpression, this.declaringClass, exprArkMethod, this.sourceFile);
             exprArkMethod.genSignature();
             this.declaringClass.addMethod(exprArkMethod);
 
             let callableType = new CallableType(exprArkMethod.getSignature());
             value = new Local(funcExprName, callableType);
             this.locals.add(value);
-        } else if (node.kind == "ClassExpression") {
+        } else if (ts.SyntaxKind[node.kind] == "ClassExpression") {
             let cls: ArkClass = new ArkClass();
-            let arkFile = this.declaringClass.getDeclaringArkFile();
-            buildNormalArkClassFromArkFile(node, arkFile, cls);
-            arkFile.addArkClass(cls);
-            if (cls.isExported()) {
-                let exportClauseName: string = cls.getName();
-                let exportClauseType: string = "Class";
-                let exportInfo = new ExportInfo();
-                exportInfo.build(exportClauseName, exportClauseType, new LineColPosition(-1, -1));
-                arkFile.addExportInfos(exportInfo);
+            const declaringArkNamespace = cls.getDeclaringArkNamespace();
+            if (declaringArkNamespace) {
+                buildNormalArkClassFromArkNamespace(node as ts.ClassExpression, declaringArkNamespace, cls, this.sourceFile);
+                declaringArkNamespace.addArkClass(cls);
+            } else {
+                let arkFile = this.declaringClass.getDeclaringArkFile();
+                buildNormalArkClassFromArkFile(node as ts.ClassExpression, arkFile, cls, this.sourceFile);
+                arkFile.addArkClass(cls);
             }
 
+            // if (cls.isExported()) {
+            //     let exportClauseName: string = cls.getName();
+            //     let exportClauseType: string = "Class";
+            //     let exportInfo = new ExportInfo();
+            //     exportInfo.build(exportClauseName, exportClauseType, new LineColPosition(-1, -1));
+            //     arkFile.addExportInfos(exportInfo);
+            // }
+
             value = new Local(cls.getName(), new ClassType(cls.getSignature()));
-        } else if (node.kind == "ObjectLiteralExpression") {
+        } else if (ts.SyntaxKind[node.kind] == "ObjectLiteralExpression") {
             value = this.objectLiteralNodeToLocal(node);
-        } else if (node.kind == "NewExpression") {
-            const className = node.children[1].text;
+        } else if (ts.SyntaxKind[node.kind] == "NewExpression") {
+            const className = node.getChildren(this.sourceFile)[1].getText(this.sourceFile);
             if (className == 'Array') {
                 let baseType: Type = AnyType.getInstance();
                 if (this.findChildIndex(node, 'FirstBinaryOperator') != -1) {
-                    const baseTypeNode = node.children[this.findChildIndex(node, 'FirstBinaryOperator') + 1];
+                    const baseTypeNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'FirstBinaryOperator') + 1];
                     baseType = this.getTypeNode(baseTypeNode);
                 }
                 let size: number = 0;
                 let sizeValue: Value | null = null;
-                const argSyntaxListNode = node.children[this.findChildIndex(node, 'OpenParenToken') + 1];
+                const argSyntaxListNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'OpenParenToken') + 1];
                 const argNodes = this.getSyntaxListItems(argSyntaxListNode);
                 const items: Constant[] = [];
-                if (argNodes.length == 1 && argNodes[0].kind == 'FirstLiteralToken') {
-                    size = parseInt(argNodes[0].text);
-                } else if (argNodes.length == 1 && argNodes[0].kind == 'Identifier') {
+                if (argNodes.length == 1 && ts.SyntaxKind[argNodes[0].kind] == 'FirstLiteralToken') {
+                    size = parseInt(argNodes[0].getText(this.sourceFile));
+                } else if (argNodes.length == 1 && ts.SyntaxKind[argNodes[0].kind] == 'Identifier') {
                     size = -1;
-                    sizeValue = this.getOriginalLocal(new Local(argNodes[0].text), false);
+                    sizeValue = this.getOriginalLocal(new Local(argNodes[0].getText(this.sourceFile)), false);
                 } else if (argNodes.length >= 1) {
                     size = argNodes.length;
                     if (baseType == AnyType.getInstance()) {
                         baseType = TypeInference.buildTypeFromStr(this.resolveKeywordType(argNodes[0]));
                     }
                     for (const sizeNode of argNodes) {
-                        items.push(new Constant(sizeNode.text, baseType));
+                        items.push(new Constant(sizeNode.getText(this.sourceFile), baseType));
                     }
                 }
 
@@ -1860,7 +1502,7 @@ export class CfgBuilder {
                     sizeValue = new Constant(size.toString(), NumberType.getInstance());
                 }
                 let newArrayExpr = new ArkNewArrayExpr(baseType, sizeValue);
-                value = this.generateAssignStmt(newArrayExpr);
+                value = this.generateAssignStmtForValue(newArrayExpr);
                 value.setType(new ArrayObjectType(baseType, 1));
 
                 for (let index = 0; index < items.length; index++) {
@@ -1873,7 +1515,7 @@ export class CfgBuilder {
                 classSignature.setClassName(className);
                 const classType = new ClassType(classSignature);
                 let newExpr = new ArkNewExpr(classType);
-                value = this.generateAssignStmt(newExpr);
+                value = this.generateAssignStmtForValue(newExpr);
 
 
                 let methodSubSignature = new MethodSubSignature();
@@ -1882,7 +1524,7 @@ export class CfgBuilder {
                 methodSignature.setDeclaringClassSignature(classSignature);
                 methodSignature.setMethodSubSignature(methodSubSignature);
 
-                let syntaxListNode = node.children[this.findChildIndex(node, 'OpenParenToken') + 1];
+                let syntaxListNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'OpenParenToken') + 1];
                 let argNodes = this.getSyntaxListItems(syntaxListNode);
                 let args: Value[] = [];
                 for (const argNode of argNodes) {
@@ -1891,27 +1533,27 @@ export class CfgBuilder {
 
                 this.current3ACstm.threeAddressStmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(value as Local, methodSignature, args)));
             }
-        } else if (node.kind == 'ArrayLiteralExpression') {
-            let syntaxListNode = node.children[1];
+        } else if (ts.SyntaxKind[node.kind] == 'ArrayLiteralExpression') {
+            let syntaxListNode = node.getChildren(this.sourceFile)[1];
             let size = 0;
-            for (const syntaxNode of syntaxListNode.children) {
-                if (syntaxNode.kind != 'CommaToken') {
+            for (const syntaxNode of syntaxListNode.getChildren(this.sourceFile)) {
+                if (ts.SyntaxKind[syntaxNode.kind] != 'CommaToken') {
                     size += 1;
                 }
             }
 
             let newArrayExpr = new ArkNewArrayExpr(UnknownType.getInstance(), new Constant(size.toString(), NumberType.getInstance()));
-            value = this.generateAssignStmt(newArrayExpr);
+            value = this.generateAssignStmtForValue(newArrayExpr);
             const itemTypes = new Set<Type>();
 
-            let argsNode = node.children[1];
+            let argsNode = node.getChildren(this.sourceFile)[1];
             let index = 0;
-            for (let argNode of argsNode.children) {
-                if (argNode.kind != 'CommaToken') {
+            for (let argNode of argsNode.getChildren(this.sourceFile)) {
+                if (ts.SyntaxKind[argNode.kind] != 'CommaToken') {
                     let arrayRef = new ArkArrayRef(value as Local, new Constant(index.toString(), NumberType.getInstance()));
                     const itemTypeStr = this.resolveKeywordType(argNode);
                     const itemType = TypeInference.buildTypeFromStr(itemTypeStr);
-                    const arrayItem = new Constant(argNode.text, itemType);
+                    const arrayItem = new Constant(argNode.getText(this.sourceFile), itemType);
                     itemTypes.add(itemType);
 
                     this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(arrayRef, arrayItem));
@@ -1925,88 +1567,88 @@ export class CfgBuilder {
                 newArrayExpr.setBaseType(new UnionType(Array.from(itemTypes.keys())));
             }
             value.setType(new ArrayType(newArrayExpr.getBaseType(), 1));
-        } else if (node.kind == 'PrefixUnaryExpression') {
-            let token = node.children[0].text;
+        } else if (ts.SyntaxKind[node.kind] == 'PrefixUnaryExpression') {
+            let token = node.getChildren(this.sourceFile)[0].getText(this.sourceFile);
             if (token == '++' || token == '--') {
-                value = this.astNodeToValue(node.children[1]);
+                value = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
                 let binopExpr = new ArkBinopExpr(value, new Constant('1', NumberType.getInstance()), token[0]);
                 this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(value, binopExpr));
             } else {
-                let op = this.astNodeToValue(node.children[1]);
+                let op = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
                 let arkUnopExpr = new ArkUnopExpr(op, token);
-                value = this.generateAssignStmt(arkUnopExpr);
+                value = this.generateAssignStmtForValue(arkUnopExpr);
             }
-        } else if (node.kind == 'PostfixUnaryExpression') {
-            let token = node.children[1].text;
-            value = this.astNodeToValue(node.children[0]);
+        } else if (ts.SyntaxKind[node.kind] == 'PostfixUnaryExpression') {
+            let token = node.getChildren(this.sourceFile)[1].getText(this.sourceFile);
+            value = this.astNodeToValue(node.getChildren(this.sourceFile)[0]);
             let binopExpr = new ArkBinopExpr(value, new Constant('1', NumberType.getInstance()), token[0]);
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(value, binopExpr));
-        } else if (node.kind == 'TemplateExpression') {
+        } else if (ts.SyntaxKind[node.kind] == 'TemplateExpression') {
             value = this.astNodeToTemplateExpr(node);
-        } else if (node.kind == 'AwaitExpression') {
-            value = this.astNodeToValue(node.children[1]);
-        } else if (node.kind == 'ParenthesizedExpression') {
-            const parenthesizedValue = this.astNodeToValue(node.children[1]);
-            value = this.generateAssignStmt(parenthesizedValue);
-        } else if (node.kind == 'SpreadElement') {
-            value = this.astNodeToValue(node.children[1]);
-        } else if (node.kind == 'TypeOfExpression') {
-            value = new ArkTypeOfExpr(this.astNodeToValue(node.children[1]));
-        } else if (node.kind == 'AsExpression') {
-            let typeName = node.children[2].text;
-            let op = this.astNodeToValue(node.children[0]);
+        } else if (ts.SyntaxKind[node.kind] == 'AwaitExpression') {
+            value = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
+        } else if (ts.SyntaxKind[node.kind] == 'ParenthesizedExpression') {
+            const parenthesizedValue = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
+            value = this.generateAssignStmtForValue(parenthesizedValue);
+        } else if (ts.SyntaxKind[node.kind] == 'SpreadElement') {
+            value = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
+        } else if (ts.SyntaxKind[node.kind] == 'TypeOfExpression') {
+            value = new ArkTypeOfExpr(this.astNodeToValue(node.getChildren(this.sourceFile)[1]));
+        } else if (ts.SyntaxKind[node.kind] == 'AsExpression') {
+            let typeName = node.getChildren(this.sourceFile)[2].getText(this.sourceFile);
+            let op = this.astNodeToValue(node.getChildren(this.sourceFile)[0]);
             value = new ArkCastExpr(op, TypeInference.buildTypeFromStr(typeName));
-        } else if (node.kind == 'TypeAssertionExpression') {
-            let typeName = node.children[this.findChildIndex(node, 'FirstBinaryOperator') + 1].text;
-            let opNode = node.children[this.findChildIndex(node, 'GreaterThanToken') + 1]
+        } else if (ts.SyntaxKind[node.kind] == 'TypeAssertionExpression') {
+            let typeName = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'FirstBinaryOperator') + 1].getText(this.sourceFile);
+            let opNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'GreaterThanToken') + 1]
             let op = this.astNodeToValue(opNode);
             value = new ArkCastExpr(op, TypeInference.buildTypeFromStr(typeName));
-        } else if (node.kind == 'ArrayBindingPattern' || node.kind == 'ObjectBindingPattern') {
+        } else if (ts.SyntaxKind[node.kind] == 'ArrayBindingPattern' || ts.SyntaxKind[node.kind] == 'ObjectBindingPattern') {
             value = this.generateTempValue();
-        } else if (node.kind == 'VoidExpression') {
-            this.astNodeToThreeAddressStmt(node.children[1]);
+        } else if (ts.SyntaxKind[node.kind] == 'VoidExpression') {
+            this.astNodeToThreeAddressStmt(node.getChildren(this.sourceFile)[1]);
             value = new Constant('undefined', UndefinedType.getInstance());
-        } else if (node.kind == 'VariableDeclarationList') {
-            let declsNode = node.children[this.findChildIndex(node, "SyntaxList")];
+        } else if (ts.SyntaxKind[node.kind] == 'VariableDeclarationList') {
+            let declsNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, "SyntaxList")];
             let syntaxListItems = this.getSyntaxListItems(declsNode);
-            value = new Local(syntaxListItems[0].text);
+            value = new Local(syntaxListItems[0].getText(this.sourceFile));
             value = this.getOriginalLocal(value);
-        } else if (node.kind == 'ConditionalExpression') {
+        } else if (ts.SyntaxKind[node.kind] == 'ConditionalExpression') {
             // TODO:新增block
             let conditionIdx = this.findChildIndex(node, 'QuestionToken') - 1;
-            let conditionExprNode = node.children[conditionIdx];
+            let conditionExprNode = node.getChildren(this.sourceFile)[conditionIdx];
             let conditionExpr = this.astNodeToConditionExpr(conditionExprNode);
             this.current3ACstm.threeAddressStmts.push(new ArkIfStmt(conditionExpr));
 
             let resultLocal = this.generateTempValue();
             let whenTrueIdx = this.findChildIndex(node, 'QuestionToken') + 1;
-            let whenTrueNode = node.children[whenTrueIdx];
+            let whenTrueNode = node.getChildren(this.sourceFile)[whenTrueIdx];
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(resultLocal, this.astNodeToValue(whenTrueNode)));
             let whenFalseIdx = this.findChildIndex(node, 'ColonToken') + 1;
-            let whenFalseNode = node.children[whenFalseIdx];
+            let whenFalseNode = node.getChildren(this.sourceFile)[whenFalseIdx];
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(resultLocal, this.astNodeToValue(whenFalseNode)));
             value = resultLocal;
-        } else if (node.kind == 'NonNullExpression') {
-            value = this.astNodeToValue(node.children[0]);
+        } else if (ts.SyntaxKind[node.kind] == 'NonNullExpression') {
+            value = this.astNodeToValue(node.getChildren(this.sourceFile)[0]);
         } else {
-            value = new Constant(node.text);
+            value = new Constant(node.getText(this.sourceFile));
         }
         return value;
     }
 
-    private astNodeToCompoundAssignment(node: NodeA): Stmt[] {
-        let operator = node.children[1].text;
+    private astNodeToCompoundAssignment(node: ts.Node): Stmt[] {
+        let operator = node.getChildren(this.sourceFile)[1].getText(this.sourceFile);
         if (!isCompoundAssignment(operator)) {
             return [];
         }
 
         let stmts: Stmt[] = [];
-        let leftOpNode = node.children[0];
+        let leftOpNode = node.getChildren(this.sourceFile)[0];
         let leftOp = this.astNodeToValue(leftOpNode);
-        let rightOpNode = node.children[2];
+        let rightOpNode = node.getChildren(this.sourceFile)[2];
         let rightOp = this.astNodeToValue(rightOpNode);
         if (IRUtils.moreThanOneAddress(leftOp) && IRUtils.moreThanOneAddress(rightOp)) {
-            rightOp = this.generateAssignStmt(rightOp);
+            rightOp = this.generateAssignStmtForValue(rightOp);
         }
         stmts.push(new ArkAssignStmt(leftOp, new ArkBinopExpr(leftOp, rightOp, operator.substring(0, operator.length - 1))));
         return stmts;
@@ -2018,16 +1660,16 @@ export class CfgBuilder {
         }
     }
 
-    private astNodeToThreeAddressAssignStmt(node: NodeA): Stmt[] {
-        let leftOpNode = node.children[0];
+    private astNodeToThreeAddressAssignStmt(node: ts.Node): Stmt[] {
+        let leftOpNode = node.getChildren(this.sourceFile)[0];
         let leftOp = this.astNodeToValue(leftOpNode);
 
         let leftOpType = this.getTypeNode(node);
 
-        let rightOpNode = new NodeA(undefined, null, [], 'dummy', -1, 'dummy');
+        let rightOpNode: ts.Node;
         let rightOp: Value;
         if (this.findChildIndex(node, 'FirstAssignment') != -1) {
-            rightOpNode = node.children[this.findChildIndex(node, 'FirstAssignment') + 1];
+            rightOpNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'FirstAssignment') + 1];
             rightOp = this.astNodeToValue(rightOpNode);
         } else {
             rightOp = new Constant('undefined', UndefinedType.getInstance());
@@ -2041,19 +1683,19 @@ export class CfgBuilder {
         }
 
         if (IRUtils.moreThanOneAddress(leftOp) && IRUtils.moreThanOneAddress(rightOp)) {
-            rightOp = this.generateAssignStmt(rightOp);
+            rightOp = this.generateAssignStmtForValue(rightOp);
         }
 
         let threeAddressAssignStmts: Stmt[] = [];
         threeAddressAssignStmts.push(new ArkAssignStmt(leftOp, rightOp));
 
-        if (leftOpNode.kind == 'ArrayBindingPattern' || leftOpNode.kind == 'ObjectBindingPattern') {
-            let argNodes = this.getSyntaxListItems(leftOpNode.children[1]);
+        if (ts.SyntaxKind[leftOpNode.kind] == 'ArrayBindingPattern' || ts.SyntaxKind[leftOpNode.kind] == 'ObjectBindingPattern') {
+            let argNodes = this.getSyntaxListItems(leftOpNode.getChildren(this.sourceFile)[1]);
             let index = 0;
             for (const argNode of argNodes) {
                 // TODO:数组条目类型
                 let arrayRef = new ArkArrayRef(leftOp as Local, new Constant(index.toString(), NumberType.getInstance()));
-                let arrayItem = new Constant(argNode.text);
+                let arrayItem = new Constant(argNode.getText(this.sourceFile));
                 threeAddressAssignStmts.push(new ArkAssignStmt(arrayItem, arrayRef));
                 index++;
             }
@@ -2061,60 +1703,60 @@ export class CfgBuilder {
         return threeAddressAssignStmts;
     }
 
-    private astNodeToThreeAddressSwitchStatement(switchAstNode: NodeA) {
-        let exprNode = switchAstNode.children[this.findChildIndex(switchAstNode, 'OpenParenToken') + 1];
+    private astNodeToThreeAddressSwitchStatement(switchAstNode: ts.Node) {
+        let exprNode = switchAstNode.getChildren(this.sourceFile)[this.findChildIndex(switchAstNode, 'OpenParenToken') + 1];
         let exprValue = this.astNodeToValue(exprNode);
         if (IRUtils.moreThanOneAddress(exprValue)) {
-            exprValue = this.generateAssignStmt(exprValue);
+            exprValue = this.generateAssignStmtForValue(exprValue);
         }
 
-        let caseBlockNode = switchAstNode.children[this.findChildIndex(switchAstNode, 'CloseParenToken') + 1];
-        let syntaxList = caseBlockNode.children[1];
+        let caseBlockNode = switchAstNode.getChildren(this.sourceFile)[this.findChildIndex(switchAstNode, 'CloseParenToken') + 1];
+        let syntaxList = caseBlockNode.getChildren(this.sourceFile)[1];
         let caseValues: Value[] = [];
-        for (const caseNode of syntaxList.children) {
-            if (caseNode.kind == 'DefaultClause') {
+        for (const caseNode of syntaxList.getChildren(this.sourceFile)) {
+            if (ts.SyntaxKind[caseNode.kind] == 'DefaultClause') {
                 continue;
             }
-            let caseExprNode = caseNode.children[1];
+            let caseExprNode = caseNode.getChildren(this.sourceFile)[1];
             let caseExprValue = this.astNodeToValue(caseExprNode);
             if (IRUtils.moreThanOneAddress(caseExprValue)) {
-                caseExprValue = this.generateAssignStmt(caseExprValue);
+                caseExprValue = this.generateAssignStmtForValue(caseExprValue);
             }
             caseValues.push(caseExprValue);
         }
         this.current3ACstm.threeAddressStmts.push(new ArkSwitchStmt(exprValue, caseValues));
     }
 
-    private astNodeToThreeAddressIterationStatement(node: NodeA) {
-        if (node.kind == "ForStatement") {
+    private astNodeToThreeAddressIterationStatement(node: ts.Node) {
+        if (ts.SyntaxKind[node.kind] == "ForStatement") {
             let openParenTokenIdx = this.findChildIndex(node, 'OpenParenToken');
             let mayConditionIdx = openParenTokenIdx + 3;
-            if (node.children[openParenTokenIdx + 1].kind != 'SemicolonToken') {
-                let initializer = node.children[openParenTokenIdx + 1]
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[openParenTokenIdx + 1].kind] != 'SemicolonToken') {
+                let initializer = node.getChildren(this.sourceFile)[openParenTokenIdx + 1]
                 this.astNodeToThreeAddressStmt(initializer);
             } else {
                 mayConditionIdx = openParenTokenIdx + 2;
             }
 
             let incrementorIdx = mayConditionIdx + 2;
-            if (node.children[mayConditionIdx].kind != 'SemicolonToken') {
-                let conditionExprNode = node.children[mayConditionIdx];
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[mayConditionIdx].kind] != 'SemicolonToken') {
+                let conditionExprNode = node.getChildren(this.sourceFile)[mayConditionIdx];
                 let conditionExpr = this.astNodeToConditionExpr(conditionExprNode);
                 this.current3ACstm.threeAddressStmts.push(new ArkIfStmt(conditionExpr));
             } else {
                 incrementorIdx = mayConditionIdx + 1;
             }
 
-            if (node.children[incrementorIdx].kind != 'SemicolonToken') {
-                let incrementorNode = node.children[incrementorIdx];
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[incrementorIdx].kind] != 'SemicolonToken') {
+                let incrementorNode = node.getChildren(this.sourceFile)[incrementorIdx];
                 this.astNodeToThreeAddressStmt(incrementorNode);
             }
-        } else if (node.kind == "ForOfStatement") {
+        } else if (ts.SyntaxKind[node.kind] == "ForOfStatement") {
             // 暂时只支持数组遍历
             let varIdx = this.findChildIndex(node, 'OpenParenToken') + 1;
-            let varNode = node.children[varIdx];
+            let varNode = node.getChildren(this.sourceFile)[varIdx];
             let iterableIdx = varIdx + 2;
-            let iterableNode = node.children[iterableIdx];
+            let iterableNode = node.getChildren(this.sourceFile)[iterableIdx];
 
             let iterableValue = this.astNodeToValue(iterableNode);
             let lenghtLocal = this.generateTempValue();
@@ -2130,12 +1772,12 @@ export class CfgBuilder {
             let incrExpr = new ArkBinopExpr(indexLocal, new Constant('1', NumberType.getInstance()), '+');
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(indexLocal, incrExpr));
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(varLocal, arrayRef));
-        } else if (node.kind == "ForInStatement") {
+        } else if (ts.SyntaxKind[node.kind] == "ForInStatement") {
             // 暂时只支持数组遍历
             let varIdx = this.findChildIndex(node, 'OpenParenToken') + 1;
-            let varNode = node.children[varIdx];
+            let varNode = node.getChildren(this.sourceFile)[varIdx];
             let iterableIdx = varIdx + 2;
-            let iterableNode = node.children[iterableIdx];
+            let iterableNode = node.getChildren(this.sourceFile)[iterableIdx];
 
             let iterableValue = this.astNodeToValue(iterableNode);
             let lenghtLocal = this.generateTempValue();
@@ -2151,90 +1793,90 @@ export class CfgBuilder {
             let incrExpr = new ArkBinopExpr(indexLocal, new Constant('1', NumberType.getInstance()), '+');
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(indexLocal, incrExpr));
             this.current3ACstm.threeAddressStmts.push(new ArkAssignStmt(varLocal, indexLocal));
-        } else if (node.kind == "WhileStatement" || node.kind == "DoStatement") {
+        } else if (ts.SyntaxKind[node.kind] == "WhileStatement" || ts.SyntaxKind[node.kind] == "DoStatement") {
             let conditionIdx = this.findChildIndex(node, 'OpenParenToken') + 1;
-            let conditionExprNode = node.children[conditionIdx];
+            let conditionExprNode = node.getChildren(this.sourceFile)[conditionIdx];
             let conditionExpr = this.astNodeToConditionExpr(conditionExprNode);
             this.current3ACstm.threeAddressStmts.push(new ArkIfStmt(conditionExpr));
         }
     }
 
-    private astNodeToThreeAddressStmt(node: NodeA) {
+    private astNodeToThreeAddressStmt(node: ts.Node) {
         let threeAddressStmts: Stmt[] = [];
-        if (node.kind == "ReturnStatement") {
-            let childCnt = node.children.length;
-            if (childCnt > 1 && node.children[1].kind != 'SemicolonToken') {
-                let op = this.astNodeToValue(node.children[1]);
+        if (ts.SyntaxKind[node.kind] == "ReturnStatement") {
+            let childCnt = node.getChildren(this.sourceFile).length;
+            if (childCnt > 1 && ts.SyntaxKind[node.getChildren(this.sourceFile)[1].kind] != 'SemicolonToken') {
+                let op = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
                 if (IRUtils.moreThanOneAddress(op)) {
-                    op = this.generateAssignStmt(op);
+                    op = this.generateAssignStmtForValue(op);
                 }
                 threeAddressStmts.push(new ArkReturnStmt(op));
             } else {
                 threeAddressStmts.push(new ArkReturnVoidStmt());
             }
-        } else if (node.kind == "FirstStatement" || node.kind == "VariableDeclarationList") {
+        } else if (ts.SyntaxKind[node.kind] == "FirstStatement" || ts.SyntaxKind[node.kind] == "VariableDeclarationList") {
             let declListNode = node;
-            if (node.kind == 'FirstStatement') {
-                declListNode = node.children[this.findChildIndex(node, "VariableDeclarationList")];
+            if (ts.SyntaxKind[node.kind] == 'FirstStatement') {
+                declListNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, "VariableDeclarationList")];
             }
-            let declsNode = declListNode.children[this.findChildIndex(declListNode, "SyntaxList")];
+            let declsNode = declListNode.getChildren(this.sourceFile)[this.findChildIndex(declListNode, "SyntaxList")];
             let syntaxListItems = this.getSyntaxListItems(declsNode);
             for (let declNode of syntaxListItems) {
                 this.astNodeToThreeAddressStmt(declNode);
             }
-        } else if ((node.kind == 'BinaryExpression' && node.children[1].kind == 'FirstAssignment')
-            || (node.kind == 'VariableDeclaration')) {
+        } else if ((ts.SyntaxKind[node.kind] == 'BinaryExpression' && ts.SyntaxKind[node.getChildren(this.sourceFile)[1].kind] == 'FirstAssignment')
+            || (ts.SyntaxKind[node.kind] == 'VariableDeclaration')) {
             threeAddressStmts.push(...this.astNodeToThreeAddressAssignStmt(node));
-        } else if ((node.kind == 'BinaryExpression')) {
+        } else if ((ts.SyntaxKind[node.kind] == 'BinaryExpression')) {
             threeAddressStmts.push(...this.astNodeToCompoundAssignment(node));
-        } else if (node.kind == "ExpressionStatement") {
+        } else if (ts.SyntaxKind[node.kind] == "ExpressionStatement") {
             let expressionNodeIdx = 0;
-            if (node.children[0].kind == 'JSDocComment') {
+            if (ts.SyntaxKind[node.getChildren(this.sourceFile)[0].kind] == 'JSDocComment') {
                 expressionNodeIdx = 1;
             }
-            let expressionNode = node.children[expressionNodeIdx];
+            let expressionNode = node.getChildren(this.sourceFile)[expressionNodeIdx];
             this.astNodeToThreeAddressStmt(expressionNode);
-        } else if (node.kind == 'IfStatement') {
-            let conditionExprNode = node.children[this.findChildIndex(node, 'OpenParenToken') + 1];
+        } else if (ts.SyntaxKind[node.kind] == 'IfStatement') {
+            let conditionExprNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'OpenParenToken') + 1];
             let conditionExpr = this.astNodeToConditionExpr(conditionExprNode);
             threeAddressStmts.push(new ArkIfStmt(conditionExpr));
-        } else if (node.kind == 'PostfixUnaryExpression' || node.kind == 'PrefixUnaryExpression') {
+        } else if (ts.SyntaxKind[node.kind] == 'PostfixUnaryExpression' || ts.SyntaxKind[node.kind] == 'PrefixUnaryExpression') {
             this.astNodeToValue(node);
-        } else if (node.kind == 'ForStatement' || node.kind == 'ForOfStatement' || node.kind == 'ForInStatement'
-            || node.kind == 'WhileStatement' || node.kind == 'DoStatement') {
+        } else if (ts.SyntaxKind[node.kind] == 'ForStatement' || ts.SyntaxKind[node.kind] == 'ForOfStatement' || ts.SyntaxKind[node.kind] == 'ForInStatement'
+            || ts.SyntaxKind[node.kind] == 'WhileStatement' || ts.SyntaxKind[node.kind] == 'DoStatement') {
             this.astNodeToThreeAddressIterationStatement(node);
-        } else if (node.kind == 'BreakStatement' || node.kind == 'ContinueStatement') {
+        } else if (ts.SyntaxKind[node.kind] == 'BreakStatement' || ts.SyntaxKind[node.kind] == 'ContinueStatement') {
             threeAddressStmts.push(new ArkGotoStmt());
-        } else if (node.kind == 'SwitchStatement') {
+        } else if (ts.SyntaxKind[node.kind] == 'SwitchStatement') {
             this.astNodeToThreeAddressSwitchStatement(node);
-        } else if (node.kind == 'ThrowStatement') {
-            let op = this.astNodeToValue(node.children[1]);
+        } else if (ts.SyntaxKind[node.kind] == 'ThrowStatement') {
+            let op = this.astNodeToValue(node.getChildren(this.sourceFile)[1]);
             if (IRUtils.moreThanOneAddress(op)) {
-                op = this.generateAssignStmt(op);
+                op = this.generateAssignStmtForValue(op);
             }
             threeAddressStmts.push(new ArkThrowStmt(op));
-        } else if (node.kind == 'CatchClause') {
-            let catchedValueNode = node.children[this.findChildIndex(node, 'OpenParenToken') + 1];
-            let catchedValue = new Local(catchedValueNode.text);
+        } else if (ts.SyntaxKind[node.kind] == 'CatchClause') {
+            let catchedValueNode = node.getChildren(this.sourceFile)[this.findChildIndex(node, 'OpenParenToken') + 1];
+            let catchedValue = new Local(catchedValueNode.getText(this.sourceFile));
             catchedValue = this.getOriginalLocal(catchedValue);
 
             let caughtExceptionRef = new ArkCaughtExceptionRef(UnknownType.getInstance());
             threeAddressStmts.push(new ArkAssignStmt(catchedValue, caughtExceptionRef));
-        } else if (node.kind == 'CallExpression') {
+        } else if (ts.SyntaxKind[node.kind] == 'CallExpression') {
             threeAddressStmts.push(new ArkInvokeStmt(this.astNodeToValue(node) as AbstractInvokeExpr));
-        } else if (node.kind == "AwaitExpression") {
-            let expressionNode = node.children[1];
+        } else if (ts.SyntaxKind[node.kind] == "AwaitExpression") {
+            let expressionNode = node.getChildren(this.sourceFile)[1];
             this.astNodeToThreeAddressStmt(expressionNode);
-        } else if (node.kind == 'VoidExpression') {
-            this.astNodeToThreeAddressStmt(node.children[1]);
-        } else if (node.kind == 'DeleteExpression') {
-            let popertyAccessExprNode = node.children[1];
+        } else if (ts.SyntaxKind[node.kind] == 'VoidExpression') {
+            this.astNodeToThreeAddressStmt(node.getChildren(this.sourceFile)[1]);
+        } else if (ts.SyntaxKind[node.kind] == 'DeleteExpression') {
+            let popertyAccessExprNode = node.getChildren(this.sourceFile)[1];
             let popertyAccessExpr = this.astNodeToValue(popertyAccessExprNode) as AbstractFieldRef;
             threeAddressStmts.push(new ArkDeleteStmt(popertyAccessExpr));
         } else if (this.nopStmt(node)) {
             // threeAddressStmts.push(new ArkNopStmt());
         } else {
-            // logger.info('unsupported stmt node, type:', node.kind, ', text:', node.text);
+            // logger.info('unsupported stmt node, type:', ts.SyntaxKind[node.kind], ', text:', node.getText(this.sourceFile));
         }
 
         this.current3ACstm.threeAddressStmts.push(...threeAddressStmts);
@@ -2248,13 +1890,13 @@ export class CfgBuilder {
             let index = 0;
             for (const methodParameter of this.declaringMethod.getParameters()) {
                 let parameterRef = new ArkParameterRef(index, methodParameter.getType());
-                let parameterLocal = this.generateAssignStmt(parameterRef);
+                let parameterLocal = this.generateAssignStmtForValue(parameterRef);
                 parameterLocal.setName(methodParameter.getName());
                 index++;
                 this.paraLocals.push(parameterLocal);
             }
             let thisRef = new ArkThisRef(this.declaringClass.getSignature().getType());
-            this.thisLocal = this.generateAssignStmt(thisRef);
+            this.thisLocal = this.generateAssignStmtForValue(thisRef);
             this.thisLocal.setName('this');
             this.thisLocal.setType(thisRef.getType());
         }
@@ -2278,85 +1920,13 @@ export class CfgBuilder {
 
 
     errorTest(stm: StatementBuilder) {
-        let mes = "";
+        let mes = "ifnext error    ";
         if (this.declaringClass?.getDeclaringArkFile()) {
-            mes = this.declaringClass?.getDeclaringArkFile().getName() + "." + this.declaringClass.getName() + "." + this.name;
-        } else {
-            mes = "ifnext error"
+            mes += this.declaringClass?.getDeclaringArkFile().getName() + "." + this.declaringClass.getName() + "." + this.name;
         }
         mes += "\n" + stm.code;
+        // console.log(mes)
         throw new textError(mes);
-    }
-
-    updateParentText(node: NodeA) {
-        if (!node)
-            return;
-        node.text = ""
-        for (let child of node.children) {
-            node.text += child.text;
-            if (child.kind.includes("Keyword"))
-                node.text += " ";
-            if (node.kind == "SyntaxList" && child.kind.includes("Statement"))
-                node.text += "\r\n";
-        }
-        if (node.parent)
-            this.updateParentText(node.parent);
-    }
-
-    public insertStatementAfter(stm: StatementBuilder, text: string): NodeA {
-        let insertAST = new ASTree(text);
-        let parent: NodeA;
-        if (stm.astNode?.parent)
-            parent = stm.astNode.parent;
-        else {
-            if (!this.entry.astNode) {
-                logger.error("entry without astNode");
-                process.exit();
-            }
-            parent = this.entry.astNode;
-        }
-        let insertPosition = -1;
-        if (stm.astNode)
-            insertPosition = parent.children.indexOf(stm.astNode) + 1;
-        else
-            insertPosition = parent.children.length;
-        let stmAST = insertAST.root.children[0];
-        parent.children.splice(insertPosition, 0, stmAST);
-        stmAST.parent = parent;
-        this.updateParentText(parent);
-        return stmAST;
-    }
-
-    public insertStatementBefore(stm: StatementBuilder, text: string): NodeA {
-        let insertAST = new ASTree(text);
-        let parent: NodeA;
-        if (stm.astNode?.parent)
-            parent = stm.astNode.parent;
-        else {
-            if (!this.entry.astNode) {
-                logger.error("entry without astNode");
-                process.exit();
-            }
-            parent = this.entry.astNode;
-        }
-        let insertPosition = -1;
-        if (stm.astNode)
-            insertPosition = parent.children.indexOf(stm.astNode);
-        else
-            insertPosition = parent.children.length;
-        let stmAST = insertAST.root.children[0]
-        parent.children.splice(insertPosition, 0, stmAST);
-        stmAST.parent = parent;
-        this.updateParentText(parent);
-        return stmAST;
-    }
-
-    removeStatement(stm: StatementBuilder) {
-        let astNode = stm.astNode;
-        if (astNode && astNode.parent) {
-            astNode.parent.children.splice(astNode.parent.children.indexOf(astNode), 1);
-            this.updateParentText(astNode.parent);
-        }
     }
 
     getStatementByText(text: string) {
@@ -2369,39 +1939,39 @@ export class CfgBuilder {
         return ret;
     }
 
-    stm23AC(stm: StatementBuilder) {
-        if (stm.addressCode3.length > 0) {
-            if (stm.type.includes("loop") || stm.type.includes("if") || stm.type.includes("switch")) {
-                let last3AC: NodeA = new NodeA(undefined, null, [], "temp", -1, "undefined");
-                for (let i = 0; i < stm.addressCode3.length; i++) {
-                    let ac = stm.addressCode3[i]
-                    let temp = this.insertStatementBefore(stm, ac);
-                    last3AC = temp;
-                }
-                if (!stm.astNode) {
-                    logger.error("stm without ast");
-                    process.exit();
-                }
-                let block = stm.astNode.children[this.findChildIndex(stm.astNode, "Block")];
-                block.parent = last3AC;
-                last3AC.children[last3AC.children.length - 1] = block;
-                this.updateParentText(last3AC);
-                this.removeStatement(stm);
-            } else {
-                for (let i = 0; i < stm.addressCode3.length; i++) {
-                    let ac = stm.addressCode3[i]
-                    this.insertStatementBefore(stm, ac);
-                }
-                this.removeStatement(stm);
-            }
-        }
-    }
+    // stm23AC(stm: StatementBuilder) {
+    //     if (stm.addressCode3.length > 0) {
+    //         if (stm.type.includes("loop") || stm.type.includes("if") || stm.type.includes("switch")) {
+    //             let last3AC: ts.Node = new ts.Node(undefined, null, [], "temp", -1, "undefined");
+    //             for (let i = 0; i < stm.addressCode3.length; i++) {
+    //                 let ac = stm.addressCode3[i]
+    //                 let temp = this.insertStatementBefore(stm, ac);
+    //                 last3AC = temp;
+    //             }
+    //             if (!stm.astNode) {
+    //                 logger.error("stm without ast");
+    //                 process.exit();
+    //             }
+    //             let block = stm.astNode.getChildren(this.sourceFile)[this.findChildIndex(stm.astNode, "Block")];
+    //             block.parent = last3AC;
+    //             last3AC.getChildren(this.sourceFile)[last3AC.getChildren(this.sourceFile).length - 1] = block;
+    //             this.updateParentText(last3AC);
+    //             this.removeStatement(stm);
+    //         } else {
+    //             for (let i = 0; i < stm.addressCode3.length; i++) {
+    //                 let ac = stm.addressCode3[i]
+    //                 this.insertStatementBefore(stm, ac);
+    //             }
+    //             this.removeStatement(stm);
+    //         }
+    //     }
+    // }
 
-    simplify() {
-        for (let stm of this.statementArray) {
-            this.stm23AC(stm)
-        }
-    }
+    // simplify() {
+    //     for (let stm of this.statementArray) {
+    //         this.stm23AC(stm)
+    //     }
+    // }
 
     printBlocks() {
         let text = "";
@@ -2517,7 +2087,7 @@ export class CfgBuilder {
                 } else if (originStmt.type == 'loopStatement') {
                     currStmtStrs.push(...iterationStmtToString(originStmt));
                 } else if (originStmt.type == 'switchStatement') {
-                    currStmtStrs.push(...switchStmtToString(originStmt));
+                    currStmtStrs.push(...switchStmtToString(originStmt, this.sourceFile));
                 } else if (originStmt.type == 'breakStatement' || originStmt.type == 'continueStatement') {
                     currStmtStrs.push(...jumpStmtToString(originStmt));
                 } else {
@@ -2585,7 +2155,7 @@ export class CfgBuilder {
 
             let strs: string[] = [];
             let findIf = false;
-            let appendAfterIf = iterationStmt.astNode?.kind == "ForOfStatement" || iterationStmt.astNode?.kind == "ForInStatement";
+            let appendAfterIf = iterationStmt.astNode && (ts.SyntaxKind[iterationStmt.astNode.kind] == "ForOfStatement" || ts.SyntaxKind[iterationStmt.astNode.kind] == "ForInStatement");
             for (const threeAddressStmt of iterationStmt.threeAddressStmts) {
                 if (threeAddressStmt instanceof ArkIfStmt) {
                     let nextBlockId = iterationStmt.nextF?.block?.id;
@@ -2606,11 +2176,11 @@ export class CfgBuilder {
         }
 
         // TODO:参考soot还是sootup处理switch
-        function switchStmtToString(originStmt: StatementBuilder): string[] {
+        function switchStmtToString(originStmt: StatementBuilder, sourceFile: ts.SourceFile): string[] {
             let switchStmt = originStmt as SwitchStatementBuilder;
 
 
-            let identifierStr = switchStmt.astNode?.children[2].text;
+            let identifierStr = switchStmt.astNode?.getChildren(sourceFile)[2].getText(sourceFile);
             let str = 'lookupswitch(' + identifierStr + '){\n' + indentation;
 
             let strs: string[] = [];
@@ -2746,8 +2316,8 @@ export class CfgBuilder {
         return this.locals;
     }
 
-    private getTypeNode(node: NodeA): Type {
-        for (let child of node.children) {
+    private getTypeNode(node: ts.Node): Type {
+        for (let child of node.getChildren(this.sourceFile)) {
             let result = this.resolveTypeNode(child)
             if (result !== UnknownType.getInstance()) {
                 return result
@@ -2756,9 +2326,9 @@ export class CfgBuilder {
         return UnknownType.getInstance();
     }
 
-    private resolveTypeNode(node: NodeA): Type {
-        let typeNode: NodeA
-        switch (node.kind) {
+    private resolveTypeNode(node: ts.Node): Type {
+        let typeNode: ts.Node
+        switch (ts.SyntaxKind[node.kind]) {
             case "BooleanKeyword":
             case "NumberKeyword":
             case "StringKeyword":
@@ -2766,16 +2336,16 @@ export class CfgBuilder {
             case "AnyKeyword":
                 return TypeInference.buildTypeFromStr(this.resolveKeywordType(node));
             case "ArrayType":
-                typeNode = node.children[0];
-                const typeStr = typeNode.text;
+                typeNode = node.getChildren(this.sourceFile)[0];
+                const typeStr = typeNode.getText(this.sourceFile);
                 return new ArrayType(TypeInference.buildTypeFromStr(typeStr), 1);
             case "TypeReference":
-                return new AnnotationNamespaceType(node.text)
+                return new AnnotationNamespaceType(node.getText(this.sourceFile))
             case "UnionType":
                 const types: Type[] = [];
-                typeNode = node.children[0];
-                for (const singleTypeNode of typeNode.children) {
-                    if (singleTypeNode.kind != "BarToken") {
+                typeNode = node.getChildren(this.sourceFile)[0];
+                for (const singleTypeNode of typeNode.getChildren(this.sourceFile)) {
+                    if (ts.SyntaxKind[singleTypeNode.kind] != "BarToken") {
                         const singleType = this.resolveTypeNode(singleTypeNode)
                         types.push(singleType);
                     }
@@ -2783,22 +2353,22 @@ export class CfgBuilder {
                 return new UnionType(types);
             case 'TupleType':
                 const tupleTypes: Type[] = [];
-                typeNode = node.children[1];
-                for (const singleTypeNode of typeNode.children) {
-                    if (singleTypeNode.kind != "CommaToken") {
+                typeNode = node.getChildren(this.sourceFile)[1];
+                for (const singleTypeNode of typeNode.getChildren(this.sourceFile)) {
+                    if (ts.SyntaxKind[singleTypeNode.kind] != "CommaToken") {
                         const singleType = this.resolveTypeNode(singleTypeNode)
                         tupleTypes.push(singleType);
                     }
                 }
                 return new TupleType(tupleTypes);
             case 'TypeQuery':
-                return new AnnotationTypeQueryType(node.children[1].text)
+                return new AnnotationTypeQueryType(node.getChildren(this.sourceFile)[1].getText(this.sourceFile))
         }
         return UnknownType.getInstance();
     }
 
-    private resolveKeywordType(node: NodeA): string {
-        switch (node.kind) {
+    private resolveKeywordType(node: ts.Node): string {
+        switch (ts.SyntaxKind[node.kind]) {
             case 'TrueKeyword':
             case 'FalseKeyword':
             case "BooleanKeyword":
@@ -2825,7 +2395,18 @@ export class CfgBuilder {
     }
 
     buildCfgBuilder() {
-        this.walkAST(this.entry, this.exit, this.astRoot);
+        let stmts: ts.Node[] = [];
+        if (ts.isSourceFile(this.astRoot)) {
+            stmts = [...this.astRoot.statements];
+        } else if (ts.isFunctionDeclaration(this.astRoot) || ts.isMethodDeclaration(this.astRoot) || ts.isConstructorDeclaration(this.astRoot)
+            || ts.isGetAccessor(this.astRoot) || ts.isGetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
+            if (this.astRoot.body) {
+                stmts = [...this.astRoot.body.statements];
+            }
+        } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
+            stmts = [...this.astRoot.body.statements];
+        }
+        this.walkAST(this.entry, this.exit, stmts);
         this.addReturnInEmptyMethod();
         this.deleteExit(this.entry);
         this.CfgBuilder2Array(this.entry);

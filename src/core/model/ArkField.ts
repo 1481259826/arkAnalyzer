@@ -17,9 +17,9 @@ import { Decorator } from "../base/Decorator";
 import { LineColPosition } from "../base/Position";
 import { Type } from "../base/Type";
 import { Value } from "../base/Value";
-import { MethodParameter } from "../common/MethodInfoBuilder";
 import { ArkClass } from "./ArkClass";
 import { FieldSignature, MethodSignature } from "./ArkSignature";
+import { MethodParameter } from "./builder/ArkMethodBuilder";
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
@@ -47,7 +47,6 @@ export class ArkField {
 
     private arkMethodSignature: MethodSignature;
 
-    //private initializer, TODO
     private initializer: Value;
     private loadStateDecorators: boolean = false;
 

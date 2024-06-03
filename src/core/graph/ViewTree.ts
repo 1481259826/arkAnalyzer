@@ -318,7 +318,9 @@ export class ViewTree {
                     let top = treeStack.top();
                     if (top && top.name == 'If') {
                         stateValues.forEach((field) => {
+                            // @ts-ignore
                             top.stateValues.add(field);
+                            // @ts-ignore
                             this.addStateValue(field, top);
                         }, this)
                     }
@@ -489,7 +491,9 @@ export class ViewTree {
             let top = treeStack.top();
             if (top) {
                 stateValues.forEach((field) => {
+                    // @ts-ignore
                     top.stateValues.add(field);
+                    // @ts-ignore
                     viewtree.addStateValue(field, top);
                 })
             }

@@ -13,14 +13,11 @@
  * limitations under the License.
  */
 
-import { NodeA } from "../base/Ast";
 import { ArkParameterRef, ArkThisRef } from "../base/Ref";
 import { ArkAssignStmt, ArkReturnStmt } from "../base/Stmt";
 import { LineColPosition } from "../base/Position";
 import { Type, UnknownType } from "../base/Type";
 import { Value } from "../base/Value";
-import { BodyBuilder } from "../common/BodyBuilder";
-import { MethodInfo, MethodParameter } from "../common/MethodInfoBuilder";
 import { Cfg } from "../graph/Cfg";
 import { ViewTree } from "../graph/ViewTree";
 import { ArkBody } from "./ArkBody";
@@ -28,6 +25,7 @@ import { ArkClass } from "./ArkClass";
 import { ArkFile } from "./ArkFile";
 import { MethodSignature, MethodSubSignature } from "./ArkSignature";
 import { Decorator } from "../base/Decorator";
+import { MethodParameter } from "./builder/ArkMethodBuilder";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -301,73 +299,4 @@ export class ArkMethod {
     public async hasViewTree(): Promise<boolean> {
         return await this.hasBuilderDecorator();
     }
-}
-
-export function buildArkMethodFromArkClass(methodNode: NodeA, declaringClass: ArkClass, mtd: ArkMethod) {
-
-    mtd.setDeclaringArkClass(declaringClass);
-    mtd.setDeclaringArkFile();
-
-    if (arkMethodNodeKind.indexOf(methodNode.kind) > -1) {
-        buildNormalArkMethodFromAstNode(methodNode, mtd);
-    } else {
-        mtd.setName("_DEFAULT_ARK_METHOD");
-    }
-    mtd.genSignature();
-    if (methodNode.kind != "SyntaxList") {
-        methodNode = methodNode.children[methodNode.children.length - 1].children[1];
-    }
-    let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd);
-    mtd.setBody(bodyBuilder.build());
-    mtd.getCfg().setDeclaringMethod(mtd);
-    if (mtd.getName() == 'constructor' && mtd.getDeclaringArkClass()) {
-        mtd.getCfg().constructorAddInit(mtd);
-    }
-    if ((mtd.getSubSignature().toString() == 'render()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'View')
-        || (mtd.getSubSignature().toString() == 'initialRender()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'ViewPU')) {
-        declaringClass.setViewTree(new ViewTree(mtd));
-    }
-}
-
-export function buildNormalArkMethodFromAstNode(methodNode: NodeA, mtd: ArkMethod) {
-    mtd.setCode(methodNode.text);
-    mtd.setLine(methodNode.line + 1);
-    mtd.setColumn(methodNode.character + 1);
-
-    if (!methodNode.methodNodeInfo) {
-        throw new Error('Error: There is no methodNodeInfo for this method!');
-    }
-    mtd.setName(methodNode.methodNodeInfo.name);
-
-    methodNode.methodNodeInfo.modifiers.forEach((modifier) => {
-        mtd.addModifier(modifier);
-    });
-    methodNode.methodNodeInfo.parameters.forEach(methodParameter => {
-        mtd.addParameter(methodParameter);
-    });
-
-    mtd.setReturnType(methodNode.methodNodeInfo.returnType);
-
-
-    methodNode.methodNodeInfo.typeParameters.forEach((typeParameter) => {
-        mtd.addTypeParameter(typeParameter);
-    });
-}
-
-export function buildNormalArkMethodFromMethodInfo(methodInfo: MethodInfo, mtd: ArkMethod) {
-    mtd.setName(methodInfo.name);
-
-    methodInfo.modifiers.forEach((modifier) => {
-        mtd.addModifier(modifier);
-    });
-    methodInfo.parameters.forEach(methodParameter => {
-        mtd.addParameter(methodParameter);
-    });
-
-    mtd.setReturnType(methodInfo.returnType);
-
-
-    methodInfo.typeParameters.forEach((typeParameter) => {
-        mtd.addTypeParameter(typeParameter);
-    });
 }
