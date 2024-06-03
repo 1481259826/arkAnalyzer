@@ -252,14 +252,9 @@ export class ArkMethod {
         this.viewTree = viewTree;
     }
 
-    public async getViewTree(): Promise<ViewTree> {
-        if (this.hasViewTree()) {
-            if (!this.viewTree) {
-                this.viewTree = new ViewTree(this);
-            }
-            if (!this.viewTree.isInitialized()) {
-                await this.viewTree.buildViewTree();
-            }
+    public getViewTree(): ViewTree {
+        if (this.hasViewTree() && !this.viewTree.isInitialized()) {
+            this.viewTree.buildViewTree();
         }
         return this.viewTree;
     }

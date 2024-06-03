@@ -280,9 +280,9 @@ export class ArkClass {
         this.viewTree = viewTree;
     }
 
-    public async getViewTree(): Promise<ViewTree> {
+    public getViewTree(): ViewTree {
         if (this.hasViewTree() && !this.viewTree.isInitialized()) {
-            await this.viewTree.buildViewTree();
+            this.viewTree.buildViewTree();
         }
         return this.viewTree;
     }
