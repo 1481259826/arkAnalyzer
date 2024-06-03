@@ -1,0 +1,29 @@
+{
+    "targetProjectName": "ArkIRTransformerTest",
+    "targetProjectOriginDirectory": "",
+    "targetProjectDirectory": "tests/resources/ArkIRTransformer/mainModule",
+
+    "logPath": "out/ArkIRTransformerTest.log",
+
+    "etsSdkPath": "",
+    "nodePath": "",
+    
+    "otherSdks": [
+        {
+            "name": "",
+            "path": ""
+        },
+        {
+            "name": "sdk2",
+            "path": ""
+        },
+        {
+            "name": "",
+            "path": "/opt/yy"
+        },
+        {
+            "name": "",
+            "path": ""
+        }
+    ]
+}

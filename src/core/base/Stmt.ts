@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-import {StmtUseReplacer} from "../common/StmtUseReplacer";
-import {Cfg} from "../graph/Cfg";
-import {AbstractExpr, AbstractInvokeExpr, ArkConditionExpr} from "./Expr";
-import {LineColPosition} from "./Position";
-import {AbstractFieldRef, ArkArrayRef} from "./Ref";
-import {Value} from "./Value";
+import { StmtUseReplacer } from '../common/StmtUseReplacer';
+import { Cfg } from '../graph/Cfg';
+import { AbstractExpr, AbstractInvokeExpr, ArkConditionExpr } from './Expr';
+import { AbstractFieldRef, ArkArrayRef } from './Ref';
+import { Value } from './Value';
 
 export class Stmt {
     private text: string = '';
@@ -72,7 +71,7 @@ export class Stmt {
     }
 
     public setCfg(cfg: Cfg): void {
-        this.cfg = cfg
+        this.cfg = cfg;
     }
 
     /**
@@ -124,7 +123,6 @@ export class Stmt {
         }
         return exprs;
     }
-
 
     public containsArrayRef(): boolean {
         for (const use of this.uses) {
@@ -256,7 +254,7 @@ export class ArkAssignStmt extends Stmt {
     }
 
     public toString(): string {
-        const str = this.getLeftOp() + " = " + this.getRightOp();
+        const str = this.getLeftOp() + ' = ' + this.getRightOp();
         this.setText(str);
         return str;
     }
@@ -270,7 +268,6 @@ export class ArkAssignStmt extends Stmt {
     }
 }
 
-
 export class ArkInvokeStmt extends Stmt {
     private invokeExpr: AbstractInvokeExpr;
 
@@ -282,8 +279,8 @@ export class ArkInvokeStmt extends Stmt {
     }
 
     public replaceInvokeExpr(newExpr: AbstractInvokeExpr) {
-        this.invokeExpr = newExpr
-        this.updateUses()
+        this.invokeExpr = newExpr;
+        this.updateUses();
         this.updateText();
     }
 
@@ -304,7 +301,6 @@ export class ArkInvokeStmt extends Stmt {
         this.replaceUses(uses);
     }
 }
-
 
 export class ArkIfStmt extends Stmt {
     private conditionExpr: ArkConditionExpr;
@@ -342,7 +338,6 @@ export class ArkIfStmt extends Stmt {
     }
 }
 
-
 export class ArkGotoStmt extends Stmt {
     constructor() {
         super();
@@ -359,7 +354,6 @@ export class ArkGotoStmt extends Stmt {
         return str;
     }
 }
-
 
 export class ArkReturnStmt extends Stmt {
     private op: Value;
@@ -399,7 +393,6 @@ export class ArkReturnStmt extends Stmt {
     }
 }
 
-
 export class ArkReturnVoidStmt extends Stmt {
     constructor() {
         super();
@@ -416,7 +409,6 @@ export class ArkReturnVoidStmt extends Stmt {
         return str;
     }
 }
-
 
 export class ArkNopStmt extends Stmt {
     constructor() {
