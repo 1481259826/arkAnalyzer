@@ -23,7 +23,7 @@ struct SubComponent {
 }
 
 @Component
-struct OutComponent {
+struct CommonTest {
   build() {
     SubComponent()
       .width(100)
