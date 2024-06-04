@@ -115,24 +115,6 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     }
 }
 
-// export function buildNormalArkMethodFromMethodInfo(methodInfo: MethodInfo, mtd: ArkMethod) {
-//     mtd.setName(methodInfo.name);
-
-//     methodInfo.modifiers.forEach((modifier) => {
-//         mtd.addModifier(modifier);
-//     });
-//     methodInfo.parameters.forEach(methodParameter => {
-//         mtd.addParameter(methodParameter);
-//     });
-
-//     mtd.setReturnType(methodInfo.returnType);
-
-
-//     methodInfo.typeParameters.forEach((typeParameter) => {
-//         mtd.addTypeParameter(typeParameter);
-//     });
-// }
-
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile): string {
     let name: string = '';
     let getAccessorName: string | undefined = undefined;
