@@ -26,7 +26,7 @@ namespace Case1 {
 
   @Entry
   @Component
-    struct Parent {
+    struct BuilderTest {
     @State label: string = 'Hello';
     build() {
       Column() {
@@ -68,7 +68,7 @@ namespace Case2 {
 
   @Entry
   @Component
-  struct Parent {
+  struct BuilderTest {
     @State label: string = 'Hello';
     build() {
       Column() {
@@ -91,7 +91,7 @@ namespace Case3 {
   }
   @Entry
   @Component
-  struct Parent {
+  struct BuilderTest {
     @State label: string = 'Hello';
     build() {
       Column() {
@@ -180,7 +180,7 @@ struct HelloGrandsonComponent {
 
 @Entry
 @Component
-struct Parent {
+struct BuilderTest {
   @State label: string = 'Hello';
   build() {
     Column() {

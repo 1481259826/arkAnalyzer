@@ -17,7 +17,6 @@ namespace Case1 {
   @Component
   struct Child {
     @Builder customBuilder() { }
-    // 使用父组件@Builder装饰的方法初始化子组件@BuilderParam
     @BuilderParam customBuilderParam: () => void = this.customBuilder;
 
     build() {
@@ -29,7 +28,7 @@ namespace Case1 {
 
   @Entry
   @Component
-  struct Parent {
+  struct BuilderParamTest {
     @Builder componentBuilder() {
       Text(`Parent builder `)
     }
@@ -61,7 +60,7 @@ namespace Case2 {
 
   @Entry
   @Component
-  struct Parent {
+  struct BuilderParamTest {
     label: string = `Parent`
 
     @Builder componentBuilder() {
@@ -92,9 +91,7 @@ namespace Case3 {
   struct Child {
     label: string = 'Child'
     @Builder customBuilder() { }
-    // 无参数类型，指向的componentBuilder也是无参数类型
     @BuilderParam customBuilderParam: () => void = this.customBuilder;
-    // 有参数类型，指向的overBuilder也是有参数类型的方法
     @BuilderParam customOverBuilderParam: ($$: Tmp) => void = overBuilder;
 
     build() {
@@ -107,7 +104,7 @@ namespace Case3 {
 
   @Entry
   @Component
-  struct Parent {
+  struct BuilderParamTest {
     label: string = 'Parent'
 
     @Builder componentBuilder() {
@@ -128,7 +125,6 @@ namespace Case3 {
 struct CustomContainer {
   @Prop header: string = '';
   @Builder closerBuilder(){ }
-  // 使用父组件的尾随闭包{}(@Builder装饰的方法)初始化子组件@BuilderParam
   @BuilderParam closer: () => void = this.closerBuilder
 
   build() {
@@ -151,13 +147,11 @@ struct CustomContainer {
 
 @Entry
 @Component
-struct CustomContainerUser {
+struct BuilderParamTest {
   @State text: string = 'header';
 
   build() {
     Column() {
-      // 创建CustomContainer，在创建CustomContainer时，通过其后紧跟一个大括号“{}”形成尾随闭包
-      // 作为传递给子组件CustomContainer @BuilderParam closer: () => void的参数
       CustomContainer({ header: this.text }) {
         Column() {
           specificParam('testA', 'testB')
