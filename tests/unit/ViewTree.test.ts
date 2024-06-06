@@ -13,21 +13,21 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../../src/Config";
-import { assert, describe, it, expect } from "vitest";
-import { Scene } from "../../src/Scene";
-import path from "path";
-import { Decorator } from "../../src/core/base/Decorator";
-import { ArkField } from "../../src/core/model/ArkField";
-import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, OutComponent_Expect_ViewTree, ParentComponent_Expect_ViewTree} from "../resources/viewtree/normal/ExpectView";
-import { ViewTreeNode } from "../../src/core/graph/ViewTree";
-import { ForEachSort_Expect_ViewTree, ForEachTest1_Expect_ViewTree, ForEachTest2_Expect_ViewTree, ForEachTest3_Expect_ViewTree } from "../resources/viewtree/control-foreach/ExpectView";
-import { IfElseTest1_Expect_ViewTree, IfElseTest2_Expect_ViewTree, IfElseTest3_Expect_ViewTree } from "../resources/viewtree/control-ifelse/ExpectView";
-import { LazyForEachTest_Expect_ViewTree } from "../resources/viewtree/control-lazyforeach/ExpectView";
-import { RepeatTest1_Expect_ViewTree, RepeatTest2_Expect_ViewTree } from "../resources/viewtree/control-repeat/ExpectView";
-import { ContentSlotTest_Expect_ViewTree } from "../resources/viewtree/control-contentslot/ExpectView";
-import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_BuilderTest_Expect_ViewTree, Case3_BuilderTest_Expect_ViewTree } from "../resources/viewtree/builder/ExpectView";
-import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from "../resources/viewtree/builderparam/ExpectView";
+import { SceneConfig } from '../../src/Config';
+import { assert, describe, it, expect } from 'vitest';
+import { Scene } from '../../src/Scene';
+import path from 'path';
+import { Decorator } from '../../src/core/base/Decorator';
+import { ArkField } from '../../src/core/model/ArkField';
+import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
+import { ViewTreeNode } from '../../src/core/graph/ViewTree';
+import { ForEachSort_Expect_ViewTree, ForEachTest1_Expect_ViewTree, ForEachTest2_Expect_ViewTree, ForEachTest3_Expect_ViewTree } from '../resources/viewtree/control-foreach/ExpectView';
+import { IfElseTest1_Expect_ViewTree, IfElseTest2_Expect_ViewTree, IfElseTest3_Expect_ViewTree } from '../resources/viewtree/control-ifelse/ExpectView';
+import { LazyForEachTest_Expect_ViewTree } from '../resources/viewtree/control-lazyforeach/ExpectView';
+import { RepeatTest1_Expect_ViewTree, RepeatTest2_Expect_ViewTree } from '../resources/viewtree/control-repeat/ExpectView';
+import { ContentSlotTest_Expect_ViewTree } from '../resources/viewtree/control-contentslot/ExpectView';
+import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_BuilderTest_Expect_ViewTree, Case3_BuilderTest_Expect_ViewTree } from '../resources/viewtree/builder/ExpectView';
+import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from '../resources/viewtree/builderparam/ExpectView';
 
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
     expect(root.name).eq(expectTree.name);
@@ -67,9 +67,9 @@ function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: st
     expectViewTree(vt.getRoot(), expectTree);
 }
 
-describe("control-contentslot Test", () => {
+describe('control-contentslot Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/control-contentslot"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-contentslot'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -78,9 +78,9 @@ describe("control-contentslot Test", () => {
     })
 })
 
-describe("control-foreach Test", () => {
+describe('control-foreach Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/control-foreach"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-foreach'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -101,9 +101,9 @@ describe("control-foreach Test", () => {
     })
 })
 
-describe("control-ifelse Test", () => {
+describe('control-ifelse Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/control-ifelse"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-ifelse'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -120,9 +120,9 @@ describe("control-ifelse Test", () => {
     })
 })
 
-describe("control-lazyforeach Test", () => {
+describe('control-lazyforeach Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/control-lazyforeach"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-lazyforeach'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -131,9 +131,9 @@ describe("control-lazyforeach Test", () => {
     })
 })
 
-describe("control-repeat Test", () => {
+describe('control-repeat Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/control-repeat"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-repeat'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -146,9 +146,9 @@ describe("control-repeat Test", () => {
     })
 })
 
-describe("builder Test", () => {
+describe('builder Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/builder"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builder'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -185,9 +185,9 @@ describe("builder Test", () => {
     })
 })
 
-describe("builderParam Test", () => {
+describe('builderParam Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/builderparam"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builderparam'));
     let scene = new Scene(config);
     scene.inferTypes();
 
@@ -208,9 +208,24 @@ describe("builderParam Test", () => {
     })
 })
 
-describe("normal Test", () => {
+describe('localstorage Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree/normal"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/localstorage'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('test localstorage case1', async () => {
+        let arkFile =  scene.getFiles().find(file => file.getName() == 'LocalStorageTest1.ets');
+        let arkClass = arkFile?.getClassWithName('LocalStorageTest1');
+        expect(arkClass?.hasEntryDecorator()).eq(true);
+        expect(arkClass?.hasComponentDecorator()).eq(true);
+    })
+    
+})
+
+describe('normal Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/normal'));
     let scene = new Scene(config);
     scene.inferTypes();
 
