@@ -14,7 +14,7 @@
  */
 
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "ohos-typescript";
-import { AnyType, ArrayType, ClassType, LiteralType, NumberType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
+import { AnyType, ArrayType, CallableType, ClassType, LiteralType, NumberType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
 import { TypeInference } from "../../common/TypeInference";
 import { ArkField } from "../ArkField";
 import Logger from "../../../utils/logger";
@@ -104,7 +104,7 @@ export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<st
     }
 
     ts.getAllDecorators(node).forEach(parseModifier);
-   
+
     return modifiers;
 }
 
@@ -298,38 +298,46 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
     }
     else if (ts.isTypeLiteralNode(typeNode)) {
         let cls: ArkClass = new ArkClass();
-        if (arkInstance) {
-            if (arkInstance instanceof ArkMethod) {
-                let declaringClass = arkInstance.getDeclaringArkClass();
-                if (declaringClass.getDeclaringArkNamespace()) {
-                    cls.setDeclaringArkNamespace(declaringClass.getDeclaringArkNamespace());
-                    cls.setDeclaringArkFile(declaringClass.getDeclaringArkFile());
-                }
-                else {
-                    cls.setDeclaringArkFile(declaringClass.getDeclaringArkFile());
-                }
-                buildNormalArkClassFromArkMethod(typeNode, cls, sourceFile);
-            }
-            else if (arkInstance instanceof ArkClass) {
-                //
-            }
-            else if (arkInstance instanceof ArkField) {
-                //
-            }
+        let declaringClass: ArkClass;
+
+        if (arkInstance instanceof ArkMethod) {
+            declaringClass = arkInstance.getDeclaringArkClass();
         }
+        else if (arkInstance instanceof ArkField) {
+            declaringClass = arkInstance.getDeclaringClass();
+        }
+        else {
+            declaringClass = arkInstance;
+        }
+        if (declaringClass.getDeclaringArkNamespace()) {
+            cls.setDeclaringArkNamespace(declaringClass.getDeclaringArkNamespace());
+            cls.setDeclaringArkFile(declaringClass.getDeclaringArkFile());
+        }
+        else {
+            cls.setDeclaringArkFile(declaringClass.getDeclaringArkFile());
+        }
+        buildNormalArkClassFromArkMethod(typeNode, cls, sourceFile);
 
         return new ClassType(cls.getSignature());
     }
     else if (ts.isFunctionTypeNode(typeNode)) {
-        debugger;
-        // let mtd: ArkMethod = new ArkMethod();
-        // buildArkMethodFromArkClass(typeNode, arkMethod.getDeclaringArkClass(), mtd, sourceFile);
-        // return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
+        let mtd: ArkMethod = new ArkMethod();
+        let cls: ArkClass;
+        if (arkInstance instanceof ArkMethod) {
+            cls = arkInstance.getDeclaringArkClass();
+        }
+        else if (arkInstance instanceof ArkClass) {
+            cls = arkInstance;
+        }
+        else {
+            cls = arkInstance.getDeclaringClass();
+        }
+        buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
+        return new CallableType(mtd.getSignature());
     }
     else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }
-    return UnknownType.getInstance();;
 }
 
 export function buildTypeFromPreStr(preStr: string) {
@@ -379,163 +387,6 @@ export function buildTypeFromPreStr(preStr: string) {
     }
     return TypeInference.buildTypeFromStr(postStr);
 }
-
-// export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment
-//     | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile): ArkField {
-//     let field = new ArkField();
-//     field.setFieldType(ts.SyntaxKind[member.kind]);
-//     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-
-//     // construct initializer
-//     if (ts.isPropertyDeclaration(member) || ts.isPropertyAssignment(member) || ts.isEnumMember(member)) {
-//         if (member.initializer) {
-//             field.setInitializer(tsNode2Value(member.initializer, sourceFile));
-//         }
-//     } else if (ts.isShorthandPropertyAssignment(member)) {
-//         if (member.objectAssignmentInitializer) {
-//             field.setInitializer(tsNode2Value(member.objectAssignmentInitializer, sourceFile));
-//         }
-//     } else if (ts.isSpreadAssignment(member)) {
-//         field.setInitializer(tsNode2Value(member.expression, sourceFile));
-//     }
-
-//     if (member.name && ts.isComputedPropertyName(member.name)) {
-//         if (ts.isIdentifier(member.name.expression)) {
-//             let propertyName = member.name.expression.text;
-//             field.setName(propertyName);
-//         }
-//         else if (ts.isPropertyAccessExpression(member.name.expression)) {
-//             field.setName(handlePropertyAccessExpression(member.name.expression));
-//         }
-//         else {
-//             logger.warn("Other property expression type found!");
-//         }
-//     }
-//     else if (member.name && ts.isIdentifier(member.name)) {
-//         let propertyName = member.name.text;
-//         field.setName(propertyName);
-//     }
-//     else {
-//         logger.warn("Other property type found!");
-//     }
-
-//     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
-//         let modifiers = buildModifiers(member.modifiers, sourceFile);
-//         modifiers.forEach((modifier) => {
-//             field.addModifier(modifier);
-//         });
-//     }
-
-//     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-//         field.setType(buildFieldType(member.type));
-//     }
-
-//     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.questionToken) {
-//         field.setQuestionToken(true);
-//     }
-
-//     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
-//         field.setExclamationToken(true);
-//     }
-
-//     return field;
-// }
-
-// export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile): ArkField {
-//     let field = new ArkField();
-//     field.setFieldType(ts.SyntaxKind[member.kind]);
-//     //parameters
-//     field.setParameters(buildParameters(member, sourceFile));
-//     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-//     //modifiers
-//     if (member.modifiers) {
-//         buildModifiers(member.modifiers, sourceFile).forEach((modifier) => {
-//             field.addModifier(modifier);
-//         });
-//     }
-//     //type
-//     field.setType(buildReturnType4Method(member, sourceFile));
-//     return field;
-// }
-
-// export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, sourceFile: ts.SourceFile): ArkField {
-//     let field = new ArkField();
-//     if (ts.isIdentifier(member.name)) {
-//         field.setName(member.name.text);
-//     }
-//     else {
-//         logger.warn("Please contact developers to support new type of GetAccessor name!");
-//         field.setName('');
-//     }
-//     field.setFieldType(ts.SyntaxKind[member.kind]);
-//     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-//     return field;
-// }
-
-// function buildFieldType(fieldType: ts.TypeNode): Type {
-//     if (ts.isUnionTypeNode(fieldType)) {
-//         let unionType: Type[] = [];
-//         fieldType.types.forEach((tmpType) => {
-//             if (ts.isTypeReferenceNode(tmpType)) {
-//                 let tmpTypeName = "";
-//                 if (ts.isQualifiedName(tmpType.typeName)) {
-//                     tmpTypeName = handleQualifiedName(tmpType.typeName);
-//                 }
-//                 else if (ts.isIdentifier(tmpType.typeName)) {
-//                     tmpTypeName = tmpType.typeName.text;
-//                 }
-//                 else {
-//                     logger.warn("Other property type found!");
-//                 }
-//                 unionType.push(new UnclearReferenceType(tmpTypeName));
-//             }
-//             else if (ts.isLiteralTypeNode(tmpType)) {
-//                 unionType.push(buildTypeFromPreStr(ts.SyntaxKind[tmpType.literal.kind]));
-//             }
-//             else {
-//                 unionType.push(buildTypeFromPreStr(ts.SyntaxKind[tmpType.kind]));
-//             }
-//         });
-//         return new UnionType(unionType)
-//     }
-//     else if (ts.isTypeReferenceNode(fieldType)) {
-//         let tmpTypeName = "";
-//         let referenceNodeName = fieldType.typeName;
-//         if (ts.isQualifiedName(referenceNodeName)) {
-//             tmpTypeName = handleQualifiedName(referenceNodeName);
-//         }
-//         else if (ts.isIdentifier(referenceNodeName)) {
-//             tmpTypeName = referenceNodeName.text;
-//         }
-//         return new UnclearReferenceType(tmpTypeName);
-//     }
-//     else if (ts.isArrayTypeNode(fieldType)) {
-//         let tmpTypeName = "";
-//         if (ts.isTypeReferenceNode(fieldType.elementType)) {
-//             if (ts.isQualifiedName(fieldType.elementType.typeName)) {
-//                 tmpTypeName = handleQualifiedName(fieldType.elementType.typeName);
-//             }
-//             else if (ts.isIdentifier(fieldType.elementType.typeName)) {
-//                 tmpTypeName = fieldType.elementType.typeName.text;
-//             }
-//             else {
-//                 logger.warn("Other property type found!");
-//             }
-//             let elementType = new UnclearReferenceType(tmpTypeName);
-//             return new ArrayType(elementType, 0);
-//         }
-//         else {
-//             let elementType = buildTypeFromPreStr(ts.SyntaxKind[fieldType.elementType.kind]);
-//             return new ArrayType(elementType, 0);
-//         }
-//     }
-//     else if (ts.isLiteralTypeNode(fieldType)) {
-//         return buildTypeFromPreStr(ts.SyntaxKind[fieldType.literal.kind]);
-//     }
-//     else {
-//         return buildTypeFromPreStr(ts.SyntaxKind[fieldType.kind]);
-//     }
-// }
 
 export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkClass): Value {
     let nodeKind = ts.SyntaxKind[node.kind];
