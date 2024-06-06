@@ -364,7 +364,7 @@ export class ArkIRTransformer {
             stmts: combinatioStmts,
         } = this.generateAssignStmtForValue(new ArkBinopExpr(values[0], values[1], '+'));
         stmts.push(...combinatioStmts);
-        for (let i = 2; i < values.length; i++) {
+        for (let i = 2; i < values.length; i++) { // next iteration start from index 2
             ({
                 value: combinationValue,
                 stmts: combinatioStmts,
@@ -825,10 +825,6 @@ export class ArkIRTransformer {
         return {value: leftValue, stmts: rightStmts};
     }
 
-    // private conditionalExpressionToValueAndStmts(conditionalExpression: ts.ConditionalExpression): ValueAndStmts {
-    //
-    // }
-
     private conditionToValueAndStmts(condition: ts.Expression): ValueAndStmts {
         const stmts: Stmt[] = [];
         let {
@@ -914,14 +910,12 @@ export class ArkIRTransformer {
         return {value: leftOp, stmts: [new ArkAssignStmt(leftOp, rightOp)]};
     }
 
-    private isRelationalOperator(operator: string):
-        boolean {
+    private isRelationalOperator(operator: string): boolean {
         return operator == '<' || operator == '<=' || operator == '>' || operator == '>=' ||
             operator == '==' || operator == '===' || operator == '!=' || operator == '!==';
     }
 
-    private flipOperator(operator: string):
-        string {
+    private flipOperator(operator: string): string {
         let newOperater = '';
         switch (operator) {
             case '<':
@@ -949,7 +943,7 @@ export class ArkIRTransformer {
                 newOperater = '===';
                 break;
             default:
-                break;
+                logger.warn(`unsupported operator ${operator} to flip`);
         }
         return newOperater;
     }
