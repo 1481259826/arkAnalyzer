@@ -1,7 +1,7 @@
 {
-    "targetProjectName": "ArkIRTransformerTest",
+    "targetProjectName": "mainModuleEts",
     "targetProjectOriginDirectory": "",
-    "targetProjectDirectory": "tests/resources/ArkIRTransformer/mainModule",
+    "targetProjectDirectory": "tests/resources/ArkIRTransformer",
 
     "logPath": "out/ArkIRTransformerTest.log",
 

@@ -847,3 +847,7 @@ export function isEtsSystemComponent(name: string): boolean {
 export function isEtsContainerComponent(name: string): boolean {
     return isEtsSystemComponent(name) && !isEtsAtomicComponent(name);
 }
+
+
+export const COMPONENT_CREATE_FUNCTION: string = 'create';
+export const COMPONENT_POP_FUNCTION: string = 'pop';

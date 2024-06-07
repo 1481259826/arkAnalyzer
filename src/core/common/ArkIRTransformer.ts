@@ -65,6 +65,8 @@ import { ArkMethod } from '../model/ArkMethod';
 import { buildArkMethodFromArkClass } from '../model/builder/ArkMethodBuilder';
 import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace } from '../model/builder/ArkClassBuilder';
 import { ArkClass } from '../model/ArkClass';
+import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
+import { COMPONENT_CREATE_FUNCTION, COMPONENT_POP_FUNCTION, isEtsSystemComponent } from './EtsConst';
 
 const logger = Logger.getLogger();
 
@@ -191,9 +193,9 @@ export class ArkIRTransformer {
             stmts: iterableStmts,
         } = this.tsNodeToValueAndStmts(forOfStatement.expression);
         stmts.push(...iterableStmts);
-        const lengthLocal = this.generateTempLocal();
+        const lengthLocal = this.generateTempLocal(NumberType.getInstance());
         stmts.push(new ArkAssignStmt(lengthLocal, new ArkLengthExpr(iterableValue)));
-        const indexLocal = this.generateTempLocal();
+        const indexLocal = this.generateTempLocal(NumberType.getInstance());
         stmts.push(new ArkAssignStmt(indexLocal, ValueUtil.getOrCreateNumberConst(0)));
 
         const conditionExpr = new ArkConditionExpr(indexLocal, lengthLocal, '>=');
@@ -320,11 +322,33 @@ export class ArkIRTransformer {
             return this.callableNodeToValueAndStmts(node);
         } else if (ts.isClassExpression(node)) {
             return this.classExpressionToValueAndStmts(node);
+        } else if (ts.isEtsComponentExpression(node)) {
+            return this.etsComponentExpressionToValueAndStmts(node);
         }
         // TODO: handle ts.ObjectLiteralExpression, ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
 
         logger.warn(`unsupported expression node: ${ts.SyntaxKind[node.kind]}`);
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
+    }
+
+    private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
+        const stmts: Stmt[] = [];
+        const componentName = (etsComponentExpression.expression as ts.Identifier).text;
+        const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_CREATE_FUNCTION);
+        const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, []);
+        const {value: componentValue, stmts: componentStmts} = this.generateAssignStmtForValue(createInvokeExpr);
+        stmts.push(...componentStmts);
+
+        if (etsComponentExpression.body) {
+            for (const statement of etsComponentExpression.body.statements) {
+                stmts.push(...this.tsNodeToStmts(statement));
+            }
+        }
+
+        const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_POP_FUNCTION);
+        const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
+        stmts.push(new ArkInvokeStmt(popInvokeExpr));
+        return {value: componentValue, stmts: stmts};
     }
 
     private classExpressionToValueAndStmts(classExpression: ts.ClassExpression): ValueAndStmts {
@@ -441,8 +465,6 @@ export class ArkIRTransformer {
         }
 
         const methodSignature = new MethodSignature();
-        methodSignature.setDeclaringClassSignature(new ClassSignature());
-        methodSignature.setMethodSubSignature(new MethodSubSignature());
 
         let {
             value: callerValue,
@@ -457,8 +479,23 @@ export class ArkIRTransformer {
             methodSignature.getMethodSubSignature().setMethodName(callerValue.getFieldName());
             invokeExpr = new ArkStaticInvokeExpr(methodSignature, args);
         } else if (callerValue instanceof Local) {
-            methodSignature.getMethodSubSignature().setMethodName(callerValue.getName());
-            invokeExpr = new ArkStaticInvokeExpr(methodSignature, args);
+            const callerName = callerValue.getName();
+            // temp for component
+            if (isEtsSystemComponent(callerName)) {
+                const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(callerName, COMPONENT_CREATE_FUNCTION);
+                const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, args);
+                const {
+                    value: componentValue,
+                    stmts: componentStmts,
+                } = this.generateAssignStmtForValue(createInvokeExpr);
+                stmts.push(...componentStmts);
+
+                const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(callerName, COMPONENT_POP_FUNCTION);
+                invokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
+            } else {
+                methodSignature.getMethodSubSignature().setMethodName(callerName);
+                invokeExpr = new ArkStaticInvokeExpr(methodSignature, args);
+            }
         } else {
             ({value: callerValue, stmts: callerStmts} = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
@@ -895,19 +932,17 @@ export class ArkIRTransformer {
         return local;
     }
 
-    private generateTempLocal(): Local {
+    private generateTempLocal(localType: Type = UnknownType.getInstance()): Local {
         const tempLocalName = this.tempLocalPrefix + this.tempLocalIndex;
         this.tempLocalIndex++;
-        const tempLocal: Local = new Local(tempLocalName);
+        const tempLocal: Local = new Local(tempLocalName, localType);
         this.locals.set(tempLocalName, tempLocal);
         return tempLocal;
     }
 
-    private generateAssignStmtForValue(value: Value): ValueAndStmts {
-        const leftOp = this.generateTempLocal();
-        const rightOp = value;
-        leftOp.setType(rightOp.getType());
-        return {value: leftOp, stmts: [new ArkAssignStmt(leftOp, rightOp)]};
+    public generateAssignStmtForValue(value: Value): ValueAndStmts {
+        const leftOp = this.generateTempLocal(value.getType());
+        return {value: leftOp, stmts: [new ArkAssignStmt(leftOp, value)]};
     }
 
     private isRelationalOperator(operator: string): boolean {
