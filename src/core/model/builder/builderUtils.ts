@@ -27,7 +27,7 @@ import { Local } from "../../base/Local";
 import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../../base/Ref";
 import { ArkClass } from "../ArkClass";
 import { ArkMethod } from "../ArkMethod";
-import { Decorator, TypeDecorator } from "../../base/Decorator";
+import { Decorator } from "../../base/Decorator";
 import { buildProperty2ArkField } from "./ArkFieldBuilder";
 import { ArrayBindingPatternParameter, MethodParameter, ObjectBindingPatternParameter, buildArkMethodFromArkClass } from "./ArkMethodBuilder";
 import { buildNormalArkClassFromArkMethod } from "./ArkClassBuilder";
@@ -72,27 +72,29 @@ export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<st
         } else if (ts.isDecorator(modifier)) {
             if (modifier.expression) {
                 let kind = "";
+                let param = "";
                 if (ts.isIdentifier(modifier.expression)) {
                     kind = modifier.expression.text;
                 } else if (ts.isCallExpression(modifier.expression)) {
                     if (ts.isIdentifier(modifier.expression.expression)) {
                         kind = modifier.expression.expression.text;
                     }
-                }
-                if (kind != "Type") {
-                    const decorator = new Decorator(kind);
-                    decorator.setContent(modifier.expression.getText(sourceFile));
-                    modifiers.add(decorator);
-                } else {
-                    const arg = (modifier.expression as ts.CallExpression).arguments[0];
-                    const body = (arg as ts.ArrowFunction).body;
-                    if (ts.isIdentifier(body)) {
-                        const typeDecorator = new TypeDecorator();
-                        typeDecorator.setType(body.text);
-                        typeDecorator.setContent(modifier.expression.getText(sourceFile));
-                        modifiers.add(typeDecorator);
+                    if (modifier.expression.arguments.length > 0) {
+                        const arg = (modifier.expression as ts.CallExpression).arguments[0];
+                        if (ts.isArrowFunction(arg)) {
+                            const body = (arg as ts.ArrowFunction).body;
+                            if (ts.isIdentifier(body)) {
+                                param = body.text;
+                            }
+                        }
                     }
                 }
+                const decorator = new Decorator(kind);
+                decorator.setContent(modifier.expression.getText(sourceFile));
+                if (param != "") {
+                    decorator.setParam(param);
+                }
+                modifiers.add(decorator);
             }
         } else {
             modifiers.add(ts.SyntaxKind[modifier.kind]);

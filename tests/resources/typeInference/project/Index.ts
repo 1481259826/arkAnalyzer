@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import taskpool from '@ohos.taskpool';
-import AbilityDelegatorRegistry from '@ohos.app.ability.abilityDelegatorRegistry';
-import {a} from "vitest/dist/suite-ynYMzeLu";
 
+export default function precision() {
+    describe('precisiontest', () => {
 
-let task: taskpool.Task = new taskpool.Task("10",a, 100);
-
-abilityDelegatorArguments = AbilityDelegatorRegistry.getArguments()
-abilityDelegator = AbilityDelegatorRegistry.getAbilityDelegator()
+        it('precision', 0, () => {
+            
+        });
+    });
+}
