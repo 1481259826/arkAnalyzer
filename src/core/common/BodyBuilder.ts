@@ -29,6 +29,7 @@ export class BodyBuilder {
     }
 
     public build(): ArkBody {
+        this.cfgBuilder.buildCfgBuilder();
         let cfg = this.cfgBuilder.buildCfg();
         cfg.buildDefUseStmt();
         let originalCfg = this.cfgBuilder.buildOriginalCfg();

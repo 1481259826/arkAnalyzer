@@ -56,8 +56,7 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
     const defaultMethodNode = node ? node : sourceFile;
 
     let bodyBuilder = new BodyBuilder(mtd.getSignature(), defaultMethodNode, mtd, sourceFile);
-    mtd.setBody(bodyBuilder.build());
-    mtd.getCfg().setDeclaringMethod(mtd);
+    mtd.setBodyBuilder(bodyBuilder);
 }
 
 export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile) {
@@ -100,11 +99,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.genSignature();
 
     let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd, sourceFile);
-    mtd.setBody(bodyBuilder.build());
-    mtd.getCfg().setDeclaringMethod(mtd);
-    if (mtd.getName() == 'constructor' && mtd.getDeclaringArkClass()) {
-        mtd.getCfg().constructorAddInit(mtd);
-    }
+    mtd.setBodyBuilder(bodyBuilder);
 
     if (mtd.hasBuilderDecorator()) {
         mtd.setViewTree(new ViewTree(mtd));

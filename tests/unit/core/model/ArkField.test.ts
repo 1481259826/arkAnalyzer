@@ -23,6 +23,6 @@ describe("ArkField Test", () => {
         field.addModifier(new Decorator('State'));
         field.addModifier('static');
         field.addModifier('public');
-        expect(field.getDecorators().length).eq(2);
+        expect(field.getDecorators().length).eq(1);
     })
 })
