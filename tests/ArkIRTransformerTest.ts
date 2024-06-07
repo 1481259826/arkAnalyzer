@@ -17,6 +17,9 @@ import Logger, { LOG_LEVEL } from '../src/utils/logger';
 import fs from 'fs';
 import * as ts from 'ohos-typescript';
 import { ArkIRTransformer } from '../src/core/common/ArkIRTransformer';
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { ArkBody } from '../src/core/model/ArkBody';
 
 const logPath = 'out/ArkIRTransformerTest.log';
 const logger = Logger.getLogger();
@@ -40,7 +43,51 @@ class ArkIRTransformerTest {
         }
         logger.info('testSimpleStmt end\n');
     }
+
+    public async testEtsStmt() {
+        logger.error('testEtsStmt start');
+
+        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/ohos-beacon-library_
+        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/HarmonyTranslator_
+        // tests/resources/ArkIRTransformer, mainModuleEts
+        // D:/Codes/openharmony/applications, applications_photos
+        const etsConfigPath = 'tests/resources/ArkIRTransformer/ArkIRTransformerTestConfig.json';
+        let sceneConfig: SceneConfig = new SceneConfig();
+        await sceneConfig.buildFromJson(etsConfigPath);
+
+        const scene = new Scene(sceneConfig);
+        this.printScene(scene);
+        logger.error('testEtsStmt end');
+    }
+
+    private printStmts(body: ArkBody): void {
+        logger.error('-- threeAddresStmts:');
+        let cfg = body.getCfg();
+        for (const threeAddresStmt of cfg.getStmts()) {
+            logger.error(threeAddresStmt.toString());
+        }
+    }
+
+    private printScene(scene: Scene): void {
+        for (const arkFile of scene.getFiles()) {
+            logger.error('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
+            for (const arkClass of arkFile.getClasses()) {
+                logger.error('========= arkClass:', arkClass.getName(), ' =======');
+                for (const arkMethod of arkClass.getMethods()) {
+                    logger.error('***** arkMethod: ', arkMethod.getName());
+                    const body = arkMethod.getBody();
+                    this.printStmts(body);
+
+                    logger.error('-- locals:');
+                    for (const local of arkMethod.getBody().getLocals()) {
+                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                    }
+                }
+            }
+        }
+    }
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
-arkIRTransformerTest.testSimpleStmt();
+// arkIRTransformerTest.testSimpleStmt();
+arkIRTransformerTest.testEtsStmt();
