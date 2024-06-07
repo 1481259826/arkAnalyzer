@@ -28,6 +28,7 @@ import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ExportInfo } from '../ArkExport';
+import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
 
 const logger = Logger.getLogger();
 
@@ -52,7 +53,10 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
     const sourceFile = ts.createSourceFile(
         arkFile.getName(),
         arkFile.getCode(),
-        ts.ScriptTarget.Latest
+        ts.ScriptTarget.Latest,
+        undefined,
+        undefined,
+        ETS_COMPILER_OPTIONS
     );
     genDefaultArkClass(arkFile, sourceFile);
     buildArkFile(arkFile, sourceFile);
