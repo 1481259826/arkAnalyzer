@@ -332,6 +332,7 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         else {
             cls = arkInstance.getDeclaringClass();
         }
+        //console.log(cls.getName());
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
         return new CallableType(mtd.getSignature());
     }

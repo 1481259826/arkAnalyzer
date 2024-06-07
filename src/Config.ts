@@ -41,9 +41,10 @@ export class Config {
     }
 }
 
-interface otherSdk {
+export interface Sdk {
     name: string;
     path: string;
+    moduleName: string;
 }
 
 export class SceneConfig {
@@ -51,89 +52,94 @@ export class SceneConfig {
 
     private targetProjectName: string = "";
     private targetProjectDirectory: string = "";
-    private targetProjectOriginDirectory: string = '';
 
     private etsSdkPath: string = "";
-    private otherSdkMap: Map<string, string> = new Map();
+    private sdksObj: Sdk[] = [];
 
     private sdkFiles: string[] = [];
     private sdkFilesMap: Map<string[], string> = new Map<string[], string>();
-    private projectFiles: Map<string, string[]> = new Map<string, string[]>();
+    //private projectFiles: Map<string, string[]> = new Map<string, string[]>();
     private logPath: string = "./out/ArkAnalyzer.log";
+    private logLevel: string = "ERROR";
 
-    private hosEtsLoaderPath: string = '';
-    private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
+    //private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
 
     constructor() { }
 
     public async buildFromJson(configJsonPath: string) {
         if (fs.existsSync(configJsonPath)) {
-            const configurations = JSON.parse(fs.readFileSync(configJsonPath, "utf8"));
+            const configurationsText = fs.readFileSync(configJsonPath, "utf8");
+            logger.info(configurationsText);
+            const configurations = JSON.parse(configurationsText);
 
-            let otherSdks: otherSdk[] = [];
-            for (let sdk of configurations.otherSdks) {
-                otherSdks.push(JSON.parse(JSON.stringify(sdk)));
+            // let otherSdks: otherSdk[] = [];
+            // for (let sdk of configurations.otherSdks) {
+            //     otherSdks.push(JSON.parse(JSON.stringify(sdk)));
+            // }
+            // otherSdks.forEach((sdk) => {
+            //     if (sdk.name && sdk.path) {
+
+            //         this.otherSdkMap.set(sdk.name, sdk.path);
+            //     }
+            // });
+
+            if (configurations.logPath) {
+                this.logPath = configurations.logPath;
             }
-            otherSdks.forEach((sdk) => {
-                if (sdk.name && sdk.path) {
-                    this.otherSdkMap.set(sdk.name, sdk.path);
-                }
-            });
+            if (configurations.logLevel) {
+                this.logLevel = configurations.logLevel;
+            }
+            Logger.configure(this.logPath, LOG_LEVEL[this.logLevel as LOG_LEVEL]);
 
-            await this.buildConfig(
-                configurations.targetProjectName,
-                configurations.targetProjectOriginDirectory,
-                configurations.targetProjectDirectory,
-                configurations.etsSdkPath,
-                configurations.logPath,
-                configurations.nodePath
-            )
+            this.sdksObj = configurations.sdks;
+
+            this.targetProjectName = configurations.targetProjectName;
+            this.targetProjectDirectory = configurations.targetProjectDirectory;
         }
         else {
-            throw new Error(`Your configJsonPath: "${configJsonPath}" is not exist.`);
+            logger.error(`Your configJsonPath: "${configJsonPath}" is not exist.`);
         }
     }
 
-    public buildFromProjectDir(targetProjectDirectory: string) {
-        this.targetProjectDirectory = targetProjectDirectory;
-        this.targetProjectName = path.basename(targetProjectDirectory);
-        Logger.configure(this.logPath, LOG_LEVEL.ERROR);
-        this.getAllFiles();
-    }
+    // public buildFromProjectDir(targetProjectDirectory: string) {
+    //     this.targetProjectDirectory = targetProjectDirectory;
+    //     this.targetProjectName = path.basename(targetProjectDirectory);
+    //     Logger.configure(this.logPath, LOG_LEVEL.ERROR);
+    //     this.getAllFiles();
+    // }
 
-    public async buildConfig(targetProjectName: string, targetProjectOriginDirectory: string, targetProjectDirectory: string,
-        sdkEtsPath: string, logPath: string, nodePath: string) {
+    public async buildConfig(targetProjectName: string, targetProjectDirectory: string,
+        sdkEtsPath: string, logPath: string, logLevel: string) {
         this.targetProjectName = targetProjectName;
-        this.targetProjectOriginDirectory = targetProjectOriginDirectory;
         this.targetProjectDirectory = path.join(targetProjectDirectory, targetProjectName);
         this.etsSdkPath = sdkEtsPath;
-        this.hosEtsLoaderPath = path.join(sdkEtsPath, './build-tools/ets-loader');
         this.logPath = logPath;
+        this.logLevel = logLevel;
 
         Logger.configure(this.logPath, LOG_LEVEL.ERROR);
-        this.getAllFiles();
+        //this.getAllFiles();
     }
 
-    private getAllFiles() {
-        if (this.targetProjectDirectory) {
-            this.projectFiles = getFiles2PkgMap(this.targetProjectDirectory, new Array<string>(), this.ohPkgContentMap);
-        }
-        else {
-            throw new Error('TargetProjectDirectory is wrong.');
-        }
-        if (this.etsSdkPath) {
-            let etsFiles: string[] = getFiles(this.etsSdkPath, "\\.d\\.ts\$");
-            this.sdkFiles.push(...etsFiles);
-            this.sdkFilesMap.set(etsFiles, "etsSdk");
-        }
-        if (this.otherSdkMap.size != 0) {
-            this.otherSdkMap.forEach((value, key) => {
-                let otherSdkFiles: string[] = getFiles(value, "\\.d\\.ts\$");
-                this.sdkFiles.push(...otherSdkFiles);
-                this.sdkFilesMap.set(otherSdkFiles, key);
-            });
-        }
-    }
+    // private getAllFiles() {
+    //     if (this.targetProjectDirectory) {
+    //         this.projectFiles = getFiles2PkgMap(this.targetProjectDirectory, new Array<string>(), this.ohPkgContentMap);
+    //     }
+    //     else {
+    //         throw new Error('TargetProjectDirectory is wrong.');
+    //     }
+    //     if (this.etsSdkPath) {
+    //         let etsFiles: string[] = getFiles(this.etsSdkPath, "\\.d\\.ts\$");
+    //         this.sdkFiles.push(...etsFiles);
+    //         this.sdkFilesMap.set(etsFiles, "etsSdk");
+    //     }
+    //     if (this.otherSdkMap.size != 0) {
+    //         this.otherSdkMap.forEach((value, key) => {
+    //             let otherSdkFiles: string[] = getFiles(value, "\\.d\\.ts\$");
+    //             this.sdkFiles.push(...otherSdkFiles);
+    //             this.sdkFilesMap.set(otherSdkFiles, key);
+    //         });
+    //     }
+    // }
 
     public getTargetProjectName() {
         return this.targetProjectName;
@@ -143,13 +149,13 @@ export class SceneConfig {
         return this.targetProjectDirectory;
     }
 
-    public getTargetProjectOriginDirectory() {
-        return this.targetProjectOriginDirectory;
-    }
+    // public getTargetProjectOriginDirectory() {
+    //     return this.targetProjectOriginDirectory;
+    // }
 
-    public getProjectFiles() {
-        return this.projectFiles;
-    }
+    // public getProjectFiles() {
+    //     return this.projectFiles;
+    // }
 
     public getSdkFiles() {
         return this.sdkFiles;
@@ -163,17 +169,17 @@ export class SceneConfig {
         return this.etsSdkPath;
     }
 
-    public getOtherSdkMap() {
-        return this.otherSdkMap;
+    public getSdksObj() {
+        return this.sdksObj;
     }
 
-    public getLogPath(): string {
-        return this.logPath;
-    }
+    // public getLogPath(): string {
+    //     return this.logPath;
+    // }
 
-    public getOhPkgContentMap(): Map<string, { [k: string]: unknown }> {
-        return this.ohPkgContentMap;
-    }
+    // public getOhPkgContentMap(): Map<string, { [k: string]: unknown }> {
+    //     return this.ohPkgContentMap;
+    // }
 }
 
 function getFiles(srcPath: string, fileExt: string, tmpFiles: string[] = []) {

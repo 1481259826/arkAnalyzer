@@ -267,7 +267,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         const data = fs.readFileSync(path, 'utf-8');
         const objects = JSON.parse(data)
         for (const object of objects) {
-            const file = this.scene.getSdkArkFilestMap().get(object.file);
+            const file = this.scene.getsdkArkFilesMap().get(object.file);
             if (!file) {
                 console.log("no file: " + object.file);
                 continue;

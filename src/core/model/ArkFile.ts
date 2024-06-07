@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Scene } from '../../Scene';
+import { ModuleScene, Scene } from '../../Scene';
 import { ExportInfo } from './ArkExport';
 import { ImportInfo } from './ArkImport';
 import { ArkClass } from "./ArkClass";
@@ -45,6 +45,7 @@ export class ArkFile {
     private exportInfos: ExportInfo[] = [];
 
     private scene: Scene;
+    private moduleScene: ModuleScene;
 
     private fileSignature: FileSignature;
 
@@ -69,6 +70,14 @@ export class ArkFile {
 
     public getScene() {
         return this.scene;
+    }
+
+    public getModuleScene() {
+        return this.moduleScene;
+    }
+
+    public setModuleScene(moduleScene: ModuleScene) {
+        this.moduleScene = moduleScene;
     }
 
     public setProjectDir(projectDir: string) {
@@ -159,6 +168,10 @@ export class ArkFile {
 
     public getProjectName() {
         return this.projectName;
+    }
+
+    public getModuleName() {
+        return this.moduleScene.getModuleName();;
     }
 
     public setOhPackageJson5Path(ohPackageJson5Path: string[]) {

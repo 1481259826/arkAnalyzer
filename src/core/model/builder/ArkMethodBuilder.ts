@@ -133,7 +133,6 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
         else {
             name = buildAnonymousMethodName(node, declaringClass);
         }
-        debugger;
     } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
         if (ts.isIdentifier(node.name)) {
             name = (node.name as ts.Identifier).text;

@@ -162,7 +162,7 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
                     elementImportInfo.setDeclaringArkFile(arkFile);
 
                     elementImportInfo.setImportFromSignature();
-                    arkFile.addImportInfos(elementImportInfo);
+                    //arkFile.addImportInfos(elementImportInfo);
                 }
 
                 arkFile.addExportInfos(element);

@@ -20,7 +20,7 @@ let config: SceneConfig = new SceneConfig();
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfigUnix.json");
 
 
-//config.buildFromJson("./tests/AppTestConfig.json");
+config.buildFromJson("./tests/AppTestConfig.json");
 //config.buildFromJson("./tests/sample/AppTestConfig-sample.json");
 //config.buildFromJson("./tests/AppTestConfigUnix.json");
 
@@ -28,20 +28,11 @@ let config: SceneConfig = new SceneConfig();
 
 function runScene4Json(config: SceneConfig) {
     let projectScene: Scene = new Scene(config);
+    projectScene.buildModuleScene('entry', 'C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
+    //projectScene.buildSceneFromProject();
+    projectScene.collectProjectImportInfos();
+    //projectScene.inferTypes();
     debugger;
-}
-async function runScene4Ide() {
-    let config: SceneConfig = new SceneConfig();
-    await config.buildFromIde(
-        "scene",
-        "D:/code/scene_xxx",
-        "C:/msys64/home/xxx/code/yyyy",
-        "D:/code/deveco-studio/sdk/xxx",
-        "C:/mysys64/home/xxx/code/log/xx.log",
-        "C:/mysys64/bin/node.exe"
-    );
 }
 
 runScene4Json(config);
-
-//runScene4Ide();
