@@ -25,7 +25,7 @@ const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
     'Provide', 'Consume', 'ObjectLink', 
     'LocalStorageLink', 'LocalStorageProp', 
-    'Local', 'Param', 'Event', 'Provider', 'Consumer' // @ComponentV2
+    'Local', 'Param', 'Event', 'Provider', 'Consumer'
 ])
 
 export class ArkField {
