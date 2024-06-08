@@ -23,8 +23,9 @@ import { MethodParameter } from "./builder/ArkMethodBuilder";
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
-    'Provide', 'Consume', 'ObjectLink', 'BuilderParam',
-    'LocalStorageLink', 'LocalStorageProp'
+    'Provide', 'Consume', 'ObjectLink', 
+    'LocalStorageLink', 'LocalStorageProp', 
+    'Local', 'Param', 'Event', 'Provider', 'Consumer'
 ])
 
 export class ArkField {

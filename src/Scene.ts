@@ -37,6 +37,12 @@ import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 
 const logger = Logger.getLogger();
 
+enum SceneBuildStage {
+    BUILD_INIT,
+    CLASS_DONE,
+    METHOD_DONE,
+};
+
 /**
  * The Scene class includes everything in the analyzed project.
  * We should be able to re-generate the project's code based on this class.
@@ -68,6 +74,8 @@ export class Scene {
     private methodsMap: Map<string, ArkMethod> = new Map();
 
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
+    private customComponents: Set<string> = new Set();
+    private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
     constructor(sceneConfig: SceneConfig) {
         this.projectName = sceneConfig.getTargetProjectName();
@@ -147,6 +155,14 @@ export class Scene {
             buildArkFileFromFile(key, this.realProjectDir, arkFile);
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
+        // method body parse depends custom components.
+        this.collectProjectCustomComponents();
+        this.buildStage = SceneBuildStage.CLASS_DONE;
+
+        this.getMethods().forEach((value) => {
+            value.buildBody();
+        });
+        this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
     public getFile(fileSignature: FileSignature): ArkFile | null {
@@ -557,6 +573,22 @@ export class Scene {
             }
         }
         return globalVariableMap;
+    }
+
+    private collectProjectCustomComponents() {
+        this.getClasses().forEach((value) => {
+            if (value.hasComponentDecorator()) {
+                this.customComponents.add(value.getName());
+            }
+        });
+    }
+
+    public isCustomComponents(name: string): boolean {
+        return this.customComponents.has(name);
+    }
+
+    public buildClassDone(): boolean {
+        return this.buildStage >= SceneBuildStage.CLASS_DONE;
     }
 
     // public getGlobalVariableMap(): Map<FileSignature | NamespaceSignature, Local[]> {

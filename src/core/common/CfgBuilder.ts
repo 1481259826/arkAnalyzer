@@ -276,7 +276,6 @@ export class CfgBuilder {
         this.anonymousFunctions = [];
         this.anonymousClassIndex = 0;
         this.sourceFile = sourceFile;
-        this.buildCfgBuilder();
     }
 
     walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {

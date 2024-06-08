@@ -836,6 +836,9 @@ export const BUILDIN_ATOMIC_COMPONENT: Set<string> = new Set([
     'SymbolSpan', 'SymbolGlyph', 'TextArea', 'TextInput', 'UIExtensionComponent', 'Video', 'Web'
 ])
 
+export const COMPONENT_DECORATOR: Set<string> = new Set(['Reusable', 'Component', 'ComponentV2', 'CustomDialog']);
+export const ENTRY_DECORATOR: string = 'Entry';
+
 export function isEtsAtomicComponent(name: string): boolean {
     return BUILDIN_ATOMIC_COMPONENT.has(name);
 }
