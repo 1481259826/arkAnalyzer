@@ -27,7 +27,7 @@ export const CommonTest_Expect_ViewTree = {
     name: '__Common__',
     children: [
         {
-            name: 'ViewPU',
+            name: 'View',
             children: [
                 SubComponent_Expect_ViewTree
             ]
@@ -112,7 +112,7 @@ export const ParentComponent_Expect_ViewTree = {
             stateValues: ['countDownStartValue']
         },
         {
-            name: 'ViewPU',
+            name: 'View',
             children: [
                 CountDownComponent_Expect_ViewTree
             ]
@@ -163,14 +163,14 @@ export const ControlCenterComponent_Expect_ViewTree = {
                                             name: 'Column',
                                             children: [
                                                 {
-                                                    name: 'ViewPU',
+                                                    name: 'View',
                                                     children: [ControlCenterComplexToggleLayout_Expect_ViewTree]
                                                 },
                                                 {
                                                     name: 'Column',
                                                     children: [
                                                         {
-                                                            name: 'ViewPU',
+                                                            name: 'View',
                                                             children: [ControlCenterSimpleToggleLayout_Expect_ViewTree]
                                                         },
                                                         {

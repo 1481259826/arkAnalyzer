@@ -838,6 +838,8 @@ export const BUILDIN_ATOMIC_COMPONENT: Set<string> = new Set([
 
 export const COMPONENT_DECORATOR: Set<string> = new Set(['Reusable', 'Component', 'ComponentV2', 'CustomDialog']);
 export const ENTRY_DECORATOR: string = 'Entry';
+export const BUILDER_DECORATOR: string = 'Builder';
+export const BUILDER_PARAM_DECORATOR: string = 'BuilderParam';
 
 export function isEtsAtomicComponent(name: string): boolean {
     return BUILDIN_ATOMIC_COMPONENT.has(name);
@@ -854,3 +856,5 @@ export function isEtsContainerComponent(name: string): boolean {
 
 export const COMPONENT_CREATE_FUNCTION: string = 'create';
 export const COMPONENT_POP_FUNCTION: string = 'pop';
+export const COMPONENT_CUSTOMVIEW_NODE: string = 'View';
+export const COMPONENT_COMMON_NODE: string = '__Common__';

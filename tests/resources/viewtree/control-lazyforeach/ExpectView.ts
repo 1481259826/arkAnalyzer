@@ -19,7 +19,7 @@ export const ChildComponent_Expect_ViewTree = {
         {
             name: 'Text',
             children: [],
-            stateValue: ['data']
+            stateValues: ['data']
         }
     ]
 }
