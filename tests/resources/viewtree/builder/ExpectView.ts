@@ -173,12 +173,18 @@ export const Case2_OverBuilder_Expect_ViewTree = {
     name: 'Row',
     children: [
         {
-            name: 'Text',
-            children: []
-        },
-        {
-            name: 'View',
-            children: [Case2_HelloComponent_Expect_ViewTree]
+            name: 'Column',
+            children: [
+                {
+                    name: 'Text',
+                    children: []
+                },
+                {
+                    name: 'View',
+                    children: [Case2_HelloComponent_Expect_ViewTree]
+                }
+
+            ]
         }
     ]
 }

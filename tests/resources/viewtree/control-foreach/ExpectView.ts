@@ -13,6 +13,12 @@
  * limitations under the License.
  */
 
+const Builder_TextArea_Expect_ViewTree = {
+    name: 'Row',
+    children: [],
+    attributes: ['width', 'height', 'backgroundColor']
+}
+
 export const ArticleSkeletonView_Expect_ViewTree = {
     name: 'Row',
     children: [
@@ -21,20 +27,25 @@ export const ArticleSkeletonView_Expect_ViewTree = {
             children: [
                 {
                     name: 'Builder',
-                    children: [
-                        {
-                            name: 'Row',
-                            children: []
-                        }
-                    ]
+                    children: [Builder_TextArea_Expect_ViewTree]
                 }
             ]
         },
         {
             name: 'Column',
-            children: []
+            children: [
+                {
+                    name: 'Builder',
+                    children: [Builder_TextArea_Expect_ViewTree]
+                },
+                {
+                    name: 'Builder',
+                    children: [Builder_TextArea_Expect_ViewTree]
+                }
+            ]
         }
-    ]
+    ],
+    attributes: ['padding', 'borderRadius', 'backgroundColor', 'height', 'width', 'justifyContent']
 }
 
 export const ForEachTest1_Expect_ViewTree = {
@@ -47,12 +58,14 @@ export const ForEachTest1_Expect_ViewTree = {
                     name: 'View',
                     children: [
                         ArticleSkeletonView_Expect_ViewTree
-                    ]
+                    ],
+                    attributes: ['margin']
                 }
             ],
             stateValues: ['simpleList']
         }
-    ]
+    ],
+    attributes: ['padding', 'width', 'height']
 }
 
 export const ArticleCard_Expect_ViewTree = {
@@ -67,11 +80,13 @@ export const ArticleCard_Expect_ViewTree = {
             children: [
                 {
                     name: 'Text',
-                    children: []
+                    children: [],
+                    stateValues: ['article']
                 },
                 {
                     name: 'Text',
-                    children: []
+                    children: [],
+                    stateValues: ['article']
                 }
             ]
         },
@@ -99,9 +114,11 @@ export const ForEachTest2_Expect_ViewTree = {
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    stateValues: ['articleList']
                 }
-            ]
+            ],
+            stateValues: ['isListReachEnd']
         }
     ]
 }
@@ -124,7 +141,8 @@ export const ForEachSort_Expect_ViewTree = {
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    stateValues: ['arr']
                 }
             ]
         }

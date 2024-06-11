@@ -32,6 +32,13 @@ import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTre
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
     expect(root.name).eq(expectTree.name);
     expect(root.children.length).eq(expectTree.children.length);
+    if (expectTree.attributes) {
+        expect(root.stmts.size).eq(expectTree.attributes.length);
+        const set = new Set(expectTree.attributes);
+        root.stmts.forEach((value, key) => {
+            expect(set.has(key)).eq(true);
+        })
+    }
     if (root.stateValues.size > 0) {
         expect(root.stateValues.size).eq(expectTree.stateValues.length);
         const set = new Set(expectTree.stateValues);
@@ -93,7 +100,7 @@ describe('control-foreach Test', () => {
     })
 
     it('test foreach3', async () => {
-        testClassViewTree(scene, 'ForEachTest3', ForEachTest2_Expect_ViewTree);
+        testClassViewTree(scene, 'ForEachTest3', ForEachTest3_Expect_ViewTree);
     })
 
     it('test foreach4', async () => {
