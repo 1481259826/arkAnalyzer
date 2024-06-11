@@ -985,6 +985,8 @@ export class CfgBuilder {
                 }
             }
         }
+
+        this.locals = arkIRTransformer.getLocals();
     }
 
     errorTest(stmt: StatementBuilder) {
@@ -1230,39 +1232,6 @@ export class CfgBuilder {
         function jumpStmtToString(originStmt: StatementBuilder): string[] {
             let targetId = originStmt.next?.block?.id as number;
             return ['goto label' + targetId];
-        }
-    }
-
-    public printThreeAddressStrs() {
-        logger.info('#### printThreeAddressStrs ####');
-        for (const stmt of this.statementArray) {
-            logger.info('------ origin stmt: ', stmt.code);
-            for (const threeAddressstr of stmt.addressCode3) {
-                logger.info(threeAddressstr);
-            }
-        }
-    }
-
-    public printThreeAddressStrsAndStmts() {
-        for (const stmt of this.statementArray) {
-            if (stmt.astNode && stmt.code) {
-                logger.info('----- origin stmt: ', stmt.code);
-                logger.info('-- threeAddressStrs:');
-                for (const threeAddressstr of stmt.addressCode3) {
-                    logger.info(threeAddressstr);
-                }
-                logger.info('-- threeAddressStmts:');
-                for (const threeAddressStmt of stmt.threeAddressStmts) {
-                    logger.info(threeAddressStmt);
-                }
-            }
-        }
-    }
-
-    public printOriginStmts() {
-        logger.info('#### printOriginStmts ####');
-        for (const stmt of this.statementArray) {
-            logger.info(stmt);
         }
     }
 
