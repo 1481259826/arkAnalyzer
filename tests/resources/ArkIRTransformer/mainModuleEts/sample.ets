@@ -19,9 +19,7 @@ struct Foo {
 
     build() {
         Row() {
-            if (this.flag) {
-                Column()
-            } else {
+            if (this.flag === false) {
                 Column()
             }
         }

@@ -288,15 +288,15 @@ export class ArkIRTransformer {
         if (inComponent && ifStatement.thenStatement) {
             stmts.push(...this.tsNodeToStmts(ifStatement.thenStatement));
         }
-        if (inComponent) {
+        if (inComponent && ifStatement.elseStatement) {
             const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
             const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(1)]);
             this.componentIfDepth++;
             stmts.push(new ArkInvokeStmt(divideInvokeExpr));
-        }
-        if (inComponent && ifStatement.elseStatement) {
+
             stmts.push(...this.tsNodeToStmts(ifStatement.elseStatement));
         }
+
         if (inComponent) {
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
