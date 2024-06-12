@@ -61,8 +61,6 @@ export class Scene {
     private extendedClasses: Map<string, ArkClass[]> = new Map();
     private globalImportInfos: ImportInfo[] = [];
 
-    // private etsSdkPath: string;
-    // private otherSdkMap: Map<string, string>;
     private moduleSdkMap: Map<string, Sdk[]> = new Map();
     private projectSdkMap: Map<string, Sdk> = new Map();
 
@@ -88,14 +86,9 @@ export class Scene {
 
     constructor(sceneConfig: SceneConfig) {
         this.projectName = sceneConfig.getTargetProjectName();
-        //this.projectFiles = sceneConfig.getProjectFiles();
         this.realProjectDir = fs.realpathSync(sceneConfig.getTargetProjectDirectory());
 
-        // this.etsSdkPath = sceneConfig.getEtsSdkPath();
-        // this.sdkFilesProjectMap = sceneConfig.getSdkFilesMap();
-
         const buildProfile = path.join(this.realProjectDir, './build-profile.json5');
-        //let modulesMap: Map<string, string> = new Map();
         if (fs.existsSync(buildProfile)) {
             const buildProfileJson = parseJsonText(fs.readFileSync(buildProfile, 'utf-8'));
             const modules = buildProfileJson.modules;
@@ -135,16 +128,6 @@ export class Scene {
                 }
             }
         });
-
-        // add sdk reative path to Import builder
-        //this.configImportSdkPrefix();
-
-        //this.genArkFiles();
-        //this.buildSceneFromProject();
-
-        //post actions
-
-        //this.collectProjectImportInfos();
     }
 
     public getRealProjectDir(): string {
@@ -156,15 +139,12 @@ export class Scene {
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
-        //updateSdkConfigPrefix(sdkName, path.relative(this.realProjectDir, sdkPath));
         const allFiles = getAllFiles(sdkPath, ['.ets', '.ts']);
         allFiles.forEach((file) => {
             logger.info('=== parse sdk file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
-            //arkFile.setProjectName(this.getProjectName());
             arkFile.setProjectName(sdkName);
-            //buildArkFileFromFile(file, this.getRealProjectDir(), arkFile);
             buildArkFileFromFile(file, path.normalize(sdkPath), arkFile);
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
@@ -337,10 +317,6 @@ export class Scene {
     public getVisibleValue(): VisibleValue {
         return this.visibleValue;
     }
-
-    // public getOhPkgContentMap(): Map<string, { [k: string]: unknown }> {
-    //     return this.ohPkgContentMap;
-    // }
 
     public getOhPkgContent() {
         return this.ohPkgContent;
@@ -682,7 +658,6 @@ export class ModuleScene {
     private moduleName: string = '';
     private modulePath: string = '';
 
-    //private moduleConfigPath: string = '';
     private moduleOhPkgFilePath: string = '';
 
     private otherSdkMap: Map<string, string> = new Map();
@@ -690,22 +665,18 @@ export class ModuleScene {
 
     private moduleImportInfos: ImportInfo[] = [];
 
-    // ArkInstance maps
     private filesMap: Map<string, ArkFile> = new Map();
     private namespacesMap: Map<string, ArkNamespace> = new Map();
     private classesMap: Map<string, ArkClass> = new Map();
     private methodsMap: Map<string, ArkMethod> = new Map();
-    //private sdkArkFilesMap: Map<string, ArkFile> = new Map();
 
     constructor() { }
 
     public ModuleScenBuilder(moduleName: string, modulePath: string, projectScene: Scene, recursively: boolean = false) {
         this.moduleName = moduleName;
         this.modulePath = modulePath;
-        //this.moduleConfigPath = moduleConfigPath;
         this.projectScene = projectScene;
 
-        //this.sdkArkFilesMap = projectScene.getSdkArkFilesMap();
         this.getModuleOhPkgFilePath();
 
         if (this.moduleOhPkgFilePath) {
@@ -714,9 +685,6 @@ export class ModuleScene {
         else {
             logger.warn('This module has no oh-package.json5!');
         }
-
-        // add sdk reative path to Import builder
-        //this.configImportSdkPrefix();
 
         this.genArkFiles();
     }

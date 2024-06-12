@@ -1,14 +1,14 @@
 {
     "targetProjectName": "AppSampleD",
-    "targetProjectDirectory": "C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD",
+    "targetProjectDirectory": "D:\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD",
 
-    "logPath": "C:\\msys64\\home\\Yifei\\log\\ArkAnalyzer.log",
+    "logPath": "D:\\log\\ArkAnalyzer.log",
     "logLevel": "INFO",
     
     "sdks": [
         {
             "name": "etsSdk",
-            "path": "C:\\Users\\Yifei\\AppData\\Local\\OpenHarmony\\Sdk\\11\\ets",
+            "path": "D:\\OpenHarmony\\Sdk\\11\\ets",
             "moduleName": ""
         }
     ]

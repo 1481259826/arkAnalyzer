@@ -17,21 +17,15 @@ import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 
 let config: SceneConfig = new SceneConfig();
-//let config: SceneConfig = new SceneConfig("./tests/AppTestConfigUnix.json");
-
 
 config.buildFromJson("./tests/AppTestConfig.json");
-//config.buildFromJson("./tests/sample/AppTestConfig-sample.json");
-//config.buildFromJson("./tests/AppTestConfigUnix.json");
-
-//config.buildFromProjectDir("C:\\msys64\\home\\Yifei\\code\\applications_photos");
 
 function runScene4Json(config: SceneConfig) {
     let projectScene: Scene = new Scene(config);
-    //projectScene.buildModuleScene('entry', 'C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
+    //projectScene.buildModuleScene('entry', 'D:\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
     projectScene.buildSceneFromProject();
     projectScene.collectProjectImportInfos();
-    //projectScene.inferTypes();
+    projectScene.inferTypes();
     debugger;
 }
 

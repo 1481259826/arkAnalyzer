@@ -120,30 +120,6 @@ export class ImportInfo {
             return;
         }
 
-        // sdkPathMap.forEach((value, key) => {
-        //     // e.g. @ohos., @kit.
-        //     if (key == 'etsSdk') {
-        //         const pathReg2 = new RegExp(`@ohos\\.`);
-        //         const pathReg3 = new RegExp(`@kit\\.`);
-        //         let tmpSig = '';
-        //         if (pathReg2.test(this.importFrom)) {
-        //             tmpSig = '@etsSdk/api/' + this.importFrom + ': ';
-        //         } else if (pathReg3.test(this.importFrom)) {
-        //             tmpSig = '@etsSdk/kits/' + this.importFrom + ': ';
-        //         }
-        //         this.setImportProjectType("SDKProject");
-        //         this.importFromSignature = tmpSig;
-        //         return;
-        //     } else {
-        //         const pathReg4 = new RegExp(`@(${key})\\/`);
-        //         if (pathReg4.test(this.importFrom)) {
-        //             this.setImportProjectType("SDKProject");
-        //             this.importFromSignature = this.importFrom + ': ';
-        //             return;
-        //         }
-        //     }
-        // });
-
         // path map defined in oh-package.json5
         let originImportPath: string = getOriginPath(this.importFrom, this.declaringArkFile);
         if (originImportPath != '') {

@@ -199,38 +199,6 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
     arkFile.addArkClass(defaultClass);
 }
 
-// function findIndicatedChild(node: NodeA, childType: string): NodeA | null {
-//     for (let child of node.children) {
-//         if (child.kind == childType) {
-//             return child;
-//         }
-//     }
-//     return null;
-// }
-
-// function processExportValAndFirstNode(node: NodeA, arkFile: ArkFile, isDefault: boolean): void {
-//     let exportClauseName: string = '';
-//     let exportClauseType: string = node.kind;
-//     let cld = findIndicatedChild(node, 'VariableDeclarationList');
-//     if (cld) {
-//         let c = findIndicatedChild(cld, 'SyntaxList');
-//         if (c) {
-//             let cc = findIndicatedChild(c, 'VariableDeclaration');
-//             if (cc) {
-//                 let ccc = findIndicatedChild(cc, 'Identifier');
-//                 if (ccc) {
-//                     exportClauseName = ccc.text;
-//                 }
-//             }
-//         }
-//     }
-//     let exportInfo = new ExportInfo();
-//     exportInfo.build(exportClauseName, exportClauseType, new LineColPosition(-1, -1));
-//     exportInfo.setDefault(isDefault);
-
-//     arkFile.addExportInfos(exportInfo);
-// }
-
 function addExportInfo(arkInstance: ArkMethod | ArkClass | ArkNamespace, arkFile: ArkFile, isDefault: boolean) {
     let exportClauseName: string = arkInstance.getName();
     let exportClauseType: string;
