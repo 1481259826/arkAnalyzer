@@ -66,7 +66,12 @@ import { buildArkMethodFromArkClass } from '../model/builder/ArkMethodBuilder';
 import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace } from '../model/builder/ArkClassBuilder';
 import { ArkClass } from '../model/ArkClass';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
-import { COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW_NODE, COMPONENT_POP_FUNCTION, isEtsSystemComponent } from './EtsConst';
+import {
+    COMPONENT_CREATE_FUNCTION,
+    COMPONENT_CUSTOMVIEW_NODE,
+    COMPONENT_POP_FUNCTION,
+    isEtsSystemComponent,
+} from './EtsConst';
 
 const logger = Logger.getLogger();
 
@@ -85,6 +90,10 @@ export class ArkIRTransformer {
     constructor(sourceFile: ts.SourceFile, withinMethod?: ArkMethod) {
         this.sourceFile = sourceFile;
         this.withinMethod = withinMethod || null;
+    }
+
+    public getLocals(): Set<Local> {
+        return new Set<Local>(this.locals.values());
     }
 
     public tsNodeToStmts(node: ts.Node): Stmt[] {
@@ -338,7 +347,7 @@ export class ArkIRTransformer {
         classSignature.setClassName(componentName);
         const classType = new ClassType(classSignature);
         const newExpr = new ArkNewExpr(classType);
-        const { value: newExprValue, stmts: newExprStmts } = this.generateAssignStmtForValue(newExpr);
+        const {value: newExprValue, stmts: newExprStmts} = this.generateAssignStmtForValue(newExpr);
         stmts.push(...newExprStmts);
 
         const methodSubSignature = new MethodSubSignature();
@@ -349,25 +358,25 @@ export class ArkIRTransformer {
         stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, methodSignature, args)));
 
         let createViewArgs = [newExprValue];
-        if (body) {  
+        if (body) {
             const anonymous = ts.factory.createArrowFunction([], [], [], undefined, undefined, body);
             // @ts-ignore
             anonymous.pos = body.pos;
             // @ts-ignore
             anonymous.end = body.end;
 
-            const { value: builderMethod, stmts: _ } = this.callableNodeToValueAndStmts(anonymous);
+            const {value: builderMethod, stmts: _} = this.callableNodeToValueAndStmts(anonymous);
             createViewArgs.push(builderMethod);
         }
         const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW_NODE, COMPONENT_CREATE_FUNCTION);
         let createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, createViewArgs);
-        const { value: componentValue, stmts: componentStmts } = this.generateAssignStmtForValue(createInvokeExpr);
+        const {value: componentValue, stmts: componentStmts} = this.generateAssignStmtForValue(createInvokeExpr);
         stmts.push(...componentStmts);
 
         const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW_NODE, COMPONENT_POP_FUNCTION);
         const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
         stmts.push(new ArkInvokeStmt(popInvokeExpr));
-        return { value: componentValue, stmts: stmts };
+        return {value: componentValue, stmts: stmts};
     }
 
     private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
@@ -387,7 +396,7 @@ export class ArkIRTransformer {
         if (isEtsSystemComponent(componentName)) {
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_CREATE_FUNCTION);
             const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, args);
-            const { value: componentValue, stmts: componentStmts } = this.generateAssignStmtForValue(createInvokeExpr);
+            const {value: componentValue, stmts: componentStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...componentStmts);
 
             if (etsComponentExpression.body) {
@@ -399,7 +408,7 @@ export class ArkIRTransformer {
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
             stmts.push(new ArkInvokeStmt(popInvokeExpr));
-            return { value: componentValue, stmts: stmts };
+            return {value: componentValue, stmts: stmts};
         }
 
         return this.createCustomViewStmt(componentName, args, etsComponentExpression.body);
