@@ -14,14 +14,14 @@
  */
 
 @Component
-struct A {
+struct Foo {
+    flag: boolean = false;
+
     build() {
         Row() {
-            Column() {
-                Row()
+            if (this.flag === false) {
+                Column()
             }
-
-            Column()
         }
     }
 }

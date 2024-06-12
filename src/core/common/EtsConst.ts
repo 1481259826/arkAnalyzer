@@ -858,3 +858,7 @@ export const COMPONENT_CREATE_FUNCTION: string = 'create';
 export const COMPONENT_POP_FUNCTION: string = 'pop';
 export const COMPONENT_CUSTOMVIEW_NODE: string = 'View';
 export const COMPONENT_COMMON_NODE: string = '__Common__';
+
+export const COMPONENT_IF: string = 'If';
+export const COMPONENT_BRANCH_FUNCTION: string = 'branch';
+export const COMPONENT_BUILD_FUNCTION: string = 'build';
