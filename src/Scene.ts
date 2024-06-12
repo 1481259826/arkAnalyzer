@@ -40,6 +40,12 @@ import { getFileRecursively } from './utils/FileUtils';
 
 const logger = Logger.getLogger();
 
+enum SceneBuildStage {
+    BUILD_INIT,
+    CLASS_DONE,
+    METHOD_DONE,
+};
+
 /**
  * The Scene class includes everything in the analyzed project.
  * We should be able to re-generate the project's code based on this class.
@@ -76,6 +82,9 @@ export class Scene {
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
+
+    private customComponents: Set<string> = new Set();
+    private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
     constructor(sceneConfig: SceneConfig) {
         this.projectName = sceneConfig.getTargetProjectName();
@@ -160,6 +169,14 @@ export class Scene {
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
+        // method body parse depends custom components.
+        this.collectProjectCustomComponents();
+        this.buildStage = SceneBuildStage.CLASS_DONE;
+
+        this.getMethods().forEach((value) => {
+            value.buildBody();
+        });
+        this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
     public buildSceneFromProject() {
@@ -221,42 +238,6 @@ export class Scene {
         this.moduleScenesMap.set(moduleName, moduleScene);
     }
 
-    // private genArkFiles() {
-    //     this.sdkFilesProjectMap.forEach((value, key) => {
-    //         if (key.length != 0) {
-    //             const sdkProjectName = value;
-    //             let realSdkProjectDir = "";
-    //             if (sdkProjectName == "etsSdk") {
-    //                 realSdkProjectDir = fs.realpathSync(this.etsSdkPath);
-    //             } else {
-    //                 let sdkPath = this.otherSdkMap.get(value);
-    //                 if (sdkPath) {
-    //                     realSdkProjectDir = fs.realpathSync(sdkPath);
-    //                 }
-    //             }
-
-    //             key.forEach((file) => {
-    //                 logger.info('=== parse file:', file);
-    //                 let arkFile: ArkFile = new ArkFile();
-    //                 arkFile.setScene(this);
-    //                 arkFile.setProjectName(sdkProjectName);
-    //                 buildArkFileFromFile(file, realSdkProjectDir, arkFile);
-    //                 this.sdkArkFilesMap.set(arkFile.getFileSignature().toString(), arkFile);
-    //             });
-    //         }
-    //     });
-
-    //     this.projectFiles.forEach((value, key) => {
-    //         logger.info('=== parse file:', key);
-    //         let arkFile: ArkFile = new ArkFile();
-    //         arkFile.setScene(this);
-    //         arkFile.setProjectName(this.projectName);
-    //         arkFile.setOhPackageJson5Path(value);
-    //         buildArkFileFromFile(key, this.realProjectDir, arkFile);
-    //         this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
-    //     });
-    // }
-
     public getFile(fileSignature: FileSignature): ArkFile | null {
         return this.filesMap.get(fileSignature.toString()) || null;
     }
@@ -264,10 +245,6 @@ export class Scene {
     public getFiles(): ArkFile[] {
         return Array.from(this.filesMap.values());
     }
-
-    // public getEtsSdkPath() {
-    //     return this.etsSdkPath;
-    // }
 
     public getsdkArkFilesMap() {
         return this.sdkArkFilesMap;
@@ -682,6 +659,22 @@ export class Scene {
         }
         return globalVariableMap;
     }
+
+    private collectProjectCustomComponents() {
+        this.getClasses().forEach((value) => {
+            if (value.hasComponentDecorator()) {
+                this.customComponents.add(value.getName());
+            }
+        });
+    }
+    
+    public isCustomComponents(name: string): boolean {
+        return this.customComponents.has(name);
+    }
+
+    public buildClassDone(): boolean {
+        return this.buildStage >= SceneBuildStage.CLASS_DONE;
+    }
 }
 
 export class ModuleScene {
@@ -752,16 +745,6 @@ export class ModuleScene {
 
     public getOhPkgContent() {
         return this.ohPkgContent;
-    }
-
-    private configImportSdkPrefix() {
-        this.projectScene.getModuleSdkMap().forEach((value, key) => {
-            if (key === this.moduleName) {
-                value.forEach((sdk) => {
-                    updateSdkConfigPrefix(sdk.name, path.relative(this.projectScene.getRealProjectDir(), sdk.path));
-                });
-            }
-        });
     }
 
     private genArkFiles() {

@@ -4,9 +4,7 @@
     
     "logPath": "out\\log.txt",
     
-    "ohosSdkPath": "",
-    "kitSdkPath": "",
-    "systemSdkPath": "",
+    "etsSdkPath": "",
     
     "otherSdks": [
         {

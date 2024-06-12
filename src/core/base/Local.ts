@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { Stmt } from "./Stmt";
-import { Type, UnknownType } from "./Type";
-import { Value } from "./Value";
+import { Stmt } from './Stmt';
+import { Type, UnknownType } from './Type';
+import { Value } from './Value';
 
 export class Local implements Value {
     private name: string;
@@ -40,9 +40,8 @@ export class Local implements Value {
     }
 
     public setName(name: string): void {
-        this.name = name
+        this.name = name;
     }
-
 
     public getType(): Type {
         return this.type;
@@ -67,7 +66,6 @@ export class Local implements Value {
     public setDeclaringStmt(declaringStmt: Stmt) {
         this.declaringStmt = declaringStmt;
     }
-
 
     public getUses(): Value[] {
         return [];

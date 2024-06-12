@@ -74,7 +74,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-        field.setType(tsNode2Type(member.type, sourceFile, field));
+        field.setType(tsNode2Type(member.type, sourceFile, cls));
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.questionToken) {

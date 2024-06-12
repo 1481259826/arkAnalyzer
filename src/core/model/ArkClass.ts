@@ -24,6 +24,7 @@ import Logger from "../../utils/logger";
 import { FileSignature, NamespaceSignature } from "./ArkSignature";
 import { Local } from "../base/Local";
 import { Decorator } from "../base/Decorator";
+import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from "../common/EtsConst";
 
 const logger = Logger.getLogger();
 
@@ -324,16 +325,19 @@ export class ArkClass {
     }
 
     public hasEntryDecorator(): boolean {
-        return this.hasDecorator('Entry');
+        return this.hasDecorator(ENTRY_DECORATOR);
     }
 
     public hasComponentDecorator(): boolean {
-        return this.hasDecorator('Component');
+        return this.hasDecorator(COMPONENT_DECORATOR);
     }
 
-    private hasDecorator(kind: string): boolean {
+    private hasDecorator(kind: string | Set<string>): boolean {
         let decorators = this.getDecorators();
         return decorators.filter((value) => {
+            if (kind instanceof Set) {
+                return kind.has(value.getKind());
+            }
             return value.getKind() == kind;
         }).length != 0;
     }

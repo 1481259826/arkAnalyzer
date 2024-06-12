@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-import {TypeInference} from "../common/TypeInference";
-import {BasicBlock} from "../graph/BasicBlock";
-import {ArkClass} from "../model/ArkClass";
-import {MethodSignature} from "../model/ArkSignature";
-import {Local} from "./Local";
-import {ArrayType, BooleanType, ClassType, NumberType, Type} from "./Type";
-import {Value} from "./Value";
+import { TypeInference } from '../common/TypeInference';
+import { BasicBlock } from '../graph/BasicBlock';
+import { ArkClass } from '../model/ArkClass';
+import { MethodSignature } from '../model/ArkSignature';
+import { Local } from './Local';
+import { ArrayType, BooleanType, ClassType, NumberType, Type } from './Type';
+import { Value } from './Value';
+import { AbstractFieldRef } from './Ref';
 
 export abstract class AbstractExpr implements Value {
     abstract getUses(): Value[];
@@ -141,7 +142,6 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
     }
 }
 
-
 export class ArkNewExpr extends AbstractExpr {
     private classType: ClassType;
 
@@ -206,6 +206,39 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 }
 
+export class ArkDeleteExpr extends AbstractExpr {
+    private field: AbstractFieldRef;
+
+    constructor(field: AbstractFieldRef) {
+        super();
+        this.field = field;
+    }
+
+    public getField(): AbstractFieldRef {
+        return this.field;
+    }
+
+    public setField(newField: AbstractFieldRef): void {
+        this.field = newField;
+    }
+
+    public getType(): Type {
+        return BooleanType.getInstance();
+    }
+
+    public getUses(): Value[] {
+        const uses: Value[] = [];
+        uses.push(this.field);
+        uses.push(...this.field.getUses());
+        return uses;
+    }
+
+    public toString(): string {
+        const str = 'delete ' + this.field;
+        return str;
+    }
+
+}
 
 // 二元运算表达式
 export class ArkBinopExpr extends AbstractExpr {
@@ -295,7 +328,6 @@ export class ArkTypeOfExpr extends AbstractExpr {
         return 'typeof ' + this.op;
     }
 }
-
 
 export class ArkInstanceOfExpr extends AbstractExpr {
     private op: Value;
@@ -478,7 +510,6 @@ export class ArkUnopExpr extends AbstractExpr {
     public getOperator(): string {
         return this.operator;
     }
-
 
     public toString(): string {
         return this.operator + this.op;

@@ -25,6 +25,7 @@ import { ArkFile } from "./ArkFile";
 import { MethodSignature, MethodSubSignature } from "./ArkSignature";
 import { Decorator } from "../base/Decorator";
 import { MethodParameter } from "./builder/ArkMethodBuilder";
+import { BodyBuilder } from "../common/BodyBuilder";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -48,6 +49,8 @@ export class ArkMethod {
 
     private body: ArkBody;
     private viewTree: ViewTree;
+
+    private bodyBuilder?: BodyBuilder;
 
     constructor() {
     }
@@ -261,5 +264,23 @@ export class ArkMethod {
 
     public hasViewTree(): boolean {
         return this.viewTree != undefined;
+    }
+
+    public setBodyBuilder(bodyBuilder: BodyBuilder) {
+        this.bodyBuilder = bodyBuilder;
+        if (this.declaringArkFile.getScene().buildClassDone()) {
+            this.buildBody();
+        }
+    }
+
+    public buildBody() {
+        if (this.bodyBuilder) {
+            this.setBody(this.bodyBuilder.build());
+            this.getCfg().setDeclaringMethod(this);
+            if (this.getName() == 'constructor' && this.getDeclaringArkClass()) {
+                this.getCfg().constructorAddInit(this);
+            }
+            this.bodyBuilder = undefined;
+        }
     }
 }

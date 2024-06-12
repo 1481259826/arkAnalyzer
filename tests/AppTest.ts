@@ -28,8 +28,8 @@ config.buildFromJson("./tests/AppTestConfig.json");
 
 function runScene4Json(config: SceneConfig) {
     let projectScene: Scene = new Scene(config);
-    projectScene.buildModuleScene('entry', 'C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
-    //projectScene.buildSceneFromProject();
+    //projectScene.buildModuleScene('entry', 'C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
+    projectScene.buildSceneFromProject();
     projectScene.collectProjectImportInfos();
     //projectScene.inferTypes();
     debugger;

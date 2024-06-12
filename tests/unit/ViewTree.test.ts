@@ -13,123 +13,166 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../../src/Config";
-import { assert, describe, it, expect } from "vitest";
-import { Scene } from "../../src/Scene";
-import path from "path";
-import { Decorator } from "../../src/core/base/Decorator";
-import { ArkField } from "../../src/core/model/ArkField";
+import { SceneConfig } from '../../src/Config';
+import { assert, describe, it, expect } from 'vitest';
+import { Scene } from '../../src/Scene';
+import path from 'path';
+import { Decorator } from '../../src/core/base/Decorator';
+import { ArkField } from '../../src/core/model/ArkField';
+import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
+import { ViewTreeNode } from '../../src/core/graph/ViewTree';
+import { ForEachSort_Expect_ViewTree, ForEachTest1_Expect_ViewTree, ForEachTest2_Expect_ViewTree, ForEachTest3_Expect_ViewTree } from '../resources/viewtree/control-foreach/ExpectView';
+import { IfElseTest1_Expect_ViewTree, IfElseTest2_Expect_ViewTree, IfElseTest3_Expect_ViewTree } from '../resources/viewtree/control-ifelse/ExpectView';
+import { LazyForEachTest_Expect_ViewTree } from '../resources/viewtree/control-lazyforeach/ExpectView';
+import { RepeatTest1_Expect_ViewTree, RepeatTest2_Expect_ViewTree } from '../resources/viewtree/control-repeat/ExpectView';
+import { ContentSlotTest_Expect_ViewTree } from '../resources/viewtree/control-contentslot/ExpectView';
+import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_BuilderTest_Expect_ViewTree, Case3_BuilderTest_Expect_ViewTree } from '../resources/viewtree/builder/ExpectView';
+import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from '../resources/viewtree/builderparam/ExpectView';
 
-describe("ViewTree Test", () => {
+function expectViewTree(root: ViewTreeNode, expectTree: any) {
+    expect(root.name).eq(expectTree.name);
+    expect(root.children.length).eq(expectTree.children.length);
+    if (expectTree.attributes) {
+        expect(root.stmts.size).eq(expectTree.attributes.length);
+        const set = new Set(expectTree.attributes);
+        root.stmts.forEach((value, key) => {
+            expect(set.has(key)).eq(true);
+        })
+    }
+    if (root.stateValues.size > 0) {
+        expect(root.stateValues.size).eq(expectTree.stateValues.length);
+        const set = new Set(expectTree.stateValues);
+        root.stateValues.forEach((value) => {
+            expect(set.has(value.getName())).eq(true);
+        })
+    }
+    root.children.forEach((value, index) => {
+        expectViewTree(value, expectTree.children[index]);
+    })
+}
+
+function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
+    let arkFile =  scene.getFiles().find(file => file.getName() == `${clsName}.ets`);
+    let arkClass = arkFile?.getClassWithName(clsName);
+    let vt = arkClass?.getViewTree();
+    if (!vt) {
+        assert.isNotNull(vt);
+        return;
+    } 
+    expectViewTree(vt.getRoot(), expectTree);
+}
+
+function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: string, expectTree: any) {
+    let arkFile =  scene.getFiles().find(file => file.getName() == `${clsName}.ets`);
+    let ns = arkFile?.getNamespaceWithName(namespace);
+    let arkClass = ns?.getClassWithName(clsName);
+    let vt = arkClass?.getViewTree();
+    if (!vt) {
+        assert.isNotNull(vt);
+        return;
+    } 
+    expectViewTree(vt.getRoot(), expectTree);
+}
+
+describe('control-contentslot Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../../tests/resources/viewtree"));
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-contentslot'));
     let scene = new Scene(config);
     scene.inferTypes();
 
-    it('test if stateValues', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ParentComponent.ets');
-        let arkClass = arkFile?.getClassWithName('CountDownComponent');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
+    it('test contentslot', async () => {
+        testClassViewTree(scene, 'ContentSlotTest', ContentSlotTest_Expect_ViewTree);
+    })
+})
 
-        let vt = await arkClass.getViewTree();
-        let stateValues = vt.getStateValues();
-        expect(stateValues.size).eq(1);
-        expect(stateValues.get(arkClass.getFieldWithName('count') as ArkField)?.size).eq(3);
+describe('control-foreach Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-foreach'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('test foreach1', async () => {
+        testClassViewTree(scene, 'ForEachTest1', ForEachTest1_Expect_ViewTree);
     })
 
-    it('test ForEach stateValues', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ControlCenterComponent.ets');
-        let arkClass = arkFile?.getClassWithName('ControlCenterComplexToggleLayout');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        let vt = await arkClass.getViewTree();
-        let type = vt.getClassFieldType('mComplexToggleLayout');
-        expect((type as Decorator).getKind()).equals('StorageLink');
-        let stateValues = vt.getStateValues();
-        expect(stateValues.size).eq(2);
-        expect(stateValues.get(arkClass.getFieldWithName('mComplexToggleLayout') as ArkField)?.size).eq(2);
+    it('test foreach2', async () => {
+        testClassViewTree(scene, 'ForEachTest2', ForEachTest2_Expect_ViewTree);
     })
 
-    it('test class.hasEntryDecorator()', async ()=> {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ParentComponent.ets');
-        let arkClass = arkFile?.getClassWithName('ParentComponent');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        
-        // let isEntry = await arkClass.hasEntryDecorator();
-        // expect(isEntry).eq(true);
+    it('test foreach3', async () => {
+        testClassViewTree(scene, 'ForEachTest3', ForEachTest3_Expect_ViewTree);
     })
 
-    it('test __Common__', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'Common.ets');
-        let arkClass = arkFile?.getClassWithName('OutComponent');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        let vt = await arkClass.getViewTree();
-        vt.buildViewTree();
-        
-        let root = vt.getRoot();
-        expect(root.name).equals('__Common__');
-        expect(root.children[0].name).equals('ViewPU');
+    it('test foreach4', async () => {
+        testClassViewTree(scene, 'ForEachSort', ForEachSort_Expect_ViewTree);
+    })
+})
+
+describe('control-ifelse Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-ifelse'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('test ifelse1', async () => {
+        testClassViewTree(scene, 'IfElseTest1', IfElseTest1_Expect_ViewTree);
     })
 
-    it ('test ForEach', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ControlCenterComponent.ets');
-        let arkClass = arkFile?.getClassWithName('ControlCenterComplexToggleLayout');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-
-        let vt = await arkClass.getViewTree();
-        let root = vt.getRoot();
-        expect(root.name).eq('Grid');
-        expect(root.children[0].name).eq('ForEach');
-        expect(root.children[0].children[0].name).eq('GridItem');
+    it('test ifelse2', async () => {
+        testClassViewTree(scene, 'IfElseTest2', IfElseTest2_Expect_ViewTree);
     })
 
-    it('test @State', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ControlCenterComponent.ets');
-        let arkClass = arkFile?.getClassWithName('ControlCenterComponent');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        let vt = await arkClass.getViewTree();
-        vt.buildViewTree();
-         
-        let type = vt.getClassFieldType('mSimpleToggleColumnCount');
-        expect((type as Decorator).getKind()).equals('State');
+    it('test ifelse3', async () => {
+        testClassViewTree(scene, 'IfElseTest3', IfElseTest3_Expect_ViewTree);
+    })
+})
 
-        let root = vt.getRoot();
-        expect(root.name).equals('Column');
-        expect(root.children[0].children[0].children[0].children[1].children[0].children[0].children[0].name).equals('Grid');
+describe('control-lazyforeach Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-lazyforeach'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('test lazyforeach', async () => {
+        testClassViewTree(scene, 'LazyForEachTest', LazyForEachTest_Expect_ViewTree);
+    })
+})
+
+describe('control-repeat Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-repeat'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('test repeat1', async () => {
+        testClassViewTree(scene, 'RepeatTest1', RepeatTest1_Expect_ViewTree);
     })
 
-    it('test If', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'ParentComponent.ets');
-        let arkClass = arkFile?.getClassWithName('ParentComponent');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        let vt = await arkClass.getViewTree();
-        let type = vt.getClassFieldType('countDownStartValue');
+    it('test repeat2', async () => {
+        testClassViewTree(scene, 'RepeatTest2', RepeatTest2_Expect_ViewTree);
+    })
+})
 
-        expect((type as Decorator).getKind()).equals('State'); 
+describe('builder Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builder'));
+    let scene = new Scene(config);
+    scene.inferTypes();
 
-        let root = vt.getRoot();
-        expect(root.name).equals('Column');
-        expect(root.children[3].children[0].children[0].children[0].name).equals('IfBranch');
+    it('test builder', async () => {
+        testClassViewTree(scene, 'BuilderTest', BuilderTest_Expect_ViewTree);
+    })
+
+    it('test builder case1', async () => {
+        testNamespaceClassViewTree(scene, 'Case1', 'BuilderTest', Case1_BuilderTest_Expect_ViewTree);
+    })
+
+    it('test builder case2', async () => {
+        testNamespaceClassViewTree(scene, 'Case2', 'BuilderTest', Case2_BuilderTest_Expect_ViewTree);
+    })
+
+    it('test builder case3', async () => {
+        testNamespaceClassViewTree(scene, 'Case3', 'BuilderTest', Case3_BuilderTest_Expect_ViewTree);
     })
 
     it('test @Builder-function-Decorator', async () => {
@@ -147,47 +190,90 @@ describe("ViewTree Test", () => {
             expect(hasBuilder).eq(true);
         }
     })
+})
 
-    it('test @Builder', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'Builder.ets');
-        let arkClass = arkFile?.getClassWithName('Parent');
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
+describe('builderParam Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builderparam'));
+    let scene = new Scene(config);
+    scene.inferTypes();
 
-        let arkDefaultClass = arkFile?.getDefaultClass();
-        let method = arkDefaultClass?.getMethodWithName('grandsonBuilder');
-        if (!method) {
-            assert.isNotNull(method);
-            return;
-        }
-
-        let vt = await method.getViewTree();
-        expect(vt.getRoot().name).eq('Row');
-        
-        vt = await arkClass.getViewTree();
-        let root = vt.getRoot();
-        let parentBuilder = root.children[0];
-        let childBuilder = parentBuilder.children[0].children[0].children[2];
-        let grandsonBuilder = childBuilder.children[0].children[0].children[2];
-        expect(parentBuilder.name).eq('Builder');
-        expect(childBuilder.name).eq('Builder');
-        expect(grandsonBuilder.name).eq('Builder');
+    it('test builderparam', async () => {
+        testClassViewTree(scene, 'BuilderParamTest', BuilderParamTest_Expect_ViewTree);
+    })
+   
+    it('test builderparam case1', async () => {
+        testNamespaceClassViewTree(scene, 'Case1', 'BuilderParamTest', Case1_BuilderParamTest_Expect_ViewTree);
     })
 
-    it('test @BuilderParam', async () => {
-        let arkFile =  scene.getFiles().find(file => file.getName() == 'SwipeLayout.ets');
-        let arkClass = arkFile?.getClassWithName('SwipeLayout');
+    // TODO: This use case relies on the ObjectLiteral arrow function parsing
+    // it('test builderparam case2', async () => {
+    //     testNamespaceClassViewTree(scene, 'Case2', 'BuilderParamTest', Case2_BuilderParamTest_Expect_ViewTree);
+    // })
+
+    it('test builderparam case3', async () => {
+        testNamespaceClassViewTree(scene, 'Case3', 'BuilderParamTest', Case3_BuilderParamTest_Expect_ViewTree);
+    }) 
+})
+
+describe('localstorage Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/localstorage'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('test localstorage case1', async () => {
+        let arkFile =  scene.getFiles().find(file => file.getName() == 'LocalStorageTest1.ets');
+        let arkClass = arkFile?.getClassWithName('LocalStorageTest1');
+        expect(arkClass?.hasEntryDecorator()).eq(true);
+        expect(arkClass?.hasComponentDecorator()).eq(true);
+    })
+    
+})
+
+describe('normal Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/normal'));
+    let scene = new Scene(config);
+    scene.inferTypes();
+
+    it('__Common__ test', async () => {
+        testClassViewTree(scene, 'CommonTest', CommonTest_Expect_ViewTree);
+    })
+
+    it('test ControlCenterComponent', async () => {
+        testClassViewTree(scene, 'ControlCenterComponent', ControlCenterComponent_Expect_ViewTree);
+    })
+
+    it('test ParentComponent', async () => {
+        testClassViewTree(scene, 'ParentComponent', ParentComponent_Expect_ViewTree);
+    })
+    
+    it('test ForEach stateValues', async () => {
+        let arkFile =  scene.getFiles().find(file => file.getName() == 'ControlCenterComponent.ets');
+        let arkClass = arkFile?.getClassWithName('ControlCenterComplexToggleLayout');
         if (arkClass == null) {
             assert.isNotNull(arkClass);
             return;
         }
         let vt = await arkClass.getViewTree();
-        let type = vt.getClassFieldType('__SurfaceComponent');
-        expect((type as Decorator).getKind()).equals('BuilderParam');
-        let root = vt.getRoot();
-        expect(root.children[0].children[0].children[0].name).equals('BuilderParam');
-        expect(root.children[0].children[0].children[0].builderParam).equals('SurfaceComponent');
+        let type = vt.getClassFieldType('mComplexToggleLayout');
+        expect((type as Decorator).getKind()).equals('StorageLink');
+        let stateValues = vt.getStateValues();
+        expect(stateValues.size).eq(2);
+        expect(stateValues.get(arkClass.getFieldWithName('mComplexToggleLayout') as ArkField)?.size).eq(2);
+        expectViewTree(vt.getRoot(), ControlCenterComplexToggleLayout_Expect_ViewTree);
+    })
+
+    it('test class.hasEntryDecorator()', async ()=> {
+        let arkFile =  scene.getFiles().find(file => file.getName() == 'ParentComponent.ets');
+        let arkClass = arkFile?.getClassWithName('ParentComponent');
+        if (arkClass == null) {
+            assert.isNotNull(arkClass);
+            return;
+        }
+        
+        let isEntry = arkClass.hasEntryDecorator();
+        expect(isEntry).eq(true);
     })
 })

@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-import { AbstractInvokeExpr, ArkBinopExpr } from "../base/Expr";
-import { ArkArrayRef, ArkInstanceFieldRef } from "../base/Ref";
-import { Value } from "../base/Value";
-
+import { AbstractInvokeExpr, ArkBinopExpr } from '../base/Expr';
+import { ArkArrayRef, ArkInstanceFieldRef } from '../base/Ref';
+import { Value } from '../base/Value';
 
 export class IRUtils {
     static moreThanOneAddress(value: Value): boolean {
