@@ -39,13 +39,16 @@
 //     i++;
 // } while (i < 10);
 //
-// // IfStatement
-// let i = 0;
-// if (i < 10) {
-//     i += 1;
-// } else {
-//     i -= 1;
-// }
+// IfStatement
+let i = 0;
+if (i < 10) {
+    i += 1;
+    if (i < 8) {
+        i += 2;
+    }
+} else {
+    i -= 1;
+}
 //
 // // PropertyAccessExpression
 // let arr = [1, 2];

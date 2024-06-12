@@ -325,7 +325,7 @@ export class ArkIfStmt extends Stmt {
     }
 
     public toString(): string {
-        const str = 'if ' + this.conditionExpr;
+        const str = 'if ' + this.conditionExpr + ', goto other block';
         this.setText(str);
         return str;
     }

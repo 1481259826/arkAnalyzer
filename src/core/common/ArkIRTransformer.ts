@@ -67,8 +67,11 @@ import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace } f
 import { ArkClass } from '../model/ArkClass';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import {
+    COMPONENT_BUILD_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW_NODE,
+    COMPONENT_DIVIDE_FUNCTION,
+    COMPONENT_IF,
     COMPONENT_POP_FUNCTION,
     isEtsSystemComponent,
 } from './EtsConst';
@@ -87,6 +90,8 @@ export class ArkIRTransformer {
     private sourceFile: ts.SourceFile;
     private withinMethod: ArkMethod | null;
 
+    private componentIfDepth = 0;
+
     constructor(sourceFile: ts.SourceFile, withinMethod?: ArkMethod) {
         this.sourceFile = sourceFile;
         this.withinMethod = withinMethod || null;
@@ -100,6 +105,8 @@ export class ArkIRTransformer {
         const stmts: Stmt[] = [];
         if (ts.isExpressionStatement(node)) {
             return this.expressionStatementToStmts(node);
+        } else if (ts.isBlock(node)) {
+            return this.blockToStmts(node);
         } else if (ts.isSwitchStatement(node)) {
             return this.switchStatementToStmts(node);
         } else if (ts.isForStatement(node)) {
@@ -125,6 +132,14 @@ export class ArkIRTransformer {
         }
 
         logger.warn(`unsupported statement node: ${ts.SyntaxKind[node.kind]}`);
+        return stmts;
+    }
+
+    private blockToStmts(block: ts.Block): Stmt[] {
+        const stmts: Stmt[] = [];
+        for (const statement of block.statements) {
+            stmts.push(...this.tsNodeToStmts(statement));
+        }
         return stmts;
     }
 
@@ -247,13 +262,42 @@ export class ArkIRTransformer {
     }
 
     private ifStatementToStmts(ifStatement: ts.IfStatement): Stmt[] {
+        let inComponent = false;
+        if (this.withinMethod && this.withinMethod.getName() === COMPONENT_BUILD_FUNCTION) {
+            inComponent = true;
+        }
+
         const stmts: Stmt[] = [];
+
+        if (inComponent) {
+            const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
+            const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, []);
+            const {value: createValue, stmts: createStmts} = this.generateAssignStmtForValue(createInvokeExpr);
+            stmts.push(...createStmts);
+        }
         const {
             value: conditionExpr,
             stmts: conditionStmts,
         } = this.conditionToValueAndStmts(ifStatement.expression);
         stmts.push(...conditionStmts);
         stmts.push(new ArkIfStmt(conditionExpr as ArkConditionExpr));
+        if (inComponent && ifStatement.thenStatement) {
+            stmts.push(...this.tsNodeToStmts(ifStatement.thenStatement));
+        }
+        if (inComponent) {
+            const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_DIVIDE_FUNCTION);
+            const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(this.componentIfDepth)]);
+            this.componentIfDepth++;
+            stmts.push(new ArkInvokeStmt(divideInvokeExpr));
+        }
+        if (inComponent && ifStatement.elseStatement) {
+            stmts.push(...this.tsNodeToStmts(ifStatement.elseStatement));
+        }
+        if (inComponent) {
+            const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_POP_FUNCTION);
+            const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
+            stmts.push(new ArkInvokeStmt(popInvokeExpr));
+        }
         return stmts;
     }
 
@@ -913,7 +957,7 @@ export class ArkIRTransformer {
         let operatorStr = binaryExpression.operatorToken.getText(this.sourceFile);
         operatorStr = operatorStr.substring(0, operatorStr.length - 1);
         stmts.push(new ArkAssignStmt(leftValue, new ArkBinopExpr(leftValue, rightValue, operatorStr)));
-        return {value: leftValue, stmts: rightStmts};
+        return {value: leftValue, stmts: stmts};
     }
 
     private conditionToValueAndStmts(condition: ts.Expression): ValueAndStmts {
