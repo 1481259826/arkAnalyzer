@@ -13,22 +13,6 @@
  * limitations under the License.
  */
 
-export const CustomContainer_Expect_ViewTree = {
-    name: 'Column',
-    children: [
-        {
-            name: 'Text',
-            children: [],
-            stateValues: ['header']
-        },
-        {
-            name: 'BuilderParam',
-            children: [],
-            builderParam: 'closer'
-        }
-    ]
-}
-
 export const SpecificParam_Expect_ViewTree = {
     name: 'Column',
     children: [
@@ -41,32 +25,39 @@ export const SpecificParam_Expect_ViewTree = {
     ]
 }
 
+export const CustomContainer_Builder_Expect_ViewTree = {
+    name: 'Column',
+    children: [
+        {
+            name: 'Builder',
+            children: [ SpecificParam_Expect_ViewTree ]
+        }
+    ]
+}
+
+export const CustomContainer_Expect_ViewTree = {
+    name: 'Column',
+    children: [
+        {
+            name: 'Text',
+            children: [],
+            stateValues: ['header']
+        },
+        {
+            name: 'Builder',
+            children: [CustomContainer_Builder_Expect_ViewTree],
+            builderParam: 'closer'
+        }
+    ]
+}
+
 export const BuilderParamTest_Expect_ViewTree = {
     name: 'Column',
     children: [
         {
             name: 'View',
-            children: [
-                {
-                    name: 'Column',
-                    children: [
-                        {
-                            name: 'Text',
-                            children: [],
-                            stateValues: ['header']
-                        },
-                        {
-                            name: 'Column',
-                            children: [
-                                {
-                                    name: 'Builder',
-                                    children: [SpecificParam_Expect_ViewTree]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
+            children: [CustomContainer_Expect_ViewTree],
+            stateValues: ['text']
         }
     ]
 }
