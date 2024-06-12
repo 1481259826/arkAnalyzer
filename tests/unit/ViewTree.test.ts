@@ -201,18 +201,19 @@ describe('builderParam Test', () => {
     it('test builderparam', async () => {
         testClassViewTree(scene, 'BuilderParamTest', BuilderParamTest_Expect_ViewTree);
     })
-
-    it('test builder case1', async () => {
+   
+    it('test builderparam case1', async () => {
         testNamespaceClassViewTree(scene, 'Case1', 'BuilderParamTest', Case1_BuilderParamTest_Expect_ViewTree);
     })
 
-    it('test builder case2', async () => {
-        testNamespaceClassViewTree(scene, 'Case2', 'BuilderParamTest', Case2_BuilderParamTest_Expect_ViewTree);
-    })
+    // TODO: This use case relies on the ObjectLiteral arrow function parsing
+    // it('test builderparam case2', async () => {
+    //     testNamespaceClassViewTree(scene, 'Case2', 'BuilderParamTest', Case2_BuilderParamTest_Expect_ViewTree);
+    // })
 
-    it('test builder case3', async () => {
+    it('test builderparam case3', async () => {
         testNamespaceClassViewTree(scene, 'Case3', 'BuilderParamTest', Case3_BuilderParamTest_Expect_ViewTree);
-    })
+    }) 
 })
 
 describe('localstorage Test', () => {

@@ -71,7 +71,7 @@ import {
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_BUILD_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
-    COMPONENT_CUSTOMVIEW_NODE,
+    COMPONENT_CUSTOMVIEW,
     COMPONENT_IF,
     COMPONENT_POP_FUNCTION,
     isEtsSystemComponent,
@@ -429,12 +429,12 @@ export class ArkIRTransformer {
             const {value: builderMethod, stmts: _} = this.callableNodeToValueAndStmts(anonymous);
             createViewArgs.push(builderMethod);
         }
-        const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW_NODE, COMPONENT_CREATE_FUNCTION);
+        const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW, COMPONENT_CREATE_FUNCTION);
         let createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, createViewArgs);
         const {value: componentValue, stmts: componentStmts} = this.generateAssignStmtForValue(createInvokeExpr);
         stmts.push(...componentStmts);
 
-        const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW_NODE, COMPONENT_POP_FUNCTION);
+        const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW, COMPONENT_POP_FUNCTION);
         const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
         stmts.push(new ArkInvokeStmt(popInvokeExpr));
         return {value: componentValue, stmts: stmts};

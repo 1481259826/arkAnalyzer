@@ -22,15 +22,15 @@ import { ArkInstanceFieldRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import { CallableType, ClassType, Type } from '../base/Type';
 import { Value } from '../base/Value';
-import { COMPONENT_COMMON_NODE, isEtsContainerComponent, COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW_NODE, BUILDER_DECORATOR, BUILDER_PARAM_DECORATOR } from '../common/EtsConst';
+import { COMPONENT_COMMON, isEtsContainerComponent, COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW, BUILDER_DECORATOR, BUILDER_PARAM_DECORATOR, COMPONENT_BRANCH_FUNCTION, COMPONENT_IF_BRANCH, COMPONENT_IF, COMPONENT_POP_FUNCTION } from '../common/EtsConst';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import { Cfg } from './Cfg';
-
-const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set(['If', 'IfBranch', COMPONENT_COMMON_NODE]);
-const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION]);
+ 
+const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([COMPONENT_IF, COMPONENT_IF_BRANCH, COMPONENT_COMMON]);
+const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
 
 class StateValuesUtils {
     private declaringArkClass: ArkClass;
@@ -119,7 +119,7 @@ export class ViewTreeNode {
     }
 
     public static createCustomComponent(): ViewTreeNode {
-        let instance = new ViewTreeNode(COMPONENT_CUSTOMVIEW_NODE);
+        let instance = new ViewTreeNode(COMPONENT_CUSTOMVIEW);
         instance.type = ViewTreeNodeType.CustomComponent;
         return instance;
     }
@@ -477,7 +477,7 @@ export class ViewTree extends TreeNodeStack {
         }
         let hasCommon: boolean = false;
         if (!this.root) {
-            this.push(new ViewTreeNode(COMPONENT_COMMON_NODE));
+            this.push(new ViewTreeNode(COMPONENT_COMMON));
             hasCommon = true;
         }
         let node = ViewTreeNode.createCustomComponent();
@@ -625,11 +625,17 @@ function repeatCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr
     return node;
 }
 
+function ifBranchCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNode {
+    viewtree.popComponentExpect(COMPONENT_IF);
+    return viewtree.addSystemComponentNode(COMPONENT_IF_BRANCH);
+}
+
 const COMPONENT_CREATE_PARSERS: Map<string, Function> = new Map([
     ['ForEach.create', forEachCreationParser],
     ['LazyForEach.create', forEachCreationParser],
     ['Repeat.create', repeatCreationParser],
     ['View.create', viewComponentCreationParser],
+    ['If.branch', ifBranchCreationParser]
 ]);
 
 function componentCreateParse(componentName: string, methodName: string, viewTree: ViewTree, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNode | undefined {
@@ -660,10 +666,13 @@ function parseStaticInvokeExpr(viewTree: ViewTree, local2Node: Map<Local, ViewTr
     let currentNode = viewTree.top();
     if (name == currentNode?.name) {
         currentNode.addStmt(viewTree, stmt);
-        if (methodName == 'pop') {
+        if (methodName == COMPONENT_POP_FUNCTION) {
             viewTree.pop();
         }
         return currentNode;
+    } else if (name == COMPONENT_IF && methodName == COMPONENT_POP_FUNCTION) {
+        viewTree.popComponentExpect(COMPONENT_IF);
+        viewTree.pop();
     }
 }
 
