@@ -115,7 +115,8 @@ export const ParentComponent_Expect_ViewTree = {
             name: 'View',
             children: [
                 CountDownComponent_Expect_ViewTree
-            ]
+            ],
+            stateValues: ['countDownStartValue']
         }
 
     ]
