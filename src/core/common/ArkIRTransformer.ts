@@ -26,6 +26,7 @@ import {
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
+    ObjectLiteralExpr,
 } from '../base/Expr';
 import {
     AbstractFieldRef,
@@ -72,6 +73,7 @@ import {
     COMPONENT_POP_FUNCTION,
     isEtsSystemComponent,
 } from './EtsConst';
+import { tsNode2Value } from '../model/builder/builderUtils';
 
 const logger = Logger.getLogger();
 
@@ -333,11 +335,22 @@ export class ArkIRTransformer {
             return this.classExpressionToValueAndStmts(node);
         } else if (ts.isEtsComponentExpression(node)) {
             return this.etsComponentExpressionToValueAndStmts(node);
+        } else if (ts.isObjectLiteralExpression(node)) {
+            return this.ObjectLiteralExpresionToValueAndStmts(node);
         }
         // TODO: handle ts.ObjectLiteralExpression, ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
 
         logger.warn(`unsupported expression node: ${ts.SyntaxKind[node.kind]}`);
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
+    }
+
+    private ObjectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts{
+        if (!this.withinMethod) {
+            logger.error(`withMethod is null`);
+            return {value: ValueUtil.getNullConstant(), stmts: []};
+        }
+        
+        return {value: tsNode2Value(node, this.sourceFile, this.withinMethod.getDeclaringArkClass()), stmts: []};
     }
 
     private createCustomViewStmt(componentName: string, args: Value[], body: ts.Block | undefined = undefined): ValueAndStmts {
