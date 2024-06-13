@@ -67,10 +67,6 @@ class StatementBuilder {
         this.line = 0;
         this.astNode = astNode;
         this.scopeID = scopeID;
-        // this.use = new Set<Variable>;
-        // this.def = new Set<Variable>;
-        // this.defspecial = new Set<Variable>;
-        // this.addressCode3 = [];
         this.threeAddressStmts = [];
         this.block = null;
         this.ifExitPass = false;
@@ -164,18 +160,15 @@ class Scope {
 
 class Block {
     id: number;
-    stms: StatementBuilder[];
+    stmts: StatementBuilder[];
     nexts: Set<Block>;
     lasts: Set<Block>;
     walked: boolean = false;
-    loopStmt: StatementBuilder | null;
 
-    constructor(id: number, stms: StatementBuilder[], loopStmt: StatementBuilder | null) {
-        this.id = id;
-        this.stms = stms;
+    constructor(stmts: StatementBuilder[]) {
+        this.stmts = stmts;
         this.nexts = new Set();
         this.lasts = new Set();
-        this.loopStmt = loopStmt;
     }
 }
 
@@ -266,8 +259,8 @@ export class CfgBuilder {
         this.tempVariableNum = 0;
         this.current3ACstm = this.entry;
         this.blocks = [];
-        this.entryBlock = new Block(this.blocks.length, [this.entry], null);
-        this.exitBlock = new Block(-1, [this.entry], null);
+        this.entryBlock = new Block([this.entry]);
+        this.exitBlock = new Block([this.entry]);
         this.currentDeclarationKeyword = '';
         this.variables = [];
         this.importFromPath = [];
@@ -387,7 +380,6 @@ export class CfgBuilder {
                 let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder('ifStatement', '', c, scope.id);
                 judgeLastType(ifstm);
                 let ifexit: StatementBuilder = new StatementBuilder('ifExit', '', c, scope.id);
-                this.exits.push(ifexit);
                 ifstm.condition = c.expression.getText(this.sourceFile);
                 ifstm.code = 'if (' + ifstm.condition + ')';
                 if (ts.isBlock(c.thenStatement)) {
@@ -606,7 +598,6 @@ export class CfgBuilder {
             this.entry.next = ret;
             ret.lasts.add(this.entry);
             ret.next = this.exit;
-            this.exit.lasts.add(ret);
         }
     }
 
@@ -640,150 +631,68 @@ export class CfgBuilder {
         }
     }
 
-    buildNewBlock(stms: StatementBuilder[]): Block {
-        let block: Block;
-        if (this.blocks.length > 0 && this.blocks[this.blocks.length - 1].stms.length == 0) {
-            block = this.blocks[this.blocks.length - 1];
-            block.stms = stms;
-        } else {
-            block = new Block(this.blocks.length, stms, null);
+    buildBlocks(): void {
+        const stmtQueue = [this.entry];
+        const handledStmts: Set<StatementBuilder> = new Set();
+        while (stmtQueue.length > 0) {
+            let stmt = stmtQueue.pop()!;
+            if (handledStmts.has(stmt)) {
+                continue;
+            }
+            const block = new Block([]);
             this.blocks.push(block);
-        }
-        return block;
-    }
-
-    buildBlocks(stmt: StatementBuilder, block: Block) {
-        if (stmt.type.includes(' exit')) {
+            while (stmt && !handledStmts.has(stmt)) {
+            block.stmts.push(stmt);
             stmt.block = block;
-            return;
-        }
-        if (stmt.walked || stmt.type == 'exit')
-            return;
-        stmt.walked = true;
-        if (stmt.type == 'entry') {
-            let b = this.buildNewBlock([]);
-            // block.nexts.push(b);
-            if (stmt.next != null)
-                this.buildBlocks(stmt.next, b);
-            return;
-        }
-        if (stmt.type != 'loopStatement' && stmt.type != 'tryStatement' || (stmt instanceof ConditionStatementBuilder && stmt.doStatement)) {
-            block.stms.push(stmt);
-            stmt.block = block;
-        }
-        if (stmt.type == 'ifStatement' || stmt.type == 'loopStatement' || stmt.type == 'catchOrNot') {
-            let cstm = stmt as ConditionStatementBuilder;
-            if (cstm.nextT == null || cstm.nextF == null) {
-                this.errorTest(cstm);
-                return;
+                handledStmts.add(stmt);
+                if (stmt instanceof ConditionStatementBuilder) {
+                    if (!handledStmts.has(stmt.nextF!)) {
+                        stmtQueue.push(stmt.nextF!);
             }
-            if (cstm.type == 'loopStatement' && !cstm.doStatement) {
-                let loopBlock = this.buildNewBlock([cstm]);
-                block = loopBlock;
-                cstm.block = block;
-            }
-            let b1 = this.buildNewBlock([]);
-            this.buildBlocks(cstm.nextT, b1);
-            let b2 = this.buildNewBlock([]);
-            this.buildBlocks(cstm.nextF, b2);
-        } else if (stmt.type == 'switchStatement') {
-            let sstm = stmt as SwitchStatementBuilder;
-            for (const cas of sstm.cases) {
-                this.buildBlocks(cas.stmt, this.buildNewBlock([]));
-            }
-            if (sstm.default) {
-                this.buildBlocks(sstm.default, this.buildNewBlock([]));
-            }
-
-        } else if (stmt.type == 'tryStatement') {
-            let trystm = stmt as TryStatementBuilder;
-            if (!trystm.tryFirst) {
-                logger.error('try without tryFirst');
-                process.exit();
-            }
-            let tryFirstBlock = this.buildNewBlock([]);
-            trystm.block = tryFirstBlock;
-            if (block.stms.length > 0) {
-                block.nexts.add(tryFirstBlock);
-                tryFirstBlock.lasts.add(block);
-            }
-            this.buildBlocks(trystm.tryFirst, tryFirstBlock);
-
-            const lastBlocksInTry: Set<Block> = new Set();
-            if (!trystm.tryExit) {
-                process.exit();
-            }
-            for (let stmt of [...trystm.tryExit.lasts]) {
-                if (stmt.block) {
-                    lastBlocksInTry.add(stmt.block);
-                }
-            }
-
-            let finallyBlock = this.buildNewBlock([]);
-            let lastFinallyBlock: Block | null = null;
-            if (trystm.finallyStatement) {
-                this.buildBlocks(trystm.finallyStatement, finallyBlock);
-                lastFinallyBlock = this.blocks[this.blocks.length - 1];
-            } else {
-                let stmt = new StatementBuilder('tmp', '', null, -1);
-                finallyBlock.stms = [stmt];
-            }
-            for (let lastBlockInTry of lastBlocksInTry) {
-                lastBlockInTry.nexts.add(finallyBlock);
-                finallyBlock.lasts.add(lastBlockInTry);
-            }
-            if (trystm.catchStatement) {
-                let catchBlock = this.buildNewBlock([]);
-                this.buildBlocks(trystm.catchStatement, catchBlock);
-                for (let lastBlockInTry of lastBlocksInTry) {
-                    lastBlockInTry.nexts.add(catchBlock);
-                    catchBlock.lasts.add(lastBlockInTry);
-                }
-
-                catchBlock.nexts.add(finallyBlock);
-                finallyBlock.lasts.add(catchBlock);
-                this.catches.push(new Catch(trystm.catchError, tryFirstBlock.id, finallyBlock.id, catchBlock.id));
-            }
-            let nextBlock = this.buildNewBlock([]);
-            if (lastFinallyBlock) {
-                finallyBlock = lastFinallyBlock;
-            }
-            if (trystm.next)
-                this.buildBlocks(trystm.next, nextBlock);
-            let goto = new StatementBuilder('gotoStatement', 'goto label' + nextBlock.id, null, trystm.tryFirst.scopeID);
-            goto.block = finallyBlock;
-            if (trystm.finallyStatement) {
-                if (trystm.catchStatement)
-                    finallyBlock.stms.push(goto);
-            } else {
-                finallyBlock.stms = [goto];
-            }
-            finallyBlock.nexts.add(nextBlock);
-            nextBlock.lasts.add(finallyBlock);
-            if (nextBlock.stms.length == 0) {
-                const returnStatement = new StatementBuilder('returnStatement', 'return;', null, trystm.tryFirst.scopeID);
-                goto.next = returnStatement;
-                returnStatement.lasts = new Set([goto]);
-                nextBlock.stms.push(returnStatement);
-                returnStatement.block = nextBlock;
-            }
-        } else {
-            if (stmt.next) {
-                if (stmt.type == 'continueStatement' && stmt.next.block) {
-                    return;
-                }
-                if (stmt.next.type == 'loopStatement' && stmt.next.block) {
-                    block = stmt.next.block;
-                    return;
-                }
-
-                stmt.next.passTmies++;
-                if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == 'loopStatement') || stmt.next.isDoWhile) {
-                    if (stmt.next.scopeID != stmt.scopeID && !stmt.next.type.includes(' exit') && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)) {
-                        let b = this.buildNewBlock([]);
-                        block = b;
+                    if (!handledStmts.has(stmt.nextT!)) {
+                        stmtQueue.push(stmt.nextT!);
                     }
-                    this.buildBlocks(stmt.next, block);
+                    break;
+                } else if (stmt instanceof SwitchStatementBuilder) {
+                    for (const cas of stmt.cases) {
+                        stmtQueue.push(cas.stmt);
+            }
+                    if (stmt.default) {
+                        stmtQueue.push(stmt.default);
+            }
+                    break;
+                } else if (stmt instanceof TryStatementBuilder) {
+                    if (stmt.next) {
+                        stmtQueue.push(stmt.next);
+            }
+                    if (stmt.finallyStatement) {
+                        stmtQueue.push(stmt.finallyStatement);
+                    }
+                    if (stmt.catchStatement) {
+                        stmtQueue.push(stmt.catchStatement);
+                    }
+                    if (stmt.tryFirst) {
+                        stmtQueue.push(stmt.tryFirst);
+                    }
+                    break;
+            } else {
+                    if (stmt.next) {
+                        if ((stmt.type == "continueStatement" || stmt.next.type == "loopStatement") && stmt.next.block) {
+                            break;
+                }
+                        if (stmt.next.type.includes(" exit")) {
+                            break;
+                }
+                stmt.next.passTmies++;
+                        if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == "loopStatement") || stmt.next.isDoWhile) {
+                            if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)) {
+                                stmtQueue.push(stmt.next);
+                                break;
+                    }
+                            stmt = stmt.next;
+                        }
+                    }
+
                 }
             }
         }
@@ -791,8 +700,8 @@ export class CfgBuilder {
 
     buildBlocksNextLast() {
         for (let block of this.blocks) {
-            for (let originStatement of block.stms) {
-                let lastStatement = (block.stms.indexOf(originStatement) == block.stms.length - 1);
+            for (let originStatement of block.stmts) {
+                let lastStatement = (block.stmts.indexOf(originStatement) == block.stmts.length - 1);
                 if (originStatement instanceof ConditionStatementBuilder) {
                     let nextT = originStatement.nextT?.block;
                     if (nextT && (lastStatement || nextT != block) && !originStatement.nextT?.type.includes(' exit')) {
@@ -850,10 +759,10 @@ export class CfgBuilder {
             const lasts = [...this.exit.lasts];
             lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
             this.exit.lasts = new Set(lasts);
-            notReturnStmt.block?.stms.push(returnStatement);
+            notReturnStmt.block?.stmts.push(returnStatement);
             returnStatement.block = notReturnStmt.block;
         } else {
-            let returnBlock = new Block(this.blocks.length, [returnStatement], null);
+            let returnBlock = new Block([returnStatement]);
             returnStatement.block = returnBlock;
             this.blocks.push(returnBlock);
             for (const notReturnStmt of notReturnStmts) {
@@ -951,8 +860,8 @@ export class CfgBuilder {
 
     private transformToArkIR() {
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
-        if (this.blocks.length > 0 && this.blocks[0].stms.length > 0) {
-            const currStmt = this.blocks[0].stms[0];
+        if (this.blocks.length > 0 && this.blocks[0].stmts.length > 0) {
+            const currStmt = this.blocks[0].stmts[0];
             let index = 0;
             for (const methodParameter of this.declaringMethod.getParameters()) {
                 const parameterRef = new ArkParameterRef(index, methodParameter.getType());
@@ -975,7 +884,7 @@ export class CfgBuilder {
         }
 
         for (const block of this.blocks) {
-            for (const originStmt of block.stms) {
+            for (const originStmt of block.stmts) {
                 if (originStmt.astNode && originStmt.code != '') {
                     originStmt.threeAddressStmts.push(...arkIRTransformer.tsNodeToStmts(originStmt.astNode));
                 } else if (originStmt.code.startsWith('return')) {
@@ -1018,9 +927,9 @@ export class CfgBuilder {
             let block = this.blocks[bi];
             if (bi != 0)
                 text += 'label' + block.id + ':\n';
-            let length = block.stms.length;
+            let length = block.stmts.length;
             for (let i = 0; i < length; i++) {
-                let stmt = block.stms[i];
+                let stmt = block.stmts[i];
                 if (stmt.type == 'ifStatement' || stmt.type == 'loopStatement' || stmt.type == 'catchOrNot') {
                     let cstm = stmt as ConditionStatementBuilder;
                     if (cstm.nextT == null || cstm.nextF == null) {
@@ -1033,8 +942,8 @@ export class CfgBuilder {
                     }
                     stmt.code = 'if !(' + cstm.condition + ') goto label' + cstm.nextF.block.id;
                     if (i == length - 1 && bi + 1 < this.blocks.length && this.blocks[bi + 1].id != cstm.nextT.block.id) {
-                        let gotoStm = new StatementBuilder('gotoStatement', 'goto label' + cstm.nextT.block.id, null, block.stms[0].scopeID);
-                        block.stms.push(gotoStm);
+                        let gotoStm = new StatementBuilder('gotoStatement', 'goto label' + cstm.nextT.block.id, null, block.stmts[0].scopeID);
+                        block.stmts.push(gotoStm);
                         length++;
                     }
                 } else if (stmt.type == 'breakStatement' || stmt.type == 'continueStatement') {
@@ -1045,8 +954,8 @@ export class CfgBuilder {
                     stmt.code = 'goto label' + stmt.next?.block.id;
                 } else {
                     if (i == length - 1 && stmt.next?.block && (bi + 1 < this.blocks.length && this.blocks[bi + 1].id != stmt.next.block.id || bi + 1 == this.blocks.length)) {
-                        let gotoStm = new StatementBuilder('StatementBuilder', 'goto label' + stmt.next?.block.id, null, block.stms[0].scopeID);
-                        block.stms.push(gotoStm);
+                        let gotoStm = new StatementBuilder('StatementBuilder', 'goto label' + stmt.next?.block.id, null, block.stmts[0].scopeID);
+                        block.stmts.push(gotoStm);
                         length++;
                     }
                 }
@@ -1078,11 +987,11 @@ export class CfgBuilder {
         for (let block of this.blocks) {
             block.id += 1;
         }
-        this.blocks.splice(0, 0, new Block(0, [], null));
+        this.blocks.splice(0, 0, new Block([]));
     }
 
     private insertBlockbBefore(blocks: Block[], id: number) {
-        blocks.splice(id, 0, new Block(0, [], null));
+        blocks.splice(id, 0, new Block([]));
         for (let i = id; i < blocks.length; i++) {
             blocks[i].id += 1;
         }
@@ -1096,14 +1005,14 @@ export class CfgBuilder {
         let stmtBlocks: Block[] = [];
         stmtBlocks.push(...this.blocks);
         let blockId = 0;
-        if (stmtBlocks[blockId].stms[blockId].type == 'loopStatement') {
+        if (stmtBlocks[blockId].stmts[blockId].type == 'loopStatement') {
             this.insertBlockbBefore(stmtBlocks, blockId);
             blockId = 1;
         }
         blockId += 1;
         for (; blockId < stmtBlocks.length; blockId++) {
-            let currStmt = stmtBlocks[blockId].stms[0];
-            let lastStmt = stmtBlocks[blockId - 1].stms[0];
+            let currStmt = stmtBlocks[blockId].stmts[0];
+            let lastStmt = stmtBlocks[blockId - 1].stmts[0];
             if (currStmt.type == 'loopStatement' && lastStmt.type == 'loopStatement') {
                 this.insertBlockbBefore(stmtBlocks, blockId);
                 blockId++;
@@ -1115,7 +1024,7 @@ export class CfgBuilder {
         for (let blockId = 0; blockId < stmtBlocks.length; blockId++) {
             let currBlock = stmtBlocks[blockId];
             let currStmtStrs: string[] = [];
-            for (const originStmt of currBlock.stms) {
+            for (const originStmt of currBlock.stmts) {
                 if (originStmt.type == 'ifStatement') {
                     currStmtStrs.push(...ifStmtToString(originStmt));
                 } else if (originStmt.type == 'loopStatement') {
@@ -1241,7 +1150,7 @@ export class CfgBuilder {
         let blockBuilderToBlock = new Map<Block, BasicBlock>();
         for (const blockBuilder of this.blocks) {
             let block = new BasicBlock();
-            for (const stmtBuilder of blockBuilder.stms) {
+            for (const stmtBuilder of blockBuilder.stmts) {
                 if (stmtBuilder.astNode == null) {
                     continue;
                 }
@@ -1279,7 +1188,7 @@ export class CfgBuilder {
         let stmtPos = -1;
         for (const blockBuilder of this.blocks) {
             let block = new BasicBlock();
-            for (const stmtBuilder of blockBuilder.stms) {
+            for (const stmtBuilder of blockBuilder.stmts) {
                 for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
                     if (stmtPos == -1) {
                         stmtPos = stmtBuilder.line;
@@ -1410,17 +1319,12 @@ export class CfgBuilder {
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
         this.resetWalked();
-        // this.buildLast(this.entry);
         this.resetWalked();
-        this.buildBlocks(this.entry, this.entryBlock);
-        this.blocks = this.blocks.filter((b) => b.stms.length != 0);
+        this.buildBlocks();
+        this.blocks = this.blocks.filter((b) => b.stmts.length != 0);
         this.buildBlocksNextLast();
         this.addReturnBlock();
         this.resetWalked();
-        // this.generateUseDef();
-        // this.resetWalked();
-
-        // this.printBlocks();
 
         this.transformToArkIR();
     }
