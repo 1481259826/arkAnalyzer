@@ -549,6 +549,7 @@ export class ObjectLiteralExpr extends AbstractExpr {
     constructor(anonymousClass: ArkClass, type: Type = ClassType) {
         super();
         this.anonymousClass = anonymousClass;
+        this.type = type;
     }
 
     public getAnonymousClass() {

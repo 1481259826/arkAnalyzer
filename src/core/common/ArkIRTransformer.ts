@@ -26,7 +26,6 @@ import {
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
-    ObjectLiteralExpr,
 } from '../base/Expr';
 import {
     AbstractFieldRef,
@@ -280,30 +279,29 @@ export class ArkIRTransformer {
             const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, [conditionExpr]);
             const {value: createValue, stmts: createStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...createStmts);
-        }
-        if (inComponent) {
+
             const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
             const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(0)]);
             this.componentIfDepth++;
             stmts.push(new ArkInvokeStmt(divideInvokeExpr));
-        }
-        if (inComponent && ifStatement.thenStatement) {
+
             stmts.push(...this.tsNodeToStmts(ifStatement.thenStatement));
-        }
-        if (inComponent && ifStatement.elseStatement) {
-            const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
-            const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(1)]);
-            this.componentIfDepth++;
-            stmts.push(new ArkInvokeStmt(divideInvokeExpr));
 
-            stmts.push(...this.tsNodeToStmts(ifStatement.elseStatement));
-        }
+            if (ifStatement.elseStatement) {
+                const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
+                const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(1)]);
+                this.componentIfDepth++;
+                stmts.push(new ArkInvokeStmt(divideInvokeExpr));
 
-        if (inComponent) {
+                stmts.push(...this.tsNodeToStmts(ifStatement.elseStatement));
+            }
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
             stmts.push(new ArkInvokeStmt(popInvokeExpr));
+        } else {
+            stmts.push(new ArkIfStmt(conditionExpr as ArkConditionExpr));
         }
+
         return stmts;
     }
 
@@ -392,12 +390,12 @@ export class ArkIRTransformer {
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
     }
 
-    private ObjectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts{
+    private ObjectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
         if (!this.withinMethod) {
             logger.error(`withMethod is null`);
             return {value: ValueUtil.getNullConstant(), stmts: []};
         }
-        
+
         return {value: tsNode2Value(node, this.sourceFile, this.withinMethod.getDeclaringArkClass()), stmts: []};
     }
 
@@ -641,14 +639,16 @@ export class ArkIRTransformer {
         const stmts: Stmt[] = [];
         const className = newExpression.expression.getText(this.sourceFile);
         if (className === 'Array') {
+            logger.error(`newExpressionToValueAndStmts, newExpression: ${newExpression.getText(this.sourceFile)}`);
+
             let baseType: Type = AnyType.getInstance();
-            if (newExpression.typeArguments) {
+            if (newExpression.typeArguments && newExpression.typeArguments.length > 0) {
                 baseType = this.resolveTypeNode(newExpression.typeArguments[0]);
             }
 
             let arrayLength = 0;
             const argumentValues: Value[] = [];
-            if (newExpression.arguments) {
+            if (newExpression.arguments && newExpression.arguments.length > 0) {
                 arrayLength = newExpression.arguments.length;
                 for (const argument of newExpression.arguments) {
                     const {
@@ -703,6 +703,7 @@ export class ArkIRTransformer {
     }
 
     private arrayLiteralExpressionToValueAndStmts(arrayLiteralExpression: ts.ArrayLiteralExpression): ValueAndStmts {
+        logger.error(`arrayLiteralExpressionToValueAndStmts, arrayLiteralExpression: ${arrayLiteralExpression.getText(this.sourceFile)}`);
         const stmts: Stmt[] = [];
         const elementTypes: Set<Type> = new Set();
         for (const element of arrayLiteralExpression.elements) {

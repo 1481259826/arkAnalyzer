@@ -21,6 +21,8 @@ struct Foo {
         Row() {
             if (this.flag === false) {
                 Column()
+            } else {
+                Column()
             }
         }
     }
