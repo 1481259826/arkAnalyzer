@@ -642,13 +642,17 @@ export class CfgBuilder {
             const block = new Block([]);
             this.blocks.push(block);
             while (stmt && !handledStmts.has(stmt)) {
-            block.stmts.push(stmt);
-            stmt.block = block;
+                if (stmt.type == "loopStatement" && block.stmts.length > 0) {
+                    stmtQueue.push(stmt);
+                    break;
+                }
+                block.stmts.push(stmt);
+                stmt.block = block;
                 handledStmts.add(stmt);
                 if (stmt instanceof ConditionStatementBuilder) {
                     if (!handledStmts.has(stmt.nextF!)) {
                         stmtQueue.push(stmt.nextF!);
-            }
+                    }
                     if (!handledStmts.has(stmt.nextT!)) {
                         stmtQueue.push(stmt.nextT!);
                     }
@@ -656,15 +660,15 @@ export class CfgBuilder {
                 } else if (stmt instanceof SwitchStatementBuilder) {
                     for (const cas of stmt.cases) {
                         stmtQueue.push(cas.stmt);
-            }
+                    }
                     if (stmt.default) {
                         stmtQueue.push(stmt.default);
-            }
+                    }
                     break;
                 } else if (stmt instanceof TryStatementBuilder) {
                     if (stmt.next) {
                         stmtQueue.push(stmt.next);
-            }
+                    }
                     if (stmt.finallyStatement) {
                         stmtQueue.push(stmt.finallyStatement);
                     }
@@ -675,20 +679,20 @@ export class CfgBuilder {
                         stmtQueue.push(stmt.tryFirst);
                     }
                     break;
-            } else {
+                } else {
                     if (stmt.next) {
                         if ((stmt.type == "continueStatement" || stmt.next.type == "loopStatement") && stmt.next.block) {
                             break;
-                }
+                        }
                         if (stmt.next.type.includes(" exit")) {
                             break;
-                }
-                stmt.next.passTmies++;
+                        }
+                        stmt.next.passTmies++;
                         if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == "loopStatement") || stmt.next.isDoWhile) {
                             if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)) {
                                 stmtQueue.push(stmt.next);
                                 break;
-                    }
+                            }
                             stmt = stmt.next;
                         }
                     }
@@ -783,9 +787,22 @@ export class CfgBuilder {
         }
     }
 
+    addStmtBuilderPosition() {
+        for (const stmt of this.statementArray) {
+            if (stmt.astNode) {
+                const { line, character } = ts.getLineAndCharacterOfPosition(
+                    this.sourceFile,
+                    stmt.astNode.getStart(this.sourceFile)
+                );
+                stmt.line = line + 1;
+                stmt.column = character + 1;
+            }
+        }
+    }
+
     CfgBuilder2Array(stmt: StatementBuilder) {
 
-        if (!stmt.walked)
+        if (stmt.walked)
             return;
         stmt.walked = false;
         stmt.index = this.statementArray.length;
@@ -1318,8 +1335,7 @@ export class CfgBuilder {
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
-        this.resetWalked();
-        this.resetWalked();
+        this.addStmtBuilderPosition();
         this.buildBlocks();
         this.blocks = this.blocks.filter((b) => b.stmts.length != 0);
         this.buildBlocksNextLast();
