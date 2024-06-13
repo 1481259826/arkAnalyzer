@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-import { Type, UnknownType } from "./Type";
-import { Value } from "./Value";
-
+import { StringType, Type, UnknownType } from './Type';
+import { Value } from './Value';
 
 export class Constant implements Value {
     private value: string;
@@ -43,10 +42,16 @@ export class Constant implements Value {
     }
 
     public setType(newType: Type): void {
-        this.type = newType
+        this.type = newType;
     }
 
     public toString(): string {
-        return this.value;
+        let str = '';
+        if (this.type instanceof StringType) {
+            str = '\'' + this.value + '\'';
+        } else {
+            str = this.value;
+        }
+        return str;
     }
 }

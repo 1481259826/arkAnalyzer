@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
+import * as ts from 'ohos-typescript';
 import * as fs from 'fs';
 import path from 'path';
 import Logger from './logger';

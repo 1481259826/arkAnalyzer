@@ -1,7 +1,7 @@
 {
-    "targetProjectName": "SceneTest",
+    "targetProjectName": "mainModule",
     "targetProjectOriginDirectory": "",
-    "targetProjectDirectory": "D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/",
+    "targetProjectDirectory": "tests/resources/scene",
 
     "logPath": "out/SceneTest.log",
 

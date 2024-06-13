@@ -15,7 +15,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import ts from 'typescript';
+import ts from 'ohos-typescript';
 import { ArkFile } from '../ArkFile';
 import { ArkNamespace } from '../ArkNamespace';
 import Logger from "../../../utils/logger";
@@ -28,6 +28,7 @@ import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ExportInfo } from '../ArkExport';
+import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
 
 const logger = Logger.getLogger();
 
@@ -52,7 +53,10 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
     const sourceFile = ts.createSourceFile(
         arkFile.getName(),
         arkFile.getCode(),
-        ts.ScriptTarget.Latest
+        ts.ScriptTarget.Latest,
+        undefined,
+        undefined,
+        ETS_COMPILER_OPTIONS
     );
     genDefaultArkClass(arkFile, sourceFile);
     buildArkFile(arkFile, sourceFile);
@@ -86,7 +90,8 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
         else if (
             ts.isClassDeclaration(child) ||
             ts.isInterfaceDeclaration(child) ||
-            ts.isEnumDeclaration(child)
+            ts.isEnumDeclaration(child) ||
+            ts.isStructDeclaration(child)
             //child.kind === ts.SyntaxKind.ClassDeclaration
             //child.kind === ts.SyntaxKind.InterfaceDeclaration
             //child.kind === ts.SyntaxKind.EnumDeclaration

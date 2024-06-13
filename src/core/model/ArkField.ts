@@ -17,14 +17,16 @@ import { Decorator } from "../base/Decorator";
 import { LineColPosition } from "../base/Position";
 import { Type } from "../base/Type";
 import { Value } from "../base/Value";
+import { BUILDER_PARAM_DECORATOR } from "../common/EtsConst";
 import { ArkClass } from "./ArkClass";
 import { FieldSignature, MethodSignature } from "./ArkSignature";
 import { MethodParameter } from "./builder/ArkMethodBuilder";
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
-    'Provide', 'Consume', 'ObjectLink', 'BuilderParam',
-    'LocalStorageLink', 'LocalStorageProp'
+    'Provide', 'Consume', 'ObjectLink', 
+    'LocalStorageLink', 'LocalStorageProp', 
+    'Local', 'Param', 'Event', 'Provider', 'Consumer'
 ])
 
 export class ArkField {
@@ -43,12 +45,10 @@ export class ArkField {
 
     private fieldSignature: FieldSignature;
     private originPosition: LineColPosition;
-    private etsPosition: LineColPosition;
 
     private arkMethodSignature: MethodSignature;
 
     private initializer: Value;
-    private loadStateDecorators: boolean = false;
 
     constructor() { }
 
@@ -207,19 +207,6 @@ export class ArkField {
         return this.originPosition;
     }
 
-    public setEtsPositionInfo(position: LineColPosition) {
-        this.etsPosition = position;
-    }
-
-    public async getEtsPositionInfo(): Promise<LineColPosition> {
-        if (!this.etsPosition) {
-            let arkFile = this.declaringClass.getDeclaringArkFile();
-            const etsPosition = await arkFile.getEtsOriginalPositionFor(this.originPosition);
-            this.setEtsPositionInfo(etsPosition);
-        }
-        return this.etsPosition;
-    }
-
     public setArkMethodSignature(methodSignature: MethodSignature) {
         this.arkMethodSignature = methodSignature;
     }
@@ -234,34 +221,16 @@ export class ArkField {
         }) as Decorator[];
     }
 
-    public async getStateDecorators(): Promise<Decorator[]> {
-        await this.loadStateDecoratorFromEts();
+    public getStateDecorators(): Decorator[] {
         return Array.from(this.modifiers).filter((item) => {
             return (item instanceof Decorator) && (COMPONENT_MEMBER_DECORATORS.has(item.getKind()));
         }) as Decorator[];
     }
 
-    private async loadStateDecoratorFromEts() {
-        if (this.loadStateDecorators) {
-            return;
-        }
-
-        let position = await this.getEtsPositionInfo();
-        let content = await this.getDeclaringClass().getDeclaringArkFile().getEtsSource(position.getLineNo() + 1);
-        let regex;
-        if (this.getName().startsWith('__')) {
-            regex = new RegExp('@([\\w]*)\\(?[\\w\']*\\)?[\\s]*' +this.getName().slice(2), 'gi');
-        } else {
-            regex = new RegExp('@([\\w]*)\\(?[\\w\']*\\)?[\\s]*' +this.getName(), 'gi');
-        }
-
-
-        let match = regex.exec(content);
-        if (match) {
-            let decorator = new Decorator(match[1]);
-            decorator.setContent(match[1]);
-            this.addModifier(decorator);
-        }
-        this.loadStateDecorators = true;
+    public hasBuilderParamDecorator(): boolean {
+        let decorators = this.getDecorators();
+        return decorators.filter((value) => {
+            return value.getKind() == BUILDER_PARAM_DECORATOR;
+        }).length != 0;
     }
 }

@@ -19,7 +19,7 @@ import { ViewTree } from "../../graph/ViewTree";
 import { ArkClass } from "../ArkClass";
 import { Decorator } from "../../base/Decorator";
 import { ArkMethod } from "../ArkMethod";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import {
     buildModifiers,
     buildParameters,
@@ -56,8 +56,7 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
     const defaultMethodNode = node ? node : sourceFile;
 
     let bodyBuilder = new BodyBuilder(mtd.getSignature(), defaultMethodNode, mtd, sourceFile);
-    mtd.setBody(bodyBuilder.build());
-    mtd.getCfg().setDeclaringMethod(mtd);
+    mtd.setBodyBuilder(bodyBuilder);
 }
 
 export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile) {
@@ -83,21 +82,10 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         mtd.addParameter(parameter);
     });
 
-    //TODO: remember to test abstract method
-    let modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    if (
-        (!ts.isConstructSignatureDeclaration(methodNode)) &&
-        (!ts.isCallSignatureDeclaration(methodNode)) &&
-        (!ts.isFunctionTypeNode(methodNode))
-    ) {
-        if (methodNode.modifiers) {
-            modifiers = buildModifiers(methodNode.modifiers, sourceFile);
-        }
-    }
-    modifiers.forEach((modifier) => {
-        mtd.addModifier(modifier);
-    });
-
+    buildModifiers(methodNode, sourceFile).forEach((value) => {
+        mtd.addModifier(value);
+    })
+    
     if (methodNode.type) {
         mtd.setReturnType(buildReturnType(methodNode.type, sourceFile, mtd));
     }
@@ -111,34 +99,16 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.genSignature();
 
     let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd, sourceFile);
-    mtd.setBody(bodyBuilder.build());
-    mtd.getCfg().setDeclaringMethod(mtd);
-    if (mtd.getName() == 'constructor' && mtd.getDeclaringArkClass()) {
-        mtd.getCfg().constructorAddInit(mtd);
-    }
-    if ((mtd.getSubSignature().toString() == 'render()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'View')
-        || (mtd.getSubSignature().toString() == 'initialRender()' && !mtd.containsModifier('StaticKeyword') && declaringClass.getSuperClassName() == 'ViewPU')) {
+    mtd.setBodyBuilder(bodyBuilder);
+
+    if (mtd.hasBuilderDecorator()) {
+        mtd.setViewTree(new ViewTree(mtd));
+    } else if (declaringClass.hasComponentDecorator() &&
+                mtd.getSubSignature().toString() == 'build()' &&
+                !mtd.containsModifier('StaticKeyword')) {
         declaringClass.setViewTree(new ViewTree(mtd));
     }
 }
-
-// export function buildNormalArkMethodFromMethodInfo(methodInfo: MethodInfo, mtd: ArkMethod) {
-//     mtd.setName(methodInfo.name);
-
-//     methodInfo.modifiers.forEach((modifier) => {
-//         mtd.addModifier(modifier);
-//     });
-//     methodInfo.parameters.forEach(methodParameter => {
-//         mtd.addParameter(methodParameter);
-//     });
-
-//     mtd.setReturnType(methodInfo.returnType);
-
-
-//     methodInfo.typeParameters.forEach((typeParameter) => {
-//         mtd.addTypeParameter(typeParameter);
-//     });
-// }
 
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile): string {
     let name: string = '';
@@ -158,7 +128,7 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
         else {
             name = buildAnonymousMethodName(node, declaringClass);
         }
-        debugger;
+        // debugger;
     } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
         if (ts.isIdentifier(node.name)) {
             name = (node.name as ts.Identifier).text;

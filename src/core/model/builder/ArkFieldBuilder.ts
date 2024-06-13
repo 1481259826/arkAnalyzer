@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts from "typescript";
+import ts from "ohos-typescript";
 import { ArkField } from "../ArkField";
 import Logger from "../../../utils/logger";
 import { LineColPosition } from "../../base/Position";
@@ -62,14 +62,14 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
-        let modifiers = buildModifiers(member.modifiers, sourceFile);
+        let modifiers = buildModifiers(member, sourceFile);
         modifiers.forEach((modifier) => {
             field.addModifier(modifier);
         });
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-        field.setType(tsNode2Type(member.type, sourceFile, field));
+        field.setType(tsNode2Type(member.type, sourceFile, cls));
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.questionToken) {
@@ -100,7 +100,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
 
     //modifiers
     if (member.modifiers) {
-        buildModifiers(member.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(member, sourceFile).forEach((modifier) => {
             field.addModifier(modifier);
         });
     }

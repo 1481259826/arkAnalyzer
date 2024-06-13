@@ -17,7 +17,7 @@ import { ArkBody } from "../model/ArkBody";
 import { ArkMethod } from "../model/ArkMethod";
 import { MethodSignature } from "../model/ArkSignature";
 import { CfgBuilder } from "./CfgBuilder";
-import * as ts from "typescript";
+import * as ts from "ohos-typescript";
 
 export class BodyBuilder {
     private cfgBuilder: CfgBuilder;
@@ -29,6 +29,7 @@ export class BodyBuilder {
     }
 
     public build(): ArkBody {
+        this.cfgBuilder.buildCfgBuilder();
         let cfg = this.cfgBuilder.buildCfg();
         cfg.buildDefUseStmt();
         let originalCfg = this.cfgBuilder.buildOriginalCfg();

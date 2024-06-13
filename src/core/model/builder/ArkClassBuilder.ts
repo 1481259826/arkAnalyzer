@@ -19,7 +19,7 @@ import { ArkMethod, arkMethodNodeKind } from "../ArkMethod";
 import { ArkNamespace } from "../ArkNamespace";
 import Logger from "../../../utils/logger";
 import { ObjectLiteralExpr } from "../../base/Expr";
-import ts from "typescript";
+import ts from "ohos-typescript";
 import { ArkClass } from "../ArkClass";
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass } from "./ArkMethodBuilder";
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from "./builderUtils";
@@ -32,7 +32,8 @@ export type ClassLikeNode =
     ts.InterfaceDeclaration |
     ts.EnumDeclaration |
     ts.ClassExpression |
-    ts.TypeLiteralNode;
+    ts.TypeLiteralNode |
+    ts.StructDeclaration;
 
 export function buildDefaultArkClassFromArkFile(arkFile: ArkFile, defaultClass: ArkClass, astRoot: ts.SourceFile) {
     defaultClass.setDeclaringArkFile(arkFile);
@@ -131,12 +132,12 @@ export function buildNormalArkClass(clsNode: ClassLikeNode,
     }
 
     if (!ts.isTypeLiteralNode(clsNode) && clsNode.modifiers) {
-        buildModifiers(clsNode.modifiers, sourceFile).forEach((modifier) => {
+        buildModifiers(clsNode, sourceFile).forEach((modifier) => {
             cls.addModifier(modifier);
         });
     }
 
-    if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode)) {
+    if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
         cls.setOriginType("Class");
     }
     else if (ts.isInterfaceDeclaration(clsNode)) {

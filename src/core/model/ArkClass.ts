@@ -21,10 +21,10 @@ import { ArkMethod } from "./ArkMethod";
 import { ArkNamespace } from "./ArkNamespace";
 import { ClassSignature, FieldSignature, MethodSignature } from "./ArkSignature";
 import Logger from "../../utils/logger";
-import { LineColPosition } from "../base/Position";
 import { FileSignature, NamespaceSignature } from "./ArkSignature";
 import { Local } from "../base/Local";
 import { Decorator } from "../base/Decorator";
+import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from "../common/EtsConst";
 
 const logger = Logger.getLogger();
 
@@ -34,8 +34,6 @@ export class ArkClass {
     private code: string;
     private line: number = -1;
     private column: number = -1;
-
-    private etsPosition: LineColPosition;
 
     private declaringArkFile: ArkFile;
     private declaringArkNamespace: ArkNamespace;
@@ -93,19 +91,6 @@ export class ArkClass {
 
     public setColumn(column: number) {
         this.column = column;
-    }
-
-    public setEtsPositionInfo(position: LineColPosition) {
-        this.etsPosition = position;
-    }
-
-    public async getEtsPositionInfo(): Promise<LineColPosition> {
-        if (!this.etsPosition) {
-            let arkFile = this.declaringArkFile;
-            const etsPosition = await arkFile.getEtsOriginalPositionFor(new LineColPosition(this.line, this.column));
-            this.setEtsPositionInfo(etsPosition);
-        }
-        return this.etsPosition;
     }
 
     public getOriginType() {
@@ -296,9 +281,9 @@ export class ArkClass {
         this.viewTree = viewTree;
     }
 
-    public async getViewTree(): Promise<ViewTree> {
+    public getViewTree(): ViewTree {
         if (this.hasViewTree() && !this.viewTree.isInitialized()) {
-            await this.viewTree.buildViewTree();
+            this.viewTree.buildViewTree();
         }
         return this.viewTree;
     }
@@ -337,6 +322,24 @@ export class ArkClass {
         return Array.from(this.modifiers).filter((item) => {
             return item instanceof Decorator;
         }) as Decorator[];
+    }
+
+    public hasEntryDecorator(): boolean {
+        return this.hasDecorator(ENTRY_DECORATOR);
+    }
+
+    public hasComponentDecorator(): boolean {
+        return this.hasDecorator(COMPONENT_DECORATOR);
+    }
+
+    private hasDecorator(kind: string | Set<string>): boolean {
+        let decorators = this.getDecorators();
+        return decorators.filter((value) => {
+            if (kind instanceof Set) {
+                return kind.has(value.getKind());
+            }
+            return value.getKind() == kind;
+        }).length != 0;
     }
 
     public getAnonymousMethodNumber() {

@@ -14,7 +14,6 @@
  */
 
 import { Decorator } from "../base/Decorator";
-import { LineColPosition } from "../base/Position";
 import { ExportInfo } from "./ArkExport";
 import { ArkClass } from "./ArkClass";
 import { ArkFile } from "./ArkFile";
@@ -27,8 +26,6 @@ export class ArkNamespace {
     private code: string
     private line: number = -1;
     private column: number = -1;
-
-    private etsPosition: LineColPosition;
 
     private declaringArkFile: ArkFile;
     private declaringArkNamespace: ArkNamespace | null = null;
@@ -113,19 +110,6 @@ export class ArkNamespace {
 
     public setColumn(column: number) {
         this.column = column;
-    }
-
-    public setEtsPositionInfo(position: LineColPosition) {
-        this.etsPosition = position;
-    }
-
-    public async getEtsPositionInfo(): Promise<LineColPosition> {
-        if (!this.etsPosition) {
-            let arkFile = this.declaringArkFile;
-            const etsPosition = await arkFile.getEtsOriginalPositionFor(new LineColPosition(this.line, this.column));
-            this.setEtsPositionInfo(etsPosition);
-        }
-        return this.etsPosition;
     }
 
     public setDeclaringType(declaringType: string) {

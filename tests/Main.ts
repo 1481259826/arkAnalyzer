@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from "typescript";
+import * as ts from "ohos-typescript";
 import { Scene } from "../src/Scene";
 import * as utils from "../src/utils/getAllFiles";
 import { Config } from "./Config";

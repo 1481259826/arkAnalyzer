@@ -15,7 +15,6 @@
 
 import { ArkParameterRef, ArkThisRef } from "../base/Ref";
 import { ArkAssignStmt, ArkReturnStmt } from "../base/Stmt";
-import { LineColPosition } from "../base/Position";
 import { Type, UnknownType } from "../base/Type";
 import { Value } from "../base/Value";
 import { Cfg } from "../graph/Cfg";
@@ -26,6 +25,7 @@ import { ArkFile } from "./ArkFile";
 import { MethodSignature, MethodSubSignature } from "./ArkSignature";
 import { Decorator } from "../base/Decorator";
 import { MethodParameter } from "./builder/ArkMethodBuilder";
+import { BodyBuilder } from "../common/BodyBuilder";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -35,8 +35,6 @@ export class ArkMethod {
     private code: string;
     private line: number = -1;
     private column: number = -1;
-
-    private etsPosition: LineColPosition;
 
     private declaringArkFile: ArkFile;
     private declaringArkClass: ArkClass;
@@ -50,8 +48,9 @@ export class ArkMethod {
     private methodSubSignature: MethodSubSignature;
 
     private body: ArkBody;
-    private loadStateDecorators: boolean = false;
     private viewTree: ViewTree;
+
+    private bodyBuilder?: BodyBuilder;
 
     constructor() {
     }
@@ -86,19 +85,6 @@ export class ArkMethod {
 
     public setColumn(column: number) {
         this.column = column;
-    }
-
-    public setEtsPositionInfo(position: LineColPosition) {
-        this.etsPosition = position;
-    }
-
-    public async getEtsPositionInfo(): Promise<LineColPosition> {
-        if (!this.etsPosition) {
-            let arkFile = this.declaringArkFile;
-            const etsPosition = await arkFile.getEtsOriginalPositionFor(new LineColPosition(this.line, this.column));
-            this.setEtsPositionInfo(etsPosition);
-        }
-        return this.etsPosition;
     }
 
     public getDeclaringArkClass() {
@@ -252,51 +238,49 @@ export class ArkMethod {
         return resultValues
     }
 
-    public async getDecorators(): Promise<Decorator[]> {
-        await this.loadStateDecoratorFromEts();
-
+    public getDecorators(): Decorator[] {
         return Array.from(this.modifiers).filter((item) => {
             return item instanceof Decorator;
         }) as Decorator[];
     }
 
-    public async hasBuilderDecorator(): Promise<boolean> {
-        let decorators = await this.getDecorators();
+    public hasBuilderDecorator(): boolean {
+        let decorators = this.getDecorators();
         return decorators.filter((value) => {
             return value.getKind() == 'Builder';
         }).length != 0;
     }
 
-    private async loadStateDecoratorFromEts() {
-        if (this.loadStateDecorators) {
-            return;
-        }
-
-        let position = await this.getEtsPositionInfo();
-        let content = await this.getDeclaringArkFile().getEtsSource(position.getLineNo() + 1);
-        let regex = new RegExp(`@([\\w]*)[export|default|function|public|static|private|async\\s]*${this.getName()}`, 'gi');
-        let match = regex.exec(content);
-        if (match) {
-            let decorator = new Decorator(match[1]);
-            decorator.setContent(match[1]);
-            this.addModifier(decorator);
-        }
-        this.loadStateDecorators = true;
+    public setViewTree(viewTree: ViewTree) {
+        this.viewTree = viewTree;
     }
 
-    public async getViewTree(): Promise<ViewTree> {
-        if (await this.hasViewTree()) {
-            if (!this.viewTree) {
-                this.viewTree = new ViewTree(this);
-            }
-            if (!this.viewTree.isInitialized()) {
-                await this.viewTree.buildViewTree();
-            }
+    public getViewTree(): ViewTree {
+        if (this.hasViewTree() && !this.viewTree.isInitialized()) {
+            this.viewTree.buildViewTree();
         }
         return this.viewTree;
     }
 
-    public async hasViewTree(): Promise<boolean> {
-        return await this.hasBuilderDecorator();
+    public hasViewTree(): boolean {
+        return this.viewTree != undefined;
+    }
+
+    public setBodyBuilder(bodyBuilder: BodyBuilder) {
+        this.bodyBuilder = bodyBuilder;
+        if (this.declaringArkFile.getScene().buildClassDone()) {
+            this.buildBody();
+        }
+    }
+
+    public buildBody() {
+        if (this.bodyBuilder) {
+            this.setBody(this.bodyBuilder.build());
+            this.getCfg().setDeclaringMethod(this);
+            if (this.getName() == 'constructor' && this.getDeclaringArkClass()) {
+                this.getCfg().constructorAddInit(this);
+            }
+            this.bodyBuilder = undefined;
+        }
     }
 }

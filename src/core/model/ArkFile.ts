@@ -13,16 +13,12 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
-import sourceMap, { BasicSourceMapConsumer } from 'source-map';
 import { Scene } from '../../Scene';
 import { ExportInfo } from './ArkExport';
 import { ImportInfo } from './ArkImport';
 import { ArkClass } from "./ArkClass";
 import { ArkNamespace } from "./ArkNamespace";
 import { ClassSignature, FileSignature, NamespaceSignature } from "./ArkSignature";
-import { LineColPosition } from '../base/Position';
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
@@ -51,8 +47,6 @@ export class ArkFile {
     private scene: Scene;
 
     private fileSignature: FileSignature;
-
-    private sourceMap: sourceMap.SourceMapConsumer;
 
     private ohPackageJson5Path: string[] = [];
 
@@ -193,56 +187,6 @@ export class ArkFile {
             namespaces.push(...ns.getAllNamespacesUnderThisNamespace());
         });
         return namespaces;
-    }
-
-    private async initSourceMap() {
-        if (this.sourceMap) {
-            return;
-        }
-        let mapFilePath: string = this.getFilePath() + '.map';
-        if (fs.existsSync(mapFilePath)) {
-            this.sourceMap = await new sourceMap.SourceMapConsumer(fs.readFileSync(mapFilePath, 'utf-8'));
-        }
-    }
-
-    public async getEtsOriginalPositionFor(position: LineColPosition): Promise<LineColPosition> {
-        if (position.getColNo() < 0 || position.getLineNo() < 1) {
-            return new LineColPosition(0, 0);
-        }
-        await this.initSourceMap();
-        let result = this.sourceMap?.originalPositionFor({
-            line: position.getLineNo(),
-            column: position.getColNo(),
-            bias: sourceMap.SourceMapConsumer.LEAST_UPPER_BOUND
-        });
-        if (result && result.line) {
-            return new LineColPosition(result.line, result.column as number);
-        }
-        return new LineColPosition(0, 0);
-    }
-
-    public async getEtsSource(line: number): Promise<string> {
-        if (line < 1) {
-            return '';
-        }
-        await this.initSourceMap();
-        if (!this.sourceMap) {
-            return '';
-        }
-        let map = (this.sourceMap as BasicSourceMapConsumer).sources[0];
-        if (!fs.existsSync(map)) {
-            map = path.join(path.dirname(this.absoluteFilePath), map);
-        }
-
-        if (!fs.existsSync(map)) {
-            return '';
-        }
-
-        let lines = fs.readFileSync(map, 'utf8').split('\n');
-        if (lines.length < line) {
-            return '';
-        }
-        return lines.slice(0, line).join('\n');
     }
 
     public getAnonymousClassNumber() {
