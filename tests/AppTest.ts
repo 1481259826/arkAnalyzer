@@ -18,8 +18,8 @@ import { Scene } from "../src/Scene";
 
 let config: SceneConfig = new SceneConfig();
 
+// build from json
 config.buildFromJson("./tests/AppTestConfig.json");
-
 function runScene4Json(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildBasicInfo(config);
@@ -29,5 +29,13 @@ function runScene4Json(config: SceneConfig) {
     projectScene.inferTypes();
     debugger;
 }
-
 runScene4Json(config);
+
+// build from directory
+// config.buildFromProjectDir("./tests/resources/viewtree");
+// function runScene4Dir(config: SceneConfig) {
+//     let projectScene: Scene = new Scene();
+//     projectScene.buildSceneFromProjectDir(config);
+//     debugger;
+// }
+// runScene4Dir(config);

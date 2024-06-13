@@ -32,11 +32,6 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     field.setCode(member.getText(sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
-    if (cls) {
-        cls.addField(field);
-        field.setDeclaringClass(cls);
-    }
-
     // construct initializer
     if (ts.isPropertyDeclaration(member) || ts.isPropertyAssignment(member) || ts.isEnumMember(member)) {
         if (member.initializer) {
@@ -83,6 +78,11 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
 
     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
         field.setExclamationToken(true);
+    }
+
+    if (cls) {
+        cls.addField(field);
+        field.setDeclaringClass(cls);
     }
 
     field.genSignature();
