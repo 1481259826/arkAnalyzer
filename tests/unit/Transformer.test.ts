@@ -22,7 +22,8 @@ import path from "path";
 describe("StaticSingleAssignmentFormer Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, "../resources/ssa"));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     let arkClass = scene.getClasses().find(cls => cls.getName() == '_DEFAULT_ARK_CLASS');
     it('normal case', () => {
         if (arkClass == null) {

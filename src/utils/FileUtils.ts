@@ -31,7 +31,7 @@ export class FileUtils {
             return;
         }
 
-        const filesUnderThisDir = fs.readdirSync(srcPath, {withFileTypes: true});
+        const filesUnderThisDir = fs.readdirSync(srcPath, { withFileTypes: true });
         filesUnderThisDir.forEach(file => {
             const realFile = path.resolve(srcPath, file.name);
             if (file.isDirectory() && (!FileUtils.FILE_FILTER.ignores.includes(file.name))) {
@@ -41,4 +41,22 @@ export class FileUtils {
             }
         });
     }
+}
+
+export function getFileRecursively(srcDir: string, fileName: string): string {
+    let res = '';
+    if (!fs.existsSync(srcDir) || !fs.statSync(srcDir).isDirectory()) {
+        logger.warn(`Input directory ${srcDir} is not exist`);
+        return res;
+    }
+
+    const filesUnderThisDir = fs.readdirSync(srcDir, { withFileTypes: true });
+    filesUnderThisDir.forEach(file => {
+        if (file.name === fileName) {
+            return path.resolve(srcDir, file.name);
+        }
+        const tmpDir = path.resolve(srcDir, '../');
+        getFileRecursively(tmpDir, fileName);
+    });
+    return res;
 }

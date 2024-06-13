@@ -41,7 +41,11 @@ export function getAllFiles(
 
   // 遍历src，判断文件类型
   fs.readdirSync(realSrc).forEach(filename => {
-    if (filename == 'oh_modules' || filename == 'node_modules') {
+    if (
+      filename == 'oh_modules' ||
+      filename == 'node_modules' ||
+      filename == 'hviforfile.ts'
+    ) {
       return;
     }
     // 拼接文件的绝对路径

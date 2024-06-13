@@ -166,7 +166,7 @@ export class ModelUtils {
         if (importInfo.getImportProjectType() == "TargetProject") {
             file = scene.getFile(importFromSignature as FileSignature);
         } else if (importInfo.getImportProjectType() == "SDKProject") {
-            file = scene.getSdkArkFilestMap().get(importFromSignature as string) || null;
+            file = scene.getsdkArkFilesMap().get(importFromSignature as string) || null;
         }
         return file;
     }

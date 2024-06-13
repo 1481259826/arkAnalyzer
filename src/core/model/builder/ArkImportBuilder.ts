@@ -134,15 +134,26 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
     return importInfos;
 }
 
+
 export function getOriginPath(importFrom: string, arkFile: ArkFile) {
     let res = '';
-    const scene: Scene = arkFile.getScene();
-    const ohPkgFiles: string[] = arkFile.getOhPackageJson5Path();
-    for (let i = ohPkgFiles.length - 1; i >= 0; i--) {
-        let ohPkgContentMap = scene.getOhPkgContentMap();
-        let info = ohPkgContentMap.get(ohPkgFiles[i]);
-        if (info != undefined) {
-            return ohPkgMatch(info.dependencies, importFrom, ohPkgFiles[i], ohPkgContentMap);
+    const projectScene: Scene = arkFile.getScene();
+    const ohPkgContentMap = projectScene.getOhPkgContentMap();
+
+    const moduleScene = arkFile.getModuleScene();
+    if (moduleScene) {
+        const moduleOhPkgContent = moduleScene.getOhPkgContent();
+        const moduleOhPkgFilePath = moduleScene.getOhPkgFilePath();
+        if (moduleOhPkgContent != undefined) {
+            res = ohPkgMatch(moduleOhPkgContent.dependencies, importFrom, moduleOhPkgFilePath, ohPkgContentMap);
+        }
+    }
+
+    if (res === '') {
+        const projectOhPkgContent = projectScene.getOhPkgContent();
+        const projectOhPkgFilePath = projectScene.getOhPkgFilePath();
+        if (projectOhPkgContent) {
+            res = ohPkgMatch(projectOhPkgContent.dependencies, importFrom, projectOhPkgFilePath, ohPkgContentMap);
         }
     }
     return res;

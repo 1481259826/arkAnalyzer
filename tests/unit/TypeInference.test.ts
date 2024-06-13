@@ -22,7 +22,8 @@ import path from "path";
 describe("StaticSingleAssignmentFormer Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, "../resources/save"));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     let methods = scene.getMethods();
     let ti = new TypeInference(scene);
     it('inferTypeInMethod case', () => {

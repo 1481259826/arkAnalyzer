@@ -25,7 +25,8 @@ import {SourceDefaultClass} from "../../src/save/source/SourceClass";
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../resources/save"));
-let scene = new Scene(config);
+let scene = new Scene();
+scene.buildSceneFromProjectDir(config);
 let arkfile = scene.getFiles().find(file => file.getName() == 'namespaces.ts');
 
 describe("PrinterBuilder Test", () => {
@@ -101,7 +102,8 @@ describe("PrinterBuilder Test", () => {
     it('SourceDefaultClass dumpOriginalCode case', () => {
         let config: SceneConfig = new SceneConfig();
         config.buildFromProjectDir(path.join(__dirname, "../../src/core/base"));
-        let scece = new Scene(config);
+        let scene = new Scene();
+        scene.buildSceneFromProjectDir(config);
         let arkfile = scene.getFiles().find(file => file.getName() == 'Local.ts');
         if (arkfile == null) {
             assert.isNotNull(arkfile);

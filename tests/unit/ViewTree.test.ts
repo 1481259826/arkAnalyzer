@@ -77,7 +77,8 @@ function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: st
 describe('control-contentslot Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-contentslot'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test contentslot', async () => {
@@ -88,7 +89,8 @@ describe('control-contentslot Test', () => {
 describe('control-foreach Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-foreach'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test foreach1', async () => {
@@ -111,7 +113,8 @@ describe('control-foreach Test', () => {
 describe('control-ifelse Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-ifelse'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test ifelse1', async () => {
@@ -130,7 +133,8 @@ describe('control-ifelse Test', () => {
 describe('control-lazyforeach Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-lazyforeach'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test lazyforeach', async () => {
@@ -141,7 +145,8 @@ describe('control-lazyforeach Test', () => {
 describe('control-repeat Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-repeat'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test repeat1', async () => {
@@ -156,7 +161,8 @@ describe('control-repeat Test', () => {
 describe('builder Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builder'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test builder', async () => {
@@ -195,7 +201,8 @@ describe('builder Test', () => {
 describe('builderParam Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builderparam'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test builderparam', async () => {
@@ -219,7 +226,8 @@ describe('builderParam Test', () => {
 describe('localstorage Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/localstorage'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test localstorage case1', async () => {
@@ -234,7 +242,8 @@ describe('localstorage Test', () => {
 describe('normal Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/normal'));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('__Common__ test', async () => {

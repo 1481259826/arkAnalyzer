@@ -24,7 +24,8 @@ import {SourceUtils} from "../../src/save/source/SourceUtils";
 describe("SourceUtils.typeToString Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, "../resources/save"));
-    let scene = new Scene(config);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     let arkClass = scene.getClasses().find(cls => cls.getName() == 'Animal');
 
     it('TypeLiteralType case', () => {
