@@ -39,25 +39,31 @@
 //     i++;
 // } while (i < 10);
 //
-// IfStatement
-let i = 0;
-if (i < 10) {
-    i += 1;
-    if (i < 8) {
-        i += 2;
-    }
-} else {
-    i -= 1;
-}
+// // IfStatement
+// let i = 0;
+// if (i < 10) {
+//     i += 1;
+//     if (i < 8) {
+//         i += 2;
+//     }
+// } else {
+//     i -= 1;
+// }
 //
 // // PropertyAccessExpression
 // let arr = [1, 2];
 // let len = arr.length;
 //
-// // array
+// array
 // const arr1 = [1, 2];
 // const arr2 = new Array(10);
 // const arr3 = new Array(1, 2, 3);
+// const arr4 = new Array();
+
+// // arrayLiteralExpression
+// // let arr = [[1], [2]];
+// let a = [[{'year': 2022}], [{'year': 2023}]];
+
 //
 // // 四则运算
 // const a = 1 + 2 * (4 - 5);
@@ -114,8 +120,39 @@ if (i < 10) {
 // let c = /3/;
 // let d = false;
 // let e = true;
-//
-//
-//
-//
-//
+
+export class GlobalContext {
+    private constructor() {
+    }
+
+    private static instance: GlobalContext;
+    private _objects = new Map<string, Object>();
+    private _context: ESObject = null;
+
+    setContext(context: ESObject) {
+        this._context = context;
+    }
+
+    getContext() {
+        return this._context;
+    }
+
+    public static getContext(): GlobalContext {
+        if (!GlobalContext.instance) {
+            GlobalContext.instance = new GlobalContext();
+        }
+        return GlobalContext.instance;
+    }
+
+    getValue(value: string): Object {
+        let result = this._objects.get(value);
+        if (!result) {
+            throw new Error('this value undefined');
+        }
+        return result;
+    }
+
+    setValue(key: string, objectClass: Object): void {
+        this._objects.set(key, objectClass);
+    }
+}

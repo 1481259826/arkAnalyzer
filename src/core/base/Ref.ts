@@ -36,7 +36,7 @@ export class ArkArrayRef extends AbstractRef {
         this.index = index;
     }
 
-    public getBase(): Value {
+    public getBase(): Local {
         return this.base;
     }
 
@@ -185,7 +185,7 @@ export class ArkThisRef extends AbstractRef {
         this.type = type;
     }
 
-    public getType(): Type {
+    public getType(): ClassType {
         return this.type;
     }
 

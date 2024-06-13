@@ -1,7 +1,7 @@
 {
-    "targetProjectName": "mainModuleEts",
+    "targetProjectName": "OHApps",
     "targetProjectOriginDirectory": "",
-    "targetProjectDirectory": "tests/resources/ArkIRTransformer",
+    "targetProjectDirectory": "D:/Codes/resources/SE4OpenHarmony-main/Apps",
 
     "logPath": "out/ArkIRTransformerTest.log",
 

@@ -47,10 +47,10 @@ class ArkIRTransformerTest {
     public async testEtsStmt() {
         logger.error('testEtsStmt start');
 
-        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/ohos-beacon-library_
-        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/HarmonyTranslator_
         // tests/resources/ArkIRTransformer, mainModuleEts
+        // tests/resources/ArkIRTransformer, mainModule
         // D:/Codes/openharmony/applications, applications_photos
+        // D:/Codes/resources/SE4OpenHarmony-main/Apps, OHApps
         const etsConfigPath = 'tests/resources/ArkIRTransformer/ArkIRTransformerTestConfig.json';
         let sceneConfig: SceneConfig = new SceneConfig();
         await sceneConfig.buildFromJson(etsConfigPath);
