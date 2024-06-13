@@ -21,9 +21,10 @@ let config: SceneConfig = new SceneConfig();
 config.buildFromJson("./tests/AppTestConfig.json");
 
 function runScene4Json(config: SceneConfig) {
-    let projectScene: Scene = new Scene(config);
+    let projectScene: Scene = new Scene();
+    projectScene.buildBasicInfo(config);
     //projectScene.buildModuleScene('entry', 'D:\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
-    projectScene.buildSceneFromProject();
+    projectScene.buildScene4HarmonyProject();
     projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     debugger;

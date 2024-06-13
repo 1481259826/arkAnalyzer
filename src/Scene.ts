@@ -52,7 +52,7 @@ enum SceneBuildStage {
  */
 export class Scene {
     private projectName: string = '';
-    private projectFiles: Map<string, string[]> = new Map<string, string[]>();
+    private projectFiles: string[] = [];
     private realProjectDir: string;
 
     private moduleScenesMap: Map<string, ModuleScene> = new Map();
@@ -84,9 +84,17 @@ export class Scene {
     private customComponents: Set<string> = new Set();
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
-    constructor(sceneConfig: SceneConfig) {
+    constructor() {}
+
+    public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
+        this.genArkFiles();
+        this.collectProjectImportInfos();
+    }
+
+    public buildBasicInfo(sceneConfig: SceneConfig) {
         this.projectName = sceneConfig.getTargetProjectName();
         this.realProjectDir = fs.realpathSync(sceneConfig.getTargetProjectDirectory());
+        this.projectFiles = sceneConfig.getProjectFiles();
 
         const buildProfile = path.join(this.realProjectDir, './build-profile.json5');
         if (fs.existsSync(buildProfile)) {
@@ -99,7 +107,7 @@ export class Scene {
             }
         }
         else {
-            logger.error('There is no build-profile.json5 for this project.');
+            logger.warn('There is no build-profile.json5 for this project.');
         }
 
         const OhPkgFilePath = path.join(this.realProjectDir, './oh-package.json5')
@@ -130,12 +138,23 @@ export class Scene {
         });
     }
 
-    public getRealProjectDir(): string {
-        return this.realProjectDir;
-    }
+    private genArkFiles() {
+        this.projectFiles.forEach((file) => {
+            logger.info('=== parse file:', file);
+            let arkFile: ArkFile = new ArkFile();
+            arkFile.setScene(this);
+            arkFile.setProjectName(this.projectName);
+            buildArkFileFromFile(file, this.realProjectDir, arkFile);
+            this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
+        });
+        // method body parse depends custom components.
+        this.collectProjectCustomComponents();
+        this.buildStage = SceneBuildStage.CLASS_DONE;
 
-    public getProjectName(): string {
-        return this.projectName;
+        this.getMethods().forEach((value) => {
+            value.buildBody();
+        });
+        this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
@@ -159,7 +178,7 @@ export class Scene {
         this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
-    public buildSceneFromProject() {
+    public buildScene4HarmonyProject() {
         this.modulePath2NameMap.forEach((value, key) => {
             const moduleOhPkgFilePath = path.resolve(key, './oh-package.json5');
             if (fs.existsSync(moduleOhPkgFilePath)) {
@@ -216,6 +235,18 @@ export class Scene {
         let moduleScene = new ModuleScene();
         moduleScene.ModuleScenBuilder(moduleName, modulePath, this);
         this.moduleScenesMap.set(moduleName, moduleScene);
+    }
+
+    public getRealProjectDir(): string {
+        return this.realProjectDir;
+    }
+
+    public getProjectName(): string {
+        return this.projectName;
+    }
+
+    public getProjectFiles() {
+        return this.projectFiles;
     }
 
     public getFile(fileSignature: FileSignature): ArkFile | null {

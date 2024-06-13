@@ -20,6 +20,7 @@ import Logger, { LOG_LEVEL } from "./utils/logger";
 import { removeSync } from "fs-extra";
 import { transfer2UnixPath } from "./utils/pathTransfer";
 import { fetchDependenciesFromFile } from "./utils/json5parser";
+import { getAllFiles } from "./utils/getAllFiles";
 
 const logger = Logger.getLogger();
 
@@ -61,7 +62,16 @@ export class SceneConfig {
     private logPath: string = "./out/ArkAnalyzer.log";
     private logLevel: string = "ERROR";
 
+    private projectFiles: string[] = [];
+
     constructor() { }
+
+    public buildFromProjectDir(targetProjectDirectory: string) {
+        this.targetProjectDirectory = targetProjectDirectory;
+        this.targetProjectName = path.basename(targetProjectDirectory);
+        Logger.configure(this.logPath, LOG_LEVEL.ERROR);
+        this.projectFiles = getAllFiles(targetProjectDirectory, ['.ets', '.ts']);
+    }
 
     public async buildFromJson(configJsonPath: string) {
         if (fs.existsSync(configJsonPath)) {
@@ -104,6 +114,10 @@ export class SceneConfig {
 
     public getTargetProjectDirectory() {
         return this.targetProjectDirectory;
+    }
+
+    public getProjectFiles() {
+        return this.projectFiles;
     }
 
     public getSdkFiles() {
