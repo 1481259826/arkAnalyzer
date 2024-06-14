@@ -330,7 +330,9 @@ export class ArkIRTransformer {
         stmts.push(...conditionStmts);
         if (inComponent) {
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
-            const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, [conditionExpr]);
+            const {value: conditionValue, stmts: assignConditionStmts} = this.generateAssignStmtForValue(conditionExpr);
+            stmts.push(...assignConditionStmts);
+            const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, [conditionValue]);
             const {value: createValue, stmts: createStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...createStmts);
 
