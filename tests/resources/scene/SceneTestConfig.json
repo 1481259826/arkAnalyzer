@@ -1,29 +1,15 @@
 {
-    "targetProjectName": "mainModule",
-    "targetProjectOriginDirectory": "",
-    "targetProjectDirectory": "tests/resources/scene",
+    "targetProjectName": "0_show_case",
+    "targetProjectDirectory": "D:\\Codes\\resources\\SE4OpenHarmony-main\\Apps\\OHApps\\AppSampleD",
 
-    "logPath": "out/SceneTest.log",
+    "logPath": "out/ArkAnalyzer.log",
+    "logLevel": "DEBUG",
 
-    "etsSdkPath": "",
-    "nodePath": "",
-    
-    "otherSdks": [
+    "sdks": [
         {
-            "name": "",
-            "path": ""
-        },
-        {
-            "name": "sdk2",
-            "path": ""
-        },
-        {
-            "name": "",
-            "path": "/opt/yy"
-        },
-        {
-            "name": "",
-            "path": ""
+            "name": "etsSdk",
+            "path": "",
+            "moduleName": ""
         }
     ]
 }

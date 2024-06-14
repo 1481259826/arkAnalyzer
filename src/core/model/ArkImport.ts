@@ -89,6 +89,7 @@ export class ImportInfo {
 
     public setImportFromSignature() {
         let importFromSignature = new FileSignature();
+
         // project internal imports
         const pathReg1 = new RegExp("^(\\.\\.\\/\|\\.\\/)");
         if (pathReg1.test(this.importFrom)) {
@@ -104,33 +105,23 @@ export class ImportInfo {
             return;
         }
 
-        // external imports, e.g. @ohos., @kit.
-        sdkPathMap.forEach((value, key) => {
-            // e.g. @ohos., @kit.
-            if (key == 'etsSdk') {
-                const pathReg2 = new RegExp(`@ohos\\.`);
-                const pathReg3 = new RegExp(`@kit\\.`);
-                let tmpSig = '';
-                if (pathReg2.test(this.importFrom)) {
-                    tmpSig = '@etsSdk/api/' + this.importFrom + ': ';
-                } else if (pathReg3.test(this.importFrom)) {
-                    tmpSig = '@etsSdk/kits/' + this.importFrom + ': ';
-                }
-                this.setImportProjectType("SDKProject");
-                this.importFromSignature = tmpSig;
-                return;
-            } else {
-                const pathReg4 = new RegExp(`@(${key})\\/`);
-                if (pathReg4.test(this.importFrom)) {
-                    this.setImportProjectType("SDKProject");
-                    this.importFromSignature = this.importFrom + ': ';
-                    return;
-                }
-            }
-        });
+        // sdk imports, e.g. @ohos., @kit.
+        const pathReg2 = new RegExp(`@ohos\\.`);
+        const pathReg3 = new RegExp(`@kit\\.`);
+        const pathReg4 = new RegExp(`@system\\.`);
+        let tmpSig = '';
+        if (pathReg2.test(this.importFrom) || pathReg4.test(this.importFrom)) {
+            tmpSig = '@etsSdk/api/' + this.importFrom + '.d.ts';
+        } else if (pathReg3.test(this.importFrom)) {
+            tmpSig = '@etsSdk/kits/' + this.importFrom + '.d.ts';
+        }
+        if (tmpSig !== '') {
+            this.setImportProjectType("SDKProject");
+            this.importFromSignature = tmpSig;
+            return;
+        }
+
         // path map defined in oh-package.json5
-        // const ohPkgReg = new RegExp('^@');
-        //if (ohPkgReg.test(this.importFrom)) {
         let originImportPath: string = getOriginPath(this.importFrom, this.declaringArkFile);
         if (originImportPath != '') {
             this.setImportProjectType("TargetProject");
@@ -140,7 +131,29 @@ export class ImportInfo {
             this.importFromSignature = importFromSignature.toString();
             return;
         }
-        //}
+
+        // project sdk or module sdk
+        //module
+        const moduleSdkMap = this.declaringArkFile.getScene().getModuleSdkMap();
+        const moduleScene = this.declaringArkFile.getModuleScene();
+        if (moduleScene) {
+            const moduleSdks = moduleSdkMap.get(moduleScene.getModuleName());
+            moduleSdks?.forEach((moduleSdk) => {
+                if (this.importFrom === moduleSdk.name) {
+                    this.setImportProjectType("SDKProject");
+                    // TODO: get files like index.ts and gen import signature (consider ets, .d.ets, ts, .d.ts, js)
+                    //this.importFromSignature = this.importFrom + ': ';
+                }
+            });
+        }
+        //project
+        const projectSdkMap = this.declaringArkFile.getScene().getProjectSdkMap();
+        const sdk = projectSdkMap.get(this.importFrom);
+        if (sdk) {
+            this.setImportProjectType("SDKProject");
+            // TODO: get files like index.ts and gen import signature (consider ets, .d.ets, ts, .d.ts, js)
+            //this.importFromSignature = this.importFrom + ': ';
+        }
     }
 
     public getImportClauseName() {

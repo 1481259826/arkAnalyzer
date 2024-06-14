@@ -13,17 +13,5 @@
  * limitations under the License.
  */
 
-@Component
-struct Foo {
-    flag: boolean = false;
-
-    build() {
-        Row() {
-            if (this.flag === false) {
-                Column()
-            } else {
-                Column()
-            }
-        }
-    }
+export class Foo {
 }

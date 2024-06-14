@@ -17,7 +17,7 @@ import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
-import { ArkGotoStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import {
     AnnotationNamespaceType,
     AnnotationTypeQueryType,
@@ -854,25 +854,7 @@ export class CfgBuilder {
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         if (this.blocks.length > 0 && this.blocks[0].stmts.length > 0) {
             const currStmt = this.blocks[0].stmts[0];
-            let index = 0;
-            for (const methodParameter of this.declaringMethod.getParameters()) {
-                const parameterRef = new ArkParameterRef(index, methodParameter.getType());
-                const {
-                    value: parameterValue,
-                    stmts: parameterStmts,
-                } = arkIRTransformer.generateAssignStmtForValue(parameterRef);
-                currStmt.threeAddressStmts.push(...parameterStmts);
-                const parameterLocal = parameterValue as Local;
-                parameterLocal.setName(methodParameter.getName());
-                index++;
-                this.paraLocals.push(parameterLocal);
-            }
-
-            const thisRef = new ArkThisRef(this.declaringClass.getSignature().getType());
-            const {value: thisValue, stmts: thisStmts} = arkIRTransformer.generateAssignStmtForValue(thisRef);
-            currStmt.threeAddressStmts.push(...thisStmts);
-            const thisLocal = thisValue as Local;
-            this.paraLocals.push(thisLocal);
+            currStmt.threeAddressStmts.push(...arkIRTransformer.prebuildStmts());
         }
 
         for (const block of this.blocks) {

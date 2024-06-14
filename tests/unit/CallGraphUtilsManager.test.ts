@@ -50,7 +50,8 @@ describe("SceneManager Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, "../../src/core/dataflow"));
     let sceneManager = new SceneManager();
-    sceneManager.scene = new Scene(config);
+    sceneManager.scene = new Scene();
+    sceneManager.scene.buildSceneFromProjectDir(config);
     it('get Method case', () => {
         let ms = new MethodSignature();
         assert.isNull(sceneManager.getMethod(ms));

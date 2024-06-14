@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
+import { Foo } from './foo';
+
 function main() {
-    for (let i = 0; i < 10; i++) {
-        let k = 1;
-    }
-    let j = 10;
+    let foo = new Foo();
 }

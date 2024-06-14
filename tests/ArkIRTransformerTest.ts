@@ -20,10 +20,12 @@ import { ArkIRTransformer } from '../src/core/common/ArkIRTransformer';
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
+import { ArkMethod } from '../src/core/model/ArkMethod';
+import { ArkClass } from '../src/core/model/ArkClass';
 
-const logPath = 'out/ArkIRTransformerTest.log';
+const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.INFO);
+Logger.configure(logPath, LOG_LEVEL.DEBUG);
 
 class ArkIRTransformerTest {
     public async testSimpleStmt() {
@@ -32,7 +34,14 @@ class ArkIRTransformerTest {
         const tsSourceCode = fs.readFileSync(tsFilePath).toString();
         const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest);
 
-        const arkIRTransformer = new ArkIRTransformer(sourceFile);
+        const dumpClass = new ArkClass();
+        dumpClass.setName('dumpClass');
+        const dumpMethod = new ArkMethod();
+        dumpMethod.setName('dumpMethod');
+        dumpClass.addMethod(dumpMethod);
+        dumpMethod.setDeclaringArkClass(dumpClass);
+
+        const arkIRTransformer = new ArkIRTransformer(sourceFile, dumpMethod);
         for (const statement of sourceFile.statements) {
             const stmts = arkIRTransformer.tsNodeToStmts(statement);
             logger.info(`ts node text: ${statement.getText(sourceFile)}`);
@@ -44,20 +53,37 @@ class ArkIRTransformerTest {
         logger.info('testSimpleStmt end\n');
     }
 
-    public async testEtsStmt() {
-        logger.error('testEtsStmt start');
+    public testStmtsOfSimpleProject() {
+        logger.error('testStmtsOfSimpleProject start');
 
-        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/ohos-beacon-library_
-        // D:/Codes/resources/SE4OpenHarmony-main/Apps/ArkTS2TSRes/HarmonyTranslator_
-        // tests/resources/ArkIRTransformer, mainModuleEts
-        // D:/Codes/openharmony/applications, applications_photos
-        const etsConfigPath = 'tests/resources/ArkIRTransformer/ArkIRTransformerTestConfig.json';
-        let sceneConfig: SceneConfig = new SceneConfig();
-        await sceneConfig.buildFromJson(etsConfigPath);
+        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
+        const projectDir = 'tests/resources/ArkIRTransformer/mainModule';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromProjectDir(projectDir);
 
-        const scene = new Scene(sceneConfig);
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
         this.printScene(scene);
-        logger.error('testEtsStmt end');
+        logger.error('testStmtsOfSimpleProject end\n');
+    }
+
+    public testStmtsOfEtsProject() {
+        logger.error('testStmtsOfEtsProject start');
+
+        // build config
+        const configPath = 'tests/resources/ArkIRTransformer/ArkIRTransformerTestConfig.json';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromJson(configPath);
+
+        // build scene
+        const scene = new Scene();
+        scene.buildBasicInfo(sceneConfig);
+        scene.buildScene4HarmonyProject();
+        scene.collectProjectImportInfos();
+
+        this.printScene(scene);
+
+        logger.error('testStmtsOfEtsProject end\n');
     }
 
     private printStmts(body: ArkBody): void {
@@ -90,4 +116,5 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-arkIRTransformerTest.testEtsStmt();
+arkIRTransformerTest.testStmtsOfSimpleProject();
+// arkIRTransformerTest.testStmtsOfEtsProject();

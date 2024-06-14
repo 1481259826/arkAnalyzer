@@ -43,6 +43,9 @@
 // let i = 0;
 // if (i < 10) {
 //     i += 1;
+//     if (i < 8) {
+//         i += 2;
+//     }
 // } else {
 //     i -= 1;
 // }
@@ -51,10 +54,16 @@
 // let arr = [1, 2];
 // let len = arr.length;
 //
-// // array
+// array
 // const arr1 = [1, 2];
 // const arr2 = new Array(10);
 // const arr3 = new Array(1, 2, 3);
+// const arr4 = new Array();
+
+// // arrayLiteralExpression
+// // let arr = [[1], [2]];
+// let a = [[{'year': 2022}], [{'year': 2023}]];
+
 //
 // // 四则运算
 // const a = 1 + 2 * (4 - 5);
@@ -112,7 +121,25 @@
 // let d = false;
 // let e = true;
 //
+
+// // global as size
+// let sz3 = 3;
 //
-//
-//
-//
+// function main() {
+//     let sz1 = 1;
+//     let arr1 = new Array(sz1);
+//     let arr2 = new Array(2);
+//     let arr3 = new Array(sz3);
+// }
+
+// // ConditionalExpression
+// function main() {
+//     let a = 1 ? 10 : 0;
+// }
+
+// FirstTemplateToken
+function main() {
+    console.log(`search_white onClick`);
+}
+
+

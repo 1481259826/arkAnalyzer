@@ -1,28 +1,10 @@
 {
-    "targetProjectName": "SE4OpenHarmony",
-    "targetProjectOriginDirectory": "C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\ArkTS2TSRes\\AppAccountManager",
-    "targetProjectDirectory": "C:\\msys64\\home\\Yifei\\code\\SE4OpenHarmony\\Apps\\ArkTS2TSRes\\ets2ts",
+    "targetProjectName": "AppSampleD",
+    "targetProjectDirectory": "D:\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD",
 
-    "logPath": "C:\\msys64\\home\\Yifei\\log\\ArkAnalyzer.log",
+    "logPath": "D:\\log\\ArkAnalyzer.log",
+    "logLevel": "INFO",
     
-    "etsSdkPath": "C:\\msys64\\home\\Yifei\\code\\openharmony\\interface\\sdk-js\\",
-    
-    "otherSdks": [
-        {
-            "name": "ArkAnalyzer",
-            "path": ""
-        },
-        {
-            "name": "sdk2",
-            "path": ""
-        },
-        {
-            "name": "",
-            "path": "/opt/yy"
-        },
-        {
-            "name": "",
-            "path": ""
-        }
+    "sdks": [
     ]
 }

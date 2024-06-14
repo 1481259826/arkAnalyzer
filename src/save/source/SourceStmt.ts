@@ -14,9 +14,9 @@
  */
 
 import { Constant } from "../../core/base/Constant";
-import { ArkBinopExpr, ArkInstanceInvokeExpr, ArkLengthExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../core/base/Expr";
+import { ArkBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkLengthExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../core/base/Expr";
 import { Local } from "../../core/base/Local";
-import { ArkInstanceFieldRef, ArkParameterRef } from "../../core/base/Ref";
+import { ArkInstanceFieldRef, ArkParameterRef, ArkThisRef } from "../../core/base/Ref";
 import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
 import { Value } from "../../core/base/Value";
 import { ArkMethod } from "../../core/model/ArkMethod";
@@ -56,23 +56,47 @@ abstract class SourceStmt extends Stmt {
     }
 
     protected staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr) {
+        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
         let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v)=>{args.push(v.toString())});
+        if (className && className.length > 0 && className != '_DEFAULT_ARK_CLASS') {
+            return `${className}.${methodName}(${args.join(',')})`;
+        }
         return `${methodName}(${args.join(',')})`;
     }
 
     protected transferValueToString(value: Value): string {
+        if (value instanceof Constant) {
+            if (value.getType() == 'string' && !value.getValue().startsWith('\'')) {
+                return `'${value.getValue()}'`;
+            } else {
+                return value.getValue();
+            }
+        }
+
         if (value instanceof ArkInstanceFieldRef) {
-            if (value.getBase() instanceof Constant) {
-                return `${(value.getBase() as unknown as Constant).getValue()}.${value.getFieldName()}`;
-            } 
+            let base = value.getBase() as any;
+            if (base instanceof Constant) {
+                return `${base.getValue()}.${value.getFieldName()}`;
+            } else if (base instanceof Local) {
+                return `${base.getName()}.${value.getFieldName()}`
+            } else if (base instanceof ArkCastExpr) {
+                let baseOp = base.getOp();
+                if (baseOp instanceof Local) {
+                    return `${baseOp.getName()}.${value.getFieldName()} as ${SourceUtils.typeToString(base.getType())}`
+                }
+                return value.toString();
+            }
             return `${value.getBase().getName()}.${value.getFieldName()}`;
         }
 
         if (value instanceof ArkBinopExpr) {
-            let binopExpr = new SourceBinopExpr(value);
-            return `${binopExpr}`;
+            let op1: Value = value.getOp1();
+            let op2: Value = value.getOp2();
+            let operator: string = value.getOperator();
+
+            return `${this.transferValueToString(op1)} ${operator} ${this.transferValueToString(op2)}`;
         }
 
         if (value instanceof ArkNewArrayExpr) {
@@ -151,6 +175,11 @@ export class SourceAssignStmt extends SourceStmt {
                 this.setText(`${this.transferValueToString(leftOp)} = new ${SourceUtils.typeToString(rightOp.getType())}();`);
             }
             return;
+        }
+
+        if (rightOp instanceof ArkThisRef) {
+            this.setText(`${this.transferValueToString(leftOp)} = this;`);
+            return;    
         }
         
         this.setText(`${this.transferValueToString(leftOp)} = ${this.transferValueToString(rightOp)};`);
@@ -363,36 +392,5 @@ export class SourceCompoundEndStmt extends Stmt {
     constructor(text: string) {
         super();
         this.setText(text);
-    }
-}
-
-class SourceBinopExpr {
-    binopExpr: ArkBinopExpr;
-    constructor(binopExpr: ArkBinopExpr) {
-        this.binopExpr = binopExpr;
-    }
-
-    public toString(): string {
-        let op1: Value = this.binopExpr.getOp1();
-        let op2: Value = this.binopExpr.getOp2();
-        let operator: string = this.binopExpr.getOperator();
-
-        return this.opToString(op1) + ' ' + operator + ' ' + this.opToString(op2);
-    }
-
-    private opToString(op: Value): string {
-        let outStr = '';
-        if (op instanceof Constant) {
-            if (op.getType() == 'string' && !op.getValue().startsWith('\'')) {
-                outStr = `'${op.getValue()}'`;
-            } else {
-                outStr = op.getValue();
-            }
-        } else if (op instanceof ArkInstanceFieldRef) {
-            outStr = op.getBase().getName() + '.' + op.getFieldName();
-        } else {
-            outStr += op;
-        }
-        return outStr;
     }
 }

@@ -17,31 +17,25 @@ import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 
 let config: SceneConfig = new SceneConfig();
-//let config: SceneConfig = new SceneConfig("./tests/AppTestConfigUnix.json");
 
-
-//config.buildFromJson("./tests/AppTestConfig.json");
-//config.buildFromJson("./tests/sample/AppTestConfig-sample.json");
-//config.buildFromJson("./tests/AppTestConfigUnix.json");
-
-//config.buildFromProjectDir("C:\\msys64\\home\\Yifei\\code\\applications_photos");
-
+// build from json
+config.buildFromJson("./tests/AppTestConfig.json");
 function runScene4Json(config: SceneConfig) {
-    let projectScene: Scene = new Scene(config);
+    let projectScene: Scene = new Scene();
+    projectScene.buildBasicInfo(config);
+    //projectScene.buildModuleScene('entry', 'D:\\code\\SE4OpenHarmony\\Apps\\OHApps\\AppSampleD\\entry');
+    projectScene.buildScene4HarmonyProject();
+    projectScene.collectProjectImportInfos();
+    projectScene.inferTypes();
     debugger;
 }
-async function runScene4Ide() {
-    let config: SceneConfig = new SceneConfig();
-    await config.buildFromIde(
-        "scene",
-        "D:/code/scene_xxx",
-        "C:/msys64/home/xxx/code/yyyy",
-        "D:/code/deveco-studio/sdk/xxx",
-        "C:/mysys64/home/xxx/code/log/xx.log",
-        "C:/mysys64/bin/node.exe"
-    );
-}
-
 runScene4Json(config);
 
-//runScene4Ide();
+// build from directory
+// config.buildFromProjectDir("./tests/resources/viewtree");
+// function runScene4Dir(config: SceneConfig) {
+//     let projectScene: Scene = new Scene();
+//     projectScene.buildSceneFromProjectDir(config);
+//     debugger;
+// }
+// runScene4Dir(config);
