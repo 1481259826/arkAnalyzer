@@ -1,29 +1,15 @@
 {
-    "targetProjectName": "OHApps",
-    "targetProjectOriginDirectory": "",
-    "targetProjectDirectory": "D:/Codes/resources/SE4OpenHarmony-main/Apps",
+    "targetProjectName": "AppSampleD",
+    "targetProjectDirectory": "D:\\Codes\\resources\\SE4OpenHarmony-main\\Apps\\OHApps\\AppSampleD",
 
-    "logPath": "out/ArkIRTransformerTest.log",
+    "logPath": "out/ArkAnalyzer.log",
+    "logLevel": "DEBUG",
 
-    "etsSdkPath": "",
-    "nodePath": "",
-    
-    "otherSdks": [
+    "sdks": [
         {
-            "name": "",
-            "path": ""
-        },
-        {
-            "name": "sdk2",
-            "path": ""
-        },
-        {
-            "name": "",
-            "path": "/opt/yy"
-        },
-        {
-            "name": "",
-            "path": ""
+            "name": "etsSdk",
+            "path": "",
+            "moduleName": ""
         }
     ]
 }
