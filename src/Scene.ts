@@ -87,6 +87,7 @@ export class Scene {
     constructor() {}
 
     public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
+        this.buildBasicInfo(sceneConfig);
         this.genArkFiles();
         this.collectProjectImportInfos();
     }
@@ -110,7 +111,7 @@ export class Scene {
             logger.warn('There is no build-profile.json5 for this project.');
         }
 
-        const OhPkgFilePath = path.join(this.realProjectDir, './oh-package.json5')
+        const OhPkgFilePath = path.join(this.realProjectDir, './oh-package.json5');
         if (fs.existsSync(OhPkgFilePath)) {
             this.ohPkgFilePath = OhPkgFilePath;
             this.ohPkgContent = fetchDependenciesFromFile(this.ohPkgFilePath);

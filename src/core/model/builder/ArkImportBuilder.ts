@@ -162,7 +162,7 @@ export function getOriginPath(importFrom: string, arkFile: ArkFile) {
 function ohPkgMatch(dependencies: unknown, importFrom: string, ohFilePath: string,
     ohPkgContentMap: Map<string, { [k: string]: unknown }>): string {
     let originPath = '';
-    if (!fs.statSync(ohFilePath).isDirectory()) {
+    if (!fs.existsSync(ohFilePath) || !fs.statSync(ohFilePath).isDirectory()) {
         ohFilePath = path.dirname(ohFilePath);
     }
     if (dependencies instanceof Object) {
