@@ -21,9 +21,9 @@ import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
 
-const logPath = 'out/ArkIRTransformerTest.log';
+const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.INFO);
+Logger.configure(logPath, LOG_LEVEL.DEBUG);
 
 class ArkIRTransformerTest {
     public async testSimpleStmt() {
@@ -44,20 +44,18 @@ class ArkIRTransformerTest {
         logger.info('testSimpleStmt end\n');
     }
 
-    public async testEtsStmt() {
+    public testEtsStmt() {
         logger.error('testEtsStmt start');
 
-        // tests/resources/ArkIRTransformer, mainModuleEts
-        // tests/resources/ArkIRTransformer, mainModule
-        // D:/Codes/openharmony/applications, applications_photos
-        // D:/Codes/resources/SE4OpenHarmony-main/Apps, OHApps
-        const etsConfigPath = 'tests/resources/ArkIRTransformer/ArkIRTransformerTestConfig.json';
-        let sceneConfig: SceneConfig = new SceneConfig();
-        await sceneConfig.buildFromJson(etsConfigPath);
+        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
+        const projectDir = 'tests/resources/ArkIRTransformer/mainModule';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromProjectDir(projectDir);
 
-        const scene = new Scene(sceneConfig);
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
         this.printScene(scene);
-        logger.error('testEtsStmt end');
+        logger.error('testEtsStmt end\n');
     }
 
     private printStmts(body: ArkBody): void {
