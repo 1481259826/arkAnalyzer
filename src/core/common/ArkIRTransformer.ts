@@ -37,7 +37,16 @@ import {
 import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkThrowStmt, Stmt } from '../base/Stmt';
+import {
+    ArkAssignStmt,
+    ArkGotoStmt,
+    ArkIfStmt,
+    ArkInvokeStmt,
+    ArkReturnStmt,
+    ArkReturnVoidStmt,
+    ArkThrowStmt,
+    Stmt,
+} from '../base/Stmt';
 import {
     AnyType,
     ArrayObjectType,
@@ -98,6 +107,7 @@ export class ArkIRTransformer {
         this.sourceFile = sourceFile;
         this.withinMethod = withinMethod;
         this.thisLocal = new Local('this', withinMethod.getDeclaringArkClass().getSignature().getType());
+        this.locals.set(this.thisLocal.getName(), this.thisLocal);
     }
 
     public getLocals(): Set<Local> {
@@ -150,9 +160,33 @@ export class ArkIRTransformer {
             return this.throwStatementToStmts(node);
         } else if (ts.isCatchClause(node)) {
             return this.catchClauseToStmts(node);
+        } else if (ts.isReturnStatement(node)) {
+            return this.returnStatementToStmts(node);
         }
 
-        logger.debug(`unsupported statement node: ${ts.SyntaxKind[node.kind]}`);
+        logger.debug(`unsupported statement node: ${ts.SyntaxKind[node.kind]}, text: ${node.getText(this.sourceFile)}`);
+        return stmts;
+    }
+
+    private returnStatementToStmts(returnStatement: ts.ReturnStatement): Stmt[] {
+        const stmts: Stmt[] = [];
+        if (returnStatement.expression) {
+            let {
+                value: exprValue,
+                stmts: exprStmts,
+            } = this.tsNodeToValueAndStmts(returnStatement.expression);
+            stmts.push(...exprStmts);
+            if (IRUtils.moreThanOneAddress(exprValue)) {
+                ({
+                    value: exprValue,
+                    stmts: exprStmts,
+                } = this.generateAssignStmtForValue(exprValue));
+                stmts.push(...exprStmts);
+            }
+            stmts.push(new ArkReturnStmt(exprValue));
+        } else {
+            stmts.push(new ArkReturnVoidStmt());
+        }
         return stmts;
     }
 
@@ -405,15 +439,40 @@ export class ArkIRTransformer {
             return this.objectLiteralExpresionToValueAndStmts(node);
         } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
             return this.thisExpressionToValueAndStmts(node as ts.ThisExpression);
+        } else if (ts.isConditionalExpression(node)) {
+            return this.conditionalExpressionToValueAndStmts(node);
         }
         // TODO: handle ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
 
-        logger.debug(`unsupported expression node: ${ts.SyntaxKind[node.kind]}`);
+        logger.debug(`unsupported expression node: ${ts.SyntaxKind[node.kind]}, text: ${node.getText(this.sourceFile)}`);
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
     }
 
     private thisExpressionToValueAndStmts(thisExpression: ts.ThisExpression): ValueAndStmts {
         return {value: this.getThisLocal(), stmts: []};
+    }
+
+    private conditionalExpressionToValueAndStmts(conditionalExpression: ts.ConditionalExpression): ValueAndStmts {
+        // TODO: separated by blocks
+        const stmts: Stmt[] = [];
+        const {
+            value: conditionValue,
+            stmts: conditionStmts,
+        } = this.conditionToValueAndStmts(conditionalExpression.condition);
+        stmts.push(...conditionStmts);
+        stmts.push(new ArkIfStmt(conditionValue as ArkConditionExpr));
+
+        const {value: whenTrueValue, stmts: whenTrueStmts} = this.tsNodeToValueAndStmts(conditionalExpression.whenTrue);
+        stmts.push(...whenTrueStmts);
+        const {value: resultValue, stmts: tempStmts} = this.generateAssignStmtForValue(whenTrueValue);
+        stmts.push(...tempStmts);
+        const {
+            value: whenFalseValue,
+            stmts: whenFalseStmts,
+        } = this.tsNodeToValueAndStmts(conditionalExpression.whenFalse);
+        stmts.push(...whenFalseStmts);
+        stmts.push(new ArkAssignStmt(resultValue, whenFalseValue));
+        return {value: resultValue, stmts: stmts};
     }
 
     private objectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
@@ -1022,7 +1081,7 @@ export class ArkIRTransformer {
         let constant: Constant | null = null;
         switch (syntaxKind) {
             case ts.SyntaxKind.NumericLiteral:
-                constant = ValueUtil.getOrCreateNumberConst(parseInt((literalNode as ts.NumericLiteral).text));
+                constant = ValueUtil.getOrCreateNumberConst(parseFloat((literalNode as ts.NumericLiteral).text));
                 break;
             case ts.SyntaxKind.BigIntLiteral:
                 constant = ValueUtil.getOrCreateNumberConst(parseInt((literalNode as ts.BigIntLiteral).text));
@@ -1032,6 +1091,9 @@ export class ArkIRTransformer {
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral:
                 constant = ValueUtil.createStringConst((literalNode as ts.RegularExpressionLiteral).text);
+                break;
+            case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+                constant = ValueUtil.createStringConst((literalNode as ts.NoSubstitutionTemplateLiteral).text);
                 break;
             case ts.SyntaxKind.NullKeyword:
                 constant = ValueUtil.getNullConstant();
@@ -1180,6 +1242,7 @@ export class ArkIRTransformer {
             ts.isNumericLiteral(node) ||
             ts.isBigIntLiteral(node) ||
             ts.isRegularExpressionLiteral(node) ||
+            ts.isNoSubstitutionTemplateLiteral(node) ||
             node.kind === ts.SyntaxKind.NullKeyword ||
             node.kind === ts.SyntaxKind.TrueKeyword ||
             node.kind === ts.SyntaxKind.FalseKeyword) {
