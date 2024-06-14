@@ -31,8 +31,8 @@ import {
     AbstractFieldRef,
     ArkArrayRef,
     ArkCaughtExceptionRef,
-    ArkInstanceFieldRef,
-    ArkStaticFieldRef,
+    ArkInstanceFieldRef, ArkParameterRef,
+    ArkStaticFieldRef, ArkThisRef,
 } from '../base/Ref';
 import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
@@ -89,17 +89,37 @@ export class ArkIRTransformer {
     private tempLocalIndex: number = 0;
     private locals: Map<string, Local> = new Map();
     private sourceFile: ts.SourceFile;
-    private withinMethod: ArkMethod | null;
+    private withinMethod: ArkMethod;
+    private thisLocal: Local;
 
     private componentIfDepth = 0;
 
-    constructor(sourceFile: ts.SourceFile, withinMethod?: ArkMethod) {
+    constructor(sourceFile: ts.SourceFile, withinMethod: ArkMethod) {
         this.sourceFile = sourceFile;
-        this.withinMethod = withinMethod || null;
+        this.withinMethod = withinMethod;
+        this.thisLocal = new Local('this', withinMethod.getDeclaringArkClass().getSignature().getType());
     }
 
     public getLocals(): Set<Local> {
         return new Set<Local>(this.locals.values());
+    }
+
+    public getThisLocal(): Local {
+        return this.thisLocal;
+    }
+
+    public prebuildStmts(): Stmt[] {
+        const stmts: Stmt[] = [];
+        let index = 0;
+        for (const methodParameter of this.withinMethod.getParameters()) {
+            const parameterRef = new ArkParameterRef(index, methodParameter.getType());
+            stmts.push(new ArkAssignStmt(this.getOrCreatLocal(methodParameter.getName(), parameterRef.getType()), parameterRef));
+            index++;
+        }
+
+        const thisRef = new ArkThisRef(this.getThisLocal().getType() as ClassType);
+        stmts.push(new ArkAssignStmt(this.getThisLocal(), thisRef));
+        return stmts;
     }
 
     public tsNodeToStmts(node: ts.Node): Stmt[] {
@@ -264,7 +284,7 @@ export class ArkIRTransformer {
 
     private ifStatementToStmts(ifStatement: ts.IfStatement): Stmt[] {
         let inComponent = false;
-        if (this.withinMethod && this.withinMethod.getName() === COMPONENT_BUILD_FUNCTION) {
+        if (this.withinMethod.getName() === COMPONENT_BUILD_FUNCTION) {
             inComponent = true;
         }
 
@@ -382,7 +402,9 @@ export class ArkIRTransformer {
         } else if (ts.isEtsComponentExpression(node)) {
             return this.etsComponentExpressionToValueAndStmts(node);
         } else if (ts.isObjectLiteralExpression(node)) {
-            return this.ObjectLiteralExpresionToValueAndStmts(node);
+            return this.objectLiteralExpresionToValueAndStmts(node);
+        } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
+            return this.thisExpressionToValueAndStmts(node as ts.ThisExpression);
         }
         // TODO: handle ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
 
@@ -390,12 +412,11 @@ export class ArkIRTransformer {
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
     }
 
-    private ObjectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
-        if (!this.withinMethod) {
-            logger.error(`withMethod is null`);
-            return {value: ValueUtil.getNullConstant(), stmts: []};
-        }
+    private thisExpressionToValueAndStmts(thisExpression: ts.ThisExpression): ValueAndStmts {
+        return {value: this.getThisLocal(), stmts: []};
+    }
 
+    private objectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
         return {value: tsNode2Value(node, this.sourceFile, this.withinMethod.getDeclaringArkClass()), stmts: []};
     }
 
@@ -474,10 +495,6 @@ export class ArkIRTransformer {
     }
 
     private classExpressionToValueAndStmts(classExpression: ts.ClassExpression): ValueAndStmts {
-        if (!this.withinMethod) {
-            logger.error(`withMethod is null`);
-            return {value: ValueUtil.getNullConstant(), stmts: []};
-        }
         const declaringArkClass = this.withinMethod.getDeclaringArkClass();
         const declaringArkNamespace = declaringArkClass.getDeclaringArkNamespace();
         const newClass = new ArkClass();
@@ -619,10 +636,6 @@ export class ArkIRTransformer {
     }
 
     private callableNodeToValueAndStmts(callableNode: ts.ArrowFunction | ts.FunctionExpression): ValueAndStmts {
-        if (!this.withinMethod) {
-            logger.error(`withMethod is null`);
-            return {value: ValueUtil.getNullConstant(), stmts: []};
-        }
         const declaringClass = this.withinMethod.getDeclaringArkClass();
         const arrowArkMethod = new ArkMethod();
         buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile);

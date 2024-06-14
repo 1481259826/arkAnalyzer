@@ -121,4 +121,10 @@
 // let d = false;
 // let e = true;
 
-const alarmInfo: AlarmInfo = ((GlobalContext.getContext().getObject('abilityWant') as Want)?.parameters?.alarmInfo) as AlarmInfo;
+class Main {
+    private i = 0;
+
+    public foo() {
+        this.i = 2;
+    }
+}
