@@ -18,15 +18,31 @@ import { Scene } from '../src/Scene';
 import { PrinterBuilder } from '../src/save/PrinterBuilder';
 import { join } from 'path';
 
-let config: SceneConfig = new SceneConfig();
-config.buildFromProjectDir(join(__dirname, 'resources', 'viewtree'));
+function testAppProjectSave() {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromJson(join(__dirname, './tests/AppTestConfig.json'));
+    let scene: Scene = new Scene();
+    scene.buildBasicInfo(config);
+    scene.buildScene4HarmonyProject();
+    scene.collectProjectImportInfos();
+    scene.inferTypes();
 
-async function run(config: SceneConfig) {
-    let scene: Scene = new Scene(config);
     let printer: PrinterBuilder = new PrinterBuilder();
     for (let f of scene.getFiles()) {
         //printer.dumpToDot(f);
         printer.dumpToTs(f);
     }
 }
-run(config);
+
+function testSimpleSave() {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(join(__dirname, 'resources', 'viewtree'));
+    let scene: Scene = new Scene();
+    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'output'));
+    for (let f of scene.getFiles()) {
+        //printer.dumpToDot(f);
+        printer.dumpToTs(f);
+    }
+}
+
+testSimpleSave();
