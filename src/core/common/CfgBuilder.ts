@@ -297,39 +297,6 @@ export class CfgBuilder {
 
         }
 
-        function checkBlock(node: ts.Node, sourceFile: ts.SourceFile): ts.Node | null {
-            if (ts.SyntaxKind[node.kind] == 'Block')
-                return node;
-            else {
-                let ret: ts.Node | null = null;
-                for (let child of node.getChildren(sourceFile)) {
-                    ret = ret || checkBlock(child, sourceFile);
-                }
-                return ret;
-            }
-        }
-
-        function getAnonymous(node: ts.Node, sourceFile: ts.SourceFile): ts.Node | null {
-            const stack: ts.Node[] = [];
-            stack.push(node);
-            while (stack.length > 0) {
-                const n = stack.pop();
-                if (!n)
-                    return null;
-                if (ts.SyntaxKind[n?.kind] == 'FunctionExpression' || ts.SyntaxKind[n?.kind] == 'ArrowFunction') {
-                    return n;
-                }
-                if (n.getChildren(sourceFile)) {
-                    for (let i = n.getChildren(sourceFile).length - 1; i >= 0; i--) {
-                        stack.push(n.getChildren(sourceFile)[i]);
-                    }
-                }
-            }
-            return null;
-        }
-
-        // logger.info(node.getText(this.sourceFile))
-
         this.scopeLevel++;
         let scope = new Scope(this.scopes.length, new Set(), this.scopeLevel);
         for (let i = this.scopes.length - 1; i >= 0; i--) {
@@ -415,9 +382,9 @@ export class CfgBuilder {
                 loopstm.condition = c.expression.getText(this.sourceFile);
                 loopstm.code = 'if (' + loopstm.condition + ')';
                 if (ts.isBlock(c.statement)) {
-                    this.walkAST(loopstm, loopExit, [...c.statement.statements]);
+                    this.walkAST(loopstm, loopstm, [...c.statement.statements]);
                 } else {
-                    this.walkAST(loopstm, loopExit, [c.statement]);
+                    this.walkAST(loopstm, loopstm, [c.statement]);
                 }
                 if (!loopstm.nextF) {
                     loopstm.nextF = loopExit;
@@ -611,7 +578,7 @@ export class CfgBuilder {
                         lasts[lasts.indexOf(exit)] = last;
                         exit.next!.lasts = new Set(lasts);
                     } else if (last.nextF == exit) {
-                        last.nextF == exit;
+                        last.nextF = exit.next;
                         const lasts = [...exit.next!.lasts];
                         lasts[lasts.indexOf(exit)] = last;
                         exit.next!.lasts = new Set(lasts);
@@ -626,6 +593,11 @@ export class CfgBuilder {
                             exit.next!.lasts = new Set(lasts);
                         }
                     }
+                } else {
+                    last.next = exit.next;
+                    const lasts = [...exit.next!.lasts];
+                    lasts[lasts.indexOf(exit)] = last;
+                    exit.next!.lasts = new Set(lasts);
                 }
             }
         }
@@ -636,6 +608,9 @@ export class CfgBuilder {
         const handledStmts: Set<StatementBuilder> = new Set();
         while (stmtQueue.length > 0) {
             let stmt = stmtQueue.pop()!;
+            if (stmt.type.includes("exit")) {
+                continue;
+            }
             if (handledStmts.has(stmt)) {
                 continue;
             }
@@ -684,7 +659,7 @@ export class CfgBuilder {
                         if ((stmt.type == "continueStatement" || stmt.next.type == "loopStatement") && stmt.next.block) {
                             break;
                         }
-                        if (stmt.next.type.includes(" exit")) {
+                        if (stmt.next.type.includes("exit")) {
                             break;
                         }
                         stmt.next.passTmies++;
