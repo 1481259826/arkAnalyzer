@@ -132,7 +132,7 @@ export class ArkIRTransformer {
             return this.catchClauseToStmts(node);
         }
 
-        logger.warn(`unsupported statement node: ${ts.SyntaxKind[node.kind]}`);
+        logger.debug(`unsupported statement node: ${ts.SyntaxKind[node.kind]}`);
         return stmts;
     }
 
@@ -384,9 +384,9 @@ export class ArkIRTransformer {
         } else if (ts.isObjectLiteralExpression(node)) {
             return this.ObjectLiteralExpresionToValueAndStmts(node);
         }
-        // TODO: handle ts.ObjectLiteralExpression, ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
+        // TODO: handle ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
 
-        logger.warn(`unsupported expression node: ${ts.SyntaxKind[node.kind]}`);
+        logger.debug(`unsupported expression node: ${ts.SyntaxKind[node.kind]}`);
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
     }
 
@@ -639,8 +639,6 @@ export class ArkIRTransformer {
         const stmts: Stmt[] = [];
         const className = newExpression.expression.getText(this.sourceFile);
         if (className === 'Array') {
-            logger.error(`newExpressionToValueAndStmts, newExpression: ${newExpression.getText(this.sourceFile)}`);
-
             let baseType: Type = AnyType.getInstance();
             if (newExpression.typeArguments && newExpression.typeArguments.length > 0) {
                 baseType = this.resolveTypeNode(newExpression.typeArguments[0]);
@@ -703,7 +701,6 @@ export class ArkIRTransformer {
     }
 
     private arrayLiteralExpressionToValueAndStmts(arrayLiteralExpression: ts.ArrayLiteralExpression): ValueAndStmts {
-        logger.error(`arrayLiteralExpressionToValueAndStmts, arrayLiteralExpression: ${arrayLiteralExpression.getText(this.sourceFile)}`);
         const stmts: Stmt[] = [];
         const elementTypes: Set<Type> = new Set();
         for (const element of arrayLiteralExpression.elements) {
@@ -788,9 +785,15 @@ export class ArkIRTransformer {
     }
 
     private asExpressionToValueAndStmts(asExpression: ts.AsExpression): ValueAndStmts {
-        const {value: exprValue, stmts: exprStmts} = this.tsNodeToValueAndStmts(asExpression.expression);
+        const stmts: Stmt[] = [];
+        let {value: exprValue, stmts: exprStmts} = this.tsNodeToValueAndStmts(asExpression.expression);
+        stmts.push(...exprStmts);
+        if (IRUtils.moreThanOneAddress(exprValue)) {
+            ({value: exprValue, stmts: exprStmts} = this.generateAssignStmtForValue(exprValue));
+            stmts.push(...exprStmts);
+        }
         const castExpr = new ArkCastExpr(exprValue, this.resolveTypeNode(asExpression.type));
-        return {value: castExpr, stmts: exprStmts};
+        return {value: castExpr, stmts: stmts};
     }
 
     private typeAssertionToValueAndStmts(typeAssertion: ts.TypeAssertion): ValueAndStmts {

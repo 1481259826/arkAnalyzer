@@ -6,10 +6,5 @@
     "logLevel": "INFO",
     
     "sdks": [
-        {
-            "name": "etsSdk",
-            "path": "D:\\OpenHarmony\\Sdk\\11\\ets",
-            "moduleName": ""
-        }
     ]
 }
