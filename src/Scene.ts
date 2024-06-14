@@ -21,7 +21,7 @@ import { AbstractCallGraph } from "./callgraph/AbstractCallGraphAlgorithm";
 import { ClassHierarchyAnalysisAlgorithm } from "./callgraph/ClassHierarchyAnalysisAlgorithm";
 import { RapidTypeAnalysisAlgorithm } from "./callgraph/RapidTypeAnalysisAlgorithm";
 import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
-import { ImportInfo, updateSdkConfigPrefix } from './core/model/ArkImport';
+import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
@@ -31,7 +31,6 @@ import { ArkMethod } from "./core/model/ArkMethod";
 import { ArkNamespace } from "./core/model/ArkNamespace";
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
 import Logger from "./utils/logger";
-import { transfer2UnixPath } from './utils/pathTransfer';
 import { Local } from './core/base/Local';
 import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
@@ -139,6 +138,17 @@ export class Scene {
         });
     }
 
+    private buildAllMethodBody() {
+        // method body parse depends custom components.
+        this.collectProjectCustomComponents();
+        this.buildStage = SceneBuildStage.CLASS_DONE;
+
+        this.getMethods().forEach((value) => {
+            value.buildBody();
+        });
+        this.buildStage = SceneBuildStage.METHOD_DONE;
+    }
+
     private genArkFiles() {
         this.projectFiles.forEach((file) => {
             logger.info('=== parse file:', file);
@@ -148,14 +158,8 @@ export class Scene {
             buildArkFileFromFile(file, this.realProjectDir, arkFile);
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
-        // method body parse depends custom components.
-        this.collectProjectCustomComponents();
-        this.buildStage = SceneBuildStage.CLASS_DONE;
-
-        this.getMethods().forEach((value) => {
-            value.buildBody();
-        });
-        this.buildStage = SceneBuildStage.METHOD_DONE;
+        
+        this.buildAllMethodBody();
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
@@ -169,14 +173,6 @@ export class Scene {
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
-        // method body parse depends custom components.
-        this.collectProjectCustomComponents();
-        this.buildStage = SceneBuildStage.CLASS_DONE;
-
-        this.getMethods().forEach((value) => {
-            value.buildBody();
-        });
-        this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
     public buildScene4HarmonyProject() {
@@ -191,6 +187,8 @@ export class Scene {
             moduleScene.ModuleScenBuilder(value, key, this);
             this.moduleScenesMap.set(value, moduleScene);
         });
+
+        this.buildAllMethodBody();
     }
 
     public buildModuleScene(moduleName: string, modulePath: string) {
@@ -236,6 +234,8 @@ export class Scene {
         let moduleScene = new ModuleScene();
         moduleScene.ModuleScenBuilder(moduleName, modulePath, this);
         this.moduleScenesMap.set(moduleName, moduleScene);
+
+        this.buildAllMethodBody();
     }
 
     public getRealProjectDir(): string {
