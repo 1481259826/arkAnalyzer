@@ -66,6 +66,27 @@ export class SceneConfig {
 
     constructor() { }
 
+    public buildConfig(
+        targetProjectName: string,
+        targetProjectDirectory: string,
+        logPath: string,
+        logLevel: string,
+        sdks: Sdk[]
+    ) {
+        if (logPath) {
+            this.logPath = logPath;
+        }
+        if (logLevel) {
+            this.logLevel = logLevel;
+        }
+        Logger.configure(this.logPath, LOG_LEVEL[this.logLevel as LOG_LEVEL]);
+
+        this.sdksObj = sdks;
+
+        this.targetProjectName = targetProjectName;
+        this.targetProjectDirectory = targetProjectDirectory;
+    }
+
     public buildFromProjectDir(targetProjectDirectory: string) {
         this.targetProjectDirectory = targetProjectDirectory;
         this.targetProjectName = path.basename(targetProjectDirectory);
@@ -73,39 +94,29 @@ export class SceneConfig {
         this.projectFiles = getAllFiles(targetProjectDirectory, ['.ets', '.ts']);
     }
 
-    public async buildFromJson(configJsonPath: string) {
+    public buildFromJson(configJsonPath: string) {
         if (fs.existsSync(configJsonPath)) {
             const configurationsText = fs.readFileSync(configJsonPath, "utf8");
             logger.info(configurationsText);
             const configurations = JSON.parse(configurationsText);
 
-            if (configurations.logPath) {
-                this.logPath = configurations.logPath;
-            }
-            if (configurations.logLevel) {
-                this.logLevel = configurations.logLevel;
-            }
-            Logger.configure(this.logPath, LOG_LEVEL[this.logLevel as LOG_LEVEL]);
+            const targetProjectName: string = configurations.targetProjectName ? configurations.targetProjectName : '';
+            const targetProjectDirectory: string = configurations.targetProjectDirectory ? configurations.targetProjectDirectory : '';
+            const logPath: string = configurations.logPath ? configurations.logPath : '';
+            const logLevel: string = configurations.logLevel ? configurations.logLevel : '';
+            const sdks: Sdk[] = configurations.sdks ? configurations.sdks : [];
 
-            this.sdksObj = configurations.sdks;
-
-            this.targetProjectName = configurations.targetProjectName;
-            this.targetProjectDirectory = configurations.targetProjectDirectory;
+            this.buildConfig(
+                targetProjectName,
+                targetProjectDirectory,
+                logPath,
+                logLevel,
+                sdks
+            );
         }
         else {
             logger.error(`Your configJsonPath: "${configJsonPath}" is not exist.`);
         }
-    }
-
-    public async buildConfig(targetProjectName: string, targetProjectDirectory: string,
-        sdkEtsPath: string, logPath: string, logLevel: string) {
-        this.targetProjectName = targetProjectName;
-        this.targetProjectDirectory = path.join(targetProjectDirectory, targetProjectName);
-        this.etsSdkPath = sdkEtsPath;
-        this.logPath = logPath;
-        this.logLevel = logLevel;
-
-        Logger.configure(this.logPath, LOG_LEVEL.ERROR);
     }
 
     public getTargetProjectName() {
