@@ -49,10 +49,6 @@ export class FileSignature {
 
     public toString(): string {
         let tmpSig = transfer2UnixPath(this.fileName);
-        // logger.error(tmpSig);
-        // remove file ext: '.d.ts' or '.ts'
-        tmpSig = tmpSig.replace(/\.d\.ts|\.ts$/, '');
-
         tmpSig = '@' + this.projectName + '/' + tmpSig + ': ';
         return tmpSig;
     }
@@ -148,6 +144,7 @@ export class FieldSignature {
     private declaringClassSignature: ClassSignature = new ClassSignature();
     private fieldName: string = '';
     private type: Type = UnknownType.getInstance();
+    private static: boolean = false;
 
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
@@ -171,6 +168,14 @@ export class FieldSignature {
 
     public getType(): Type {
         return this.type;
+    }
+
+    public setStatic() {
+        this.static = true;
+    }
+
+    public isStatic() {
+        return this.static;
     }
 
     constructor() {
@@ -234,6 +239,7 @@ export class MethodSubSignature {
 export class MethodSignature {
     private declaringClassSignature: ClassSignature = new ClassSignature();
     private methodSubSignature: MethodSubSignature = new MethodSubSignature();
+    private static: boolean = false;
 
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
@@ -253,6 +259,14 @@ export class MethodSignature {
 
     public getType(): Type {
         return this.methodSubSignature.getReturnType();
+    }
+
+    public setStatic() {
+        this.static = true;
+    }
+
+    public isStatic() {
+        return this.static;
     }
 
     constructor() {
