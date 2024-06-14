@@ -108,11 +108,12 @@ export class ImportInfo {
         // sdk imports, e.g. @ohos., @kit.
         const pathReg2 = new RegExp(`@ohos\\.`);
         const pathReg3 = new RegExp(`@kit\\.`);
+        const pathReg4 = new RegExp(`@system\\.`);
         let tmpSig = '';
-        if (pathReg2.test(this.importFrom)) {
-            tmpSig = '@etsSdk/api/' + this.importFrom + ': ';
+        if (pathReg2.test(this.importFrom) || pathReg4.test(this.importFrom)) {
+            tmpSig = '@etsSdk/api/' + this.importFrom + '.d.ts';
         } else if (pathReg3.test(this.importFrom)) {
-            tmpSig = '@etsSdk/kits/' + this.importFrom + ': ';
+            tmpSig = '@etsSdk/kits/' + this.importFrom + '.d.ts';
         }
         if (tmpSig !== '') {
             this.setImportProjectType("SDKProject");
