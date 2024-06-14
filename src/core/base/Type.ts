@@ -301,7 +301,9 @@ export class ArrayType extends Type {
 
     public toString(): string {
         const strs: string[] = [];
-        strs.push('(' + this.baseType.toString() + ')');
+        if (this.baseType) {
+            strs.push('(' + this.baseType.toString() + ')');
+        }
         for (let i = 0; i < this.dimension; i++) {
             strs.push('[]');
         }
