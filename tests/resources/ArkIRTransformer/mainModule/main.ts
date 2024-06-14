@@ -120,11 +120,26 @@
 // let c = /3/;
 // let d = false;
 // let e = true;
+//
 
-class Main {
-    private i = 0;
+// // global as size
+// let sz3 = 3;
+//
+// function main() {
+//     let sz1 = 1;
+//     let arr1 = new Array(sz1);
+//     let arr2 = new Array(2);
+//     let arr3 = new Array(sz3);
+// }
 
-    public foo() {
-        this.i = 2;
-    }
+// // ConditionalExpression
+// function main() {
+//     let a = 1 ? 10 : 0;
+// }
+
+// FirstTemplateToken
+function main() {
+    console.log(`search_white onClick`);
 }
+
+
