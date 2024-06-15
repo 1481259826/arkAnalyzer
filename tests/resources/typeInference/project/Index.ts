@@ -15,11 +15,4 @@
  */
 
 
-export default function precision() {
-    describe('precisiontest', () => {
 
-        it('precision', 0, () => {
-            
-        });
-    });
-}
