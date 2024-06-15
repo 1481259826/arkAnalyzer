@@ -38,6 +38,7 @@ function testSimpleSave() {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(join(__dirname, 'resources', 'viewtree'));
     let scene: Scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
     let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'output'));
     for (let f of scene.getFiles()) {
         //printer.dumpToDot(f);

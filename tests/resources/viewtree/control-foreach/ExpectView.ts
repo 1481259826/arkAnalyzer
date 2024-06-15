@@ -16,7 +16,7 @@
 const Builder_TextArea_Expect_ViewTree = {
     name: 'Row',
     children: [],
-    attributes: ['width', 'height', 'backgroundColor']
+    attributes: ['width', 'height', 'backgroundColor', 'create', 'pop']
 }
 
 export const ArticleSkeletonView_Expect_ViewTree = {
@@ -45,7 +45,7 @@ export const ArticleSkeletonView_Expect_ViewTree = {
             ]
         }
     ],
-    attributes: ['padding', 'borderRadius', 'backgroundColor', 'height', 'width', 'justifyContent']
+    attributes: ['create', 'pop', 'padding', 'borderRadius', 'backgroundColor', 'height', 'width', 'justifyContent']
 }
 
 export const ForEachTest1_Expect_ViewTree = {
@@ -59,13 +59,13 @@ export const ForEachTest1_Expect_ViewTree = {
                     children: [
                         ArticleSkeletonView_Expect_ViewTree
                     ],
-                    attributes: ['margin']
+                    attributes: ['margin', 'create', 'pop']
                 }
             ],
             stateValues: ['simpleList']
         }
     ],
-    attributes: ['padding', 'width', 'height']
+    attributes: ['create', 'padding', 'width', 'height', 'pop']
 }
 
 export const ArticleCard_Expect_ViewTree = {

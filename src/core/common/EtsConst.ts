@@ -241,7 +241,6 @@ export const ETS_COMPILER_OPTIONS =
             'RichEditor',
             'Component3D',
             'ContainerSpan',
-            'Repeat', 
             'ForEach', 
             'LazyForEach'
         ],
@@ -858,6 +857,7 @@ export const COMPONENT_CREATE_FUNCTION: string = 'create';
 export const COMPONENT_POP_FUNCTION: string = 'pop';
 export const COMPONENT_CUSTOMVIEW: string = 'View';
 export const COMPONENT_COMMON: string = '__Common__';
+export const COMPONENT_REPEAT: string = 'Repeat';
 
 export const COMPONENT_IF: string = 'If';
 export const COMPONENT_IF_BRANCH: string = 'IfBranch';
