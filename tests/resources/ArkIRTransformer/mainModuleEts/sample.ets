@@ -13,17 +13,11 @@
  * limitations under the License.
  */
 
+@Entry
 @Component
-struct Foo {
-    flag: boolean = false;
-
+struct Parent {
     build() {
         Row() {
-            if (this.flag === false) {
-                Column()
-            } else {
-                Column()
-            }
-        }
+        }.width(10)
     }
 }

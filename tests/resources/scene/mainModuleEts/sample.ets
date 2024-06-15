@@ -13,5 +13,15 @@
  * limitations under the License.
  */
 
-export class Foo {
+@Entry
+@Component
+struct Parent {
+    build() {
+        WaterFlow() {
+            LazyForEach(this.dataSource, (item: number) => {
+                Column()
+            }, (item: string) => item)
+        }
+    .columnsTemplate("1fr 1fr")
+    }
 }
