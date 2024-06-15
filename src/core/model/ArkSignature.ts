@@ -182,7 +182,11 @@ export class FieldSignature {
     }
 
     public toString(): string {
-        return this.getDeclaringClassSignature().toString() + '.' + this.getFieldName();
+        let tmpSig = this.fieldName;
+        if (this.isStatic()) {
+            tmpSig = '[static]' + tmpSig;
+        }
+        return this.getDeclaringClassSignature().toString() + '.' + tmpSig;
     }
 }
 
@@ -191,6 +195,7 @@ export class MethodSubSignature {
     private parameters: MethodParameter[] = [];
     private parameterTypes: Set<Type> = new Set<Type>();
     private returnType: Type = UnknownType.getInstance();
+    private static: boolean = false;
 
     public getMethodName() {
         return this.methodName;
@@ -223,6 +228,14 @@ export class MethodSubSignature {
         this.returnType = returnType;
     }
 
+    public setStatic() {
+        this.static = true;
+    }
+
+    public isStatic() {
+        return this.static;
+    }
+
     constructor() {
     }
 
@@ -232,14 +245,17 @@ export class MethodSubSignature {
             paraStr += parameterType.toString() + ", ";
         });
         paraStr = paraStr.replace(/, $/, '');
-        return `${this.getMethodName()}(${paraStr})`;
+        let tmpSig =  `${this.getMethodName()}(${paraStr})`;
+        if (this.isStatic()) {
+            tmpSig = '[static]' + tmpSig;
+        }
+        return tmpSig;
     }
 }
 
 export class MethodSignature {
     private declaringClassSignature: ClassSignature = new ClassSignature();
     private methodSubSignature: MethodSubSignature = new MethodSubSignature();
-    private static: boolean = false;
 
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
@@ -259,14 +275,6 @@ export class MethodSignature {
 
     public getType(): Type {
         return this.methodSubSignature.getReturnType();
-    }
-
-    public setStatic() {
-        this.static = true;
-    }
-
-    public isStatic() {
-        return this.static;
     }
 
     constructor() {
