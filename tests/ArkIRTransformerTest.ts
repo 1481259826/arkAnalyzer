@@ -65,13 +65,13 @@ class ArkIRTransformerTest {
         scene.buildSceneFromProjectDir(sceneConfig);
         this.printScene(scene);
 
-        // get viewTree
-        for (const arkFile of scene.getFiles()) {
-            for (const arkClass of arkFile.getClasses()) {
-                const viewTree = arkClass.getViewTree();
-                logger.error(`getViewTree of ${arkClass.getName()} done`);
-            }
-        }
+        // // get viewTree
+        // for (const arkFile of scene.getFiles()) {
+        //     for (const arkClass of arkFile.getClasses()) {
+        //         const viewTree = arkClass.getViewTree();
+        //         logger.error(`getViewTree of ${arkClass.getName()} done`);
+        //     }
+        // }
 
         logger.error('testStmtsOfSimpleProject end\n');
     }
@@ -99,11 +99,11 @@ class ArkIRTransformerTest {
         logger.error('--- threeAddresStmts ---');
         const cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
-            // logger.error(`text: ${threeAddresStmt.toString()}`);
+            logger.error(`text: ${threeAddresStmt.toString()}`);
             // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
-            if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
-                logger.error(`text: ${threeAddresStmt.toString()}`);
-            }
+            // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
+            //     logger.error(`text: ${threeAddresStmt.toString()}`);
+            // }
         }
 
         // logger.error('--- originalStmts ---');
@@ -136,5 +136,5 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-// arkIRTransformerTest.testStmtsOfSimpleProject();
-arkIRTransformerTest.testStmtsOfEtsProject();
+arkIRTransformerTest.testStmtsOfSimpleProject();
+// arkIRTransformerTest.testStmtsOfEtsProject();

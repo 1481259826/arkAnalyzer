@@ -16,8 +16,13 @@
 @Entry
 @Component
 struct Parent {
+@State simpleList: Array<string> = ['one', 'two', 'three'];
+
     build() {
-        Row() {
-        }.width(10)
+        Repeat<string>(this.simpleList)
+            .each((obj: RepeatItem<string>) => {
+                Row()
+            })
+            .key((item: string) => item)
     }
 }
