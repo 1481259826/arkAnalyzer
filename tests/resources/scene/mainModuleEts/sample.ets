@@ -22,6 +22,6 @@ struct Parent {
                 Column()
             }, (item: string) => item)
         }
-    .columnsTemplate("1fr 1fr")
+    .columnsTemplate('1fr 1fr')
     }
 }
