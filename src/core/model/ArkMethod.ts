@@ -107,6 +107,13 @@ export class ArkMethod {
         return this.modifiers.has('ExportKeyword');
     }
 
+    public isStatic(): boolean {
+        if (this.modifiers.has("StaticKeyword")) {
+            return true;
+        }
+        return false;
+    }
+
     public isDefaultArkMethod(): boolean {
         return this.getName() === "_DEFAULT_ARK_METHOD";
     }
@@ -151,6 +158,9 @@ export class ArkMethod {
         mtdSubSig.setMethodName(this.name);
         mtdSubSig.setParameters(this.parameters);
         mtdSubSig.setReturnType(this.returnType);
+        if (this.isStatic()) {
+            mtdSubSig.setStatic();
+        }
         this.setSubSignature(mtdSubSig);
 
         let mtdSig = new MethodSignature();

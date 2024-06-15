@@ -236,6 +236,13 @@ export class ArkClass {
         return this.modifiers.has(name);
     }
 
+    public isStatic(): boolean {
+        if (this.modifiers.has("StaticKeyword")) {
+            return true;
+        }
+        return false;
+    }
+
     public getMethods(): ArkMethod[] {
         const allMethods = Array.from(this.methods.values());
         allMethods.push(...this.staticMethods.values());
