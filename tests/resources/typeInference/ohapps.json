@@ -1,6 +1,6 @@
 {
     "targetProjectName": "TypeInferenceTest",    
-    "targetProjectDirectory": "tests/resources/typeinference/project",
+    "targetProjectDirectory": "D:/11study/OHApps/gitee",
 
     "logPath": "out/ArkAnalyzer.log",
     "logLevel": "INFO",

@@ -2,26 +2,9 @@
     "targetProjectName": "TypeInferenceTest",    
     "targetProjectDirectory": "tests/resources/typeInference/multi_module/main_module",
 
-    "logPath": "out/TypeInferenceTest.log",
-
-    "etsSdkPath": "",
+    "logPath": "out/ArkAnalyzer.log",
+    "logLevel": "INFO",
     
-    "otherSdks": [
-        {
-            "name": "",
-            "path": ""
-        },
-        {
-            "name": "sdk2",
-            "path": ""
-        },
-        {
-            "name": "",
-            "path": "/opt/yy"
-        },
-        {
-            "name": "",
-            "path": ""
-        }
+    "sdks": [
     ]
 }
