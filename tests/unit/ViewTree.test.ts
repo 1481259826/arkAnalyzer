@@ -33,9 +33,9 @@ function expectViewTree(root: ViewTreeNode, expectTree: any) {
     expect(root.name).eq(expectTree.name);
     expect(root.children.length).eq(expectTree.children.length);
     if (expectTree.attributes) {
-        expect(root.stmts.size).eq(expectTree.attributes.length);
+        expect(root.attributes.size).eq(expectTree.attributes.length);
         const set = new Set(expectTree.attributes);
-        root.stmts.forEach((value, key) => {
+        root.attributes.forEach((value, key) => {
             expect(set.has(key)).eq(true);
         })
     }
@@ -56,10 +56,11 @@ function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
     let arkClass = arkFile?.getClassWithName(clsName);
     let vt = arkClass?.getViewTree();
     if (!vt) {
-        assert.isNotNull(vt);
+        assert.isDefined(vt);
         return;
     } 
     expectViewTree(vt.getRoot(), expectTree);
+    return vt;
 }
 
 function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: string, expectTree: any) {
@@ -68,7 +69,7 @@ function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: st
     let arkClass = ns?.getClassWithName(clsName);
     let vt = arkClass?.getViewTree();
     if (!vt) {
-        assert.isNotNull(vt);
+        assert.isDefined(vt);
         return;
     } 
     expectViewTree(vt.getRoot(), expectTree);
@@ -255,7 +256,12 @@ describe('normal Test', () => {
     })
 
     it('test ParentComponent', async () => {
-        testClassViewTree(scene, 'ParentComponent', ParentComponent_Expect_ViewTree);
+        let vt = testClassViewTree(scene, 'ParentComponent', ParentComponent_Expect_ViewTree);
+        let root = vt?.getRoot();
+        root?.children[3].stateValuesTransfer?.forEach((value, key) => {
+            expect(value.getName()).eq('countDownStartValue');
+            expect(key.getName()).eq('count');
+        })
     })
     
     it('test ForEach stateValues', async () => {

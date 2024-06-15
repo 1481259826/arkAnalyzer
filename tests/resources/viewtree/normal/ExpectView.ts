@@ -30,7 +30,8 @@ export const CommonTest_Expect_ViewTree = {
             name: 'View',
             children: [
                 SubComponent_Expect_ViewTree
-            ]
+            ],
+            attributes: ['create', 'pop', 'width', 'height']
         }
     ]
 }

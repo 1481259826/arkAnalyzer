@@ -38,7 +38,8 @@ export const RepeatTest1_Expect_ViewTree = {
                             children: [RepeatTestChildItem_Expect_ViewTree]
                         }
                     ],
-                    stateValues: ['simpleList']
+                    stateValues: ['simpleList'],
+                    attributes: ['create', 'key']
                 }
             ]
         }
