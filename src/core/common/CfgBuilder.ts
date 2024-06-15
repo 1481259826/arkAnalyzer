@@ -779,7 +779,7 @@ export class CfgBuilder {
 
         if (stmt.walked)
             return;
-        stmt.walked = false;
+        stmt.walked = true;
         stmt.index = this.statementArray.length;
         if (!stmt.type.includes(' exit'))
             this.statementArray.push(stmt);
