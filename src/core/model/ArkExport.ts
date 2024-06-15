@@ -13,102 +13,117 @@
  * limitations under the License.
  */
 
-import * as ts from "ohos-typescript";
-import { ImportInfo } from "./ArkImport";
-import { LineColPosition } from "../base/Position";
-import { Decorator } from "../base/Decorator";
+import {LineColPosition} from "../base/Position";
+import {Decorator} from "../base/Decorator";
+import {ArkFile} from "./ArkFile";
+import {ArkSignature, ClassSignature, MethodSignature, NamespaceSignature} from "./ArkSignature";
+import {Local} from "../base/Local";
 
-export class ExportInfo {
-    exportClauseName: string;
-    exportClauseType: string;
-    exportFrom: string | undefined;
-    nameBeforeAs: string | undefined;
-    declaringSignature: string;
-    isDefault: boolean = false;
-    importInfo: ImportInfo | undefined;
-    private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
+export type TypeSignature = NamespaceSignature | ClassSignature | MethodSignature | Local;
+
+export enum ExportType {
+    NAME_SPACE = 'ArkNamespace',
+    CLASS = 'ArkClass',
+    METHOD = 'ArkMethod',
+    LOCAL = 'Local',
+    UNKNOWN = 'Unknown'
+}
+
+export interface ArkExport extends ArkSignature {
+    isExported(): boolean;
+
+    getModifiers(): Set<string | Decorator>;
+
+    getName(): string;
+
+    getType(): ExportType;
+
+}
+
+export interface FromInfo {
+    isDefault(): boolean;
+
+    getOriginName(): string;
+
+    getFrom(): string;
+
+    getDeclaringArkFile(): ArkFile;
+}
+
+export class ExportInfo implements FromInfo {
+
+    private modifiers: Set<string | Decorator>;
+    private default: boolean;
+    private nameBeforeAs: string | undefined;
+    private exportClauseName: string;
+
+    private exportClauseType: ExportType;
+    private typeSignature: TypeSignature;
+    private exportFrom: string;
 
     private originTsPosition: LineColPosition;
     private tsSourceCode: string;
+    private declaringArkFile: ArkFile;
 
-    constructor() {
+    private constructor() {
     }
 
-    public build(exportClauseName: string, exportClauseType: string, originTsPosition: LineColPosition,
-        modifiers: Set<string | Decorator>, exportFrom?: string, nameBeforeAs?: string) {
-        this.setExportClauseName(exportClauseName);
-        this.setExportClauseType(exportClauseType);
-        modifiers.forEach((modifier) => {
-            this.addModifier(modifier);
-        });
-        this.setExportFrom(exportFrom);
-        this.setNameBeforeAs(nameBeforeAs);
-        this.setOriginTsPosition(originTsPosition);
-        this.genImportInfo();
+    public getFrom(): string {
+        return this.exportFrom;
+    }
+
+    public getOriginName() {
+        return this.nameBeforeAs ?? this.exportClauseName;
     }
 
     public getExportClauseName() {
         return this.exportClauseName;
     }
 
-    public setExportClauseName(exportClauseName: string) {
-        this.exportClauseName = exportClauseName;
-    }
-
-    public getExportClauseType() {
-        return this.exportClauseType;
-    }
-
-    public setExportClauseType(exportClauseType: string) {
+    public setExportClauseType(exportClauseType: ExportType) {
         this.exportClauseType = exportClauseType;
     }
 
-    public getModifiers() {
-        return this.modifiers;
+    public getExportClauseType(): ExportType {
+        return this.exportClauseType;
     }
 
-    public addModifier(name: string | Decorator) {
-        this.modifiers.add(name);
-    }
-
-    public getExportFrom() {
-        return this.exportFrom;
-    }
-
-    public setExportFrom(exportFrom: string | undefined) {
-        this.exportFrom = exportFrom;
+    private setNameBeforeAs(nameBeforeAs: string) {
+        this.nameBeforeAs = nameBeforeAs;
     }
 
     public getNameBeforeAs() {
         return this.nameBeforeAs;
     }
 
-    public setNameBeforeAs(nameBeforeAs: string | undefined) {
-        this.nameBeforeAs = nameBeforeAs;
+    public setTypeSignature(value: TypeSignature) {
+        this.typeSignature = value;
     }
 
-    public setDefault(isDefault: boolean) {
-        this.isDefault = isDefault;
+    public getExportFrom(): string {
+        return this.exportFrom;
     }
 
-    public getDefault() {
-        return this.isDefault;
+    public getTypeSignature(): TypeSignature {
+        return this.typeSignature;
     }
 
-    public setImportInfo(importInfo: ImportInfo | undefined) {
-        this.importInfo = importInfo;
-    }
-
-    public getImportInfo() {
-        return this.importInfo;
-    }
-
-    private genImportInfo() {
-        if (this.exportFrom != undefined) {
-            let importInfo = new ImportInfo();
-            importInfo.build(this.exportClauseName, this.exportClauseType, this.exportFrom, this.originTsPosition, this.modifiers, this.nameBeforeAs);
-            this.setImportInfo(importInfo);
+    public isDefault(): boolean {
+        if (this.default === undefined) {
+            this.default = this.modifiers?.has('DefaultKeyword')
         }
+        return this.default;
+    }
+
+    private addModifier(name: string | Decorator) {
+        if (!this.modifiers) {
+            this.modifiers = new Set<string | Decorator>();
+        }
+        this.modifiers.add(name);
+    }
+
+    public getModifiers() {
+        return this.modifiers;
     }
 
     public setOriginTsPosition(originTsPosition: LineColPosition): void {
@@ -126,4 +141,74 @@ export class ExportInfo {
     public getTsSourceCode(): string {
         return this.tsSourceCode;
     }
+
+    public getDeclaringArkFile(): ArkFile {
+        return this.declaringArkFile;
+    }
+
+    public setDeclaringArkFile(value: ArkFile) {
+        this.declaringArkFile = value;
+    }
+
+
+    public static Builder = class ArkExportBuilder {
+        exportInfo: ExportInfo = new ExportInfo();
+
+        public exportClauseName(exportClauseName: string): ArkExportBuilder {
+            this.exportInfo.exportClauseName = exportClauseName;
+            return this;
+        }
+
+        public exportClauseType(exportClauseType: ExportType): ArkExportBuilder {
+            this.exportInfo.setExportClauseType(exportClauseType);
+            return this;
+        }
+
+        public nameBeforeAs(nameBeforeAs: string): ArkExportBuilder {
+            this.exportInfo.setNameBeforeAs(nameBeforeAs);
+            return this;
+        }
+
+        public addModifier(name: string | Decorator): ArkExportBuilder {
+            this.exportInfo.addModifier(name);
+            return this;
+        }
+
+        public modifiers(modifiers: Set<string | Decorator>): ArkExportBuilder {
+            if (modifiers) {
+                modifiers.forEach(m => this.exportInfo.addModifier(m));
+            }
+            return this;
+        }
+
+        public originTsPosition(originTsPosition: LineColPosition): ArkExportBuilder {
+            this.exportInfo.setOriginTsPosition(originTsPosition);
+            return this;
+        }
+
+        public tsSourceCode(tsSourceCode: string): ArkExportBuilder {
+            this.exportInfo.setTsSourceCode(tsSourceCode);
+            return this;
+        }
+
+        public declaringArkFile(value: ArkFile): ArkExportBuilder {
+            this.exportInfo.setDeclaringArkFile(value);
+            return this;
+        }
+
+        public typeSignature(value: TypeSignature): ArkExportBuilder {
+            this.exportInfo.setTypeSignature(value);
+            return this;
+        }
+
+        public exportFrom(exportFrom: string): ArkExportBuilder {
+            this.exportInfo.exportFrom = exportFrom;
+            return this;
+        }
+
+        public build(): ExportInfo {
+            return this.exportInfo;
+        }
+    }
+
 }

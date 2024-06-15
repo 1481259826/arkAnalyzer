@@ -16,19 +16,26 @@
 import fs from 'fs';
 import path from 'path';
 import ts from 'ohos-typescript';
-import { ArkFile } from '../ArkFile';
-import { ArkNamespace } from '../ArkNamespace';
+import {ArkFile} from '../ArkFile';
+import {ArkNamespace} from '../ArkNamespace';
 import Logger from "../../../utils/logger";
-import { buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile } from './ArkClassBuilder';
-import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
-import { buildImportInfo } from './ArkImportBuilder';
-import { buildExportInfo } from './ArkExportBuilder';
-import { buildArkNamespace } from './ArkNamespaceBuilder';
-import { ArkClass } from '../ArkClass';
-import { ArkMethod } from '../ArkMethod';
-import { LineColPosition } from '../../base/Position';
-import { ExportInfo } from '../ArkExport';
-import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
+import {buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile} from './ArkClassBuilder';
+import {buildArkMethodFromArkClass} from './ArkMethodBuilder';
+import {buildImportInfo, expandExportInfo, getArkFile} from './ArkImportBuilder';
+import {
+    buildExportInfo,
+    initExportAssignment,
+    initExportDeclaration,
+    initExportTypeAliasDeclaration,
+    initExportVariableStatement,
+    isExported
+} from './ArkExportBuilder';
+import {buildArkNamespace} from './ArkNamespaceBuilder';
+import {ArkClass} from '../ArkClass';
+import {ArkMethod} from '../ArkMethod';
+import {LineColPosition} from '../../base/Position';
+import {ETS_COMPILER_OPTIONS} from '../../common/EtsConst';
+import {ImportInfo} from "../ArkImport";
 
 const logger = Logger.getLogger();
 
@@ -37,11 +44,11 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
     'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
 
 /**
-* Entry of building ArkFile instance
-*
-* @param arkFile 
-* @returns
-*/
+ * Entry of building ArkFile instance
+ *
+ * @param arkFile
+ * @returns
+ */
 export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile) {
     arkFile.setFilePath(absoluteFilePath);
     arkFile.setProjectDir(projectDir);
@@ -63,12 +70,12 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
 }
 
 /**
-* Building ArkFile instance
-*
-* @param arkFile 
-* @param astRoot
-* @returns
-*/
+ * Building ArkFile instance
+ *
+ * @param arkFile
+ * @param astRoot
+ * @returns
+ */
 function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
     const statements = astRoot.statements;
     statements.forEach((child) => {
@@ -83,11 +90,9 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             arkFile.addNamespace(ns);
 
             if (ns.isExported()) {
-                let isDefault = ns.getModifiers().has("DefaultKeyword");
-                addExportInfo(ns, arkFile, isDefault);
+                arkFile.addExportInfo(buildExportInfo(ns, arkFile, LineColPosition.buildFromNode(child, astRoot)));
             }
-        }
-        else if (
+        } else if (
             ts.isClassDeclaration(child) ||
             ts.isInterfaceDeclaration(child) ||
             ts.isEnumDeclaration(child) ||
@@ -102,8 +107,7 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             arkFile.addArkClass(cls);
 
             if (cls.isExported()) {
-                let isDefault = cls.getModifiers().has("DefaultKeyword");
-                addExportInfo(cls, arkFile, isDefault);
+                arkFile.addExportInfo(buildExportInfo(cls, arkFile, LineColPosition.buildFromNode(child, astRoot)));
             }
         }
         // TODO: Check
@@ -115,22 +119,18 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             arkFile.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
-                let isDefault = mthd.getModifiers().has("DefaultKeyword");
-                addExportInfo(mthd, arkFile, isDefault);
+                arkFile.addExportInfo(buildExportInfo(mthd, arkFile, LineColPosition.buildFromNode(child, astRoot)));
             }
-        }
-        else if (ts.isFunctionDeclaration(child)) {
+        } else if (ts.isFunctionDeclaration(child)) {
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, arkFile.getDefaultClass(), mthd, astRoot);
             arkFile.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
-                let isDefault = mthd.getModifiers().has("DefaultKeyword");
-                addExportInfo(mthd, arkFile, isDefault);
+                arkFile.addExportInfo(buildExportInfo(mthd, arkFile, LineColPosition.buildFromNode(child, astRoot)));
             }
-        }
-        else if (
+        } else if (
             ts.isImportEqualsDeclaration(child) ||
             ts.isImportDeclaration(child)
             //child.kind === ts.SyntaxKind.ImportEqualsDeclaration ||
@@ -138,57 +138,28 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
         ) {
             let importInfos = buildImportInfo(child, astRoot);
             importInfos?.forEach((element) => {
-                element.setDeclaringFilePath(arkFile.getFilePath());
-                element.setProjectPath(arkFile.getProjectDir());
+                // element.setDeclaringFilePath(arkFile.getFilePath());
+                // element.setProjectPath(arkFile.getProjectDir());
                 element.setDeclaringArkFile(arkFile);
 
-                element.setImportFromSignature();
+                // element.setImportFromSignature();
                 arkFile.addImportInfos(element);
 
             });
-        }
-        else if (
-            ts.isExportAssignment(child) ||
-            ts.isExportDeclaration(child)
-            //child.kind === ts.SyntaxKind.ExportAssignment ||
-            //child.kind === ts.SyntaxKind.ExportDeclaration
-        ) {
-            let exportInfos = buildExportInfo(child, astRoot);
-            exportInfos.forEach((element) => {
-                if (element.getModifiers().has("DefaultKeyword")) {
-                    element.setDefault(true);
-                }
-
-                let elementImportInfo = element.getImportInfo();
-                if (elementImportInfo) {
-                    elementImportInfo.setDeclaringFilePath(arkFile.getFilePath());
-                    elementImportInfo.setProjectPath(arkFile.getProjectDir());
-                    elementImportInfo.setDeclaringArkFile(arkFile);
-
-                    elementImportInfo.setImportFromSignature();
-                    //arkFile.addImportInfos(elementImportInfo);
-                }
-
-                arkFile.addExportInfos(element);
-            });
-        }
-        else {
+        } else if (ts.isExportDeclaration(child)) {
+            initExportDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+        } else if (ts.isExportAssignment(child)) {
+            initExportAssignment(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+        } else if (ts.isVariableStatement(child) && isExported(child.modifiers)) {
+            initExportVariableStatement(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+        } else if (ts.isTypeAliasDeclaration(child) && isExported(child.modifiers)) {
+            initExportTypeAliasDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+        } else {
             logger.info('Child joined default method of arkFile: ', ts.SyntaxKind[child.kind]);
             // join default method
         }
     });
 
-    // TODO: Check
-    // if (child.kind == 'VariableStatement' || child.kind == 'FirstStatement') {
-    //     //check ExportKeyword
-    //     let childSyntaxNode = findIndicatedChild(child, 'SyntaxList');
-    //     let isDefault = findIndicatedChild(child, 'DefaultKeyword') ? true : false;
-    //     if (childSyntaxNode) {
-    //         if (findIndicatedChild(childSyntaxNode, 'ExportKeyword')) {
-    //             processExportValAndFirstNode(child, arkFile, isDefault);
-    //         }
-    //     }
-    // }
 }
 
 function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
@@ -199,19 +170,34 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
     arkFile.addArkClass(defaultClass);
 }
 
-function addExportInfo(arkInstance: ArkMethod | ArkClass | ArkNamespace, arkFile: ArkFile, isDefault: boolean) {
-    let exportClauseName: string = arkInstance.getName();
-    let exportClauseType: string;
-    if (arkInstance instanceof ArkMethod) {
-        exportClauseType = "Method";
-    } else if (arkInstance instanceof ArkClass) {
-        exportClauseType = "Class";
-    } else {
-        exportClauseType = "ArkNamespace";
+/**
+ * 展开 import * 和 export *
+ * @param map
+ */
+export function flatMap(map: Map<string, ArkFile>) {
+    for (const arkFile of map.values()) {
+        let importInfos = arkFile.getImportInfos();
+        importInfos.forEach((item) => {
+            if (item.getNameBeforeAs() === '*') {
+                let formFile = getArkFile(item);
+                if (formFile) {
+                    expandExportInfo(formFile);
+                    let prefix = item.getImportClauseName() === '*' ? '' : item.getImportClauseName() + '.';
+                    formFile.getExportInfos().forEach(e => {
+                        let newInfo = new ImportInfo();
+                        newInfo.build(prefix + e.getExportClauseName(), item.getImportType(),
+                            item.getImportFrom(), item.getOriginTsPosition(), item.getModifiers(), e.getExportClauseName());
+                        newInfo.setDeclaringArkFile(item.getDeclaringArkFile());
+                        newInfo.setTsSourceCode(item.getTsSourceCode());
+                        arkFile.addImportInfos(newInfo);
+                    })
+                } else {
+                    logger.warn("from file not found:" + item.getTsSourceCode())
+                }
+            }
+        })
+
     }
-    const modifiers = arkInstance.getModifiers();
-    let exportInfo = new ExportInfo();
-    exportInfo.build(exportClauseName, exportClauseType, new LineColPosition(-1, -1), modifiers);
-    exportInfo.setDefault(isDefault);
-    arkFile.addExportInfos(exportInfo);
 }
+
+

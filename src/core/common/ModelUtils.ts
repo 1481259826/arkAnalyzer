@@ -13,15 +13,13 @@
  * limitations under the License.
  */
 
-import {Scene} from "../../Scene";
-import { Local } from "../base/Local";
+import {Local} from "../base/Local";
 import {ArkClass} from "../model/ArkClass";
 import {ArkFile} from "../model/ArkFile";
 import {ArkMethod} from "../model/ArkMethod";
 import {ArkNamespace} from "../model/ArkNamespace";
-import {FileSignature, MethodSignature} from "../model/ArkSignature";
-import {ExportInfo} from "../model/ArkExport";
-import {ImportInfo} from "../model/ArkImport";
+import {ClassSignature, MethodSignature, NamespaceSignature} from "../model/ArkSignature";
+import {TypeSignature} from "../model/ArkExport";
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -73,7 +71,10 @@ export class ModelUtils {
         return null;
     }
 
-    /** search class within the file that contain the given method */
+
+    /**
+     *  search class within the file that contain the given method
+     */
     public static getClassWithName(className: string, startFrom: ArkMethod): ArkClass | null {
         if (!className.includes(".")) {
             const thisClass = startFrom.getDeclaringArkClass();
@@ -111,65 +112,22 @@ export class ModelUtils {
         if (classSearched != null) {
             return classSearched;
         }
-
-        return this.getClassInImportInfoWithName(className, arkFile);
+        return null;
     }
 
     public static getClassInImportInfoWithName(className: string, arkFile: ArkFile): ArkClass | null {
-        for (const importInfo of arkFile.getImportInfos()) {
-            if (importInfo.getImportClauseName() == className) {
-                const importFrom = this.getFileFromImportInfo(importInfo, arkFile.getScene());
-                if (importFrom) {
-                    const nameBefroreAs = importInfo.getNameBeforeAs();
-                    if (nameBefroreAs != undefined) {
-                        className = nameBefroreAs;
-                    }
-                    return this.getClassInImportFileWithName(className, importFrom);
-                }
-            }
+        let typeSignature = this.getTypeSignatureInImportInfoWithName(className, arkFile);
+        if (typeSignature) {
+            return arkFile.getScene().getClass(typeSignature as ClassSignature);
         }
         return null;
     }
 
-    public static getClassInImportFileWithName(className: string, arkFile: ArkFile): ArkClass | null {
-        let defaultExport: ExportInfo | null = null;
-        for (const exportInfo of arkFile.getExportInfos()) {
-            if (exportInfo.getExportClauseName() == className) {
-                const nameBefroreAs = exportInfo.getNameBeforeAs();
-                if (nameBefroreAs != undefined) {
-                    className = nameBefroreAs;
-                }
-                let classSearched = arkFile.getClassWithName(className);
-                if (classSearched != null) {
-                    return classSearched;
-                }
-
-                return this.getClassInImportInfoWithName(className, arkFile);
-            } else if (exportInfo.getDefault()) {
-                defaultExport = exportInfo;
-            }
-        }
-        if (defaultExport) {
-            className = defaultExport.getExportClauseName()
-            let classSearched = arkFile.getClassWithName(className);
-            if (classSearched != null) {
-                return classSearched;
-            }
-            return this.getClassInImportInfoWithName(className, arkFile);
-        }
-        return null;
+    /** search type within the given file import infos */
+    public static getTypeSignatureInImportInfoWithName(name: string, arkFile: ArkFile): TypeSignature | undefined {
+        return arkFile.getImportInfo(name)?.getExportInfo()?.getTypeSignature();
     }
 
-    public static getFileFromImportInfo(importInfo: ImportInfo, scene: Scene): ArkFile | null {
-        const importFromSignature = importInfo.getImportFromSignature();
-        let file: ArkFile | null = null;
-        if (importInfo.getImportProjectType() == "TargetProject") {
-            file = scene.getFile(importFromSignature as FileSignature);
-        } else if (importInfo.getImportProjectType() == "SDKProject") {
-            file = scene.getsdkArkFilesMap().get(importFromSignature as string) || null;
-        }
-        return file;
-    }
 
     /** search method within the file that contain the given method */
     public static getMethodWithName(methodName: string, startFrom: ArkMethod): ArkMethod | null {
@@ -234,49 +192,13 @@ export class ModelUtils {
             return namespaceSearched;
         }
 
-        return this.getNamespaceInImportInfoWithName(namespaceName, arkFile);
-    }
-
-    public static getNamespaceInImportInfoWithName(namespaceName: string, arkFile: ArkFile): ArkNamespace | null {
-        for (const importInfo of arkFile.getImportInfos()) {
-            if (importInfo.getImportClauseName() == namespaceName) {
-                const importFrom = this.getFileFromImportInfo(importInfo, arkFile.getScene());
-                if (importFrom) {
-                    const nameBefroreAs = importInfo.getNameBeforeAs();
-                    if (nameBefroreAs != undefined) {
-                        namespaceName = nameBefroreAs;
-                    }
-                    return this.getNamespaceInImportFileWithName(namespaceName, importFrom);
-                }
-            }
-        }
         return null;
     }
 
-    public static getNamespaceInImportFileWithName(namespaceName: string, arkFile: ArkFile): ArkNamespace | null {
-        let defaultExport: ExportInfo | null = null;
-        for (const exportInfo of arkFile.getExportInfos()) {
-            if (exportInfo.getExportClauseName() == namespaceName) {
-                const nameBefroreAs = exportInfo.getNameBeforeAs();
-                if (nameBefroreAs != undefined) {
-                    namespaceName = nameBefroreAs;
-                }
-                let namespaceSearched = arkFile.getNamespaceWithName(namespaceName);
-                if (namespaceSearched) {
-                    return namespaceSearched;
-                }
-                return this.getNamespaceInImportInfoWithName(namespaceName, arkFile);
-            } else if (exportInfo.getDefault()) {
-                defaultExport = exportInfo;
-            }
-        }
-        if (defaultExport) {
-            namespaceName = defaultExport.getExportClauseName()
-            let namespaceSearched = arkFile.getNamespaceWithName(namespaceName);
-            if (namespaceSearched) {
-                return namespaceSearched;
-            }
-            return this.getNamespaceInImportInfoWithName(namespaceName, arkFile);
+    public static getNamespaceInImportInfoWithName(namespaceName: string, arkFile: ArkFile): ArkNamespace | null {
+        let typeSignature = this.getTypeSignatureInImportInfoWithName(namespaceName, arkFile);
+        if (typeSignature) {
+            return arkFile.getScene().getNamespace(typeSignature as NamespaceSignature);
         }
         return null;
     }
@@ -304,95 +226,24 @@ export class ModelUtils {
                 return method;
             }
         }
-        return this.getStaticMethodInImportInfoWithName(methodName, arkFile);
-    }
-
-    public static getStaticMethodInImportInfoWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
-        for (const importInfo of arkFile.getImportInfos()) {
-            if (importInfo.getImportClauseName() == methodName) {
-                const importFrom = this.getFileFromImportInfo(importInfo, arkFile.getScene());
-                if (importFrom) {
-                    const nameBefroreAs = importInfo.getNameBeforeAs();
-                    if (nameBefroreAs != undefined) {
-                        methodName = nameBefroreAs;
-                    }
-                    return this.getStaticMethodInImportFileWithName(methodName, importFrom);
-                }
-            }
-        }
         return null;
     }
 
-    public static getStaticMethodInImportFileWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
-        let defaultExport: ExportInfo | null = null;
-        for (const exportInfo of arkFile.getExportInfos()) {
-            if (exportInfo.getExportClauseName() == methodName) {
-                const defaultClass = arkFile.getClassWithName('_DEFAULT_ARK_CLASS');
-                if (defaultClass) {
-                    const nameBefroreAs = exportInfo.getNameBeforeAs();
-                    if (nameBefroreAs != undefined) {
-                        methodName = nameBefroreAs;
-                    }
-                    let method = defaultClass.getMethodWithName(methodName);
-                    if (method) {
-                        return method;
-                    }
-                    return this.getStaticMethodInImportInfoWithName(methodName, arkFile);
-                }
-
-            } else if (exportInfo.getDefault()) {
-                defaultExport = exportInfo;
-            }
-        }
-        if (defaultExport) {
-            methodName = defaultExport.getExportClauseName();
-            const defaultClass = arkFile.getClassWithName('_DEFAULT_ARK_CLASS');
-            if (defaultClass) {
-                for (const arkMethod of defaultClass.getMethods()) {
-                    if (arkMethod.getName() == methodName) {
-                        return arkMethod;
-                    }
-                }
-                return this.getStaticMethodInImportInfoWithName(methodName, arkFile);
-            }
+    public static getStaticMethodInImportInfoWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
+        let typeSignature = this.getTypeSignatureInImportInfoWithName(methodName, arkFile);
+        if (typeSignature) {
+            return arkFile.getScene().getMethod(typeSignature as MethodSignature);
         }
         return null;
     }
 
     public static getLocalInImportInfoWithName(localName: string, arkFile: ArkFile): Local | null {
-        for (const importInfo of arkFile.getImportInfos()) {
-            if (importInfo.getImportClauseName() == localName) {
-                const importFrom = this.getFileFromImportInfo(importInfo, arkFile.getScene());
-                if (importFrom) {
-                    const nameBefroreAs = importInfo.getNameBeforeAs();
-                    if (nameBefroreAs != undefined) {
-                        localName = nameBefroreAs;
-                    }
-                    return this.getLocalInImportFileWithName(localName, importFrom);
-                }
-            }
+        let typeSignature = this.getTypeSignatureInImportInfoWithName(localName, arkFile);
+        if (typeSignature) {
+            return typeSignature as Local;
         }
         return null;
     }
-
-    public static getLocalInImportFileWithName(localName: string, arkFile: ArkFile): Local | null {
-        for (const exportInfo of arkFile.getExportInfos()) {
-            if (exportInfo.getExportClauseName() == localName) {
-                const nameBefroreAs = exportInfo.getNameBeforeAs();
-                if (nameBefroreAs != undefined) {
-                    localName = nameBefroreAs;
-                }
-                for (const local of arkFile.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
-                    if (local.getName() == localName) {
-                        return local;
-                    }
-                }
-                return this.getLocalInImportInfoWithName(localName, arkFile);
-            }
-        }
-        return null;
-    }
-
 
     /* get nested namespaces in a file */
     public static getAllNamespacesInFile(arkFile: ArkFile): ArkNamespace[] {

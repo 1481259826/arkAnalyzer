@@ -14,7 +14,7 @@
  */
 
 import {ArkField} from "../model/ArkField";
-import {ClassSignature, MethodSignature} from "../model/ArkSignature";
+import {ClassSignature, MethodSignature, NamespaceSignature} from "../model/ArkSignature";
 
 export abstract class Type {
     abstract toString(): string;
@@ -409,6 +409,22 @@ export abstract class AnnotationType extends Type {
 }
 
 export class AnnotationNamespaceType extends AnnotationType {
+    private namespaceSignature: NamespaceSignature;
+
+    public static getInstance(signature: NamespaceSignature): AnnotationNamespaceType {
+        const type = new AnnotationNamespaceType(signature.getNamespaceName());
+        type.setNamespaceSignature(signature);
+        return type;
+    }
+
+    public getNamespaceSignature(): NamespaceSignature {
+        return this.namespaceSignature;
+    }
+
+    public setNamespaceSignature(signature: NamespaceSignature): void {
+        this.namespaceSignature = signature;
+    }
+
     constructor(originType: string) {
         super(originType);
     }

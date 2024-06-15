@@ -26,11 +26,12 @@ import { MethodSignature, MethodSubSignature } from "./ArkSignature";
 import { Decorator } from "../base/Decorator";
 import { MethodParameter } from "./builder/ArkMethodBuilder";
 import { BodyBuilder } from "../common/BodyBuilder";
+import {ArkExport, ExportType} from "./ArkExport";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
 
-export class ArkMethod {
+export class ArkMethod implements ArkExport {
     private name: string;
     private code: string;
     private line: number = -1;
@@ -53,6 +54,10 @@ export class ArkMethod {
     private bodyBuilder?: BodyBuilder;
 
     constructor() {
+    }
+
+    getType(): ExportType {
+        return ExportType.METHOD;
     }
 
     public getName() {

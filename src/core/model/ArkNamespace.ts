@@ -14,14 +14,14 @@
  */
 
 import { Decorator } from "../base/Decorator";
-import { ExportInfo } from "./ArkExport";
+import { ArkExport, ExportInfo, ExportType } from "./ArkExport";
 import { ArkClass } from "./ArkClass";
 import { ArkFile } from "./ArkFile";
 import { ArkMethod } from "./ArkMethod";
 import { ClassSignature, NamespaceSignature } from "./ArkSignature";
 
 
-export class ArkNamespace {
+export class ArkNamespace implements ArkExport {
     private name: string;
     private code: string
     private line: number = -1;
@@ -34,7 +34,7 @@ export class ArkNamespace {
     private declaringType: string;
 
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    private exportInfos: ExportInfo[] = [];
+    private exportInfos: Map<string, ExportInfo> = new Map<string, ExportInfo>();
 
     private defaultClass: ArkClass;
 
@@ -74,6 +74,10 @@ export class ArkNamespace {
             namespaceSignature.setDeclaringNamespaceSignature(this.declaringArkNamespace.getNamespaceSignature());
         }
         this.namespaceSignature = namespaceSignature;
+    }
+
+    public getSignature() {
+        return this.namespaceSignature;
     }
 
     public getNamespaceSignature() {
@@ -178,11 +182,15 @@ export class ArkNamespace {
     }
 
     public getExportInfos(): ExportInfo[] {
+        return Array.from(this.exportInfos.values());
+    }
+
+    public getExportInfosMap(): Map<string, ExportInfo> {
         return this.exportInfos;
     }
 
     public addExportInfo(exportInfo: ExportInfo) {
-        this.exportInfos.push(exportInfo);
+        this.exportInfos.set(exportInfo.getExportClauseName(), exportInfo);
     }
 
     public getDefaultClass() {
@@ -230,6 +238,10 @@ export class ArkNamespace {
 
     public getAnonymousClassNumber() {
         return this.anonymousClassNumber++;
+    }
+
+    getType(): ExportType {
+        return ExportType.NAME_SPACE;
     }
 }
 
