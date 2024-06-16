@@ -1,0 +1,15 @@
+{
+    "targetProjectName": "AppSampleD",
+    "targetProjectDirectory": "/home/redx/Tests/applications_photos",
+
+    "logPath": "log/ArkAnalyzer.log",
+    "logLevel": "INFO",
+    
+    "sdks": [
+        {
+            "name": "etsSdk",
+            "path": "/home/redx/Downloads/ohos-sdk/linux/ets",
+            "moduleName": ""
+        }
+    ]
+}
