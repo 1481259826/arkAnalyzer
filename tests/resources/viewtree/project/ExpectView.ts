@@ -15,7 +15,7 @@
 
 export const Project_Page_Expect_ViewTree = {
     name: 'Column',
-    attributes: ['width'],
+    attributes: ['create', 'pop', 'width'],
     children: [
         {
             name: 'View',
