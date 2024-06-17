@@ -1,27 +1,10 @@
 {
-    "targetProjectName": "TypeInferenceTest",
-    "targetProjectDirectory": "tests\\resources\\type",    
+    "targetProjectName": "TypeInferenceTest",    
+    "targetProjectDirectory": "tests/resources/type",
+
+    "logPath": "out/ArkAnalyzer.log",
+    "logLevel": "INFO",
     
-    "logPath": "out\\log.txt",
-    
-    "etsSdkPath": "",
-    
-    "otherSdks": [
-        {
-            "name": "",
-            "path": ""
-        },
-        {
-            "name": "sdk2",
-            "path": ""
-        },
-        {
-            "name": "",
-            "path": "/opt/yy"
-        },
-        {
-            "name": "",
-            "path": ""
-        }
+    "sdks": [
     ]
 }
