@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as t from './example';
+import * as t from './exportSample';
 import MyWantAgent from '@ohos.app.ability.wantAgent';
 
 export function cc(){
