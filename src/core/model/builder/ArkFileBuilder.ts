@@ -16,26 +16,26 @@
 import fs from 'fs';
 import path from 'path';
 import ts from 'ohos-typescript';
-import {ArkFile} from '../ArkFile';
-import {ArkNamespace} from '../ArkNamespace';
+import { ArkFile } from '../ArkFile';
+import { ArkNamespace } from '../ArkNamespace';
 import Logger from "../../../utils/logger";
-import {buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile} from './ArkClassBuilder';
-import {buildArkMethodFromArkClass} from './ArkMethodBuilder';
-import {buildImportInfo, expandExportInfo, getArkFile} from './ArkImportBuilder';
+import { buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile } from './ArkClassBuilder';
+import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
+import { buildImportInfo, expandExportInfo, getArkFile } from './ArkImportBuilder';
 import {
+    buildExportAssignment,
+    buildExportDeclaration,
     buildExportInfo,
-    initExportAssignment,
-    initExportDeclaration,
-    initExportTypeAliasDeclaration,
-    initExportVariableStatement,
+    buildExportTypeAliasDeclaration,
+    buildExportVariableStatement,
     isExported
 } from './ArkExportBuilder';
-import {buildArkNamespace} from './ArkNamespaceBuilder';
-import {ArkClass} from '../ArkClass';
-import {ArkMethod} from '../ArkMethod';
-import {LineColPosition} from '../../base/Position';
-import {ETS_COMPILER_OPTIONS} from '../../common/EtsConst';
-import {ImportInfo} from "../ArkImport";
+import { buildArkNamespace } from './ArkNamespaceBuilder';
+import { ArkClass } from '../ArkClass';
+import { ArkMethod } from '../ArkMethod';
+import { LineColPosition } from '../../base/Position';
+import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
+import { ImportInfo } from "../ArkImport";
 
 const logger = Logger.getLogger();
 
@@ -133,30 +133,23 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
         } else if (
             ts.isImportEqualsDeclaration(child) ||
             ts.isImportDeclaration(child)
-            //child.kind === ts.SyntaxKind.ImportEqualsDeclaration ||
-            //child.kind === ts.SyntaxKind.ImportDeclaration
         ) {
             let importInfos = buildImportInfo(child, astRoot);
             importInfos?.forEach((element) => {
-                // element.setDeclaringFilePath(arkFile.getFilePath());
-                // element.setProjectPath(arkFile.getProjectDir());
                 element.setDeclaringArkFile(arkFile);
-
-                // element.setImportFromSignature();
-                arkFile.addImportInfos(element);
+                arkFile.addImportInfo(element);
 
             });
         } else if (ts.isExportDeclaration(child)) {
-            initExportDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+            buildExportDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else if (ts.isExportAssignment(child)) {
-            initExportAssignment(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+            buildExportAssignment(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else if (ts.isVariableStatement(child) && isExported(child.modifiers)) {
-            initExportVariableStatement(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+            buildExportVariableStatement(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else if (ts.isTypeAliasDeclaration(child) && isExported(child.modifiers)) {
-            initExportTypeAliasDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+            buildExportTypeAliasDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else {
             logger.info('Child joined default method of arkFile: ', ts.SyntaxKind[child.kind]);
-            // join default method
         }
     });
 
@@ -174,7 +167,7 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
  * 展开 import * 和 export *
  * @param map
  */
-export function flatMap(map: Map<string, ArkFile>) {
+export function expandImportAll(map: Map<string, ArkFile>) {
     for (const arkFile of map.values()) {
         let importInfos = arkFile.getImportInfos();
         importInfos.forEach((item) => {
@@ -189,7 +182,7 @@ export function flatMap(map: Map<string, ArkFile>) {
                             item.getImportFrom(), item.getOriginTsPosition(), item.getModifiers(), e.getExportClauseName());
                         newInfo.setDeclaringArkFile(item.getDeclaringArkFile());
                         newInfo.setTsSourceCode(item.getTsSourceCode());
-                        arkFile.addImportInfos(newInfo);
+                        arkFile.addImportInfo(newInfo);
                     })
                 } else {
                     logger.warn("from file not found:" + item.getTsSourceCode())

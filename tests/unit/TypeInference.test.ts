@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import {SceneConfig} from "../../src/Config";
-import {TypeInference} from "../../src/core/common/TypeInference"
-import {assert, describe, expect, it, vi} from "vitest";
-import {Scene} from "../../src/Scene";
+import { SceneConfig } from "../../src/Config";
+import { TypeInference } from "../../src/core/common/TypeInference"
+import { assert, describe, expect, it, vi } from "vitest";
+import { Scene } from "../../src/Scene";
 import path from "path";
 
 describe("StaticSingleAssignmentFormer Test", () => {

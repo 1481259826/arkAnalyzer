@@ -13,13 +13,11 @@
  * limitations under the License.
  */
 
-import * as ts from "ohos-typescript";
-import path from 'path';
-import {ArkFile} from "./ArkFile";
-import {LineColPosition} from "../base/Position";
-import {findExportInfo} from "./builder/ArkImportBuilder";
-import {Decorator} from "../base/Decorator";
-import {ExportInfo, FromInfo} from "./ArkExport";
+import { ArkFile } from "./ArkFile";
+import { LineColPosition } from "../base/Position";
+import { findExportInfo } from "./builder/ArkImportBuilder";
+import { Decorator } from "../base/Decorator";
+import { ExportInfo, FromInfo } from "./ArkExport";
 
 export class ImportInfo implements FromInfo {
     private importClauseName: string;
@@ -49,53 +47,53 @@ export class ImportInfo implements FromInfo {
         this.setNameBeforeAs(nameBeforeAs);
     }
 
-    public getOriginName() {
+    public getOriginName(): string {
         return this.nameBeforeAs ?? this.importClauseName;
     }
 
     /**
      * 获取实际的引用（调用时生成）
      */
-    public getExportInfo() {
+    public getLazyExportInfo(): ExportInfo | null {
         if (this.lazyExportInfo === undefined) {
             this.lazyExportInfo = findExportInfo(this);
         }
         return this.lazyExportInfo;
     }
 
-    public setDeclaringArkFile(declaringArkFile: ArkFile) {
+    public setDeclaringArkFile(declaringArkFile: ArkFile): void {
         this.declaringArkFile = declaringArkFile;
     }
 
-    public getDeclaringArkFile() {
+    public getDeclaringArkFile(): ArkFile {
         return this.declaringArkFile;
     }
 
-    public getImportClauseName() {
+    public getImportClauseName(): string {
         return this.importClauseName;
     }
 
-    public setImportClauseName(importClauseName: string) {
+    public setImportClauseName(importClauseName: string): void {
         this.importClauseName = importClauseName;
     }
 
-    public getImportType() {
+    public getImportType(): string {
         return this.importType;
     }
 
-    public setImportType(importType: string) {
+    public setImportType(importType: string): void {
         this.importType = importType;
     }
 
-    public getImportFrom() {
+    public getImportFrom(): string {
         return this.importFrom;
     }
 
-    public setImportFrom(importFrom: string) {
+    public setImportFrom(importFrom: string): void {
         this.importFrom = importFrom;
     }
 
-    public getNameBeforeAs() {
+    public getNameBeforeAs(): string | undefined {
         return this.nameBeforeAs;
     }
 
@@ -103,16 +101,12 @@ export class ImportInfo implements FromInfo {
         this.nameBeforeAs = nameBeforeAs;
     }
 
-    public getModifiers() {
+    public getModifiers(): Set<string | Decorator> {
         return this.modifiers;
     }
 
-    public addModifier(name: string | Decorator) {
+    public addModifier(name: string | Decorator): void {
         this.modifiers.add(name);
-    }
-
-    private transfer2UnixPath(path2Do: string) {
-        return path.posix.join(...path2Do.split(/\\/));
     }
 
     public setOriginTsPosition(originTsPosition: LineColPosition): void {
@@ -137,7 +131,7 @@ export class ImportInfo implements FromInfo {
 
     public isDefault(): boolean {
         let index = this.tsSourceCode.indexOf(this.importClauseName);
-        if(index === -1){
+        if (index === -1) {
             return false;
         }
         let start = this.tsSourceCode.indexOf('{');

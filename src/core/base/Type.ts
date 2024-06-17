@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import {ArkField} from "../model/ArkField";
-import {ClassSignature, MethodSignature, NamespaceSignature} from "../model/ArkSignature";
+import { ArkField } from "../model/ArkField";
+import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
 
 export abstract class Type {
     abstract toString(): string;

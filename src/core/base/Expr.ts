@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import {TypeInference} from '../common/TypeInference';
-import {BasicBlock} from '../graph/BasicBlock';
-import {ArkClass} from '../model/ArkClass';
-import {ClassSignature, MethodSignature, MethodSubSignature, NamespaceSignature} from '../model/ArkSignature';
-import {Local} from './Local';
+import { TypeInference } from '../common/TypeInference';
+import { BasicBlock } from '../graph/BasicBlock';
+import { ArkClass } from '../model/ArkClass';
+import { ClassSignature, MethodSignature, MethodSubSignature, NamespaceSignature } from '../model/ArkSignature';
+import { Local } from './Local';
 import {
     AnnotationNamespaceType,
     ArrayType,
@@ -28,11 +28,11 @@ import {
     Type,
     UnknownType
 } from './Type';
-import {Value} from './Value';
-import {AbstractFieldRef, ArkParameterRef} from './Ref';
-import {ModelUtils} from "../common/ModelUtils";
-import {ArkMethod} from "../model/ArkMethod";
-import {ArkAssignStmt, ArkInvokeStmt} from "./Stmt";
+import { Value } from './Value';
+import { AbstractFieldRef, ArkParameterRef } from './Ref';
+import { ModelUtils } from "../common/ModelUtils";
+import { ArkMethod } from "../model/ArkMethod";
+import { ArkAssignStmt } from "./Stmt";
 import Logger from "../../utils/logger";
 
 const logger = Logger.getLogger();
@@ -44,7 +44,7 @@ export abstract class AbstractExpr implements Value {
 
     abstract toString(): string;
 
-    assembleType(arkMethod: ArkMethod): AbstractExpr {
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
         return this;
     }
 }
@@ -138,7 +138,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         return strs.join('');
     }
 
-    assembleType(arkMethod: ArkMethod): AbstractInvokeExpr {
+    public inferType(arkMethod: ArkMethod): AbstractInvokeExpr {
         if (!(this.base instanceof Local)) {
             logger.warn("invoke expr base is not local")
             return this;
@@ -232,7 +232,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         return strs.join('');
     }
 
-    assembleType(arkMethod: ArkMethod): ArkStaticInvokeExpr {
+    public inferType(arkMethod: ArkMethod): ArkStaticInvokeExpr {
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         let method = ModelUtils.getStaticMethodWithName(methodName, arkMethod);
         if (!method) {
@@ -270,7 +270,7 @@ export class ArkNewExpr extends AbstractExpr {
         return 'new ' + this.classType;
     }
 
-    assembleType(arkMethod: ArkMethod): ArkNewExpr {
+    public inferType(arkMethod: ArkMethod): ArkNewExpr {
         const className = this.classType.getClassSignature().getClassName();
         const arkClass = ModelUtils.getClassWithName(className, arkMethod);
         if (arkClass) {

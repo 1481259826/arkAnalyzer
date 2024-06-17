@@ -13,14 +13,11 @@
  * limitations under the License.
  */
 
-import { fetchDependenciesFromFile } from '../../src/utils/json5parser';
-import { assert, describe, expect, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 import path from 'path';
-import {SceneConfig} from "../../src/Config";
-import {Scene} from "../../src/Scene";
-import {FileSignature} from "../../src/core/model/ArkSignature";
-import {ExportInfo} from "../../src/core/model/ArkExport";
-import {ImportInfo} from "../../src/core/model/ArkImport";
+import { SceneConfig } from "../../src/Config";
+import { Scene } from "../../src/Scene";
+import { FileSignature } from "../../src/core/model/ArkSignature";
 
 describe("export Test", () => {
     it('debug case', () => {
@@ -38,7 +35,7 @@ describe("export Test", () => {
         fileId.setFileName("test.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
-        assert.equal(file?.getExportInfosMap().size,2);
-        assert.equal(file?.getImportInfos().length,17);
+        assert.equal(file?.getExportInfos().length,2);
+        assert.equal(file?.getImportInfos().length,18);
     })
 })

@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import {Local} from "../base/Local";
-import {ArkClass} from "../model/ArkClass";
-import {ArkFile} from "../model/ArkFile";
-import {ArkMethod} from "../model/ArkMethod";
-import {ArkNamespace} from "../model/ArkNamespace";
-import {ClassSignature, MethodSignature, NamespaceSignature} from "../model/ArkSignature";
-import {TypeSignature} from "../model/ArkExport";
+import { Local } from "../base/Local";
+import { ArkClass } from "../model/ArkClass";
+import { ArkFile } from "../model/ArkFile";
+import { ArkMethod } from "../model/ArkMethod";
+import { ArkNamespace } from "../model/ArkNamespace";
+import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
+import { TypeSignature } from "../model/ArkExport";
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -117,15 +117,15 @@ export class ModelUtils {
 
     public static getClassInImportInfoWithName(className: string, arkFile: ArkFile): ArkClass | null {
         let typeSignature = this.getTypeSignatureInImportInfoWithName(className, arkFile);
-        if (typeSignature) {
-            return arkFile.getScene().getClass(typeSignature as ClassSignature);
+        if (typeSignature instanceof ClassSignature) {
+            return arkFile.getScene().getClass(typeSignature);
         }
         return null;
     }
 
     /** search type within the given file import infos */
     public static getTypeSignatureInImportInfoWithName(name: string, arkFile: ArkFile): TypeSignature | undefined {
-        return arkFile.getImportInfo(name)?.getExportInfo()?.getTypeSignature();
+        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getTypeSignature();
     }
 
 

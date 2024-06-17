@@ -26,7 +26,7 @@ import { MethodSignature, MethodSubSignature } from "./ArkSignature";
 import { Decorator } from "../base/Decorator";
 import { MethodParameter } from "./builder/ArkMethodBuilder";
 import { BodyBuilder } from "../common/BodyBuilder";
-import {ArkExport, ExportType} from "./ArkExport";
+import { ArkExport, ExportType } from "./ArkExport";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];

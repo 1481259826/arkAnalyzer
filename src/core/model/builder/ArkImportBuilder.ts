@@ -16,15 +16,15 @@
 import * as ts from "ohos-typescript";
 import path from 'path';
 import fs from 'fs';
-import {ArkFile} from "../ArkFile";
-import {LineColPosition} from "../../base/Position";
-import {ImportInfo} from "../ArkImport";
-import {buildModifiers} from "./builderUtils";
-import {Decorator} from "../../base/Decorator";
-import {ExportInfo, ExportType, FromInfo, TypeSignature} from "../ArkExport";
-import {FileSignature} from "../ArkSignature";
+import { ArkFile } from "../ArkFile";
+import { LineColPosition } from "../../base/Position";
+import { ImportInfo } from "../ArkImport";
+import { buildModifiers } from "./builderUtils";
+import { Decorator } from "../../base/Decorator";
+import { ExportInfo, ExportType, FromInfo } from "../ArkExport";
+import { FileSignature } from "../ArkSignature";
 import Logger from "../../../utils/logger";
-import {Scene} from "../../../Scene";
+import { Scene } from "../../../Scene";
 
 const logger = Logger.getLogger();
 
@@ -35,34 +35,34 @@ function getProjectArkFile(im: FromInfo, originPath: string) {
     return im.getDeclaringArkFile().getScene().getFile(fromSignature);
 }
 
-export function expandExportInfo(arkFile: ArkFile) {
-    let exportInfosMap = arkFile.getExportInfosMap();
-    exportInfosMap.forEach((v, k) => {
-        if (v.getNameBeforeAs() === '*') {
-            let formFile = getArkFile(v);
+export function expandExportInfo(arkFile: ArkFile): void {
+    let exportInfos = arkFile.getExportInfos();
+    exportInfos.forEach(exportInfo => {
+        if (exportInfo.getNameBeforeAs() === '*') {
+            let formFile = getArkFile(exportInfo);
             if (formFile) {
                 expandExportInfo(formFile);
-                let prefix = v.getExportClauseName() === '*' ? '' : v.getExportClauseName() + '.';
+                let prefix = exportInfo.getExportClauseName() === '*' ? '' : exportInfo.getExportClauseName() + '.';
                 formFile.getExportInfos().forEach(eInfo => {
-                    let e = enrichType(eInfo);
+                    let e = setTypeForExportInfo(eInfo);
                     let newInfo = new ExportInfo.Builder()
                         .exportClauseName(prefix + e.getExportClauseName())
                         .nameBeforeAs(e.getExportClauseName())
                         .exportClauseType(e.getExportClauseType())
-                        .modifiers(v.getModifiers())
+                        .modifiers(exportInfo.getModifiers())
                         .typeSignature(e.getTypeSignature())
                         .originTsPosition(e.getOriginTsPosition())
                         .declaringArkFile(e.getDeclaringArkFile())
                         .build();
-                    exportInfosMap.set(newInfo.getExportClauseName(), newInfo);
+                    arkFile.addExportInfo(newInfo);
                 })
-                exportInfosMap.set(k, enrichType(v));
+                arkFile.addExportInfo(setTypeForExportInfo(exportInfo));
             }
         }
     })
 }
 
-export function getArkFile(im: FromInfo) {
+export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     const from = im.getFrom();
     if (!from) {
         return null;
@@ -97,28 +97,27 @@ export function findExportInfo(im: FromInfo): ExportInfo | null {
             .typeSignature(file.getDefaultClass().getSignature())
             .build();
     }
-    let eInfo = im.isDefault() ? file.getExportInfos().find(p => p.isDefault()) : file.getExportInfosMap().get(im.getOriginName());
+    let eInfo = im.isDefault() ? file.getExportInfos().find(p => p.isDefault()) : file.getExportInfoBy(im.getOriginName());
     if (eInfo === undefined) {
         logger.warn('export info not found, ' + im.getFrom() + ' in file: ' + im.getDeclaringArkFile().getFileSignature().toString());
         return null;
     }
-
-    return enrichType(eInfo);
+    return eInfo;
 }
 
-function enrichType(eInfo: ExportInfo) {
+export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
     if (eInfo.getTypeSignature()) {
         return eInfo;
     } else if (!eInfo.getFrom()) {
         if (eInfo.getExportClauseType() === ExportType.LOCAL) {
-            findDefaultMethod(eInfo);
+            findDefaultMethodSetType(eInfo);
         } else {
-            let found = findClasses(eInfo);
+            let found = findClassSetType(eInfo);
             if (!found) {
-                found = findNameSpaces(eInfo);
+                found = findNameSpaceSetType(eInfo);
             }
             if (!found) {
-                findDefaultMethod(eInfo);
+                findDefaultMethodSetType(eInfo);
             }
         }
         return eInfo;
@@ -135,7 +134,7 @@ function enrichType(eInfo: ExportInfo) {
     return eInfo;
 }
 
-function findDefaultMethod(info: ExportInfo): boolean {
+function findDefaultMethodSetType(info: ExportInfo): boolean {
     let locals = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
     if (locals) {
         for (const local of locals) {
@@ -149,26 +148,22 @@ function findDefaultMethod(info: ExportInfo): boolean {
     return false;
 }
 
-function findClasses(info: ExportInfo): boolean {
-    let classes = info.getDeclaringArkFile().getClasses();
-    for (const clazz of classes) {
-        if (clazz.getName() === info.getOriginName()) {
-            info.setExportClauseType(ExportType.CLASS);
-            info.setTypeSignature(clazz.getSignature());
-            return true;
-        }
+function findClassSetType(info: ExportInfo): boolean {
+    const clazz = info.getDeclaringArkFile().getClassWithName(info.getOriginName());
+    if (clazz) {
+        info.setExportClauseType(ExportType.CLASS);
+        info.setTypeSignature(clazz.getSignature());
+        return true;
     }
     return false;
 }
 
-function findNameSpaces(info: ExportInfo): boolean {
-    let namespaces = info.getDeclaringArkFile().getNamespaces();
-    for (const space of namespaces) {
-        if (space.getName() === info.getOriginName()) {
-            info.setExportClauseType(ExportType.NAME_SPACE);
-            info.setTypeSignature(space.getSignature());
-            return true;
-        }
+function findNameSpaceSetType(info: ExportInfo): boolean {
+    const space = info.getDeclaringArkFile().getNamespaceWithName(info.getOriginName());
+    if (space) {
+        info.setExportClauseType(ExportType.NAME_SPACE);
+        info.setTypeSignature(space.getSignature());
+        return true;
     }
     return false;
 }

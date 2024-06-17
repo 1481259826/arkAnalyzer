@@ -16,27 +16,27 @@
 import fs from 'fs';
 import path from 'path';
 
-import {SceneConfig, Sdk} from './Config';
-import {AbstractCallGraph} from "./callgraph/AbstractCallGraphAlgorithm";
-import {ClassHierarchyAnalysisAlgorithm} from "./callgraph/ClassHierarchyAnalysisAlgorithm";
-import {RapidTypeAnalysisAlgorithm} from "./callgraph/RapidTypeAnalysisAlgorithm";
-import {VariablePointerAnalysisAlogorithm} from './callgraph/VariablePointerAnalysisAlgorithm';
-import {ImportInfo} from './core/model/ArkImport';
-import {ModelUtils} from './core/common/ModelUtils';
-import {TypeInference} from './core/common/TypeInference';
-import {VisibleValue} from './core/common/VisibleValue';
-import {ArkClass} from "./core/model/ArkClass";
-import {ArkFile} from "./core/model/ArkFile";
-import {ArkMethod} from "./core/model/ArkMethod";
-import {ArkNamespace} from "./core/model/ArkNamespace";
-import {ClassSignature, FileSignature, MethodSignature, NamespaceSignature} from "./core/model/ArkSignature";
+import { SceneConfig, Sdk } from './Config';
+import { AbstractCallGraph } from "./callgraph/AbstractCallGraphAlgorithm";
+import { ClassHierarchyAnalysisAlgorithm } from "./callgraph/ClassHierarchyAnalysisAlgorithm";
+import { RapidTypeAnalysisAlgorithm } from "./callgraph/RapidTypeAnalysisAlgorithm";
+import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
+import { ImportInfo } from './core/model/ArkImport';
+import { ModelUtils } from './core/common/ModelUtils';
+import { TypeInference } from './core/common/TypeInference';
+import { VisibleValue } from './core/common/VisibleValue';
+import { ArkClass } from "./core/model/ArkClass";
+import { ArkFile } from "./core/model/ArkFile";
+import { ArkMethod } from "./core/model/ArkMethod";
+import { ArkNamespace } from "./core/model/ArkNamespace";
+import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
 import Logger from "./utils/logger";
-import {Local} from './core/base/Local';
-import {buildArkFileFromFile, flatMap} from './core/model/builder/ArkFileBuilder';
-import {fetchDependenciesFromFile, parseJsonText} from './utils/json5parser';
-import {getAllFiles} from './utils/getAllFiles';
-import {getFileRecursively} from './utils/FileUtils';
-import {ExportType} from "./core/model/ArkExport";
+import { Local } from './core/base/Local';
+import { buildArkFileFromFile, expandImportAll } from './core/model/builder/ArkFileBuilder';
+import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
+import { getAllFiles } from './utils/getAllFiles';
+import { getFileRecursively } from './utils/FileUtils';
+import { ExportType } from "./core/model/ArkExport";
 
 const logger = Logger.getLogger();
 
@@ -157,7 +157,7 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
-        flatMap(this.filesMap);
+        expandImportAll(this.filesMap);
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
@@ -171,7 +171,7 @@ export class Scene {
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
-        flatMap(this.sdkArkFilesMap);
+        expandImportAll(this.sdkArkFilesMap);
     }
 
     public buildScene4HarmonyProject() {

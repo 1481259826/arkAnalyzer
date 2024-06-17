@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-import {ModuleScene, Scene} from '../../Scene';
-import {ExportInfo} from './ArkExport';
-import {ImportInfo} from './ArkImport';
-import {ArkClass} from "./ArkClass";
-import {ArkNamespace} from "./ArkNamespace";
-import {ClassSignature, FileSignature, NamespaceSignature} from "./ArkSignature";
+import { ModuleScene, Scene } from '../../Scene';
+import { ExportInfo } from './ArkExport';
+import { ImportInfo } from './ArkImport';
+import { ArkClass } from "./ArkClass";
+import { ArkNamespace } from "./ArkNamespace";
+import { ClassSignature, FileSignature, NamespaceSignature } from "./ArkSignature";
+import { setTypeForExportInfo } from "./builder/ArkImportBuilder";
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
@@ -41,8 +42,8 @@ export class ArkFile {
     private namespaces: Map<string, ArkNamespace> = new Map<string, ArkNamespace>(); // don't contain nested namespaces
     private classes: Map<string, ArkClass> = new Map<string, ArkClass>(); // don't contain class in namespace
 
-    private importInfos: Map<string, ImportInfo> = new Map<string, ImportInfo>();
-    private exportInfos: Map<string, ExportInfo> = new Map<string, ExportInfo>();
+    private importInfoMap: Map<string, ImportInfo> = new Map<string, ImportInfo>();
+    private exportInfoMap: Map<string, ExportInfo> = new Map<string, ExportInfo>();
 
     private scene: Scene;
     private moduleScene: ModuleScene;
@@ -147,27 +148,31 @@ export class ArkFile {
     }
 
     public getImportInfos(): ImportInfo[] {
-        return Array.from(this.importInfos.values());
+        return Array.from(this.importInfoMap.values());
     }
 
-    public getImportInfo(name: string): ImportInfo | undefined {
-        return this.importInfos.get(name);
+    public getImportInfoBy(name: string): ImportInfo | undefined {
+        return this.importInfoMap.get(name);
     }
 
-    public addImportInfos(importInfo: ImportInfo) {
-        this.importInfos.set(importInfo.getImportClauseName(), importInfo);
+    public addImportInfo(importInfo: ImportInfo) {
+        this.importInfoMap.set(importInfo.getImportClauseName(), importInfo);
     }
 
     public getExportInfos(): ExportInfo[] {
-        return Array.from(this.exportInfos.values());
+        return Array.from(this.exportInfoMap.values());
     }
 
-    public getExportInfosMap(): Map<string, ExportInfo> {
-        return this.exportInfos;
+    public getExportInfoBy(name: string): ExportInfo | null {
+        const exportInfo = this.exportInfoMap.get(name);
+        if (exportInfo) {
+            return setTypeForExportInfo(exportInfo);
+        }
+        return null;
     }
 
     public addExportInfo(exportInfo: ExportInfo) {
-        this.exportInfos.set(exportInfo.getExportClauseName(), exportInfo);
+        this.exportInfoMap.set(exportInfo.getExportClauseName(), exportInfo);
     }
 
     public setProjectName(projectName: string) {
@@ -180,7 +185,6 @@ export class ArkFile {
 
     public getModuleName() {
         return this.moduleScene.getModuleName();
-        ;
     }
 
     public setOhPackageJson5Path(ohPackageJson5Path: string[]) {

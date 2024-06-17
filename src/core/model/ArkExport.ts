@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
-import {LineColPosition} from "../base/Position";
-import {Decorator} from "../base/Decorator";
-import {ArkFile} from "./ArkFile";
-import {ArkSignature, ClassSignature, MethodSignature, NamespaceSignature} from "./ArkSignature";
-import {Local} from "../base/Local";
+import { LineColPosition } from "../base/Position";
+import { Decorator } from "../base/Decorator";
+import { ArkFile } from "./ArkFile";
+import { ArkSignature, ClassSignature, MethodSignature, NamespaceSignature } from "./ArkSignature";
+import { Local } from "../base/Local";
 
 export type TypeSignature = NamespaceSignature | ClassSignature | MethodSignature | Local;
 
 export enum ExportType {
-    NAME_SPACE = 'ArkNamespace',
-    CLASS = 'ArkClass',
-    METHOD = 'ArkMethod',
-    LOCAL = 'Local',
-    UNKNOWN = 'Unknown'
+    NAME_SPACE = 0,
+    CLASS = 1,
+    METHOD = 2,
+    LOCAL = 3,
+    UNKNOWN = 4
 }
 
 export interface ArkExport extends ArkSignature {
@@ -53,7 +53,7 @@ export interface FromInfo {
 export class ExportInfo implements FromInfo {
 
     private modifiers: Set<string | Decorator>;
-    private default: boolean;
+    private _default: boolean;
     private nameBeforeAs: string | undefined;
     private exportClauseName: string;
 
@@ -63,7 +63,7 @@ export class ExportInfo implements FromInfo {
 
     private originTsPosition: LineColPosition;
     private tsSourceCode: string;
-    private declaringArkFile: ArkFile;
+    declaringArkFile: ArkFile;
 
     private constructor() {
     }
@@ -72,15 +72,15 @@ export class ExportInfo implements FromInfo {
         return this.exportFrom;
     }
 
-    public getOriginName() {
+    public getOriginName(): string {
         return this.nameBeforeAs ?? this.exportClauseName;
     }
 
-    public getExportClauseName() {
+    public getExportClauseName(): string {
         return this.exportClauseName;
     }
 
-    public setExportClauseType(exportClauseType: ExportType) {
+    public setExportClauseType(exportClauseType: ExportType): void {
         this.exportClauseType = exportClauseType;
     }
 
@@ -88,11 +88,11 @@ export class ExportInfo implements FromInfo {
         return this.exportClauseType;
     }
 
-    private setNameBeforeAs(nameBeforeAs: string) {
+    private setNameBeforeAs(nameBeforeAs: string): void {
         this.nameBeforeAs = nameBeforeAs;
     }
 
-    public getNameBeforeAs() {
+    public getNameBeforeAs(): string | undefined {
         return this.nameBeforeAs;
     }
 
@@ -109,20 +109,20 @@ export class ExportInfo implements FromInfo {
     }
 
     public isDefault(): boolean {
-        if (this.default === undefined) {
-            this.default = this.modifiers?.has('DefaultKeyword')
+        if (this._default === undefined) {
+            this._default = this.modifiers?.has('DefaultKeyword')
         }
-        return this.default;
+        return this._default;
     }
 
-    private addModifier(name: string | Decorator) {
+    private addModifier(name: string | Decorator): void {
         if (!this.modifiers) {
             this.modifiers = new Set<string | Decorator>();
         }
         this.modifiers.add(name);
     }
 
-    public getModifiers() {
+    public getModifiers(): Set<string | Decorator> {
         return this.modifiers;
     }
 
@@ -146,7 +146,7 @@ export class ExportInfo implements FromInfo {
         return this.declaringArkFile;
     }
 
-    public setDeclaringArkFile(value: ArkFile) {
+    public setDeclaringArkFile(value: ArkFile): void {
         this.declaringArkFile = value;
     }
 

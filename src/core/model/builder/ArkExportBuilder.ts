@@ -14,13 +14,13 @@
  */
 
 import * as ts from "ohos-typescript";
-import {LineColPosition} from "../../base/Position";
-import {ArkExport, ExportInfo, ExportType, TypeSignature} from "../ArkExport";
-import {Decorator} from "../../base/Decorator";
-import {buildModifiers} from "./builderUtils";
-import {ArkFile} from "../ArkFile";
+import { LineColPosition } from "../../base/Position";
+import { ArkExport, ExportInfo, ExportType, TypeSignature } from "../ArkExport";
+import { Decorator } from "../../base/Decorator";
+import { buildModifiers } from "./builderUtils";
+import { ArkFile } from "../ArkFile";
 
-export {buildExportInfo, initExportAssignment, initExportDeclaration};
+export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 
 function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineColPosition): ExportInfo {
     return new ExportInfo.Builder()
@@ -34,7 +34,7 @@ function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineCol
         .build();
 }
 
-function initExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
+function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const tsSourceCode = node.getText(sourceFile);
     const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
@@ -78,7 +78,7 @@ function initExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Source
     return exportInfos;
 }
 
-function initExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
+function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     let exportInfos: ExportInfo[] = [];
     if (!node.expression) {
         return exportInfos;
@@ -125,7 +125,7 @@ function initExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceFi
  * @param sourceFile
  * @param arkFile
  */
-export function initExportVariableStatement(node: ts.VariableStatement, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
+export function buildExportVariableStatement(node: ts.VariableStatement, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     let exportInfos: ExportInfo[] = [];
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
@@ -150,7 +150,7 @@ export function initExportVariableStatement(node: ts.VariableStatement, sourceFi
  * @param sourceFile
  * @param arkFile
  */
-export function initExportTypeAliasDeclaration(node: ts.TypeAliasDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
+export function buildExportTypeAliasDeclaration(node: ts.TypeAliasDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     let exportInfos: ExportInfo[] = [];
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();

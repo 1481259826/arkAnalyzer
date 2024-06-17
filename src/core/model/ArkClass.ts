@@ -19,13 +19,12 @@ import { ArkField } from "./ArkField";
 import { ArkFile } from "./ArkFile";
 import { ArkMethod } from "./ArkMethod";
 import { ArkNamespace } from "./ArkNamespace";
-import { ClassSignature, FieldSignature, MethodSignature } from "./ArkSignature";
+import { ClassSignature, FieldSignature, FileSignature, MethodSignature, NamespaceSignature } from "./ArkSignature";
 import Logger from "../../utils/logger";
-import { FileSignature, NamespaceSignature } from "./ArkSignature";
 import { Local } from "../base/Local";
 import { Decorator } from "../base/Decorator";
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from "../common/EtsConst";
-import {ArkExport, ExportType} from "./ArkExport";
+import { ArkExport, ExportType } from "./ArkExport";
 
 const logger = Logger.getLogger();
 

@@ -13,40 +13,34 @@
  * limitations under the License.
  */
 
-import {Scene} from '../../Scene';
 import Logger from "../../utils/logger";
-import {
-    AbstractInvokeExpr,
-    ArkBinopExpr,
-    ArkInstanceInvokeExpr,
-    ArkNewExpr,
-    ArkStaticInvokeExpr
-} from "../base/Expr";
-import {Local} from "../base/Local";
-import {AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef} from "../base/Ref";
-import {ArkAssignStmt, ArkInvokeStmt, Stmt} from "../base/Stmt";
+import { AbstractInvokeExpr, ArkBinopExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
+import { Local } from "../base/Local";
+import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
+import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
 import {
     AnnotationNamespaceType,
     AnnotationType,
-    AnyType, ArrayType,
-    BooleanType, CallableType,
+    AnyType,
+    ArrayType,
+    BooleanType,
     ClassType,
     NeverType,
     NullType,
     NumberType,
     StringType,
-    Type, UnclearReferenceType,
+    Type,
+    UnclearReferenceType,
     UndefinedType,
     UnionType,
     UnknownType,
     VoidType
 } from "../base/Type";
-import {ArkMethod} from "../model/ArkMethod";
-import {ClassSignature, NamespaceSignature} from "../model/ArkSignature";
-import {ModelUtils} from "./ModelUtils";
-import {ArkField} from '../model/ArkField';
-import {ArkClass} from '../model/ArkClass';
-import {TypeSignature} from "../model/ArkExport";
+import { ArkMethod } from "../model/ArkMethod";
+import { ClassSignature } from "../model/ArkSignature";
+import { ModelUtils } from "./ModelUtils";
+import { ArkField } from '../model/ArkField';
+import { ArkClass } from '../model/ArkClass';
 
 const logger = Logger.getLogger();
 
@@ -86,7 +80,7 @@ export class TypeInference {
     private static resolveSymbolInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
         const exprs = stmt.getExprs();
         for (const expr of exprs) {
-            const newExpr = expr.assembleType(arkMethod);
+            const newExpr = expr.inferType(arkMethod);
             if (expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
                 if (stmt.containsInvokeExpr()) {
                     if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
@@ -169,7 +163,7 @@ export class TypeInference {
         field.getFieldSignature().setDeclaringClassSignature(arkClass.getSignature());
         let arkField = arkClass.getFieldWithName(fieldName) ?? arkClass.getStaticFieldWithName(fieldName);
         if (arkField == null) {
-            const tsField = arkClass.getDeclaringArkFile().getExportInfosMap().get(fieldName);
+            const tsField = arkClass.getDeclaringArkFile().getExportInfoBy(fieldName);
             if (tsField && tsField.getTypeSignature() instanceof ClassSignature) {
                 field.getFieldSignature().setType(new ClassType(tsField.getTypeSignature() as ClassSignature));
             }
@@ -182,7 +176,7 @@ export class TypeInference {
                 if (signature instanceof ClassSignature) {
                     fieldType = new ClassType(signature);
                 }
-                arkField.setType(fieldType)
+                arkField.setType(fieldType);
             }
         }
         return arkField;

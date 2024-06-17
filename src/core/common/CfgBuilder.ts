@@ -310,7 +310,7 @@ export class CfgBuilder {
         for (let i = 0; i < nodes.length; i++) {
             let c = nodes[i];
             if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c)) {
-                let s = new StatementBuilder("statement", c.getText(this.sourceFile), c, scope.id);
+                let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
                 lastStatement = s;
             } else if (ts.isReturnStatement(c)) {

@@ -14,7 +14,6 @@
  */
 
 import { LineColPosition } from "../../base/Position";
-import { ExportInfo } from "../ArkExport";
 import { buildDefaultArkClassFromArkNamespace, buildNormalArkClassFromArkNamespace } from "./ArkClassBuilder";
 import { ArkFile } from "../ArkFile";
 import { buildArkMethodFromArkClass } from "./ArkMethodBuilder";
@@ -22,7 +21,7 @@ import ts from "ohos-typescript";
 import { ArkNamespace } from "../ArkNamespace";
 import { buildModifiers } from "./builderUtils";
 import Logger from "../../../utils/logger";
-import {buildExportInfo, initExportAssignment, initExportDeclaration} from "./ArkExportBuilder";
+import { buildExportAssignment, buildExportDeclaration, buildExportInfo } from "./ArkExportBuilder";
 import { ArkClass } from "../ArkClass";
 import { ArkMethod } from "../ArkMethod";
 
@@ -148,10 +147,10 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
                     LineColPosition.buildFromNode(child, sourceFile)));
             }
         } else if (ts.isExportDeclaration(child)) {
-            initExportDeclaration(child, sourceFile, namespace.getDeclaringArkFile())
+            buildExportDeclaration(child, sourceFile, namespace.getDeclaringArkFile())
                 .forEach(item => namespace.addExportInfo(item));
         } else if (ts.isExportAssignment(child)) {
-            initExportAssignment(child, sourceFile, namespace.getDeclaringArkFile())
+            buildExportAssignment(child, sourceFile, namespace.getDeclaringArkFile())
                 .forEach(item => namespace.addExportInfo(item));
         } else {
             logger.info('Child joined default method of arkFile: ', ts.SyntaxKind[child.kind]);
