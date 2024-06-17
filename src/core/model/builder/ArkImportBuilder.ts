@@ -70,7 +70,7 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     if (/^\.{1,2}\//.test(from)) {
         const originPath = path.resolve(path.dirname(im.getDeclaringArkFile().getFilePath()), from);
         return getProjectArkFile(im, originPath);
-    } else if (/^@ohos\//.test(from)) {
+    } else if (/^@[a-z|\-]+?\//.test(from)) {
         const originPath = getOriginPath(from, im.getDeclaringArkFile());
         const fromSignature = new FileSignature();
         fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
