@@ -13,17 +13,16 @@
  * limitations under the License.
  */
 
+@Entry
 @Component
-struct Foo {
-    flag: boolean = false;
+struct Parent {
+@State simpleList: Array<string> = ['one', 'two', 'three'];
 
     build() {
-        Row() {
-            if (this.flag === false) {
-                Column()
-            } else {
-                Column()
-            }
-        }
+        Repeat<string>(this.simpleList)
+            .each((obj: RepeatItem<string>) => {
+                Row()
+            })
+            .key((item: string) => item)
     }
 }
