@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 
-import { ArkFile } from "../../core/model/ArkFile";
 import { ArkNamespace } from "../../core/model/ArkNamespace";
 import { SourceBase } from "./SourceBase";
 import { SourceClass } from "./SourceClass";
 import { SourceMethod } from "./SourceMethod";
 import { SourceExportInfo } from "./SourceModule";
 
+/**
+ * @category save
+ */
 export class SourceNamespace extends SourceBase{
     ns: ArkNamespace;
 
-    public constructor(indent: string, arkFile: ArkFile, ns: ArkNamespace) {
-        super(indent, arkFile);
+    public constructor(indent: string, ns: ArkNamespace) {
+        super(indent);
         this.ns = ns;
     }
 
@@ -43,22 +45,22 @@ export class SourceNamespace extends SourceBase{
             if (cls.isDefaultArkClass()) {
                 for (let method of cls.getMethods()) {
                     if (!method.getName().startsWith('AnonymousFunc$_')) {
-                        items.push(new SourceMethod(this.printer.getIndent(), this.arkFile, method));
+                        items.push(new SourceMethod(this.printer.getIndent(), method));
                     }
                 }
             } else {
-                items.push(new SourceClass(this.printer.getIndent(), this.arkFile, cls));
+                items.push(new SourceClass(this.printer.getIndent(), cls));
             }            
         }
 
         // print namespace
         for (let childNs of this.ns.getNamespaces()) {
-            items.push(new SourceNamespace(this.printer.getIndent(), this.arkFile, childNs));
+            items.push(new SourceNamespace(this.printer.getIndent(), childNs));
         }
 
         // print exportInfos
         for (let exportInfo of this.ns.getExportInfos()) {
-            items.push(new SourceExportInfo(this.printer.getIndent(), this.arkFile, exportInfo));
+            items.push(new SourceExportInfo(this.printer.getIndent(), exportInfo));
         }
         //TODO: fields /methods
         //TODO: sort by lineno
@@ -73,7 +75,7 @@ export class SourceNamespace extends SourceBase{
         return this.printer.toString();
     }
 
-    public dumpOriginalCode(): string {
+    public dumpOriginal(): string {
         return this.ns.getCode();
     }
 

@@ -17,14 +17,51 @@ import fs from 'fs';
 import { dirname, join } from 'path';
 import { ArkFile } from '../core/model/ArkFile';
 import { ArkStream } from './ArkStream';
-import { DotPrinter } from './DotPrinter';
-import { SourcePrinter } from './source/SourcePrinter';
+import { DotFilePrinter } from './DotPrinter';
+import { SourceFilePrinter } from './source/SourcePrinter';
 import { Printer } from './Printer';
 
-export class PrinterBuilder {    
+/**
+ * @example
+ * // dump method IR to ts source
+ * let method: Method = xx;
+ * let srcPrinter = new SourceMethodPrinter(method);
+ * PrinterBuilder.dump(srcPrinter, 'output.ts');
+ * 
+ * // dump method original ts source
+ * PrinterBuilder.dumpOriginal(srcPrinter, 'output.ts');
+ * 
+ * // dump method cfg to dot
+ * let dotPrinter = new DotMethodPrinter(method);
+ * PrinterBuilder.dump(dotPrinter, 'output.dot');
+ * 
+ * // dump method original dot
+ * PrinterBuilder.dumpOriginal(dotPrinter, 'output.dot');
+ * 
+ * // dump project
+ * let printer = new PrinterBuilder('output');
+ * for (let f of scene.getFiles()) {
+ *     printer.dumpToTs(f);
+ * }
+ * 
+ * @category save
+ */
+export class PrinterBuilder {
     outputDir: string;
-    constructor(outputDir: string='') {
+    constructor(outputDir: string = '') {
         this.outputDir = outputDir;
+    }
+
+    public static dump(source: Printer, output: string) {
+        let streamOut = new ArkStream(fs.createWriteStream(output));
+        streamOut.write(source.dump());
+        streamOut.close();
+    }
+
+    public static dumpOriginal(source: Printer, output: string) {
+        let streamOut = new ArkStream(fs.createWriteStream(output));
+        streamOut.write(source.dumpOriginal());
+        streamOut.close();
     }
 
     protected getOutputDir(arkFile: ArkFile): string {
@@ -35,28 +72,25 @@ export class PrinterBuilder {
         }
     }
 
-    public dumpToDot(arkFile: ArkFile, output: string|undefined=undefined): void {
+    public dumpToDot(arkFile: ArkFile, output: string | undefined = undefined): void {
         let filename = output;
         if (output === undefined) {
-            filename = join(this.getOutputDir(arkFile), arkFile.getName() +'.dot');
-        }     
-        fs.mkdirSync(dirname(filename as string), {recursive: true});
-        let streamOut = new ArkStream(fs.createWriteStream(filename as string));
-        let printer: Printer = new DotPrinter(arkFile);
-        printer.printTo(streamOut);
-        streamOut.close();
+            filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.dot');
+        }
+        fs.mkdirSync(dirname(filename as string), { recursive: true });
+
+        let printer: Printer = new DotFilePrinter(arkFile);
+        PrinterBuilder.dump(printer, filename as string);
     }
 
-    public dumpToTs(arkFile: ArkFile, output: string|undefined=undefined): void {
+    public dumpToTs(arkFile: ArkFile, output: string | undefined = undefined): void {
         let filename = output;
         if (output === undefined) {
-            filename = join(this.getOutputDir(arkFile), arkFile.getName()); 
-        }     
-        fs.mkdirSync(dirname(filename as string), {recursive: true});
-        let streamOut = new ArkStream(fs.createWriteStream(filename as string));
-        let printer: SourcePrinter = new SourcePrinter(arkFile);
-        // if arkFile not change printOriginalCode()
-        printer.printTo(streamOut);
-        streamOut.close();
+            filename = join(this.getOutputDir(arkFile), arkFile.getName());
+        }
+        fs.mkdirSync(dirname(filename as string), { recursive: true });
+
+        let printer: Printer = new SourceFilePrinter(arkFile);
+        PrinterBuilder.dump(printer, filename as string);
     }
 }

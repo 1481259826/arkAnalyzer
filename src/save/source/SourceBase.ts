@@ -15,20 +15,16 @@
 
 import { Decorator } from "../../core/base/Decorator";
 import { ArkFile } from "../../core/model/ArkFile";
-import { ArkCodeBuffer } from "../ArkStream";
+import { Printer } from "../Printer";
 
 
-export abstract class SourceBase {
-    protected printer: ArkCodeBuffer;
+export abstract class SourceBase extends Printer {
     protected arkFile: ArkFile;
 
-    public constructor(indent: string, arkFile: ArkFile) {
-        this.printer = new ArkCodeBuffer(indent);
-        this.arkFile = arkFile;
+    public constructor(indent: string) {
+        super(indent);
     }
 
-    public abstract dump(): string;
-    public abstract dumpOriginalCode(): string;
     public abstract getLine(): number;
 
     protected modifiersToString(modifiers: Set<string | Decorator>): string {

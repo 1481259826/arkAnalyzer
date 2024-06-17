@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArrayType, ClassType, LiteralType, Type, TypeLiteralType, UnknownType } from "../../core/base/Type";
+import { ArrayType, ClassType, LiteralType, PrimitiveType, Type, TypeLiteralType, UnknownType } from "../../core/base/Type";
 
 export class SourceUtils {
     public static typeToString(type: Type): string {
@@ -35,11 +35,23 @@ export class SourceUtils {
         } else if (type instanceof UnknownType) {
             return 'any';
         } else if (type instanceof ClassType) {
-            return type.getClassSignature().getClassName();
+            let name = type.getClassSignature().getClassName();
+            if (name == '_DEFAULT_ARK_CLASS' || name.startsWith('AnonymousClass')) {
+                return 'any';
+            }
+            return name;
         } else if (type instanceof ArrayType) {
-            if (type.getBaseType() instanceof UnknownType) {
+            let baseType = type.getBaseType();
+            if (baseType instanceof UnknownType) {
                 const strs: string[] = [];
                 strs.push('(any)');
+                for (let i = 0; i < type.getDimension(); i++) {
+                    strs.push('[]');
+                }
+                return strs.join('');
+            } else if (baseType instanceof PrimitiveType) {
+                const strs: string[] = [];
+                strs.push(`${baseType.getName()}`);
                 for (let i = 0; i < type.getDimension(); i++) {
                     strs.push('[]');
                 }
