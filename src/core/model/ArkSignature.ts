@@ -27,6 +27,9 @@ export interface ArkSignature {
     getSignature(): Signature;
 }
 
+/**
+ * @category core/model
+ */
 export class FileSignature {
     private projectName: string = "_UnkownProjectName";
     private fileName: string = "_UnkownFileName";
@@ -257,6 +260,9 @@ export class MethodSubSignature {
     }
 }
 
+/**
+ * @category core/model
+ */
 export class MethodSignature {
     private declaringClassSignature: ClassSignature = new ClassSignature();
     private methodSubSignature: MethodSubSignature = new MethodSubSignature();

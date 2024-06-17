@@ -37,6 +37,9 @@ import Logger from "../../utils/logger";
 
 const logger = Logger.getLogger();
 
+/**
+ * @category core/base/expr
+ */
 export abstract class AbstractExpr implements Value {
     abstract getUses(): Value[];
 

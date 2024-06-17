@@ -38,6 +38,9 @@ export class LinePosition {
     }
 }
 
+/**
+ * @category core/base
+ */
 export class LineColPosition {
     private readonly lineNo: number;
     private readonly colNo: number;

@@ -26,6 +26,9 @@ import Logger from "../../utils/logger";
 
 const logger = Logger.getLogger();
 
+/**
+ * @category core/graph
+ */
 export class Cfg {
     private blocks: Set<BasicBlock> = new Set();
     private stmtToBlock: Map<Stmt, BasicBlock> = new Map();

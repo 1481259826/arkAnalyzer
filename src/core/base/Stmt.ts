@@ -20,6 +20,9 @@ import { AbstractFieldRef, ArkArrayRef } from './Ref';
 import { Value } from './Value';
 import { LineColPosition } from './Position';
 
+/**
+ * @category core/base/stmt
+ */
 export class Stmt {
     private text: string = '';
     private def: Value | null = null;

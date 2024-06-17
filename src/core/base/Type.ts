@@ -16,6 +16,9 @@
 import { ArkField } from "../model/ArkField";
 import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
 
+/**
+ * @category core/base/type
+ */
 export abstract class Type {
     abstract toString(): string;
 }

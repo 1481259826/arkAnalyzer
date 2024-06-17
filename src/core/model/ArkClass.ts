@@ -28,6 +28,9 @@ import { ArkExport, ExportType } from "./ArkExport";
 
 const logger = Logger.getLogger();
 
+/**
+ * @category core/model
+ */
 export class ArkClass implements ArkExport {
     private name: string = '';
     private originType: string = "Class";
