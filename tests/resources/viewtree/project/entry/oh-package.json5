@@ -1,0 +1,6 @@
+{
+    "name": "entry",
+    "dependencies": {
+        "@hmos/worldclock": "file:../worldclock"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "modules": [
+        {
+            "name": "entry",
+            "srcPath": "./entry"
+        },
+        {
+            "name": "worldclock",
+            "srcPath": "./worldclock"
+        }
+    ]
+}
