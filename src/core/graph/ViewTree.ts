@@ -161,10 +161,26 @@ export class ViewTreeNode {
         this.children.push(builder.getViewTree().getRoot());
     }
 
-    public walk(selector: (item: ViewTreeNode) => boolean): boolean {
+    /**
+     * walk node and node's children 
+     * @param selector Node selector function, return true skipping the follow-up nodes.
+     * @returns 
+     *  - true: There are nodes that meet the selector. 
+     *  - false: does not exist.
+     */
+    public walk(selector: (item: ViewTreeNode) => boolean, visitor: Set<ViewTreeNode> = new Set()): boolean {
+        if (visitor.has(this)) {
+            return false;
+        }
+
         let ret: boolean = selector(this);
+        visitor.add(this);
+
         for (const child of this.children) {
-            ret = ret || child.walk(selector);
+            ret = ret || child.walk(selector, visitor);
+            if (ret) {
+                break;
+            }
         }
         return ret;
     }

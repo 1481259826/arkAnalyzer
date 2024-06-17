@@ -31,8 +31,10 @@ import {
     AbstractFieldRef,
     ArkArrayRef,
     ArkCaughtExceptionRef,
-    ArkInstanceFieldRef, ArkParameterRef,
-    ArkStaticFieldRef, ArkThisRef,
+    ArkInstanceFieldRef,
+    ArkParameterRef,
+    ArkStaticFieldRef,
+    ArkThisRef,
 } from '../base/Ref';
 import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
@@ -81,10 +83,11 @@ import {
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
     COMPONENT_IF,
-    COMPONENT_POP_FUNCTION,
+    COMPONENT_POP_FUNCTION, COMPONENT_REPEAT,
     isEtsSystemComponent,
 } from './EtsConst';
 import { tsNode2Value } from '../model/builder/builderUtils';
+import { LineColPosition } from '../base/Position';
 
 const logger = Logger.getLogger();
 
@@ -98,16 +101,18 @@ export class ArkIRTransformer {
     private tempLocalIndex: number = 0;
     private locals: Map<string, Local> = new Map();
     private sourceFile: ts.SourceFile;
-    private withinMethod: ArkMethod;
+    private declaringMethod: ArkMethod;
     private thisLocal: Local;
 
-    private componentIfDepth = 0;
+    private inBuildMethod = false;
+    private stmtInBuildMethodToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
 
-    constructor(sourceFile: ts.SourceFile, withinMethod: ArkMethod) {
+    constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
-        this.withinMethod = withinMethod;
-        this.thisLocal = new Local('this', withinMethod.getDeclaringArkClass().getSignature().getType());
+        this.declaringMethod = declaringMethod;
+        this.thisLocal = new Local('this', declaringMethod.getDeclaringArkClass().getSignature().getType());
         this.locals.set(this.thisLocal.getName(), this.thisLocal);
+        this.inBuildMethod = declaringMethod.getName() == COMPONENT_BUILD_FUNCTION;
     }
 
     public getLocals(): Set<Local> {
@@ -118,10 +123,14 @@ export class ArkIRTransformer {
         return this.thisLocal;
     }
 
+    public getStmtInBuildMethodToOriginalStmt(): Map<Stmt, Stmt> {
+        return this.stmtInBuildMethodToOriginalStmt;
+    }
+
     public prebuildStmts(): Stmt[] {
         const stmts: Stmt[] = [];
         let index = 0;
-        for (const methodParameter of this.withinMethod.getParameters()) {
+        for (const methodParameter of this.declaringMethod.getParameters()) {
             const parameterRef = new ArkParameterRef(index, methodParameter.getType());
             stmts.push(new ArkAssignStmt(this.getOrCreatLocal(methodParameter.getName(), parameterRef.getType()), parameterRef));
             index++;
@@ -201,7 +210,34 @@ export class ArkIRTransformer {
     private expressionStatementToStmts(expressionStatement: ts.ExpressionStatement): Stmt[] {
         const {value: expr, stmts: stmts} = this.tsNodeToValueAndStmts(expressionStatement.expression);
         if (expr instanceof AbstractInvokeExpr) {
-            stmts.push(new ArkInvokeStmt(expr));
+            const arkInvokeStmt = new ArkInvokeStmt(expr);
+            if (this.inBuildMethod) {
+                const originalStmtOfInvokeStmt = this.creatOriginalStmt(expressionStatement.expression);
+                this.mapStmtsToOriginalStmt([arkInvokeStmt], originalStmtOfInvokeStmt);
+            }
+            stmts.push(arkInvokeStmt);
+
+            let originalRepeatStmt: Stmt | null = null;
+            for (const stmt of stmts) {
+                if ((stmt instanceof ArkAssignStmt) && (stmt.getRightOp() instanceof ArkStaticInvokeExpr)) {
+                    const rightOp = stmt.getRightOp() as ArkStaticInvokeExpr;
+                    if (rightOp.getMethodSignature().getMethodSubSignature().getMethodName() === COMPONENT_REPEAT) {
+                        const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_CREATE_FUNCTION);
+                        const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, rightOp.getArgs());
+                        originalRepeatStmt = this.stmtInBuildMethodToOriginalStmt.get(stmt) as Stmt;
+                        this.stmtInBuildMethodToOriginalStmt.delete(stmt);
+                        stmt.setRightOp(createInvokeExpr);
+                        this.stmtInBuildMethodToOriginalStmt.set(stmt, originalRepeatStmt);
+                    }
+                }
+            }
+            if (originalRepeatStmt) {
+                const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_POP_FUNCTION);
+                const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
+                const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
+                this.mapStmtsToOriginalStmt([popInvokeStmt], originalRepeatStmt);
+                stmts.push(popInvokeStmt);
+            }
         }
         return stmts;
     }
@@ -317,43 +353,46 @@ export class ArkIRTransformer {
     }
 
     private ifStatementToStmts(ifStatement: ts.IfStatement): Stmt[] {
-        let inComponent = false;
-        if (this.withinMethod.getName() === COMPONENT_BUILD_FUNCTION) {
-            inComponent = true;
-        }
-
         const stmts: Stmt[] = [];
         const {
             value: conditionExpr,
             stmts: conditionStmts,
         } = this.conditionToValueAndStmts(ifStatement.expression);
         stmts.push(...conditionStmts);
-        if (inComponent) {
+        if (this.inBuildMethod) {
+            const originalStmtOfConditionExpression = this.creatOriginalStmt(ifStatement.expression);
+            this.mapStmtsToOriginalStmt(stmts, originalStmtOfConditionExpression);
+
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
             const {value: conditionValue, stmts: assignConditionStmts} = this.generateAssignStmtForValue(conditionExpr);
             stmts.push(...assignConditionStmts);
             const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, [conditionValue]);
             const {value: createValue, stmts: createStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...createStmts);
-
-            const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
-            const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(0)]);
-            this.componentIfDepth++;
-            stmts.push(new ArkInvokeStmt(divideInvokeExpr));
+            const branchMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
+            const branchInvokeExpr = new ArkStaticInvokeExpr(branchMethodSignature, [ValueUtil.getOrCreateNumberConst(0)]);
+            const branchInvokeStmt = new ArkInvokeStmt(branchInvokeExpr);
+            stmts.push(branchInvokeStmt);
+            const originalStmtOfIfStatement = this.creatOriginalStmt(ifStatement);
+            this.mapStmtsToOriginalStmt(stmts, originalStmtOfIfStatement);
 
             stmts.push(...this.tsNodeToStmts(ifStatement.thenStatement));
 
             if (ifStatement.elseStatement) {
-                const divideMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
-                const divideInvokeExpr = new ArkStaticInvokeExpr(divideMethodSignature, [ValueUtil.getOrCreateNumberConst(1)]);
-                this.componentIfDepth++;
-                stmts.push(new ArkInvokeStmt(divideInvokeExpr));
+                const branchElseMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
+                const branchElseInvokeExpr = new ArkStaticInvokeExpr(branchElseMethodSignature, [ValueUtil.getOrCreateNumberConst(1)]);
+                const branchElseInvokeStmt = new ArkInvokeStmt(branchElseInvokeExpr);
+                const originalStmtOfElseStatement = this.creatOriginalStmt(ifStatement.elseStatement);
+                this.mapStmtsToOriginalStmt([branchElseInvokeStmt], originalStmtOfElseStatement);
+                stmts.push(branchElseInvokeStmt);
 
                 stmts.push(...this.tsNodeToStmts(ifStatement.elseStatement));
             }
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
-            stmts.push(new ArkInvokeStmt(popInvokeExpr));
+            const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
+            this.mapStmtsToOriginalStmt([popInvokeStmt], originalStmtOfIfStatement);
+            stmts.push(popInvokeStmt);
         } else {
             stmts.push(new ArkIfStmt(conditionExpr as ArkConditionExpr));
         }
@@ -478,10 +517,11 @@ export class ArkIRTransformer {
     }
 
     private objectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
-        return {value: tsNode2Value(node, this.sourceFile, this.withinMethod.getDeclaringArkClass()), stmts: []};
+        return {value: tsNode2Value(node, this.sourceFile, this.declaringMethod.getDeclaringArkClass()), stmts: []};
     }
 
-    private createCustomViewStmt(componentName: string, args: Value[], body: ts.Block | undefined = undefined): ValueAndStmts {
+    private createCustomViewStmt(componentName: string, args: Value[],
+                                 componentExpression: ts.EtsComponentExpression | ts.CallExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
 
         const classSignature = new ClassSignature();
@@ -499,12 +539,12 @@ export class ArkIRTransformer {
         stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, methodSignature, args)));
 
         let createViewArgs = [newExprValue];
-        if (body) {
-            const anonymous = ts.factory.createArrowFunction([], [], [], undefined, undefined, body);
+        if (ts.isEtsComponentExpression(componentExpression) && componentExpression.body) {
+            const anonymous = ts.factory.createArrowFunction([], [], [], undefined, undefined, componentExpression.body);
             // @ts-ignore
-            anonymous.pos = body.pos;
+            anonymous.pos = componentExpression.body.pos;
             // @ts-ignore
-            anonymous.end = body.end;
+            anonymous.end = componentExpression.body.end;
 
             const {value: builderMethod, stmts: _} = this.callableNodeToValueAndStmts(anonymous);
             createViewArgs.push(builderMethod);
@@ -517,6 +557,8 @@ export class ArkIRTransformer {
         const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW, COMPONENT_POP_FUNCTION);
         const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
         stmts.push(new ArkInvokeStmt(popInvokeExpr));
+        const originalStmtOfComponentExpression = this.creatOriginalStmt(componentExpression);
+        this.mapStmtsToOriginalStmt(stmts, originalStmtOfComponentExpression);
         return {value: componentValue, stmts: stmts};
     }
 
@@ -539,6 +581,8 @@ export class ArkIRTransformer {
             const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, args);
             const {value: componentValue, stmts: componentStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...componentStmts);
+            const originalStmtOfEtsComponentExpression = this.creatOriginalStmt(etsComponentExpression);
+            this.mapStmtsToOriginalStmt(stmts, originalStmtOfEtsComponentExpression);
 
             if (etsComponentExpression.body) {
                 for (const statement of etsComponentExpression.body.statements) {
@@ -548,15 +592,17 @@ export class ArkIRTransformer {
 
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
-            stmts.push(new ArkInvokeStmt(popInvokeExpr));
+            const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
+            this.mapStmtsToOriginalStmt([popInvokeStmt], originalStmtOfEtsComponentExpression);
+            stmts.push(popInvokeStmt);
             return {value: componentValue, stmts: stmts};
         }
 
-        return this.createCustomViewStmt(componentName, args, etsComponentExpression.body);
+        return this.createCustomViewStmt(componentName, args, etsComponentExpression);
     }
 
     private classExpressionToValueAndStmts(classExpression: ts.ClassExpression): ValueAndStmts {
-        const declaringArkClass = this.withinMethod.getDeclaringArkClass();
+        const declaringArkClass = this.declaringMethod.getDeclaringArkClass();
         const declaringArkNamespace = declaringArkClass.getDeclaringArkNamespace();
         const newClass = new ArkClass();
         if (declaringArkNamespace) {
@@ -665,39 +711,44 @@ export class ArkIRTransformer {
         }
 
         const methodSignature = new MethodSignature();
-
         let {
             value: callerValue,
             stmts: callerStmts,
         } = this.tsNodeToValueAndStmts(callExpression.expression);
         stmts.push(...callerStmts);
-        let invokeExpr: AbstractInvokeExpr;
+        let invokeValue: Value;
         if (callerValue instanceof ArkInstanceFieldRef) {
             methodSignature.getMethodSubSignature().setMethodName(callerValue.getFieldName());
-            invokeExpr = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args);
+            invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args);
         } else if (callerValue instanceof ArkStaticFieldRef) {
             methodSignature.getMethodSubSignature().setMethodName(callerValue.getFieldName());
-            invokeExpr = new ArkStaticInvokeExpr(methodSignature, args);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
             // temp for component
-            if (this.withinMethod?.getDeclaringArkFile().getScene().isCustomComponents(callerName)) {
-                return this.createCustomViewStmt(callerName, args);
+            if (this.declaringMethod.getDeclaringArkFile().getScene().isCustomComponents(callerName)) {
+                return this.createCustomViewStmt(callerName, args, callExpression);
             } else {
                 methodSignature.getMethodSubSignature().setMethodName(callerName);
-                invokeExpr = new ArkStaticInvokeExpr(methodSignature, args);
+                invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
             }
         } else {
             ({value: callerValue, stmts: callerStmts} = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
             methodSignature.getMethodSubSignature().setMethodName((callerValue as Local).getName());
-            invokeExpr = new ArkStaticInvokeExpr(methodSignature, args);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
         }
-        return {value: invokeExpr, stmts: stmts};
+
+        if (this.inBuildMethod) {
+            const originalStmtOfCallExpression = this.creatOriginalStmt(callExpression);
+            this.mapStmtsToOriginalStmt(stmts, originalStmtOfCallExpression);
+        }
+
+        return {value: invokeValue, stmts: stmts};
     }
 
     private callableNodeToValueAndStmts(callableNode: ts.ArrowFunction | ts.FunctionExpression): ValueAndStmts {
-        const declaringClass = this.withinMethod.getDeclaringArkClass();
+        const declaringClass = this.declaringMethod.getDeclaringArkClass();
         const arrowArkMethod = new ArkMethod();
         buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile);
         declaringClass.addMethod(arrowArkMethod);
@@ -1253,4 +1304,21 @@ export class ArkIRTransformer {
         return false;
     }
 
+    private creatOriginalStmt(node: ts.Node): Stmt {
+        const originalStmt = new Stmt();
+        originalStmt.setText(node.getText(this.sourceFile));
+        const positionInfo = LineColPosition.buildFromNode(node, this.sourceFile);
+        originalStmt.setOriginPositionInfo(positionInfo);
+        originalStmt.setPositionInfo(positionInfo);
+        return originalStmt;
+    }
+
+    private mapStmtsToOriginalStmt(stmts: Stmt[], originalStmt: Stmt): void {
+        for (const stmt of stmts) {
+            if (stmt.getOriginPositionInfo().getLineNo() == -1) {
+                stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
+                this.stmtInBuildMethodToOriginalStmt.set(stmt, originalStmt);
+            }
+        }
+    }
 }

@@ -3,7 +3,7 @@
     "targetProjectDirectory": "D:\\Codes\\resources\\SE4OpenHarmony-main\\Apps\\OHApps\\AppSampleD",
 
     "logPath": "out/ArkAnalyzer.log",
-    "logLevel": "DEBUG",
+    "logLevel": "ERROR",
 
     "sdks": [
         {

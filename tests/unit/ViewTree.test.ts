@@ -19,7 +19,7 @@ import { Scene } from '../../src/Scene';
 import path from 'path';
 import { Decorator } from '../../src/core/base/Decorator';
 import { ArkField } from '../../src/core/model/ArkField';
-import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
+import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree, SelfDepends_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
 import { ViewTreeNode } from '../../src/core/graph/ViewTree';
 import { ForEachSort_Expect_ViewTree, ForEachTest1_Expect_ViewTree, ForEachTest2_Expect_ViewTree, ForEachTest3_Expect_ViewTree } from '../resources/viewtree/control-foreach/ExpectView';
 import { IfElseTest1_Expect_ViewTree, IfElseTest2_Expect_ViewTree, IfElseTest3_Expect_ViewTree } from '../resources/viewtree/control-ifelse/ExpectView';
@@ -30,6 +30,9 @@ import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_B
 import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from '../resources/viewtree/builderparam/ExpectView';
 
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
+    if (expectTree.skip) {
+        return;
+    }
     expect(root.name).eq(expectTree.name);
     expect(root.children.length).eq(expectTree.children.length);
     if (expectTree.attributes) {
@@ -290,5 +293,9 @@ describe('normal Test', () => {
         
         let isEntry = arkClass.hasEntryDecorator();
         expect(isEntry).eq(true);
+    })
+
+    it('test SelfDepends', async ()=> {
+        testClassViewTree(scene, 'SelfDepends', SelfDepends_Expect_ViewTree);
     })
 })
