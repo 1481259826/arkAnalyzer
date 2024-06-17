@@ -16,13 +16,31 @@
 import { CfgUitls } from '../../utils/CfgUtils';
 import { Constant } from '../base/Constant';
 import { Decorator } from '../base/Decorator';
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr, ObjectLiteralExpr } from '../base/Expr';
+import {
+    AbstractInvokeExpr,
+    ArkInstanceInvokeExpr,
+    ArkNewExpr,
+    ArkStaticInvokeExpr,
+    ObjectLiteralExpr
+} from '../base/Expr';
 import { Local } from '../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import { CallableType, ClassType, Type } from '../base/Type';
 import { Value } from '../base/Value';
-import { COMPONENT_COMMON, isEtsContainerComponent, COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW, BUILDER_DECORATOR, BUILDER_PARAM_DECORATOR, COMPONENT_BRANCH_FUNCTION, COMPONENT_IF_BRANCH, COMPONENT_IF, COMPONENT_POP_FUNCTION, COMPONENT_REPEAT } from '../common/EtsConst';
+import {
+    BUILDER_DECORATOR,
+    BUILDER_PARAM_DECORATOR,
+    COMPONENT_BRANCH_FUNCTION,
+    COMPONENT_COMMON,
+    COMPONENT_CREATE_FUNCTION,
+    COMPONENT_CUSTOMVIEW,
+    COMPONENT_IF,
+    COMPONENT_IF_BRANCH,
+    COMPONENT_POP_FUNCTION,
+    COMPONENT_REPEAT,
+    isEtsContainerComponent
+} from '../common/EtsConst';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
@@ -686,6 +704,7 @@ function ifBranchCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, ex
     return viewtree.addSystemComponentNode(COMPONENT_IF_BRANCH);
 }
 
+// @ts-ignore
 const COMPONENT_CREATE_PARSERS: Map<string, Function> = new Map([
     ['ForEach.create', forEachCreationParser],
     ['LazyForEach.create', forEachCreationParser],

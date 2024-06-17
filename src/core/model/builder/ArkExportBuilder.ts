@@ -14,116 +14,179 @@
  */
 
 import * as ts from "ohos-typescript";
-import {LineColPosition} from "../../base/Position";
-import { ExportInfo } from "../ArkExport";
+import { LineColPosition } from "../../base/Position";
+import { ArkExport, ExportInfo, ExportType, TypeSignature } from "../ArkExport";
 import { Decorator } from "../../base/Decorator";
 import { buildModifiers } from "./builderUtils";
+import { ArkFile } from "../ArkFile";
 
-export function buildExportInfo(node: ts.Statement, sourceFile: ts.SourceFile): ExportInfo[] {
-    if (ts.isExportDeclaration(node)) {
-        return buildExportDeclarationNode(node, sourceFile);
-    }
-    else if (ts.isExportAssignment(node)) {
-        return buildExportAssignmentNode(node, sourceFile);
-    }
-    return [];
+export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
+
+function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineColPosition): ExportInfo {
+    return new ExportInfo.Builder()
+        .exportClauseName(arkInstance.getName())
+        .exportClauseType(arkInstance.getType())
+        .nameBeforeAs(arkInstance.getName())
+        .modifiers(arkInstance.getModifiers())
+        .typeSignature(arkInstance.getSignature() as TypeSignature)
+        .originTsPosition(line)
+        .declaringArkFile(arkFile)
+        .build();
 }
 
-function buildExportDeclarationNode(node: ts.ExportDeclaration, sourceFile: ts.SourceFile): ExportInfo[] {
+function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const tsSourceCode = node.getText(sourceFile);
-
-    let exportInfos: ExportInfo[] = [];
-    let exportFrom: string | undefined;
+    const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
+    let exportFrom = '';
     if (node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
         exportFrom = node.moduleSpecifier.text;
     }
-
-    const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
-    if (node.modifiers) {
-        buildModifiers(node, sourceFile).forEach((modifier) => {
-            modifiers.add(modifier);
-        });
-    }
-
+    let exportInfos: ExportInfo[] = [];
     // just like: export {xxx as x} from './yy'
     if (node.exportClause && ts.isNamedExports(node.exportClause) && node.exportClause.elements) {
-        let exportClauseType = "NamedExports";
         node.exportClause.elements.forEach((element) => {
-            let exportClauseName = element.name.text;
-            if (element.propertyName && ts.isIdentifier(element.propertyName)) {
-                let exportInfo = new ExportInfo();
-                exportInfo.build(exportClauseName, exportClauseType, originTsPosition, modifiers, exportFrom, element.propertyName.text);
-                exportInfo.setTsSourceCode(tsSourceCode);
-                exportInfos.push(exportInfo);
-            } else {
-                let exportInfo = new ExportInfo();
-                exportInfo.build(exportClauseName, exportClauseType, originTsPosition, modifiers, exportFrom);
-                exportInfo.setTsSourceCode(tsSourceCode);
+            let nameBeforeAs = element.propertyName && ts.isIdentifier(element.propertyName)
+                ? element.propertyName.text : element.name.text
+            let builder = new ExportInfo.Builder()
+                .exportClauseType(ExportType.UNKNOWN)
+                .exportClauseName(element.name.text)
+                .nameBeforeAs(nameBeforeAs)
+                .tsSourceCode(tsSourceCode)
+                .exportFrom(exportFrom)
+                .originTsPosition(originTsPosition)
+                .declaringArkFile(arkFile)
+                .modifiers(modifiers);
+            exportInfos.push(builder.build());
+        });
+        return exportInfos;
+    }
+
+    let builder1 = new ExportInfo.Builder()
+        .exportClauseType(ExportType.UNKNOWN)
+        .nameBeforeAs('*')
+        .modifiers(modifiers)
+        .tsSourceCode(tsSourceCode)
+        .exportFrom(exportFrom)
+        .declaringArkFile(arkFile)
+        .originTsPosition(originTsPosition);
+    if (node.exportClause && ts.isNamespaceExport(node.exportClause) && ts.isIdentifier(node.exportClause.name)) { // just like: export * as xx from './yy'
+        exportInfos.push(builder1.exportClauseName(node.exportClause.name.text).build());
+    } else if (!node.exportClause && node.moduleSpecifier) { // just like: export * from './yy'
+        exportInfos.push(builder1.exportClauseName('*').build());
+    }
+    return exportInfos;
+}
+
+function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
+    let exportInfos: ExportInfo[] = [];
+    if (!node.expression) {
+        return exportInfos;
+    }
+    const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
+    const tsSourceCode = node.getText(sourceFile);
+    const modifiers = buildModifiers(node, sourceFile);
+    if(isKeyword(node.getChildren(sourceFile),ts.SyntaxKind.DefaultKeyword)){
+        modifiers.add(ts.SyntaxKind[ts.SyntaxKind.DefaultKeyword]);
+    }
+    if (ts.isIdentifier(node.expression)) { //export default xx
+        const exportInfo = new ExportInfo.Builder()
+            .exportClauseName(node.expression.text)
+            .exportClauseType(ExportType.UNKNOWN)
+            .modifiers(modifiers)
+            .tsSourceCode(tsSourceCode)
+            .originTsPosition(originTsPosition)
+            .declaringArkFile(arkFile)
+            .build();
+        exportInfos.push(exportInfo);
+    } else if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { //export default {a,b,c}
+        node.expression.properties.forEach((property) => {
+            if (property.name && ts.isIdentifier(property.name)) {
+                let exportClauseName = property.name.text;
+                const exportInfo = new ExportInfo.Builder()
+                    .exportClauseName(property.name.text)
+                    .exportClauseType(ExportType.UNKNOWN)
+                    .nameBeforeAs(property.name.text)
+                    .modifiers(modifiers)
+                    .tsSourceCode(tsSourceCode)
+                    .originTsPosition(originTsPosition)
+                    .declaringArkFile(arkFile)
+                    .build();
                 exportInfos.push(exportInfo);
             }
         });
     }
-    // just like: export * as xx from './yy'
-    if (node.exportClause && ts.isNamespaceExport(node.exportClause)) {
-        let exportClauseType = "NamespaceExport";
-        if (ts.isIdentifier(node.exportClause.name)) {
-            let exportClauseName = node.exportClause.name.text;
-            let nameBeforeAs = '*';
-            let exportInfo = new ExportInfo();
-            exportInfo.build(exportClauseName, exportClauseType, originTsPosition, modifiers, exportFrom, nameBeforeAs);
-            exportInfo.setTsSourceCode(tsSourceCode);
-            exportInfos.push(exportInfo);
-        }
-
-    }
-
-    // TODO: consider again
-    // just like: export * from './yy'
-    if (!node.exportClause && node.moduleSpecifier) {
-        let exportClauseType = "NamespaceExport";
-        let exportClauseName = '*';
-        let exportInfo = new ExportInfo();
-        exportInfo.build(exportClauseName, exportClauseType, originTsPosition, modifiers, exportFrom);
-        exportInfo.setTsSourceCode(tsSourceCode);
-        exportInfos.push(exportInfo);
-    }
-
     return exportInfos;
 }
 
-function buildExportAssignmentNode(node: ts.ExportAssignment, sourceFile: ts.SourceFile): ExportInfo[] {
-    const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
-    const tsSourceCode = node.getText(sourceFile);
-
+/**
+ * export const c = '', b = 1;
+ * @param node
+ * @param sourceFile
+ * @param arkFile
+ */
+export function buildExportVariableStatement(node: ts.VariableStatement, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     let exportInfos: ExportInfo[] = [];
-    const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
-    if (node.modifiers) {
-        buildModifiers(node, sourceFile).forEach((modifier) => {
-            modifiers.add(modifier);
-        });
+    const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
+    const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
+    const tsSourceCode = node.getText(sourceFile);
+    node.declarationList.declarations.forEach(dec => {
+        const exportInfo = new ExportInfo.Builder()
+            .exportClauseName(dec.name.getText(sourceFile))
+            .exportClauseType(ExportType.LOCAL)
+            .modifiers(modifiers)
+            .tsSourceCode(tsSourceCode)
+            .originTsPosition(originTsPosition)
+            .declaringArkFile(arkFile)
+            .build();
+        exportInfos.push(exportInfo);
+    })
+    return exportInfos;
+}
+
+/**
+ * export type MyType = string;
+ * @param node
+ * @param sourceFile
+ * @param arkFile
+ */
+export function buildExportTypeAliasDeclaration(node: ts.TypeAliasDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
+    let exportInfos: ExportInfo[] = [];
+    const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
+    const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
+    const tsSourceCode = node.getText(sourceFile);
+    const exportInfo = new ExportInfo.Builder()
+        .exportClauseName(node.name.text)
+        .exportClauseType(ExportType.LOCAL)
+        .tsSourceCode(tsSourceCode)
+        .modifiers(modifiers)
+        .originTsPosition(originTsPosition)
+        .declaringArkFile(arkFile)
+        .build();
+    exportInfos.push(exportInfo);
+    return exportInfos;
+}
+
+export function isExported(modifierArray: ts.NodeArray<ts.ModifierLike> | undefined): boolean {
+    if (!modifierArray) {
+        return false;
     }
-    if (node.expression) {
-        if (ts.isIdentifier(node.expression)) {
-            let exportClauseType = "default";
-            let exportClauseName = node.expression.text;
-            let exportInfo = new ExportInfo();
-            exportInfo.build(exportClauseName, exportClauseType, originTsPosition, modifiers);
-            exportInfo.setTsSourceCode(tsSourceCode);
-            exportInfos.push(exportInfo);
-        } else if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) {
-            let exportClauseType = "default-Obj";
-            node.expression.properties.forEach((property) => {
-                if (property.name && ts.isIdentifier(property.name)) {
-                    let exportClauseName = property.name.text;
-                    let exportInfo = new ExportInfo();
-                    exportInfo.build(exportClauseName, exportClauseType, originTsPosition, modifiers);
-                    exportInfo.setTsSourceCode(tsSourceCode);
-                    exportInfos.push(exportInfo);
-                }
-            });
+    for (let child of modifierArray) {
+        if (child.kind === ts.SyntaxKind.ExportKeyword) {
+            return true;
         }
     }
+    return false;
+}
 
-    return exportInfos;
+function isKeyword(modifierArray: ts.Node[] | undefined, keyword: ts.SyntaxKind): boolean {
+    if (!modifierArray) {
+        return false;
+    }
+    for (let child of modifierArray) {
+        if (child.kind === keyword) {
+            return true;
+        }
+    }
+    return false;
 }

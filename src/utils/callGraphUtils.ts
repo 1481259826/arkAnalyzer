@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import {Scene} from "../Scene";
-import {ArkClass} from "../core/model/ArkClass";
-import {ArkMethod} from "../core/model/ArkMethod";
-import {ClassSignature, MethodSignature} from "../core/model/ArkSignature";
+import { Scene } from "../Scene";
+import { ArkClass } from "../core/model/ArkClass";
+import { ArkMethod } from "../core/model/ArkMethod";
+import { ClassSignature, MethodSignature } from "../core/model/ArkSignature";
 import Logger from "./logger";
-import {ModelUtils} from "../core/common/ModelUtils";
+import { ModelUtils } from "../core/common/ModelUtils";
 
 const logger = Logger.getLogger();
 
@@ -95,7 +95,7 @@ export class SceneManager {
         let targetMethod = this._scene.getMethod(method);
         if (targetMethod == null) {
             // 支持SDK调用解析
-            let sdkMap = this.scene.getsdkArkFilesMap()
+            let sdkMap = this.scene.getSdkArkFilesMap()
             for (let file of sdkMap.values()) {
                 if (file.getFileSignature().toString() == method.getDeclaringClassSignature().getDeclaringFileSignature().toString()) {
                     const methods = ModelUtils.getAllMethodsInFile(file);
@@ -115,7 +115,7 @@ export class SceneManager {
             return null
         let classInstance = this._scene.getClass(arkClass)
         if (classInstance == null) {
-            let sdkOrTargetProjectFile = this._scene.getsdkArkFilesMap()
+            let sdkOrTargetProjectFile = this._scene.getSdkArkFilesMap()
                 .get(arkClass.getDeclaringFileSignature().toString())
             // TODO: support get sdk class, targetProject class waiting to be supported
             if (sdkOrTargetProjectFile != null) {

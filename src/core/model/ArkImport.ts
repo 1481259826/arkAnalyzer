@@ -13,46 +13,30 @@
  * limitations under the License.
  */
 
-import * as ts from "ohos-typescript";
-import path from 'path';
-import fs from 'fs';
-import { transfer2UnixPath } from "../../utils/pathTransfer";
 import { ArkFile } from "./ArkFile";
-import { FileSignature } from "./ArkSignature";
-import { Scene } from "../../Scene";
 import { LineColPosition } from "../base/Position";
-import { getOriginPath } from "./builder/ArkImportBuilder";
+import { findExportInfo } from "./builder/ArkImportBuilder";
 import { Decorator } from "../base/Decorator";
+import { ExportInfo, FromInfo } from "./ArkExport";
 
-var sdkPathMap: Map<string, string> = new Map();
-
-export function updateSdkConfigPrefix(sdkName: string, sdkRelativePath: string) {
-    sdkPathMap.set(sdkName, transfer2UnixPath(sdkRelativePath));
-}
-
-export class ImportInfo {
+export class ImportInfo implements FromInfo {
     private importClauseName: string;
     private importType: string;
     private importFrom: string;
     private nameBeforeAs: string | undefined;
-    private clauseType: string = "";
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
 
     private declaringArkFile: ArkFile;
 
-    private importFromSignature: string | FileSignature = "";
-    private importProjectType: string = "ThirdPartPackage";
-    private declaringFilePath: string;
-    private projectPath: string;
-
     private originTsPosition: LineColPosition;
     private tsSourceCode: string;
+    private lazyExportInfo: ExportInfo | null;
 
     constructor() {
     }
 
     public build(importClauseName: string, importType: string, importFrom: string, originTsPosition: LineColPosition,
-        modifiers: Set<string | Decorator>, nameBeforeAs?: string) {
+                 modifiers: Set<string | Decorator>, nameBeforeAs?: string) {
         this.setImportClauseName(importClauseName);
         this.setImportType(importType);
         this.setImportFrom(importFrom);
@@ -63,124 +47,53 @@ export class ImportInfo {
         this.setNameBeforeAs(nameBeforeAs);
     }
 
-    public getImportFromSignature() {
-        return this.importFromSignature;
+    public getOriginName(): string {
+        return this.nameBeforeAs ?? this.importClauseName;
     }
 
-    public getImportProjectType() {
-        return this.importProjectType;
+    /**
+     * 获取实际的引用（调用时生成）
+     */
+    public getLazyExportInfo(): ExportInfo | null {
+        if (this.lazyExportInfo === undefined) {
+            this.lazyExportInfo = findExportInfo(this);
+        }
+        return this.lazyExportInfo;
     }
 
-    public setImportProjectType(importProjectType: string) {
-        this.importProjectType = importProjectType;
-    }
-
-    public setDeclaringFilePath(declaringFilePath: string) {
-        this.declaringFilePath = declaringFilePath;
-    }
-
-    public setDeclaringArkFile(declaringArkFile: ArkFile) {
+    public setDeclaringArkFile(declaringArkFile: ArkFile): void {
         this.declaringArkFile = declaringArkFile;
     }
 
-    public setProjectPath(projectPath: string) {
-        this.projectPath = projectPath;
+    public getDeclaringArkFile(): ArkFile {
+        return this.declaringArkFile;
     }
 
-    public setImportFromSignature() {
-        let importFromSignature = new FileSignature();
-
-        // project internal imports
-        const pathReg1 = new RegExp("^(\\.\\.\\/\|\\.\\/)");
-        if (pathReg1.test(this.importFrom)) {
-            this.setImportProjectType("TargetProject");
-            //get real target path of importfrom
-            let realImportFromPath = path.resolve(path.dirname(this.declaringFilePath), this.importFrom);
-            //get relative path from project dir to real target path of importfrom
-            let tmpSig1 = path.relative(this.projectPath, realImportFromPath);
-            //tmpSig1 = tmpSig1.replace(/^\.\//, '');
-            importFromSignature.setFileName(tmpSig1);
-            importFromSignature.setProjectName(this.declaringArkFile.getProjectName());
-            this.importFromSignature = importFromSignature;
-            return;
-        }
-
-        // sdk imports, e.g. @ohos., @kit.
-        const pathReg2 = new RegExp(`@ohos\\.`);
-        const pathReg3 = new RegExp(`@kit\\.`);
-        const pathReg4 = new RegExp(`@system\\.`);
-        let tmpSig = '';
-        if (pathReg2.test(this.importFrom) || pathReg4.test(this.importFrom)) {
-            tmpSig = '@etsSdk/api/' + this.importFrom + '.d.ts';
-        } else if (pathReg3.test(this.importFrom)) {
-            tmpSig = '@etsSdk/kits/' + this.importFrom + '.d.ts';
-        }
-        if (tmpSig !== '') {
-            this.setImportProjectType("SDKProject");
-            this.importFromSignature = tmpSig;
-            return;
-        }
-
-        // path map defined in oh-package.json5
-        let originImportPath: string = getOriginPath(this.importFrom, this.declaringArkFile);
-        if (originImportPath != '') {
-            this.setImportProjectType("TargetProject");
-            const relativeImportPath: string = path.relative(this.projectPath, originImportPath);
-            importFromSignature.setFileName(relativeImportPath);
-            importFromSignature.setProjectName(this.declaringArkFile.getProjectName());
-            this.importFromSignature = importFromSignature.toString();
-            return;
-        }
-
-        // project sdk or module sdk
-        //module
-        const moduleSdkMap = this.declaringArkFile.getScene().getModuleSdkMap();
-        const moduleScene = this.declaringArkFile.getModuleScene();
-        if (moduleScene) {
-            const moduleSdks = moduleSdkMap.get(moduleScene.getModuleName());
-            moduleSdks?.forEach((moduleSdk) => {
-                if (this.importFrom === moduleSdk.name) {
-                    this.setImportProjectType("SDKProject");
-                    // TODO: get files like index.ts and gen import signature (consider ets, .d.ets, ts, .d.ts, js)
-                    //this.importFromSignature = this.importFrom + ': ';
-                }
-            });
-        }
-        //project
-        const projectSdkMap = this.declaringArkFile.getScene().getProjectSdkMap();
-        const sdk = projectSdkMap.get(this.importFrom);
-        if (sdk) {
-            this.setImportProjectType("SDKProject");
-            // TODO: get files like index.ts and gen import signature (consider ets, .d.ets, ts, .d.ts, js)
-            //this.importFromSignature = this.importFrom + ': ';
-        }
-    }
-
-    public getImportClauseName() {
+    public getImportClauseName(): string {
         return this.importClauseName;
     }
 
-    public setImportClauseName(importClauseName: string) {
+    public setImportClauseName(importClauseName: string): void {
         this.importClauseName = importClauseName;
     }
 
-    public getImportType() {
+    public getImportType(): string {
         return this.importType;
     }
 
-    public setImportType(importType: string) {
+    public setImportType(importType: string): void {
         this.importType = importType;
     }
 
-    public getImportFrom() {
+    public getImportFrom(): string {
         return this.importFrom;
     }
 
-    public setImportFrom(importFrom: string) {
+    public setImportFrom(importFrom: string): void {
         this.importFrom = importFrom;
     }
 
-    public getNameBeforeAs() {
+    public getNameBeforeAs(): string | undefined {
         return this.nameBeforeAs;
     }
 
@@ -188,24 +101,12 @@ export class ImportInfo {
         this.nameBeforeAs = nameBeforeAs;
     }
 
-    public getClauseType() {
-        return this.clauseType;
-    }
-
-    public setClauseType(clauseType: string) {
-        this.clauseType = clauseType;
-    }
-
-    public getModifiers() {
+    public getModifiers(): Set<string | Decorator> {
         return this.modifiers;
     }
 
-    public addModifier(name: string | Decorator) {
+    public addModifier(name: string | Decorator): void {
         this.modifiers.add(name);
-    }
-
-    private transfer2UnixPath(path2Do: string) {
-        return path.posix.join(...path2Do.split(/\\/));
     }
 
     public setOriginTsPosition(originTsPosition: LineColPosition): void {
@@ -222,5 +123,19 @@ export class ImportInfo {
 
     public getTsSourceCode(): string {
         return this.tsSourceCode;
+    }
+
+    public getFrom(): string {
+        return this.importFrom;
+    }
+
+    public isDefault(): boolean {
+        let index = this.tsSourceCode.indexOf(this.importClauseName);
+        if (index === -1) {
+            return false;
+        }
+        let start = this.tsSourceCode.indexOf('{');
+        let end = this.tsSourceCode.indexOf('}');
+        return !(index > start && index < end);
     }
 }

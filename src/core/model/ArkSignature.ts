@@ -14,15 +14,18 @@
  */
 
 import path from 'path';
-import {transfer2UnixPath} from '../../utils/pathTransfer';
-import {ClassType, Type, UnknownType} from '../base/Type';
+import { transfer2UnixPath } from '../../utils/pathTransfer';
+import { ClassType, Type, UnknownType } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 import Logger from "../../utils/logger";
-import {rm} from "fs-extra";
 
 export type Signature = FileSignature | NamespaceSignature | ClassSignature | MethodSignature | FieldSignature;
 
 const logger = Logger.getLogger();
+
+export interface ArkSignature {
+    getSignature(): Signature;
+}
 
 export class FileSignature {
     private projectName: string = "_UnkownProjectName";
@@ -49,6 +52,7 @@ export class FileSignature {
 
     public toString(): string {
         let tmpSig = transfer2UnixPath(this.fileName);
+        tmpSig = tmpSig.replace(/\.d\.ts|\.ts|\.ets$/, '');
         tmpSig = '@' + this.projectName + '/' + tmpSig + ': ';
         return tmpSig;
     }

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import {SceneConfig} from "../../src/Config";
-import {TypeInference} from "../../src/core/common/TypeInference"
-import {assert, describe, expect, it, vi} from "vitest";
-import {Scene} from "../../src/Scene";
+import { SceneConfig } from "../../src/Config";
+import { TypeInference } from "../../src/core/common/TypeInference"
+import { assert, describe, expect, it, vi } from "vitest";
+import { Scene } from "../../src/Scene";
 import path from "path";
 
 describe("StaticSingleAssignmentFormer Test", () => {
@@ -25,7 +25,7 @@ describe("StaticSingleAssignmentFormer Test", () => {
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     let methods = scene.getMethods();
-    let ti = new TypeInference(scene);
+
     it('inferTypeInMethod case', () => {
         if (methods == null) {
             assert.isNotNull(methods);
@@ -34,7 +34,7 @@ describe("StaticSingleAssignmentFormer Test", () => {
 
         for (const method of methods) {
             const spy = vi.spyOn(method, "getBody");
-            ti.inferTypeInMethod(method);
+            TypeInference.inferTypeInMethod(method);
             expect(spy).toHaveBeenCalledTimes(1);
         }
     })
@@ -46,7 +46,7 @@ describe("StaticSingleAssignmentFormer Test", () => {
 
         for (const method of methods) {
             const spy = vi.spyOn(method, "getBody");
-            ti.inferSimpleTypeInMethod(method);
+            TypeInference.inferSimpleTypeInMethod(method);
             expect(spy).toHaveBeenCalledTimes(1);
         }
     })

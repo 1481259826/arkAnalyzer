@@ -31,26 +31,13 @@ export class SourceExportInfo extends SourceBase{
     }
 
     public dump(): string {
-        if (this.info.getExportClauseType() !== 'NamespaceExport' && this.info.getExportClauseType() !== 'NamedExports') {
-            return '';
-        }
-        if (this.info.getExportClauseType() === 'NamespaceExport') {
-            // just like: export * as xx from './yy'
-            if (this.info.getNameBeforeAs()) {
-                this.printer.writeIndent().write(`export ${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}`);
-            } else {
-                this.printer.writeIndent().write(`export ${this.info.getExportClauseName()}`);
-            }
-        } else if (this.info.getExportClauseType() === 'NamedExports') {
-            // just like: export {xxx as x} from './yy'
-            if (this.info.getNameBeforeAs()) {
-                this.printer.write(`export {${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}}`);
-            } else {
-                this.printer.write(`export {${this.info.getExportClauseName()}}`);
-            }
+        if (this.info.getNameBeforeAs()) {
+            this.printer.write(`export {${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}}`);
+        } else {
+            this.printer.write(`export {${this.info.getExportClauseName()}}`);
         }
         if (this.info.getExportFrom()) {
-            this.printer.write(` from '${this.info.getExportFrom() as string}'`);
+            this.printer.write(this.info.getTsSourceCode());
         }
         this.printer.writeLine(';');
 
