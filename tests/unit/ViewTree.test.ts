@@ -28,6 +28,7 @@ import { RepeatTest1_Expect_ViewTree, RepeatTest2_Expect_ViewTree } from '../res
 import { ContentSlotTest_Expect_ViewTree } from '../resources/viewtree/control-contentslot/ExpectView';
 import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_BuilderTest_Expect_ViewTree, Case3_BuilderTest_Expect_ViewTree } from '../resources/viewtree/builder/ExpectView';
 import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from '../resources/viewtree/builderparam/ExpectView';
+import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
     if (expectTree.skip) {
@@ -55,7 +56,7 @@ function expectViewTree(root: ViewTreeNode, expectTree: any) {
 }
 
 function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
-    let arkFile =  scene.getFiles().find(file => file.getName() == `${clsName}.ets`);
+    let arkFile =  scene.getFiles().find(file => file.getName().endsWith(`${clsName}.ets`));
     let arkClass = arkFile?.getClassWithName(clsName);
     let vt = arkClass?.getViewTree();
     if (!vt) {
@@ -297,5 +298,20 @@ describe('normal Test', () => {
 
     it('test SelfDepends', async ()=> {
         testClassViewTree(scene, 'SelfDepends', SelfDepends_Expect_ViewTree);
+    })
+})
+
+
+describe('project Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromJson(path.join(__dirname, '../../tests/resources/viewtree/project/test-config.json'));
+    let scene: Scene = new Scene();
+    scene.buildBasicInfo(config);
+    scene.buildScene4HarmonyProject();
+    scene.collectProjectImportInfos();
+    scene.inferTypes();
+
+    it('test alias', async ()=> {
+        testClassViewTree(scene, 'Page', Project_Page_Expect_ViewTree);
     })
 })
