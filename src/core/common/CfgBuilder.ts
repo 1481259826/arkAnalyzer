@@ -196,15 +196,6 @@ class textError extends Error {
     }
 }
 
-function getNumOfIdentifier(node: ts.Node, sourceFile: ts.SourceFile): number {
-    let num = 0;
-    if (ts.SyntaxKind[node.kind] == 'Identifier')
-        return 1;
-    for (let child of node.getChildren(sourceFile))
-        num += getNumOfIdentifier(child, sourceFile);
-    return num;
-}
-
 export class CfgBuilder {
     name: string;
     astRoot: ts.Node;
@@ -414,9 +405,9 @@ export class CfgBuilder {
                     loopExit.code = c.initializer?.getText(this.sourceFile) + ' in ' + c.expression.getText(this.sourceFile);
                 }
                 if (ts.isBlock(c.statement)) {
-                    this.walkAST(loopstm, loopExit, [...c.statement.statements]);
+                    this.walkAST(loopstm, loopstm, [...c.statement.statements]);
                 } else {
-                    this.walkAST(loopstm, loopExit, [c.statement]);
+                    this.walkAST(loopstm, loopstm, [c.statement]);
                 }
                 if (!loopstm.nextF) {
                     loopstm.nextF = loopExit;
@@ -957,13 +948,6 @@ export class CfgBuilder {
         }
     }
 
-    private addFirstBlock() {
-        for (let block of this.blocks) {
-            block.id += 1;
-        }
-        this.blocks.splice(0, 0, new Block([]));
-    }
-
     private insertBlockbBefore(blocks: Block[], id: number) {
         blocks.splice(id, 0, new Block([]));
         for (let i = id; i < blocks.length; i++) {
@@ -1298,7 +1282,6 @@ export class CfgBuilder {
         this.buildBlocksNextLast();
         this.addReturnBlock();
         this.resetWalked();
-
         this.transformToArkIR();
     }
 }
