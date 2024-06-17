@@ -16,11 +16,17 @@
 import { ArkField } from "../model/ArkField";
 import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
 
+/**
+ * @category core/base/type
+ */
 export abstract class Type {
     abstract toString(): string;
 }
 
-/** any type */
+/**
+ * any type
+ * @category core/base/type
+ */
 export class AnyType extends Type {
     private static readonly INSTANCE = new AnyType();
 
@@ -37,8 +43,10 @@ export class AnyType extends Type {
     }
 }
 
-
-/** unknown type */
+/**
+ * unknown type
+ * @category core/base/type
+ */
 export class UnknownType extends Type {
     private static readonly INSTANCE = new UnknownType();
 
@@ -55,8 +63,10 @@ export class UnknownType extends Type {
     }
 }
 
-
-/** unclear type */
+/**
+ * unclear type
+ * @category core/base/type
+ */
 export class UnclearReferenceType extends Type {
     private name: string;
 
@@ -74,7 +84,10 @@ export class UnclearReferenceType extends Type {
     }
 }
 
-/** primitive type */
+/**
+ * primitive type
+ * @category core/base/type
+ */
 export abstract class PrimitiveType extends Type {
     private name: string;
 
@@ -128,7 +141,10 @@ export class StringType extends PrimitiveType {
     }
 }
 
-/** null type */
+/**
+ * null type
+ * @category core/base/type
+ */
 export class NullType extends PrimitiveType {
     private static readonly INSTANCE = new NullType();
 
@@ -141,7 +157,10 @@ export class NullType extends PrimitiveType {
     }
 }
 
-/** undefined type */
+/**
+ * undefined type
+ * @category core/base/type
+ */
 export class UndefinedType extends PrimitiveType {
     private static readonly INSTANCE = new UndefinedType();
 
@@ -154,7 +173,10 @@ export class UndefinedType extends PrimitiveType {
     }
 }
 
-/** literal type */
+/**
+ * literal type
+ * @category core/base/type
+ */
 export class LiteralType extends PrimitiveType {
     private literalName: string | number;
 
@@ -172,7 +194,10 @@ export class LiteralType extends PrimitiveType {
     }
 }
 
-/** union type */
+/**
+ * union type
+ * @category core/base/type
+ */
 export class UnionType extends Type {
     private types: Type[];
     private currType: Type;  // The true type of the value at this time  
@@ -203,8 +228,10 @@ export class UnionType extends Type {
     }
 }
 
-// types for function
-/** void return type */
+/**
+ * types for function void return type
+ * @category core/base/type
+ */
 export class VoidType extends Type {
     private static readonly INSTANCE = new VoidType();
 
@@ -237,7 +264,10 @@ export class NeverType extends Type {
     }
 }
 
-/** callable type */
+/**
+ * callable type
+ * @category core/base/type
+ */
 export class CallableType extends Type {
     private methodSignature: MethodSignature;
 
@@ -255,7 +285,10 @@ export class CallableType extends Type {
     }
 }
 
-/** type of an object */
+/**
+ * type of an object
+ * @category core/base/type
+ */
 export class ClassType extends Type {
     private classSignature: ClassSignature;
 
@@ -355,7 +388,10 @@ export class AliasType extends Type {
     }
 }
 
-/** type of the type alias for the class*/
+/**
+ * type of the type alias for the class
+ * @category core/base/type
+ */
 export class ClassAliasType extends AliasType {
     constructor(classType: ClassType) {
         super(classType);

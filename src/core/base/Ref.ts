@@ -21,6 +21,9 @@ import { Value } from "./Value";
 
 const logger = Logger.getLogger();
 
+/**
+ * @category core/base/ref
+ */
 export abstract class AbstractRef implements Value {
     abstract getUses(): Value[];
     abstract getType(): Type;

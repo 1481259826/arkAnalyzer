@@ -26,7 +26,7 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
     'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
 
 /**
- *
+ * @category core/model
  */
 export class ArkFile {
 

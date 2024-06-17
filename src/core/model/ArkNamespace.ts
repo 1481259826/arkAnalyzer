@@ -20,7 +20,9 @@ import { ArkFile } from "./ArkFile";
 import { ArkMethod } from "./ArkMethod";
 import { ClassSignature, NamespaceSignature } from "./ArkSignature";
 
-
+/**
+ * @category core/model
+ */
 export class ArkNamespace implements ArkExport {
     private name: string;
     private code: string

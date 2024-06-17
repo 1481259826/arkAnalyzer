@@ -16,6 +16,9 @@
 import { StringType, Type, UnknownType } from './Type';
 import { Value } from './Value';
 
+/**
+ * @category core/base
+ */
 export class Constant implements Value {
     private value: string;
     private type: Type;

@@ -50,6 +50,9 @@ export interface FromInfo {
     getDeclaringArkFile(): ArkFile;
 }
 
+/**
+ * @category core/model
+ */
 export class ExportInfo implements FromInfo {
 
     private modifiers: Set<string | Decorator>;

@@ -19,6 +19,9 @@ import { findExportInfo } from "./builder/ArkImportBuilder";
 import { Decorator } from "../base/Decorator";
 import { ExportInfo, FromInfo } from "./ArkExport";
 
+/**
+ * @category core/model
+ */
 export class ImportInfo implements FromInfo {
     private importClauseName: string;
     private importType: string;

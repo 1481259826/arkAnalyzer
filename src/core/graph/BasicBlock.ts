@@ -15,6 +15,9 @@
 
 import { Stmt } from "../base/Stmt";
 
+/**
+ * @category core/graph
+ */
 export class BasicBlock {
     private stmts: Stmt[] = [];
     private predecessorBlocks: BasicBlock[] = [];

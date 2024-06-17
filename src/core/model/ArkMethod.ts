@@ -31,6 +31,9 @@ import { ArkExport, ExportType } from "./ArkExport";
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
 
+/**
+ * @category core/model
+ */
 export class ArkMethod implements ArkExport {
     private name: string;
     private code: string;
