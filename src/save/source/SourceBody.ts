@@ -16,11 +16,10 @@
 
 import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
 import { Local } from "../../core/base/Local";
-import { ArkParameterRef } from "../../core/base/Ref";
+import { ArkParameterRef, ArkThisRef } from "../../core/base/Ref";
 import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
 import { CallableType } from '../../core/base/Type';
 import { BasicBlock } from '../../core/graph/BasicBlock';
-import { DominanceTree } from "../../core/graph/DominanceTree";
 import { ArkBody } from "../../core/model/ArkBody";
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger from "../../utils/logger";
@@ -36,7 +35,6 @@ export class SourceBody {
     protected printer: ArkCodeBuffer;
     private arkBody: ArkBody;
     private stmts: Stmt[] = [];
-    private dominanceTree: DominanceTree;
     private method: ArkMethod;
     private cfgUtils: CfgUitls;
     
@@ -172,6 +170,10 @@ export class SourceBody {
                 if (assignStmt.getRightOp() instanceof ArkParameterRef) {
                     continue;
                 }
+                if (assignStmt.getRightOp() instanceof ArkThisRef) {
+                    this.printer.writeIndent().writeLine(`let ${local.getName()}: any;`);
+                    continue;
+                }
             }
             this.printer.writeIndent().writeLine(`let ${local.getName()}: ${SourceUtils.typeToString(local.getType())};`);
             logger.info('SourceBody->printLocals:', local);
@@ -196,15 +198,6 @@ export class SourceBody {
                 this.printer.writeIndent().writeLine(stmt.toString());
             }
         }
-    }
-
-    private hasDominated(srcBlock: BasicBlock, dstBlock: BasicBlock): boolean {
-        for (let child of this.dominanceTree.getChildren(srcBlock)) {
-            if (child == dstBlock) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /*

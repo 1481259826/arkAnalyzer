@@ -119,7 +119,7 @@ abstract class SourceStmt extends Stmt {
             if (value.getName().startsWith('AnonymousFunc$_')) {
                 for (const anonymousMethod of this.method.getDeclaringArkClass().getMethods()) {
                     if (anonymousMethod.getName() == value.getName()) {
-                       let _anonymous = new SourceMethod('', this.method.getDeclaringArkFile(), anonymousMethod);
+                       let _anonymous = new SourceMethod('', anonymousMethod);
                        return _anonymous.dump();
                     }
                 }

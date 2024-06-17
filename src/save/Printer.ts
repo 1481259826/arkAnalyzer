@@ -13,13 +13,25 @@
  * limitations under the License.
  */
 
-import { ArkFile } from '../core/model/ArkFile';
-import { ArkStream } from './ArkStream';
+import { ArkCodeBuffer } from './ArkStream';
 
+/**
+ * @category save
+ */
 export abstract class Printer {
-    arkFile: ArkFile;
-    constructor(arkFile: ArkFile) {
-        this.arkFile = arkFile;
+    protected printer: ArkCodeBuffer;
+
+    public constructor(indent: string='') {
+        this.printer = new ArkCodeBuffer(indent);
     }
-    public abstract printTo(streamOut: ArkStream): void;
+
+    /**
+     * ArkIR dump
+     */
+    public abstract dump(): string;
+
+    /**
+     * Original dump
+     */
+    public abstract dumpOriginal(): string;
 }

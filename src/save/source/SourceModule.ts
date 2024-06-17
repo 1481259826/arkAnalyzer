@@ -13,51 +13,64 @@
  * limitations under the License.
  */
 
-import { ExportInfo } from "../../core/model/ArkExport";
+import { ExportInfo, ExportType } from "../../core/model/ArkExport";
 import { ImportInfo } from "../../core/model/ArkImport";
-import { ArkFile } from "../../core/model/ArkFile";
 import { SourceBase } from "./SourceBase";
 
 export class SourceExportInfo extends SourceBase{
     info: ExportInfo;
 
-    public constructor(indent: string, arkFile: ArkFile, info: ExportInfo) {
-        super(indent, arkFile);
+    public constructor(indent: string, info: ExportInfo) {
+        super(indent);
         this.info = info;
     }
 
     public getLine(): number {
-        return -1;
+        return this.info.getOriginTsPosition().getLineNo();
     }
 
     public dump(): string {
-        if (this.info.getNameBeforeAs()) {
-            this.printer.write(`export {${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}}`);
-        } else {
-            this.printer.write(`export {${this.info.getExportClauseName()}}`);
+        this.printer.clear();
+        if (this.info.getExportClauseType() !== ExportType.NAME_SPACE && this.info.getExportClauseType() !== ExportType.NAME_SPACE) {
+            return '';
+        }
+        if (this.info.getExportClauseType() === ExportType.NAME_SPACE) {
+            // just like: export * as xx from './yy'
+            if (this.info.getNameBeforeAs()) {
+                this.printer.writeIndent().write(`export ${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}`);
+            } else {
+                this.printer.writeIndent().write(`export ${this.info.getExportClauseName()}`);
+            }
+        } else if (this.info.getExportClauseType() === ExportType.NAME_SPACE) {
+            // just like: export {xxx as x} from './yy'
+            if (this.info.getNameBeforeAs()) {
+                this.printer.write(`export {${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}}`);
+            } else {
+                this.printer.write(`export {${this.info.getExportClauseName()}}`);
+            }
         }
         if (this.info.getExportFrom()) {
-            this.printer.write(this.info.getTsSourceCode());
+            this.printer.write(` from '${this.info.getExportFrom() as string}'`);
         }
         this.printer.writeLine(';');
 
         return this.printer.toString();
     }
-    public dumpOriginalCode(): string {
-        return this.dump();
+    public dumpOriginal(): string {
+        return this.info.getTsSourceCode();
     }
 }
 
 export class SourceImportInfo extends SourceBase{
     info: ImportInfo;
 
-    public constructor(indent: string, arkFile: ArkFile, info: ImportInfo) {
-        super(indent, arkFile);
+    public constructor(indent: string, info: ImportInfo) {
+        super(indent);
         this.info = info;
     }
 
     public getLine(): number {
-        return -1;
+        return this.info.getOriginTsPosition().getLineNo();
     }
 
     public dump(): string {
@@ -83,7 +96,7 @@ export class SourceImportInfo extends SourceBase{
         }
         return this.printer.toString();
     }
-    public dumpOriginalCode(): string {
-        return this.dump();
+    public dumpOriginal(): string {
+        return this.info.getTsSourceCode();
     }
 }
