@@ -33,6 +33,8 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
 import { TypeInference } from './TypeInference';
 import { ArkIRTransformer } from './ArkIRTransformer';
+import { LineColPosition } from '../base/Position';
+import { COMPONENT_BUILD_FUNCTION } from './EtsConst';
 
 const logger = Logger.getLogger();
 
@@ -64,7 +66,8 @@ class StatementBuilder {
         this.lasts = new Set();
         this.walked = false;
         this.index = 0;
-        this.line = 0;
+        this.line = -1;
+        this.column = -1;
         this.astNode = astNode;
         this.scopeID = scopeID;
         this.threeAddressStmts = [];
@@ -221,16 +224,10 @@ export class CfgBuilder {
     catches: Catch[];
     exits: StatementBuilder[] = [];
 
-    anonymousFuncIndex: number;
-    anonymousFunctions: CfgBuilder[];
-
-    anonymousClassIndex: number;
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
 
-    private locals: Set<Local> = new Set();
-    private thisLocal: Local = new Local('this');
-    private paraLocals: Local[] = [];
+    private arkIRTransformer: ArkIRTransformer;
 
     constructor(ast: ts.Node, name: string, declaringMethod: ArkMethod, sourceFile: ts.SourceFile) {
         this.name = name;
@@ -256,10 +253,8 @@ export class CfgBuilder {
         this.variables = [];
         this.importFromPath = [];
         this.catches = [];
-        this.anonymousFuncIndex = 0;
-        this.anonymousFunctions = [];
-        this.anonymousClassIndex = 0;
         this.sourceFile = sourceFile;
+        this.arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
     }
 
     walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
@@ -599,7 +594,7 @@ export class CfgBuilder {
         const handledStmts: Set<StatementBuilder> = new Set();
         while (stmtQueue.length > 0) {
             let stmt = stmtQueue.pop()!;
-            if (stmt.type.includes("exit")) {
+            if (stmt.type.includes('exit')) {
                 continue;
             }
             if (handledStmts.has(stmt)) {
@@ -608,7 +603,7 @@ export class CfgBuilder {
             const block = new Block([]);
             this.blocks.push(block);
             while (stmt && !handledStmts.has(stmt)) {
-                if (stmt.type == "loopStatement" && block.stmts.length > 0) {
+                if (stmt.type == 'loopStatement' && block.stmts.length > 0) {
                     stmtQueue.push(stmt);
                     break;
                 }
@@ -647,14 +642,14 @@ export class CfgBuilder {
                     break;
                 } else {
                     if (stmt.next) {
-                        if ((stmt.type == "continueStatement" || stmt.next.type == "loopStatement") && stmt.next.block) {
+                        if ((stmt.type == 'continueStatement' || stmt.next.type == 'loopStatement') && stmt.next.block) {
                             break;
                         }
-                        if (stmt.next.type.includes("exit")) {
+                        if (stmt.next.type.includes('exit')) {
                             break;
                         }
                         stmt.next.passTmies++;
-                        if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == "loopStatement") || stmt.next.isDoWhile) {
+                        if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == 'loopStatement') || stmt.next.isDoWhile) {
                             if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)) {
                                 stmtQueue.push(stmt.next);
                                 break;
@@ -756,9 +751,9 @@ export class CfgBuilder {
     addStmtBuilderPosition() {
         for (const stmt of this.statementArray) {
             if (stmt.astNode) {
-                const { line, character } = ts.getLineAndCharacterOfPosition(
+                const {line, character} = ts.getLineAndCharacterOfPosition(
                     this.sourceFile,
-                    stmt.astNode.getStart(this.sourceFile)
+                    stmt.astNode.getStart(this.sourceFile),
                 );
                 stmt.line = line + 1;
                 stmt.column = character + 1;
@@ -842,16 +837,15 @@ export class CfgBuilder {
     }
 
     private transformToArkIR() {
-        const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         if (this.blocks.length > 0 && this.blocks[0].stmts.length > 0) {
             const currStmt = this.blocks[0].stmts[0];
-            currStmt.threeAddressStmts.push(...arkIRTransformer.prebuildStmts());
+            currStmt.threeAddressStmts.push(...this.arkIRTransformer.prebuildStmts());
         }
 
         for (const block of this.blocks) {
             for (const originStmt of block.stmts) {
                 if (originStmt.astNode && originStmt.code != '') {
-                    originStmt.threeAddressStmts.push(...arkIRTransformer.tsNodeToStmts(originStmt.astNode));
+                    originStmt.threeAddressStmts.push(...this.arkIRTransformer.tsNodeToStmts(originStmt.astNode));
                 } else if (originStmt.code.startsWith('return')) {
                     originStmt.threeAddressStmts.push(new ArkReturnVoidStmt());
                 } else if (originStmt.type == 'gotoStatement') {
@@ -859,8 +853,6 @@ export class CfgBuilder {
                 }
             }
         }
-
-        this.locals = arkIRTransformer.getLocals();
     }
 
     errorTest(stmt: StatementBuilder) {
@@ -948,177 +940,39 @@ export class CfgBuilder {
         }
     }
 
-    private insertBlockbBefore(blocks: Block[], id: number) {
-        blocks.splice(id, 0, new Block([]));
-        for (let i = id; i < blocks.length; i++) {
-            blocks[i].id += 1;
-        }
-    }
-
-    public printThreeAddressStmts() {
-        // format
-        let indentation = ' '.repeat(4);
-        let lineEnd = ';\n';
-
-        let stmtBlocks: Block[] = [];
-        stmtBlocks.push(...this.blocks);
-        let blockId = 0;
-        if (stmtBlocks[blockId].stmts[blockId].type == 'loopStatement') {
-            this.insertBlockbBefore(stmtBlocks, blockId);
-            blockId = 1;
-        }
-        blockId += 1;
-        for (; blockId < stmtBlocks.length; blockId++) {
-            let currStmt = stmtBlocks[blockId].stmts[0];
-            let lastStmt = stmtBlocks[blockId - 1].stmts[0];
-            if (currStmt.type == 'loopStatement' && lastStmt.type == 'loopStatement') {
-                this.insertBlockbBefore(stmtBlocks, blockId);
-                blockId++;
-            }
-        }
-
-        let blockTailStmtStrs = new Map<number, string[]>();
-        let blockStmtStrs = new Map<number, string[]>();
-        for (let blockId = 0; blockId < stmtBlocks.length; blockId++) {
-            let currBlock = stmtBlocks[blockId];
-            let currStmtStrs: string[] = [];
-            for (const originStmt of currBlock.stmts) {
-                if (originStmt.type == 'ifStatement') {
-                    currStmtStrs.push(...ifStmtToString(originStmt));
-                } else if (originStmt.type == 'loopStatement') {
-                    currStmtStrs.push(...iterationStmtToString(originStmt));
-                } else if (originStmt.type == 'switchStatement') {
-                    currStmtStrs.push(...switchStmtToString(originStmt, this.sourceFile));
-                } else if (originStmt.type == 'breakStatement' || originStmt.type == 'continueStatement') {
-                    currStmtStrs.push(...jumpStmtToString(originStmt));
-                } else {
-                    for (const threeAddressStmt of originStmt.threeAddressStmts) {
-                        currStmtStrs.push(threeAddressStmt.toString());
-                    }
-                }
-            }
-            blockStmtStrs.set(blockId, currStmtStrs);
-        }
-
-        // add tail stmts and print to str
-        let functionBodyStr = 'method: ' + this.name + ' {\n';
-        for (let blockId = 0; blockId < stmtBlocks.length; blockId++) {
-            let stmtStrs: string[] = [];
-            let currStmtStrs = blockStmtStrs.get(blockId);
-            if (currStmtStrs != undefined) {
-                stmtStrs.push(...currStmtStrs);
-            }
-            let tailStmtStrs = blockTailStmtStrs.get(blockId);
-            if (tailStmtStrs != undefined) {
-                stmtStrs.push(...tailStmtStrs);
-            }
-
-            if (blockId != 0) {
-                functionBodyStr += 'label' + blockId + ':\n';
-            }
-            functionBodyStr += indentation;
-            functionBodyStr += stmtStrs.join(lineEnd + indentation);
-            functionBodyStr += lineEnd;
-        }
-
-        functionBodyStr += '}\n';
-        logger.info(functionBodyStr);
-
-        function ifStmtToString(originStmt: StatementBuilder): string[] {
-            let ifStmt = originStmt as ConditionStatementBuilder;
-
-            let strs: string[] = [];
-            for (const threeAddressStmt of ifStmt.threeAddressStmts) {
-                if (threeAddressStmt instanceof ArkIfStmt) {
-                    let nextBlockId = ifStmt.nextF?.block?.id;
-                    strs.push(threeAddressStmt.toString() + ' goto label' + nextBlockId);
-                } else {
-                    strs.push(threeAddressStmt.toString());
-                }
-            }
-            return strs;
-        }
-
-        function iterationStmtToString(originStmt: StatementBuilder): string[] {
-            let iterationStmt = originStmt as ConditionStatementBuilder;
-
-            let bodyBlockId = iterationStmt.nextT?.block?.id as number;
-            if (blockTailStmtStrs.get(bodyBlockId) == undefined) {
-                blockTailStmtStrs.set(bodyBlockId, []);
-            }
-            let currTailStmtStrs = blockTailStmtStrs.get(bodyBlockId) as string[];
-
-            let preBlockId = bodyBlockId - 1;
-            if (blockTailStmtStrs.get(preBlockId) == undefined) {
-                blockTailStmtStrs.set(preBlockId, []);
-            }
-            let preTailStmtStrs = blockTailStmtStrs.get(preBlockId) as string[];
-
-            let strs: string[] = [];
-            let findIf = false;
-            let appendAfterIf = iterationStmt.astNode && (ts.SyntaxKind[iterationStmt.astNode.kind] == 'ForOfStatement' || ts.SyntaxKind[iterationStmt.astNode.kind] == 'ForInStatement');
-            for (const threeAddressStmt of iterationStmt.threeAddressStmts) {
-                if (threeAddressStmt instanceof ArkIfStmt) {
-                    let nextBlockId = iterationStmt.nextF?.block?.id;
-                    strs.push(threeAddressStmt.toString() + ' goto label' + nextBlockId);
-                    findIf = true;
-                } else if (!findIf) {
-                    preTailStmtStrs.push(threeAddressStmt.toString());
-                } else if (threeAddressStmt instanceof ArkGotoStmt) {
-                    currTailStmtStrs.push('goto label' + bodyBlockId);
-                } else if (appendAfterIf) {
-                    strs.push(threeAddressStmt.toString());
-                    appendAfterIf = false;
-                } else {
-                    currTailStmtStrs.push(threeAddressStmt.toString());
-                }
-            }
-            return strs;
-        }
-
-        // TODO:参考soot还是sootup处理switch
-        function switchStmtToString(originStmt: StatementBuilder, sourceFile: ts.SourceFile): string[] {
-            let switchStmt = originStmt as SwitchStatementBuilder;
-
-            let identifierStr = switchStmt.astNode?.getChildren(sourceFile)[2].getText(sourceFile);
-            let str = 'lookupswitch(' + identifierStr + '){\n' + indentation;
-
-            let strs: string[] = [];
-            let nextBlockId = -1;
-            for (const item of switchStmt.cases) {
-                strs.push(indentation + item.value + 'goto label' + item.stmt.block?.id);
-                nextBlockId = item.stmt.next?.block?.id as number;
-            }
-            strs.push(indentation + 'default: goto label' + nextBlockId);
-            str += strs.join(lineEnd + indentation);
-
-            str += lineEnd + indentation + '}';
-            return [str];
-        }
-
-        function jumpStmtToString(originStmt: StatementBuilder): string[] {
-            let targetId = originStmt.next?.block?.id as number;
-            return ['goto label' + targetId];
-        }
-    }
-
     // TODO: Add more APIs to the class 'Cfg', and use these to build Cfg
     public buildOriginalCfg(): Cfg {
-        let originalCfg = new Cfg();
-        let blockBuilderToBlock = new Map<Block, BasicBlock>();
+        const originalCfg = new Cfg();
+        const inBuildMethod = this.declaringMethod.getName() == COMPONENT_BUILD_FUNCTION;
+        const stmtInBuildMethodToOriginalStmt = this.arkIRTransformer.getStmtInBuildMethodToOriginalStmt();
+        const blockBuilderToBlock = new Map<Block, BasicBlock>();
         for (const blockBuilder of this.blocks) {
-            let block = new BasicBlock();
-            for (const stmtBuilder of blockBuilder.stmts) {
-                if (stmtBuilder.astNode == null) {
-                    continue;
+            const block = new BasicBlock();
+            if (inBuildMethod) {
+                const stmtSet = new Set<Stmt>();
+                for (const stmtBuilder of blockBuilder.stmts) {
+                    for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
+                        if (stmtInBuildMethodToOriginalStmt.has(threeAddressStmt)) {
+                            const originalStmt = stmtInBuildMethodToOriginalStmt.get(threeAddressStmt) as Stmt;
+                            if (!stmtSet.has(originalStmt)) {
+                                stmtSet.add(originalStmt);
+                                block.addStmt(originalStmt);
+                            }
+                        }
+                    }
                 }
-                let originlStmt: Stmt = new Stmt();
-                originlStmt.setText(stmtBuilder.code);
-                originlStmt.setPositionInfo(stmtBuilder.line);
-                originlStmt.setOriginPositionInfo(stmtBuilder.line);
-                originlStmt.setColumn(stmtBuilder.column);
-                originlStmt.setOriginColumn(stmtBuilder.column);
-                block.addStmt(originlStmt);
+            } else {
+                for (const stmtBuilder of blockBuilder.stmts) {
+                    if (stmtBuilder.astNode == null) {
+                        continue;
+                    }
+                    const originalStmt: Stmt = new Stmt();
+                    originalStmt.setText(stmtBuilder.code);
+                    const positionInfo = new LineColPosition(stmtBuilder.line, stmtBuilder.column);
+                    originalStmt.setPositionInfo(positionInfo);
+                    originalStmt.setOriginPositionInfo(positionInfo);
+                    block.addStmt(originalStmt);
+                }
             }
             originalCfg.addBlock(block);
 
@@ -1129,7 +983,7 @@ export class CfgBuilder {
         // link block
         for (const [blockBuilder, block] of blockBuilderToBlock) {
             for (const successorBuilder of blockBuilder.nexts) {
-                let successorBlock = blockBuilderToBlock.get(successorBuilder) as BasicBlock;
+                const successorBlock = blockBuilderToBlock.get(successorBuilder) as BasicBlock;
                 successorBlock.addPredecessorBlock(block);
                 block.addSuccessorBlock(successorBlock);
             }
@@ -1142,19 +996,19 @@ export class CfgBuilder {
     public buildCfg(): Cfg {
         let cfg = new Cfg();
         cfg.declaringClass = this.declaringClass;
+        const inBuildMethod = this.declaringMethod.getName() == COMPONENT_BUILD_FUNCTION;
         let blockBuilderToBlock = new Map<Block, BasicBlock>();
-        let stmtPos = -1;
+        let isStartingStmt = true;
         for (const blockBuilder of this.blocks) {
             let block = new BasicBlock();
             for (const stmtBuilder of blockBuilder.stmts) {
                 for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
-                    if (stmtPos == -1) {
-                        stmtPos = stmtBuilder.line;
+                    if (isStartingStmt) {
                         cfg.setStartingStmt(threeAddressStmt);
                     }
-                    threeAddressStmt.setOriginPositionInfo(stmtBuilder.line);
-                    threeAddressStmt.setPositionInfo(stmtPos);
-                    stmtPos++;
+                    if (!inBuildMethod) {
+                        threeAddressStmt.setOriginPositionInfo(new LineColPosition(stmtBuilder.line, stmtBuilder.column));
+                    }
                     block.addStmt(threeAddressStmt);
 
                     threeAddressStmt.setCfg(cfg);
@@ -1179,85 +1033,7 @@ export class CfgBuilder {
     }
 
     public getLocals(): Set<Local> {
-        return this.locals;
-    }
-
-    private getTypeNode(node: ts.Node): Type {
-        for (let child of node.getChildren(this.sourceFile)) {
-            let result = this.resolveTypeNode(child);
-            if (result !== UnknownType.getInstance()) {
-                return result;
-            }
-        }
-        return UnknownType.getInstance();
-    }
-
-    private resolveTypeNode(node: ts.Node): Type {
-        let typeNode: ts.Node;
-        switch (ts.SyntaxKind[node.kind]) {
-            case 'BooleanKeyword':
-            case 'NumberKeyword':
-            case 'StringKeyword':
-            case 'VoidKeyword':
-            case 'AnyKeyword':
-                return TypeInference.buildTypeFromStr(this.resolveKeywordType(node));
-            case 'ArrayType':
-                typeNode = node.getChildren(this.sourceFile)[0];
-                const typeStr = typeNode.getText(this.sourceFile);
-                return new ArrayType(TypeInference.buildTypeFromStr(typeStr), 1);
-            case 'TypeReference':
-                return new AnnotationNamespaceType(node.getText(this.sourceFile));
-            case 'UnionType':
-                const types: Type[] = [];
-                typeNode = node.getChildren(this.sourceFile)[0];
-                for (const singleTypeNode of typeNode.getChildren(this.sourceFile)) {
-                    if (ts.SyntaxKind[singleTypeNode.kind] != 'BarToken') {
-                        const singleType = this.resolveTypeNode(singleTypeNode);
-                        types.push(singleType);
-                    }
-                }
-                return new UnionType(types);
-            case 'TupleType':
-                const tupleTypes: Type[] = [];
-                typeNode = node.getChildren(this.sourceFile)[1];
-                for (const singleTypeNode of typeNode.getChildren(this.sourceFile)) {
-                    if (ts.SyntaxKind[singleTypeNode.kind] != 'CommaToken') {
-                        const singleType = this.resolveTypeNode(singleTypeNode);
-                        tupleTypes.push(singleType);
-                    }
-                }
-                return new TupleType(tupleTypes);
-            case 'TypeQuery':
-                return new AnnotationTypeQueryType(node.getChildren(this.sourceFile)[1].getText(this.sourceFile));
-        }
-        return UnknownType.getInstance();
-    }
-
-    private resolveKeywordType(node: ts.Node): string {
-        switch (ts.SyntaxKind[node.kind]) {
-            case 'TrueKeyword':
-            case 'FalseKeyword':
-            case 'BooleanKeyword':
-            case 'FalseKeyword':
-            case 'TrueKeyword':
-                return 'boolean';
-            case 'NumberKeyword':
-            case 'FirstLiteralToken':
-                return 'number';
-            case 'StringKeyword':
-            case 'StringLiteral':
-                return 'string';
-            case 'VoidKeyword':
-                return 'void';
-            case 'AnyKeyword':
-                return 'any';
-            case 'NullKeyword':
-                return 'null';
-            case 'RegularExpressionLiteral':
-                return 'RegularExpression';
-            default:
-                return '';
-        }
+        return this.arkIRTransformer.getLocals();
     }
 
     buildCfgBuilder() {

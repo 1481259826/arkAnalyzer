@@ -13,16 +13,30 @@
  * limitations under the License.
  */
 
-@Entry
 @Component
-struct Parent {
-@State simpleList: Array<string> = ['one', 'two', 'three'];
+@Reusabel
+export struct SelfDepends {
+    @State item: number = 0;
+    private datasource: MyDataSource = new MyDataSource();
 
     build() {
-        Repeat<string>(this.simpleList)
-            .each((obj: RepeatItem<string>) => {
-                Row()
-            })
-            .key((item: string) => item)
+        Column() {
+            Text('N' + this.item)
+                .fontSize(12)
+                .height('16')
+            WaterFlow() {
+                LazyForEach(this.datasource, (item: number) => {
+                    FlowItem() {
+                        SelfDepends({item: item})
+                    }
+                    .width('100%')
+                }, (item: string) => item)
+            }
+            .cachedCount(2)
+        }
     }
+}
+
+class MyDataSource implements IDataSource {
+    
 }

@@ -347,7 +347,7 @@ export class SourceReturnVoidStmt extends SourceStmt {
     }
 
     protected transfer2ts(stmtReader: StmtReader): void {
-        if (this.original.getOriginPositionInfo() == 0) {
+        if (this.original.getOriginPositionInfo().getLineNo() == 0) {
             this.setText('');
         } else {
             this.setText('return;');

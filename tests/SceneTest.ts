@@ -74,13 +74,23 @@ class SceneTest {
         logger.error('testSimpleProject start');
 
         // build config
-        const projectDir = 'tests/resources/scene/mainModule';
+        // const projectDir = 'tests/resources/scene/mainModule';
+        const projectDir = 'tests/resources/scene/mainModuleEts';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
         // build scene
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
+        scene.inferTypes();
+
+        // get viewTree
+        for (const arkFile of scene.getFiles()) {
+            for (const arkClass of arkFile.getClasses()) {
+                arkClass.getViewTree();
+                logger.error(`getViewTree of ${arkClass.getName()} done`);
+            }
+        }
 
         logger.error('testSimpleProject end\n');
     }
@@ -105,5 +115,5 @@ class SceneTest {
 
 let sceneTest = new SceneTest();
 // sceneTest.testETsWholePipline();
-// sceneTest.testSimpleProject();
-sceneTest.testEtsProject();
+sceneTest.testSimpleProject();
+// sceneTest.testEtsProject();
