@@ -2,7 +2,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "coverage": "vitest run --coverage",
+    "coverage": "vitest --no-color run --coverage",
     "gendoc": "npx typedoc"
   },
   "dependencies": {
