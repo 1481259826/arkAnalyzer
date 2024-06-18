@@ -138,8 +138,6 @@
 // }
 
 function main(i: number) {
-    if (1) {
-        let i = 0;
-    }
-    return;
+    let arr = [1, 2, 3];
+    let b = ~arr[0] + 1;
 }

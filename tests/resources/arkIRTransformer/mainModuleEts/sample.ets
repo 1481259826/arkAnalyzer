@@ -15,10 +15,32 @@
 
 @Entry
 @Component
-struct Foo {
-    aa: string = 'aastr'
+struct Parent {
+@State simpleList: Array<string> = ['one', 'two', 'three'];
 
     build() {
-        Row()
+        Row() {
+            Column() {
+                Repeat<string>(this.simpleList)
+                    .each((obj: RepeatItem<string>)=>{
+                        ChildItem({ item: obj.item })
+                    })
+                    .key((item: string) => item)
+            }
+        .width('100%')
+                .height('100%')
+        }
+    .height('100%')
+            .backgroundColor(0xF1F3F5)
+    }
+}
+
+@Component
+struct ChildItem {
+@Prop item: string;
+
+    build() {
+        Text(this.item)
+            .fontSize(50)
     }
 }

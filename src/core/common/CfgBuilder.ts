@@ -964,7 +964,7 @@ export class CfgBuilder {
                 }
             } else {
                 for (const stmtBuilder of blockBuilder.stmts) {
-                    if (stmtBuilder.astNode == null) {
+                    if (stmtBuilder.astNode == null || stmtBuilder.code === '') {
                         continue;
                     }
                     const originalStmt: Stmt = new Stmt();

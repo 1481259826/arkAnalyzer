@@ -122,7 +122,7 @@ export class ArkIRTransformer {
         return this.thisLocal;
     }
 
-    public isInBuildMethod():boolean {
+    public isInBuildMethod(): boolean {
         return this.inBuildMethod;
     }
 
@@ -214,33 +214,28 @@ export class ArkIRTransformer {
         const {value: expr, stmts: stmts} = this.tsNodeToValueAndStmts(expressionStatement.expression);
         if (expr instanceof AbstractInvokeExpr) {
             const arkInvokeStmt = new ArkInvokeStmt(expr);
-            if (this.inBuildMethod) {
-                const originalStmtOfInvokeStmt = this.creatOriginalStmt(expressionStatement.expression);
-                this.mapStmtsToOriginalStmt([arkInvokeStmt], originalStmtOfInvokeStmt);
-            }
             stmts.push(arkInvokeStmt);
 
-            let originalRepeatStmt: Stmt | null = null;
+            let hasRepeat: boolean = false;
             for (const stmt of stmts) {
                 if ((stmt instanceof ArkAssignStmt) && (stmt.getRightOp() instanceof ArkStaticInvokeExpr)) {
                     const rightOp = stmt.getRightOp() as ArkStaticInvokeExpr;
                     if (rightOp.getMethodSignature().getMethodSubSignature().getMethodName() === COMPONENT_REPEAT) {
                         const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_CREATE_FUNCTION);
                         const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, rightOp.getArgs());
-                        originalRepeatStmt = this.stmtInBuildMethodToOriginalStmt.get(stmt) as Stmt;
-                        this.stmtInBuildMethodToOriginalStmt.delete(stmt);
                         stmt.setRightOp(createInvokeExpr);
-                        this.stmtInBuildMethodToOriginalStmt.set(stmt, originalRepeatStmt);
                     }
                 }
             }
-            if (originalRepeatStmt) {
+            if (hasRepeat) {
                 const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_POP_FUNCTION);
                 const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
                 const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
-                this.mapStmtsToOriginalStmt([popInvokeStmt], originalRepeatStmt);
                 stmts.push(popInvokeStmt);
             }
+        }
+        if (this.inBuildMethod) {
+            this.mapStmtsToTsStmt(stmts, expressionStatement);
         }
         return stmts;
     }
@@ -363,9 +358,6 @@ export class ArkIRTransformer {
         } = this.conditionToValueAndStmts(ifStatement.expression);
         stmts.push(...conditionStmts);
         if (this.inBuildMethod) {
-            const originalStmtOfConditionExpression = this.creatOriginalStmt(ifStatement.expression);
-            this.mapStmtsToOriginalStmt(stmts, originalStmtOfConditionExpression);
-
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
             const {value: conditionValue, stmts: assignConditionStmts} = this.generateAssignStmtForValue(conditionExpr);
             stmts.push(...assignConditionStmts);
@@ -376,8 +368,6 @@ export class ArkIRTransformer {
             const branchInvokeExpr = new ArkStaticInvokeExpr(branchMethodSignature, [ValueUtil.getOrCreateNumberConst(0)]);
             const branchInvokeStmt = new ArkInvokeStmt(branchInvokeExpr);
             stmts.push(branchInvokeStmt);
-            const originalStmtOfIfStatement = this.creatOriginalStmt(ifStatement);
-            this.mapStmtsToOriginalStmt(stmts, originalStmtOfIfStatement);
 
             stmts.push(...this.tsNodeToStmts(ifStatement.thenStatement));
 
@@ -385,8 +375,6 @@ export class ArkIRTransformer {
                 const branchElseMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
                 const branchElseInvokeExpr = new ArkStaticInvokeExpr(branchElseMethodSignature, [ValueUtil.getOrCreateNumberConst(1)]);
                 const branchElseInvokeStmt = new ArkInvokeStmt(branchElseInvokeExpr);
-                const originalStmtOfElseStatement = this.creatOriginalStmt(ifStatement.elseStatement);
-                this.mapStmtsToOriginalStmt([branchElseInvokeStmt], originalStmtOfElseStatement);
                 stmts.push(branchElseInvokeStmt);
 
                 stmts.push(...this.tsNodeToStmts(ifStatement.elseStatement));
@@ -394,8 +382,9 @@ export class ArkIRTransformer {
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
             const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
-            this.mapStmtsToOriginalStmt([popInvokeStmt], originalStmtOfIfStatement);
             stmts.push(popInvokeStmt);
+
+            this.mapStmtsToTsStmt(stmts, ifStatement);
         } else {
             stmts.push(new ArkIfStmt(conditionExpr as ArkConditionExpr));
         }
@@ -560,8 +549,6 @@ export class ArkIRTransformer {
         const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_CUSTOMVIEW, COMPONENT_POP_FUNCTION);
         const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
         stmts.push(new ArkInvokeStmt(popInvokeExpr));
-        const originalStmtOfComponentExpression = this.creatOriginalStmt(componentExpression);
-        this.mapStmtsToOriginalStmt(stmts, originalStmtOfComponentExpression);
         return {value: componentValue, stmts: stmts};
     }
 
@@ -585,8 +572,6 @@ export class ArkIRTransformer {
             const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, args);
             const {value: componentValue, stmts: componentStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...componentStmts);
-            const originalStmtOfEtsComponentExpression = this.creatOriginalStmt(etsComponentExpression);
-            this.mapStmtsToOriginalStmt(stmts, originalStmtOfEtsComponentExpression);
 
             if (etsComponentExpression.body) {
                 for (const statement of etsComponentExpression.body.statements) {
@@ -597,7 +582,6 @@ export class ArkIRTransformer {
             const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_POP_FUNCTION);
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
             const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
-            this.mapStmtsToOriginalStmt([popInvokeStmt], originalStmtOfEtsComponentExpression);
             stmts.push(popInvokeStmt);
             return {value: componentValue, stmts: stmts};
         }
@@ -742,12 +726,6 @@ export class ArkIRTransformer {
             methodSignature.getMethodSubSignature().setMethodName((callerValue as Local).getName());
             invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
         }
-
-        if (this.inBuildMethod) {
-            const originalStmtOfCallExpression = this.creatOriginalStmt(callExpression);
-            this.mapStmtsToOriginalStmt(stmts, originalStmtOfCallExpression);
-        }
-
         return {value: invokeValue, stmts: stmts};
     }
 
@@ -855,10 +833,17 @@ export class ArkIRTransformer {
     }
 
     private prefixUnaryExpressionToValueAndStmts(prefixUnaryExpression: ts.PrefixUnaryExpression): ValueAndStmts {
-        const {
+        const stmts: Stmt[] = [];
+        let {
             value: operandValue,
-            stmts: stmts,
+            stmts: exprStmts,
         } = this.tsNodeToValueAndStmts(prefixUnaryExpression.operand);
+        stmts.push(...exprStmts);
+        if (IRUtils.moreThanOneAddress(operandValue)) {
+            ({value: operandValue, stmts: exprStmts} = this.generateAssignStmtForValue(operandValue));
+            stmts.push(...exprStmts);
+        }
+
         const operator = prefixUnaryExpression.operator;
         const operatorStr = ts.tokenToString(operator) as string;
         if (operator == ts.SyntaxKind.PlusPlusToken || operator == ts.SyntaxKind.MinusMinusToken) {
@@ -872,10 +857,17 @@ export class ArkIRTransformer {
     }
 
     private postfixUnaryExpressionToValueAndStmts(postfixUnaryExpression: ts.PostfixUnaryExpression): ValueAndStmts {
-        const {
+        const stmts: Stmt[] = [];
+        let {
             value: operandValue,
-            stmts: stmts,
+            stmts: exprStmts,
         } = this.tsNodeToValueAndStmts(postfixUnaryExpression.operand);
+        stmts.push(...exprStmts);
+        if (IRUtils.moreThanOneAddress(operandValue)) {
+            ({value: operandValue, stmts: exprStmts} = this.generateAssignStmtForValue(operandValue));
+            stmts.push(...exprStmts);
+        }
+
         const operator = postfixUnaryExpression.operator;
         const operatorStr = ts.tokenToString(operator) as string;
         const binopExpr = new ArkBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), operatorStr[0]);
@@ -1308,16 +1300,13 @@ export class ArkIRTransformer {
         return false;
     }
 
-    private creatOriginalStmt(node: ts.Node): Stmt {
+    private mapStmtsToTsStmt(stmts: Stmt[], node: ts.Node): void {
         const originalStmt = new Stmt();
         originalStmt.setText(node.getText(this.sourceFile));
         const positionInfo = LineColPosition.buildFromNode(node, this.sourceFile);
         originalStmt.setOriginPositionInfo(positionInfo);
         originalStmt.setPositionInfo(positionInfo);
-        return originalStmt;
-    }
 
-    private mapStmtsToOriginalStmt(stmts: Stmt[], originalStmt: Stmt): void {
         for (const stmt of stmts) {
             if (stmt.getOriginPositionInfo().getLineNo() == -1) {
                 stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
