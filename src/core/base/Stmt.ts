@@ -27,8 +27,8 @@ export class Stmt {
     private text: string = '';
     private def: Value | null = null;
     private uses: Value[] = [];
-    private originPosition: LineColPosition = new LineColPosition(-1, -1);
-    private position: LineColPosition = new LineColPosition(-1, -1);
+    private originPosition: LineColPosition = LineColPosition.DEFAULT;
+    private position: LineColPosition = LineColPosition.DEFAULT;
     private cfg: Cfg | null = null;
 
     constructor() {

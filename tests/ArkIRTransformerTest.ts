@@ -56,8 +56,8 @@ class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
         logger.error('testStmtsOfSimpleProject start');
 
-        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
+        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
@@ -90,7 +90,7 @@ class ArkIRTransformerTest {
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
-
+        scene.inferTypes();
         this.printScene(scene);
 
         logger.error('testStmtsOfEtsProject end\n');
@@ -107,12 +107,12 @@ class ArkIRTransformerTest {
             // }
         }
 
-        // logger.error('--- originalStmts ---');
-        // const originalCfg = body.getOriginalCfg();
-        // for (const originalStmt of originalCfg.getStmts()) {
-        //     logger.error(`text: ${originalStmt.toString()}`);
-        //     logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
-        // }
+        logger.error('--- originalStmts ---');
+        const originalCfg = body.getOriginalCfg();
+        for (const originalStmt of originalCfg.getStmts()) {
+            logger.error(`text: ${originalStmt.toString()}`);
+            logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
+        }
     }
 
     private printScene(scene: Scene): void {
