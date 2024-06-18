@@ -31,7 +31,7 @@ private data: MyDataSource = new MyDataSource();
                     Row() {
                         Text(item).fontSize(50)
                             .onAppear(() => {
-                                console.info("appear:" + item)
+                                console.info('appear:' + item)
                             })
                     }.margin({ left: 10, right: 10 })
                 }
