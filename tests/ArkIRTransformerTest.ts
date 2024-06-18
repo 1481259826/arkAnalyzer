@@ -30,7 +30,7 @@ Logger.configure(logPath, LOG_LEVEL.DEBUG);
 class ArkIRTransformerTest {
     public async testSimpleStmt() {
         logger.info('testSimpleStmt start');
-        const tsFilePath = 'tests/resources/ArkIRTransformer/mainModule/main.ts';
+        const tsFilePath = 'tests/resources/arkIRTransformer/mainModule/main.ts';
         const tsSourceCode = fs.readFileSync(tsFilePath).toString();
         const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest);
 
@@ -57,13 +57,14 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfSimpleProject start');
 
         const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        // const projectDir = 'tests/resources/ArkIRTransformer/mainModule';
+        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
         this.printScene(scene);
+        scene.inferTypes();
 
         // // get viewTree
         // for (const arkFile of scene.getFiles()) {
@@ -80,7 +81,7 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfEtsProject start');
 
         // build config
-        const configPath = 'tests/resources/ArkIRTransformer/ArkIRTransformerTestConfig.json';
+        const configPath = 'tests/resources/arkIRTransformer/ArkIRTransformerTestConfig.json';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromJson(configPath);
 
@@ -100,7 +101,7 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
             logger.error(`text: ${threeAddresStmt.toString()}`);
-            // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
+            logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
             // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
             //     logger.error(`text: ${threeAddresStmt.toString()}`);
             // }

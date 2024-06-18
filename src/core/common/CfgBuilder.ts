@@ -943,7 +943,7 @@ export class CfgBuilder {
     // TODO: Add more APIs to the class 'Cfg', and use these to build Cfg
     public buildOriginalCfg(): Cfg {
         const originalCfg = new Cfg();
-        const inBuildMethod = this.declaringMethod.getName() == COMPONENT_BUILD_FUNCTION;
+        const inBuildMethod = this.arkIRTransformer.isInBuildMethod();
         const stmtInBuildMethodToOriginalStmt = this.arkIRTransformer.getStmtInBuildMethodToOriginalStmt();
         const blockBuilderToBlock = new Map<Block, BasicBlock>();
         for (const blockBuilder of this.blocks) {
@@ -996,7 +996,7 @@ export class CfgBuilder {
     public buildCfg(): Cfg {
         let cfg = new Cfg();
         cfg.declaringClass = this.declaringClass;
-        const inBuildMethod = this.declaringMethod.getName() == COMPONENT_BUILD_FUNCTION;
+        const inBuildMethod = this.arkIRTransformer.isInBuildMethod();
         let blockBuilderToBlock = new Map<Block, BasicBlock>();
         let isStartingStmt = true;
         for (const blockBuilder of this.blocks) {
