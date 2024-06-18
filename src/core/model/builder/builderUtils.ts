@@ -466,7 +466,7 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
     else if (ts.isBinaryExpression(node)) {
         let leftOp = tsNode2Value(node.left, sourceFile, cls);
         let rightOp = tsNode2Value(node.right, sourceFile, cls);
-        let op = ts.SyntaxKind[node.operatorToken.kind];
+        let op = ts.tokenToString(node.operatorToken.kind) as string;
         return new ArkBinopExpr(leftOp, rightOp, op);
     }
     else if (ts.isPrefixUnaryExpression(node)) {
