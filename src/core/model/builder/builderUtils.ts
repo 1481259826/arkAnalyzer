@@ -392,11 +392,13 @@ export function buildTypeFromPreStr(preStr: string) {
 
 export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkClass): Value {
     let nodeKind = ts.SyntaxKind[node.kind];
-    if (nodeKind == 'NumericLiteral' ||
-        nodeKind == 'StringLiteral' ||
-        nodeKind == 'TrueKeyword' ||
-        nodeKind == 'FalseKeyword' ||
-        nodeKind == 'FirstLiteralToken') {
+    if (nodeKind === 'NumericLiteral' ||
+        nodeKind === 'StringLiteral' ||
+        nodeKind === 'TrueKeyword' ||
+        nodeKind === 'FalseKeyword' ||
+        nodeKind === 'FirstLiteralToken' ||
+        nodeKind === 'NullKeyword'
+    ) {
         let type = buildTypeFromPreStr(nodeKind);
         let value = node.getText(sourceFile);
         return new Constant(value, type);
