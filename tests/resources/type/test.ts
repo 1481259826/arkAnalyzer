@@ -12,8 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function main() {
-    for (let i = 0; i< 1;i++) {
-    console.log(i)
-}
-}
+class Person {
+        x: number = 0;
+    
+        constructor(public age: number) {
+            super()
+        }
+        growOld = () => {
+            this.age++;
+        }
+    }

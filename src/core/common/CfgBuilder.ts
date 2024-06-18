@@ -551,6 +551,7 @@ export class CfgBuilder {
             this.entry.next = ret;
             ret.lasts.add(this.entry);
             ret.next = this.exit;
+            this.exit.lasts = new Set([ret]);
         }
     }
 
