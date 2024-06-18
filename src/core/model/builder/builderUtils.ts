@@ -30,7 +30,7 @@ import { ArkMethod } from "../ArkMethod";
 import { Decorator } from "../../base/Decorator";
 import { buildProperty2ArkField } from "./ArkFieldBuilder";
 import { ArrayBindingPatternParameter, MethodParameter, ObjectBindingPatternParameter, buildArkMethodFromArkClass } from "./ArkMethodBuilder";
-import { buildNormalArkClassFromArkMethod } from "./ArkClassBuilder";
+import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkMethod, buildNormalArkClassFromArkNamespace } from "./ArkClassBuilder";
 
 const logger = Logger.getLogger();
 
@@ -514,54 +514,19 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
         }
     }
     else if (ts.isObjectLiteralExpression(node)) {
-
-        let anonymousClassName = 'AnonymousClass-initializer';
-
-        // TODO: 解析类体
+        const declaringArkNamespace = cls.getDeclaringArkNamespace();
+        const declaringArkFile = cls.getDeclaringArkFile();
         let arkClass: ArkClass = new ArkClass();
-        arkClass.setName(anonymousClassName);
-        const { line, character } = ts.getLineAndCharacterOfPosition(
-            sourceFile,
-            node.getStart(sourceFile)
-        );
-        arkClass.setLine(line + 1);
-        arkClass.setColumn(character + 1);
-        arkClass.setDeclaringArkFile(cls.getDeclaringArkFile());
-        arkClass.genSignature();
-
-        let classSig = new ClassSignature();
-        classSig.setClassName(arkClass.getName());
+        if (declaringArkNamespace) {
+            buildNormalArkClassFromArkNamespace(node, declaringArkNamespace, arkClass, sourceFile);
+            declaringArkNamespace.addArkClass(arkClass);
+        }
+        else {
+            buildNormalArkClassFromArkFile(node, declaringArkFile, arkClass, sourceFile);
+            declaringArkFile.addArkClass(arkClass);
+        }
+        let classSig = arkClass.getSignature();
         const classType = new ClassType(classSig);
-
-        //gen arkfields
-        let arkFields: ArkField[] = [];
-        let arkMethods: ArkMethod[] = [];
-        node.properties.forEach((property) => {
-            if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property) || ts.isSpreadAssignment(property)) {
-                arkFields.push(buildProperty2ArkField(property, sourceFile, arkClass));
-            }
-            else {
-                // let methodInfo = buildMethodInfo4MethodNode(property, sourceFile);
-                // let arkMethod = new ArkMethod();
-                // const { line, character } = ts.getLineAndCharacterOfPosition(
-                //     sourceFile,
-                //     property.getStart(sourceFile)
-                // );
-                // arkMethod.setLine(line + 1);
-                // arkMethod.setColumn(character + 1);
-
-                // buildNormalArkMethodFromMethodInfo(methodInfo, arkMethod);
-                // arkMethods.push(arkMethod);
-                let arkMethod = new ArkMethod();
-                arkMethod.setDeclaringArkClass(arkClass);
-                arkMethod.setDeclaringArkFile();
-                buildArkMethodFromArkClass(property, arkClass, arkMethod, sourceFile);
-            }
-        });
-        arkMethods.forEach((mtd) => {
-            arkClass.addMethod(mtd);
-        });
-        arkClass.addFields(arkFields);
         return new ObjectLiteralExpr(arkClass, classType);
     }
     else {
