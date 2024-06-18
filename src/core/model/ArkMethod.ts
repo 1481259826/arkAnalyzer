@@ -287,9 +287,6 @@ export class ArkMethod {
         if (this.bodyBuilder) {
             this.setBody(this.bodyBuilder.build());
             this.getCfg().setDeclaringMethod(this);
-            if (this.getName() == 'constructor' && this.getDeclaringArkClass()) {
-                this.getCfg().constructorAddInit(this);
-            }
             this.bodyBuilder = undefined;
         }
     }
