@@ -137,4 +137,9 @@
 //     let a = 1 ? 10 : 0;
 // }
 
-let i = 1;
+function main(i: number) {
+    if (1) {
+        let i = 0;
+    }
+    return;
+}

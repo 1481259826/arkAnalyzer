@@ -15,31 +15,10 @@
 
 @Entry
 @Component
-struct MyComponent {
-private data: MyDataSource = new MyDataSource();
-
-    aboutToAppear() {
-        for (let i = 0; i <= 20; i++) {
-            this.data.pushData(`Hello ${i}`)
-        }
-    }
+struct Foo {
+    aa: string = 'aastr'
 
     build() {
-        List({ space: 3 }) {
-            LazyForEach(this.data, (item: string) => {
-                ListItem() {
-                    Row() {
-                        Text(item).fontSize(50)
-                            .onAppear(() => {
-                                console.info('appear:' + item)
-                            })
-                    }.margin({ left: 10, right: 10 })
-                }
-            .onClick(() => {
-                    // 点击追加子组件
-                    this.data.pushData(`Hello ${this.data.totalCount()}`);
-                })
-            }, (item: string) => item)
-        }.cachedCount(5)
+        Row()
     }
 }

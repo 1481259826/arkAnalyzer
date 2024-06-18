@@ -1006,6 +1006,7 @@ export class CfgBuilder {
                 for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
                     if (isStartingStmt) {
                         cfg.setStartingStmt(threeAddressStmt);
+                        isStartingStmt = false;
                     }
                     if (!inBuildMethod) {
                         threeAddressStmt.setOriginPositionInfo(new LineColPosition(stmtBuilder.line, stmtBuilder.column));
