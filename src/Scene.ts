@@ -696,6 +696,10 @@ export class Scene {
         return this.customComponents.has(name);
     }
 
+    public getCustomComponents(): Set<string> {
+        return this.customComponents;
+    }
+
     public buildClassDone(): boolean {
         return this.buildStage >= SceneBuildStage.CLASS_DONE;
     }
