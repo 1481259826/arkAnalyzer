@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
