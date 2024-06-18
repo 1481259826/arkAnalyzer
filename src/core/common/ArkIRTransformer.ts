@@ -79,11 +79,11 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import {
     COMPONENT_BRANCH_FUNCTION,
-    COMPONENT_BUILD_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
     COMPONENT_IF,
-    COMPONENT_POP_FUNCTION, COMPONENT_REPEAT,
+    COMPONENT_POP_FUNCTION,
+    COMPONENT_REPEAT,
     isEtsSystemComponent,
 } from './EtsConst';
 import { tsNode2Value } from '../model/builder/builderUtils';
@@ -112,7 +112,6 @@ export class ArkIRTransformer {
         this.declaringMethod = declaringMethod;
         this.thisLocal = new Local('this', declaringMethod.getDeclaringArkClass().getSignature().getType());
         this.locals.set(this.thisLocal.getName(), this.thisLocal);
-        this.inBuildMethod = declaringMethod.getName() == COMPONENT_BUILD_FUNCTION;
     }
 
     public getLocals(): Set<Local> {
@@ -121,6 +120,10 @@ export class ArkIRTransformer {
 
     public getThisLocal(): Local {
         return this.thisLocal;
+    }
+
+    public isInBuildMethod():boolean {
+        return this.inBuildMethod;
     }
 
     public getStmtInBuildMethodToOriginalStmt(): Map<Stmt, Stmt> {
@@ -563,6 +566,7 @@ export class ArkIRTransformer {
     }
 
     private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
+        this.inBuildMethod = true;
         const stmts: Stmt[] = [];
         const componentName = (etsComponentExpression.expression as ts.Identifier).text;
         const args: Value[] = [];
