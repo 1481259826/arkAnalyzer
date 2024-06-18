@@ -137,9 +137,4 @@
 //     let a = 1 ? 10 : 0;
 // }
 
-// FirstTemplateToken
-function main() {
-    console.log(`search_white onClick`);
-}
-
-
+let i = 1;

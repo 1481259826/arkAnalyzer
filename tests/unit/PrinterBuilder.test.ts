@@ -19,7 +19,7 @@ import {assert, describe, expect, it, vi} from "vitest";
 import {Scene} from "../../src/Scene";
 import path from "path";
 import fs from "fs";
-import {SourcePrinter} from "../../src/save/source/SourcePrinter";
+import {SourceFilePrinter} from "../../src/save/source/SourcePrinter";
 import {ArkStream} from "../../src/save/ArkStream";
 import {SourceDefaultClass} from "../../src/save/source/SourceClass";
 
@@ -93,10 +93,10 @@ describe("PrinterBuilder Test", () => {
             assert.isNotNull(arkfile);
             return;
         }
-        let printer = new SourcePrinter(arkfile);
+        let printer = new SourceFilePrinter(arkfile);
         let outstream = new ArkStream(fs.createWriteStream("tests/resources/output/basic.code.ts"));
         const spy = vi.spyOn(outstream, "write");
-        printer.printOriginalCode(outstream);
+        outstream.write(printer.dumpOriginal());
         expect(spy).toHaveBeenCalled();
     })
     it('SourceDefaultClass dumpOriginalCode case', () => {
@@ -111,9 +111,9 @@ describe("PrinterBuilder Test", () => {
         }
         let cls = arkfile.getClasses()[0];
         if (cls.isDefaultArkClass()) {
-            let sdc = new SourceDefaultClass('', arkfile, cls);
+            let sdc = new SourceDefaultClass('', cls);
             expect(sdc.dump()).match(new RegExp("\n+"));
-            expect(sdc.dumpOriginalCode()).match(new RegExp("\n+"));
+            expect(sdc.dumpOriginal()).match(new RegExp("\n+"));
         }
     })
 })

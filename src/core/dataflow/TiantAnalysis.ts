@@ -21,17 +21,16 @@ import { Value } from "../base/Value"
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from "../base/Stmt"
 import { ArkMethod } from "../model/ArkMethod";
 import { Constant } from "../base/Constant"
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
-import { DataflowSolver } from "./DataflowSolver"
-import { AbstractInvokeExpr, ArkBinopExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
+import { DataflowSolver, factEqual } from "./DataflowSolver"
+import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
 import { UndefinedType } from "../base/Type";
-import { factEqual } from "./DataflowSolver";
-import { FileSignature } from "../model/ArkSignature";
-import { NamespaceSignature } from "../model/ArkSignature";
+import { FileSignature, NamespaceSignature } from "../model/ArkSignature";
 import { ArkClass } from "../model/ArkClass";
 import Logger from "../../utils/logger";
 import { ArkNamespace } from "../model/ArkNamespace";
 import * as fs from 'fs';
+
 const logger = Logger.getLogger();
 
 export class TiantAnalysisChecker extends DataflowProblem<Value> {
@@ -267,7 +266,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         const data = fs.readFileSync(path, 'utf-8');
         const objects = JSON.parse(data)
         for (const object of objects) {
-            const file = this.scene.getsdkArkFilesMap().get(object.file);
+            const file = this.scene.getSdkArkFilesMap().get(object.file);
             if (!file) {
                 console.log("no file: " + object.file);
                 continue;

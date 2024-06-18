@@ -212,3 +212,34 @@ export const NotificationItem_Expect_ViewTree = {
         
     ]
 }
+
+export const SelfDepends_Expect_ViewTree = {
+    name: 'Column',
+    children: [
+        {
+            name: 'Text',
+            children: [],
+            stateValues: ['item']
+        },
+        {
+            name: 'WaterFlow',
+            children: [
+                {
+                    name: 'LazyForEach',
+                    children: [
+                        {
+                            name: 'FlowItem',
+                            children: [
+                                {
+                                    name: 'View',
+                                    children: [],
+                                    skip: true
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

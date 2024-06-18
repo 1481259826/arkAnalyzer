@@ -18,17 +18,18 @@ import { Cfg } from '../graph/Cfg';
 import { AbstractExpr, AbstractInvokeExpr, ArkConditionExpr } from './Expr';
 import { AbstractFieldRef, ArkArrayRef } from './Ref';
 import { Value } from './Value';
+import { LineColPosition } from './Position';
 
+/**
+ * @category core/base/stmt
+ */
 export class Stmt {
     private text: string = '';
     private def: Value | null = null;
     private uses: Value[] = [];
-    private originPosition: number = 0;
-    private position: number = 0;
+    private originPosition: LineColPosition = new LineColPosition(-1, -1);
+    private position: LineColPosition = new LineColPosition(-1, -1);
     private cfg: Cfg | null = null;
-
-    private originColumn: number = -1;
-    private column: number = -1;
 
     constructor() {
     }
@@ -175,36 +176,20 @@ export class Stmt {
         return undefined;
     }
 
-    public setPositionInfo(position: number) {
+    public setPositionInfo(position: LineColPosition) {
         this.position = position;
     }
 
-    public getPositionInfo(): number {
+    public getPositionInfo(): LineColPosition {
         return this.position;
     }
 
-    public setOriginPositionInfo(originPosition: number): void {
+    public setOriginPositionInfo(originPosition: LineColPosition): void {
         this.originPosition = originPosition;
     }
 
-    public getOriginPositionInfo(): number {
+    public getOriginPositionInfo(): LineColPosition {
         return this.originPosition;
-    }
-
-    public setColumn(nweColumn: number) {
-        this.column = nweColumn;
-    }
-
-    public getColumn(): number {
-        return this.column;
-    }
-
-    public setOriginColumn(newOriginColumn: number): void {
-        this.originColumn = newOriginColumn;
-    }
-
-    public getOriginColumn(): number {
-        return this.originColumn;
     }
 
     public toString(): string {

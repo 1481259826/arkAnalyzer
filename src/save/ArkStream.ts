@@ -72,6 +72,10 @@ export class ArkCodeBuffer {
     public toString(): string {
         return this.output.join('');
     }
+
+    public clear() {
+        this.output = [];
+    }
 }
 
 export class ArkStream extends ArkCodeBuffer{

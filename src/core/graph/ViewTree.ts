@@ -16,13 +16,31 @@
 import { CfgUitls } from '../../utils/CfgUtils';
 import { Constant } from '../base/Constant';
 import { Decorator } from '../base/Decorator';
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr, ObjectLiteralExpr } from '../base/Expr';
+import {
+    AbstractInvokeExpr,
+    ArkInstanceInvokeExpr,
+    ArkNewExpr,
+    ArkStaticInvokeExpr,
+    ObjectLiteralExpr
+} from '../base/Expr';
 import { Local } from '../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import { CallableType, ClassType, Type } from '../base/Type';
 import { Value } from '../base/Value';
-import { COMPONENT_COMMON, isEtsContainerComponent, COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW, BUILDER_DECORATOR, BUILDER_PARAM_DECORATOR, COMPONENT_BRANCH_FUNCTION, COMPONENT_IF_BRANCH, COMPONENT_IF, COMPONENT_POP_FUNCTION, COMPONENT_REPEAT } from '../common/EtsConst';
+import {
+    BUILDER_DECORATOR,
+    BUILDER_PARAM_DECORATOR,
+    COMPONENT_BRANCH_FUNCTION,
+    COMPONENT_COMMON,
+    COMPONENT_CREATE_FUNCTION,
+    COMPONENT_CUSTOMVIEW,
+    COMPONENT_IF,
+    COMPONENT_IF_BRANCH,
+    COMPONENT_POP_FUNCTION,
+    COMPONENT_REPEAT,
+    isEtsContainerComponent
+} from '../common/EtsConst';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
@@ -94,38 +112,47 @@ export enum ViewTreeNodeType {
     BuilderParam
 }
 
+/**
+ * @category core/graph
+ */
 export class ViewTreeNode {
+    /** Component node name */
     name: string;
-    /**
-     * @deprecated Use `attributes` instead. 
-     */
+    /** @deprecated Use {@link attributes} instead. */
     stmts: Map<string, [Stmt, (Constant | ArkInstanceFieldRef | MethodSignature)[]]>;
+    /** Component attribute stmts, key is attribute name, value is [Stmt, [Uses Values]]. */
     attributes: Map<string, [Stmt, (Constant | ArkInstanceFieldRef | MethodSignature)[]]>;
-    /**
-     * Used state values.
-     */
+    /** Used state values. */
     stateValues: Set<ArkField>;
+    /** Node's parent, CustomComponent and root node no parent. */
     parent: ViewTreeNode | null;
+    /** Node's children. */
     children: ViewTreeNode[];
-    classSignature?: ClassSignature | MethodSignature; // CustomComponent or Builder type need to set
+    /** @deprecated Use {@link signature} instead. */
+    classSignature?: ClassSignature | MethodSignature;
+    /** CustomComponent class signature or Builder method signature. */
+    signature?: ClassSignature | MethodSignature;
+
     /**
      * Custom component value transfer
-     * key: ArkField, custom component class stateValue field.
-     * value: ArkField | ArkMethod, 
-     *     key is @BuilderParam, the value is @Builder ArkMethod
-     *     Others, the value is parent class stateValue field
+     * - key: ArkField, child custom component class stateValue field.
+     * - value: ArkField | ArkMethod, parent component transfer value.  
+     *     key is BuilderParam, the value is Builder ArkMethod.  
+     *     Others, the value is parent class stateValue field.
      */
     stateValuesTransfer?: Map<ArkField, ArkField | ArkMethod>;
-    /**
-     * @BuilderParam placeholders
-     */
+
+    /** BuilderParam placeholders ArkField. */
     builderParam?: ArkField;
-    /**
-     * builderParam bind builder
-     */
+
+    /** builderParam bind builder method signature. */
     builder?: MethodSignature;
+
     private type: ViewTreeNodeType;
 
+    /**
+     * @internal
+     */
     constructor(name: string) {
         this.name = name;
         this.attributes = new Map();
@@ -136,57 +163,103 @@ export class ViewTreeNode {
         this.type = ViewTreeNodeType.SystemComponent;
     }
 
+    /**
+     * @internal
+     */
     public static createCustomComponent(): ViewTreeNode {
         let instance = new ViewTreeNode(COMPONENT_CUSTOMVIEW);
         instance.type = ViewTreeNodeType.CustomComponent;
         return instance;
     }
 
+    /**
+     * @internal
+     */
     public static createBuilderNode(): ViewTreeNode {
         let instance = new ViewTreeNode(BUILDER_DECORATOR);
         instance.type = ViewTreeNodeType.Builder;
         return instance;
     }
 
+    /**
+     * @internal
+     */
     public static createBuilderParamNode(): ViewTreeNode {
         let instance = new ViewTreeNode(BUILDER_PARAM_DECORATOR);
         instance.type = ViewTreeNodeType.BuilderParam;
         return instance;
     }
 
+    /**
+     * @internal
+     */
     public changeBuilderParam2BuilderNode(builder: ArkMethod) {
         this.name = BUILDER_DECORATOR;
         this.type = ViewTreeNodeType.Builder;
-        this.classSignature = builder.getSignature();
+        this.signature = builder.getSignature();
+        this.classSignature = this.signature;
         this.children.push(builder.getViewTree().getRoot());
     }
 
-    public walk(selector: (item: ViewTreeNode) => boolean): boolean {
+    /**
+     * walk node and node's children 
+     * @param selector Node selector function, return true skipping the follow-up nodes.
+     * @returns 
+     *  - true: There are nodes that meet the selector. 
+     *  - false: does not exist.
+     */
+    public walk(selector: (item: ViewTreeNode) => boolean, visitor: Set<ViewTreeNode> = new Set()): boolean {
+        if (visitor.has(this)) {
+            return false;
+        }
+
         let ret: boolean = selector(this);
+        visitor.add(this);
+
         for (const child of this.children) {
-            ret = ret || child.walk(selector);
+            ret = ret || child.walk(selector, visitor);
+            if (ret) {
+                break;
+            }
         }
         return ret;
     }
 
+    /**
+     * @internal
+     */
     public hasBuilderParam(): boolean {
         return this.walk((item) => {
             return item.isBuilderParam();
         })
     }
 
+    /**
+     * Whether the node type is Builder.
+     * @returns true: node is Builder, false others.
+     */
     public isBuilder(): boolean {
         return this.type == ViewTreeNodeType.Builder;
     }
 
+    /**
+     * @internal
+     */
     public isBuilderParam(): boolean {
         return this.type == ViewTreeNodeType.BuilderParam;
     }
 
+    /**
+     * Whether the node type is custom component.
+     * @returns true: node is custom component, false others.
+     */
     public isCustomComponent(): boolean {
         return this.type == ViewTreeNodeType.CustomComponent;
     }
 
+    /**
+     * @internal
+     */
     public clone(parent: ViewTreeNode): ViewTreeNode {
         let newNode = new ViewTreeNode(this.name);
         newNode.attributes = this.attributes;
@@ -194,7 +267,8 @@ export class ViewTreeNode {
         newNode.stateValues = this.stateValues;
         newNode.parent = parent;
         newNode.type = this.type;
-        newNode.classSignature = this.classSignature;
+        newNode.signature = this.signature;
+        newNode.classSignature = newNode.signature;
         newNode.builderParam = this.builderParam;
         newNode.builder = this.builder;
 
@@ -205,6 +279,9 @@ export class ViewTreeNode {
         return newNode;
     }
 
+    /**
+     * @internal
+     */
     public addStmt(tree: ViewTree, stmt: Stmt) {
         this.parseAttributes(stmt);
         this.parseStateValues(tree, stmt);
@@ -279,10 +356,17 @@ class TreeNodeStack {
         this.stack = [];
     }
 
+    /**
+     * ViewTree root node.
+     * @returns root node
+     */
     public getRoot(): ViewTreeNode {
         return this.root;
     }
 
+    /**
+     * @internal
+     */
     public push(node: ViewTreeNode) {
         let parent = this.getParent();
         node.parent = parent;
@@ -294,18 +378,30 @@ class TreeNodeStack {
         }
     }
 
+    /**
+     * @internal
+     */
     public pop() {
         this.stack.pop();
     }
 
+    /**
+     * @internal
+     */
     public top(): ViewTreeNode | null {
         return this.isEmpty() ? null : this.stack[this.stack.length - 1];
     }
 
+    /**
+     * @internal
+     */
     public isEmpty(): boolean {
         return this.stack.length == 0;
     }
 
+    /**
+     * @internal
+     */
     public popAutomicComponent(name: string): void {
         if (this.isEmpty()) {
             return;
@@ -317,6 +413,9 @@ class TreeNodeStack {
         }
     }
 
+    /**
+     * @internal
+     */
     public popComponentExpect(name: string): TreeNodeStack {
         for (let i = this.stack.length - 1; i >= 0; i--) {
             if (this.stack[i].name != name) {
@@ -345,12 +444,50 @@ class TreeNodeStack {
     }
 }
 
+/**
+ * ArkUI Component Tree
+ * @example
+ * // Component Class get ViewTree
+ * let arkClas: ArkClass = ...;
+ * let viewtree = arkClas.getViewTree();
+ * 
+ * // get viewtree root node
+ * let root: ViewTreeNode = viewtree.getRoot();
+ * 
+ * // get viewtree stateValues Map
+ * let stateValues: Map<ArkField, Set<ViewTreeNode>> = viewtree.getStateValues();
+ * 
+ * // walk all nodes
+ * root.walk((node) => {
+ *   // check node is builder
+ *   if (node.isBuilder()) {
+ *      xx
+ *   } 
+ *   
+ *   // check node is sub CustomComponent
+ *   if (node.isCustomComponent()) {
+ *      xx
+ *   }
+ *   
+ *   if (xxx) {
+ *      // Skip the remaining nodes and end the traversal
+ *      return true;
+ *   }
+ *      
+ *   return false;
+ * })
+ * 
+ * @category core/graph
+ */
 export class ViewTree extends TreeNodeStack {
     private render: ArkMethod;
     private buildViewStatus: boolean;
     private stateValues: Map<ArkField, Set<ViewTreeNode>>;
     private fieldTypes: Map<string, Decorator | Type>;
 
+    /**
+     * @internal
+     */
     constructor(render: ArkMethod) {
         super();
         this.render = render;
@@ -359,6 +496,9 @@ export class ViewTree extends TreeNodeStack {
         this.buildViewStatus = false;
     }
 
+    /**
+     * @internal
+     */
     public buildViewTree() {
         if (!this.render || this.isInitialized()) {
             return;
@@ -368,14 +508,24 @@ export class ViewTree extends TreeNodeStack {
         buildViewTree(this, this.render.getCfg());
     }
 
+    /**
+     * @internal
+     */
     public isInitialized(): boolean {
         return this.root != null || this.buildViewStatus;
     }
 
+    /**
+     * Map of the component controlled by the state variable
+     * @returns 
+     */
     public getStateValues(): Map<ArkField, Set<ViewTreeNode>> {
         return this.stateValues;
     }
 
+    /**
+     * @internal
+     */
     public addStateValue(field: ArkField, node: ViewTreeNode) {
         if (!this.stateValues.has(field)) {
             this.stateValues.set(field, new Set());
@@ -384,6 +534,9 @@ export class ViewTree extends TreeNodeStack {
         sets?.add(node);
     }
 
+    /**
+     * @internal
+     */
     public isCreateFunc(name: string): boolean {
         return COMPONENT_CREATE_FUNCTIONS.has(name);
     }
@@ -403,14 +556,23 @@ export class ViewTree extends TreeNodeStack {
         }
     }
 
+    /**
+     * @deprecated Use {@link getStateValues} instead. 
+     */
     public isClassField(name: string) {
         return this.fieldTypes.has(name);
     }
 
+    /**
+     * @internal
+     */
     public getDeclaringArkClass() {
         return this.render.getDeclaringArkClass();
     }
 
+    /**
+     * @internal
+     */
     public findMethod(methodSignature: MethodSignature): ArkMethod | null {
         let method = this.render.getDeclaringArkFile().getScene().getMethod(methodSignature);
         if (method) {
@@ -426,6 +588,9 @@ export class ViewTree extends TreeNodeStack {
         return this.findMethodWithName(methodSignature.getMethodSubSignature().getMethodName())
     }
 
+    /**
+     * @internal
+     */
     public findMethodWithName(name: string): ArkMethod | null {
         let method = this.getDeclaringArkClass().getMethodWithName(name);
         if (method) {
@@ -452,6 +617,9 @@ export class ViewTree extends TreeNodeStack {
         return method;
     }
 
+    /**
+     * @internal
+     */
     public findClass(classSignature: ClassSignature): ArkClass | null {
         let cls = this.render.getDeclaringArkFile().getScene().getClass(classSignature);
         if (cls) {
@@ -466,10 +634,16 @@ export class ViewTree extends TreeNodeStack {
         return this.render.getDeclaringArkFile().getClassWithName(classSignature.getClassName());
     }
 
+    /**
+     * @deprecated Use {@link getStateValues} instead. 
+     */
     public getClassFieldType(name: string): Decorator | Type | undefined {
         return this.fieldTypes.get(name);
     }
 
+    /**
+     * @internal
+     */
     public addBuilderNode(method: ArkMethod): ViewTreeNode | undefined {
         if (!method.hasBuilderDecorator()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} is not @Builder.`);
@@ -483,7 +657,8 @@ export class ViewTree extends TreeNodeStack {
         }
 
         let node = ViewTreeNode.createBuilderNode();
-        node.classSignature = method.getSignature();
+        node.signature = method.getSignature();
+        node.classSignature = node.signature;
         this.push(node);
 
         node.children.push(builderViewTree.getRoot());
@@ -537,6 +712,9 @@ export class ViewTree extends TreeNodeStack {
         return transferMap;
     }
 
+    /**
+     * @internal
+     */
     public addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined): ViewTreeNode | undefined {
         if (!cls.hasComponentDecorator()) {
             logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} is not component.`);
@@ -552,7 +730,8 @@ export class ViewTree extends TreeNodeStack {
             this.push(new ViewTreeNode(COMPONENT_COMMON));
         }
         let node = ViewTreeNode.createCustomComponent();
-        node.classSignature = cls.getSignature();
+        node.signature = cls.getSignature();
+        node.classSignature = node.signature;
         node.stateValuesTransfer = this.parseObjectLiteralExpr(cls, arg, builder)
         this.push(node);
         let root = componentViewTree.getRoot();
@@ -574,6 +753,9 @@ export class ViewTree extends TreeNodeStack {
         return node;
     }
 
+    /**
+     * @internal
+     */
     public addBuilderParamNode(field: ArkField): ViewTreeNode {
         let node = ViewTreeNode.createBuilderParamNode();
         node.builderParam = field;
@@ -583,6 +765,9 @@ export class ViewTree extends TreeNodeStack {
         return node;
     }
 
+    /**
+     * @internal
+     */
     public addSystemComponentNode(name: string): ViewTreeNode {
         let node = new ViewTreeNode(name);
         this.push(node);
@@ -651,7 +836,7 @@ function forEachCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, exp
     return node;
 }
 
-function repeatCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNode {
+function repeatCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNode {
     let node = viewtree.addSystemComponentNode(name);
     let arg = expr.getArg(0) as Local;
     if (arg?.getDeclaringStmt()) {
@@ -665,12 +850,12 @@ function repeatCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr
     return node;
 }
 
-function ifBranchCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNode {
+function ifBranchCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNode {
     viewtree.popComponentExpect(COMPONENT_IF);
     return viewtree.addSystemComponentNode(COMPONENT_IF_BRANCH);
 }
 
-const COMPONENT_CREATE_PARSERS: Map<string, Function> = new Map([
+const COMPONENT_CREATE_PARSERS: Map<string, (viewtree: ViewTree, name: string, stmt: Stmt, expr: AbstractInvokeExpr)=> ViewTreeNode|undefined> = new Map([
     ['ForEach.create', forEachCreationParser],
     ['LazyForEach.create', forEachCreationParser],
     ['Repeat.create', repeatCreationParser],
@@ -700,12 +885,6 @@ function parseStaticInvokeExpr(viewTree: ViewTree, local2Node: Map<Local, ViewTr
 
     let name = methodSignature.getDeclaringClassSignature().getClassName();
     let methodName = methodSignature.getMethodSubSignature().getMethodName();
-    if (name == '' && methodName == COMPONENT_REPEAT) {
-        name = COMPONENT_REPEAT;
-        methodName = COMPONENT_CREATE_FUNCTION;
-        methodSignature.getDeclaringClassSignature().setClassName(name);
-        methodSignature.getMethodSubSignature().setMethodName(COMPONENT_CREATE_FUNCTION);
-    }
 
     if (viewTree.isCreateFunc(methodName)) {
         return componentCreateParse(name, methodName, viewTree, stmt, expr);
@@ -737,7 +916,7 @@ function parseInstanceInvokeExpr(viewTree: ViewTree, local2Node: Map<Local, View
     let temp = expr.getBase();
     if (local2Node.has(temp)) {
         let component = local2Node.get(temp);
-        if (component?.name == COMPONENT_REPEAT && 
+        if (component?.name == COMPONENT_REPEAT &&
             expr.getMethodSignature().getMethodSubSignature().getMethodName() == 'each') {
             let arg = expr.getArg(0);
             let type = arg.getType();

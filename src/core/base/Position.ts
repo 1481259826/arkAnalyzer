@@ -15,6 +15,7 @@
 
 import ts from "ohos-typescript";
 
+
 export abstract class Position {
     public abstract getFirstLine(): number;
 
@@ -37,9 +38,14 @@ export class LinePosition {
     }
 }
 
+/**
+ * @category core/base
+ */
 export class LineColPosition {
     private readonly lineNo: number;
     private readonly colNo: number;
+
+    public static DEFAULT: LineColPosition = new LineColPosition(-1, -1);
 
     constructor(lineNo: number, colNo: number) {
         this.lineNo = lineNo;
@@ -55,7 +61,7 @@ export class LineColPosition {
     }
 
     public static buildFromNode(node: ts.Node, sourceFile: ts.SourceFile) {
-        let { line, character } = ts.getLineAndCharacterOfPosition(
+        let {line, character} = ts.getLineAndCharacterOfPosition(
             sourceFile,
             node.getStart(sourceFile)
         );

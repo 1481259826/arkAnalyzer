@@ -20,15 +20,15 @@ import { StaticSingleAssignmentFormer } from "../src/transformer/StaticSingleAss
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
-        // tests\\resources\\typeInference\\sample
-        // tests\\resources\\typeInference\\moduleA
-        // tests\\resources\\typeInference\\mainModule
-        const config_path = "tests\\resources\\type\\TypeTestConfig.json";
-        // const config_path = "tests\\resources\\typeInference\\TypeInferenceTestConfig.json";
         let config: SceneConfig = new SceneConfig();
-        config.buildFromJson(config_path);
-        // Logger.setLogLevel(LOG_LEVEL.INFO);
-        return new Scene(config);
+        // config.buildFromJson(config_path);
+        config.buildFromProjectDir("tests/resources/type")
+        const scene = new Scene();
+        scene.buildBasicInfo(config);
+        // scene.buildScene4HarmonyProject();
+        scene.buildSceneFromProjectDir(config);
+        scene.collectProjectImportInfos();
+        return scene
     }
 
     public testLocalTypes() {
@@ -59,23 +59,6 @@ export class TypeInferenceTest {
         }
     }
 
-    public testFunctionReturnType() {
-        let scene = this.buildScene();
-
-        for (const arkFile of scene.getFiles()) {
-            console.log('=============== arkFile:', arkFile.getName(), ' ================');
-            for (const arkClass of arkFile.getClasses()) {
-                for (const arkMethod of arkClass.getMethods()) {
-                    if (arkMethod.getName() == '_DEFAULT_ARK_METHOD') {
-                        continue;
-                    }
-
-                    console.log(arkMethod.getSubSignature().toString());
-                }
-            }
-        }
-    }
-
     public printStmts(body: ArkBody): void {
         console.log('-- threeAddresStmts:');
         let cfg = body.getCfg();
@@ -84,10 +67,6 @@ export class TypeInferenceTest {
         }
     }
 
-    public testTypeInference(): void {
-        let scene = this.buildScene();
-        scene.inferTypes();
-    }
 }
 
 let typeInferenceTest = new TypeInferenceTest();

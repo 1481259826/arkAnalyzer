@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { cc } from "./test";
+import { something } from "./else";
+
+export * as z from './test'; //kind 278
+
+export let blah = 'test';
+
+const a = 1
+const b = 'a';
+export {a, b};
+
+export function testing() {
+    something();
+    cc();
+}
+
+export {testing as testing2}
+
+export const c = '';
+
+export interface MyInterface {
+
+}
+type s = object;
+
+export type MyType = string;
+
+export namespace MyNameSpace {
+
+    export function doa() {
+
+    }
+}
+
+export class d {
+
+    public dos(){
+
+    }
+
+}
+
+let l = 2.1;
+
+export default l;
+

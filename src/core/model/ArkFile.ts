@@ -19,13 +19,14 @@ import { ImportInfo } from './ArkImport';
 import { ArkClass } from "./ArkClass";
 import { ArkNamespace } from "./ArkNamespace";
 import { ClassSignature, FileSignature, NamespaceSignature } from "./ArkSignature";
+import { setTypeForExportInfo } from "./builder/ArkImportBuilder";
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
     'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
 
 /**
- *
+ * @category core/model
  */
 export class ArkFile {
 
@@ -41,8 +42,8 @@ export class ArkFile {
     private namespaces: Map<string, ArkNamespace> = new Map<string, ArkNamespace>(); // don't contain nested namespaces
     private classes: Map<string, ArkClass> = new Map<string, ArkClass>(); // don't contain class in namespace
 
-    private importInfos: ImportInfo[] = [];
-    private exportInfos: ExportInfo[] = [];
+    private importInfoMap: Map<string, ImportInfo> = new Map<string, ImportInfo>();
+    private exportInfoMap: Map<string, ExportInfo> = new Map<string, ExportInfo>();
 
     private scene: Scene;
     private moduleScene: ModuleScene;
@@ -147,19 +148,31 @@ export class ArkFile {
     }
 
     public getImportInfos(): ImportInfo[] {
-        return this.importInfos;
+        return Array.from(this.importInfoMap.values());
     }
 
-    public addImportInfos(importInfo: ImportInfo) {
-        this.importInfos.push(importInfo);
+    public getImportInfoBy(name: string): ImportInfo | undefined {
+        return this.importInfoMap.get(name);
+    }
+
+    public addImportInfo(importInfo: ImportInfo) {
+        this.importInfoMap.set(importInfo.getImportClauseName(), importInfo);
     }
 
     public getExportInfos(): ExportInfo[] {
-        return this.exportInfos;
+        return Array.from(this.exportInfoMap.values());
     }
 
-    public addExportInfos(exportInfo: ExportInfo) {
-        this.exportInfos.push(exportInfo);
+    public getExportInfoBy(name: string): ExportInfo | null {
+        const exportInfo = this.exportInfoMap.get(name);
+        if (exportInfo) {
+            return setTypeForExportInfo(exportInfo);
+        }
+        return null;
+    }
+
+    public addExportInfo(exportInfo: ExportInfo) {
+        this.exportInfoMap.set(exportInfo.getExportClauseName(), exportInfo);
     }
 
     public setProjectName(projectName: string) {
@@ -171,7 +184,7 @@ export class ArkFile {
     }
 
     public getModuleName() {
-        return this.moduleScene.getModuleName();;
+        return this.moduleScene.getModuleName();
     }
 
     public setOhPackageJson5Path(ohPackageJson5Path: string[]) {

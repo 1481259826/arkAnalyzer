@@ -14,22 +14,25 @@
  */
 
 import { UnknownType } from "../../core/base/Type";
-import { ArkFile } from "../../core/model/ArkFile";
 import { ArkMethod } from "../../core/model/ArkMethod";
 import { ArkCodeBuffer } from "../ArkStream";
 import { SourceBase } from "./SourceBase";
 import { SourceBody } from "./SourceBody";
 import { SourceUtils } from "./SourceUtils";
 
+/**
+ * @category save
+ */
 export class SourceMethod extends SourceBase{
     method: ArkMethod;
 
-    public constructor(indent: string, arkFile: ArkFile, method: ArkMethod) {
-        super(indent, arkFile);
+    public constructor(indent: string, method: ArkMethod) {
+        super(indent);
         this.method = method;
     }
 
     public dump(): string {
+        this.printer.clear();
         if (this.method.isDefaultArkMethod()) {
             this.printBody(this.method);
         } else {
@@ -37,7 +40,7 @@ export class SourceMethod extends SourceBase{
         }
         return this.printer.toString();
     }
-    public dumpOriginalCode(): string {
+    public dumpOriginal(): string {
         return this.method.getCode() + '\n';
     }
     public getLine(): number {

@@ -17,6 +17,9 @@ import { Stmt } from './Stmt';
 import { Type, UnknownType } from './Type';
 import { Value } from './Value';
 
+/**
+ * @category core/base
+ */
 export class Local implements Value {
     private name: string;
     private type: Type;

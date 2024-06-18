@@ -13,5 +13,15 @@
  * limitations under the License.
  */
 
-export class Foo {
+import {City} from '@hmos/worldclock';
+
+@Entry
+@Component
+struct Page {
+    build() {
+        Column() {
+            City()
+        }
+        .width('100%')
+    }
 }

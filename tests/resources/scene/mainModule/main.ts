@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-import { Foo } from './foo';
-
 function main() {
-    let foo = new Foo();
+    let i = 0;
 }

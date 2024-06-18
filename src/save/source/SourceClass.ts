@@ -14,17 +14,18 @@
  */
 
 import { ArkClass } from "../../core/model/ArkClass";
-import { ArkFile } from "../../core/model/ArkFile";
 import { SourceBase } from "./SourceBase";
 import { SourceMethod } from "./SourceMethod";
 import { SourceUtils } from "./SourceUtils";
 
-
+/**
+ * @category save
+ */
 export class SourceClass extends SourceBase{
     cls: ArkClass;
 
-    public constructor(indent: string, arkFile: ArkFile, cls: ArkClass) {
-        super(indent, arkFile);
+    public constructor(indent: string, cls: ArkClass) {
+        super(indent);
         this.cls = cls;
     }
 
@@ -33,6 +34,7 @@ export class SourceClass extends SourceBase{
     }
 
     public dump(): string {
+        this.printer.clear();
         // print export class name<> + extends c0 implements x1, x2 {
         this.printer.writeIndent().writeSpace(this.modifiersToString(this.cls.getModifiers()))
             .write(`${this.cls.getOriginType().toLowerCase()} ${this.cls.getName()}`);
@@ -56,14 +58,14 @@ export class SourceClass extends SourceBase{
         return this.printer.toString();
     }
 
-    public dumpOriginalCode(): string {
+    public dumpOriginal(): string {
         return this.cls.getCode() + '\n';
     }
 
     protected printMethods(): void {
         let items: SourceBase[] = [];
         for (let method of this.cls.getMethods()) {
-            items.push(new SourceMethod(this.printer.getIndent(), this.arkFile, method));
+            items.push(new SourceMethod(this.printer.getIndent(), method));
         }
         items.sort((a, b) => a.getLine() - b.getLine());
         items.forEach((v):void => {
@@ -95,8 +97,12 @@ export class SourceClass extends SourceBase{
 }
 
 export class SourceDefaultClass extends SourceClass {
-    public constructor(indent: string, arkFile: ArkFile, cls: ArkClass) {
-        super(indent, arkFile, cls);
+    public constructor(indent: string, cls: ArkClass) {
+        super(indent, cls);
+    }
+
+    public getLine(): number {
+        return this.cls.getLine();
     }
 
     public dump(): string {
@@ -104,7 +110,7 @@ export class SourceDefaultClass extends SourceClass {
         return this.printer.toString();
     }
 
-    public dumpOriginalCode(): string {
+    public dumpOriginal(): string {
         for (let method of this.cls.getMethods()) {
             if (method.isDefaultArkMethod()) {
                 for (let stmt of method.getBody().getOriginalCfg().getStmts()) {

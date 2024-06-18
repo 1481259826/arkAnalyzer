@@ -50,7 +50,7 @@
  *     private calls: Map<string, string[]>;
  * }
  */
-import { ArkStream } from '../ArkStream';
+import { ArkFile } from '../../core/model/ArkFile';
 import { Printer } from '../Printer';
 import { SourceBase } from './SourceBase';
 import { SourceClass} from './SourceClass';
@@ -58,17 +58,27 @@ import { SourceMethod } from './SourceMethod';
 import { SourceExportInfo, SourceImportInfo } from './SourceModule';
 import { SourceNamespace } from './SourceNamespace';
 
-export class SourcePrinter extends Printer {
+/**
+ * @category save
+ */
+export class SourceFilePrinter extends Printer {
+    arkFile: ArkFile;
     items: SourceBase[] = [];
 
-    public printTo(streamOut: ArkStream): void {
+    constructor(arkFile: ArkFile) {
+        super();
+        this.arkFile = arkFile;
+    }
+
+    public dump(): string {
+        this.printer.clear();
         // print imports
         for (let info of this.arkFile.getImportInfos()) {
-            this.items.push(new SourceImportInfo('', this.arkFile, info));
+            this.items.push(new SourceImportInfo('', info));
         }
         // print namespace
         for (let ns of this.arkFile.getNamespaces()) {
-            this.items.push(new SourceNamespace('', this.arkFile, ns));
+            this.items.push(new SourceNamespace('', ns));
         }
         
         // print class 
@@ -76,25 +86,27 @@ export class SourcePrinter extends Printer {
             if (cls.isDefaultArkClass()) {
                 for (let method of cls.getMethods()) {
                     if (!method.getName().startsWith('AnonymousFunc$_')) {
-                        this.items.push(new SourceMethod('', this.arkFile, method));
+                        this.items.push(new SourceMethod('', method));
                     }
                 }
             } else {
-                this.items.push(new SourceClass('', this.arkFile, cls));
+                this.items.push(new SourceClass('', cls));
             }
         }
         // print export
         for (let info of this.arkFile.getExportInfos()) {
-            this.items.push(new SourceExportInfo('', this.arkFile, info));
+            this.items.push(new SourceExportInfo('', info));
         }
 
         this.items.sort((a, b) => a.getLine() - b.getLine());
         this.items.forEach((v):void => {
-            streamOut.write(v.dump());
+            this.printer.write(v.dump());
         });
+
+        return this.printer.toString();
+    }
+    public dumpOriginal(): string {
+        return this.arkFile.getCode();
     }
 
-    public printOriginalCode(streamOut: ArkStream): void {
-        streamOut.write(this.arkFile.getCode());
-    }
 }
