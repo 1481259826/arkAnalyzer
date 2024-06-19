@@ -14,14 +14,14 @@
  */
 
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "ohos-typescript";
-import { AnyType, ArrayType, CallableType, ClassType, LiteralType, NumberType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
+import { AnyType, ArrayType, CallableType, ClassType, LiteralType, NumberType, StringType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
 import { TypeInference } from "../../common/TypeInference";
 import { ArkField } from "../ArkField";
 import Logger from "../../../utils/logger";
 import { LineColPosition } from "../../base/Position";
 import { Value } from "../../base/Value";
 import { Constant } from "../../base/Constant";
-import { ArkBinopExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr, ArkUnopExpr, ArrayLiteralExpr, ObjectLiteralExpr } from "../../base/Expr";
+import { ArkBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr, ArkUnopExpr, ArrayLiteralExpr, ObjectLiteralExpr } from "../../base/Expr";
 import { ClassSignature, FieldSignature, MethodSignature, MethodSubSignature } from "../ArkSignature";
 import { Local } from "../../base/Local";
 import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../../base/Ref";
@@ -29,7 +29,7 @@ import { ArkClass } from "../ArkClass";
 import { ArkMethod } from "../ArkMethod";
 import { Decorator } from "../../base/Decorator";
 import { buildProperty2ArkField } from "./ArkFieldBuilder";
-import { ArrayBindingPatternParameter, MethodParameter, ObjectBindingPatternParameter, buildArkMethodFromArkClass } from "./ArkMethodBuilder";
+import { ArrayBindingPatternParameter, MethodParameter, ObjectBindingPatternParameter, arkMethodNodeKind, buildArkMethodFromArkClass } from "./ArkMethodBuilder";
 import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkMethod, buildNormalArkClassFromArkNamespace } from "./ArkClassBuilder";
 
 const logger = Logger.getLogger();
@@ -421,7 +421,10 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
                 arrayArguments.push(new Constant(value, type));
             });
             if (className === 'Array') {
-                if (arrayArguments.length == 1 && (arrayArguments[0].getType() instanceof NumberType)) {
+                if (arrayArguments.length === 0) {
+                    return new ArkNewArrayExpr(typeArguments, new Constant('0', new NumberType()));
+                }
+                else if (arrayArguments.length == 1 && (arrayArguments[0].getType() instanceof NumberType)) {
                     return new ArkNewArrayExpr(typeArguments, arrayArguments[0]);
                 }
                 else if (arrayArguments.length == 1 && !(arrayArguments[0].getType() instanceof NumberType)) {
@@ -441,6 +444,13 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
                 const classType = new ClassType(classSignature);
                 return new ArkNewExpr(classType);
             }
+        }
+        else if (ts.isPropertyAccessExpression(node.expression)) {
+            const className = handlePropertyAccessExpression(node.expression);
+            let classSignature = new ClassSignature();
+            classSignature.setClassName(className);
+            const classType = new ClassType(classSignature);
+            return new ArkNewExpr(classType);
         }
         else {
             logger.warn("Other newExpr type found for ts node.");
@@ -531,12 +541,65 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
         const classType = new ClassType(classSig);
         return new ObjectLiteralExpr(arkClass, classType);
     }
+    else if (ts.isArrowFunction(node)) {
+        let mthd: ArkMethod = new ArkMethod();
+        buildArkMethodFromArkClass(node, cls, mthd, sourceFile);
+        let argumentParas: Value[] = [];
+        node.parameters.forEach((argument) => {
+            argumentParas.push(tsNode2Value(argument, sourceFile, cls));
+        });
+        cls.addMethod(mthd);
+        return new ArkStaticInvokeExpr(mthd.getSignature(), argumentParas)
+    }
+    else if (ts.isParameter(node)) {
+        if (ts.isIdentifier(node.name)) {
+            return new Local(node.name.getText(sourceFile));
+        }
+        else if (ts.isObjectBindingPattern(node.name)) {
+            logger.warn('Need to build ObjectBindingPattern value.');
+        }
+        else {
+            // ArrayBindingPattern
+            logger.warn('Need to build ArrayBindingPattern value.');
+        }
+    }
+    else if (node.kind === ts.SyntaxKind.ThisKeyword) {
+        // TODO
+    }
+    else if (ts.isConditionalExpression(node)) {
+        // TODO
+    }
+    else if (ts.isAsExpression(node)) {
+        const value = tsNode2Value(node.expression, sourceFile, cls);
+        const type = tsNode2Type(node.type, sourceFile, cls);
+        return new ArkCastExpr(value, type);
+    }
+    else if (ts.isTemplateExpression(node)) {
+        let values: Value[] = [];
+        node.templateSpans.forEach((templateSpan) => {
+            values.push(tsNode2Value(templateSpan.expression, sourceFile, cls));
+            const literalRawText = templateSpan.literal.rawText;
+            const literalStr = literalRawText ? literalRawText : '';
+            values.push(new Constant(literalStr, StringType.getInstance()));
+        });
+        // TODO
+    }
+    else if (ts.isParenthesizedExpression(node)) {
+        return tsNode2Value(node.expression, sourceFile, cls);
+    }
+    else if (ts.isAwaitExpression(node)) {
+        return tsNode2Value(node.expression, sourceFile, cls);
+    }
+    else if (ts.isNonNullExpression(node)) {
+        return tsNode2Value(node.expression, sourceFile, cls);
+    }
+    else if (ts.isElementAccessExpression(node)) {
+        //TODO
+    }
     else {
         logger.warn("Other type found for ts node.");
     }
     return new Constant('', UnknownType.getInstance())
 }
-function buildTypeLiteralNode2ArkClassBak(typeNode: ts.TypeLiteralNode) {
-    throw new Error("Function not implemented.");
-}
+
 

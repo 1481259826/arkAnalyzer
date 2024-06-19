@@ -85,7 +85,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     buildModifiers(methodNode, sourceFile).forEach((value) => {
         mtd.addModifier(value);
     })
-    
+
     if (methodNode.type) {
         mtd.setReturnType(buildReturnType(methodNode.type, sourceFile, mtd));
     }
@@ -104,10 +104,12 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     if (mtd.hasBuilderDecorator()) {
         mtd.setViewTree(new ViewTree(mtd));
     } else if (declaringClass.hasComponentDecorator() &&
-                mtd.getSubSignature().toString() == 'build()' &&
-                !mtd.containsModifier('StaticKeyword')) {
+        mtd.getSubSignature().toString() == 'build()' &&
+        !mtd.containsModifier('StaticKeyword')) {
         declaringClass.setViewTree(new ViewTree(mtd));
     }
+
+    declaringClass.addMethod(mtd);
 }
 
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile): string {
@@ -132,7 +134,10 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
         if (ts.isIdentifier(node.name)) {
             name = (node.name as ts.Identifier).text;
         } else if (ts.isComputedPropertyName(node.name)) {
-            if (ts.isPropertyAccessExpression(node.name.expression)) {
+            if (ts.isIdentifier(node.name.expression)) {
+                name = node.name.expression.text;
+            }
+            else if (ts.isPropertyAccessExpression(node.name.expression)) {
                 name = handlePropertyAccessExpression(node.name.expression);
             }
             else {
