@@ -78,10 +78,7 @@ class StateValuesUtils {
         }
     }
 
-    public parseStmtUsesStateValues(stmt: Stmt | null, uses: Set<ArkField> = new Set(), wholeMethod: boolean = false, visitor: Set<MethodSignature> = new Set()) {
-        if (!stmt) {
-            return uses;
-        }
+    public parseStmtUsesStateValues(stmt: Stmt, uses: Set<ArkField> = new Set(), wholeMethod: boolean = false, visitor: Set<MethodSignature> = new Set()) {
         for (const v of stmt.getUses()) {
             if (v instanceof ArkInstanceFieldRef) {
                 let field = this.declaringArkClass.getField(v.getFieldSignature());
@@ -666,6 +663,20 @@ export class ViewTree extends TreeNodeStack {
         return node;
     }
 
+    private findMethodInvokeBuilderMethod(method: ArkMethod) {
+        for (const stmt of method.getCfg().getStmts()) {
+            if (!(stmt instanceof ArkInvokeStmt)) {
+                continue;
+            }
+
+            let expr = stmt.getInvokeExpr();
+            let method = this.findMethod(expr.getMethodSignature());
+            if (method?.hasBuilderDecorator()) {
+                return method;
+            }
+        }
+    }
+
     private parseObjectLiteralExpr(cls: ArkClass, object: Value | undefined, builder: ArkMethod | undefined): Map<ArkField, ArkField | ArkMethod> | undefined {
         let transferMap: Map<ArkField, ArkField | ArkMethod> = new Map();
         if (object instanceof ObjectLiteralExpr) {
@@ -680,9 +691,14 @@ export class ViewTree extends TreeNodeStack {
                     let method: ArkMethod | undefined | null;
                     if (value instanceof ArkInstanceFieldRef) {
                         method = this.findMethodWithName(value.getFieldName());
+                    } else if (value instanceof ArkStaticInvokeExpr) {
+                        method = this.findMethod(value.getMethodSignature());
                     } else if (value instanceof Local) {
                         method = this.findMethodWithName(value.getName());
                     }
+                    if (method && !method.hasBuilderDecorator()) {
+                        method = this.findMethodInvokeBuilderMethod(method);
+                    } 
                     if (method) {
                         transferMap.set(dstField, method);
                     }
@@ -820,8 +836,9 @@ function viewComponentCreationParser(viewtree: ViewTree, name: string, stmt: Stm
 function forEachCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNode {
     let node = viewtree.addSystemComponentNode(name);
     let values = expr.getArg(0) as Local;
-    if (values?.getDeclaringStmt()) {
-        let stateValues = StateValuesUtils.getInstance(viewtree.getDeclaringArkClass()).parseStmtUsesStateValues(values.getDeclaringStmt());
+    let declaringStmt = values?.getDeclaringStmt();
+    if (declaringStmt) {
+        let stateValues = StateValuesUtils.getInstance(viewtree.getDeclaringArkClass()).parseStmtUsesStateValues(declaringStmt);
         stateValues.forEach((field) => {
             node.stateValues.add(field);
             viewtree.addStateValue(field, node);
@@ -839,8 +856,9 @@ function forEachCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, exp
 function repeatCreationParser(viewtree: ViewTree, name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNode {
     let node = viewtree.addSystemComponentNode(name);
     let arg = expr.getArg(0) as Local;
-    if (arg?.getDeclaringStmt()) {
-        let stateValues = StateValuesUtils.getInstance(viewtree.getDeclaringArkClass()).parseStmtUsesStateValues(arg.getDeclaringStmt());
+    let declaringStmt = arg?.getDeclaringStmt();
+    if (declaringStmt) {
+        let stateValues = StateValuesUtils.getInstance(viewtree.getDeclaringArkClass()).parseStmtUsesStateValues(declaringStmt);
         stateValues.forEach((field) => {
             node.stateValues.add(field);
             viewtree.addStateValue(field, node);
