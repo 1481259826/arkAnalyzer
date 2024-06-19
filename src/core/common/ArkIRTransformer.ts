@@ -770,6 +770,8 @@ export class ArkIRTransformer {
             let arrayLengthValue: Value = ValueUtil.getOrCreateNumberConst(arrayLength);
             if (arrayLength === 1) {
                 arrayLengthValue = argumentValues[0];
+            } else if (arrayLength > 1 && !(argumentValues[0].getType() instanceof AnyType || argumentValues[0].getType() instanceof UnknownType)) {
+                baseType = argumentValues[0].getType();
             }
 
             const {
@@ -778,6 +780,14 @@ export class ArkIRTransformer {
             } = this.generateAssignStmtForValue(new ArkNewArrayExpr(baseType, arrayLengthValue));
             stmts.push(...arrayStmts);
             (arrayExprValue as Local).setType(new ArrayObjectType(baseType, 1));
+
+            if (arrayLength > 1) {
+                for (let i = 0; i < arrayLength; i++) {
+                    const arrayRef = new ArkArrayRef(arrayExprValue as Local, ValueUtil.getOrCreateNumberConst(i));
+                    stmts.push(new ArkAssignStmt(arrayRef, argumentValues[i]));
+                }
+            }
+            
             return {value: arrayExprValue, stmts: stmts};
         } else {
             const classSignature = new ClassSignature();

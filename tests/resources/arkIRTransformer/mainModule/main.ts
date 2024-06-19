@@ -135,6 +135,9 @@ function main() {
     let arr5 = [];
 
     let arr6 = new Array();
+
+    let arr7 = new Array(1, 2, 3);
+    let arr8 = [1, 2, '3'];
 }
 
 // // ConditionalExpression
@@ -157,7 +160,7 @@ function main() {
 //     }
 //     let f = 5;
 // }
-//
+
 // function main() {
 //     // let arr = [1, 2];
 //     // let a = ~arr[0] + 1;
@@ -165,3 +168,4 @@ function main() {
 //     let a = 1;
 //     let b = -a + 1;
 // }
+
