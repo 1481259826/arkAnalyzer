@@ -140,13 +140,22 @@ export class Scene {
         // method body parse depends custom components.
         this.collectProjectCustomComponents();
         this.buildStage = SceneBuildStage.CLASS_DONE;
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                for (const method of cls.getMethods()) {
+                    method.buildBody();
+                }
+            }
+        }
+        for (const namespace of this.getNamespacesMap().values()) {
+            for (const cls of namespace.getClasses()) {
+                for (const method of cls.getMethods()) {
+                    method.buildBody();
+                }
+            }
+        }
 
-        this.getMethods().forEach((value) => {
-            value.buildBody();
-        });
         this.buildStage = SceneBuildStage.METHOD_DONE;
-
-        this.updateClassesMap();
     }
 
     private genArkFiles() {
@@ -310,36 +319,18 @@ export class Scene {
         return null;
     }
 
-    private updateOneClassMap(cls: ArkClass) {
-        let key = cls.getSignature().toString();
-        if (this.classesMap.has(key)) {
-            return;
-        }
-        this.classesMap.set(key, cls);
-        for (const method of cls.getMethods()) {
-            let key = method.getSignature().toString();
-            if (!this.methodsMap.has(key)) {
-                this.methodsMap.set(key, method);
-            }
-        }
-    }
-
-    private updateClassesMap() {
-        for (const file of this.getFiles()) {
-            for (const cls of file.getClasses()) {
-                this.updateOneClassMap(cls);
-            }
-        }
-        for (const namespace of this.getNamespacesMap().values()) {
-            for (const cls of namespace.getClasses()) {
-                this.updateOneClassMap(cls);
-            }
-        }
-    }
-
     private getClassesMap(): Map<string, ArkClass> {
         if (this.classesMap.size == 0) {
-            this.updateClassesMap();
+            for (const file of this.getFiles()) {
+                for (const cls of file.getClasses()) {
+                    this.classesMap.set(cls.getSignature().toString(), cls);
+                }
+            }
+            for (const namespace of this.getNamespacesMap().values()) {
+                for (const cls of namespace.getClasses()) {
+                    this.classesMap.set(cls.getSignature().toString(), cls);
+                }
+            }
         }
         return this.classesMap;
     }
@@ -705,11 +696,20 @@ export class Scene {
     }
 
     private collectProjectCustomComponents() {
-        this.getClasses().forEach((value) => {
-            if (value.hasComponentDecorator()) {
-                this.customComponents.add(value.getName());
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                if (cls.hasComponentDecorator()) {
+                    this.customComponents.add(cls.getName());
+                }
             }
-        });
+        }
+        for (const namespace of this.getNamespacesMap().values()) {
+            for (const cls of namespace.getClasses()) {
+                if (cls.hasComponentDecorator()) {
+                    this.customComponents.add(cls.getName());
+                }
+            }
+        }
     }
 
     public isCustomComponents(name: string): boolean {
