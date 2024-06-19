@@ -58,7 +58,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         let propertyName = member.name.text;
         field.setName(propertyName);
     } else {
-        logger.warn("Other property type found!");
+        logger.warn("Other type of property name found!");
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
@@ -119,6 +119,18 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
     field.setCode(member.getText(sourceFile));
     if (ts.isIdentifier(member.name)) {
         field.setName(member.name.text);
+    }
+    else if (ts.isComputedPropertyName(member.name)) {
+        if (ts.isIdentifier(member.name.expression)) {
+            let propertyName = member.name.expression.text;
+            field.setName(propertyName);
+        } else if (ts.isPropertyAccessExpression(member.name.expression)) {
+            field.setName(handlePropertyAccessExpression(member.name.expression));
+        } else if (ts.isStringLiteral(member.name.expression)) {
+            field.setName(member.name.expression.text);
+        } else {
+            logger.warn("Other type of computed property name found!");
+        }
     }
     else {
         logger.warn("Please contact developers to support new type of GetAccessor name!");

@@ -70,6 +70,7 @@ export function buildNormalArkClassFromArkFile(clsNode: ClassLikeNode,
     cls.setColumn(character + 1);
 
     buildNormalArkClass(clsNode, cls, sourceFile);
+    arkFile.addArkClass(cls);
 }
 
 export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode,
@@ -85,6 +86,7 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode,
     cls.setColumn(character + 1);
 
     buildNormalArkClass(clsNode, cls, sourceFile);
+    arkNamespace.addArkClass(cls);
 }
 
 function buildDefaultArkClass(cls: ArkClass, sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
