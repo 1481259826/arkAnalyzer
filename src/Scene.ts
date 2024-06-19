@@ -147,6 +147,13 @@ export class Scene {
                 }
             }
         }
+        for (const namespace of this.getNamespacesMap().values()) {
+            for (const cls of namespace.getClasses()) {
+                for (const method of cls.getMethods()) {
+                    method.buildBody();
+                }
+            }
+        }
 
         this.buildStage = SceneBuildStage.METHOD_DONE;
     }
@@ -313,7 +320,7 @@ export class Scene {
     }
 
     private getClassesMap(): Map<string, ArkClass> {
-        if (this.buildStage >= SceneBuildStage.CLASS_DONE && this.classesMap.size == 0) {
+        if (this.classesMap.size == 0) {
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -342,7 +349,7 @@ export class Scene {
     }
 
     private getMethodsMap(): Map<string, ArkMethod> {
-        if (this.buildStage >= SceneBuildStage.METHOD_DONE && this.methodsMap.size == 0) {
+        if (this.methodsMap.size == 0) {
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods()) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -691,6 +698,13 @@ export class Scene {
     private collectProjectCustomComponents() {
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
+                if (cls.hasComponentDecorator()) {
+                    this.customComponents.add(cls.getName());
+                }
+            }
+        }
+        for (const namespace of this.getNamespacesMap().values()) {
+            for (const cls of namespace.getClasses()) {
                 if (cls.hasComponentDecorator()) {
                     this.customComponents.add(cls.getName());
                 }
