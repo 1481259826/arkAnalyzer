@@ -32,13 +32,11 @@ export class ExprUseReplacer {
     // TODO:是否将该逻辑移Expr具体类中，利用多态实现
     public caseExpr(expr: AbstractExpr): void {
         if (expr instanceof ArkBinopExpr) {
-            this.caseBinopExp(expr);
+            this.caseBinopExpr(expr);
         } else if (expr instanceof AbstractInvokeExpr) {
             this.caseInvokeExpr(expr);
         } else if (expr instanceof ArkNewArrayExpr) {
             this.caseNewArrayExpr(expr);
-        } else if (expr instanceof ArkBinopExpr) {
-            this.caseBinopExpr(expr);
         } else if (expr instanceof ArkTypeOfExpr) {
             this.caseTypeOfExpr(expr);
         } else if (expr instanceof ArkInstanceOfExpr) {
@@ -50,7 +48,7 @@ export class ExprUseReplacer {
         }
     }
 
-    private caseBinopExp(expr: ArkBinopExpr): void {
+    private caseBinopExpr(expr: ArkBinopExpr): void {
         if (expr.getOp1() == this.oldUse) {
             expr.setOp1(this.newUse);
         }
@@ -75,15 +73,6 @@ export class ExprUseReplacer {
     private caseNewArrayExpr(expr: ArkNewArrayExpr): void {
         if (expr.getSize() == this.oldUse) {
             expr.setSize(this.newUse);
-        }
-    }
-
-    private caseBinopExpr(expr: ArkBinopExpr): void {
-        if (expr.getOp1() == this.oldUse) {
-            expr.setOp1(this.newUse);
-        }
-        if (expr.getOp2() == this.oldUse) {
-            expr.setOp2(this.newUse);
         }
     }
 

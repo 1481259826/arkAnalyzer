@@ -119,7 +119,7 @@ abstract class SourceStmt extends Stmt {
             if (value.getName().startsWith('AnonymousFunc$_')) {
                 for (const anonymousMethod of this.method.getDeclaringArkClass().getMethods()) {
                     if (anonymousMethod.getName() == value.getName()) {
-                       let _anonymous = new SourceMethod('', this.method.getDeclaringArkFile(), anonymousMethod);
+                       let _anonymous = new SourceMethod('', anonymousMethod);
                        return _anonymous.dump();
                     }
                 }
@@ -347,7 +347,7 @@ export class SourceReturnVoidStmt extends SourceStmt {
     }
 
     protected transfer2ts(stmtReader: StmtReader): void {
-        if (this.original.getOriginPositionInfo() == 0) {
+        if (this.original.getOriginPositionInfo().getLineNo() == 0) {
             this.setText('');
         } else {
             this.setText('return;');

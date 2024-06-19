@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts from "ohos-typescript";
+import ts from 'ohos-typescript';
 
 export abstract class Position {
     public abstract getFirstLine(): number;
@@ -37,9 +37,14 @@ export class LinePosition {
     }
 }
 
+/**
+ * @category core/base
+ */
 export class LineColPosition {
     private readonly lineNo: number;
     private readonly colNo: number;
+
+    public static readonly DEFAULT: LineColPosition = new LineColPosition(-1, -1);
 
     constructor(lineNo: number, colNo: number) {
         this.lineNo = lineNo;
@@ -55,9 +60,9 @@ export class LineColPosition {
     }
 
     public static buildFromNode(node: ts.Node, sourceFile: ts.SourceFile) {
-        let { line, character } = ts.getLineAndCharacterOfPosition(
+        let {line, character} = ts.getLineAndCharacterOfPosition(
             sourceFile,
-            node.getStart(sourceFile)
+            node.getStart(sourceFile),
         );
         // line start from 1.
         return new LineColPosition(line + 1, character + 1);

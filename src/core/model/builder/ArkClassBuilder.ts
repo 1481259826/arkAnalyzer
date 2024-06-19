@@ -33,7 +33,8 @@ export type ClassLikeNode =
     ts.EnumDeclaration |
     ts.ClassExpression |
     ts.TypeLiteralNode |
-    ts.StructDeclaration;
+    ts.StructDeclaration |
+    ts.ObjectLiteralExpression;
 
 export function buildDefaultArkClassFromArkFile(arkFile: ArkFile, defaultClass: ArkClass, astRoot: ts.SourceFile) {
     defaultClass.setDeclaringArkFile(arkFile);
@@ -67,11 +68,9 @@ export function buildNormalArkClassFromArkFile(clsNode: ClassLikeNode,
     );
     cls.setLine(line + 1);
     cls.setColumn(character + 1);
-    if (ts.isTypeLiteralNode(clsNode) || ts.isClassExpression(clsNode)) {
-        const clsName = 'AnonymousClass-' + arkFile.getName() + '-' + arkFile.getAnonymousClassNumber();
-        cls.setName(clsName);
-    }
+
     buildNormalArkClass(clsNode, cls, sourceFile);
+    arkFile.addArkClass(cls);
 }
 
 export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode,
@@ -85,11 +84,9 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode,
     );
     cls.setLine(line + 1);
     cls.setColumn(character + 1);
-    if (ts.isTypeLiteralNode(clsNode) || ts.isClassExpression(clsNode)) {
-        const clsName = 'AnonymousClass-' + arkNamespace.getName() + '-' + arkNamespace.getAnonymousClassNumber();
-        cls.setName(clsName);
-    }
+
     buildNormalArkClass(clsNode, cls, sourceFile);
+    arkNamespace.addArkClass(cls);
 }
 
 function buildDefaultArkClass(cls: ArkClass, sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
@@ -107,57 +104,210 @@ function genDefaultArkMethod(cls: ArkClass, sourceFile: ts.SourceFile, node?: ts
 
 export function buildNormalArkClass(clsNode: ClassLikeNode,
     cls: ArkClass, sourceFile: ts.SourceFile) {
-    if (!ts.isTypeLiteralNode(clsNode) && clsNode.name) {
+    switch (clsNode.kind) {
+        case ts.SyntaxKind.StructDeclaration:
+            buildStruct2ArkClass(clsNode, cls, sourceFile);
+            break;
+        case ts.SyntaxKind.ClassDeclaration:
+            buildClass2ArkClass(clsNode, cls, sourceFile);
+            break;
+        case ts.SyntaxKind.ClassExpression:
+            buildClass2ArkClass(clsNode, cls, sourceFile);
+            break;
+        case ts.SyntaxKind.InterfaceDeclaration:
+            buildInterface2ArkClass(clsNode, cls, sourceFile);
+            break;
+        case ts.SyntaxKind.EnumDeclaration:
+            buildEnum2ArkClass(clsNode, cls, sourceFile);
+            break;
+        case ts.SyntaxKind.TypeLiteral:
+            buildTypeLiteralNode2ArkClass(clsNode, cls, sourceFile);
+            break;
+        case ts.SyntaxKind.ObjectLiteralExpression:
+            buildObjectLiteralExpression2ArkClass(clsNode, cls, sourceFile);
+            break;
+    }
+}
+
+function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sourceFile: ts.SourceFile) {
+    if (clsNode.name) {
         cls.setName(clsNode.name.text);
+    }
+    else {
+        genAnonymousClassName(clsNode, cls);
     }
 
     cls.genSignature();
 
-    if ((!ts.isEnumDeclaration(clsNode)) && (!ts.isTypeLiteralNode(clsNode))) {
-        if (clsNode.typeParameters) {
-            buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
-                cls.addTypeParameter(typeParameter);
-            });
-        }
+    if (clsNode.typeParameters) {
+        buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
+            cls.addTypeParameter(typeParameter);
+        });
+    }
 
-        if (clsNode.heritageClauses) {
-            for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-                if (value == 'ExtendsKeyword') {
-                    cls.setSuperClassName(key);
-                } else {
-                    cls.addImplementedInterfaceName(key);
-                }
+    if (clsNode.heritageClauses) {
+        for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
+            if (value == 'ExtendsKeyword') {
+                cls.setSuperClassName(key);
+            } else {
+                cls.addImplementedInterfaceName(key);
             }
         }
     }
 
-    if (!ts.isTypeLiteralNode(clsNode) && clsNode.modifiers) {
-        buildModifiers(clsNode, sourceFile).forEach((modifier) => {
-            cls.addModifier(modifier);
+    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
+        cls.addModifier(modifier);
+    });
+
+    cls.setOriginType("Struct");
+
+    buildArkClassMembers(clsNode, cls, sourceFile);
+}
+
+function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, cls: ArkClass, sourceFile: ts.SourceFile) {
+    if (clsNode.name) {
+        cls.setName(clsNode.name.text);
+    }
+    else {
+        genAnonymousClassName(clsNode, cls);
+    }
+
+    cls.genSignature();
+
+    if (clsNode.typeParameters) {
+        buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
+            cls.addTypeParameter(typeParameter);
         });
     }
 
-    if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
-        cls.setOriginType("Class");
-    }
-    else if (ts.isInterfaceDeclaration(clsNode)) {
-        cls.setOriginType("Interface");
-    }
-    else if (ts.isEnumDeclaration(clsNode)) {
-        cls.setOriginType("Enum");
-    }
-    else {
-        cls.setOriginType("TypeLiteral");
+    if (clsNode.heritageClauses) {
+        for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
+            if (value == 'ExtendsKeyword') {
+                cls.setSuperClassName(key);
+            } else {
+                cls.addImplementedInterfaceName(key);
+            }
+        }
     }
 
+    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
+        cls.addModifier(modifier);
+    });
+
+    cls.setOriginType("Class");
+
+    buildArkClassMembers(clsNode, cls, sourceFile);
+}
+
+function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass, sourceFile: ts.SourceFile) {
+    if (clsNode.name) {
+        cls.setName(clsNode.name.text);
+    }
+    else {
+        genAnonymousClassName(clsNode, cls);
+    }
+
+    cls.genSignature();
+
+    if (clsNode.typeParameters) {
+        buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
+            cls.addTypeParameter(typeParameter);
+        });
+    }
+
+    if (clsNode.heritageClauses) {
+        for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
+            if (value == 'ExtendsKeyword') {
+                cls.setSuperClassName(key);
+            } else {
+                cls.addImplementedInterfaceName(key);
+            }
+        }
+    }
+
+    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
+        cls.addModifier(modifier);
+    });
+
+    cls.setOriginType("Interface");
+
+    buildArkClassMembers(clsNode, cls, sourceFile);
+}
+
+function buildEnum2ArkClass(clsNode: ts.EnumDeclaration, cls: ArkClass, sourceFile: ts.SourceFile) {
+    if (clsNode.name) {
+        cls.setName(clsNode.name.text);
+    }
+    else {
+        genAnonymousClassName(clsNode, cls);
+    }
+
+    cls.genSignature();
+
+    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
+        cls.addModifier(modifier);
+    });
+
+    cls.setOriginType("Enum");
+
+    buildArkClassMembers(clsNode, cls, sourceFile);
+}
+
+function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClass, sourceFile: ts.SourceFile) {
+    genAnonymousClassName(clsNode, cls);
+
+    cls.genSignature();
+
+    cls.setOriginType("TypeLiteral");
+}
+
+function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpression, cls: ArkClass, sourceFile: ts.SourceFile) {
+    genAnonymousClassName(clsNode, cls);
+
+    cls.genSignature();
+
+    cls.setOriginType("Object");
+
+    let arkMethods: ArkMethod[] = [];
+    clsNode.properties.forEach((property) => {
+        if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property) || ts.isSpreadAssignment(property)) {
+            buildProperty2ArkField(property, sourceFile, cls);
+        }
+        else {
+            let arkMethod = new ArkMethod();
+            arkMethod.setDeclaringArkClass(cls);
+            arkMethod.setDeclaringArkFile();
+            buildArkMethodFromArkClass(property, cls, arkMethod, sourceFile);
+        }
+    });
+    arkMethods.forEach((mtd) => {
+        cls.addMethod(mtd);
+    });
+}
+
+function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass) {
+    const declaringArkNamespace = cls.getDeclaringArkNamespace();
+    const declaringArkFile = cls.getDeclaringArkFile();
+    let clsName = '';
+    if (declaringArkNamespace) {
+        clsName = 'AnonymousClass-' + declaringArkNamespace.getName() + '-' + declaringArkNamespace.getAnonymousClassNumber();
+    }
+    else {
+        clsName = 'AnonymousClass-' + declaringArkFile.getName() + '-' + declaringArkFile.getAnonymousClassNumber();
+    }
+    cls.setName(clsName);
+}
+
+function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile: ts.SourceFile) {
+    if (ts.isObjectLiteralExpression(clsNode)) {
+        return;
+    }
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member) || ts.isEnumMember(member)) {
-            let field = buildProperty2ArkField(member, sourceFile, cls);
-            checkInitializer(field, cls);
+            buildProperty2ArkField(member, sourceFile, cls);
         }
         else if (ts.isIndexSignatureDeclaration(member)) {
-            let field = buildIndexSignature2ArkField(member, sourceFile, cls);
-            checkInitializer(field, cls);
+            buildIndexSignature2ArkField(member, sourceFile, cls);
         }
         else if (
             ts.isMethodDeclaration(member) ||
@@ -171,12 +321,11 @@ export function buildNormalArkClass(clsNode: ClassLikeNode,
             buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
             cls.addMethod(mthd);
             if (ts.isGetAccessor(member)) {
-                let field = buildGetAccessor2ArkField(member, mthd, sourceFile);
-                checkInitializer(field, cls);
+                buildGetAccessor2ArkField(member, mthd, sourceFile);
             }
         }
         else if (ts.isSemicolonClassElement(member)) {
-            logger.warn("Skip these members.");
+            logger.debug("Skip these members.");
         }
         else {
             logger.warn("Please contact developers to support new member type!");

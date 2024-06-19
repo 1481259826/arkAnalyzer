@@ -12,13 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-function test() {
-    try {
-        let a = 0;
-    } catch (err) {
-        let b = 1;
+class Person {
+        x: number = 0;
+    
+        constructor(public age: number) {
+            super()
+        }
+        growOld = () => {
+            this.age++;
+        }
     }
-    let c = 2;
-    let d = 3;
-}

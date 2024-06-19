@@ -69,7 +69,7 @@ describe("SourceUtils.typeToString Test", () => {
     })
     it('ArrayType case 2', () => {
         let type = new ty.ArrayType(ty.StringType.getInstance(), 1);
-        assert.equal(SourceUtils.typeToString(type), "(string)[]");
+        assert.equal(SourceUtils.typeToString(type), "string[]");
     })
 
     it('VoidType case', () => {

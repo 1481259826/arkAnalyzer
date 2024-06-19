@@ -14,16 +14,22 @@
  */
 
 import path from 'path';
-import {transfer2UnixPath} from '../../utils/pathTransfer';
-import {ClassType, Type, UnknownType} from '../base/Type';
+import { transfer2UnixPath } from '../../utils/pathTransfer';
+import { ClassType, Type, UnknownType } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 import Logger from "../../utils/logger";
-import {rm} from "fs-extra";
 
 export type Signature = FileSignature | NamespaceSignature | ClassSignature | MethodSignature | FieldSignature;
 
 const logger = Logger.getLogger();
 
+export interface ArkSignature {
+    getSignature(): Signature;
+}
+
+/**
+ * @category core/model
+ */
 export class FileSignature {
     private projectName: string = "_UnkownProjectName";
     private fileName: string = "_UnkownFileName";
@@ -49,6 +55,7 @@ export class FileSignature {
 
     public toString(): string {
         let tmpSig = transfer2UnixPath(this.fileName);
+        tmpSig = tmpSig.replace(/\.d\.ts|\.ts|\.ets$/, '');
         tmpSig = '@' + this.projectName + '/' + tmpSig + ': ';
         return tmpSig;
     }
@@ -253,6 +260,9 @@ export class MethodSubSignature {
     }
 }
 
+/**
+ * @category core/model
+ */
 export class MethodSignature {
     private declaringClassSignature: ClassSignature = new ClassSignature();
     private methodSubSignature: MethodSubSignature = new MethodSubSignature();

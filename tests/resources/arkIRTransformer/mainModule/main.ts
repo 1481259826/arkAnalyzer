@@ -122,24 +122,46 @@
 // let e = true;
 //
 
-// // global as size
-// let sz3 = 3;
-//
-// function main() {
-//     let sz1 = 1;
-//     let arr1 = new Array(sz1);
-//     let arr2 = new Array(2);
-//     let arr3 = new Array(sz3);
-// }
+// global as size
+let sz3 = 3;
+
+function main() {
+    let sz1 = 1;
+    let arr1 = new Array(sz1);
+    let arr2 = new Array(2);
+    let arr3 = new Array(sz3);
+
+    let arr4 = [1, 2, 3];
+    let arr5 = [];
+
+    let arr6 = new Array();
+}
 
 // // ConditionalExpression
 // function main() {
 //     let a = 1 ? 10 : 0;
 // }
 
-// FirstTemplateToken
-function main() {
-    console.log(`search_white onClick`);
-}
-
-
+// function main(i: number) {
+//     if (1) {
+//         let a = 1;
+//         if (1) {
+//             let b = 2;
+//             if (b = 3) {
+//                 let c = 4;
+//             }
+//         }
+//         let d = 4;
+//     } else {
+//         let e = 5;
+//     }
+//     let f = 5;
+// }
+//
+// function main() {
+//     // let arr = [1, 2];
+//     // let a = ~arr[0] + 1;
+//
+//     let a = 1;
+//     let b = -a + 1;
+// }

@@ -29,6 +29,9 @@ const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'Local', 'Param', 'Event', 'Provider', 'Consumer'
 ])
 
+/**
+ * @category core/model
+ */
 export class ArkField {
     private name: string = "";
     private code: string = "";

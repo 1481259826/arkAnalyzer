@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+/**
+ * @category core/base
+ */
 export class Decorator {
     kind: string;
     content: string;

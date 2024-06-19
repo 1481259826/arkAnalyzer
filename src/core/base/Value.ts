@@ -15,6 +15,9 @@
 
 import { Type } from "./Type";
 
+/**
+ * @category core/base
+ */
 export interface Value {
     /** Return a list of values which are contained in this value */
     getUses(): Value[];

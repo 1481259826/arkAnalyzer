@@ -11,8 +11,7 @@ out/
 tests/resources/output
 tests/resources/callgraph/projectTest/*
 coverage
-src/ets2ts.js
-index.ts
-src/exportAll.ts
+doc/
 exportRollup.config.mjs
 dist/
+*.log

@@ -19,7 +19,7 @@ import { Scene } from '../../src/Scene';
 import path from 'path';
 import { Decorator } from '../../src/core/base/Decorator';
 import { ArkField } from '../../src/core/model/ArkField';
-import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
+import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree, SelfDepends_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
 import { ViewTreeNode } from '../../src/core/graph/ViewTree';
 import { ForEachSort_Expect_ViewTree, ForEachTest1_Expect_ViewTree, ForEachTest2_Expect_ViewTree, ForEachTest3_Expect_ViewTree } from '../resources/viewtree/control-foreach/ExpectView';
 import { IfElseTest1_Expect_ViewTree, IfElseTest2_Expect_ViewTree, IfElseTest3_Expect_ViewTree } from '../resources/viewtree/control-ifelse/ExpectView';
@@ -28,8 +28,12 @@ import { RepeatTest1_Expect_ViewTree, RepeatTest2_Expect_ViewTree } from '../res
 import { ContentSlotTest_Expect_ViewTree } from '../resources/viewtree/control-contentslot/ExpectView';
 import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_BuilderTest_Expect_ViewTree, Case3_BuilderTest_Expect_ViewTree } from '../resources/viewtree/builder/ExpectView';
 import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from '../resources/viewtree/builderparam/ExpectView';
+import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
+    if (expectTree.skip) {
+        return;
+    }
     expect(root.name).eq(expectTree.name);
     expect(root.children.length).eq(expectTree.children.length);
     if (expectTree.attributes) {
@@ -52,7 +56,7 @@ function expectViewTree(root: ViewTreeNode, expectTree: any) {
 }
 
 function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
-    let arkFile =  scene.getFiles().find(file => file.getName() == `${clsName}.ets`);
+    let arkFile =  scene.getFiles().find(file => file.getName().endsWith(`${clsName}.ets`));
     let arkClass = arkFile?.getClassWithName(clsName);
     let vt = arkClass?.getViewTree();
     if (!vt) {
@@ -290,5 +294,24 @@ describe('normal Test', () => {
         
         let isEntry = arkClass.hasEntryDecorator();
         expect(isEntry).eq(true);
+    })
+
+    it('test SelfDepends', async ()=> {
+        testClassViewTree(scene, 'SelfDepends', SelfDepends_Expect_ViewTree);
+    })
+})
+
+
+describe('project Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromJson(path.join(__dirname, '../../tests/resources/viewtree/project/test-config.json'));
+    let scene: Scene = new Scene();
+    scene.buildBasicInfo(config);
+    scene.buildScene4HarmonyProject();
+    scene.collectProjectImportInfos();
+    scene.inferTypes();
+
+    it('test alias', async ()=> {
+        testClassViewTree(scene, 'Page', Project_Page_Expect_ViewTree);
     })
 })

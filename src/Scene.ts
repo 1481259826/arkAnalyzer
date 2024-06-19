@@ -32,10 +32,11 @@ import { ArkNamespace } from "./core/model/ArkNamespace";
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
 import Logger from "./utils/logger";
 import { Local } from './core/base/Local';
-import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
+import { buildArkFileFromFile, expandImportAll } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
+import { ExportType } from "./core/model/ArkExport";
 
 const logger = Logger.getLogger();
 
@@ -83,7 +84,8 @@ export class Scene {
     private customComponents: Set<string> = new Set();
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
-    constructor() {}
+    constructor() {
+    }
 
     public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
         this.buildBasicInfo(sceneConfig);
@@ -105,8 +107,7 @@ export class Scene {
                     this.modulePath2NameMap.set(path.resolve(this.realProjectDir, path.join(module.srcPath)), module.name);
                 });
             }
-        }
-        else {
+        } else {
             logger.warn('There is no build-profile.json5 for this project.');
         }
 
@@ -115,23 +116,20 @@ export class Scene {
             this.ohPkgFilePath = OhPkgFilePath;
             this.ohPkgContent = fetchDependenciesFromFile(this.ohPkgFilePath);
             this.ohPkgContentMap.set(OhPkgFilePath, this.ohPkgContent);
-        }
-        else {
+        } else {
             logger.warn('This project has no oh-package.json5!');
         }
 
         // handle sdks
-        sceneConfig.getSdksObj().forEach((sdk) => {
+        sceneConfig.getSdksObj()?.forEach((sdk) => {
             if (!sdk.moduleName) {
                 this.buildSdk(sdk.name, sdk.path);
                 this.projectSdkMap.set(sdk.name, sdk);
-            }
-            else {
+            } else {
                 let moduleSdks = this.moduleSdkMap.get(sdk.moduleName);
                 if (moduleSdks) {
                     moduleSdks.push(sdk);
-                }
-                else {
+                } else {
                     this.moduleSdkMap.set(sdk.moduleName, [sdk]);
                 }
             }
@@ -142,10 +140,14 @@ export class Scene {
         // method body parse depends custom components.
         this.collectProjectCustomComponents();
         this.buildStage = SceneBuildStage.CLASS_DONE;
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                for (const method of cls.getMethods()) {
+                    method.buildBody();
+                }
+            }
+        }
 
-        this.getMethods().forEach((value) => {
-            value.buildBody();
-        });
         this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
@@ -158,8 +160,8 @@ export class Scene {
             buildArkFileFromFile(file, this.realProjectDir, arkFile);
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
-        
         this.buildAllMethodBody();
+        expandImportAll(this.filesMap);
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
@@ -173,6 +175,7 @@ export class Scene {
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
+        expandImportAll(this.sdkArkFilesMap);
     }
 
     public buildScene4HarmonyProject() {
@@ -201,8 +204,7 @@ export class Scene {
         if (fs.existsSync(moduleOhPkgFilePath)) {
             const moduleOhPkgContent = fetchDependenciesFromFile(moduleOhPkgFilePath);
             this.ohPkgContentMap.set(moduleOhPkgFilePath, moduleOhPkgContent);
-        }
-        else {
+        } else {
             logger.warn('Module: ', moduleName, 'has no oh-package.json5.');
         }
 
@@ -251,14 +253,21 @@ export class Scene {
     }
 
     public getFile(fileSignature: FileSignature): ArkFile | null {
-        return this.filesMap.get(fileSignature.toString()) || null;
+        if (this.projectName === fileSignature.getProjectName()) {
+            return this.filesMap.get(fileSignature.toString()) || null;
+        } else if ('etsSdk' === fileSignature.getProjectName()) {
+            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
+        } else {
+            logger.error("unknown file: " + fileSignature.toString());
+        }
+        return null;
     }
 
     public getFiles(): ArkFile[] {
         return Array.from(this.filesMap.values());
     }
 
-    public getsdkArkFilesMap() {
+    public getSdkArkFilesMap() {
         return this.sdkArkFilesMap;
     }
 
@@ -294,11 +303,17 @@ export class Scene {
     }
 
     public getClass(classSignature: ClassSignature): ArkClass | null {
-        return this.getClassesMap().get(classSignature.toString()) || null;
+        if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
+            return this.getClassesMap().get(classSignature.toString()) || null;
+        } else if ('etsSdk' === classSignature.getDeclaringFileSignature().getProjectName()) {
+            const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
+            return arkFile ? arkFile.getClass(classSignature) : null;
+        }
+        return null;
     }
 
     private getClassesMap(): Map<string, ArkClass> {
-        if (this.classesMap.size == 0) {
+        if (this.buildStage >= SceneBuildStage.CLASS_DONE && this.classesMap.size == 0) {
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -318,11 +333,16 @@ export class Scene {
     }
 
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
-        return this.getMethodsMap().get(methodSignature.toString()) || null;
+        if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
+            return this.getMethodsMap().get(methodSignature.toString()) || null;
+        } else if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
+            this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature);
+        }
+        return null;
     }
 
     private getMethodsMap(): Map<string, ArkMethod> {
-        if (this.methodsMap.size == 0) {
+        if (this.buildStage >= SceneBuildStage.METHOD_DONE && this.methodsMap.size == 0) {
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods()) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -388,11 +408,11 @@ export class Scene {
      * 对每个method方法体内部进行类型推导，将变量类型填入
      */
     public inferTypes() {
-        const typeInference = new TypeInference(this);
+
         for (let arkFile of this.getFiles()) {
             for (let arkClass of arkFile.getClasses()) {
                 for (let arkMethod of arkClass.getMethods()) {
-                    typeInference.inferTypeInMethod(arkMethod);
+                    TypeInference.inferTypeInMethod(arkMethod);
                 }
             }
         }
@@ -402,11 +422,11 @@ export class Scene {
     }
 
     public inferSimpleTypes() {
-        const typeInference = new TypeInference(this);
+
         for (let arkFile of this.getFiles()) {
             for (let arkClass of arkFile.getClasses()) {
                 for (let arkMethod of arkClass.getMethods()) {
-                    typeInference.inferSimpleTypeInMethod(arkMethod);
+                    TypeInference.inferSimpleTypeInMethod(arkMethod);
                 }
             }
         }
@@ -584,7 +604,7 @@ export class Scene {
                 const finalNS = finalNamespaces.shift()!;
                 const exportLocal = [];
                 for (const exportInfo of finalNS.getExportInfos()) {
-                    if (exportInfo.getExportClauseType() == 'FirstStatement') {
+                    if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
                         for (const local of finalNS.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
                             if (local.getName() == exportInfo.getExportClauseName()) {
                                 exportLocal.push(local);
@@ -669,13 +689,15 @@ export class Scene {
     }
 
     private collectProjectCustomComponents() {
-        this.getClasses().forEach((value) => {
-            if (value.hasComponentDecorator()) {
-                this.customComponents.add(value.getName());
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                if (cls.hasComponentDecorator()) {
+                    this.customComponents.add(cls.getName());
+                }
             }
-        });
+        }
     }
-    
+
     public isCustomComponents(name: string): boolean {
         return this.customComponents.has(name);
     }
@@ -686,6 +708,10 @@ export class Scene {
 
     public buildClassDone(): boolean {
         return this.buildStage >= SceneBuildStage.CLASS_DONE;
+    }
+
+    public getModuleScene(moduleName: string) {
+        return this.moduleScenesMap.get(moduleName);
     }
 }
 
@@ -706,7 +732,8 @@ export class ModuleScene {
     private classesMap: Map<string, ArkClass> = new Map();
     private methodsMap: Map<string, ArkMethod> = new Map();
 
-    constructor() { }
+    constructor() {
+    }
 
     public ModuleScenBuilder(moduleName: string, modulePath: string, projectScene: Scene, recursively: boolean = false) {
         this.moduleName = moduleName;
@@ -717,8 +744,7 @@ export class ModuleScene {
 
         if (this.moduleOhPkgFilePath) {
             this.ohPkgContent = fetchDependenciesFromFile(this.moduleOhPkgFilePath);
-        }
-        else {
+        } else {
             logger.warn('This module has no oh-package.json5!');
         }
 
@@ -741,6 +767,10 @@ export class ModuleScene {
      */
     public getModuleName(): string {
         return this.moduleName;
+    }
+
+    public getModulePath(): string {
+        return this.modulePath;
     }
 
     public getOhPkgFilePath() {

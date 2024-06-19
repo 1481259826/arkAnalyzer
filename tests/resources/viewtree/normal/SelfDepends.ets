@@ -14,16 +14,29 @@
  */
 
 @Component
-struct Foo {
-    flag: boolean = false;
+@Reusabel
+export struct SelfDepends {
+    @State item: number = 0;
+    private datasource: MyDataSource = new MyDataSource();
 
     build() {
-        Row() {
-            if (this.flag === false) {
-                Column()
-            } else {
-                Column()
+        Column() {
+            Text('N' + this.item)
+                .fontSize(12)
+                .height('16')
+            WaterFlow() {
+                LazyForEach(this.datasource, (item: number) => {
+                    FlowItem() {
+                        SelfDepends({item: item})
+                    }
+                    .width('100%')
+                }, (item: string) => item)
             }
+            .cachedCount(2)
         }
     }
+}
+
+class MyDataSource implements IDataSource {
+    
 }

@@ -17,7 +17,7 @@ import { Constant } from "../base/Constant";
 import { DefUseChain } from "../base/DefUseChain";
 import { Local } from "../base/Local";
 import { AbstractFieldRef, ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
-import { ArkAssignStmt, Stmt } from "../base/Stmt";
+import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
 import { UndefinedType } from "../base/Type";
 import { ArkClass } from "../model/ArkClass";
 import { ArkMethod } from "../model/ArkMethod";
@@ -26,6 +26,9 @@ import Logger from "../../utils/logger";
 
 const logger = Logger.getLogger();
 
+/**
+ * @category core/graph
+ */
 export class Cfg {
     private blocks: Set<BasicBlock> = new Set();
     private stmtToBlock: Map<Stmt, BasicBlock> = new Map();
@@ -98,8 +101,13 @@ export class Cfg {
 
         const stmts = [...this.blocks][0].getStmts();
         let index = arkMethod.getParameters().length;
-        // let cThis: 
         const cThis = stmts[index].getDef()!;
+        if (stmts.length > index + 1 && stmts[index + 1] instanceof ArkInvokeStmt) {
+            const invokeStmt = stmts[index + 1];
+            if (invokeStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() == "super") {
+                index++;
+            }
+        }
         for (const field of arkMethod.getDeclaringArkClass().getFields()){
             let init = field.getInitializer();
             if (init == undefined){
@@ -117,7 +125,7 @@ export class Cfg {
             try{
                 const assignStmt = new ArkAssignStmt(leftOp, init);
                 index++;
-                stmts.splice(index,0,assignStmt);
+                stmts.splice(index, 0, assignStmt);
             } catch{
                 // logger.log(init.toString());
             }
