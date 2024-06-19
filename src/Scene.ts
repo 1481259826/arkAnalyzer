@@ -140,10 +140,14 @@ export class Scene {
         // method body parse depends custom components.
         this.collectProjectCustomComponents();
         this.buildStage = SceneBuildStage.CLASS_DONE;
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                for (const method of cls.getMethods()) {
+                    method.buildBody();
+                }
+            }
+        }
 
-        this.getMethods().forEach((value) => {
-            value.buildBody();
-        });
         this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
@@ -309,7 +313,7 @@ export class Scene {
     }
 
     private getClassesMap(): Map<string, ArkClass> {
-        if (this.classesMap.size == 0) {
+        if (this.buildStage >= SceneBuildStage.CLASS_DONE && this.classesMap.size == 0) {
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -331,14 +335,14 @@ export class Scene {
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
         if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
             return this.getMethodsMap().get(methodSignature.toString()) || null;
-        }  else if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
+        } else if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
             this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature);
         }
         return null;
     }
 
     private getMethodsMap(): Map<string, ArkMethod> {
-        if (this.methodsMap.size == 0) {
+        if (this.buildStage >= SceneBuildStage.METHOD_DONE && this.methodsMap.size == 0) {
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods()) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -685,11 +689,13 @@ export class Scene {
     }
 
     private collectProjectCustomComponents() {
-        this.getClasses().forEach((value) => {
-            if (value.hasComponentDecorator()) {
-                this.customComponents.add(value.getName());
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                if (cls.hasComponentDecorator()) {
+                    this.customComponents.add(cls.getName());
+                }
             }
-        });
+        }
     }
 
     public isCustomComponents(name: string): boolean {
