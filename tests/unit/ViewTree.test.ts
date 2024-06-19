@@ -219,9 +219,9 @@ describe('builderParam Test', () => {
     })
 
     // TODO: This use case relies on the ObjectLiteral arrow function parsing
-    // it('test builderparam case2', async () => {
-    //     testNamespaceClassViewTree(scene, 'Case2', 'BuilderParamTest', Case2_BuilderParamTest_Expect_ViewTree);
-    // })
+    it('test builderparam case2', async () => {
+        testNamespaceClassViewTree(scene, 'Case2', 'BuilderParamTest', Case2_BuilderParamTest_Expect_ViewTree);
+    })
 
     it('test builderparam case3', async () => {
         testNamespaceClassViewTree(scene, 'Case3', 'BuilderParamTest', Case3_BuilderParamTest_Expect_ViewTree);
