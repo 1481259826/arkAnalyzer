@@ -14,7 +14,7 @@
  */
 
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "ohos-typescript";
-import { AnyType, ArrayType, CallableType, ClassType, LiteralType, NumberType, StringType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType } from "../../base/Type";
+import { AnyType, ArrayType, CallableType, ClassType, LiteralType, NumberType, StringType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType, TypeParameterType } from "../../base/Type";
 import { TypeInference } from "../../common/TypeInference";
 import { ArkField } from "../ArkField";
 import Logger from "../../../utils/logger";
@@ -134,7 +134,7 @@ export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDe
     sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): Type[] {
     let typeParams: Type[] = [];
     typeParameters.forEach((typeParameter) => {
-        tsNode2Type(typeParameter, sourceFile, arkInstance);
+        typeParams.push(tsNode2Type(typeParameter, sourceFile, arkInstance));
 
         if (typeParameter.modifiers) {
             logger.warn("This typeparameter has modifiers.");
@@ -336,6 +336,10 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         }
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
         return new CallableType(mtd.getSignature());
+    }
+    else if (ts.isTypeParameterDeclaration(typeNode)) {
+        const typeParameterName = typeNode.name.text;
+        return new TypeParameterType(typeParameterName);
     }
     else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
