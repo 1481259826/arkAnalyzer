@@ -663,7 +663,7 @@ export class ViewTree extends TreeNodeStack {
         return node;
     }
 
-    private findMethodInvokeBuilderMethod(method: ArkMethod) {
+    private findMethodInvokeBuilderMethod(method: ArkMethod) : ArkMethod | undefined {
         for (const stmt of method.getCfg().getStmts()) {
             if (!(stmt instanceof ArkInvokeStmt)) {
                 continue;
