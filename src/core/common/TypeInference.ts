@@ -99,16 +99,16 @@ export class TypeInference {
             }
         }
 
-        for (const use of stmt.getUses()) {
+        for (let use of stmt.getUses()) {
             if (use instanceof ArkInstanceFieldRef) {
                 let fieldType = this.handleClassField(use, arkMethod);
                 if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() instanceof Local && fieldType != undefined) {
                     if (fieldType instanceof ArkField) {
                         if (fieldType.getModifiers().has("StaticKeyword")) {
-                            stmt.setRightOp(new ArkStaticFieldRef(fieldType.getSignature()))
+                            stmt.replaceUse(use, new ArkStaticFieldRef(fieldType.getSignature()));
+                            stmt.setRightOp(stmt.getRightOp());
                         } else {
-                            // stmt.setRightOp(new ArkInstanceFieldRef(fieldType.getSignature()))
-                            stmt.setRightOp(new ArkInstanceFieldRef(use.getBase(), fieldType.getSignature()));
+                            use.setFieldSignature(fieldType.getSignature());
                         }
                         (stmt.getLeftOp() as Local).setType(fieldType.getType())
                     } else if (fieldType instanceof ArkClass) {
@@ -235,7 +235,7 @@ export class TypeInference {
                             leftOpType.setBaseType(new ClassType(itemClass.getSignature()));
                         } else {
                             const signature = ModelUtils.getTypeSignatureInImportInfoWithName(baseType.getName(), arkMethod.getDeclaringArkFile());
-                            if(signature && signature instanceof ClassSignature){
+                            if (signature && signature instanceof ClassSignature) {
                                 leftOpType.setBaseType(new ClassType(signature));
                             }
                         }
