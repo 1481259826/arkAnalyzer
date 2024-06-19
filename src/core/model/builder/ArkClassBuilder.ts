@@ -266,11 +266,10 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
 
     cls.setOriginType("Object");
 
-    let arkFields: ArkField[] = [];
     let arkMethods: ArkMethod[] = [];
     clsNode.properties.forEach((property) => {
         if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property) || ts.isSpreadAssignment(property)) {
-            arkFields.push(buildProperty2ArkField(property, sourceFile, cls));
+            buildProperty2ArkField(property, sourceFile, cls);
         }
         else {
             let arkMethod = new ArkMethod();
@@ -282,7 +281,6 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
     arkMethods.forEach((mtd) => {
         cls.addMethod(mtd);
     });
-    cls.addFields(arkFields);
 }
 
 function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass) {
@@ -304,12 +302,10 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     }
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member) || ts.isEnumMember(member)) {
-            let field = buildProperty2ArkField(member, sourceFile, cls);
-            //checkInitializer(field, cls);
+            buildProperty2ArkField(member, sourceFile, cls);
         }
         else if (ts.isIndexSignatureDeclaration(member)) {
-            let field = buildIndexSignature2ArkField(member, sourceFile, cls);
-            //checkInitializer(field, cls);
+            buildIndexSignature2ArkField(member, sourceFile, cls);
         }
         else if (
             ts.isMethodDeclaration(member) ||
@@ -323,12 +319,11 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
             buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
             cls.addMethod(mthd);
             if (ts.isGetAccessor(member)) {
-                let field = buildGetAccessor2ArkField(member, mthd, sourceFile);
-                //checkInitializer(field, cls);
+                buildGetAccessor2ArkField(member, mthd, sourceFile);
             }
         }
         else if (ts.isSemicolonClassElement(member)) {
-            logger.warn("Skip these members.");
+            logger.debug("Skip these members.");
         }
         else {
             logger.warn("Please contact developers to support new member type!");

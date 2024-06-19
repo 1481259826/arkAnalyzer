@@ -26,7 +26,7 @@ const logger = Logger.getLogger();
 export type PropertyLike = ts.PropertyDeclaration | ts.PropertyAssignment;
 
 export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment
-    | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass): ArkField {
+    | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass) {
     let field = new ArkField();
     field.setFieldType(ts.SyntaxKind[member.kind]);
     field.setCode(member.getText(sourceFile));
@@ -86,10 +86,9 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     }
 
     field.genSignature();
-    return field;
 }
 
-export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls?: ArkClass): ArkField {
+export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls?: ArkClass) {
     let field = new ArkField();
     field.setCode(member.getText(sourceFile));
     field.setFieldType(ts.SyntaxKind[member.kind]);
@@ -113,10 +112,9 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
         cls.addField(field);
     }
     field.genSignature();
-    return field;
 }
 
-export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile): ArkField {
+export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile) {
     let field = new ArkField();
     field.setCode(member.getText(sourceFile));
     if (ts.isIdentifier(member.name)) {
@@ -136,5 +134,4 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
     field.setArkMethodSignature(mthd.getSignature());
     field.genSignature();
     cls.addField(field);
-    return field;
 }
