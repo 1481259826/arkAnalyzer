@@ -66,14 +66,6 @@ class ArkIRTransformerTest {
         scene.inferTypes();
         this.printScene(scene);
 
-        // // get viewTree
-        // for (const arkFile of scene.getFiles()) {
-        //     for (const arkClass of arkFile.getClasses()) {
-        //         const viewTree = arkClass.getViewTree();
-        //         logger.error(`getViewTree of ${arkClass.getName()} done`);
-        //     }
-        // }
-
         logger.error('testStmtsOfSimpleProject end\n');
     }
 

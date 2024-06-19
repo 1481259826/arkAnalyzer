@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest --no-color run",
     "coverage": "vitest run --coverage",
     "gendoc": "npx typedoc"
   },

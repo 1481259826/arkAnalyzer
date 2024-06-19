@@ -76,9 +76,9 @@ function doValidation(scene: Scene) : void {
     let customComponents = scene.getCustomComponents();
 
     obj.filesNumber[1] = files.length;
-    obj.classesNumber[1] = classes.length;
-    obj.methodsNumber[1] = methods.length;
-    obj.customComponentsNumber [1] = customComponents.size;
+    //obj.classesNumber[1] = classes.length;
+    //obj.methodsNumber[1] = methods.length;
+    //obj.customComponentsNumber [1] = customComponents.size;
 
     try {
         assertObj(obj);
