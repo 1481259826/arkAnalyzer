@@ -15,6 +15,7 @@
 
 import {Scene} from "../../Scene";
 import {ClassHierarchyAnalysisAlgorithm} from "../../callgraph/ClassHierarchyAnalysisAlgorithm";
+import { AbstractInvokeExpr } from "../base/Expr";
 import {ArkInstanceFieldRef, ArkStaticFieldRef} from "../base/Ref";
 import {ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt} from "../base/Stmt";
 import {ArkClass} from "../model/ArkClass";
@@ -290,7 +291,14 @@ export abstract class DataflowSolver<D> {
     }
 
     protected isCallStatement(stmt: Stmt): boolean {
-        return stmt.containsInvokeExpr();
+        for (const use of stmt.getUses()) {
+            if (use instanceof AbstractInvokeExpr) {
+                if (this.scene.getFile(use.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     protected isExitStatement(stmt: Stmt): boolean {
