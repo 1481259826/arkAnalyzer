@@ -13,7 +13,5 @@
  * limitations under the License.
  */
 for (let i =0 ;i<1;i++){}
-for (let i of a){}
-for (let i in a){}
     
     
