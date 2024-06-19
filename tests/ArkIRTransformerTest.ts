@@ -99,12 +99,12 @@ class ArkIRTransformerTest {
             // }
         }
 
-        logger.error('--- originalStmts ---');
-        const originalCfg = body.getOriginalCfg();
-        for (const originalStmt of originalCfg.getStmts()) {
-            logger.error(`text: ${originalStmt.toString()}`);
-            logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
-        }
+        // logger.error('--- originalStmts ---');
+        // const originalCfg = body.getOriginalCfg();
+        // for (const originalStmt of originalCfg.getStmts()) {
+        //     logger.error(`text: ${originalStmt.toString()}`);
+        //     logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
+        // }
     }
 
     private printScene(scene: Scene): void {
@@ -129,5 +129,5 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-// arkIRTransformerTest.testStmtsOfSimpleProject();
-arkIRTransformerTest.testStmtsOfEtsProject();
+arkIRTransformerTest.testStmtsOfSimpleProject();
+// arkIRTransformerTest.testStmtsOfEtsProject();

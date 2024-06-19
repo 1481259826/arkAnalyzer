@@ -748,7 +748,10 @@ export class ArkIRTransformer {
         if (className === 'Array') {
             let baseType: Type = AnyType.getInstance();
             if (newExpression.typeArguments && newExpression.typeArguments.length > 0) {
-                baseType = this.resolveTypeNode(newExpression.typeArguments[0]);
+                const argumentType = this.resolveTypeNode(newExpression.typeArguments[0]);
+                if (!(argumentType instanceof AnyType || argumentType instanceof UnknownType)) {
+                    baseType = argumentType;
+                }
             }
 
             let arrayLength = 0;
@@ -763,13 +766,9 @@ export class ArkIRTransformer {
                     argumentValues.push(argumentValue);
                     stmts.push(...argumentStmts);
                 }
-                if ((baseType instanceof AnyType || baseType instanceof UnknownType) && (arrayLength > 1 ||
-                    !(argumentValues[0].getType() instanceof NumberType))) {
-                    baseType = argumentValues[0].getType();
-                }
             }
             let arrayLengthValue: Value = ValueUtil.getOrCreateNumberConst(arrayLength);
-            if (arrayLength === 1 && argumentValues[0].getType() instanceof NumberType) {
+            if (arrayLength === 1) {
                 arrayLengthValue = argumentValues[0];
             }
 
@@ -810,6 +809,8 @@ export class ArkIRTransformer {
     private arrayLiteralExpressionToValueAndStmts(arrayLiteralExpression: ts.ArrayLiteralExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
         const elementTypes: Set<Type> = new Set();
+        const elementValues: Value[] = [];
+        const arrayLength = arrayLiteralExpression.elements.length;
         for (const element of arrayLiteralExpression.elements) {
             let {value: elementValue, stmts: elementStmts} = this.tsNodeToValueAndStmts(element);
             stmts.push(...elementStmts);
@@ -817,18 +818,24 @@ export class ArkIRTransformer {
                 ({value: elementValue, stmts: elementStmts} = this.generateAssignStmtForValue(elementValue));
                 stmts.push(...elementStmts);
             }
+            elementValues.push(elementValue);
             elementTypes.add(elementValue.getType());
         }
 
-        let baseType = UnknownType.getInstance();
+        let baseType = AnyType.getInstance();
         if (elementTypes.size == 1) {
             baseType = elementTypes.keys().next().value;
         } else if (elementTypes.size > 1) {
             baseType = new UnionType(Array.from(elementTypes));
         }
-        const newArrayExpr = new ArkNewArrayExpr(baseType, ValueUtil.getOrCreateNumberConst(elementTypes.size));
+        const newArrayExpr = new ArkNewArrayExpr(baseType, ValueUtil.getOrCreateNumberConst(arrayLength));
         const {value: newArrayValue, stmts: elementStmts} = this.generateAssignStmtForValue(newArrayExpr);
         stmts.push(...elementStmts);
+
+        for (let i = 0; i < arrayLength; i++) {
+            const arrayRef = new ArkArrayRef(newArrayValue as Local, ValueUtil.getOrCreateNumberConst(i));
+            stmts.push(new ArkAssignStmt(arrayRef, elementValues[i]));
+        }
         return {value: newArrayValue, stmts: stmts};
     }
 
