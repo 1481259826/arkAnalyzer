@@ -975,18 +975,27 @@ export class CfgBuilder {
                     block.addStmt(originalStmt);
                 }
             }
-            originalCfg.addBlock(block);
 
-            // build the map
-            blockBuilderToBlock.set(blockBuilder, block);
+            if (block.getStmts().length !== 0) {
+                originalCfg.addBlock(block);
+                blockBuilderToBlock.set(blockBuilder, block);
+            }
+        }
+
+        for (const blockBuilder of blockBuilderToBlock.keys()) {
+            if (blockBuilder.stmts.length === 0) {
+                blockBuilderToBlock.delete(blockBuilder);
+            }
         }
 
         // link block
         for (const [blockBuilder, block] of blockBuilderToBlock) {
             for (const successorBuilder of blockBuilder.nexts) {
-                const successorBlock = blockBuilderToBlock.get(successorBuilder) as BasicBlock;
-                successorBlock.addPredecessorBlock(block);
-                block.addSuccessorBlock(successorBlock);
+                const successorBlock = blockBuilderToBlock.get(successorBuilder);
+                if (successorBlock) {
+                    successorBlock.addPredecessorBlock(block);
+                    block.addSuccessorBlock(successorBlock);
+                }
             }
         }
 
@@ -998,10 +1007,10 @@ export class CfgBuilder {
         let cfg = new Cfg();
         cfg.declaringClass = this.declaringClass;
         const inBuildMethod = this.arkIRTransformer.isInBuildMethod();
-        let blockBuilderToBlock = new Map<Block, BasicBlock>();
+        const blockBuilderToBlock = new Map<Block, BasicBlock>();
         let isStartingStmt = true;
         for (const blockBuilder of this.blocks) {
-            let block = new BasicBlock();
+            const block = new BasicBlock();
             for (const stmtBuilder of blockBuilder.stmts) {
                 for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
                     if (isStartingStmt) {
@@ -1016,18 +1025,21 @@ export class CfgBuilder {
                     threeAddressStmt.setCfg(cfg);
                 }
             }
-            cfg.addBlock(block);
 
-            // build the map
-            blockBuilderToBlock.set(blockBuilder, block);
+            if (block.getStmts().length !== 0) {
+                cfg.addBlock(block);
+                blockBuilderToBlock.set(blockBuilder, block);
+            }
         }
 
         // link block
         for (const [blockBuilder, block] of blockBuilderToBlock) {
             for (const successorBuilder of blockBuilder.nexts) {
-                let successorBlock = blockBuilderToBlock.get(successorBuilder) as BasicBlock;
-                successorBlock.addPredecessorBlock(block);
-                block.addSuccessorBlock(successorBlock);
+                const successorBlock = blockBuilderToBlock.get(successorBuilder);
+                if (successorBlock) {
+                    successorBlock.addPredecessorBlock(block);
+                    block.addSuccessorBlock(successorBlock);
+                }
             }
         }
 
