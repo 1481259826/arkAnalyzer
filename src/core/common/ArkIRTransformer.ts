@@ -787,7 +787,7 @@ export class ArkIRTransformer {
                     stmts.push(new ArkAssignStmt(arrayRef, argumentValues[i]));
                 }
             }
-            
+
             return {value: arrayExprValue, stmts: stmts};
         } else {
             const classSignature = new ClassSignature();
@@ -1264,6 +1264,8 @@ export class ArkIRTransformer {
                 return NeverType.getInstance();
             case ts.SyntaxKind.TypeReference:
                 return new UnclearReferenceType(type.getText(this.sourceFile));
+            case ts.SyntaxKind.ArrayType:
+                return new ArrayType(this.resolveTypeNode((type as ts.ArrayTypeNode).elementType), 1);
         }
         return UnknownType.getInstance();
     }

@@ -123,21 +123,24 @@
 //
 
 // global as size
-let sz3 = 3;
+// let sz3 = 3;
 
 function main() {
-    let sz1 = 1;
-    let arr1 = new Array(sz1);
-    let arr2 = new Array(2);
-    let arr3 = new Array(sz3);
+    // let sz1 = 1;
+    // let arr1 = new Array(sz1);
+    // let arr2 = new Array(2);
+    // let arr3 = new Array(sz3);
+    //
+    // let arr4 = [1, 2, 3];
+    // let arr5 = [];
+    //
+    // let arr6 = new Array();
+    //
+    // let arr7 = new Array(1, 2, 3);
+    // let arr8 = [1, 2, '3'];
 
-    let arr4 = [1, 2, 3];
-    let arr5 = [];
-
-    let arr6 = new Array();
-
-    let arr7 = new Array(1, 2, 3);
-    let arr8 = [1, 2, '3'];
+    let arr9:number[] = [];
+    let arr10:any[] = [];
 }
 
 // // ConditionalExpression
