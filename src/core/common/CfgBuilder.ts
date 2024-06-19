@@ -333,6 +333,7 @@ export class CfgBuilder {
                 let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder('ifStatement', '', c, scope.id);
                 judgeLastType(ifstm);
                 let ifexit: StatementBuilder = new StatementBuilder('ifExit', '', c, scope.id);
+                this.exits.push(ifexit);
                 ifstm.condition = c.expression.getText(this.sourceFile);
                 ifstm.code = 'if (' + ifstm.condition + ')';
                 if (ts.isBlock(c.thenStatement)) {
