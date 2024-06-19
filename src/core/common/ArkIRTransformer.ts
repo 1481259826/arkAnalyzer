@@ -88,7 +88,6 @@ import {
 } from './EtsConst';
 import { tsNode2Value } from '../model/builder/builderUtils';
 import { LineColPosition } from '../base/Position';
-import { ArrayTypeNode } from 'ohos-typescript';
 
 const logger = Logger.getLogger();
 
