@@ -137,7 +137,26 @@
 //     let a = 1 ? 10 : 0;
 // }
 
-function main(i: number) {
-    let arr = [1, 2, 3];
-    let b = ~arr[0] + 1;
+// function main(i: number) {
+//     if (1) {
+//         let a = 1;
+//         if (1) {
+//             let b = 2;
+//             if (b = 3) {
+//                 let c = 4;
+//             }
+//         }
+//         let d = 4;
+//     } else {
+//         let e = 5;
+//     }
+//     let f = 5;
+// }
+
+function main() {
+    // let arr = [1, 2];
+    // let a = ~arr[0] + 1;
+
+    let a = 1;
+    let b = -a + 1;
 }
