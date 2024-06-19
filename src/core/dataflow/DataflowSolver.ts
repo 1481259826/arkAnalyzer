@@ -291,9 +291,9 @@ export abstract class DataflowSolver<D> {
     }
 
     protected isCallStatement(stmt: Stmt): boolean {
-        for (const use of stmt.getUses()) {
-            if (use instanceof AbstractInvokeExpr) {
-                if (this.scene.getFile(use.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature())) {
+        for (const expr of stmt.getExprs()) {
+            if (expr instanceof AbstractInvokeExpr) {
+                if (this.scene.getFile(expr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature())) {
                     return true;
                 }
             }

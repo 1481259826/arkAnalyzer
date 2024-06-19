@@ -363,11 +363,11 @@ export class CfgBuilder {
                 this.loopStack.push(loopstm);
                 judgeLastType(loopstm);
                 let loopExit = new StatementBuilder('loopExit', '', c, scope.id);
-                this.exits.push(loopExit);
+                this.exits.push(loopExit); 
                 loopstm.nextF = loopExit;
                 loopExit.lasts.add(loopstm);
                 loopstm.condition = c.expression.getText(this.sourceFile);
-                loopstm.code = 'if (' + loopstm.condition + ')';
+                loopstm.code = 'while (' + loopstm.condition + ')';
                 if (ts.isBlock(c.statement)) {
                     this.walkAST(loopstm, loopstm, [...c.statement.statements]);
                 } else {
@@ -393,13 +393,15 @@ export class CfgBuilder {
                 this.exits.push(loopExit);
                 loopstm.nextF = loopExit;
                 loopExit.lasts.add(loopstm);
+                loopstm.code = 'for (';
                 if (ts.isForStatement(c)) {
-                    loopstm.code = c.initializer?.getText(this.sourceFile) + '; ' + c.condition?.getText(this.sourceFile) + '; ' + c.incrementor?.getText(this.sourceFile);
+                    loopstm.code += c.initializer?.getText(this.sourceFile) + '; ' + c.condition?.getText(this.sourceFile) + '; ' + c.incrementor?.getText(this.sourceFile);
                 } else if (ts.isForOfStatement(c)) {
-                    loopExit.code = c.initializer?.getText(this.sourceFile) + ' of ' + c.expression.getText(this.sourceFile);
+                    loopstm.code += c.initializer?.getText(this.sourceFile) + ' of ' + c.expression.getText(this.sourceFile);
                 } else {
-                    loopExit.code = c.initializer?.getText(this.sourceFile) + ' in ' + c.expression.getText(this.sourceFile);
+                    loopstm.code += c.initializer?.getText(this.sourceFile) + ' in ' + c.expression.getText(this.sourceFile);
                 }
+                loopstm.code += ')'
                 if (ts.isBlock(c.statement)) {
                     this.walkAST(loopstm, loopstm, [...c.statement.statements]);
                 } else {
@@ -452,7 +454,7 @@ export class CfgBuilder {
                 let switchExit = new StatementBuilder('switchExit', '', null, scope.id);
                 this.exits.push(switchExit);
                 this.switchExitStack.push(switchExit);
-                switchExit.code = 'switch (' + c.expression + ')';
+                switchstm.code = 'switch (' + c.expression + ')';
                 let lastCaseExit: StatementBuilder | null = null;
                 for (let i = 0; i < c.caseBlock.clauses.length; i++) {
                     const clause = c.caseBlock.clauses[i];
