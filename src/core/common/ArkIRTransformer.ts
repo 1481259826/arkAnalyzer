@@ -649,6 +649,10 @@ export class ArkIRTransformer {
             ({value: baseValue, stmts: baseStmts} = this.generateAssignStmtForValue(baseValue));
             stmts.push(...baseStmts);
         }
+        if (!(baseValue instanceof Local)) {
+            ({value: baseValue, stmts: baseStmts} = this.generateAssignStmtForValue(baseValue));
+            stmts.push(...baseStmts);
+        }
         const fieldSignature = new FieldSignature();
         fieldSignature.setFieldName(propertyAccessExpression.name.getText(this.sourceFile));
         const fieldRef = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
@@ -1156,7 +1160,9 @@ export class ArkIRTransformer {
                 constant = ValueUtil.createStringConst((literalNode as ts.StringLiteral).text);
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral:
-                constant = ValueUtil.createStringConst((literalNode as ts.RegularExpressionLiteral).text);
+                const classSignature = new ClassSignature();
+                classSignature.setClassName('RegExp');
+                constant = new Constant((literalNode as ts.RegularExpressionLiteral).text, classSignature.getType());
                 break;
             case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 constant = ValueUtil.createStringConst((literalNode as ts.NoSubstitutionTemplateLiteral).text);
