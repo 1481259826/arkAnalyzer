@@ -63,7 +63,7 @@ class StateValuesUtils {
         return new StateValuesUtils(declaringArkClass);
     }
 
-    private parseMethodUsesStateValues(methodSignature: MethodSignature, uses: Set<ArkField>, visitor: Set<MethodSignature> = new Set()) {
+    private parseMethodUsesStateValues(methodSignature: MethodSignature, uses: Set<ArkField>, visitor: Set<MethodSignature | Stmt> = new Set()) {
         if (visitor.has(methodSignature)) {
             return;
         }
@@ -78,7 +78,11 @@ class StateValuesUtils {
         }
     }
 
-    public parseStmtUsesStateValues(stmt: Stmt, uses: Set<ArkField> = new Set(), wholeMethod: boolean = false, visitor: Set<MethodSignature> = new Set()) {
+    public parseStmtUsesStateValues(stmt: Stmt, uses: Set<ArkField> = new Set(), wholeMethod: boolean = false, visitor: Set<MethodSignature | Stmt> = new Set()): Set<ArkField> {
+        if (visitor.has(stmt)) {
+            return uses;
+        }
+        visitor.add(stmt);
         for (const v of stmt.getUses()) {
             if (v instanceof ArkInstanceFieldRef) {
                 let field = this.declaringArkClass.getField(v.getFieldSignature());
