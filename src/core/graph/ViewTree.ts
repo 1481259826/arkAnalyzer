@@ -320,7 +320,11 @@ export class ViewTreeNode {
 
     }
 
-    private getBindValues(local: Local, relationValues: (Constant | ArkInstanceFieldRef | MethodSignature)[]) {
+    private getBindValues(local: Local, relationValues: (Constant | ArkInstanceFieldRef | MethodSignature)[], visitor: Set<Local> = new Set()) {
+        if (visitor.has(local)) {
+            return;
+        }
+        visitor.add(local);
         const stmt = local.getDeclaringStmt();
         if (!stmt) {
             let type = local.getType();
@@ -335,7 +339,7 @@ export class ViewTreeNode {
             } else if (v instanceof ArkInstanceFieldRef) {
                 relationValues.push(v);
             } else if (v instanceof Local) {
-                this.getBindValues(v, relationValues);
+                this.getBindValues(v, relationValues, visitor);
             }
         }
     }
