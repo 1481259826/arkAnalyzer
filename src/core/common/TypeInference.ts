@@ -110,7 +110,7 @@ export class TypeInference {
                         } else {
                             use.setFieldSignature(fieldType.getSignature());
                         }
-                        (stmt.getLeftOp() as Local).setType(fieldType.getType())
+                        (stmt.getLeftOp() as Local).setType(stmt.getRightOp().getType())
                     } else if (fieldType instanceof ArkClass) {
                         (stmt.getLeftOp() as Local).setType(fieldType.getSignature())
                     }
