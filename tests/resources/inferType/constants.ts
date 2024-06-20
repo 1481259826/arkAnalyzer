@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-for (let i =0 ;i<1;i++){}
-    
-    
+
+export class Constants {
+    public static readonly ARRAY_SIZE: number = 9999;
+    public static readonly INDEX_SIZE: number = 9999;
+}

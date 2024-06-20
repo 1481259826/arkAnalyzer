@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-for (let i =0 ;i<1;i++){}
-    
-    
+
+import { Constants } from "./constants";
+
+function test_new_array(): void {
+    let arr11: number[] = new Array(Constants.ARRAY_SIZE);
+}
