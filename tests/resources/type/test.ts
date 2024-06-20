@@ -12,19 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-        if (1) {
-            let a = 1;
-            if (1) {
-                let b = 2;
-                if (b = 3) {
-                    let c = 4;
-                }
-            }
-            let d = 4;
-        } else {
-            let e = 5;
-        }
-        let f = 5;
+for (let i =0 ;i<1;i++){}
     
     
