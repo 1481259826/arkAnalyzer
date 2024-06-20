@@ -40,5 +40,6 @@ describe("Infer Array Test", () => {
         assert.isTrue(stmt instanceof ArkAssignStmt);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkNewArrayExpr);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp().getType() instanceof ArrayType);
+        assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ArrayType);
     })
 })
