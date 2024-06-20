@@ -24,6 +24,7 @@ import {
     AnyType,
     ArrayType,
     BooleanType,
+    CallableType,
     ClassType,
     NeverType,
     NullType,
@@ -37,7 +38,7 @@ import {
     VoidType
 } from "../base/Type";
 import { ArkMethod } from "../model/ArkMethod";
-import { ClassSignature } from "../model/ArkSignature";
+import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
 import { ModelUtils } from "./ModelUtils";
 import { ArkField } from '../model/ArkField';
 import { ArkClass } from '../model/ArkClass';
@@ -187,6 +188,12 @@ export class TypeInference {
                     ?? ModelUtils.getTypeSignatureInImportInfoWithName(fieldTypeName, arkMethod.getDeclaringArkFile());
                 if (signature instanceof ClassSignature) {
                     fieldType = new ClassType(signature);
+                } else if (signature instanceof NamespaceSignature) {
+                    let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
+                    namespaceType.setNamespaceSignature(signature);
+                    fieldType = namespaceType;
+                } else if (signature instanceof MethodSignature) {
+                    fieldType = new CallableType(signature);
                 }
                 arkField.setType(fieldType);
             }
@@ -211,6 +218,12 @@ export class TypeInference {
                             leftOp.setType(stmt.getRightOp().getType());
                         } else if (classSignature instanceof ClassSignature) {
                             leftOp.setType(new ClassType(classSignature));
+                        } else if (classSignature instanceof NamespaceSignature) {
+                            let namespaceType = new AnnotationNamespaceType(classSignature.getNamespaceName());
+                            namespaceType.setNamespaceSignature(classSignature);
+                            leftOp.setType(namespaceType);
+                        } else if (classSignature instanceof MethodSignature) {
+                            leftOp.setType(new CallableType(classSignature));
                         }
                     }
                 } else if (leftOpType instanceof UnknownType) {
@@ -226,6 +239,12 @@ export class TypeInference {
                                 leftOp.setType(stmt.getRightOp().getType());
                             } else if (classSignature instanceof ClassSignature) {
                                 leftOp.setType(new ClassType(classSignature));
+                            } else if (classSignature instanceof NamespaceSignature) {
+                                let namespaceType = new AnnotationNamespaceType(classSignature.getNamespaceName());
+                                namespaceType.setNamespaceSignature(classSignature);
+                                leftOp.setType(namespaceType);
+                            } else if (classSignature instanceof MethodSignature) {
+                                leftOp.setType(new CallableType(classSignature));
                             }
                         } else {
                             leftOp.setType(rightOpType)

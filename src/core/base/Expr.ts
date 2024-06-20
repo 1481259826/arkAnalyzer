@@ -242,6 +242,8 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
             const type = ModelUtils.getTypeSignatureInImportInfoWithName(methodName, arkMethod.getDeclaringArkFile());
             if (type && type instanceof MethodSignature) {
                 method = arkMethod.getDeclaringArkFile().getScene().getMethod(type);
+            } else if (type && type instanceof ClassSignature) {
+                method = arkMethod.getDeclaringArkFile().getScene().getClass(type)?.getMethodWithName('constructor') || null;
             }
         }
         if (method) {
