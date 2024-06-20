@@ -30,6 +30,7 @@ class test {
 
 }
 
-export default test;
+let sTest = new test();
+export default sTest as test;
 
 

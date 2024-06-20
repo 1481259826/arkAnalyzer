@@ -141,7 +141,7 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
     if (fromInfo.isDefault()) {
         exportInfo = file.getExportInfos().find(p => p.isDefault());
         if (exportInfo) {
-            return exportInfo;
+            return setTypeForExportInfo(exportInfo);
         }
         if (file.getName().endsWith('.d.ts')) {
             return buildDefaultClassExportInfo(fromInfo, file);
@@ -300,17 +300,19 @@ function getOriginArkFile(fromInfo: FromInfo) {
         generateModuleMap(fromInfo.getDeclaringArkFile());
     }
     let index: number;
+    let file;
+    let modulePath;
     if ((index = from.indexOf('src')) > 0 || (index = from.indexOf('Index')) > 0 || (index = from.indexOf('index')) > 0) {
-        const modulePath = moduleMap.get(from.substring(0, index).replace(/\/*$/, '')) ?? '';
-        return getArkFileFromScene(fromInfo, path.join(modulePath ?? '', from.substring(index)));
+        modulePath = moduleMap.get(from.substring(0, index).replace(/\/*$/, '')) ?? '';
+        file = getArkFileFromScene(fromInfo, path.join(modulePath ?? '', from.substring(index)));
     } else {
-        const modulePath = moduleMap.get(from) ?? '';
-        const file = getArkFileFromScene(fromInfo, path.join(modulePath, 'index.ets')) ?? getArkFileFromScene(fromInfo, path.join(modulePath, 'Index.ets'))
-        if (file) {
-            return file;
-        } else {
-            return getArkFileFromScene(fromInfo, path.join(modulePath, '/src/main/ets/TsIndex.ts'));
-        }
+        modulePath = moduleMap.get(from) ?? '';
+        file = getArkFileFromScene(fromInfo, path.join(modulePath, 'index.ets')) ?? getArkFileFromScene(fromInfo, path.join(modulePath, 'Index.ets'))
+    }
+    if (file && findExportInfoInfile(fromInfo, file)) {
+        return file;
+    } else {
+        return getArkFileFromScene(fromInfo, path.join(modulePath, '/src/main/ets/TsIndex.ts'));
     }
 }
 

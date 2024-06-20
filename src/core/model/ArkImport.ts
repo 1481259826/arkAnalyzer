@@ -48,9 +48,6 @@ export class ImportInfo implements FromInfo {
             this.addModifier(modifier);
         });
         this.setNameBeforeAs(nameBeforeAs);
-        if (this.checkDefault()) {
-            this.addModifier('DefaultKeyword');
-        }
     }
 
     public getOriginName(): string {
@@ -136,10 +133,6 @@ export class ImportInfo implements FromInfo {
     }
 
     public isDefault(): boolean {
-        return this.modifiers.has('DefaultKeyword');
-    }
-
-    private checkDefault(): boolean {
         if (this.nameBeforeAs === 'default') {
             return true;
         }
