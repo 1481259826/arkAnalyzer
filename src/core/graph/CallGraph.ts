@@ -18,18 +18,26 @@ import { MethodSignature } from '../model/ArkSignature'
 import { Stmt, ArkInvokeStmt } from '../base/Stmt'
 
 export type Method = MethodSignature;
-type StmtSet = Set<Stmt>;
 export type CallSiteID = number;
 export type CallSite = [Stmt, Method];
+type StmtSet = Set<Stmt>;
 
 export class CallGraphEdge extends BaseEdge {
     private directCalls: StmtSet;
     private indirectCalls: StmtSet;
     private callSiteID: CallSiteID;
 
-    constructor(src: CallGraphNode, dst: CallGraphNode, kind: number, csID: CallSiteID) {
-        super(src, dst, kind);
+    constructor(src: CallGraphNode, dst: CallGraphNode, csID: CallSiteID) {
+        super(src, dst, 0);
         this.callSiteID = csID;
+    }
+
+    public addDirectCallSite(stmt: Stmt) {
+        this.directCalls.add(stmt);
+    }
+
+    public addInDirectCallSite(stmt: Stmt) {
+        this.indirectCalls.add(stmt);
     }
 }
 
@@ -50,7 +58,6 @@ export class CallGraph extends BaseGraph {
     private idToCallSiteMap: Map<CallSiteID, CallSite>;
     private callSiteToIdMap: Map<CallSite, CallSiteID>;
     private methodToCGNodeMap: Map<Method, CallGraphNode>;
-    private nodeNum: number = 0;
     private callSiteNum: number = 0;
     private directCallEdgeNum: number;
     private inDirectCallEdgeNum: number;
@@ -73,7 +80,7 @@ export class CallGraph extends BaseGraph {
         }
 
         return n;
-    }
+    } 
 
     public addDirectCallEdge(caller: Method, callee: Method, callStmt: Stmt): void {
         let callerNode = this.getCallGraphNodeByMethod(caller) as CallGraphNode;
@@ -90,7 +97,8 @@ export class CallGraph extends BaseGraph {
         }
 
         // TODO: check if edge exists 
-        let callEdge = new CallGraphEdge(callerNode, calleeNode, 0, csID);
+        let callEdge = new CallGraphEdge(callerNode, calleeNode, csID);
+        callEdge.addDirectCallSite(callStmt);
         callEdge.getSrcNode().addOutgoingEdge(callEdge);
         callEdge.getDstNode().addIncomingEdge(callEdge);
     }

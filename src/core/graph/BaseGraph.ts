@@ -104,8 +104,8 @@ export class BaseNode {
 }
 
 export class BaseGraph {
-    private edgeNum: number;
-    private nodeNum: number = 0;
+    protected edgeNum: number;
+    protected nodeNum: number = 0;
     protected idToNodeMap: Map<NodeID, BaseNode>;
 
     public addNode(n: BaseNode): void {
