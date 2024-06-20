@@ -195,7 +195,11 @@ export class ViewTreeNode {
         this.type = ViewTreeNodeType.Builder;
         this.signature = builder.getSignature();
         this.classSignature = this.signature;
-        this.children.push(builder.getViewTree().getRoot());
+        if (builder.getViewTree().getRoot()) {
+            this.children.push(builder.getViewTree().getRoot());
+        } else {
+            logger.error(`ViewTree->changeBuilderParam2BuilderNode ${builder.getSignature().toString()} @Builder viewtree fail.`);
+        }
     }
 
     /**
@@ -648,7 +652,7 @@ export class ViewTree extends TreeNodeStack {
         }
 
         let builderViewTree = method.getViewTree();
-        if (!builderViewTree) {
+        if (!builderViewTree || !builderViewTree.getRoot()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
             return;
         }
@@ -738,7 +742,7 @@ export class ViewTree extends TreeNodeStack {
         }
 
         let componentViewTree = cls.getViewTree();
-        if (!componentViewTree) {
+        if (!componentViewTree || !componentViewTree.getRoot()) {
             logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
             return;
         }
