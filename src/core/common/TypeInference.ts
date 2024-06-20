@@ -99,21 +99,33 @@ export class TypeInference {
             }
         }
 
-        for (let use of stmt.getUses()) {
+        for (const use of stmt.getUses()) {
             if (use instanceof ArkInstanceFieldRef) {
                 let fieldType = this.handleClassField(use, arkMethod);
                 if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() instanceof Local && fieldType != undefined) {
-                    if (fieldType instanceof ArkField) {
-                        if (fieldType.getModifiers().has("StaticKeyword")) {
-                            stmt.replaceUse(use, new ArkStaticFieldRef(fieldType.getSignature()));
-                            stmt.setRightOp(stmt.getRightOp());
-                        } else {
-                            use.setFieldSignature(fieldType.getSignature());
+                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
+                        if (fieldType instanceof ArkField) {
+                            if (fieldType.getModifiers().has("StaticKeyword")) {
+                                stmt.setRightOp(new ArkStaticFieldRef(fieldType.getSignature()))
+                            } else {
+                                stmt.setRightOp(new ArkInstanceFieldRef(use.getBase(), fieldType.getSignature()));
+                            }
+                            (stmt.getLeftOp() as Local).setType(fieldType.getType())
+                        } else if (fieldType instanceof ArkClass) {
+                            (stmt.getLeftOp() as Local).setType(fieldType.getSignature())
                         }
-                        (stmt.getLeftOp() as Local).setType(stmt.getRightOp().getType())
-                    } else if (fieldType instanceof ArkClass) {
-                        (stmt.getLeftOp() as Local).setType(fieldType.getSignature())
+                    } else {
+                        if (fieldType instanceof ArkField) {
+                            if (fieldType.getModifiers().has("StaticKeyword")) {
+                                stmt.replaceUse(use, new ArkStaticFieldRef(fieldType.getSignature()));
+                                stmt.setRightOp(stmt.getRightOp());
+                            } else {
+                                use.setFieldSignature(fieldType.getSignature());
+                            }
+                        }
+                        (stmt.getLeftOp() as Local).setType(stmt.getRightOp().getType());
                     }
+
                 }
             }
         }

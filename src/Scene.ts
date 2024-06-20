@@ -291,7 +291,13 @@ export class Scene {
     }
 
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
-        return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
+        if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+            return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
+        } else if ('etsSdk' === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+            const arkFile = this.sdkArkFilesMap.get(namespaceSignature.getDeclaringFileSignature().toString());
+            return arkFile?.getNamespace(namespaceSignature) || null;
+        }
+        return null;
     }
 
     private getNamespacesMap(): Map<string, ArkNamespace> {

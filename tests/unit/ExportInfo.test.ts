@@ -36,3 +36,11 @@ describe("export Test", () => {
         assert.equal(file?.getImportInfos().length, 17);
     })
 })
+
+describe("function Test", () => {
+    it('debug case', () => {
+        const s = '@ohos/test//'
+        let lw = s.replace(/\/*$/, '');
+        assert.equal(lw, '@ohos/test')
+    })
+})
