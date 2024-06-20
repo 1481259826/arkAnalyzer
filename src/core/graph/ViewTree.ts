@@ -63,7 +63,7 @@ class StateValuesUtils {
         return new StateValuesUtils(declaringArkClass);
     }
 
-    private parseMethodUsesStateValues(methodSignature: MethodSignature, uses: Set<ArkField>, visitor: Set<MethodSignature> = new Set()) {
+    private parseMethodUsesStateValues(methodSignature: MethodSignature, uses: Set<ArkField>, visitor: Set<MethodSignature | Stmt> = new Set()) {
         if (visitor.has(methodSignature)) {
             return;
         }
@@ -78,7 +78,11 @@ class StateValuesUtils {
         }
     }
 
-    public parseStmtUsesStateValues(stmt: Stmt, uses: Set<ArkField> = new Set(), wholeMethod: boolean = false, visitor: Set<MethodSignature> = new Set()) {
+    public parseStmtUsesStateValues(stmt: Stmt, uses: Set<ArkField> = new Set(), wholeMethod: boolean = false, visitor: Set<MethodSignature | Stmt> = new Set()): Set<ArkField> {
+        if (visitor.has(stmt)) {
+            return uses;
+        }
+        visitor.add(stmt);
         for (const v of stmt.getUses()) {
             if (v instanceof ArkInstanceFieldRef) {
                 let field = this.declaringArkClass.getField(v.getFieldSignature());
@@ -195,7 +199,11 @@ export class ViewTreeNode {
         this.type = ViewTreeNodeType.Builder;
         this.signature = builder.getSignature();
         this.classSignature = this.signature;
-        this.children.push(builder.getViewTree().getRoot());
+        if (builder.getViewTree().getRoot()) {
+            this.children.push(builder.getViewTree().getRoot());
+        } else {
+            logger.error(`ViewTree->changeBuilderParam2BuilderNode ${builder.getSignature().toString()} @Builder viewtree fail.`);
+        }
     }
 
     /**
@@ -257,7 +265,7 @@ export class ViewTreeNode {
     /**
      * @internal
      */
-    public clone(parent: ViewTreeNode): ViewTreeNode {
+    public clone(parent: ViewTreeNode, map: Map<ViewTreeNode, ViewTreeNode> = new Map()): ViewTreeNode {
         let newNode = new ViewTreeNode(this.name);
         newNode.attributes = this.attributes;
         newNode.stmts = newNode.attributes;
@@ -268,9 +276,14 @@ export class ViewTreeNode {
         newNode.classSignature = newNode.signature;
         newNode.builderParam = this.builderParam;
         newNode.builder = this.builder;
+        map.set(this, newNode);
 
         for (const child of this.children) {
-            newNode.children.push(child.clone(newNode));
+            if (map.has(child)) {
+                newNode.children.push(map.get(child)!);
+            } else {
+                newNode.children.push(child.clone(newNode, map));
+            }
         }
 
         return newNode;
@@ -316,7 +329,11 @@ export class ViewTreeNode {
 
     }
 
-    private getBindValues(local: Local, relationValues: (Constant | ArkInstanceFieldRef | MethodSignature)[]) {
+    private getBindValues(local: Local, relationValues: (Constant | ArkInstanceFieldRef | MethodSignature)[], visitor: Set<Local> = new Set()) {
+        if (visitor.has(local)) {
+            return;
+        }
+        visitor.add(local);
         const stmt = local.getDeclaringStmt();
         if (!stmt) {
             let type = local.getType();
@@ -331,7 +348,7 @@ export class ViewTreeNode {
             } else if (v instanceof ArkInstanceFieldRef) {
                 relationValues.push(v);
             } else if (v instanceof Local) {
-                this.getBindValues(v, relationValues);
+                this.getBindValues(v, relationValues, visitor);
             }
         }
     }
@@ -648,7 +665,7 @@ export class ViewTree extends TreeNodeStack {
         }
 
         let builderViewTree = method.getViewTree();
-        if (!builderViewTree) {
+        if (!builderViewTree || !builderViewTree.getRoot()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
             return;
         }
@@ -738,7 +755,7 @@ export class ViewTree extends TreeNodeStack {
         }
 
         let componentViewTree = cls.getViewTree();
-        if (!componentViewTree) {
+        if (!componentViewTree || !componentViewTree.getRoot()) {
             logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
             return;
         }
