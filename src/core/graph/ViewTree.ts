@@ -265,7 +265,7 @@ export class ViewTreeNode {
     /**
      * @internal
      */
-    public clone(parent: ViewTreeNode): ViewTreeNode {
+    public clone(parent: ViewTreeNode, map: Map<ViewTreeNode, ViewTreeNode> = new Map()): ViewTreeNode {
         let newNode = new ViewTreeNode(this.name);
         newNode.attributes = this.attributes;
         newNode.stmts = newNode.attributes;
@@ -276,9 +276,14 @@ export class ViewTreeNode {
         newNode.classSignature = newNode.signature;
         newNode.builderParam = this.builderParam;
         newNode.builder = this.builder;
+        map.set(this, newNode);
 
         for (const child of this.children) {
-            newNode.children.push(child.clone(newNode));
+            if (map.has(child)) {
+                newNode.children.push(map.get(child)!);
+            } else {
+                newNode.children.push(child.clone(newNode, map));
+            }
         }
 
         return newNode;
