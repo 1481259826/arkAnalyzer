@@ -1,21 +1,22 @@
-
+export type NodeID = number;
+export type Kind = number;
 
 export class BaseEdge {
     private src: BaseNode;
     private dst: BaseNode;
-    private kind: number;
+    private kind: Kind;
 
-    constructor(s: BaseNode, d: BaseNode, k: number) {
+    constructor(s: BaseNode, d: BaseNode, k: Kind) {
         this.src = s;
         this.dst = d;
         this.kind = k;
     }
 
-    public getSrcID(): number {
+    public getSrcID(): NodeID {
         return this.src.getID();
     }
 
-    public getDstID(): number {
+    public getDstID(): NodeID {
         return this.dst.getID();
     }
 
@@ -27,27 +28,27 @@ export class BaseEdge {
         return this.dst;
     }
 
-    public getKind(): number {
+    public getKind(): Kind {
         return this.kind;
     }
 }
 
 export class BaseNode {
-    private id: number;
-    private kind: number;
+    private id: NodeID;
+    private kind: Kind;
     private inEdges: BaseEdge[];
     private outEdges: BaseEdge[];
 
-    constructor(id: number, k: number) {
+    constructor(id: NodeID, k: Kind) {
         this.id = id;
         this.kind = k;
     }
 
-    public getID(): number {
+    public getID(): NodeID {
         return this.id;
     }
 
-    public getKind(): number {
+    public getKind(): Kind {
         return this.kind;
     }
 
@@ -90,22 +91,22 @@ export class BaseNode {
 export class BaseGraph {
     private edgeNum: number;
     private nodeNum: number = 0;
-    protected idToNodeMap: Map<number, BaseNode>;
+    protected idToNodeMap: Map<NodeID, BaseNode>;
 
     public addNode(n: BaseNode): void {
         this.idToNodeMap.set(n.getID(), n);
         this.nodeNum++;
     }
 
-    public getNode(id: number): BaseNode|undefined {
+    public getNode(id: NodeID): BaseNode | undefined {
         return this.idToNodeMap.get(id);
     }
 
-    public hasNode(id: number): boolean {
+    public hasNode(id: NodeID): boolean {
         return this.idToNodeMap.has(id);
     }
 
-    public removeNode(id: number): boolean {
+    public removeNode(id: NodeID): boolean {
         if(this.idToNodeMap.delete(id)) {
             this.nodeNum--;
             return true;
