@@ -274,9 +274,6 @@ export class ArkMethod implements ArkExport {
     }
 
     public getViewTree(): ViewTree {
-        if (this.hasViewTree() && !this.viewTree.isInitialized()) {
-            this.viewTree.buildViewTree();
-        }
         return this.viewTree;
     }
 

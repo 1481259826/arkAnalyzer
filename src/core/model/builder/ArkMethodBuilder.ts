@@ -15,7 +15,7 @@
 
 import { Type } from "../../base/Type";
 import { BodyBuilder } from "../../common/BodyBuilder";
-import { ViewTree } from "../../graph/ViewTree";
+import { buildViewTree } from "../../graph/builder/ViewTreeBuilder";
 import { ArkClass } from "../ArkClass";
 import { Decorator } from "../../base/Decorator";
 import { ArkMethod } from "../ArkMethod";
@@ -102,11 +102,11 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setBodyBuilder(bodyBuilder);
 
     if (mtd.hasBuilderDecorator()) {
-        mtd.setViewTree(new ViewTree(mtd));
+        mtd.setViewTree(buildViewTree(mtd));
     } else if (declaringClass.hasComponentDecorator() &&
         mtd.getSubSignature().toString() == 'build()' &&
         !mtd.containsModifier('StaticKeyword')) {
-        declaringClass.setViewTree(new ViewTree(mtd));
+        declaringClass.setViewTree(buildViewTree(mtd));
     }
 
     declaringClass.addMethod(mtd);
