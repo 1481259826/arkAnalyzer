@@ -718,12 +718,28 @@ export class ArkIRTransformer {
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
             // temp for component
-            if (this.declaringMethod.getDeclaringArkFile().getScene().isCustomComponents(callerName)) {
+            let cls = this.declaringMethod.getDeclaringArkFile().getClassWithName(callerName);
+            if (cls?.hasComponentDecorator()) {
                 return this.createCustomViewStmt(callerName, args, callExpression);
-            } else {
-                methodSignature.getMethodSubSignature().setMethodName(callerName);
-                invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
             }
+
+            for (const ns of this.declaringMethod.getDeclaringArkFile().getAllNamespacesUnderThisFile()) {
+                cls = ns.getClassWithName(callerName);
+                if (cls?.hasComponentDecorator()) {
+                    return this.createCustomViewStmt(callerName, args, callExpression);
+                }
+            } 
+            let exportInfo = this.declaringMethod.getDeclaringArkFile().getImportInfoBy(callerName)?.getLazyExportInfo();
+            let typeSignature = exportInfo?.getTypeSignature();
+            if (typeSignature instanceof ClassSignature) {
+                let cls = this.declaringMethod.getDeclaringArkFile().getScene().getClass(typeSignature);
+                if (cls?.hasComponentDecorator()) {
+                    return this.createCustomViewStmt(callerName, args, callExpression);
+                }
+            }
+            methodSignature.getMethodSubSignature().setMethodName(callerName);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+            
         } else {
             ({value: callerValue, stmts: callerStmts} = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
