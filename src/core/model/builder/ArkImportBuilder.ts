@@ -23,6 +23,8 @@ import { Decorator } from "../../base/Decorator";
 import { ExportInfo, ExportType, FromInfo } from "../ArkExport";
 import { FileSignature } from "../ArkSignature";
 import Logger from "../../../utils/logger";
+import { Scene } from "../../../Scene";
+import { transfer2UnixPath } from "../../../utils/pathTransfer";
 
 const logger = Logger.getLogger();
 const moduleMap: Map<string, string> = new Map<string, string>();
@@ -118,10 +120,27 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
 }
 
 function getArkFileFromScene(im: FromInfo, originPath: string) {
-    const fromSignature = new FileSignature();
-    fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
-    fromSignature.setFileName(path.relative(im.getDeclaringArkFile().getProjectDir(), originPath));
-    return im.getDeclaringArkFile().getScene().getFile(fromSignature);
+    let fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
+    const scene = im.getDeclaringArkFile().getScene();
+    if (originPath.indexOf('.') > 0) {
+        const fromSignature = new FileSignature();
+        fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
+        fromSignature.setFileName(fileName);
+        return scene.getFile(fromSignature);
+    }
+    let arkFile = getArkFileFormSceneMap(im.getDeclaringArkFile().getProjectName()
+        , fileName, '.ets: ', '.d.ts: ', scene);
+    if (arkFile) {
+        return arkFile;
+    }
+    return getArkFileFormSceneMap(im.getDeclaringArkFile().getProjectName(), fileName, '.ts: ', '.d.ets: ', scene);
+}
+
+function getArkFileFormSceneMap(projectName: string, fileName: string, suffix: string, etsSdkSuffix: string, scene: Scene) {
+    if (projectName === 'etsSdk') {
+        return scene.getSdkArkFilesMap().get(transfer2UnixPath(`@${projectName}/${fileName}${etsSdkSuffix}`));
+    }
+    return scene.getFilesMap().get(transfer2UnixPath(`@${projectName}/${fileName}${suffix}`));
 }
 
 function buildDefaultClassExportInfo(im: FromInfo, file: ArkFile) {
