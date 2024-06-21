@@ -14,20 +14,48 @@
  */
 
 import { SceneConfig } from '../../src/Config';
-import { assert, describe, it, expect } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../src/Scene';
 import path from 'path';
 import { Decorator } from '../../src/core/base/Decorator';
 import { ArkField } from '../../src/core/model/ArkField';
-import {CommonTest_Expect_ViewTree, ControlCenterComplexToggleLayout_Expect_ViewTree, ControlCenterComponent_Expect_ViewTree, NotificationItem_Expect_ViewTree, ParentComponent_Expect_ViewTree, SelfDepends_Expect_ViewTree} from '../resources/viewtree/normal/ExpectView';
+import {
+    CommonTest_Expect_ViewTree,
+    ControlCenterComplexToggleLayout_Expect_ViewTree,
+    ControlCenterComponent_Expect_ViewTree,
+    ParentComponent_Expect_ViewTree,
+    SelfDepends_Expect_ViewTree
+} from '../resources/viewtree/normal/ExpectView';
 import { ViewTreeNode } from '../../src/core/graph/ViewTree';
-import { ForEachSort_Expect_ViewTree, ForEachTest1_Expect_ViewTree, ForEachTest2_Expect_ViewTree, ForEachTest3_Expect_ViewTree } from '../resources/viewtree/control-foreach/ExpectView';
-import { IfElseTest1_Expect_ViewTree, IfElseTest2_Expect_ViewTree, IfElseTest3_Expect_ViewTree } from '../resources/viewtree/control-ifelse/ExpectView';
+import {
+    ForEachSort_Expect_ViewTree,
+    ForEachTest1_Expect_ViewTree,
+    ForEachTest2_Expect_ViewTree,
+    ForEachTest3_Expect_ViewTree
+} from '../resources/viewtree/control-foreach/ExpectView';
+import {
+    IfElseTest1_Expect_ViewTree,
+    IfElseTest2_Expect_ViewTree,
+    IfElseTest3_Expect_ViewTree
+} from '../resources/viewtree/control-ifelse/ExpectView';
 import { LazyForEachTest_Expect_ViewTree } from '../resources/viewtree/control-lazyforeach/ExpectView';
-import { RepeatTest1_Expect_ViewTree, RepeatTest2_Expect_ViewTree } from '../resources/viewtree/control-repeat/ExpectView';
+import {
+    RepeatTest1_Expect_ViewTree,
+    RepeatTest2_Expect_ViewTree
+} from '../resources/viewtree/control-repeat/ExpectView';
 import { ContentSlotTest_Expect_ViewTree } from '../resources/viewtree/control-contentslot/ExpectView';
-import { BuilderTest_Expect_ViewTree, Case1_BuilderTest_Expect_ViewTree, Case2_BuilderTest_Expect_ViewTree, Case3_BuilderTest_Expect_ViewTree } from '../resources/viewtree/builder/ExpectView';
-import { BuilderParamTest_Expect_ViewTree, Case1_BuilderParamTest_Expect_ViewTree, Case2_BuilderParamTest_Expect_ViewTree, Case3_BuilderParamTest_Expect_ViewTree } from '../resources/viewtree/builderparam/ExpectView';
+import {
+    BuilderTest_Expect_ViewTree,
+    Case1_BuilderTest_Expect_ViewTree,
+    Case2_BuilderTest_Expect_ViewTree,
+    Case3_BuilderTest_Expect_ViewTree
+} from '../resources/viewtree/builder/ExpectView';
+import {
+    BuilderParamTest_Expect_ViewTree,
+    Case1_BuilderParamTest_Expect_ViewTree,
+    Case2_BuilderParamTest_Expect_ViewTree,
+    Case3_BuilderParamTest_Expect_ViewTree
+} from '../resources/viewtree/builderparam/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
@@ -311,6 +339,8 @@ describe('project Test', () => {
     scene.collectProjectImportInfos();
     scene.inferTypes();
 
+    const project = scene.getFilesMap().get('@projectTest/entry/src/main/ets/Page.ets: ');
+    project?.getImportInfos().forEach(e => e.getLazyExportInfo());
     it('test alias', async ()=> {
         testClassViewTree(scene, 'Page', Project_Page_Expect_ViewTree);
     })
