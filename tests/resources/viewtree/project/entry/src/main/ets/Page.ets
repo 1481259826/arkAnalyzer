@@ -14,6 +14,7 @@
  */
 
 import {City} from '@hmos/worldclock';
+import Rename from '@hmos/worldclock/src/main/ets/RenameTest';
 
 @Entry
 @Component
@@ -21,6 +22,7 @@ struct Page {
     build() {
         Column() {
             City()
+            Rename()
         }
         .width('100%')
     }
