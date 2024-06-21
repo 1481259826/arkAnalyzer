@@ -81,7 +81,6 @@ export class Scene {
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
 
-    private customComponents: Set<string> = new Set();
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
     constructor() {
@@ -137,8 +136,6 @@ export class Scene {
     }
 
     private buildAllMethodBody() {
-        // method body parse depends custom components.
-        this.collectProjectCustomComponents();
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
@@ -699,31 +696,6 @@ export class Scene {
             }
         }
         return globalVariableMap;
-    }
-
-    private collectProjectCustomComponents() {
-        for (const file of this.getFiles()) {
-            for (const cls of file.getClasses()) {
-                if (cls.hasComponentDecorator()) {
-                    this.customComponents.add(cls.getName());
-                }
-            }
-        }
-        for (const namespace of this.getNamespacesMap().values()) {
-            for (const cls of namespace.getClasses()) {
-                if (cls.hasComponentDecorator()) {
-                    this.customComponents.add(cls.getName());
-                }
-            }
-        }
-    }
-
-    public isCustomComponents(name: string): boolean {
-        return this.customComponents.has(name);
-    }
-
-    public getCustomComponents(): Set<string> {
-        return this.customComponents;
     }
 
     public buildClassDone(): boolean {
