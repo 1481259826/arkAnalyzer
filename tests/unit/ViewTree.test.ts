@@ -339,8 +339,6 @@ describe('project Test', () => {
     scene.collectProjectImportInfos();
     scene.inferTypes();
 
-    const project = scene.getFilesMap().get('@projectTest/entry/src/main/ets/Page.ets: ');
-    project?.getImportInfos().forEach(e => e.getLazyExportInfo());
     it('test alias', async ()=> {
         testClassViewTree(scene, 'Page', Project_Page_Expect_ViewTree);
     })
