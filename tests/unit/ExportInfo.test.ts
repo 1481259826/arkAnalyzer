@@ -39,8 +39,11 @@ describe("export Test", () => {
 
 describe("function Test", () => {
     it('debug case', () => {
-        const s = '@ohos/test//'
+        const s = 'D:/test/sfs.test'
         let lw = s.replace(/\/*$/, '');
-        assert.equal(lw, '@ohos/test')
+        assert.isTrue(/\.e?ts$/.test('xx.ets'))
+        assert.isTrue(/\.e?ts$/.test('xxs.ts'))
+        assert.isTrue(/\.e?ts$/.test('ets.d.ts'))
+        assert.isTrue(/\.e?ts$/.test('ts.d.ets'))
     })
 })
