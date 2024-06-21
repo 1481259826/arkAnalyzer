@@ -31,6 +31,9 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     field.setFieldType(ts.SyntaxKind[member.kind]);
     field.setCode(member.getText(sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
+    if (cls) {
+        field.setDeclaringClass(cls);
+    }
 
     if (member.name && ts.isComputedPropertyName(member.name)) {
         if (ts.isIdentifier(member.name.expression)) {
@@ -46,11 +49,6 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         field.setName(propertyName);
     } else {
         logger.warn("Other type of property name found!");
-    }
-
-    if (cls) {
-        cls.addField(field);
-        field.setDeclaringClass(cls);
     }
 
     // construct initializer
@@ -85,6 +83,10 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         field.setExclamationToken(true);
     }
 
+    if (cls) {
+        cls.addField(field);
+    }
+
     field.genSignature();
 }
 
@@ -92,6 +94,9 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     let field = new ArkField();
     field.setCode(member.getText(sourceFile));
     field.setFieldType(ts.SyntaxKind[member.kind]);
+    if (cls) {
+        field.setDeclaringClass(cls);
+    }
 
     if (member.name) {
         field.setName(member.name.getText(sourceFile));
@@ -111,13 +116,12 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
         });
     }
 
-    if (cls) {
-        field.setDeclaringClass(cls);
-        cls.addField(field);
-    }
-
     //type
     field.setType(tsNode2Type(member.type, sourceFile, field));
+
+    if (cls) {
+        cls.addField(field);
+    }
 
     field.genSignature();
 }
