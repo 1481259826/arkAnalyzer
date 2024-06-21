@@ -664,18 +664,18 @@ export class ViewTree extends TreeNodeStack {
             return;
         }
 
-        let builderViewTree = method.getViewTree();
-        if (!builderViewTree || !builderViewTree.getRoot()) {
-            logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
-            return;
-        }
-
         let node = ViewTreeNode.createBuilderNode();
         node.signature = method.getSignature();
         node.classSignature = node.signature;
         this.push(node);
 
-        node.children.push(builderViewTree.getRoot());
+        let builderViewTree = method.getViewTree();
+        if (!builderViewTree || !builderViewTree.getRoot()) {
+            logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
+        } else {
+            node.children.push(builderViewTree.getRoot());
+        }
+
         this.pop();
         return node;
     }
