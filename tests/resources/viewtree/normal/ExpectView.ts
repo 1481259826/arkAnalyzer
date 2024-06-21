@@ -24,16 +24,11 @@ export const SubComponent_Expect_ViewTree: any = {
 }
 
 export const CommonTest_Expect_ViewTree = {
-    name: '__Common__',
+    name: 'View',
     children: [
-        {
-            name: 'View',
-            children: [
-                SubComponent_Expect_ViewTree
-            ],
-            attributes: ['create', 'pop', 'width', 'height']
-        }
-    ]
+        SubComponent_Expect_ViewTree
+    ],
+    attributes: ['create', 'pop', 'width', 'height']
 }
 
 export const ControlCenterComplexToggleLayout_Expect_ViewTree = {
@@ -44,7 +39,7 @@ export const ControlCenterComplexToggleLayout_Expect_ViewTree = {
             children: [
                 {
                     name: 'GridItem',
-                    children: [ ]
+                    children: []
                 }
             ],
             stateValues: ['mComplexToggleLayout']
@@ -62,13 +57,13 @@ export const CountDownComponent_Expect_ViewTree = {
                 {
                     name: 'IfBranch',
                     children: [
-                        {name: 'Text', children: [], stateValues: ['count']}
+                        { name: 'Text', children: [], stateValues: ['count'] }
                     ]
                 },
                 {
                     name: 'IfBranch',
                     children: [
-                        {name: 'Text', children: []}
+                        { name: 'Text', children: [] }
                     ]
                 }
             ],
@@ -77,7 +72,7 @@ export const CountDownComponent_Expect_ViewTree = {
         {
             name: 'Button',
             children: [
-                {name: 'Text', children: []}
+                { name: 'Text', children: [] }
             ],
             stateValues: ['count']
         }
@@ -209,7 +204,7 @@ export const ControlCenterComponent_Expect_ViewTree = {
 export const NotificationItem_Expect_ViewTree = {
     name: 'Column',
     children: [
-        
+
     ]
 }
 

@@ -32,7 +32,6 @@ import {
     BUILDER_DECORATOR,
     BUILDER_PARAM_DECORATOR,
     COMPONENT_BRANCH_FUNCTION,
-    COMPONENT_COMMON,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
     COMPONENT_IF,
@@ -49,7 +48,7 @@ import { Cfg } from './Cfg';
 import Logger from '../../utils/logger';
 
 const logger = Logger.getLogger();
-const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([COMPONENT_IF, COMPONENT_IF_BRANCH, COMPONENT_COMMON, COMPONENT_CUSTOMVIEW, COMPONENT_REPEAT]);
+const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([COMPONENT_IF, COMPONENT_IF_BRANCH, COMPONENT_CUSTOMVIEW, COMPONENT_REPEAT]);
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
 
 class StateValuesUtils {
@@ -658,12 +657,7 @@ export class ViewTree extends TreeNodeStack {
     /**
      * @internal
      */
-    public addBuilderNode(method: ArkMethod): ViewTreeNode | undefined {
-        if (!method.hasBuilderDecorator()) {
-            logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} is not @Builder.`);
-            return;
-        }
-
+    public addBuilderNode(method: ArkMethod): ViewTreeNode {
         let node = ViewTreeNode.createBuilderNode();
         node.signature = method.getSignature();
         node.classSignature = node.signature;
@@ -748,41 +742,34 @@ export class ViewTree extends TreeNodeStack {
     /**
      * @internal
      */
-    public addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined): ViewTreeNode | undefined {
-        if (!cls.hasComponentDecorator()) {
-            logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} is not component.`);
-            return;
-        }
-
-        let componentViewTree = cls.getViewTree();
-        if (!componentViewTree || !componentViewTree.getRoot()) {
-            logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
-            return;
-        }
-        if (!this.root) {
-            this.push(new ViewTreeNode(COMPONENT_COMMON));
-        }
+    public addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined): ViewTreeNode {
         let node = ViewTreeNode.createCustomComponent();
         node.signature = cls.getSignature();
         node.classSignature = node.signature;
         node.stateValuesTransfer = this.parseObjectLiteralExpr(cls, arg, builder)
         this.push(node);
-        let root = componentViewTree.getRoot();
-        if (root.hasBuilderParam()) {
-            root = root.clone(node);
-            if (node.stateValuesTransfer) {
-                root.walk((item) => {
-                    if (item.isBuilderParam() && item.builderParam) {
-                        let method = node.stateValuesTransfer?.get(item.builderParam) as ArkMethod;
-                        if (method) {
-                            item.changeBuilderParam2BuilderNode(method);
+
+        let componentViewTree = cls.getViewTree();
+        if (!componentViewTree || !componentViewTree.getRoot()) {
+            logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
+        } else {
+            let root = componentViewTree.getRoot();
+            if (root.hasBuilderParam()) {
+                root = root.clone(node);
+                if (node.stateValuesTransfer) {
+                    root.walk((item) => {
+                        if (item.isBuilderParam() && item.builderParam) {
+                            let method = node.stateValuesTransfer?.get(item.builderParam) as ArkMethod;
+                            if (method) {
+                                item.changeBuilderParam2BuilderNode(method);
+                            }
                         }
-                    }
-                    return false;
-                })
+                        return false;
+                    })
+                }
             }
+            node.children.push(root);
         }
-        node.children.push(root);
         return node;
     }
 
@@ -842,7 +829,7 @@ function viewComponentCreationParser(viewtree: ViewTree, name: string, stmt: Stm
     let clsSignature = (initValue.getType() as ClassType).getClassSignature();
     if (clsSignature) {
         let cls = viewtree.findClass(clsSignature);
-        if (cls) {
+        if (cls && cls.hasComponentDecorator()) {
             return viewtree.addCustomComponentNode(cls, arg, builderMethod);
         } else {
             logger.error(`ViewTree->viewComponentCreationParser not found class. ${stmt.toString()}`);
@@ -930,9 +917,6 @@ function parseStaticInvokeExpr(viewTree: ViewTree, local2Node: Map<Local, ViewTr
         currentNode.addStmt(viewTree, stmt);
         if (methodName == COMPONENT_POP_FUNCTION) {
             viewTree.pop();
-            if (viewTree.top()?.name == COMPONENT_COMMON) {
-                viewTree.pop();
-            }
         }
         return currentNode;
     } else if (name == COMPONENT_IF && methodName == COMPONENT_POP_FUNCTION) {
