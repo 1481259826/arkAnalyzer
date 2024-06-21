@@ -23,11 +23,11 @@ import { Decorator } from "../../base/Decorator";
 import { ExportInfo, ExportType, FromInfo } from "../ArkExport";
 import { FileSignature } from "../ArkSignature";
 import Logger from "../../../utils/logger";
-import { Scene } from "../../../Scene";
 import { transfer2UnixPath } from "../../../utils/pathTransfer";
 
 const logger = Logger.getLogger();
 const moduleMap: Map<string, string> = new Map<string, string>();
+const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
 
 export function expandExportInfo(arkFile: ArkFile): void {
     let exportInfos = arkFile.getExportInfos();
@@ -68,8 +68,8 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
         return getOriginArkFile(im);
     } else {
         const sdkMap = im.getDeclaringArkFile()?.getScene()?.getSdkArkFilesMap();
-        let prefix = /^@kit\./.test(from) ? '@etsSdk/kits/' : '@etsSdk/api/';
-        return sdkMap?.get(prefix + from + ': ');
+        let prefix = /^@kit\./.test(from) ? '/kits/' : '/api/';
+        return getArkFileFormMap('etsSdk', prefix + from, sdkMap);
     }
 }
 
@@ -122,25 +122,27 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
 function getArkFileFromScene(im: FromInfo, originPath: string) {
     let fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
     const scene = im.getDeclaringArkFile().getScene();
+    const projectName = im.getDeclaringArkFile().getProjectName();
     if (originPath.indexOf('.') > 0) {
         const fromSignature = new FileSignature();
         fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
         fromSignature.setFileName(fileName);
         return scene.getFile(fromSignature);
     }
-    let arkFile = getArkFileFormSceneMap(im.getDeclaringArkFile().getProjectName()
-        , fileName, '.ets: ', '.d.ts: ', scene);
-    if (arkFile) {
-        return arkFile;
+    if (projectName === 'etsSdk') {
+        return getArkFileFormMap(projectName, fileName, scene.getSdkArkFilesMap());
     }
-    return getArkFileFormSceneMap(im.getDeclaringArkFile().getProjectName(), fileName, '.ts: ', '.d.ets: ', scene);
+    return getArkFileFormMap(projectName, fileName, scene.getFilesMap());
 }
 
-function getArkFileFormSceneMap(projectName: string, fileName: string, suffix: string, etsSdkSuffix: string, scene: Scene) {
-    if (projectName === 'etsSdk') {
-        return scene.getSdkArkFilesMap().get(transfer2UnixPath(`@${projectName}/${fileName}${etsSdkSuffix}`));
+function getArkFileFormMap(projectName: string, fileName: string, map: Map<string, ArkFile>) {
+    const keyPrefix = transfer2UnixPath(`@${projectName}/${fileName}`);
+    for (const suffix of fileSuffixArray) {
+        const arkFile = map.get(keyPrefix + suffix);
+        if (arkFile) {
+            return arkFile;
+        }
     }
-    return scene.getFilesMap().get(transfer2UnixPath(`@${projectName}/${fileName}${suffix}`));
 }
 
 function buildDefaultClassExportInfo(im: FromInfo, file: ArkFile) {
