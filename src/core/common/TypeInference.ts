@@ -212,18 +212,18 @@ export class TypeInference {
                     }
                     let leftOpTypeString = leftOpType.getOriginType()
                     if (leftOpType instanceof AnnotationNamespaceType) {
-                        let classSignature = ModelUtils.getClassWithName(leftOpTypeString, arkMethod)?.getSignature()
+                        let signature = ModelUtils.getClassWithName(leftOpTypeString, arkMethod)?.getSignature()
                             ?? ModelUtils.getTypeSignatureInImportInfoWithName(leftOpTypeString, arkMethod.getDeclaringArkFile());
-                        if (classSignature === undefined) {
+                        if (signature === undefined) {
                             leftOp.setType(stmt.getRightOp().getType());
-                        } else if (classSignature instanceof ClassSignature) {
-                            leftOp.setType(new ClassType(classSignature));
-                        } else if (classSignature instanceof NamespaceSignature) {
-                            let namespaceType = new AnnotationNamespaceType(classSignature.getNamespaceName());
-                            namespaceType.setNamespaceSignature(classSignature);
+                        } else if (signature instanceof ClassSignature) {
+                            leftOp.setType(new ClassType(signature));
+                        } else if (signature instanceof NamespaceSignature) {
+                            let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
+                            namespaceType.setNamespaceSignature(signature);
                             leftOp.setType(namespaceType);
-                        } else if (classSignature instanceof MethodSignature) {
-                            leftOp.setType(new CallableType(classSignature));
+                        } else if (signature instanceof MethodSignature) {
+                            leftOp.setType(new CallableType(signature));
                         }
                     }
                 } else if (leftOpType instanceof UnknownType) {
@@ -233,18 +233,18 @@ export class TypeInference {
                         if (rightOpType instanceof UnclearReferenceType) {
                             if (arkMethod == null)
                                 return
-                            let classSignature = ModelUtils.getClassWithName(rightOpType.getName(), arkMethod)?.getSignature()
+                            let signature = ModelUtils.getClassWithName(rightOpType.getName(), arkMethod)?.getSignature()
                                 ?? ModelUtils.getTypeSignatureInImportInfoWithName(rightOpType.getName(), arkMethod.getDeclaringArkFile());
-                            if (classSignature === undefined) {
+                            if (signature === undefined) {
                                 leftOp.setType(stmt.getRightOp().getType());
-                            } else if (classSignature instanceof ClassSignature) {
-                                leftOp.setType(new ClassType(classSignature));
-                            } else if (classSignature instanceof NamespaceSignature) {
-                                let namespaceType = new AnnotationNamespaceType(classSignature.getNamespaceName());
-                                namespaceType.setNamespaceSignature(classSignature);
+                            } else if (signature instanceof ClassSignature) {
+                                leftOp.setType(new ClassType(signature));
+                            } else if (signature instanceof NamespaceSignature) {
+                                let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
+                                namespaceType.setNamespaceSignature(signature);
                                 leftOp.setType(namespaceType);
-                            } else if (classSignature instanceof MethodSignature) {
-                                leftOp.setType(new CallableType(classSignature));
+                            } else if (signature instanceof MethodSignature) {
+                                leftOp.setType(new CallableType(signature));
                             }
                         } else {
                             leftOp.setType(rightOpType)
