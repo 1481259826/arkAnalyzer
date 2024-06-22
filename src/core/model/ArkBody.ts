@@ -16,19 +16,21 @@
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
 import { MethodSignature } from './ArkSignature';
+import { Stmt } from '../base/Stmt';
 
 export class ArkBody {
     private locals: Set<Local>;
     private originalCfg: Cfg;
     private cfg: Cfg;
     private methodSignature: MethodSignature;
+    private stmtToOriginalStmt: Map<Stmt, Stmt>;
 
-
-    constructor(methodSignature: MethodSignature, locals: Set<Local>, originalCfg: Cfg, cfg: Cfg) {
+    constructor(methodSignature: MethodSignature, locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>) {
         this.methodSignature = methodSignature;
         this.locals = locals;
         this.originalCfg = originalCfg;
         this.cfg = cfg;
+        this.stmtToOriginalStmt = stmtToOriginalStmt;
     }
 
     public getLocals(): Set<Local> {
@@ -40,7 +42,7 @@ export class ArkBody {
     }
 
     public getCfg(): Cfg {
-        return this.cfg
+        return this.cfg;
     }
 
     public setCfg(cfg: Cfg): void {
@@ -48,7 +50,7 @@ export class ArkBody {
     }
 
     public getOriginalCfg(): Cfg {
-        return this.originalCfg
+        return this.originalCfg;
     }
 
     public setOriginalCfg(originalCfg: Cfg): void {
@@ -61,5 +63,9 @@ export class ArkBody {
 
     public setMethodSignature(methodSignature: MethodSignature): void {
         this.methodSignature = methodSignature;
+    }
+
+    public getStmtToOriginalStmt(): Map<Stmt, Stmt> {
+        return this.stmtToOriginalStmt;
     }
 }
