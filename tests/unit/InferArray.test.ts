@@ -18,32 +18,28 @@ import path from 'path';
 import { SceneConfig } from "../../src/Config";
 import { Scene } from "../../src/Scene";
 import { FileSignature } from "../../src/core/model/ArkSignature";
+import { ArkAssignStmt, ArkNewArrayExpr, ArrayType } from "../../src";
 
-describe("export Test", () => {
-    it('debug case', () => {
+describe("Infer Array Test", () => {
+    it('normal case', () => {
 
         let config: SceneConfig = new SceneConfig();
-        config.buildFromProjectDir(path.join(__dirname, "../resources/exports"))
+        config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"))
         let projectScene: Scene = new Scene();
         projectScene.buildSceneFromProjectDir(config);
         projectScene.collectProjectImportInfos();
         projectScene.inferTypes();
+
         const fileId = new FileSignature();
-        fileId.setFileName("test.ts");
+        fileId.setFileName("inferSample.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
-        assert.equal(file?.getExportInfos().length,2);
-        assert.equal(file?.getImportInfos().length, 17);
-    })
-})
-
-describe("function Test", () => {
-    it('debug case', () => {
-        const s = 'D:/test/sfs.test'
-        let lw = s.replace(/\/*$/, '');
-        assert.isTrue(/\.e?ts$/.test('xx.ets'))
-        assert.isTrue(/\.e?ts$/.test('xxs.ts'))
-        assert.isTrue(/\.e?ts$/.test('ets.d.ts'))
-        assert.isTrue(/\.e?ts$/.test('ts.d.ets'))
+        const method = file?.getDefaultClass().getMethodWithName('test_new_array');
+        assert.isDefined(method);
+        const stmt = method?.getCfg().getStmts()[1];
+        assert.isTrue(stmt instanceof ArkAssignStmt);
+        assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkNewArrayExpr);
+        assert.isTrue((stmt as ArkAssignStmt).getRightOp().getType() instanceof ArrayType);
+        assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ArrayType);
     })
 })

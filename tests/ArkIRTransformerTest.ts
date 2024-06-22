@@ -63,7 +63,9 @@ class ArkIRTransformerTest {
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
+        // this.printScene(scene);
         scene.inferTypes();
+        logger.error('\nafter inferTypes');
         this.printScene(scene);
 
         logger.error('testStmtsOfSimpleProject end\n');
@@ -82,7 +84,9 @@ class ArkIRTransformerTest {
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
+        this.printScene(scene);
         scene.inferTypes();
+        logger.error('\nafter inferTypes');
         this.printScene(scene);
 
         logger.error('testStmtsOfEtsProject end\n');
@@ -93,7 +97,7 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
             logger.error(`text: ${threeAddresStmt.toString()}`);
-            logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
+            // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
             // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
             //     logger.error(`text: ${threeAddresStmt.toString()}`);
             // }
@@ -117,10 +121,10 @@ class ArkIRTransformerTest {
                     const body = arkMethod.getBody();
                     this.printStmts(body);
 
-                    // logger.error('-- locals:');
-                    // for (const local of arkMethod.getBody().getLocals()) {
-                    //     logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    // }
+                    logger.error('-- locals:');
+                    for (const local of arkMethod.getBody().getLocals()) {
+                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                    }
                 }
             }
         }

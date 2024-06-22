@@ -81,7 +81,6 @@ export class Scene {
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
 
-    private customComponents: Set<string> = new Set();
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
     constructor() {
@@ -137,11 +136,16 @@ export class Scene {
     }
 
     private buildAllMethodBody() {
-        // method body parse depends custom components.
-        this.collectProjectCustomComponents();
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
+                for (const method of cls.getMethods()) {
+                    method.buildBody();
+                }
+            }
+        }
+        for (const namespace of this.getNamespacesMap().values()) {
+            for (const cls of namespace.getClasses()) {
                 for (const method of cls.getMethods()) {
                     method.buildBody();
                 }
@@ -284,7 +288,13 @@ export class Scene {
     }
 
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
-        return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
+        if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+            return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
+        } else if ('etsSdk' === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+            const arkFile = this.sdkArkFilesMap.get(namespaceSignature.getDeclaringFileSignature().toString());
+            return arkFile?.getNamespace(namespaceSignature) || null;
+        }
+        return null;
     }
 
     private getNamespacesMap(): Map<string, ArkNamespace> {
@@ -313,7 +323,7 @@ export class Scene {
     }
 
     private getClassesMap(): Map<string, ArkClass> {
-        if (this.buildStage >= SceneBuildStage.CLASS_DONE && this.classesMap.size == 0) {
+        if (this.classesMap.size == 0) {
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -342,7 +352,7 @@ export class Scene {
     }
 
     private getMethodsMap(): Map<string, ArkMethod> {
-        if (this.buildStage >= SceneBuildStage.METHOD_DONE && this.methodsMap.size == 0) {
+        if (this.methodsMap.size == 0) {
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods()) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -686,24 +696,6 @@ export class Scene {
             }
         }
         return globalVariableMap;
-    }
-
-    private collectProjectCustomComponents() {
-        for (const file of this.getFiles()) {
-            for (const cls of file.getClasses()) {
-                if (cls.hasComponentDecorator()) {
-                    this.customComponents.add(cls.getName());
-                }
-            }
-        }
-    }
-
-    public isCustomComponents(name: string): boolean {
-        return this.customComponents.has(name);
-    }
-
-    public getCustomComponents(): Set<string> {
-        return this.customComponents;
     }
 
     public buildClassDone(): boolean {

@@ -649,6 +649,10 @@ export class ArkIRTransformer {
             ({value: baseValue, stmts: baseStmts} = this.generateAssignStmtForValue(baseValue));
             stmts.push(...baseStmts);
         }
+        if (!(baseValue instanceof Local)) {
+            ({value: baseValue, stmts: baseStmts} = this.generateAssignStmtForValue(baseValue));
+            stmts.push(...baseStmts);
+        }
         const fieldSignature = new FieldSignature();
         fieldSignature.setFieldName(propertyAccessExpression.name.getText(this.sourceFile));
         const fieldRef = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
@@ -714,12 +718,28 @@ export class ArkIRTransformer {
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
             // temp for component
-            if (this.declaringMethod.getDeclaringArkFile().getScene().isCustomComponents(callerName)) {
+            let cls = this.declaringMethod.getDeclaringArkFile().getClassWithName(callerName);
+            if (cls?.hasComponentDecorator()) {
                 return this.createCustomViewStmt(callerName, args, callExpression);
-            } else {
-                methodSignature.getMethodSubSignature().setMethodName(callerName);
-                invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
             }
+
+            for (const ns of this.declaringMethod.getDeclaringArkFile().getAllNamespacesUnderThisFile()) {
+                cls = ns.getClassWithName(callerName);
+                if (cls?.hasComponentDecorator()) {
+                    return this.createCustomViewStmt(callerName, args, callExpression);
+                }
+            } 
+            let exportInfo = this.declaringMethod.getDeclaringArkFile().getImportInfoBy(callerName)?.getLazyExportInfo();
+            let typeSignature = exportInfo?.getTypeSignature();
+            if (typeSignature instanceof ClassSignature) {
+                let cls = this.declaringMethod.getDeclaringArkFile().getScene().getClass(typeSignature);
+                if (cls?.hasComponentDecorator()) {
+                    return this.createCustomViewStmt(callerName, args, callExpression);
+                }
+            }
+            methodSignature.getMethodSubSignature().setMethodName(callerName);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+            
         } else {
             ({value: callerValue, stmts: callerStmts} = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
@@ -770,6 +790,8 @@ export class ArkIRTransformer {
             let arrayLengthValue: Value = ValueUtil.getOrCreateNumberConst(arrayLength);
             if (arrayLength === 1) {
                 arrayLengthValue = argumentValues[0];
+            } else if (arrayLength > 1 && !(argumentValues[0].getType() instanceof AnyType || argumentValues[0].getType() instanceof UnknownType)) {
+                baseType = argumentValues[0].getType();
             }
 
             const {
@@ -778,6 +800,14 @@ export class ArkIRTransformer {
             } = this.generateAssignStmtForValue(new ArkNewArrayExpr(baseType, arrayLengthValue));
             stmts.push(...arrayStmts);
             (arrayExprValue as Local).setType(new ArrayObjectType(baseType, 1));
+
+            if (arrayLength > 1) {
+                for (let i = 0; i < arrayLength; i++) {
+                    const arrayRef = new ArkArrayRef(arrayExprValue as Local, ValueUtil.getOrCreateNumberConst(i));
+                    stmts.push(new ArkAssignStmt(arrayRef, argumentValues[i]));
+                }
+            }
+
             return {value: arrayExprValue, stmts: stmts};
         } else {
             const classSignature = new ClassSignature();
@@ -1146,7 +1176,9 @@ export class ArkIRTransformer {
                 constant = ValueUtil.createStringConst((literalNode as ts.StringLiteral).text);
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral:
-                constant = ValueUtil.createStringConst((literalNode as ts.RegularExpressionLiteral).text);
+                const classSignature = new ClassSignature();
+                classSignature.setClassName('RegExp');
+                constant = new Constant((literalNode as ts.RegularExpressionLiteral).text, classSignature.getType());
                 break;
             case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 constant = ValueUtil.createStringConst((literalNode as ts.NoSubstitutionTemplateLiteral).text);
@@ -1254,6 +1286,8 @@ export class ArkIRTransformer {
                 return NeverType.getInstance();
             case ts.SyntaxKind.TypeReference:
                 return new UnclearReferenceType(type.getText(this.sourceFile));
+            case ts.SyntaxKind.ArrayType:
+                return new ArrayType(this.resolveTypeNode((type as ts.ArrayTypeNode).elementType), 1);
         }
         return UnknownType.getInstance();
     }

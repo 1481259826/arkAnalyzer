@@ -115,7 +115,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile): string {
     let name: string = '';
     let getAccessorName: string | undefined = undefined;
-    if (ts.isFunctionDeclaration(node)) {
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) {
         if (node.name) {
             name = node.name.text;
         }

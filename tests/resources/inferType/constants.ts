@@ -13,27 +13,7 @@
  * limitations under the License.
  */
 
-export const Project_Page_Expect_ViewTree = {
-    name: 'Column',
-    attributes: ['create', 'pop', 'width'],
-    children: [
-        {
-            name: 'View',
-            children: [
-                {
-                    name: 'Text',
-                    children: []
-                }
-            ]
-        },
-        {
-            name: 'View',
-            children: [
-                {
-                    name: 'Text',
-                    children: []
-                }
-            ]
-        }
-    ]
+export class Constants {
+    public static readonly ARRAY_SIZE: number = 9999;
+    public static readonly INDEX_SIZE: number = 9999;
 }

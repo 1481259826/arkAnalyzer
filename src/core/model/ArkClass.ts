@@ -58,6 +58,7 @@ export class ArkClass implements ArkExport {
     private staticFields: Map<string, ArkField> = new Map<string, ArkField>();
 
     private anonymousMethodNumber: number = 0;
+    private indexSignatureNumber: number = 0;
 
     private viewTree: ViewTree;
 
@@ -354,6 +355,10 @@ export class ArkClass implements ArkExport {
 
     public getAnonymousMethodNumber() {
         return this.anonymousMethodNumber++;
+    }
+
+    public getIndexSignatureNumber() {
+        return this.indexSignatureNumber++;
     }
 
     getType(): ExportType {

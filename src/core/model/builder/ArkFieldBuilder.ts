@@ -31,18 +31,8 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     field.setFieldType(ts.SyntaxKind[member.kind]);
     field.setCode(member.getText(sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-
-    // construct initializer
-    if (ts.isPropertyDeclaration(member) || ts.isPropertyAssignment(member) || ts.isEnumMember(member)) {
-        if (member.initializer) {
-            field.setInitializer(tsNode2Value(member.initializer, sourceFile, cls));
-        }
-    } else if (ts.isShorthandPropertyAssignment(member)) {
-        if (member.objectAssignmentInitializer) {
-            field.setInitializer(tsNode2Value(member.objectAssignmentInitializer, sourceFile, cls));
-        }
-    } else if (ts.isSpreadAssignment(member)) {
-        field.setInitializer(tsNode2Value(member.expression, sourceFile, cls));
+    if (cls) {
+        field.setDeclaringClass(cls);
     }
 
     if (member.name && ts.isComputedPropertyName(member.name)) {
@@ -59,6 +49,19 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         field.setName(propertyName);
     } else {
         logger.warn("Other type of property name found!");
+    }
+
+    // construct initializer
+    if (ts.isPropertyDeclaration(member) || ts.isPropertyAssignment(member) || ts.isEnumMember(member)) {
+        if (member.initializer) {
+            field.setInitializer(tsNode2Value(member.initializer, sourceFile, cls));
+        }
+    } else if (ts.isShorthandPropertyAssignment(member)) {
+        if (member.objectAssignmentInitializer) {
+            field.setInitializer(tsNode2Value(member.objectAssignmentInitializer, sourceFile, cls));
+        }
+    } else if (ts.isSpreadAssignment(member)) {
+        field.setInitializer(tsNode2Value(member.expression, sourceFile, cls));
     }
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
@@ -82,16 +85,25 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
 
     if (cls) {
         cls.addField(field);
-        field.setDeclaringClass(cls);
     }
 
     field.genSignature();
 }
 
-export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls?: ArkClass) {
+export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass) {
     let field = new ArkField();
     field.setCode(member.getText(sourceFile));
     field.setFieldType(ts.SyntaxKind[member.kind]);
+    if (cls) {
+        field.setDeclaringClass(cls);
+    }
+
+    if (member.name) {
+        field.setName(member.name.getText(sourceFile));
+    }
+    else {
+        field.setName(buildAnonymousFieldName(cls));
+    }
 
     //TODO: parameters
     //field.setParameters(buildParameters(member.parameters, sourceFile));
@@ -108,9 +120,9 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     field.setType(tsNode2Type(member.type, sourceFile, field));
 
     if (cls) {
-        field.setDeclaringClass(cls);
         cls.addField(field);
     }
+
     field.genSignature();
 }
 
@@ -146,4 +158,9 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
     field.setArkMethodSignature(mthd.getSignature());
     field.genSignature();
     cls.addField(field);
+}
+
+function buildAnonymousFieldName(arkClass: ArkClass) {
+    const fieldName = 'IndexSignature-' + arkClass.getName() + '-' + arkClass.getIndexSignatureNumber();
+    return fieldName;
 }

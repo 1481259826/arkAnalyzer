@@ -13,27 +13,10 @@
  * limitations under the License.
  */
 
-export const Project_Page_Expect_ViewTree = {
-    name: 'Column',
-    attributes: ['create', 'pop', 'width'],
-    children: [
-        {
-            name: 'View',
-            children: [
-                {
-                    name: 'Text',
-                    children: []
-                }
-            ]
-        },
-        {
-            name: 'View',
-            children: [
-                {
-                    name: 'Text',
-                    children: []
-                }
-            ]
-        }
-    ]
+@Component
+export default struct RenameTest {
+
+    build() {
+        Text('Rename test')
+    }
 }

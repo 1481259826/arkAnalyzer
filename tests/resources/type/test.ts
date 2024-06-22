@@ -12,13 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class Person {
-        x: number = 0;
+for (let i =0 ;i<1;i++){}
     
-        constructor(public age: number) {
-            super()
-        }
-        growOld = () => {
-            this.age++;
-        }
-    }
+    

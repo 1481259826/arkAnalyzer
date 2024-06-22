@@ -13,27 +13,8 @@
  * limitations under the License.
  */
 
-export const Project_Page_Expect_ViewTree = {
-    name: 'Column',
-    attributes: ['create', 'pop', 'width'],
-    children: [
-        {
-            name: 'View',
-            children: [
-                {
-                    name: 'Text',
-                    children: []
-                }
-            ]
-        },
-        {
-            name: 'View',
-            children: [
-                {
-                    name: 'Text',
-                    children: []
-                }
-            ]
-        }
-    ]
+import { Constants } from "./constants";
+
+function test_new_array(): void {
+    let arr11: number[] = new Array(Constants.ARRAY_SIZE);
 }
