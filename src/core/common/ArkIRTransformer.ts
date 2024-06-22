@@ -224,6 +224,7 @@ export class ArkIRTransformer {
                         const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_CREATE_FUNCTION);
                         const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, rightOp.getArgs());
                         stmt.setRightOp(createInvokeExpr);
+                        hasRepeat = true;
                     }
                 }
             }
@@ -1343,8 +1344,10 @@ export class ArkIRTransformer {
         originalStmt.setPositionInfo(positionInfo);
 
         for (const stmt of stmts) {
-            stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
-            this.stmtToOriginalStmt.set(stmt, originalStmt);
+            if (stmt.getOriginPositionInfo().getLineNo() === -1) {
+                stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
+                this.stmtToOriginalStmt.set(stmt, originalStmt);
+            }
         }
     }
 }

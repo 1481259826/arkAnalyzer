@@ -56,8 +56,8 @@ class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
         logger.error('testStmtsOfSimpleProject start');
 
-        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
+        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
@@ -97,18 +97,18 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
             logger.error(`text: ${threeAddresStmt.toString()}`);
-            // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
+            logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
             // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
             //     logger.error(`text: ${threeAddresStmt.toString()}`);
             // }
         }
 
-        // logger.error('--- originalStmts ---');
-        // const originalCfg = body.getOriginalCfg();
-        // for (const originalStmt of originalCfg.getStmts()) {
-        //     logger.error(`text: ${originalStmt.toString()}`);
-        //     logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
-        // }
+        logger.error('--- originalStmts ---');
+        const originalCfg = body.getOriginalCfg();
+        for (const originalStmt of originalCfg.getStmts()) {
+            logger.error(`text: ${originalStmt.toString()}`);
+            logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
+        }
     }
 
     private printScene(scene: Scene): void {
@@ -121,10 +121,10 @@ class ArkIRTransformerTest {
                     const body = arkMethod.getBody();
                     this.printStmts(body);
 
-                    logger.error('-- locals:');
-                    for (const local of arkMethod.getBody().getLocals()) {
-                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    }
+                    // logger.error('-- locals:');
+                    // for (const local of arkMethod.getBody().getLocals()) {
+                    //     logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                    // }
                 }
             }
         }
