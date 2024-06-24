@@ -259,6 +259,7 @@ function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClas
     cls.genSignature();
 
     cls.setOriginType("TypeLiteral");
+    buildArkClassMembers(clsNode, cls, sourceFile);
 }
 
 function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpression, cls: ArkClass, sourceFile: ts.SourceFile) {
