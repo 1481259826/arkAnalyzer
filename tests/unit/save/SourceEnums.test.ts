@@ -57,19 +57,6 @@ enum Response1 {
 function respond(recipient: string, message: Response1): void {
 }
 respond('Princess Caroline', Response1.Yes);
-enum ShapeKind {
-  Circle,
-  Square,
-}
-interface Circle {
-  kind: ShapeKind.Circle;
-  radius: number;
-}
-interface Square {
-  kind: ShapeKind.Square;
-  sideLength: number;
-}
-let c = {kind: ShapeKind.Circle, radius: 100};
 enum E {
   X,
   Y,
