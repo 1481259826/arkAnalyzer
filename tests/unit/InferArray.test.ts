@@ -18,17 +18,18 @@ import path from 'path';
 import { SceneConfig } from "../../src/Config";
 import { Scene } from "../../src/Scene";
 import { FileSignature } from "../../src/core/model/ArkSignature";
-import { ArkAssignStmt, ArkNewArrayExpr, ArrayType } from "../../src";
+import { ArkAssignStmt, ArkNewArrayExpr, ArrayType, NumberType } from "../../src";
 
 describe("Infer Array Test", () => {
+
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"))
+    let projectScene: Scene = new Scene();
+    projectScene.buildSceneFromProjectDir(config);
+    projectScene.collectProjectImportInfos();
+    projectScene.inferTypes();
     it('normal case', () => {
 
-        let config: SceneConfig = new SceneConfig();
-        config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"))
-        let projectScene: Scene = new Scene();
-        projectScene.buildSceneFromProjectDir(config);
-        projectScene.collectProjectImportInfos();
-        projectScene.inferTypes();
 
         const fileId = new FileSignature();
         fileId.setFileName("inferSample.ts");
@@ -41,5 +42,17 @@ describe("Infer Array Test", () => {
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkNewArrayExpr);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp().getType() instanceof ArrayType);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ArrayType);
+    })
+
+
+    it('demo case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("demo.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const method = file?.getClassWithName('B')?.getMethodWithName('f1');
+        const stmt = method?.getCfg().getStmts()[1];
+        assert.isDefined(stmt);
+        assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof NumberType);
     })
 })
