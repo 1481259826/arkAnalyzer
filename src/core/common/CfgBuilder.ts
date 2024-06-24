@@ -980,6 +980,7 @@ export class CfgBuilder {
                     cfg.setStartingStmt(stmt);
                 }
                 blockInCfg.addStmt(stmt);
+                stmt.setCfg(cfg);
             }
             cfg.addBlock(blockInCfg);
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
