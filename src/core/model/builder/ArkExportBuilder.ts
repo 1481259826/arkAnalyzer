@@ -95,7 +95,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
                 let exportClauseName = property.name.text;
                 const exportInfo = new ExportInfo.Builder()
                     .exportClauseName(property.name.text)
-                    .exportClauseType(ExportType.UNKNOWN)
+                    .exportClauseType(ExportType.LOCAL)
                     .nameBeforeAs(property.name.text)
                     .modifiers(modifiers)
                     .tsSourceCode(tsSourceCode)
@@ -107,15 +107,16 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
         });
     } else {
         const exportInfo = new ExportInfo.Builder()
-            .exportClauseType(ExportType.UNKNOWN)
+            .exportClauseType(ExportType.LOCAL)
             .modifiers(modifiers)
             .tsSourceCode(tsSourceCode)
             .originTsPosition(originTsPosition)
             .declaringArkFile(arkFile)
+            .exportClauseName('default')
         if (ts.isIdentifier(node.expression)) { //export default xx
-            exportInfo.exportClauseName(node.expression.text);
+            exportInfo.nameBeforeAs(node.expression.text);
         } else if (ts.isAsExpression(node.expression)) { //export default xx as YY
-            exportInfo.exportClauseName(node.expression.expression.getText(sourceFile))
+            exportInfo.nameBeforeAs(node.expression.expression.getText(sourceFile))
         }
         exportInfos.push(exportInfo.build());
     }

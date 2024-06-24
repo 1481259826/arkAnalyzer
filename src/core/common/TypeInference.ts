@@ -42,6 +42,7 @@ import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/Ar
 import { ModelUtils } from "./ModelUtils";
 import { ArkField } from '../model/ArkField';
 import { ArkClass } from '../model/ArkClass';
+import { TypeSignature } from "../model/ArkExport";
 
 const logger = Logger.getLogger();
 
@@ -162,9 +163,22 @@ export class TypeInference {
         const fieldName = field.getFieldName();
         let arkClass
         if (!(type instanceof ClassType)) {
-            const typeSi = ModelUtils.getTypeSignatureInImportInfoWithName(baseName, arkMethod.getDeclaringArkFile());
-            if (typeSi instanceof ClassSignature) {
-                arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(typeSi);
+            arkClass = ModelUtils.getClassWithName(baseName, arkMethod);
+            if (!arkClass) {
+                arkClass = ModelUtils.getNamespaceWithName(baseName, arkMethod)?.getClassWithName(fieldName);
+                if (arkClass) {
+                    return arkClass;
+                }
+                const typeSi = ModelUtils.getTypeSignatureInImportInfoWithName(baseName, arkMethod.getDeclaringArkFile());
+                if (typeSi instanceof NamespaceSignature) {
+                    arkClass = arkMethod.getDeclaringArkFile().getScene().getNamespace(typeSi)?.getClassWithName(fieldName);
+                    if (arkClass) {
+                        return arkClass;
+                    }
+                }
+                if (typeSi instanceof ClassSignature) {
+                    arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(typeSi);
+                }
             }
         } else {
             arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
@@ -176,9 +190,12 @@ export class TypeInference {
         field.getFieldSignature().setDeclaringClassSignature(arkClass.getSignature());
         let arkField = arkClass.getFieldWithName(fieldName) ?? arkClass.getStaticFieldWithName(fieldName);
         if (arkField == null) {
-            const tsField = arkClass.getDeclaringArkFile().getExportInfoBy(fieldName);
-            if (tsField && tsField.getTypeSignature() instanceof ClassSignature) {
-                field.getFieldSignature().setType(new ClassType(tsField.getTypeSignature() as ClassSignature));
+            const exportInfo = arkClass.getDeclaringArkFile().getExportInfoBy(fieldName);
+            if (exportInfo) {
+                const newType = this.parseSignature2Type(exportInfo.getTypeSignature());
+                if (newType) {
+                    field.getFieldSignature().setType(newType);
+                }
             }
         } else {
             let fieldType = arkField.getType();
@@ -186,19 +203,30 @@ export class TypeInference {
                 const fieldTypeName = fieldType.getName();
                 const signature = ModelUtils.getClassWithName(fieldTypeName, arkMethod)?.getSignature()
                     ?? ModelUtils.getTypeSignatureInImportInfoWithName(fieldTypeName, arkMethod.getDeclaringArkFile());
-                if (signature instanceof ClassSignature) {
-                    fieldType = new ClassType(signature);
-                } else if (signature instanceof NamespaceSignature) {
-                    let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
-                    namespaceType.setNamespaceSignature(signature);
-                    fieldType = namespaceType;
-                } else if (signature instanceof MethodSignature) {
-                    fieldType = new CallableType(signature);
+                const newType = this.parseSignature2Type(signature);
+                if (newType) {
+                    arkField.setType(newType);
                 }
-                arkField.setType(fieldType);
             }
         }
         return arkField;
+    }
+
+    private static parseSignature2Type(signature: TypeSignature | undefined): Type | null {
+        if (!signature) {
+            return null;
+        }
+        if (signature instanceof ClassSignature) {
+            return new ClassType(signature);
+        } else if (signature instanceof NamespaceSignature) {
+            let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
+            namespaceType.setNamespaceSignature(signature);
+            return namespaceType;
+        } else if (signature instanceof MethodSignature) {
+            return new CallableType(signature);
+        } else {
+            return signature.getType();
+        }
     }
 
     public static inferTypeInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
@@ -207,23 +235,15 @@ export class TypeInference {
             if (leftOp instanceof Local) {
                 const leftOpType = leftOp.getType();
                 if (leftOpType instanceof AnnotationType) {
-                    if (arkMethod === null) {
-                        return
-                    }
                     let leftOpTypeString = leftOpType.getOriginType()
                     if (leftOpType instanceof AnnotationNamespaceType) {
-                        let signature = ModelUtils.getClassWithName(leftOpTypeString, arkMethod)?.getSignature()
+                        const signature = ModelUtils.getClassWithName(leftOpTypeString, arkMethod)?.getSignature()
                             ?? ModelUtils.getTypeSignatureInImportInfoWithName(leftOpTypeString, arkMethod.getDeclaringArkFile());
-                        if (signature === undefined) {
+                        const type = this.parseSignature2Type(signature);
+                        if (type) {
+                            leftOp.setType(type);
+                        } else {
                             leftOp.setType(stmt.getRightOp().getType());
-                        } else if (signature instanceof ClassSignature) {
-                            leftOp.setType(new ClassType(signature));
-                        } else if (signature instanceof NamespaceSignature) {
-                            let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
-                            namespaceType.setNamespaceSignature(signature);
-                            leftOp.setType(namespaceType);
-                        } else if (signature instanceof MethodSignature) {
-                            leftOp.setType(new CallableType(signature));
                         }
                     }
                 } else if (leftOpType instanceof UnknownType) {
@@ -231,20 +251,13 @@ export class TypeInference {
                     if (rightOp instanceof ArkParameterRef) {
                         let rightOpType = rightOp.getType()
                         if (rightOpType instanceof UnclearReferenceType) {
-                            if (arkMethod == null)
-                                return
                             let signature = ModelUtils.getClassWithName(rightOpType.getName(), arkMethod)?.getSignature()
                                 ?? ModelUtils.getTypeSignatureInImportInfoWithName(rightOpType.getName(), arkMethod.getDeclaringArkFile());
-                            if (signature === undefined) {
+                            const type = this.parseSignature2Type(signature);
+                            if (type) {
+                                leftOp.setType(type);
+                            } else {
                                 leftOp.setType(stmt.getRightOp().getType());
-                            } else if (signature instanceof ClassSignature) {
-                                leftOp.setType(new ClassType(signature));
-                            } else if (signature instanceof NamespaceSignature) {
-                                let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
-                                namespaceType.setNamespaceSignature(signature);
-                                leftOp.setType(namespaceType);
-                            } else if (signature instanceof MethodSignature) {
-                                leftOp.setType(new CallableType(signature));
                             }
                         } else {
                             leftOp.setType(rightOpType)
