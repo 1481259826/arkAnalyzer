@@ -56,8 +56,9 @@ class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
         logger.error('testStmtsOfSimpleProject start');
 
-        const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
+        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
         // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const projectDir = 'tests/resources/arkIRTransformer/expression';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
@@ -97,7 +98,7 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
             logger.error(`text: ${threeAddresStmt.toString()}`);
-            logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
+            // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
             // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
             //     logger.error(`text: ${threeAddresStmt.toString()}`);
             // }
