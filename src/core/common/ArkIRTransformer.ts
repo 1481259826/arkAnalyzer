@@ -744,7 +744,7 @@ export class ArkIRTransformer {
     private callableNodeToValueAndStmts(callableNode: ts.ArrowFunction | ts.FunctionExpression): ValueAndStmts {
         const declaringClass = this.declaringMethod.getDeclaringArkClass();
         const arrowArkMethod = new ArkMethod();
-        buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile);
+        buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile, this.declaringMethod);
         declaringClass.addMethod(arrowArkMethod);
 
         const callableType = new CallableType(arrowArkMethod.getSignature());
