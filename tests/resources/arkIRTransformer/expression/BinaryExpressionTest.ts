@@ -13,25 +13,9 @@
  * limitations under the License.
  */
 
-@Component
-struct Foo {
-    flag: boolean = false;
-    flag1: boolean = false;
+let a = 0;
+let b = 0;
 
-@Builder
-    MyBuilderFunction() {
-        if (this.flag) {
-            Row()
-        } else {
-            Column()
-        }
-    }
-
-    build() {
-        if (this.flag) {
-            this.MyBuilderFunction()
-        } else {
-            Column()
-        }
-    }
-}
+let c = (a + b) / (a - b);
+let d = a & b;
+let e = (a || b) && a;

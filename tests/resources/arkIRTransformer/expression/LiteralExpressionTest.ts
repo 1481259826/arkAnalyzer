@@ -13,25 +13,6 @@
  * limitations under the License.
  */
 
-@Component
-struct Foo {
-    flag: boolean = false;
-    flag1: boolean = false;
-
-@Builder
-    MyBuilderFunction() {
-        if (this.flag) {
-            Row()
-        } else {
-            Column()
-        }
-    }
-
-    build() {
-        if (this.flag) {
-            this.MyBuilderFunction()
-        } else {
-            Column()
-        }
-    }
-}
+const arr1 = [1, 2, 3];
+const arr2 = [];
+let arr3 = [1, 2, '3'];

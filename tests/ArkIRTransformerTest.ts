@@ -58,6 +58,7 @@ class ArkIRTransformerTest {
 
         // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        // const projectDir = 'tests/resources/arkIRTransformer/expression';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
@@ -121,10 +122,10 @@ class ArkIRTransformerTest {
                     const body = arkMethod.getBody();
                     this.printStmts(body);
 
-                    logger.error('-- locals:');
-                    for (const local of arkMethod.getBody().getLocals()) {
-                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    }
+                    // logger.error('-- locals:');
+                    // for (const local of arkMethod.getBody().getLocals()) {
+                    //     logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                    // }
                 }
             }
         }

@@ -13,25 +13,7 @@
  * limitations under the License.
  */
 
-@Component
-struct Foo {
-    flag: boolean = false;
-    flag1: boolean = false;
-
-@Builder
-    MyBuilderFunction() {
-        if (this.flag) {
-            Row()
-        } else {
-            Column()
-        }
-    }
-
-    build() {
-        if (this.flag) {
-            this.MyBuilderFunction()
-        } else {
-            Column()
-        }
-    }
-}
+const a = 1;
+const b = -a;
+const c = ~a;
+const d = !a;

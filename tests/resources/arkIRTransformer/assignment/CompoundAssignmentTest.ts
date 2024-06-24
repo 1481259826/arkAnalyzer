@@ -13,25 +13,26 @@
  * limitations under the License.
  */
 
-@Component
-struct Foo {
-    flag: boolean = false;
-    flag1: boolean = false;
+let a = 1;
+a += 2;
+a -= 3;
+a *= 4;
+a /= 5;
+a **= 6;
 
-@Builder
-    MyBuilderFunction() {
-        if (this.flag) {
-            Row()
-        } else {
-            Column()
-        }
-    }
+a &= 7;
+a |= 8;
+a ^= 9;
 
-    build() {
-        if (this.flag) {
-            this.MyBuilderFunction()
-        } else {
-            Column()
-        }
-    }
-}
+a <<= 10;
+a >>= 11;
+a >>>= 12;
+
+let b = 'hello';
+b += ' world';
+
+let c = 1;
+c++;
+++c;
+c--;
+--c;

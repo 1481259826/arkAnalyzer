@@ -16,10 +16,10 @@
 // // call
 // console.log('hi');
 //
-// // for i
-// for (let i = 0; i < 10; i++) {
-//     console.log(i);
-// }
+// for i
+for (let i = 0; i < 10; i++) {
+    console.log(i);
+}
 //
 // for of
 // let arr = [1,2,3]
@@ -172,8 +172,14 @@
 //     let b = -a + 1;
 // }
 
-function main() {
-    let i = 'hi'.charAt(0);
+// function main() {
+//     let i = 'hi'.charAt(0);
+//
+//     let j = /hjh/.test(i);
+// }
 
-    let j = /hjh/.test(i);
+function main() {
+    const a = [1, 2];
+    a.forEach((i) => {
+    });
 }

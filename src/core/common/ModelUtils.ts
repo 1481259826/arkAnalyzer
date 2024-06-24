@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-import { Local } from "../base/Local";
-import { ArkClass } from "../model/ArkClass";
-import { ArkFile } from "../model/ArkFile";
-import { ArkMethod } from "../model/ArkMethod";
-import { ArkNamespace } from "../model/ArkNamespace";
-import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
-import { TypeSignature } from "../model/ArkExport";
+import { Local } from '../base/Local';
+import { ArkClass } from '../model/ArkClass';
+import { ArkFile } from '../model/ArkFile';
+import { ArkMethod } from '../model/ArkMethod';
+import { ArkNamespace } from '../model/ArkNamespace';
+import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { TypeSignature } from '../model/ArkExport';
+import { Decorator } from '../base/Decorator';
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -28,7 +29,7 @@ export class ModelUtils {
                 return arkMethod.getSignature();
             }
         }
-        return null
+        return null;
     }
 
     public static getClassWithNameInNamespaceRecursively(className: string, ns: ArkNamespace): ArkClass | null {
@@ -49,14 +50,14 @@ export class ModelUtils {
     }
 
     public static getClassWithNameFromClass(className: string, startFrom: ArkClass): ArkClass | null {
-        if (!className.includes(".")) {
+        if (!className.includes('.')) {
             let res: ArkClass | null = null;
             if (startFrom.getDeclaringArkNamespace() != null) {
                 res = this.getClassWithNameInNamespaceRecursively(className, startFrom.getDeclaringArkNamespace());
             } else {
                 res = this.getClassInFileWithName(className, startFrom.getDeclaringArkFile());
             }
-            return res
+            return res;
         } else {
             const names = className.split('.');
             let nameSpace = this.getNamespaceWithNameFromClass(names[0], startFrom);
@@ -71,12 +72,11 @@ export class ModelUtils {
         return null;
     }
 
-
     /**
      *  search class within the file that contain the given method
      */
     public static getClassWithName(className: string, startFrom: ArkMethod): ArkClass | null {
-        if (!className.includes(".")) {
+        if (!className.includes('.')) {
             const thisClass = startFrom.getDeclaringArkClass();
             if (thisClass.getName() == className) {
                 return thisClass;
@@ -127,7 +127,6 @@ export class ModelUtils {
     public static getTypeSignatureInImportInfoWithName(name: string, arkFile: ArkFile): TypeSignature | undefined {
         return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getTypeSignature();
     }
-
 
     /** search method within the file that contain the given method */
     public static getMethodWithName(methodName: string, startFrom: ArkMethod): ArkMethod | null {
@@ -266,7 +265,7 @@ export class ModelUtils {
         const allClasses = arkFile.getClasses();
         this.getAllNamespacesInFile(arkFile).forEach((namespace) => {
             allClasses.push(...namespace.getClasses());
-        })
+        });
         return allClasses;
     }
 
@@ -274,7 +273,19 @@ export class ModelUtils {
         const allMethods: ArkMethod[] = [];
         this.getAllClassesInFile(arkFile).forEach((cls) => {
             allMethods.push(...cls.getMethods());
-        })
+        });
         return allMethods;
+    }
+
+    public static isArkUIBuilderMethod(arkMethod: ArkMethod): boolean {
+        let isArkUIBuilderMethod = arkMethod.hasBuilderDecorator();
+
+        if (!isArkUIBuilderMethod && arkMethod.getName() == 'build') {
+            const fileName = arkMethod.getDeclaringArkClass().getDeclaringArkFile().getName();
+            if (fileName.endsWith('.ets')) {
+                isArkUIBuilderMethod = true;
+            }
+        }
+        return isArkUIBuilderMethod;
     }
 }
