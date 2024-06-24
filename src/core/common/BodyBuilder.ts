@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { ArkBody } from "../model/ArkBody";
-import { ArkMethod } from "../model/ArkMethod";
-import { MethodSignature } from "../model/ArkSignature";
-import { CfgBuilder } from "./CfgBuilder";
-import * as ts from "ohos-typescript";
+import { ArkBody } from '../model/ArkBody';
+import { ArkMethod } from '../model/ArkMethod';
+import { MethodSignature } from '../model/ArkSignature';
+import { CfgBuilder } from './CfgBuilder';
+import * as ts from 'ohos-typescript';
 
 export class BodyBuilder {
     private cfgBuilder: CfgBuilder;
@@ -30,11 +30,9 @@ export class BodyBuilder {
 
     public build(): ArkBody {
         this.cfgBuilder.buildCfgBuilder();
-        let cfg = this.cfgBuilder.buildCfg();
+        const {cfg, originalCfg, stmtToOriginalStmt, locals} = this.cfgBuilder.buildCfgAndOriginalCfg();
         cfg.buildDefUseStmt();
-        let originalCfg = this.cfgBuilder.buildOriginalCfg();
-        let locals = new Set(this.cfgBuilder.getLocals());
 
-        return new ArkBody(this.methodSignature, locals, originalCfg, cfg);
+        return new ArkBody(this.methodSignature, locals, originalCfg, cfg, stmtToOriginalStmt);
     }
 }
