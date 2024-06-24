@@ -35,6 +35,7 @@ import { TypeInference } from './TypeInference';
 import { ArkIRTransformer } from './ArkIRTransformer';
 import { LineColPosition } from '../base/Position';
 import { COMPONENT_BUILD_FUNCTION } from './EtsConst';
+import { Decorator } from '../base/Decorator';
 
 const logger = Logger.getLogger();
 
@@ -932,7 +933,12 @@ export class CfgBuilder {
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
         }
-        this.walkAST(this.entry, this.exit, stmts);
+        if (!this.isBuilder()) {
+            this.walkAST(this.entry, this.exit, stmts);
+        } else {
+            this.handleBuilder(stmts);
+        }
+        
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
@@ -942,6 +948,36 @@ export class CfgBuilder {
         this.buildBlocksNextLast();
         this.addReturnBlock();
         this.resetWalked();
+    }
+
+    private isBuilder(): boolean {
+        let isBuilder = false;
+        for (const decorator of this.declaringMethod.getModifiers()) {
+            if (decorator instanceof Decorator && decorator.getKind() == 'Builder') {
+                isBuilder = true;
+                break;
+            }
+        }
+        if (!isBuilder && this.name == 'build') {
+            const fileName = this.declaringClass.getDeclaringArkFile().getName().split('.')
+            if (fileName[fileName.length - 1] == 'ets') {
+                isBuilder = true;
+            }
+        }
+        return isBuilder;
+        
+    }
+
+    private handleBuilder(stmts: ts.Node[]): void {
+        let lastStmt = this.entry;
+        for (const stmt of stmts) {
+            const stmtBuilder = new StatementBuilder('statement', stmt.getText(this.sourceFile), stmt, 0);
+            lastStmt.next = stmtBuilder;
+            stmtBuilder.lasts.add(lastStmt);
+            lastStmt = stmtBuilder;
+        }
+        lastStmt.next = this.exit;
+        this.exit.lasts.add(lastStmt);
     }
 
     public buildCfgAndOriginalCfg(): {
