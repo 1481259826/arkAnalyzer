@@ -13,20 +13,23 @@
  * limitations under the License.
  */
 
-import {SceneConfig} from "../../src/Config";
-import * as ty from "../../src/core/base/Type";
-import {assert, describe, it} from "vitest";
-import {Scene} from "../../src/Scene";
-import path from "path";
-import {SourceUtils} from "../../src/save/source/SourceUtils";
+import { SceneConfig } from '../../../src/Config';
+import * as ty from '../../../src/core/base/Type';
+import { assert, describe, it } from 'vitest';
+import { Scene } from '../../../src/Scene';
+import path from 'path';
+import { SourceClassPrinter } from '../../../src';
+import { SourceTransformer } from '../../../src/save/source/SourceTransformer';
 
-
-describe("SourceUtils.typeToString Test", () => {
+describe('SourceUtilsTest', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../resources/save"));
+    config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
-    let arkClass = scene.getClasses().find(cls => cls.getName() == 'Animal');
+    let arkClass = scene.getClasses().find((cls) => cls.getName() == 'Animal');
+    let arkFile = scene.getFiles()[0];
+    let clsPrinter = new SourceClassPrinter(arkClass!);
+    let transformer = new SourceTransformer(clsPrinter);
 
     it('TypeLiteralType case', () => {
         if (arkClass == null) {
@@ -35,23 +38,24 @@ describe("SourceUtils.typeToString Test", () => {
         }
         let type = new ty.TypeLiteralType();
         type.setMembers(arkClass.getFields());
-        assert.equal(SourceUtils.typeToString(type), "{name:undefined}");
-    })
+
+        assert.equal(transformer.typeToString(type), '{name:undefined}');
+    });
 
     it('Array case', () => {
         let type = [1, 2];
-        assert.equal(SourceUtils.typeToString(type), "1 | 2");
-    })
+        assert.equal(transformer.typeToString(type), '1 | 2');
+    });
 
     it('LiteralType case', () => {
-        let type = new ty.LiteralType("BooleanKeyword");
-        assert.equal(SourceUtils.typeToString(type), "boolean");
-    })
+        let type = new ty.LiteralType('BooleanKeyword');
+        assert.equal(transformer.typeToString(type), 'boolean');
+    });
 
     it('UnknownType case', () => {
         let type = new ty.UnknownType();
-        assert.equal(SourceUtils.typeToString(type), "any");
-    })
+        assert.equal(transformer.typeToString(type), 'any');
+    });
 
     it('ClassType case', () => {
         if (arkClass == null) {
@@ -59,34 +63,29 @@ describe("SourceUtils.typeToString Test", () => {
             return;
         }
         let type = new ty.ClassType(arkClass.getSignature());
-        assert.equal(SourceUtils.typeToString(type), "Animal");
-    })
-
+        assert.equal(transformer.typeToString(type), 'Animal');
+    });
 
     it('ArrayType case 1', () => {
         let type = new ty.ArrayType(ty.UnknownType.getInstance(), 2);
-        assert.equal(SourceUtils.typeToString(type), "(any)[][]");
-    })
+        assert.equal(transformer.typeToString(type), '(any)[][]');
+    });
     it('ArrayType case 2', () => {
         let type = new ty.ArrayType(ty.StringType.getInstance(), 1);
-        assert.equal(SourceUtils.typeToString(type), "string[]");
-    })
+        assert.equal(transformer.typeToString(type), 'string[]');
+    });
 
     it('VoidType case', () => {
         let type = new ty.VoidType();
-        assert.equal(SourceUtils.typeToString(type), "void");
-    })
-})
+        assert.equal(transformer.typeToString(type), 'void');
+    });
 
-
-describe("SourceUtils.typeArrayToString Test", () => {
-
-    it('normal case', () => {
+    it('typeArrayToString Test1', () => {
         let types = [ty.VoidType.getInstance(), ty.StringType.getInstance()];
-        assert.equal(SourceUtils.typeArrayToString(types), "void,string");
-    })
-    it('normal case', () => {
+        assert.equal(transformer.typeArrayToString(types), 'void, string');
+    });
+    it('typeArrayToString Test2', () => {
         let types = [ty.UnknownType.getInstance(), ty.StringType.getInstance()];
-        assert.equal(SourceUtils.typeArrayToString(types, "@"), "any@string");
-    })
-})
+        assert.equal(transformer.typeArrayToString(types, '@'), 'any@string');
+    });
+});

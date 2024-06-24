@@ -13,59 +13,89 @@
  * limitations under the License.
  */
 
-import { UnknownType } from "../../core/base/Type";
-import { ArkMethod } from "../../core/model/ArkMethod";
-import { ArkCodeBuffer } from "../ArkStream";
-import { SourceBase } from "./SourceBase";
-import { SourceBody } from "./SourceBody";
-import { SourceUtils } from "./SourceUtils";
+import { UnknownType } from '../../core/base/Type';
+import { ArkMethod } from '../../core/model/ArkMethod';
+import { ArkCodeBuffer } from '../ArkStream';
+import { SourceBase } from './SourceBase';
+import { SourceBody } from './SourceBody';
+import { SourceStmt } from './SourceStmt';
+import { SourceTransformer } from './SourceTransformer';
+import { SourceUtils } from './SourceUtils';
 
 /**
  * @category save
  */
-export class SourceMethod extends SourceBase{
-    method: ArkMethod;
+export class SourceMethod extends SourceBase {
+    private method: ArkMethod;
+    private transformer: SourceTransformer;
 
-    public constructor(indent: string, method: ArkMethod) {
-        super(indent);
+    public constructor(method: ArkMethod, indent: string = '') {
+        super(method.getDeclaringArkFile(), indent);
         this.method = method;
+        this.transformer = new SourceTransformer(this);
     }
 
     public dump(): string {
         this.printer.clear();
-        if (this.method.isDefaultArkMethod()) {
-            this.printBody(this.method);
-        } else {
+        if (!this.method.isDefaultArkMethod()) {
             this.printMethod(this.method);
+        } else {
+            this.printBody(this.method);
         }
         return this.printer.toString();
     }
+
     public dumpOriginal(): string {
         return this.method.getCode() + '\n';
     }
+
     public getLine(): number {
-        return this.method.getLine();
+        let line = this.method.getLine();
+        if (line > 0) {
+            return line;
+        }
+
+        for (const stmt of this.method.getCfg().getStmts().reverse()) {
+            if (stmt.getOriginPositionInfo().getLineNo() > 0) {
+                return stmt.getOriginPositionInfo().getLineNo();
+            }
+        }
+
+        return line;
     }
 
-    public printMethod(method: ArkMethod): void {
+    public dumpDefaultMethod(): SourceStmt[] {
+        let srcBody = new SourceBody(this.printer.getIndent(), this.method);
+        return srcBody.getStmts();
+    }
+
+    private printMethod(method: ArkMethod): void {
+        this.printDecorator(method.getModifiers());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
-        if (method.containsModifier('AbstractKeyword') 
-            || method.getDeclaringArkClass().getOriginType().toLowerCase() == 'interface') {
+        if (
+            method.containsModifier('AbstractKeyword') ||
+            method.getDeclaringArkClass().getOriginType().toLowerCase() ==
+                'interface'
+        ) {
             this.printer.writeLine(';');
             return;
         }
 
-        this.printer.writeLine('{');
+        this.printer.writeLine(' {');
         this.printer.incIndent();
         this.printBody(method);
         this.printer.decIndent();
 
         this.printer.writeIndent();
-        this.printer.writeLine('}');
+        if (SourceUtils.isAnonymousMethod(method.getName())) {
+            this.printer.write('}');
+        } else {
+            this.printer.writeLine('}');
+        }
     }
 
-    public printBody(method: ArkMethod): void {
+    private printBody(method: ArkMethod): void {
         let srcBody = new SourceBody(this.printer.getIndent(), method);
         this.printer.write(srcBody.dump());
     }
@@ -73,22 +103,24 @@ export class SourceMethod extends SourceBase{
     protected methodProtoToString(method: ArkMethod): string {
         let code = new ArkCodeBuffer();
         code.writeSpace(this.modifiersToString(method.getModifiers()));
-        if (!method.getName().startsWith('AnonymousFunc$_')) {
+        if (!SourceUtils.isAnonymousMethod(method.getName())) {
             if (method.getDeclaringArkClass()?.isDefaultArkClass()) {
                 code.writeSpace('function');
             }
-            code.write(this.resolveMethodName(method.getName()));   
-        } else {
-            
+            code.write(this.resolveMethodName(method.getName()));
         }
         if (method.getTypeParameter().length > 0) {
             let typeParameters: string[] = [];
             method.getTypeParameter().forEach((parameter) => {
-                typeParameters.push(SourceUtils.typeToString(parameter));
+                typeParameters.push(this.transformer.typeToString(parameter));
             });
-            code.write(`<${SourceUtils.typeArrayToString(method.getTypeParameter())}>`);
-        } 
-        
+            code.write(
+                `<${this.transformer.typeArrayToString(
+                    method.getTypeParameter()
+                )}>`
+            );
+        }
+
         let parameters: string[] = [];
         method.getParameters().forEach((parameter) => {
             let str: string = parameter.getName();
@@ -96,19 +128,43 @@ export class SourceMethod extends SourceBase{
                 str += '?';
             }
             if (parameter.getType()) {
-                str += ': ' + SourceUtils.typeToString(parameter.getType());
-            } 
+                str +=
+                    ': ' + this.transformer.typeToString(parameter.getType());
+            }
             parameters.push(str);
         });
-        code.write(`(${parameters.join(',')})`);
+        code.write(`(${parameters.join(', ')})`);
         const returnType = method.getReturnType();
         if (!(returnType instanceof UnknownType)) {
-            code.writeSpace(`: ${SourceUtils.typeToString(returnType)}`);
+            code.write(`: ${this.transformer.typeToString(returnType)}`);
         }
-        if (method.getName().startsWith('AnonymousFunc$_')) {
-            code.write(' => ');
+        if (SourceUtils.isAnonymousMethod(method.getName())) {
+            code.write(' =>');
         }
         return code.toString();
     }
 
+    public toArrowFunctionTypeString(): string {
+        let code = new ArkCodeBuffer();
+
+        let parameters: string[] = [];
+        this.method.getParameters().forEach((parameter) => {
+            let str: string = parameter.getName();
+            if (parameter.isOptional()) {
+                str += '?';
+            }
+            if (parameter.getType()) {
+                str +=
+                    ': ' + this.transformer.typeToString(parameter.getType());
+            }
+            parameters.push(str);
+        });
+        code.write(`(${parameters.join(', ')}) => `);
+        const returnType = this.method.getReturnType();
+        if (!(returnType instanceof UnknownType)) {
+            code.writeSpace(`${this.transformer.typeToString(returnType)}`);
+        }
+
+        return code.toString();
+    }
 }

@@ -652,6 +652,10 @@ export class ArrayLiteralExpr extends AbstractExpr {
         this.type = type;
     }
 
+    public getElements() {
+        return this.elements;
+    }
+
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push();

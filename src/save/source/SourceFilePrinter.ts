@@ -15,35 +15,17 @@
 
 /*
  * TODO:
- * 
+ *
  * 1. Method parameter:
  *  a) default value 不支持
- *      source: move(distanceInMeters = 5)  
+ *      source: move(distanceInMeters = 5)
  *      parsed: move(distanceInMeters)
  *  c) string[] 类型解析为 ArrayType，无法还原
  *  d) 构造函数Access Modifiers 不支持
  *     constructor(public make: string, public model: string) {
  *     }
- * 
- * 2. Fileld:
- *  a) default value
- *      source: readonly numberOfLegs: number = 8; 
- *      parsed: readonly numberOfLegs:number;
- * 
- *   
- * 3. Enum
- *  a) 初始化不支持二元操作和函数调用
- *      enum FileAccess {
- *          // constant members
- *          None,
- *          Read    = 1 << 1,
- *          Write   = 1 << 2,
- *          ReadWrite  = Read | Write,
- *          // computed member
- *          G = "123".length
- *   }
- * 
- * 4. 泛型
+ *
+ * 2. 泛型
  *  a) field泛型<>类型丢失
  * class GenericNumber<T> {
  *     private methods: Set<string>;
@@ -52,18 +34,19 @@
  */
 import { ArkFile } from '../../core/model/ArkFile';
 import { Printer } from '../Printer';
-import { SourceBase } from './SourceBase';
-import { SourceClass} from './SourceClass';
+import { Dump } from './SourceBase';
+import { SourceClass } from './SourceClass';
 import { SourceMethod } from './SourceMethod';
 import { SourceExportInfo, SourceImportInfo } from './SourceModule';
 import { SourceNamespace } from './SourceNamespace';
+import { SourceUtils } from './SourceUtils';
 
 /**
  * @category save
  */
 export class SourceFilePrinter extends Printer {
     arkFile: ArkFile;
-    items: SourceBase[] = [];
+    items: Dump[] = [];
 
     constructor(arkFile: ArkFile) {
         super();
@@ -74,32 +57,41 @@ export class SourceFilePrinter extends Printer {
         this.printer.clear();
         // print imports
         for (let info of this.arkFile.getImportInfos()) {
-            this.items.push(new SourceImportInfo('', info));
+            this.items.push(new SourceImportInfo(info));
         }
         // print namespace
         for (let ns of this.arkFile.getNamespaces()) {
-            this.items.push(new SourceNamespace('', ns));
+            this.items.push(new SourceNamespace(ns));
         }
-        
-        // print class 
+
+        // print class
         for (let cls of this.arkFile.getClasses()) {
             if (cls.isDefaultArkClass()) {
                 for (let method of cls.getMethods()) {
-                    if (!method.getName().startsWith('AnonymousFunc$_')) {
-                        this.items.push(new SourceMethod('', method));
+                    if (method.isDefaultArkMethod()) {
+                        this.items.push(
+                            ...new SourceMethod(
+                                method,
+                                this.printer.getIndent()
+                            ).dumpDefaultMethod()
+                        );
+                    } else if (
+                        !SourceUtils.isAnonymousMethod(method.getName())
+                    ) {
+                        this.items.push(new SourceMethod(method));
                     }
                 }
-            } else {
-                this.items.push(new SourceClass('', cls));
+            } else if (!SourceUtils.isAnonymousClass(cls.getName())) {
+                this.items.push(new SourceClass(cls));
             }
         }
         // print export
         for (let info of this.arkFile.getExportInfos()) {
-            this.items.push(new SourceExportInfo('', info));
+            this.items.push(new SourceExportInfo(info));
         }
 
         this.items.sort((a, b) => a.getLine() - b.getLine());
-        this.items.forEach((v):void => {
+        this.items.forEach((v): void => {
             this.printer.write(v.dump());
         });
 
@@ -108,5 +100,4 @@ export class SourceFilePrinter extends Printer {
     public dumpOriginal(): string {
         return this.arkFile.getCode();
     }
-
 }
