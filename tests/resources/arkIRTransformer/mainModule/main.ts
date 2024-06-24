@@ -177,3 +177,9 @@ for (let i = 0; i < 10; i++) {
 //
 //     let j = /hjh/.test(i);
 // }
+
+function main() {
+    const a = [1, 2];
+    a.forEach((i) => {
+    });
+}
