@@ -13,34 +13,25 @@
  * limitations under the License.
  */
 
-@Entry
 @Component
-struct Parent {
-@State simpleList: Array<string> = ['one', 'two', 'three'];
+struct Foo {
+    flag: boolean = false;
+    flag1: boolean = false;
 
-    build() {
-        Row() {
-            Column() {
-                Repeat<string>(this.simpleList)
-                    .each((obj: RepeatItem<string>)=>{
-                        ChildItem({ item: obj.item })
-                    })
-                    .key((item: string) => item)
-            }
-        .width('100%')
-                .height('100%')
+@Builder
+    MyBuilderFunction() {
+        if (this.flag) {
+            Row()
+        } else {
+            Column()
         }
-    .height('100%')
-            .backgroundColor(0xF1F3F5)
     }
-}
-
-@Component
-struct ChildItem {
-@Prop item: string;
 
     build() {
-        Text(this.item)
-            .fontSize(50)
+        if (this.flag) {
+            this.MyBuilderFunction()
+        } else {
+            Column()
+        }
     }
 }
