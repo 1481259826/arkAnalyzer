@@ -13,17 +13,17 @@
  * limitations under the License.
  */
 
-import { BasicBlock } from "../core/graph/BasicBlock";
-import { ArkClass } from "../core/model/ArkClass";
-import { ArkFile } from "../core/model/ArkFile";
-import { ArkMethod } from "../core/model/ArkMethod";
-import { ArkNamespace } from "../core/model/ArkNamespace";
-import { Printer } from "./Printer";
+import { BasicBlock } from '../core/graph/BasicBlock';
+import { ArkClass } from '../core/model/ArkClass';
+import { ArkFile } from '../core/model/ArkFile';
+import { ArkMethod } from '../core/model/ArkMethod';
+import { ArkNamespace } from '../core/model/ArkNamespace';
+import { Printer } from './Printer';
 
 /**
  * @category save
  */
-export class DotMethodPrinter extends Printer{
+export class DotMethodPrinter extends Printer {
     method: ArkMethod;
     nesting: boolean;
 
@@ -36,15 +36,25 @@ export class DotMethodPrinter extends Printer{
     public dump(): string {
         this.printer.clear();
         if (this.nesting) {
-            this.printer.writeIndent().writeLine(`subgraph "cluster_${this.method.getSignature()}" {`);
+            this.printer
+                .writeIndent()
+                .writeLine(
+                    `subgraph "cluster_${this.method.getSignature()}" {`
+                );
         } else {
-            this.printer.writeIndent().writeLine(`digraph "${this.method.getSignature()}" {`);
+            this.printer
+                .writeIndent()
+                .writeLine(`digraph "${this.method.getSignature()}" {`);
         }
         this.printer.incIndent();
-        this.printer.writeIndent().writeLine(`label="${this.method.getSignature()}";`);
+        this.printer
+            .writeIndent()
+            .writeLine(`label="${this.method.getSignature()}";`);
 
         let blocks = this.method.getBody().getCfg().getBlocks();
-        let prefix = `Node${this.stringHashCode(this.method.getSignature().toString())}`
+        let prefix = `Node${this.stringHashCode(
+            this.method.getSignature().toString()
+        )}`;
         this.printBlocks(blocks, prefix);
 
         this.printer.decIndent();
@@ -55,15 +65,25 @@ export class DotMethodPrinter extends Printer{
     public dumpOriginal(): string {
         this.printer.clear();
         if (this.nesting) {
-            this.printer.writeIndent().writeLine(`subgraph "cluster_Original_${this.method.getSignature()}" {`);
+            this.printer
+                .writeIndent()
+                .writeLine(
+                    `subgraph "cluster_Original_${this.method.getSignature()}" {`
+                );
         } else {
-            this.printer.writeIndent().writeLine(`digraph "${this.method.getSignature()}" {`);
+            this.printer
+                .writeIndent()
+                .writeLine(`digraph "${this.method.getSignature()}" {`);
         }
         this.printer.incIndent();
-        this.printer.writeIndent().writeLine(`label="${this.method.getSignature()}_original";`);
+        this.printer
+            .writeIndent()
+            .writeLine(`label="${this.method.getSignature()}_original";`);
 
         let blocks = this.method.getBody().getOriginalCfg().getBlocks();
-        let prefix = `NodeOriginal${this.stringHashCode(this.method.getSignature().toString())}`
+        let prefix = `NodeOriginal${this.stringHashCode(
+            this.method.getSignature().toString()
+        )}`;
         this.printBlocks(blocks, prefix);
 
         this.printer.decIndent();
@@ -74,26 +94,42 @@ export class DotMethodPrinter extends Printer{
 
     protected stringHashCode(name: string): number {
         let hashCode = 0;
-        for (let i = 0 ; i < name.length; i++) {
+        for (let i = 0; i < name.length; i++) {
             hashCode += name.charCodeAt(i);
         }
         return Math.abs(hashCode);
     }
 
     private printBlocks(blocks: Set<BasicBlock>, prefix: string): void {
-        let blockToNode: Map<BasicBlock, string> = new Map<BasicBlock, string>();
+        let blockToNode: Map<BasicBlock, string> = new Map<
+            BasicBlock,
+            string
+        >();
         let index = 0;
         for (let block of blocks) {
             let name = prefix + index++;
             blockToNode.set(block, name);
-            // Node0 [label="entry"];
-            this.printer.writeIndent().writeLine(`${name} [label="${this.getBlockContent(block, this.printer.getIndent())}"];`);
+            /** Node0 [label="entry"]; */
+            this.printer
+                .writeIndent()
+                .writeLine(
+                    `${name} [label="${this.getBlockContent(
+                        block,
+                        this.printer.getIndent()
+                    )}"];`
+                );
         }
 
         for (let block of blocks) {
             for (let nextBlock of block.getSuccessors()) {
                 // Node0 -> Node1;
-                this.printer.writeIndent().writeLine(`${blockToNode.get(block)} -> ${blockToNode.get(nextBlock)};`);
+                this.printer
+                    .writeIndent()
+                    .writeLine(
+                        `${blockToNode.get(block)} -> ${blockToNode.get(
+                            nextBlock
+                        )};`
+                    );
             }
         }
     }
@@ -113,7 +149,7 @@ export class DotMethodPrinter extends Printer{
 export class DotClassPrinter extends Printer {
     cls: ArkClass;
     nesting: boolean;
-    
+
     constructor(cls: ArkClass, nesting: boolean = false) {
         super();
         this.cls = cls;
@@ -129,7 +165,7 @@ export class DotClassPrinter extends Printer {
 
         for (let method of this.cls.getMethods()) {
             let mtd = new DotMethodPrinter(method, true);
-            this.printer.write(mtd.dump());    
+            this.printer.write(mtd.dump());
         }
 
         if (!this.nesting) {
@@ -149,7 +185,7 @@ export class DotClassPrinter extends Printer {
 
         for (let method of this.cls.getMethods()) {
             let mtd = new DotMethodPrinter(method, true);
-            this.printer.write(mtd.dumpOriginal());    
+            this.printer.write(mtd.dumpOriginal());
         }
 
         if (!this.nesting) {
@@ -173,17 +209,17 @@ export class DotNamespacePrinter extends Printer {
         this.ns = ns;
         this.nesting = nesting;
     }
-    
+
     public dump(): string {
         this.printer.clear();
         if (!this.nesting) {
             this.printer.writeLine(`digraph "${this.ns.getName()}" {`);
             this.printer.incIndent();
         }
-        
+
         for (let method of this.ns.getAllMethodsUnderThisNamespace()) {
             let mtd = new DotMethodPrinter(method, true);
-            this.printer.write(mtd.dump());    
+            this.printer.write(mtd.dump());
         }
 
         if (!this.nesting) {
@@ -203,7 +239,7 @@ export class DotNamespacePrinter extends Printer {
 
         for (let method of this.ns.getAllMethodsUnderThisNamespace()) {
             let mtd = new DotMethodPrinter(method, true);
-            this.printer.write(mtd.dumpOriginal());    
+            this.printer.write(mtd.dumpOriginal());
         }
 
         if (!this.nesting) {
@@ -235,7 +271,7 @@ export class DotFilePrinter extends Printer {
             this.printer.write(nsPrinter.dump());
         }
 
-        // print class 
+        // print class
         for (let cls of this.arkFile.getClasses()) {
             let clsPrinter = new DotClassPrinter(cls, true);
             this.printer.write(clsPrinter.dump());
@@ -256,7 +292,7 @@ export class DotFilePrinter extends Printer {
             this.printer.write(nsPrinter.dumpOriginal());
         }
 
-        // print class 
+        // print class
         for (let cls of this.arkFile.getClasses()) {
             let clsPrinter = new DotClassPrinter(cls, true);
             this.printer.write(clsPrinter.dumpOriginal());

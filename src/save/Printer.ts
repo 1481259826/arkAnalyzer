@@ -21,7 +21,7 @@ import { ArkCodeBuffer } from './ArkStream';
 export abstract class Printer {
     protected printer: ArkCodeBuffer;
 
-    public constructor(indent: string='') {
+    public constructor(indent: string = '') {
         this.printer = new ArkCodeBuffer(indent);
     }
 

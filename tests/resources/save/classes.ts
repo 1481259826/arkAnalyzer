@@ -149,3 +149,12 @@ export class ParseIntBasedZipCodeValidator {
         return s.length === 5 && parseInt(s).toString() === s;
     }
 }
+
+class ObjectLiteralTest {
+    test: Object = {x: 'n', child: [
+        {
+            x: 'c',
+            child: []
+        }
+    ]}
+}

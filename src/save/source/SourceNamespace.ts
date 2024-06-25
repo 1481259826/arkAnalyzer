@@ -13,20 +13,21 @@
  * limitations under the License.
  */
 
-import { ArkNamespace } from "../../core/model/ArkNamespace";
-import { SourceBase } from "./SourceBase";
-import { SourceClass } from "./SourceClass";
-import { SourceMethod } from "./SourceMethod";
-import { SourceExportInfo } from "./SourceModule";
+import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { Dump, SourceBase } from './SourceBase';
+import { SourceClass } from './SourceClass';
+import { SourceMethod } from './SourceMethod';
+import { SourceExportInfo } from './SourceModule';
+import { SourceUtils } from './SourceUtils';
 
 /**
  * @category save
  */
-export class SourceNamespace extends SourceBase{
+export class SourceNamespace extends SourceBase {
     ns: ArkNamespace;
 
-    public constructor(indent: string, ns: ArkNamespace) {
-        super(indent);
+    public constructor(ns: ArkNamespace, indent: string = '') {
+        super(ns.getDeclaringArkFile(), indent);
         this.ns = ns;
     }
 
@@ -35,37 +36,55 @@ export class SourceNamespace extends SourceBase{
     }
 
     public dump(): string {
-        this.printer.writeIndent().writeSpace(this.modifiersToString(this.ns.getModifiers())).writeLine(`namespace ${this.ns.getName()} {`);
+        this.printer
+            .writeIndent()
+            .writeSpace(this.modifiersToString(this.ns.getModifiers()))
+            .writeLine(`namespace ${this.ns.getName()} {`);
         this.printer.incIndent();
 
-        let items: SourceBase[] = [];
-        
-        // print class 
+        let items: Dump[] = [];
+
+        // print class
         for (let cls of this.ns.getClasses()) {
+            if (SourceUtils.isAnonymousClass(cls.getName())) {
+                continue;
+            }
             if (cls.isDefaultArkClass()) {
                 for (let method of cls.getMethods()) {
-                    if (!method.getName().startsWith('AnonymousFunc$_')) {
-                        items.push(new SourceMethod(this.printer.getIndent(), method));
+                    if (method.isDefaultArkMethod()) {
+                        items.push(
+                            ...new SourceMethod(
+                                method,
+                                this.printer.getIndent()
+                            ).dumpDefaultMethod()
+                        );
+                    } else if (
+                        !SourceUtils.isAnonymousMethod(method.getName())
+                    ) {
+                        items.push(
+                            new SourceMethod(method, this.printer.getIndent())
+                        );
                     }
                 }
             } else {
-                items.push(new SourceClass(this.printer.getIndent(), cls));
-            }            
+                items.push(new SourceClass(cls, this.printer.getIndent()));
+            }
         }
 
         // print namespace
         for (let childNs of this.ns.getNamespaces()) {
-            items.push(new SourceNamespace(this.printer.getIndent(), childNs));
+            items.push(new SourceNamespace(childNs, this.printer.getIndent()));
         }
 
         // print exportInfos
         for (let exportInfo of this.ns.getExportInfos()) {
-            items.push(new SourceExportInfo(this.printer.getIndent(), exportInfo));
+            items.push(
+                new SourceExportInfo(exportInfo, this.printer.getIndent())
+            );
         }
-        //TODO: fields /methods
-        //TODO: sort by lineno
+
         items.sort((a, b) => a.getLine() - b.getLine());
-        items.forEach((v):void => {
+        items.forEach((v): void => {
             this.printer.write(v.dump());
         });
 
@@ -78,5 +97,4 @@ export class SourceNamespace extends SourceBase{
     public dumpOriginal(): string {
         return this.ns.getCode();
     }
-
 }

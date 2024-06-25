@@ -29,7 +29,6 @@ export { BasicBlock } from './core/graph/BasicBlock';
 export { Cfg } from './core/graph/Cfg';
 export { ViewTree, ViewTreeNode } from './core/graph/ViewTree';
 
-
 // core/model
 export { ArkFile } from './core/model/ArkFile';
 export { ArkNamespace } from './core/model/ArkNamespace';
@@ -40,7 +39,7 @@ export { ExportInfo } from './core/model/ArkExport';
 export { ImportInfo } from './core/model/ArkImport';
 export { FileSignature, MethodSignature } from './core/model/ArkSignature';
 
-export { Config } from './Config';
+export { Config, SceneConfig } from './Config';
 export { Scene } from './Scene';
 
 // save
@@ -50,9 +49,9 @@ export {
     DotMethodPrinter,
     DotClassPrinter,
     DotNamespacePrinter,
-    DotFilePrinter
+    DotFilePrinter,
 } from './save/DotPrinter';
 export { SourceMethod as SourceMethodPrinter } from './save/source/SourceMethod';
 export { SourceClass as SourceClassPrinter } from './save/source/SourceClass';
 export { SourceNamespace as SourceNamespacePrinter } from './save/source/SourceNamespace';
-export { SourceFilePrinter } from './save/source/SourcePrinter';
+export { SourceFilePrinter } from './save/source/SourceFilePrinter';
