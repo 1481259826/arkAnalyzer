@@ -232,6 +232,9 @@ export class ArkIRTransformer {
                 const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
                 stmts.push(popInvokeStmt);
             }
+        }else if(expr instanceof ArkDeleteExpr){
+            const {value: _, stmts: exprStmts} = this.generateAssignStmtForValue(expr);
+            stmts.push(...exprStmts);
         }
         return stmts;
     }
@@ -909,7 +912,6 @@ export class ArkIRTransformer {
     }
 
     private deleteExpressionToValueAndStmts(deleteExpression: ts.DeleteExpression): ValueAndStmts {
-        // TODO: reserve ArkDeleteStmt or not
         const {value: exprValue, stmts: stmts} = this.tsNodeToValueAndStmts(deleteExpression.expression);
         const deleteExpr = new ArkDeleteExpr(exprValue as AbstractFieldRef);
         return {value: deleteExpr, stmts: stmts};
