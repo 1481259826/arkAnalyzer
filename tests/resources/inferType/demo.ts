@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-class A {
+class StaticFieldA {
     static s_v1: number = 1;
 }
 
-class B {
+class StaticUserB {
     f1() {
-        console.log(A.s_v1);
+        console.log(StaticFieldA.s_v1);
     }
 }

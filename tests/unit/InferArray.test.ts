@@ -18,7 +18,7 @@ import path from 'path';
 import { SceneConfig } from "../../src/Config";
 import { Scene } from "../../src/Scene";
 import { FileSignature } from "../../src/core/model/ArkSignature";
-import { ArkAssignStmt, ArkNewArrayExpr, ArrayType, NumberType } from "../../src";
+import { ArkAssignStmt, ArkNewArrayExpr, ArkStaticFieldRef, ArrayType, NumberType } from "../../src";
 
 describe("Infer Array Test", () => {
 
@@ -50,9 +50,10 @@ describe("Infer Array Test", () => {
         fileId.setFileName("demo.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
-        const method = file?.getClassWithName('B')?.getMethodWithName('f1');
+        const method = file?.getClassWithName('StaticUserB')?.getMethodWithName('f1');
         const stmt = method?.getCfg().getStmts()[1];
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof NumberType);
+        assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkStaticFieldRef);
     })
 })
