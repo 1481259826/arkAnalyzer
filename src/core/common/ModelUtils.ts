@@ -20,7 +20,6 @@ import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { TypeSignature } from '../model/ArkExport';
-import { Decorator } from '../base/Decorator';
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -287,5 +286,18 @@ export class ModelUtils {
             }
         }
         return isArkUIBuilderMethod;
+    }
+
+    public static getInvokerSignatureWithName(name: string, invokeMethod: ArkMethod): TypeSignature | undefined {
+        let signature: TypeSignature | undefined = this.getClassWithName(name, invokeMethod)?.getSignature();
+        if (signature) {
+            return signature;
+        }
+        signature = this.getNamespaceWithName(name, invokeMethod)?.getSignature();
+        if (signature) {
+            return signature;
+        }
+        signature = this.getTypeSignatureInImportInfoWithName(name, invokeMethod.getDeclaringArkFile());
+        return signature;
     }
 }

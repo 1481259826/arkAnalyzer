@@ -16,7 +16,7 @@
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
 import { ArkClass } from '../model/ArkClass';
-import { ClassSignature, MethodSignature, MethodSubSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
@@ -148,13 +148,10 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         }
 
         if (this.base.getType() instanceof UnknownType) {
-            const arkType = ModelUtils.getTypeSignatureInImportInfoWithName(this.base.getName(), arkMethod.getDeclaringArkFile());
-            if (arkType instanceof ClassSignature) {
-                this.base.setType(new ClassType(arkType));
-            } else if (arkType instanceof NamespaceSignature) {
-                let namespaceType = new AnnotationNamespaceType(arkType.getNamespaceName());
-                namespaceType.setNamespaceSignature(arkType);
-                this.base.setType(namespaceType);
+            const signature = ModelUtils.getInvokerSignatureWithName(this.base.getName(), arkMethod);
+            const type = TypeInference.parseSignature2Type(signature);
+            if (type) {
+                this.base.setType(type);
             }
         }
 
@@ -188,7 +185,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 if (method.containsModifier('StaticKeyword')) {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
                 }
-            } else if (methodName === 'constructor') {
+            } else if (methodName === 'constructor') { //隐式构造
                 const subSignature = new MethodSubSignature();
                 subSignature.setMethodName(methodName);
                 subSignature.setReturnType(new ClassType(type.getClassSignature()));

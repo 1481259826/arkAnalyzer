@@ -212,7 +212,7 @@ export class TypeInference {
         return arkField;
     }
 
-    private static parseSignature2Type(signature: TypeSignature | undefined): Type | null {
+    public static parseSignature2Type(signature: TypeSignature | undefined): Type | null {
         if (!signature) {
             return null;
         }
@@ -232,6 +232,7 @@ export class TypeInference {
     public static inferTypeInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
         if (stmt instanceof ArkAssignStmt) {
             const leftOp = stmt.getLeftOp();
+
             if (leftOp instanceof Local) {
                 const leftOpType = leftOp.getType();
                 if (leftOpType instanceof AnnotationType) {
@@ -269,6 +270,9 @@ export class TypeInference {
                     const rightOp = stmt.getRightOp();
                     leftOpType.setCurrType(rightOp.getType());
                 } else if (leftOpType instanceof UnclearReferenceType) {
+                    if (!(stmt.getRightOp() instanceof UnknownType)) {
+                        leftOp.setType(stmt.getRightOp().getType());
+                    }
                     if (stmt.containsInvokeExpr()) {
                     }
                 } else if (leftOpType instanceof ArrayType) {

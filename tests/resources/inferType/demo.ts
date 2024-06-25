@@ -14,11 +14,39 @@
  */
 
 class StaticFieldA {
+    static s_f1() {
+    };
+
+    f2() {
+    };
+
     static s_v1: number = 1;
+    v2: number = 2;
 }
 
 class StaticUserB {
     f1() {
         console.log(StaticFieldA.s_v1);
+        StaticFieldA.s_f1();
+        const a: StaticFieldA = new StaticFieldA();
+        console.log(a.v2);
+        a.f2();
     }
+
+    a: StaticFieldA;
 }
+
+class C {
+    b: StaticUserB;
+
+    cf(): void {
+        new StaticFieldA().f2();
+        new StaticUserB().f1();
+        this.b.f1();
+        this.b.a.f2();
+
+    }
+
+}
+
+export {}
