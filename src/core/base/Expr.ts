@@ -652,7 +652,7 @@ export class ArrayLiteralExpr extends AbstractExpr {
         this.type = type;
     }
 
-    public getElements() {
+    public getElements(): Value[] {
         return this.elements;
     }
 
