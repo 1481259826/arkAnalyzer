@@ -41,8 +41,8 @@ describe("function Test", () => {
     it('debug case', () => {
         const s = 'D:/test/sfs.test'
         let lw = s.replace(/\/*$/, '');
-        assert.isTrue(/\.e?ts$/.test('xx.ets'))
-        assert.isTrue(/\.e?ts$/.test('xxs.ts'))
+        assert.isTrue(/^@\w+\./.test('@ohos.hilog'))
+        assert.isTrue(/^@\w+\./.test('@hwos.hilog'))
         assert.isTrue(/\.e?ts$/.test('ets.d.ts'))
         assert.isTrue(/\.e?ts$/.test('ts.d.ets'))
     })

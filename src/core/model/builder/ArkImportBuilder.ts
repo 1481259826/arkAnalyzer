@@ -109,7 +109,6 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
     } else if (eInfo.getExportClauseType() === ExportType.UNKNOWN) {
         let result = findExportInfo(eInfo);
         if (result !== null) {
-            eInfo = result;
             return result;
         }
         logger.warn(eInfo.getFrom() + 'trace end at' + eInfo.getDeclaringArkFile().getFileSignature().toString());
