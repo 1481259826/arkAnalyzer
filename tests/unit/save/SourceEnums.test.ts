@@ -17,67 +17,31 @@ import { SceneConfig, Scene, SourceFilePrinter } from '../../../src/index';
 import { describe, expect, it } from 'vitest';
 import path from 'path';
 
-const CASE1_EXPECT = `enum Direction1 {
-  Up = 1,
-  Down,
-  Left,
-  Right,
+const CASE1_EXPECT = `enum SceneBuildStage {
+  BUILD_INIT = 1 << 1,
+  CLASS_DONE = 1 << 2,
+  METHOD_DONE = BUILD_INIT | CLASS_DONE,
+  ALL = 'all'.length,
 }
-enum Direction2 {
-  Up = "UP",
-  Down = "DOWN",
-  Left = "LEFT",
-  Right = "RIGHT",
+let ALL_BUILD_STAGE = [SceneBuildStage.BUILD_INIT, SceneBuildStage.CLASS_DONE, SceneBuildStage.METHOD_DONE];
+export enum ValueTag {
+  TAINT,
 }
-enum BooleanLikeHeterogeneousEnum {
-  No = 0,
-  Yes = "YES",
+export enum ExportType {
+  NAME_SPACE = 0,
+  CLASS = 1,
+  METHOD = 2,
+  LOCAL = 3,
+  UNKNOWN = 4,
 }
-enum E1 {
-  X,
-  Y,
-  Z,
+declare enum ViewTreeNodeType {
+  SystemComponent,
+  CustomComponent,
+  Builder,
+  BuilderParam,
 }
-enum E2 {
-  A = 1,
-  B,
-  C,
-}
-enum FileAccess {
-  None,
-  Read = 1 << 1,
-  Write = 1 << 2,
-  ReadWrite = Read | Write,
-  G = "123".length,
-}
-enum Response1 {
-  No = 0,
-  Yes = 1,
-}
-function respond(recipient: string, message: Response1): void {
-}
-respond('Princess Caroline', Response1.Yes);
-enum E {
-  X,
-  Y,
-  Z,
-}
-function f(obj: {X: number}) {
-  return obj.X;
-}
-f(E);
-declare enum Enum {
-  A,
-}
-let a2 = Enum.A;
-let nameOfA = Enum.a2;
-const enum Directions {
-  Up,
-  Down,
-  Left,
-  Right,
-}
-let directions = [Directions.Up, Directions.Down, Directions.Left, Directions.Right];
+let systemComponent = ViewTreeNodeType.SystemComponent;
+let nameOfsystemComponent = ViewTreeNodeType.systemComponent;
 `;
 
 describe('SourceEnumsTest', () => {
