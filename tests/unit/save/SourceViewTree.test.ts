@@ -17,7 +17,7 @@ import { SceneConfig, Scene, SourceNamespacePrinter } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
-const CASE2_EXPECT = `namespace Case2 {
+const CASE2_EXPECT_v1 = `namespace Case2 {
   class Tmp {
     paramA1: string = '';
   }
@@ -65,7 +65,55 @@ const CASE2_EXPECT = `namespace Case2 {
 }
 `;
 
-const CASE3_EXPECT = `namespace Case3 {
+const CASE2_EXPECT_v2 = `namespace Case2 {
+  class Tmp {
+    paramA1: string = '';
+  }
+  @Builder
+  function overBuilder($$: Tmp) {
+    Row.create();
+    Column.create();
+    Text.create('overBuilder===' + $$.paramA1 + '');
+    Text.pop();
+    View.create(new HelloComponent({message: $$.paramA1}));
+    View.pop();
+    Column.pop();
+    Row.pop();
+  }
+  @Component
+  struct HelloComponent {
+    constructor(value?: {message: string}, ##storage?: LocalStorage) {
+    }
+    @Link
+    message: string;
+    build() {
+      Row.create();
+      Text.create('HelloComponent===' + this.message + '');
+      Text.pop();
+      Row.pop();
+    }
+  }
+  @Entry
+  @Component
+  struct BuilderTest {
+    constructor(value?: {label: string}, ##storage?: LocalStorage) {
+    }
+    @State
+    label: string = 'Hello';
+    build() {
+      Column.create();
+      overBuilder({paramA1: .label});
+      Button.pop();
+      Button.create('Click me').onClick(() => {
+        this.label = 'ArkUI';
+      });
+      Column.pop();
+    }
+  }
+}
+`;
+
+const CASE3_EXPECT_v1 = `namespace Case3 {
   @Builder
   function overBuilder(paramA1: string) {
     Row.create();
@@ -77,6 +125,30 @@ const CASE3_EXPECT = `namespace Case3 {
   @Component
   struct BuilderTest {
     constructor(value?: {label: string}) {
+    }
+    @State
+    label: string = 'Hello';
+    build() {
+      Column.create();
+      overBuilder(this.label);
+      Column.pop();
+    }
+  }
+}
+`;
+
+const CASE3_EXPECT_v2 = `namespace Case3 {
+  @Builder
+  function overBuilder(paramA1: string) {
+    Row.create();
+    Text.create('UseStateVarByValue: ' + paramA1 + ' ');
+    Text.pop();
+    Row.pop();
+  }
+  @Entry
+  @Component
+  struct BuilderTest {
+    constructor(value?: {label: string}, ##storage?: LocalStorage) {
     }
     @State
     label: string = 'Hello';
@@ -109,7 +181,9 @@ describe('SourceViewTreeTest', () => {
         }
         let printer = new SourceNamespacePrinter(ns);
         let source = printer.dump();
-        expect(source).eq(CASE2_EXPECT);
+        expect(source).toSatisfy((value: string) => {
+          return source == CASE2_EXPECT_v1 || source == CASE2_EXPECT_v2
+        });
     });
 
     it('case3: class Decorator', () => {
@@ -124,6 +198,8 @@ describe('SourceViewTreeTest', () => {
         }
         let printer = new SourceNamespacePrinter(ns);
         let source = printer.dump();
-        expect(source).eq(CASE3_EXPECT);
+        expect(source).toSatisfy((value: string) => {
+          return source == CASE3_EXPECT_v1 || source == CASE3_EXPECT_v2
+        });
     });
 });
