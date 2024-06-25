@@ -456,7 +456,12 @@ export class Scene {
             let superClass: ArkClass | null = null;
 
             superClass = ModelUtils.getClassWithNameFromClass(superClassName, cls);
-
+            if (!superClass) {
+                const signature = ModelUtils.getTypeSignatureInImportInfoWithName(superClassName, cls.getDeclaringArkFile());
+                if (signature instanceof ClassSignature) {
+                    superClass = cls.getDeclaringArkFile().getScene().getClass(signature);
+                }
+            }
             if (superClass != null) {
                 cls.setSuperClass(superClass);
                 superClass.addExtendedClass(cls);

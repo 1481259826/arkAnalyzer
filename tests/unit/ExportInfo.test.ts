@@ -20,20 +20,26 @@ import { Scene } from "../../src/Scene";
 import { FileSignature } from "../../src/core/model/ArkSignature";
 
 describe("export Test", () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, "../resources/exports"))
+    let projectScene: Scene = new Scene();
+    projectScene.buildSceneFromProjectDir(config);
+    projectScene.collectProjectImportInfos();
+    projectScene.inferTypes();
     it('debug case', () => {
-
-        let config: SceneConfig = new SceneConfig();
-        config.buildFromProjectDir(path.join(__dirname, "../resources/exports"))
-        let projectScene: Scene = new Scene();
-        projectScene.buildSceneFromProjectDir(config);
-        projectScene.collectProjectImportInfos();
-        projectScene.inferTypes();
         const fileId = new FileSignature();
         fileId.setFileName("test.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length,2);
         assert.equal(file?.getImportInfos().length, 17);
+    })
+
+    it('supperClass Test case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("exportSample.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('d')?.getSuperClass());
     })
 })
 

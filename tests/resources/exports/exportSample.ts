@@ -14,7 +14,7 @@
  */
 
 import { cc } from "./test";
-import { something } from "./else";
+import dfs, { something } from "./else";
 
 export * as z from './test'; //kind 278
 
@@ -22,20 +22,21 @@ export let blah = 'test';
 
 const a = 1
 const b = 'a';
-export {a, b};
+export { a, b };
 
 export function testing() {
     something();
     cc();
 }
 
-export {testing as testing2}
+export { testing as testing2 }
 
 export const c = '';
 
 export interface MyInterface {
 
 }
+
 type s = object;
 
 export type MyType = string;
@@ -47,9 +48,9 @@ export namespace MyNameSpace {
     }
 }
 
-export class d {
+export class d extends dfs {
 
-    public dos(){
+    public dos() {
 
     }
 
