@@ -25,7 +25,7 @@ describe("export Test", () => {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
-    // projectScene.inferTypes();
+    projectScene.inferTypes();
     it('debug case', () => {
         const fileId = new FileSignature();
         fileId.setFileName("test.ts");

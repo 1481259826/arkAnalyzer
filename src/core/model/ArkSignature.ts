@@ -31,9 +31,8 @@ export interface ArkSignature {
  * @category core/model
  */
 export class FileSignature {
-    public static readonly DEFAULT: FileSignature = new FileSignature();
-    private projectName: string = "_UnknownProjectName";
-    private fileName: string = "_UnknownFileName";
+    private projectName: string = "_UnkownProjectName";
+    private fileName: string = "_UnkownFileName";
 
     constructor() {
     }
@@ -63,7 +62,7 @@ export class FileSignature {
 
 export class NamespaceSignature {
     private namespaceName: string = "";
-    private declaringFileSignature: FileSignature = FileSignature.DEFAULT;
+    private declaringFileSignature: FileSignature = new FileSignature();
     private declaringNamespaceSignature: NamespaceSignature | null = null;
 
     constructor() {
@@ -103,8 +102,7 @@ export class NamespaceSignature {
 }
 
 export class ClassSignature {
-    public static readonly DEFAULT = new ClassSignature();
-    private declaringFileSignature: FileSignature = FileSignature.DEFAULT;
+    private declaringFileSignature: FileSignature = new FileSignature();
     private declaringNamespaceSignature: NamespaceSignature | null = null;
     private className: string = "";
 
@@ -151,7 +149,7 @@ export class ClassSignature {
 export type BaseSignature = ClassSignature | NamespaceSignature;
 
 export class FieldSignature {
-    private declaringSignature: BaseSignature = ClassSignature.DEFAULT;
+    private declaringSignature: BaseSignature = new ClassSignature();
     private fieldName: string = '';
     private type: Type = UnknownType.getInstance();
     private static: boolean = false;
@@ -201,7 +199,6 @@ export class FieldSignature {
 }
 
 export class MethodSubSignature {
-    public static readonly DEFAULT = new MethodSubSignature();
     private methodName: string = '';
     private parameters: MethodParameter[] = [];
     private parameterTypes: Set<Type> = new Set<Type>();
@@ -268,8 +265,8 @@ export class MethodSubSignature {
  * @category core/model
  */
 export class MethodSignature {
-    private declaringClassSignature: ClassSignature = ClassSignature.DEFAULT;
-    private methodSubSignature: MethodSubSignature = MethodSubSignature.DEFAULT;
+    private declaringClassSignature: ClassSignature = new ClassSignature();
+    private methodSubSignature: MethodSubSignature = new MethodSubSignature();
 
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
