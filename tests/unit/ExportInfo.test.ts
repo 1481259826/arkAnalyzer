@@ -22,7 +22,6 @@ import { FileSignature } from "../../src/core/model/ArkSignature";
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, "../resources/exports"))
-    // config.getSdksObj().push({name:'etsSdk',path:'C:/Users/LongyuC/AppData/Local/Huawei/Sdk/openharmony/9/ets'});
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
