@@ -14,16 +14,16 @@
  */
 
 import * as t from './exportSample';
-import MyWantAgent from '@ohos.app.ability.wantAgent';
+import hilog from '@ohos.hilog';
 
 export function cc(){
     t.testing();
     t.z.cc();
     let dd = new t.d();
     dd.dos();
-    let type = MyWantAgent.OperationType.UNKNOWN_TYPE;
+    hilog.info('print log');
     let ab = t.default;
-    return type;
+    return ab;
 }
 
 class test {
