@@ -25,7 +25,7 @@ describe("export Test", () => {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
-    projectScene.inferTypes();
+    // projectScene.inferTypes();
     it('debug case', () => {
         const fileId = new FileSignature();
         fileId.setFileName("test.ts");
@@ -33,6 +33,8 @@ describe("export Test", () => {
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length,2);
         assert.equal(file?.getImportInfos().length, 17);
+        const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg().getStmts();
+        assert.isNotEmpty(stmts);
     })
 
     it('supperClass Test case', () => {

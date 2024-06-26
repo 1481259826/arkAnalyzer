@@ -121,17 +121,23 @@ export class TypeInference {
             return field;
         }
         //infer base type
-        if (base.getType() instanceof UnknownType) {
-            const signature = ModelUtils.getBaseSignatureWithName(base.getName(), arkMethod);
-            if (signature) {
-                field.getFieldSignature().setDeclaringSignature(signature);
-            }
+        let signature;
+        const baseType = base.getType();
+        if (baseType instanceof UnknownType) {
+            signature = ModelUtils.getBaseSignatureWithName(base.getName(), arkMethod);
             const type = TypeInference.parseSignature2Type(signature);
             if (type) {
                 base.setType(type);
             } else {
                 logger.warn('infer field of base fail: ' + field.toString());
             }
+        } else if (baseType instanceof ClassType) {
+            signature = baseType.getClassSignature();
+        } else if (baseType instanceof AnnotationNamespaceType) {
+            signature = baseType.getNamespaceSignature();
+        }
+        if (signature) {
+            field.getFieldSignature().setDeclaringSignature(signature);
         }
         //infer field type
         const fieldName = field.getFieldName();
@@ -142,8 +148,7 @@ export class TypeInference {
             let arkField = arkClass?.getFieldWithName(fieldName) ?? arkClass?.getStaticFieldWithName(fieldName);
             if (arkField) {
                 if (arkField.getType() instanceof UnclearReferenceType) {
-                    const signature = ModelUtils.getBaseSignatureWithName(fieldName, arkMethod);
-                    inferType = this.parseSignature2Type(signature);
+                    inferType = this.inferUnclearReferenceType((arkField.getType() as UnclearReferenceType).getName(), arkMethod);
                     if (inferType) {
                         arkField.setType(inferType);
                         arkField.getSignature().setType(inferType);
@@ -156,6 +161,7 @@ export class TypeInference {
                     if (arkField.getSignature().isStatic()) {
                         return new ArkStaticFieldRef(arkField.getSignature());
                     }
+                    return field;
                 }
                 logger.warn('infer field type fail: ' + field.toString());
                 return field;
@@ -218,24 +224,26 @@ export class TypeInference {
                 return;
             }
             const leftOpType = leftOp.getType();
+            let type;
             if (leftOpType instanceof AnnotationNamespaceType) {
-                const type = this.inferUnclearReferenceType(leftOpType.getOriginType(), arkMethod);
-                if (type) {
-                    leftOp.setType(type);
-                }
+                type = this.inferUnclearReferenceType(leftOpType.getOriginType(), arkMethod);
             } else if (leftOpType instanceof UnionType) {
-                const rightOp = stmt.getRightOp();
-                leftOpType.setCurrType(rightOp.getType());
+                for (const e of leftOpType.getTypes()) {
+                    if (typeof e === typeof rightOp.getType()) {
+                        leftOpType.setCurrType(rightOp.getType());
+                        break;
+                    }
+                }
             } else if (leftOpType instanceof UnclearReferenceType) {
-                const type = this.inferUnclearReferenceType(leftOpType.getName(), arkMethod);
-                if (type) {
-                    leftOp.setType(type);
-                }
+                type = this.inferUnclearReferenceType(leftOpType.getName(), arkMethod);
             } else if (leftOpType instanceof ArrayType && leftOpType.getBaseType() instanceof UnclearReferenceType) {
-                const type = this.inferUnclearReferenceType((leftOpType.getBaseType() as UnclearReferenceType).getName(), arkMethod);
-                if (type) {
-                    leftOpType.setBaseType(type);
+                let baseType = this.inferUnclearReferenceType((leftOpType.getBaseType() as UnclearReferenceType).getName(), arkMethod);
+                if (baseType) {
+                    leftOpType.setBaseType(baseType);
                 }
+            }
+            if (type) {
+                leftOp.setType(type);
             }
         } else if (leftOp instanceof ArkInstanceFieldRef) {
             logger.warn("to do")
