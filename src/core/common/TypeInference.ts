@@ -124,8 +124,7 @@ export class TypeInference {
         let signature;
         const baseType = base.getType();
         if (baseType instanceof UnknownType) {
-            signature = ModelUtils.getBaseSignatureWithName(base.getName(), arkMethod);
-            const type = TypeInference.parseSignature2Type(signature);
+            const type = TypeInference.inferBaseType(base.getName(), arkMethod);
             if (type) {
                 base.setType(type);
             } else {
@@ -147,7 +146,11 @@ export class TypeInference {
             const arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
             let arkField = arkClass?.getFieldWithName(fieldName) ?? arkClass?.getStaticFieldWithName(fieldName);
             if (arkField) {
-                if (arkField.getType() instanceof UnclearReferenceType) {
+                if (!arkField.getType() && arkField.getFieldType() === 'EnumMember') {
+                    arkField.setType(type);
+                    arkField.getSignature().setType(type);
+                    inferType = type;
+                } else if (arkField.getType() instanceof UnclearReferenceType) {
                     inferType = this.inferUnclearReferenceType((arkField.getType() as UnclearReferenceType).getName(), arkMethod);
                     if (inferType) {
                         arkField.setType(inferType);
@@ -246,7 +249,10 @@ export class TypeInference {
                 leftOp.setType(type);
             }
         } else if (leftOp instanceof ArkInstanceFieldRef) {
-            logger.warn("to do")
+            const fieldRef = this.handleClassField(leftOp, arkMethod);
+            if (fieldRef instanceof ArkStaticFieldRef) {
+                stmt.setLeftOp(fieldRef);
+            }
         }
 
     }
@@ -362,6 +368,17 @@ export class TypeInference {
     private static inferUnclearReferenceType(refName: string, arkMethod: ArkMethod) {
         let signature = ModelUtils.getClassWithName(refName, arkMethod)?.getSignature()
             ?? ModelUtils.getTypeSignatureInImportInfoWithName(refName, arkMethod.getDeclaringArkFile());
+        return this.parseSignature2Type(signature);
+    }
+
+    public static inferBaseType(baseName: string, arkMethod: ArkMethod) {
+        const field = arkMethod.getDeclaringArkFile().getDefaultClass().getFieldWithName(baseName);
+        if (field) {
+            return field.getType();
+        }
+        let signature: TypeSignature | undefined = ModelUtils.getClassWithName(baseName, arkMethod)?.getSignature()
+            ?? ModelUtils.getNamespaceWithName(baseName, arkMethod)?.getSignature()
+            ?? ModelUtils.getTypeSignatureInImportInfoWithName(baseName, arkMethod.getDeclaringArkFile());
         return this.parseSignature2Type(signature);
     }
 }

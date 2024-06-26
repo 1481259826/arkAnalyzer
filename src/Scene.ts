@@ -165,6 +165,7 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
+
         expandImportAll(this.filesMap);
     }
 

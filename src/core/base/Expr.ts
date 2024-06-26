@@ -148,8 +148,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         }
 
         if (this.base.getType() instanceof UnknownType) {
-            const signature = ModelUtils.getBaseSignatureWithName(this.base.getName(), arkMethod);
-            const type = TypeInference.parseSignature2Type(signature);
+            const type = TypeInference.inferBaseType(this.base.getName(), arkMethod);
             if (type) {
                 this.base.setType(type);
             }

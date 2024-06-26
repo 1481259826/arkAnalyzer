@@ -50,7 +50,7 @@ export function expandExportInfo(arkFile: ArkFile): void {
                         .build();
                     arkFile.addExportInfo(newInfo);
                 })
-                arkFile.addExportInfo(setTypeForExportInfo(exportInfo));
+                arkFile.addExportInfo(exportInfo);
             }
         }
     })
