@@ -16,20 +16,47 @@
 import { NodeID, Kind, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
 import { MethodSignature } from '../model/ArkSignature'
 import { Stmt, ArkInvokeStmt } from '../base/Stmt'
+import { Value } from '../base/Value'
+import { Scene } from '../../Scene';
+import { ArkMethod } from '../model/ArkMethod';
+import { ContextID } from '../pta/Context';
+//import { } from '../pta/Context'
 
 export type Method = MethodSignature;
 export type CallSiteID = number;
-export type CallSite = [Stmt, Method];
+export type FuncID = number;
 type StmtSet = Set<Stmt>;
+export enum CallGraphNodeKind {
+    real, vitual
+}
+export class CallSite {
+    public callStmt: Stmt;
+    public args: Value[] | undefined;
+    public calleeFuncID: FuncID;
+
+    constructor(s: Stmt, a: Value[] | undefined, c: FuncID) {
+        this.callStmt = s;
+        this.args = a;
+        this.calleeFuncID = c;
+    }
+}
+export class CSCallSite extends CallSite {
+    public cid: ContextID;
+
+    constructor(id: ContextID, cs: CallSite) {
+        super(cs.callStmt, cs.args, cs.calleeFuncID);
+        this.cid = id;
+    }
+}
 
 export class CallGraphEdge extends BaseEdge {
-    private directCalls: StmtSet;
-    private indirectCalls: StmtSet;
+    private directCalls: StmtSet = new Set();
+    private indirectCalls: StmtSet = new Set();
     private callSiteID: CallSiteID;
 
-    constructor(src: CallGraphNode, dst: CallGraphNode, csID: CallSiteID) {
+    constructor(src: CallGraphNode, dst: CallGraphNode ) {
         super(src, dst, 0);
-        this.callSiteID = csID;
+        //this.callSiteID = csID;
     }
 
     public addDirectCallSite(stmt: Stmt) {
@@ -44,8 +71,8 @@ export class CallGraphEdge extends BaseEdge {
 export class CallGraphNode extends BaseNode {
     private method: Method;
 
-    constructor(id: number, m: Method) {
-        super(id, 0);
+    constructor(id: number, m: Method, k: CallGraphNodeKind = CallGraphNodeKind.real) {
+        super(id, k);
         this.method = m;
     }
 
@@ -55,28 +82,47 @@ export class CallGraphNode extends BaseNode {
 }
 
 export class CallGraph extends BaseGraph {
-    private idToCallSiteMap: Map<CallSiteID, CallSite>;
-    private callSiteToIdMap: Map<CallSite, CallSiteID>;
-    private methodToCGNodeMap: Map<Method, CallGraphNode>;
+    private scene: Scene;
+    private idToCallSiteMap: Map<CallSiteID, CallSite> = new Map();
+    private callSiteToIdMap: Map<CallSite, CallSiteID> = new Map();
+    private stmtToCallSitemap: Map<Stmt, CallSite> = new Map();
+    private methodToCGNodeMap: Map<Method, CallGraphNode> = new Map();
+    private callPairToEdgeMap: Map<string, CallGraphEdge> = new Map();
     private callSiteNum: number = 0;
     private directCallEdgeNum: number;
     private inDirectCallEdgeNum: number;
+    private entries: NodeID[];
 
-    constructor() {
+    constructor(s: Scene) {
         super();
+        this.scene = s;
     }
 
-    public addCallGraphNode(method: Method): void {
-        let id: NodeID = this.nodeNum++;
-        let cgNode = new CallGraphNode(id, method);
+    private getCallPairString(srcID: NodeID, dstID: NodeID): string {
+        return `${srcID}-${dstID}`;
+    }
+
+    public getCallEdgeByPair(srcID: NodeID, dstID: NodeID): CallGraphEdge |undefined {
+        let key: string = this.getCallPairString(srcID, dstID);
+        return this.callPairToEdgeMap.get(key);
+    }
+
+    public addCallGraphNode(method: Method, kind: CallGraphNodeKind = CallGraphNodeKind.real): CallGraphNode {
+        let id: NodeID = this.nodeNum;
+        let cgNode = new CallGraphNode(id, method, kind);
         this.addNode(cgNode);
         this.methodToCGNodeMap.set(method, cgNode);
+        return cgNode;
     }
 
-    public getCallGraphNodeByMethod(method: Method): CallGraphNode | undefined {
+    public getCallGraphNodeByMethod(method: Method): CallGraphNode {
         let n = this.methodToCGNodeMap.get(method);
         if (n == undefined) {
-            throw(new Error("CallGraphNode can't be found for method " + method.toString()))
+            // The method can't be found
+            // means the method has no implementation, or base type is unclear to find it
+            // Create a virtual CG Node
+            // TODO: this virtual CG Node need be remove once the base type is clear 
+            return this.addCallGraphNode(method, CallGraphNodeKind.vitual)
         }
 
         return n;
@@ -85,8 +131,10 @@ export class CallGraph extends BaseGraph {
     public addDirectCallEdge(caller: Method, callee: Method, callStmt: Stmt): void {
         let callerNode = this.getCallGraphNodeByMethod(caller) as CallGraphNode;
         let calleeNode = this.getCallGraphNodeByMethod(callee) as CallGraphNode;
+        let args = callStmt.getInvokeExpr()?.getArgs();
+        //this.getMethodByFuncID
 
-        let cs: CallSite = [callStmt, callee];
+        let cs: CallSite = new CallSite(callStmt, args, calleeNode.getID());
         let csID: CallSiteID;
         if (!this.callSiteToIdMap.has(cs)) {
             csID = this.callSiteNum++;
@@ -96,10 +144,56 @@ export class CallGraph extends BaseGraph {
             csID = this.callSiteToIdMap.get(cs) as CallSiteID;
         }
 
+        if(this.addStmtToCallSiteMap(callStmt, cs)) {
+            // TODO: check stmt exists
+        }
+
         // TODO: check if edge exists 
-        let callEdge = new CallGraphEdge(callerNode, calleeNode, csID);
+        let callEdge = this.getCallEdgeByPair(callerNode.getID(), calleeNode.getID());
+        if (callEdge == undefined) {
+            callEdge = new CallGraphEdge(callerNode, calleeNode);
+            callEdge.getSrcNode().addOutgoingEdge(callEdge);
+            callEdge.getDstNode().addIncomingEdge(callEdge);
+            this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
+        }
         callEdge.addDirectCallSite(callStmt);
-        callEdge.getSrcNode().addOutgoingEdge(callEdge);
-        callEdge.getDstNode().addIncomingEdge(callEdge);
+    }
+
+    public addStmtToCallSiteMap(stmt: Stmt, cs: CallSite): boolean{
+        if (this.stmtToCallSitemap.has(stmt)) {
+            return false;
+        }
+        this.stmtToCallSitemap.set(stmt, cs);
+        return true;
+    }
+
+    public getCallSiteByStmt(stmt: Stmt): CallSite | undefined {
+        return this.stmtToCallSitemap.get(stmt);
+    }
+
+    public getMethodByFuncID(id: FuncID): Method | null {
+        let node = this.getNode(id);
+        if(node != undefined) {
+            return (node as CallGraphNode).getMethod();
+        }
+        //return undefined;
+        return null;
+    }
+
+    public getArkMethodByFuncID(id: FuncID) : ArkMethod| null{
+        let method = this.getMethodByFuncID(id);
+        if (method != null) {
+            return this.scene.getMethod(method);
+        }
+
+        return null;
+    }
+
+    public getEntries(): FuncID[] {
+        return this.entries;
+    }
+
+    public setEntries(n : NodeID[]): void {
+        this.entries = n;
     }
 }
