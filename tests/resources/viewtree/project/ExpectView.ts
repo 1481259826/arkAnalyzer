@@ -25,6 +25,15 @@ export const Project_Page_Expect_ViewTree = {
                     children: []
                 }
             ]
+        },
+        {
+            name: 'View',
+            children: [
+                {
+                    name: 'Text',
+                    children: []
+                }
+            ]
         }
     ]
 }

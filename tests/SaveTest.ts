@@ -17,17 +17,29 @@ import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { PrinterBuilder } from '../src/save/PrinterBuilder';
 import { join } from 'path';
+import Logger from '../src/utils/logger';
+
+const logger = Logger.getLogger();
 
 function testAppProjectSave() {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromJson(join(__dirname, './tests/AppTestConfig.json'));
+    config.buildFromJson(join(__dirname, './AppTestConfig.json'));
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
+    logger.error('start ... ');
     scene.buildScene4HarmonyProject();
     scene.collectProjectImportInfos();
     scene.inferTypes();
+    logger.error('end inferTypes ... ');
 
-    let printer: PrinterBuilder = new PrinterBuilder();
+    for (let cls of scene.getClasses()) {
+        if (cls.hasComponentDecorator()) {
+            cls.getViewTree();
+        }
+    }
+    logger.error('end build viewtree ... ');
+
+    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out'));
     for (let f of scene.getFiles()) {
         //printer.dumpToDot(f);
         printer.dumpToTs(f);
@@ -36,10 +48,10 @@ function testAppProjectSave() {
 
 function testSimpleSave() {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(join(__dirname, 'resources', 'viewtree'));
+    config.buildFromProjectDir(join(__dirname, 'resources', 'save'));
     let scene: Scene = new Scene();
     scene.buildSceneFromProjectDir(config);
-    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'output'));
+    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out'));
     for (let f of scene.getFiles()) {
         //printer.dumpToDot(f);
         printer.dumpToTs(f);

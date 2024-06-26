@@ -13,6 +13,26 @@
  * limitations under the License.
  */
 
+import { getLogger, configure } from 'log4js';
+configure({
+    appenders: {
+        console: {
+            type: 'console',
+            layout: {
+                type: 'pattern',
+                pattern: '[%d] [%p] [%z] [ArkAnalyzer] - %m',
+            },
+        },
+    },
+    categories: {
+        default: {
+            appenders: ['console'],
+            level: 'info',
+            enableCallStack: false,
+        }
+    }
+});
+const logger = getLogger();
 
 function forLoopTest() {
     let myPerson = new Person(10);
@@ -22,7 +42,7 @@ function forLoopTest() {
     }
 }
 
-function test() {
+function controlTest() {
     const sampleData: number[] = [1, 2, 3, 4, 5];
 
     for (let i = 0; i < sampleData.length; i++) {
@@ -75,9 +95,9 @@ function test() {
 }
 
 class Person {
-    x:number = 0;
+    x: number = 0;
 
-    constructor (public age:number) {
+    constructor(public age: number) {
 
     }
     growOld = () => {
@@ -97,7 +117,7 @@ export function classMethodTest() {
     let notPerson = new Person(10);
     let x = new Map();
     let z = new Error();
-    let y = test();
+    let y = controlTest();
     let a = notPerson.age
     notPerson.growOld()
     Person.wooooof()
@@ -166,24 +186,24 @@ export class SecurityDoor extends Door implements Alarm, Alarm2 {
     }
 }
 
-const someClass = class<Type> {
+const someClass = class <Type> {
     content: Type;
     constructor(value: Type) {
-      this.content = value;
+        this.content = value;
     }
-  };
+};
 const m = new someClass("Hello, world");
 
 abstract class Animal {
     public name;
-    public constructor(name:string) {
-      this.name = name;
+    public constructor(name: string) {
+        this.name = name;
     }
-    public abstract sayHi():void;
+    public abstract sayHi(): void;
 }
 
 export default 123;
-export let x:number = 1;
+export let x: number = 1;
 export const soo = 123;
 export interface StringValidator {
     isAcceptable(s?: string): boolean;
@@ -193,6 +213,4 @@ export interface StringValidator {
 export { ExtendedAdder as ExtAdder, ExtendedAdder };
 
 forLoopTest();
-test();
-
-
+controlTest();

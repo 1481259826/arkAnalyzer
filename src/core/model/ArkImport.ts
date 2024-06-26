@@ -133,6 +133,9 @@ export class ImportInfo implements FromInfo {
     }
 
     public isDefault(): boolean {
+        if (this.nameBeforeAs === 'default') {
+            return true;
+        }
         let index = this.tsSourceCode.indexOf(this.importClauseName);
         if (index === -1) {
             return false;

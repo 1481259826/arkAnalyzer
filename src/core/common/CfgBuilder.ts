@@ -35,6 +35,8 @@ import { TypeInference } from './TypeInference';
 import { ArkIRTransformer } from './ArkIRTransformer';
 import { LineColPosition } from '../base/Position';
 import { COMPONENT_BUILD_FUNCTION } from './EtsConst';
+import { Decorator } from '../base/Decorator';
+import { ModelUtils } from './ModelUtils';
 
 const logger = Logger.getLogger();
 
@@ -52,7 +54,6 @@ class StatementBuilder {
     astNode: ts.Node | null;//ast节点对象
     scopeID: number;
     addressCode3: string[];
-    threeAddressStmts: Stmt[];
     block: Block | null;
     ifExitPass: boolean;
     passTmies: number = 0;
@@ -70,7 +71,6 @@ class StatementBuilder {
         this.column = -1;
         this.astNode = astNode;
         this.scopeID = scopeID;
-        this.threeAddressStmts = [];
         this.block = null;
         this.ifExitPass = false;
     }
@@ -227,8 +227,6 @@ export class CfgBuilder {
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
 
-    private arkIRTransformer: ArkIRTransformer;
-
     constructor(ast: ts.Node, name: string, declaringMethod: ArkMethod, sourceFile: ts.SourceFile) {
         this.name = name;
         this.astRoot = ast;
@@ -254,7 +252,6 @@ export class CfgBuilder {
         this.importFromPath = [];
         this.catches = [];
         this.sourceFile = sourceFile;
-        this.arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
     }
 
     walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
@@ -363,7 +360,7 @@ export class CfgBuilder {
                 this.loopStack.push(loopstm);
                 judgeLastType(loopstm);
                 let loopExit = new StatementBuilder('loopExit', '', c, scope.id);
-                this.exits.push(loopExit); 
+                this.exits.push(loopExit);
                 loopstm.nextF = loopExit;
                 loopExit.lasts.add(loopstm);
                 loopstm.condition = c.expression.getText(this.sourceFile);
@@ -401,7 +398,7 @@ export class CfgBuilder {
                 } else {
                     loopstm.code += c.initializer?.getText(this.sourceFile) + ' in ' + c.expression.getText(this.sourceFile);
                 }
-                loopstm.code += ')'
+                loopstm.code += ')';
                 if (ts.isBlock(c.statement)) {
                     this.walkAST(loopstm, loopstm, [...c.statement.statements]);
                 } else {
@@ -840,25 +837,6 @@ export class CfgBuilder {
         }
     }
 
-    private transformToArkIR() {
-        if (this.blocks.length > 0 && this.blocks[0].stmts.length > 0) {
-            const currStmt = this.blocks[0].stmts[0];
-            currStmt.threeAddressStmts.push(...this.arkIRTransformer.prebuildStmts());
-        }
-
-        for (const block of this.blocks) {
-            for (const originStmt of block.stmts) {
-                if (originStmt.astNode && originStmt.code != '') {
-                    originStmt.threeAddressStmts.push(...this.arkIRTransformer.tsNodeToStmts(originStmt.astNode));
-                } else if (originStmt.code.startsWith('return')) {
-                    originStmt.threeAddressStmts.push(new ArkReturnVoidStmt());
-                } else if (originStmt.type == 'gotoStatement') {
-                    originStmt.threeAddressStmts.push(new ArkGotoStmt());
-                }
-            }
-        }
-    }
-
     errorTest(stmt: StatementBuilder) {
         let mes = 'ifnext error    ';
         if (this.declaringClass?.getDeclaringArkFile()) {
@@ -944,115 +922,6 @@ export class CfgBuilder {
         }
     }
 
-    // TODO: Add more APIs to the class 'Cfg', and use these to build Cfg
-    public buildOriginalCfg(): Cfg {
-        const originalCfg = new Cfg();
-        const inBuildMethod = this.arkIRTransformer.isInBuildMethod();
-        const stmtInBuildMethodToOriginalStmt = this.arkIRTransformer.getStmtInBuildMethodToOriginalStmt();
-        const blockBuilderToBlock = new Map<Block, BasicBlock>();
-        for (const blockBuilder of this.blocks) {
-            const block = new BasicBlock();
-            if (inBuildMethod) {
-                const stmtSet = new Set<Stmt>();
-                for (const stmtBuilder of blockBuilder.stmts) {
-                    for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
-                        if (stmtInBuildMethodToOriginalStmt.has(threeAddressStmt)) {
-                            const originalStmt = stmtInBuildMethodToOriginalStmt.get(threeAddressStmt) as Stmt;
-                            if (!stmtSet.has(originalStmt)) {
-                                stmtSet.add(originalStmt);
-                                block.addStmt(originalStmt);
-                            }
-                        }
-                    }
-                }
-            } else {
-                for (const stmtBuilder of blockBuilder.stmts) {
-                    if (stmtBuilder.astNode == null || stmtBuilder.code === '') {
-                        continue;
-                    }
-                    const originalStmt: Stmt = new Stmt();
-                    originalStmt.setText(stmtBuilder.code);
-                    const positionInfo = new LineColPosition(stmtBuilder.line, stmtBuilder.column);
-                    originalStmt.setPositionInfo(positionInfo);
-                    originalStmt.setOriginPositionInfo(positionInfo);
-                    block.addStmt(originalStmt);
-                }
-            }
-
-            if (block.getStmts().length !== 0) {
-                originalCfg.addBlock(block);
-                blockBuilderToBlock.set(blockBuilder, block);
-            }
-        }
-
-        for (const blockBuilder of blockBuilderToBlock.keys()) {
-            if (blockBuilder.stmts.length === 0) {
-                blockBuilderToBlock.delete(blockBuilder);
-            }
-        }
-
-        // link block
-        for (const [blockBuilder, block] of blockBuilderToBlock) {
-            for (const successorBuilder of blockBuilder.nexts) {
-                const successorBlock = blockBuilderToBlock.get(successorBuilder);
-                if (successorBlock) {
-                    successorBlock.addPredecessorBlock(block);
-                    block.addSuccessorBlock(successorBlock);
-                }
-            }
-        }
-
-        return originalCfg;
-    }
-
-    // TODO: Add more APIs to class 'Cfg', and use these to build Cfg
-    public buildCfg(): Cfg {
-        let cfg = new Cfg();
-        cfg.declaringClass = this.declaringClass;
-        const inBuildMethod = this.arkIRTransformer.isInBuildMethod();
-        const blockBuilderToBlock = new Map<Block, BasicBlock>();
-        let isStartingStmt = true;
-        for (const blockBuilder of this.blocks) {
-            const block = new BasicBlock();
-            for (const stmtBuilder of blockBuilder.stmts) {
-                for (const threeAddressStmt of stmtBuilder.threeAddressStmts) {
-                    if (isStartingStmt) {
-                        cfg.setStartingStmt(threeAddressStmt);
-                        isStartingStmt = false;
-                    }
-                    if (!inBuildMethod) {
-                        threeAddressStmt.setOriginPositionInfo(new LineColPosition(stmtBuilder.line, stmtBuilder.column));
-                    }
-                    block.addStmt(threeAddressStmt);
-
-                    threeAddressStmt.setCfg(cfg);
-                }
-            }
-
-            if (block.getStmts().length !== 0) {
-                cfg.addBlock(block);
-                blockBuilderToBlock.set(blockBuilder, block);
-            }
-        }
-
-        // link block
-        for (const [blockBuilder, block] of blockBuilderToBlock) {
-            for (const successorBuilder of blockBuilder.nexts) {
-                const successorBlock = blockBuilderToBlock.get(successorBuilder);
-                if (successorBlock) {
-                    successorBlock.addPredecessorBlock(block);
-                    block.addSuccessorBlock(successorBlock);
-                }
-            }
-        }
-
-        return cfg;
-    }
-
-    public getLocals(): Set<Local> {
-        return this.arkIRTransformer.getLocals();
-    }
-
     buildCfgBuilder() {
         let stmts: ts.Node[] = [];
         if (ts.isSourceFile(this.astRoot)) {
@@ -1065,7 +934,12 @@ export class CfgBuilder {
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
         }
-        this.walkAST(this.entry, this.exit, stmts);
+        if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
+            this.walkAST(this.entry, this.exit, stmts);
+        } else {
+            this.handleBuilder(stmts);
+        }
+        
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
@@ -1075,6 +949,97 @@ export class CfgBuilder {
         this.buildBlocksNextLast();
         this.addReturnBlock();
         this.resetWalked();
-        this.transformToArkIR();
+    }
+
+    private handleBuilder(stmts: ts.Node[]): void {
+        let lastStmt = this.entry;
+        for (const stmt of stmts) {
+            const stmtBuilder = new StatementBuilder('statement', stmt.getText(this.sourceFile), stmt, 0);
+            lastStmt.next = stmtBuilder;
+            stmtBuilder.lasts.add(lastStmt);
+            lastStmt = stmtBuilder;
+        }
+        lastStmt.next = this.exit;
+        this.exit.lasts.add(lastStmt);
+    }
+
+    public buildCfgAndOriginalCfg(): {
+        cfg: Cfg,
+        originalCfg: Cfg,
+        stmtToOriginalStmt: Map<Stmt, Stmt>,
+        locals: Set<Local>
+    } {
+        const cfg = new Cfg();
+        const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
+        let isStartingStmtInCfgBlock = true;
+        const stmtsInOriginalCfg: Stmt[] = [];
+        const stmtSetInOriginalCfg = new Set<Stmt>();
+
+        const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
+        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
+        for (let i = 0; i < this.blocks.length; i++) {
+            // build block in Cfg
+            const stmtsInBlock: Stmt[] = [];
+            if (i === 0) {
+                stmtsInBlock.push(...arkIRTransformer.prebuildStmts());
+            }
+            for (const statementBuilder of this.blocks[i].stmts) {
+                if (statementBuilder.astNode && statementBuilder.code != '') {
+                    stmtsInBlock.push(...arkIRTransformer.tsNodeToStmts(statementBuilder.astNode));
+                } else if (statementBuilder.code.startsWith('return')) {
+                    stmtsInBlock.push(new ArkReturnVoidStmt());
+                } else if (statementBuilder.type == 'gotoStatement') {
+                    stmtsInBlock.push(new ArkGotoStmt());
+                }
+            }
+            const blockInCfg = new BasicBlock();
+            for (const stmt of stmtsInBlock) {
+                if (isStartingStmtInCfgBlock) {
+                    isStartingStmtInCfgBlock = false;
+                    cfg.setStartingStmt(stmt);
+                }
+                blockInCfg.addStmt(stmt);
+                stmt.setCfg(cfg);
+            }
+            cfg.addBlock(blockInCfg);
+            blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
+
+            // collect stmts in OriginalCfg
+            for (const stmt of stmtsInBlock) {
+                const originalStmt = stmtToOriginalStmt.get(stmt);
+                if (originalStmt) {
+                    if (!stmtSetInOriginalCfg.has(originalStmt)) {
+                        stmtSetInOriginalCfg.add(originalStmt);
+                        stmtsInOriginalCfg.push(originalStmt);
+                    }
+                }
+            }
+        }
+
+        // link blocks
+        for (const [blockBuilder, cfgBlock] of blockBuilderToCfgBlock) {
+            for (const successorBuilder of blockBuilder.nexts) {
+                const successorBlock = blockBuilderToCfgBlock.get(successorBuilder) as BasicBlock;
+                successorBlock.addPredecessorBlock(cfgBlock);
+                cfgBlock.addSuccessorBlock(successorBlock);
+            }
+        }
+
+        const originalCfg = new Cfg();
+        const originalCfgBlock = new BasicBlock();
+        for (let i = 0; i < stmtsInOriginalCfg.length; i++) {
+            if (i === 0) {
+                originalCfg.setStartingStmt(stmtsInOriginalCfg[i]);
+            }
+            originalCfgBlock.addStmt(stmtsInOriginalCfg[i]);
+        }
+        originalCfg.addBlock(originalCfgBlock);
+
+        return {
+            cfg: cfg,
+            originalCfg: originalCfg,
+            stmtToOriginalStmt: stmtToOriginalStmt,
+            locals: arkIRTransformer.getLocals(),
+        };
     }
 }

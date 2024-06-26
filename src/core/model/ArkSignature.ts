@@ -55,7 +55,6 @@ export class FileSignature {
 
     public toString(): string {
         let tmpSig = transfer2UnixPath(this.fileName);
-        tmpSig = tmpSig.replace(/\.d\.ts|\.ts|\.ets$/, '');
         tmpSig = '@' + this.projectName + '/' + tmpSig + ': ';
         return tmpSig;
     }

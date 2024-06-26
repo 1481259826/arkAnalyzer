@@ -88,6 +88,7 @@ import {
 } from './EtsConst';
 import { tsNode2Value } from '../model/builder/builderUtils';
 import { LineColPosition } from '../base/Position';
+import { ModelUtils } from './ModelUtils';
 
 const logger = Logger.getLogger();
 
@@ -105,13 +106,14 @@ export class ArkIRTransformer {
     private thisLocal: Local;
 
     private inBuildMethod = false;
-    private stmtInBuildMethodToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
+    private stmtToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
 
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
         this.declaringMethod = declaringMethod;
         this.thisLocal = new Local('this', declaringMethod.getDeclaringArkClass().getSignature().getType());
         this.locals.set(this.thisLocal.getName(), this.thisLocal);
+        this.inBuildMethod = ModelUtils.isArkUIBuilderMethod(declaringMethod);
     }
 
     public getLocals(): Set<Local> {
@@ -122,12 +124,8 @@ export class ArkIRTransformer {
         return this.thisLocal;
     }
 
-    public isInBuildMethod(): boolean {
-        return this.inBuildMethod;
-    }
-
-    public getStmtInBuildMethodToOriginalStmt(): Map<Stmt, Stmt> {
-        return this.stmtInBuildMethodToOriginalStmt;
+    public getStmtToOriginalStmt(): Map<Stmt, Stmt> {
+        return this.stmtToOriginalStmt;
     }
 
     public prebuildStmts(): Stmt[] {
@@ -145,38 +143,38 @@ export class ArkIRTransformer {
     }
 
     public tsNodeToStmts(node: ts.Node): Stmt[] {
-        const stmts: Stmt[] = [];
+        let stmts: Stmt[] = [];
         if (ts.isExpressionStatement(node)) {
-            return this.expressionStatementToStmts(node);
+            stmts = this.expressionStatementToStmts(node);
         } else if (ts.isBlock(node)) {
-            return this.blockToStmts(node);
+            stmts = this.blockToStmts(node);
         } else if (ts.isSwitchStatement(node)) {
-            return this.switchStatementToStmts(node);
+            stmts = this.switchStatementToStmts(node);
         } else if (ts.isForStatement(node)) {
-            return this.forStatementToStmts(node);
+            stmts = this.forStatementToStmts(node);
         } else if (ts.isForInStatement(node) || ts.isForOfStatement(node)) {
-            return this.rangeForStatementToStmts(node);
+            stmts = this.rangeForStatementToStmts(node);
         } else if (ts.isWhileStatement(node)) {
-            return this.whileStatementToStmts(node);
+            stmts = this.whileStatementToStmts(node);
         } else if (ts.isDoStatement(node)) {
-            return this.doStatementToStmts(node);
+            stmts = this.doStatementToStmts(node);
         } else if (ts.isVariableStatement(node)) {
-            return this.variableStatementToStmts(node);
+            stmts = this.variableStatementToStmts(node);
         } else if (ts.isVariableDeclarationList(node)) {
-            return this.variableDeclarationListToStmts(node);
+            stmts = this.variableDeclarationListToStmts(node);
         } else if (ts.isIfStatement(node)) {
-            return this.ifStatementToStmts(node);
+            stmts = this.ifStatementToStmts(node);
         } else if (ts.isBreakStatement(node) || ts.isContinueStatement(node)) {
-            return this.gotoStatementToStmts(node);
+            stmts = this.gotoStatementToStmts(node);
         } else if (ts.isThrowStatement(node)) {
-            return this.throwStatementToStmts(node);
+            stmts = this.throwStatementToStmts(node);
         } else if (ts.isCatchClause(node)) {
-            return this.catchClauseToStmts(node);
+            stmts = this.catchClauseToStmts(node);
         } else if (ts.isReturnStatement(node)) {
-            return this.returnStatementToStmts(node);
+            stmts = this.returnStatementToStmts(node);
         }
 
-        logger.debug(`unsupported statement node: ${ts.SyntaxKind[node.kind]}, text: ${node.getText(this.sourceFile)}`);
+        this.mapStmtsToTsStmt(stmts, node);
         return stmts;
     }
 
@@ -224,6 +222,7 @@ export class ArkIRTransformer {
                         const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_CREATE_FUNCTION);
                         const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, rightOp.getArgs());
                         stmt.setRightOp(createInvokeExpr);
+                        hasRepeat = true;
                     }
                 }
             }
@@ -233,9 +232,9 @@ export class ArkIRTransformer {
                 const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
                 stmts.push(popInvokeStmt);
             }
-        }
-        if (this.inBuildMethod) {
-            this.mapStmtsToTsStmt(stmts, expressionStatement);
+        }else if(expr instanceof ArkDeleteExpr){
+            const {value: _, stmts: exprStmts} = this.generateAssignStmtForValue(expr);
+            stmts.push(...exprStmts);
         }
         return stmts;
     }
@@ -383,8 +382,6 @@ export class ArkIRTransformer {
             const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
             const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
             stmts.push(popInvokeStmt);
-
-            this.mapStmtsToTsStmt(stmts, ifStatement);
         } else {
             stmts.push(new ArkIfStmt(conditionExpr as ArkConditionExpr));
         }
@@ -477,7 +474,6 @@ export class ArkIRTransformer {
         }
         // TODO: handle ts.SpreadElement, ts.ObjectBindingPattern, ts.ArrayBindingPattern
 
-        logger.debug(`unsupported expression node: ${ts.SyntaxKind[node.kind]}, text: ${node.getText(this.sourceFile)}`);
         return {value: new Local(node.getText(this.sourceFile)), stmts: []};
     }
 
@@ -553,7 +549,6 @@ export class ArkIRTransformer {
     }
 
     private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
-        this.inBuildMethod = true;
         const stmts: Stmt[] = [];
         const componentName = (etsComponentExpression.expression as ts.Identifier).text;
         const args: Value[] = [];
@@ -649,6 +644,10 @@ export class ArkIRTransformer {
             ({value: baseValue, stmts: baseStmts} = this.generateAssignStmtForValue(baseValue));
             stmts.push(...baseStmts);
         }
+        if (!(baseValue instanceof Local)) {
+            ({value: baseValue, stmts: baseStmts} = this.generateAssignStmtForValue(baseValue));
+            stmts.push(...baseStmts);
+        }
         const fieldSignature = new FieldSignature();
         fieldSignature.setFieldName(propertyAccessExpression.name.getText(this.sourceFile));
         const fieldRef = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
@@ -714,12 +713,28 @@ export class ArkIRTransformer {
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
             // temp for component
-            if (this.declaringMethod.getDeclaringArkFile().getScene().isCustomComponents(callerName)) {
+            let cls = this.declaringMethod.getDeclaringArkFile().getClassWithName(callerName);
+            if (cls?.hasComponentDecorator()) {
                 return this.createCustomViewStmt(callerName, args, callExpression);
-            } else {
-                methodSignature.getMethodSubSignature().setMethodName(callerName);
-                invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
             }
+
+            for (const ns of this.declaringMethod.getDeclaringArkFile().getAllNamespacesUnderThisFile()) {
+                cls = ns.getClassWithName(callerName);
+                if (cls?.hasComponentDecorator()) {
+                    return this.createCustomViewStmt(callerName, args, callExpression);
+                }
+            }
+            let exportInfo = this.declaringMethod.getDeclaringArkFile().getImportInfoBy(callerName)?.getLazyExportInfo();
+            let typeSignature = exportInfo?.getTypeSignature();
+            if (typeSignature instanceof ClassSignature) {
+                let cls = this.declaringMethod.getDeclaringArkFile().getScene().getClass(typeSignature);
+                if (cls?.hasComponentDecorator()) {
+                    return this.createCustomViewStmt(callerName, args, callExpression);
+                }
+            }
+            methodSignature.getMethodSubSignature().setMethodName(callerName);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+
         } else {
             ({value: callerValue, stmts: callerStmts} = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
@@ -732,7 +747,7 @@ export class ArkIRTransformer {
     private callableNodeToValueAndStmts(callableNode: ts.ArrowFunction | ts.FunctionExpression): ValueAndStmts {
         const declaringClass = this.declaringMethod.getDeclaringArkClass();
         const arrowArkMethod = new ArkMethod();
-        buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile);
+        buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile, this.declaringMethod);
         declaringClass.addMethod(arrowArkMethod);
 
         const callableType = new CallableType(arrowArkMethod.getSignature());
@@ -897,7 +912,6 @@ export class ArkIRTransformer {
     }
 
     private deleteExpressionToValueAndStmts(deleteExpression: ts.DeleteExpression): ValueAndStmts {
-        // TODO: reserve ArkDeleteStmt or not
         const {value: exprValue, stmts: stmts} = this.tsNodeToValueAndStmts(deleteExpression.expression);
         const deleteExpr = new ArkDeleteExpr(exprValue as AbstractFieldRef);
         return {value: deleteExpr, stmts: stmts};
@@ -1156,7 +1170,9 @@ export class ArkIRTransformer {
                 constant = ValueUtil.createStringConst((literalNode as ts.StringLiteral).text);
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral:
-                constant = ValueUtil.createStringConst((literalNode as ts.RegularExpressionLiteral).text);
+                const classSignature = new ClassSignature();
+                classSignature.setClassName('RegExp');
+                constant = new Constant((literalNode as ts.RegularExpressionLiteral).text, classSignature.getType());
                 break;
             case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 constant = ValueUtil.createStringConst((literalNode as ts.NoSubstitutionTemplateLiteral).text);
@@ -1327,9 +1343,9 @@ export class ArkIRTransformer {
         originalStmt.setPositionInfo(positionInfo);
 
         for (const stmt of stmts) {
-            if (stmt.getOriginPositionInfo().getLineNo() == -1) {
+            if (stmt.getOriginPositionInfo().getLineNo() === -1) {
                 stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
-                this.stmtInBuildMethodToOriginalStmt.set(stmt, originalStmt);
+                this.stmtToOriginalStmt.set(stmt, originalStmt);
             }
         }
     }

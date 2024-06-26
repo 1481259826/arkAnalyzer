@@ -112,6 +112,9 @@ export class ExportInfo implements FromInfo {
     }
 
     public isDefault(): boolean {
+        if (this.exportFrom) {
+            return this.nameBeforeAs === 'default';
+        }
         if (this._default === undefined) {
             this._default = this.modifiers?.has('DefaultKeyword')
         }

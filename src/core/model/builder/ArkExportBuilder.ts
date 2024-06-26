@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import * as ts from "ohos-typescript";
+import ts from "ohos-typescript";
 import { LineColPosition } from "../../base/Position";
 import { ArkExport, ExportInfo, ExportType, TypeSignature } from "../ArkExport";
 import { Decorator } from "../../base/Decorator";
@@ -89,17 +89,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
     if(isKeyword(node.getChildren(sourceFile),ts.SyntaxKind.DefaultKeyword)){
         modifiers.add(ts.SyntaxKind[ts.SyntaxKind.DefaultKeyword]);
     }
-    if (ts.isIdentifier(node.expression)) { //export default xx
-        const exportInfo = new ExportInfo.Builder()
-            .exportClauseName(node.expression.text)
-            .exportClauseType(ExportType.UNKNOWN)
-            .modifiers(modifiers)
-            .tsSourceCode(tsSourceCode)
-            .originTsPosition(originTsPosition)
-            .declaringArkFile(arkFile)
-            .build();
-        exportInfos.push(exportInfo);
-    } else if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { //export default {a,b,c}
+    if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { //export default {a,b,c}
         node.expression.properties.forEach((property) => {
             if (property.name && ts.isIdentifier(property.name)) {
                 let exportClauseName = property.name.text;
@@ -115,6 +105,20 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
                 exportInfos.push(exportInfo);
             }
         });
+    } else {
+        const exportInfo = new ExportInfo.Builder()
+            .exportClauseType(ExportType.UNKNOWN)
+            .modifiers(modifiers)
+            .tsSourceCode(tsSourceCode)
+            .originTsPosition(originTsPosition)
+            .declaringArkFile(arkFile)
+            .exportClauseName('default')
+        if (ts.isIdentifier(node.expression)) { //export default xx
+            exportInfo.nameBeforeAs(node.expression.text);
+        } else if (ts.isAsExpression(node.expression)) { //export default xx as YY
+            exportInfo.nameBeforeAs(node.expression.expression.getText(sourceFile))
+        }
+        exportInfos.push(exportInfo.build());
     }
     return exportInfos;
 }

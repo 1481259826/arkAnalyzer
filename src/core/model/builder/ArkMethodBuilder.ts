@@ -13,21 +13,21 @@
  * limitations under the License.
  */
 
-import { Type } from "../../base/Type";
-import { BodyBuilder } from "../../common/BodyBuilder";
-import { ViewTree } from "../../graph/ViewTree";
-import { ArkClass } from "../ArkClass";
-import { Decorator } from "../../base/Decorator";
-import { ArkMethod } from "../ArkMethod";
-import ts from "ohos-typescript";
+import { Type } from '../../base/Type';
+import { BodyBuilder } from '../../common/BodyBuilder';
+import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
+import { ArkClass } from '../ArkClass';
+import { Decorator } from '../../base/Decorator';
+import { ArkMethod } from '../ArkMethod';
+import ts from 'ohos-typescript';
 import {
     buildModifiers,
     buildParameters,
     buildReturnType,
     buildTypeParameters,
-    handlePropertyAccessExpression
-} from "./builderUtils";
-import Logger from "../../../utils/logger";
+    handlePropertyAccessExpression,
+} from './builderUtils';
+import Logger from '../../../utils/logger';
 
 const logger = Logger.getLogger();
 
@@ -47,10 +47,10 @@ export type MethodLikeNode =
     ts.FunctionTypeNode;
 
 export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd: ArkMethod,
-    sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
+                                                  sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
     mtd.setDeclaringArkClass(declaringClass);
     mtd.setDeclaringArkFile();
-    mtd.setName("_DEFAULT_ARK_METHOD");
+    mtd.setName('_DEFAULT_ARK_METHOD');
     mtd.genSignature();
 
     const defaultMethodNode = node ? node : sourceFile;
@@ -59,24 +59,21 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
     mtd.setBodyBuilder(bodyBuilder);
 }
 
-export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile) {
+export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
 
     mtd.setDeclaringArkClass(declaringClass);
     mtd.setDeclaringArkFile();
 
     mtd.setCode(methodNode.getText(sourceFile));
-    const { line, character } = ts.getLineAndCharacterOfPosition(
+    const {line, character} = ts.getLineAndCharacterOfPosition(
         sourceFile,
-        methodNode.getStart(sourceFile)
+        methodNode.getStart(sourceFile),
     );
     mtd.setLine(line + 1);
     mtd.setColumn(character + 1);
 
-
-    const methodName = buildMethodName(methodNode, declaringClass, sourceFile);
+    const methodName = buildMethodName(methodNode, declaringClass, sourceFile, declaringMethod);
     mtd.setName(methodName);
-
-
 
     buildParameters(methodNode.parameters, mtd, sourceFile).forEach((parameter) => {
         mtd.addParameter(parameter);
@@ -84,7 +81,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
 
     buildModifiers(methodNode, sourceFile).forEach((value) => {
         mtd.addModifier(value);
-    })
+    });
 
     if (methodNode.type) {
         mtd.setReturnType(buildReturnType(methodNode.type, sourceFile, mtd));
@@ -102,33 +99,31 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setBodyBuilder(bodyBuilder);
 
     if (mtd.hasBuilderDecorator()) {
-        mtd.setViewTree(new ViewTree(mtd));
+        mtd.setViewTree(buildViewTree(mtd));
     } else if (declaringClass.hasComponentDecorator() &&
         mtd.getSubSignature().toString() == 'build()' &&
         !mtd.containsModifier('StaticKeyword')) {
-        declaringClass.setViewTree(new ViewTree(mtd));
+        declaringClass.setViewTree(buildViewTree(mtd));
     }
 
     declaringClass.addMethod(mtd);
 }
 
-function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile): string {
+function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod): string {
     let name: string = '';
     let getAccessorName: string | undefined = undefined;
-    if (ts.isFunctionDeclaration(node)) {
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) {
         if (node.name) {
             name = node.name.text;
-        }
-        else {
-            name = buildAnonymousMethodName(node, declaringClass);
+        } else {
+            name = buildAnonymousMethodName(node, declaringClass, declaringMethod);
         }
     } else if (ts.isFunctionTypeNode(node)) {
         if (node.name) {
             //TODO: check name type
             name = node.name.getText(sourceFile);
-        }
-        else {
-            name = buildAnonymousMethodName(node, declaringClass);
+        } else {
+            name = buildAnonymousMethodName(node, declaringClass, declaringMethod);
         }
     } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
         if (ts.isIdentifier(node.name)) {
@@ -136,16 +131,14 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
         } else if (ts.isComputedPropertyName(node.name)) {
             if (ts.isIdentifier(node.name.expression)) {
                 name = node.name.expression.text;
-            }
-            else if (ts.isPropertyAccessExpression(node.name.expression)) {
+            } else if (ts.isPropertyAccessExpression(node.name.expression)) {
                 name = handlePropertyAccessExpression(node.name.expression);
-            }
-            else {
+            } else {
                 debugger;
-                logger.warn("Other method ComputedPropertyName found!");
+                logger.warn('Other method ComputedPropertyName found!');
             }
         } else {
-            logger.warn("Other method declaration type found!");
+            logger.warn('Other method declaration type found!');
         }
     }
     //TODO, hard code
@@ -154,28 +147,32 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     } else if (ts.isConstructSignatureDeclaration(node)) {
         name = 'construct-signature';
     } else if (ts.isCallSignatureDeclaration(node)) {
-        name = "call-signature";
+        name = 'call-signature';
     } else if (ts.isGetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Get-' + node.name.text;
         getAccessorName = node.name.text;
     } else if (ts.isSetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Set-' + node.name.text;
     } else if (ts.isArrowFunction(node)) {
-        name = buildAnonymousMethodName(node, declaringClass);
+        name = buildAnonymousMethodName(node, declaringClass, declaringMethod);
     }
     return name;
 }
 
-function buildAnonymousMethodName(node: MethodLikeNode, arkClass: ArkClass) {
-    const mtdName = 'AnonymousMethod-' + arkClass.getName() + '-' + arkClass.getAnonymousMethodNumber();
+function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass, declaringMethod?: ArkMethod) {
+    let declaringMethodName = '';
+    if (declaringMethod) {
+        declaringMethodName = declaringMethod.getName() + '-';
+    }
+    const mtdName = 'AnonymousMethod-' + declaringMethodName + declaringClass.getAnonymousMethodNumber();
     return mtdName;
 }
 
 export class ObjectBindingPatternParameter {
-    private propertyName: string = "";
-    private name: string = "";
+    private propertyName: string = '';
+    private name: string = '';
     private optional: boolean = false;
-    private initializer: string = "";
+    private initializer: string = '';
 
     constructor() {
     }
@@ -206,10 +203,10 @@ export class ObjectBindingPatternParameter {
 }
 
 export class ArrayBindingPatternParameter {
-    private propertyName: string = "";
-    private name: string = "";
+    private propertyName: string = '';
+    private name: string = '';
     private optional: boolean = false;
-    private initializer: string = "";
+    private initializer: string = '';
 
     constructor() {
     }
@@ -240,7 +237,7 @@ export class ArrayBindingPatternParameter {
 }
 
 export class MethodParameter {
-    private name: string = "";
+    private name: string = '';
     private type: Type;
     private optional: boolean = false;
     private objElements: ObjectBindingPatternParameter[] = [];
