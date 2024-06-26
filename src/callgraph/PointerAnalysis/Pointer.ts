@@ -153,7 +153,7 @@ export class StaticFieldPointer extends Pointer {
 
     public toString() {
         let resultString = "[StaticFieldPointer] "
-        resultString += this.fieldSignature.getDeclaringClassSignature().getClassName() + "."
+        resultString += this.fieldSignature.getDeclaringSignature().getClassName() + "."
             + this.fieldSignature.getFieldName() + " pointer: {"
         const pointerTargets = this.getAllPointerTargets()
         for (let pointerTarget of pointerTargets) {

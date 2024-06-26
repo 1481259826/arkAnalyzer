@@ -31,8 +31,9 @@ export interface ArkSignature {
  * @category core/model
  */
 export class FileSignature {
-    private projectName: string = "_UnkownProjectName";
-    private fileName: string = "_UnkownFileName";
+    public static readonly DEFAULT: FileSignature = new FileSignature();
+    private projectName: string = "_UnknownProjectName";
+    private fileName: string = "_UnknownFileName";
 
     constructor() {
     }
@@ -62,7 +63,7 @@ export class FileSignature {
 
 export class NamespaceSignature {
     private namespaceName: string = "";
-    private declaringFileSignature: FileSignature = new FileSignature();
+    private declaringFileSignature: FileSignature = FileSignature.DEFAULT;
     private declaringNamespaceSignature: NamespaceSignature | null = null;
 
     constructor() {
@@ -102,7 +103,8 @@ export class NamespaceSignature {
 }
 
 export class ClassSignature {
-    private declaringFileSignature: FileSignature = new FileSignature();
+    public static readonly DEFAULT = new ClassSignature();
+    private declaringFileSignature: FileSignature = FileSignature.DEFAULT;
     private declaringNamespaceSignature: NamespaceSignature | null = null;
     private className: string = "";
 
@@ -146,18 +148,20 @@ export class ClassSignature {
     }
 }
 
+export type BaseSignature = ClassSignature | NamespaceSignature;
+
 export class FieldSignature {
-    private declaringClassSignature: ClassSignature = new ClassSignature();
+    private declaringSignature: BaseSignature = ClassSignature.DEFAULT;
     private fieldName: string = '';
     private type: Type = UnknownType.getInstance();
     private static: boolean = false;
 
-    public getDeclaringClassSignature() {
-        return this.declaringClassSignature;
+    public getDeclaringSignature() {
+        return this.declaringSignature;
     }
 
-    public setDeclaringClassSignature(declaringClassSignature: ClassSignature) {
-        this.declaringClassSignature = declaringClassSignature;
+    public setDeclaringSignature(declaringClassSignature: BaseSignature) {
+        this.declaringSignature = declaringClassSignature;
     }
 
     public getFieldName() {
@@ -192,11 +196,12 @@ export class FieldSignature {
         if (this.isStatic()) {
             tmpSig = '[static]' + tmpSig;
         }
-        return this.getDeclaringClassSignature().toString() + '.' + tmpSig;
+        return this.getDeclaringSignature().toString() + '.' + tmpSig;
     }
 }
 
 export class MethodSubSignature {
+    public static readonly DEFAULT = new MethodSubSignature();
     private methodName: string = '';
     private parameters: MethodParameter[] = [];
     private parameterTypes: Set<Type> = new Set<Type>();
@@ -251,7 +256,7 @@ export class MethodSubSignature {
             paraStr += parameterType.toString() + ", ";
         });
         paraStr = paraStr.replace(/, $/, '');
-        let tmpSig =  `${this.getMethodName()}(${paraStr})`;
+        let tmpSig = `${this.getMethodName()}(${paraStr})`;
         if (this.isStatic()) {
             tmpSig = '[static]' + tmpSig;
         }
@@ -263,8 +268,8 @@ export class MethodSubSignature {
  * @category core/model
  */
 export class MethodSignature {
-    private declaringClassSignature: ClassSignature = new ClassSignature();
-    private methodSubSignature: MethodSubSignature = new MethodSubSignature();
+    private declaringClassSignature: ClassSignature = ClassSignature.DEFAULT;
+    private methodSubSignature: MethodSubSignature = MethodSubSignature.DEFAULT;
 
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
@@ -331,7 +336,7 @@ export class InterfaceSignature {
 
 //TODO, reconstruct
 export function fieldSignatureCompare(leftSig: FieldSignature, rightSig: FieldSignature): boolean {
-    if (classSignatureCompare(leftSig.getDeclaringClassSignature(), rightSig.getDeclaringClassSignature()) &&
+    if (leftSig.getDeclaringSignature().toString() === rightSig.getDeclaringSignature().toString() &&
         (leftSig.getFieldName() == rightSig.getFieldName())) {
         return true;
     }

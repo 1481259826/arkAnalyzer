@@ -18,17 +18,15 @@ import { ArkBody } from "../model/ArkBody";
 import { DataflowProblem, FlowFunction } from "./DataflowProblem"
 import { Local } from "../base/Local"
 import { Value } from "../base/Value"
-import { ClassType, NumberType, Type } from "../base/Type"
+import { ClassType, UndefinedType } from "../base/Type"
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from "../base/Stmt"
 import { ArkMethod } from "../model/ArkMethod";
 import { Constant } from "../base/Constant"
 import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
 import { DataflowSolver } from "./DataflowSolver"
 import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
-import { UndefinedType } from "../base/Type";
 import { factEqual } from "../dataflow/DataflowSolver";
-import { FileSignature } from "../model/ArkSignature";
-import { NamespaceSignature } from "../model/ArkSignature";
+import { FileSignature, NamespaceSignature } from "../model/ArkSignature";
 import { ArkClass } from "../model/ArkClass";
 import Logger from "../../utils/logger";
 
@@ -159,7 +157,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                                 break;
                             }
                         }
-                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringClassSignature()){
+                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringSignature()) {
                         ret.add(dataFact);
                     }
                 }

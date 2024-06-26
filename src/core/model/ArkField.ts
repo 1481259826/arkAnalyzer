@@ -138,7 +138,7 @@ export class ArkField {
     public genSignature() {
         let fieldSig = new FieldSignature();
         fieldSig.setType(this.type);
-        fieldSig.setDeclaringClassSignature(this.declaringClass.getSignature());
+        fieldSig.setDeclaringSignature(this.declaringClass.getSignature());
         fieldSig.setFieldName(this.name);
         if (this.isStatic()) {
             fieldSig.setStatic();

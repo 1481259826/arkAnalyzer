@@ -14,13 +14,12 @@
  */
 
 import Logger from "../../utils/logger";
-import { AbstractInvokeExpr, ArkBinopExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
+import { ArkBinopExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
 import { Local } from "../base/Local";
 import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
 import {
     AnnotationNamespaceType,
-    AnnotationType,
     AnyType,
     ArrayType,
     BooleanType,
@@ -40,11 +39,10 @@ import {
 import { ArkMethod } from "../model/ArkMethod";
 import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
 import { ModelUtils } from "./ModelUtils";
-import { ArkField } from '../model/ArkField';
-import { ArkClass } from '../model/ArkClass';
 import { TypeSignature } from "../model/ArkExport";
 
 const logger = Logger.getLogger();
+
 
 export class TypeInference {
 
@@ -80,136 +78,102 @@ export class TypeInference {
 
     /** resolve symbol that is uncertain when build stmts, such as class' name and function's name */
     private static resolveSymbolInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
+        //method
         const exprs = stmt.getExprs();
         for (const expr of exprs) {
             const newExpr = expr.inferType(arkMethod);
-            if (expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
-                if (stmt.containsInvokeExpr()) {
-                    if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
-                        stmt.setRightOp(newExpr)
-                    } else if (stmt instanceof ArkInvokeStmt) {
-                        stmt.replaceInvokeExpr(newExpr)
-                    }
-                    stmt.setText(stmt.toString().replace(/^instanceInvoke/, "staticinvoke"))
-                }
-            }
-            if (newExpr instanceof AbstractInvokeExpr && stmt instanceof ArkAssignStmt) {
-                const leftOp = stmt.getLeftOp()
-                if (leftOp instanceof Local) {
-                    leftOp.setType(newExpr.getMethodSignature().getMethodSubSignature().getReturnType());
+            if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
+                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
+                    stmt.setRightOp(newExpr)
+                } else if (stmt instanceof ArkInvokeStmt) {
+                    stmt.replaceInvokeExpr(newExpr)
                 }
             }
         }
-
+        //field
         for (const use of stmt.getUses()) {
-            if (use instanceof ArkInstanceFieldRef) {
-                let fieldType = this.handleClassField(use, arkMethod);
-                if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() instanceof Local && fieldType != undefined) {
-                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
-                        if (fieldType instanceof ArkField) {
-                            if (fieldType.getModifiers().has("StaticKeyword")) {
-                                stmt.setRightOp(new ArkStaticFieldRef(fieldType.getSignature()))
-                            } else {
-                                stmt.setRightOp(new ArkInstanceFieldRef(use.getBase(), fieldType.getSignature()));
-                            }
-                            (stmt.getLeftOp() as Local).setType(fieldType.getType())
-                        } else if (fieldType instanceof ArkClass) {
-                            (stmt.getLeftOp() as Local).setType(fieldType.getSignature())
-                        }
-                    } else {
-                        if (fieldType instanceof ArkField) {
-                            if (fieldType.getModifiers().has("StaticKeyword")) {
-                                stmt.replaceUse(use, new ArkStaticFieldRef(fieldType.getSignature()));
-                                stmt.setRightOp(stmt.getRightOp());
-                            } else {
-                                use.setFieldSignature(fieldType.getSignature());
-                            }
-                        }
-                        (stmt.getLeftOp() as Local).setType(stmt.getRightOp().getType());
-                    }
-
+            if (!(use instanceof ArkInstanceFieldRef)) {
+                continue;
+            }
+            const fieldRef = this.handleClassField(use, arkMethod);
+            if (stmt instanceof ArkAssignStmt && fieldRef instanceof ArkStaticFieldRef) {
+                if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
+                    stmt.setRightOp(fieldRef);
+                } else {
+                    stmt.replaceUse(use, fieldRef);
+                    stmt.setRightOp(stmt.getRightOp());
                 }
             }
         }
         const stmtDef = stmt.getDef()
         if (stmtDef && stmtDef instanceof ArkInstanceFieldRef) {
-            let fieldType = this.handleClassField(stmtDef, arkMethod);
-            if (fieldType instanceof ArkField) {
-                let fieldRef: AbstractFieldRef
-                if (fieldType.getModifiers().has("StaticKeyword")) {
-                    fieldRef = new ArkStaticFieldRef(fieldType.getSignature())
-                } else {
-                    fieldRef = new ArkInstanceFieldRef(stmtDef.getBase(), fieldType.getSignature())
-                }
-                stmt.setDef(fieldRef)
-                if (stmt instanceof ArkAssignStmt) {
-                    // not sure
-                    stmt.setLeftOp(fieldRef)
-                }
-            } else if (fieldType instanceof ArkClass) {
-                // nothing to do?
+            const fieldRef = this.handleClassField(stmtDef, arkMethod);
+            if (fieldRef instanceof ArkStaticFieldRef) {
+                stmt.setDef(fieldRef);
             }
         }
     }
 
-    private static handleClassField(field: ArkInstanceFieldRef, arkMethod: ArkMethod): ArkClass | ArkField | null {
-        const base = field.getBase()
+    private static handleClassField(field: ArkInstanceFieldRef, arkMethod: ArkMethod): AbstractFieldRef {
+        const base = field.getBase();
         if (!(base instanceof Local)) {
-            logger.warn("field ref base is not local")
-            return null
+            logger.warn("field ref base is not local");
+            return field;
         }
-        const baseName = base.getName()
-        const type = base.getType();
+        //infer base type
+        if (base.getType() instanceof UnknownType) {
+            const signature = ModelUtils.getBaseSignatureWithName(base.getName(), arkMethod);
+            if (signature) {
+                field.getFieldSignature().setDeclaringSignature(signature);
+            }
+            const type = TypeInference.parseSignature2Type(signature);
+            if (type) {
+                base.setType(type);
+            } else {
+                logger.warn('infer field of base fail: ' + field.toString());
+            }
+        }
+        //infer field type
         const fieldName = field.getFieldName();
-        let arkClass
-        if (!(type instanceof ClassType)) {
-            arkClass = ModelUtils.getClassWithName(baseName, arkMethod);
-            if (!arkClass) {
-                arkClass = ModelUtils.getNamespaceWithName(baseName, arkMethod)?.getClassWithName(fieldName);
-                if (arkClass) {
-                    return arkClass;
+        const type = base.getType();
+        let inferType;
+        if (type instanceof ClassType) {
+            const arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
+            let arkField = arkClass?.getFieldWithName(fieldName) ?? arkClass?.getStaticFieldWithName(fieldName);
+            if (arkField) {
+                if (arkField.getType() instanceof UnclearReferenceType) {
+                    const signature = ModelUtils.getBaseSignatureWithName(fieldName, arkMethod);
+                    inferType = this.parseSignature2Type(signature);
+                    if (inferType) {
+                        arkField.setType(inferType);
+                        arkField.getSignature().setType(inferType);
+                    }
+                } else {
+                    inferType = arkField.getType();
                 }
-                const typeSi = ModelUtils.getTypeSignatureInImportInfoWithName(baseName, arkMethod.getDeclaringArkFile());
-                if (typeSi instanceof NamespaceSignature) {
-                    arkClass = arkMethod.getDeclaringArkFile().getScene().getNamespace(typeSi)?.getClassWithName(fieldName);
-                    if (arkClass) {
-                        return arkClass;
+                if (inferType && !(inferType instanceof UnknownType)) {
+                    field.getFieldSignature().setType(inferType);
+                    if (arkField.getSignature().isStatic()) {
+                        return new ArkStaticFieldRef(arkField.getSignature());
                     }
                 }
-                if (typeSi instanceof ClassSignature) {
-                    arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(typeSi);
-                }
+                logger.warn('infer field type fail: ' + field.toString());
+                return field;
             }
+            inferType = this.parseSignature2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getTypeSignature());
+        } else if (type instanceof AnnotationNamespaceType) {
+            const arkClass = arkMethod.getDeclaringArkFile().getScene().getNamespace(
+                type.getNamespaceSignature())?.getClassWithName(fieldName);
+            if (arkClass) {
+                inferType = new ClassType(arkClass.getSignature());
+            }
+        }
+        if (inferType) {
+            field.getFieldSignature().setType(inferType);
         } else {
-            arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
+            logger.warn('infer field type fail: ' + field.toString());
         }
-        if (!arkClass) {
-            logger.warn(`class ${baseName} does not exist`);
-            return null;
-        }
-        field.getFieldSignature().setDeclaringClassSignature(arkClass.getSignature());
-        let arkField = arkClass.getFieldWithName(fieldName) ?? arkClass.getStaticFieldWithName(fieldName);
-        if (arkField == null) {
-            const exportInfo = arkClass.getDeclaringArkFile().getExportInfoBy(fieldName);
-            if (exportInfo) {
-                const newType = this.parseSignature2Type(exportInfo.getTypeSignature());
-                if (newType) {
-                    field.getFieldSignature().setType(newType);
-                }
-            }
-        } else {
-            let fieldType = arkField.getType();
-            if (fieldType instanceof UnclearReferenceType) {
-                const fieldTypeName = fieldType.getName();
-                const signature = ModelUtils.getClassWithName(fieldTypeName, arkMethod)?.getSignature()
-                    ?? ModelUtils.getTypeSignatureInImportInfoWithName(fieldTypeName, arkMethod.getDeclaringArkFile());
-                const newType = this.parseSignature2Type(signature);
-                if (newType) {
-                    arkField.setType(newType);
-                }
-            }
-        }
-        return arkField;
+        return field;
     }
 
     public static parseSignature2Type(signature: TypeSignature | undefined): Type | null {
@@ -229,70 +193,54 @@ export class TypeInference {
         }
     }
 
+    /**
+     * pass ArkAssignStmt right type to left
+     * @param stmt
+     * @param arkMethod
+     */
     public static inferTypeInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
-        if (stmt instanceof ArkAssignStmt) {
-            const leftOp = stmt.getLeftOp();
-
-            if (leftOp instanceof Local) {
-                const leftOpType = leftOp.getType();
-                if (leftOpType instanceof AnnotationType) {
-                    let leftOpTypeString = leftOpType.getOriginType()
-                    if (leftOpType instanceof AnnotationNamespaceType) {
-                        const signature = ModelUtils.getClassWithName(leftOpTypeString, arkMethod)?.getSignature()
-                            ?? ModelUtils.getTypeSignatureInImportInfoWithName(leftOpTypeString, arkMethod.getDeclaringArkFile());
-                        const type = this.parseSignature2Type(signature);
-                        if (type) {
-                            leftOp.setType(type);
-                        } else {
-                            leftOp.setType(stmt.getRightOp().getType());
-                        }
-                    }
-                } else if (leftOpType instanceof UnknownType) {
-                    const rightOp = stmt.getRightOp();
-                    if (rightOp instanceof ArkParameterRef) {
-                        let rightOpType = rightOp.getType()
-                        if (rightOpType instanceof UnclearReferenceType) {
-                            let signature = ModelUtils.getClassWithName(rightOpType.getName(), arkMethod)?.getSignature()
-                                ?? ModelUtils.getTypeSignatureInImportInfoWithName(rightOpType.getName(), arkMethod.getDeclaringArkFile());
-                            const type = this.parseSignature2Type(signature);
-                            if (type) {
-                                leftOp.setType(type);
-                            } else {
-                                leftOp.setType(stmt.getRightOp().getType());
-                            }
-                        } else {
-                            leftOp.setType(rightOpType)
-                        }
-                    } else {
-                        leftOp.setType(rightOp.getType());
-                    }
-                } else if (leftOpType instanceof UnionType) {
-                    const rightOp = stmt.getRightOp();
-                    leftOpType.setCurrType(rightOp.getType());
-                } else if (leftOpType instanceof UnclearReferenceType) {
-                    if (!(stmt.getRightOp() instanceof UnknownType)) {
-                        leftOp.setType(stmt.getRightOp().getType());
-                    }
-                    if (stmt.containsInvokeExpr()) {
-                    }
-                } else if (leftOpType instanceof ArrayType) {
-                    if (leftOpType.getBaseType() instanceof UnclearReferenceType) {
-                        const baseType = leftOpType.getBaseType() as UnclearReferenceType;
-                        const itemClass = ModelUtils.getClassWithName(baseType.getName(), arkMethod);
-                        if (itemClass) {
-                            leftOpType.setBaseType(new ClassType(itemClass.getSignature()));
-                        } else {
-                            const signature = ModelUtils.getTypeSignatureInImportInfoWithName(baseType.getName(), arkMethod.getDeclaringArkFile());
-                            if (signature && signature instanceof ClassSignature) {
-                                leftOpType.setBaseType(new ClassType(signature));
-                            }
-                        }
-                    }
-                }
-            } else if (leftOp instanceof ArkInstanceFieldRef) {
-                // 对应赋值语句左值进行了取属性操作
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return;
+        }
+        //从右到左
+        const rightOp = stmt.getRightOp();
+        if (rightOp.getType() instanceof UnclearReferenceType) {
+            const type = this.inferUnclearReferenceType((rightOp.getType() as UnclearReferenceType).getName(), arkMethod);
+            if (type && rightOp instanceof ArkParameterRef) {
+                rightOp.setType(type);
             }
         }
+        const leftOp = stmt.getLeftOp();
+        if (leftOp instanceof Local) {
+            if (leftOp.getType() instanceof UnknownType
+                && !(stmt.getRightOp().getType() instanceof UnknownType || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
+                leftOp.setType(stmt.getRightOp().getType());
+                return;
+            }
+            const leftOpType = leftOp.getType();
+            if (leftOpType instanceof AnnotationNamespaceType) {
+                const type = this.inferUnclearReferenceType(leftOpType.getOriginType(), arkMethod);
+                if (type) {
+                    leftOp.setType(type);
+                }
+            } else if (leftOpType instanceof UnionType) {
+                const rightOp = stmt.getRightOp();
+                leftOpType.setCurrType(rightOp.getType());
+            } else if (leftOpType instanceof UnclearReferenceType) {
+                const type = this.inferUnclearReferenceType(leftOpType.getName(), arkMethod);
+                if (type) {
+                    leftOp.setType(type);
+                }
+            } else if (leftOpType instanceof ArrayType && leftOpType.getBaseType() instanceof UnclearReferenceType) {
+                const type = this.inferUnclearReferenceType((leftOpType.getBaseType() as UnclearReferenceType).getName(), arkMethod);
+                if (type) {
+                    leftOpType.setBaseType(type);
+                }
+            }
+        } else if (leftOp instanceof ArkInstanceFieldRef) {
+            logger.warn("to do")
+        }
+
     }
 
     public static inferSimpleTypeInStmt(stmt: Stmt): void {
@@ -401,5 +349,11 @@ export class TypeInference {
                 method.setReturnType(new ClassType(returnInstance.getSignature()));
             }
         }
+    }
+
+    private static inferUnclearReferenceType(refName: string, arkMethod: ArkMethod) {
+        let signature = ModelUtils.getClassWithName(refName, arkMethod)?.getSignature()
+            ?? ModelUtils.getTypeSignatureInImportInfoWithName(refName, arkMethod.getDeclaringArkFile());
+        return this.parseSignature2Type(signature);
     }
 }
