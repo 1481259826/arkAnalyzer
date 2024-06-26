@@ -49,6 +49,9 @@ export class CallGraphBuilder {
                 }
             }
         }
+
+        // set entries at end
+        this.setEntries();
     }
 
     /// Get direct call callee
@@ -63,5 +66,11 @@ export class CallGraphBuilder {
         }
 
         return undefined;
+    }
+    
+    public setEntries(): void {
+        let nodesIter = this.cg.getNodesIter();
+        let entries = Array.from(nodesIter).filter(node => node.hasIncomingEdges() == false).map(node => node.getID());
+        this.cg.setEntries(entries);
     }
 }

@@ -51,8 +51,8 @@ export class BaseEdge {
 export class BaseNode {
     private id: NodeID;
     private kind: Kind;
-    private inEdges: BaseEdge[];
-    private outEdges: BaseEdge[];
+    private inEdges: Set<BaseEdge> = new Set();
+    private outEdges: Set<BaseEdge> = new Set();
 
     constructor(id: NodeID, k: Kind) {
         this.id = id;
@@ -67,40 +67,37 @@ export class BaseNode {
         return this.kind;
     }
 
-    public hasIncomingEdge(): boolean {
-        return (this.inEdges.length != 0);
+    public hasIncomingEdges(): boolean {
+        return (this.inEdges.size != 0);
     }
 
-    public hasOutgoingEdge(): boolean {
-        return (this.outEdges.length !=0);
+    public hasOutgoingEdges(): boolean {
+        return (this.outEdges.size == 0);
+    }
+
+    public hasIncomingEdge(e: BaseEdge): boolean {
+        return this.inEdges.has(e);
+    }
+
+    public hasOutgoingEdge(e: BaseEdge): boolean {
+        return this.outEdges.has(e);
     }
 
     public addIncomingEdge(e: BaseEdge): void {
-        this.inEdges.push(e);
+        this.inEdges.add(e);
     }
 
     public addOutgoingEdge(e: BaseEdge): void {
-        this.outEdges.push(e);
+        this.outEdges.add(e);
     }
 
     public removeIncomingEdge(e: BaseEdge): boolean {
-        let idx = this.inEdges.indexOf(e);
-        if (idx != -1) {
-            this.inEdges.splice(idx, 1);
-            return true;
-        }
-        return false;
+        return this.inEdges.delete(e);
     }
 
     public removeOutgoingEdge(e: BaseEdge): boolean {
-        let idx = this.outEdges.indexOf(e);
-        if (idx != -1) {
-            this.outEdges.splice(idx, 1);
-            return true;
-        }
-        return false;
+        return this.outEdges.delete(e);
     }
-
 }
 
 export class BaseGraph {
@@ -108,12 +105,20 @@ export class BaseGraph {
     protected nodeNum: number = 0;
     protected idToNodeMap: Map<NodeID, BaseNode>;
 
+    constructor() {
+        this.idToNodeMap = new Map();
+    }
+
     public addNode(n: BaseNode): void {
         this.idToNodeMap.set(n.getID(), n);
         this.nodeNum++;
     }
 
     public getNode(id: NodeID): BaseNode | undefined {
+        if (!this.idToNodeMap.has(id)) {
+            throw new Error(`Can find Node # ${id}`);
+        }
+
         return this.idToNodeMap.get(id);
     }
 
@@ -127,5 +132,19 @@ export class BaseGraph {
             return true;
         }
         return false;
+    }
+
+    public hasEdge(src: BaseNode, dst: BaseNode): boolean {
+        let e = new BaseEdge(src, dst, 0);
+
+        if (src.hasOutgoingEdge(e) && dst.hasIncomingEdge(e)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public getNodesIter(): IterableIterator<BaseNode> {
+        return this.idToNodeMap.values();
     }
 };
