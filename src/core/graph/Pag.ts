@@ -14,40 +14,44 @@
  */
 
 import { NodeID, Kind, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
+import { CallGraph, CallSite, CallSiteID } from './CallGraph';
+import { ContextID } from '../pta/Context';
+import { Value } from '../base/Value';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
  */
 
-enum PagEdgeKind {
-    Address, Copy, Load, Write
+export enum PagEdgeKind {
+    Address, Copy, Load, Write, 
 };
 
-class PagEdge extends BaseEdge {
+export class PagEdge extends BaseEdge {
     constructor(s: PagNode, d: PagNode, k: PagEdgeKind) {
         super(s, d, k);
     };
+
 }
 
-class AddrPagEdge extends PagEdge {
+export class AddrPagEdge extends PagEdge {
     constructor(s: PagNode, d: PagNode) {
         super(s, d, PagEdgeKind.Address);
     };
 }
 
-class CopyPagEdge extends PagEdge {
+export class CopyPagEdge extends PagEdge {
     constructor(s: PagNode, d: PagNode) {
         super(s, d, PagEdgeKind.Copy);
     };
 }
 
-class LoadPagEdge extends PagEdge {
+export class LoadPagEdge extends PagEdge {
     constructor(s: PagNode, d: PagNode) {
         super(s, d, PagEdgeKind.Copy);
     };
 }
 
-class WritePagEdge extends PagEdge {
+export class WritePagEdge extends PagEdge {
     constructor(s: PagNode, d: PagNode) {
         super(s, d, PagEdgeKind.Write);
     };
@@ -55,7 +59,10 @@ class WritePagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-class PagNode extends BaseNode {
+export class PagNode extends BaseNode {
+    private cid: ContextID | undefined;
+    private value: Value;
+
     private addressInEdges: PagEdgeSet;
     private addressOutEdges: PagEdgeSet;
     private copyInEdges: PagEdgeSet;
@@ -65,26 +72,33 @@ class PagNode extends BaseNode {
     private writeInEdges: PagEdgeSet;
     private wirteOutEdges: PagEdgeSet;
 
-    constructor (id: NodeID) {
+    constructor (id: NodeID, cid: ContextID|undefined = undefined, v: Value) {
         super(id, 0);
+        this.cid = cid;
+        this.value = v;
     }
 
     public addAddressInEdge(e: AddrPagEdge): void {
+        this.addAddressInEdge == undefined ? this.addressInEdges = new Set(): undefined;
         this.addressInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
     public addAddressOutEdge(e:AddrPagEdge): void {
+        this.addressOutEdges == undefined ? this.addressOutEdges = new Set() : undefined;
         this.addressOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
     public addCopyInEdge(e: CopyPagEdge): void {
+        this.copyInEdges == undefined ? this.copyInEdges = new Set() : undefined;
         this.copyInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
     public addCopyOutEdge(e: CopyPagEdge): void {
+        this.copyOutEdges == undefined ? this.copyOutEdges = new Set() : undefined;
+
         this.copyOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
@@ -107,5 +121,68 @@ class PagNode extends BaseNode {
     public addWriteOutEdge(e: LoadPagEdge): void {
         this.wirteOutEdges.add(e);
         this.addOutgoingEdge(e);
+    }
+}
+
+export class Pag extends BaseGraph {
+
+    private cg: CallGraph;
+    private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
+
+    public getCG(): CallGraph {
+        return this.cg;
+    }
+    public addPagNode(cid: ContextID, v: Value): PagNode{
+        let id: NodeID = this.nodeNum++;
+        let pagNode = new PagNode(id, cid, v);
+        this.addNode(pagNode);
+        this.contextValueToIdMap.set([cid, v], id);
+        return pagNode;
+    }
+
+    public getOrNewNode(cid: ContextID, v: Value): PagNode {
+        let nodeId = this.contextValueToIdMap.get([cid, v]);
+        if (nodeId != undefined) {
+            return this.getNode(nodeId) as PagNode;
+        }
+
+        return this.addPagNode(cid, v);
+    }
+
+    public addCopyEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind) {
+        // TODO: check if the edge already existing
+        let edge = new PagEdge(src, dst, kind); 
+
+        src.addOutgoingEdge(edge);
+        src.addCopyOutEdge(edge);
+        dst.addIncomingEdge(edge);
+        dst.addCopyInEdge(edge);
+    }
+}
+
+export class FuncPag {
+    private funcID: number;
+    private interalEdges: Set<PagEdge>;
+    private normalCallSites: Set<CallSite>;
+    private dynamicCallSites: Set<CallSite>;
+    private funPtrCallSite: Set<CallSite>;
+
+    public addNormalCallSite(cs: CallSite): void {
+        if (this.normalCallSites == undefined) {
+            this.normalCallSites = new Set();
+        }
+
+        this.normalCallSites.add(cs);
+    }
+
+    public addDynamicCallSite(cs: CallSite): void {
+        if (this.dynamicCallSites == undefined) {
+            this.dynamicCallSites = new Set();
+        }
+        this.dynamicCallSites.add(cs);
+    }
+
+    public getNormalCallSites(): Set<CallSite> {
+        return this.normalCallSites;
     }
 }
