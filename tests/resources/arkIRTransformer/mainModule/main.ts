@@ -17,6 +17,8 @@
 // console.log('hi');
 //
 // for i
+import { s } from 'vitest/dist/reporters-yx5ZTtEV';
+
 for (let i = 0; i < 10; i++) {
     console.log(i);
 }
@@ -179,7 +181,5 @@ for (let i = 0; i < 10; i++) {
 // }
 
 function main() {
-    const a = [1, 2];
-    a.forEach((i) => {
-    });
+    let a: [number, string];
 }
