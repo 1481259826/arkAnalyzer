@@ -33,14 +33,14 @@ list.forEach((i: any) => {
 });
 let i = 0;
 for (; i < list.length; i = i + 1) {
-  if (i != 0) {
-    if (i != 2) {
-      logger.info(list[i]);
-    } else {
-      break;
-    }
-  } else {
+  if (i == 0) {
     continue;
+  } else {
+    if (i == 2) {
+      break;
+    } else {
+      logger.info(list[i]);
+    }
   }
 }
 let pets = new Set(['Cat', 'Dog', 'Hamster']);

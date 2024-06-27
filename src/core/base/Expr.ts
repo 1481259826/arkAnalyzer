@@ -626,6 +626,10 @@ export class ArkUnopExpr extends AbstractExpr {
         return uses;
     }
 
+    public getOp(): Value {
+        return this.op;
+    }
+
     public getType(): Type {
         return this.op.getType();
     }

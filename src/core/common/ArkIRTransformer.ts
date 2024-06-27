@@ -89,6 +89,7 @@ import {
 import { tsNode2Value } from '../model/builder/builderUtils';
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
+import { TypeInference } from './TypeInference';
 
 const logger = Logger.getLogger();
 
@@ -718,26 +719,14 @@ export class ArkIRTransformer {
             invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
+            let classSignature = new ClassSignature();
+            classSignature.setClassName(callerName);
             // temp for component
-            let cls = this.declaringMethod.getDeclaringArkFile().getClassWithName(callerName);
+            let cls = TypeInference.getClass(this.declaringMethod, classSignature);
             if (cls?.hasComponentDecorator()) {
                 return this.createCustomViewStmt(callerName, args, callExpression);
             }
 
-            for (const ns of this.declaringMethod.getDeclaringArkFile().getAllNamespacesUnderThisFile()) {
-                cls = ns.getClassWithName(callerName);
-                if (cls?.hasComponentDecorator()) {
-                    return this.createCustomViewStmt(callerName, args, callExpression);
-                }
-            }
-            let exportInfo = this.declaringMethod.getDeclaringArkFile().getImportInfoBy(callerName)?.getLazyExportInfo();
-            let typeSignature = exportInfo?.getTypeSignature();
-            if (typeSignature instanceof ClassSignature) {
-                let cls = this.declaringMethod.getDeclaringArkFile().getScene().getClass(typeSignature);
-                if (cls?.hasComponentDecorator()) {
-                    return this.createCustomViewStmt(callerName, args, callExpression);
-                }
-            }
             methodSignature.getMethodSubSignature().setMethodName(callerName);
             invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
 
