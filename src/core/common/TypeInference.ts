@@ -121,35 +121,25 @@ export class TypeInference {
             return field;
         }
         //infer base type
-        let signature;
-        const baseType = base.getType();
-        if (baseType instanceof UnknownType) {
+        if (base.getType() instanceof UnknownType) {
             const type = TypeInference.inferBaseType(base.getName(), arkMethod);
             if (type) {
                 base.setType(type);
-            } else {
-                logger.warn('infer field of base fail: ' + field.toString());
             }
-        } else if (baseType instanceof ClassType) {
-            signature = baseType.getClassSignature();
-        } else if (baseType instanceof AnnotationNamespaceType) {
-            signature = baseType.getNamespaceSignature();
         }
-        if (signature) {
-            field.getFieldSignature().setDeclaringSignature(signature);
-        }
-        //infer field type
         const fieldName = field.getFieldName();
-        const type = base.getType();
         let inferType;
-        if (type instanceof ClassType) {
-            const arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
+        const baseType = base.getType();
+        if (baseType instanceof ClassType) {
+            const signature = baseType.getClassSignature();
+            field.getFieldSignature().setDeclaringSignature(signature);
+            const arkClass = arkMethod.getDeclaringArkFile().getScene().getClass(signature);
             let arkField = arkClass?.getFieldWithName(fieldName) ?? arkClass?.getStaticFieldWithName(fieldName);
             if (arkField) {
                 if (!arkField.getType() && arkField.getFieldType() === 'EnumMember') {
-                    arkField.setType(type);
-                    arkField.getSignature().setType(type);
-                    inferType = type;
+                    arkField.setType(baseType);
+                    arkField.getSignature().setType(baseType);
+                    inferType = baseType;
                 } else if (arkField.getType() instanceof UnclearReferenceType) {
                     inferType = this.inferUnclearReferenceType((arkField.getType() as UnclearReferenceType).getName(), arkMethod);
                     if (inferType) {
@@ -170,13 +160,15 @@ export class TypeInference {
                 return field;
             }
             inferType = this.parseSignature2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getTypeSignature());
-        } else if (type instanceof AnnotationNamespaceType) {
-            const arkClass = arkMethod.getDeclaringArkFile().getScene().getNamespace(
-                type.getNamespaceSignature())?.getClassWithName(fieldName);
+        } else if (baseType instanceof AnnotationNamespaceType) {
+            const signature = baseType.getNamespaceSignature();
+            field.getFieldSignature().setDeclaringSignature(signature);
+            const arkClass = arkMethod.getDeclaringArkFile().getScene().getNamespace(signature)?.getClassWithName(fieldName);
             if (arkClass) {
                 inferType = new ClassType(arkClass.getSignature());
             }
         }
+        //infer field type
         if (inferType) {
             field.getFieldSignature().setType(inferType);
         } else {
