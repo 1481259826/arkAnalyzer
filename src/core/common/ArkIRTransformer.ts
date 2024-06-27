@@ -351,12 +351,13 @@ export class ArkIRTransformer {
 
     private ifStatementToStmts(ifStatement: ts.IfStatement): Stmt[] {
         const stmts: Stmt[] = [];
-        const {
-            value: conditionExpr,
-            stmts: conditionStmts,
-        } = this.conditionToValueAndStmts(ifStatement.expression);
-        stmts.push(...conditionStmts);
         if (this.inBuildMethod) {
+            const {
+                value: conditionExpr,
+                stmts: conditionStmts,
+            } = this.conditionToValueAndStmts(ifStatement.expression, false);
+            stmts.push(...conditionStmts);
+
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
             const {value: conditionValue, stmts: assignConditionStmts} = this.generateAssignStmtForValue(conditionExpr);
             stmts.push(...assignConditionStmts);
@@ -383,6 +384,11 @@ export class ArkIRTransformer {
             const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
             stmts.push(popInvokeStmt);
         } else {
+            const {
+                value: conditionExpr,
+                stmts: conditionStmts,
+            } = this.conditionToValueAndStmts(ifStatement.expression);
+            stmts.push(...conditionStmts);
             stmts.push(new ArkIfStmt(conditionExpr as ArkConditionExpr));
         }
 
@@ -1134,7 +1140,7 @@ export class ArkIRTransformer {
         return {value: leftValue, stmts: stmts};
     }
 
-    private conditionToValueAndStmts(condition: ts.Expression): ValueAndStmts {
+    private conditionToValueAndStmts(condition: ts.Expression, flip: boolean = true): ValueAndStmts {
         const stmts: Stmt[] = [];
         let {
             value: conditionValue,
@@ -1143,7 +1149,8 @@ export class ArkIRTransformer {
         stmts.push(...conditionStmts);
         let conditionExpr: ArkConditionExpr;
         if ((conditionValue instanceof ArkBinopExpr) && this.isRelationalOperator(conditionValue.getOperator())) {
-            conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), this.flipOperator(conditionValue.getOperator()));
+            const operator = flip ? this.flipOperator(conditionValue.getOperator()) : conditionValue.getOperator();
+            conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), operator);
         } else {
             if (IRUtils.moreThanOneAddress(conditionValue)) {
                 ({
@@ -1152,7 +1159,8 @@ export class ArkIRTransformer {
                 } = this.generateAssignStmtForValue(conditionValue));
                 stmts.push(...conditionStmts);
             }
-            conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), '==');
+            const operator = flip ? '==' : '!=';
+            conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), operator);
         }
         return {value: conditionExpr, stmts: stmts};
     }
