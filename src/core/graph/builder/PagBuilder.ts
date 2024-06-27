@@ -17,12 +17,16 @@ import { CallGraph, CallSite, FuncID, CallGraphNode } from '../CallGraph';
 import { Pag, FuncPag, PagNode, PagEdgeKind } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkInvokeStmt, ArkAssignStmt } from '../../base/Stmt'
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkParameterRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
 import { ContextID } from '../../pta/Context';
 import { ArkMethod } from '../../model/ArkMethod';
+import Logger, { LOG_LEVEL } from "../../../utils/logger";
+import { Local } from '../../base/Local';
+
+const logger = Logger.getLogger();
 
 class CSFuncID{
     public cid: ContextID;
@@ -77,8 +81,17 @@ export class PagBuilder {
         }
 
         for (let stmt of arkMethod.getCfg().getStmts()){
+            logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
-                // TODO: add non-call edges
+
+                // Add non-call edges
+                let kind = this.getEdgeKindForAssignStmt(stmt);
+                if (kind != PagEdgeKind.Unknown) {
+                    fpag.addInternalEdge(stmt, kind);
+                    continue;
+                }
+
+                // handle call
                 let inkExpr = stmt.getInvokeExpr();
                 if (inkExpr instanceof ArkStaticInvokeExpr) {
                     let cs = this.cg.getCallSiteByStmt(stmt);
@@ -90,6 +103,7 @@ export class PagBuilder {
                     }
                 }
             } else {
+                // TODO: need handle other type of stmt?
             }
         }
 
@@ -103,13 +117,24 @@ export class PagBuilder {
             throw new Error("No Func PAG is found for #" + funcID);
         }
 
-        this.addEdgesFromFuncPag(funcPag);
+        this.addEdgesFromFuncPag(funcPag, cid);
         this.addCallsEdgesFromFuncPag(funcPag, cid);
-
     }
 
-    public addEdgesFromFuncPag(funcPag: FuncPag) {
+    /// Add Pag Nodes and Edges in function
+    public addEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
+        let inEdges = funcPag.getInternalEdges();
+        if (inEdges == undefined) {
+            return false;
+        }
 
+        for (let e of inEdges) {
+            let srcPagNode = this.getOrNewPagNode(cid, e.src);
+            let dstPagNode = this.getOrNewPagNode(cid, e.dst);
+            this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind);
+        }
+
+        return true;
     }
 
     /// add Copy edges interprocedural
@@ -143,7 +168,7 @@ export class PagBuilder {
                         let srcPagNode = this.getOrNewPagNode(cid, arg);
                         let dstPagNode = this.getOrNewPagNode(calleeCid, param);
 
-                        this.pag.addCopyEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy);
+                        this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy);
                     }
                     // TODO: handle other types of parmeters
                 }
@@ -158,7 +183,7 @@ export class PagBuilder {
                     let srcPagNode = this.getOrNewPagNode(calleeCid, retValue);
                     let dstPagNode = this.getOrNewPagNode(calleeCid, retDst);
 
-                    this.pag.addCopyEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy);
+                    this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy);
                 }
             }
         }
@@ -169,4 +194,66 @@ export class PagBuilder {
         return this.pag.getOrNewNode(cid, v);
     }
 
+    private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
+        if (this.stmtIsCreateAddressObj(stmt)) {
+            return PagEdgeKind.Address;
+        }
+
+        if (this.stmtIsCopyKind(stmt)) {
+            return PagEdgeKind.Copy;
+        }
+
+        if (this.stmtIsReadKind(stmt)) {
+            return PagEdgeKind.Read;
+        }
+
+        if (this.stmtIsWriteKind(stmt)) {
+            return PagEdgeKind.Write
+        }
+
+        return PagEdgeKind.Unknown;
+    }
+
+    private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
+        let rhOp = stmt.getRightOp();
+        if (rhOp instanceof ArkNewExpr) {
+            return true;
+        }
+
+        // TODO: add other Address Obj creation
+        // like static object
+        return false;
+    }
+
+    private stmtIsCopyKind(stmt: ArkAssignStmt): boolean {
+        let lhOp = stmt.getLeftOp();
+        let rhOp = stmt.getRightOp();
+
+        if (lhOp instanceof Local && rhOp instanceof Local) {
+            return true;
+        }
+        return false;
+    }
+
+    private stmtIsWriteKind(stmt: ArkAssignStmt): boolean {
+        let lhOp = stmt.getLeftOp();
+        let rhOp = stmt.getRightOp();
+
+        if (lhOp instanceof Local && 
+            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkStaticFieldRef)) {
+            return true;
+        }
+        return false;
+    }
+
+    private stmtIsReadKind(stmt: ArkAssignStmt): boolean {
+        let lhOp = stmt.getLeftOp();
+        let rhOp = stmt.getRightOp();
+
+        if (rhOp instanceof Local && 
+            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkStaticFieldRef)) {
+            return true;
+        }
+        return false;
+    }
 }
