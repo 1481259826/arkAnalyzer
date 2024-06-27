@@ -181,5 +181,9 @@ for (let i = 0; i < 10; i++) {
 // }
 
 function main() {
-    let a: [number, string];
+    if (1) {
+        let a = 0;
+    } else {
+        let b = 1;
+    }
 }
