@@ -33,6 +33,7 @@ export abstract class SourceBase
     implements Dump, TransformerContext
 {
     protected arkFile: ArkFile;
+    protected inBuilder: boolean;
 
     public constructor(arkFile: ArkFile, indent: string = '') {
         super(indent);
@@ -57,6 +58,10 @@ export abstract class SourceBase
 
     public transTemp2Code(temp: Local): string {
         return temp.getName();
+    }
+
+    public isInBuilderMethod(): boolean {
+        return this.inBuilder;
     }
 
     public abstract getLine(): number;

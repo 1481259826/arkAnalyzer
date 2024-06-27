@@ -33,6 +33,11 @@ export class SourceMethod extends SourceBase {
         super(method.getDeclaringArkFile(), indent);
         this.method = method;
         this.transformer = new SourceTransformer(this);
+        this.inBuilder = this.initInBuilder();
+    }
+
+    public setInBuilder(inBuilder: boolean): void {
+        this.inBuilder = inBuilder;
     }
 
     public dump(): string {
@@ -65,7 +70,7 @@ export class SourceMethod extends SourceBase {
     }
 
     public dumpDefaultMethod(): SourceStmt[] {
-        let srcBody = new SourceBody(this.printer.getIndent(), this.method);
+        let srcBody = new SourceBody(this.printer.getIndent(), this.method, false);
         return srcBody.getStmts();
     }
 
@@ -75,8 +80,7 @@ export class SourceMethod extends SourceBase {
         // abstract function no body
         if (
             method.containsModifier('AbstractKeyword') ||
-            method.getDeclaringArkClass().getOriginType().toLowerCase() ==
-                'interface'
+            method.getDeclaringArkClass().getOriginType().toLowerCase() == 'interface'
         ) {
             this.printer.writeLine(';');
             return;
@@ -96,7 +100,7 @@ export class SourceMethod extends SourceBase {
     }
 
     private printBody(method: ArkMethod): void {
-        let srcBody = new SourceBody(this.printer.getIndent(), method);
+        let srcBody = new SourceBody(this.printer.getIndent(), method, this.inBuilder);
         this.printer.write(srcBody.dump());
     }
 
@@ -114,11 +118,7 @@ export class SourceMethod extends SourceBase {
             method.getTypeParameter().forEach((parameter) => {
                 typeParameters.push(this.transformer.typeToString(parameter));
             });
-            code.write(
-                `<${this.transformer.typeArrayToString(
-                    method.getTypeParameter()
-                )}>`
-            );
+            code.write(`<${this.transformer.typeArrayToString(method.getTypeParameter())}>`);
         }
 
         let parameters: string[] = [];
@@ -128,8 +128,7 @@ export class SourceMethod extends SourceBase {
                 str += '?';
             }
             if (parameter.getType()) {
-                str +=
-                    ': ' + this.transformer.typeToString(parameter.getType());
+                str += ': ' + this.transformer.typeToString(parameter.getType());
             }
             parameters.push(str);
         });
@@ -154,8 +153,7 @@ export class SourceMethod extends SourceBase {
                 str += '?';
             }
             if (parameter.getType()) {
-                str +=
-                    ': ' + this.transformer.typeToString(parameter.getType());
+                str += ': ' + this.transformer.typeToString(parameter.getType());
             }
             parameters.push(str);
         });
@@ -166,5 +164,14 @@ export class SourceMethod extends SourceBase {
         }
 
         return code.toString();
+    }
+
+    private initInBuilder(): boolean {
+        return (
+            this.method.hasBuilderDecorator() ||
+            (this.method.getName() == 'build' &&
+                !this.method.containsModifier('StaticKeyword') &&
+                this.method.getDeclaringArkClass().hasViewTree())
+        );
     }
 }

@@ -17,10 +17,14 @@ enum SceneBuildStage {
     BUILD_INIT = 1 << 1,
     CLASS_DONE = 1 << 2,
     METHOD_DONE = BUILD_INIT | CLASS_DONE,
-    ALL = 'all'.length
-};
+    ALL = 'all'.length,
+}
 
-const ALL_BUILD_STAGE = [SceneBuildStage.BUILD_INIT, SceneBuildStage.CLASS_DONE, SceneBuildStage.METHOD_DONE];
+const ALL_BUILD_STAGE = [
+    SceneBuildStage.BUILD_INIT,
+    SceneBuildStage.CLASS_DONE,
+    SceneBuildStage.METHOD_DONE,
+];
 
 export enum ValueTag {
     TAINT,
@@ -38,8 +42,19 @@ declare enum ViewTreeNodeType {
     SystemComponent,
     CustomComponent,
     Builder,
-    BuilderParam
+    BuilderParam,
 }
 
 let systemComponent = ViewTreeNodeType.SystemComponent;
 let nameOfsystemComponent = ViewTreeNodeType[systemComponent];
+
+let obj: Object = { x: 1 };
+for (const [key, value] of Object.entries(ViewTreeNodeType)) {
+    obj[key] = value;
+}
+
+if (!obj.hasOwnProperty('SystemComponent')) {
+    console.log('error');
+}
+
+delete obj['x'];
