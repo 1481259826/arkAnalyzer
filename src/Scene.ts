@@ -37,6 +37,7 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from "./core/model/ArkExport";
+import { ArkField } from "./core/model/ArkField";
 
 const logger = Logger.getLogger();
 
@@ -143,6 +144,22 @@ export class Scene {
                     method.buildBody();
                 }
             }
+            //put file variable to default class field
+            const defaultClass = file.getDefaultClass();
+            const defaultArkMethod = defaultClass.getDefaultArkMethod();
+            if (defaultArkMethod) {
+                TypeInference.inferTypeInMethod(defaultArkMethod);
+                defaultClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
+                    if (local.getName() !== 'this' && !local.getName().startsWith('$temp')) {
+                        const arkField = new ArkField();
+                        arkField.setDeclaringClass(defaultClass);
+                        arkField.setType(local.getType());
+                        arkField.setName(local.getName());
+                        arkField.genSignature();
+                        defaultClass.addField(arkField);
+                    }
+                });
+            }
         }
         for (const namespace of this.getNamespacesMap().values()) {
             for (const cls of namespace.getClasses()) {
@@ -197,6 +214,7 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
+        expandImportAll(this.filesMap);
     }
 
     public buildModuleScene(moduleName: string, modulePath: string) {
@@ -423,13 +441,16 @@ export class Scene {
         for (let arkFile of this.getFiles()) {
             for (let arkClass of arkFile.getClasses()) {
                 for (let arkMethod of arkClass.getMethods()) {
+                    if (arkMethod.isDefaultArkMethod()) {
+                        continue;
+                    }
                     TypeInference.inferTypeInMethod(arkMethod);
                 }
             }
         }
 
         // get class hierarchy
-        this.genExtendedClasses()
+        this.genExtendedClasses();
     }
 
     public inferSimpleTypes() {

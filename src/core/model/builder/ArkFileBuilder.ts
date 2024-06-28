@@ -36,7 +36,6 @@ import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
 import { ImportInfo } from "../ArkImport";
-import { ArkField } from "../ArkField";
 
 const logger = Logger.getLogger();
 
@@ -171,17 +170,7 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
  */
 export function expandImportAll(map: Map<string, ArkFile>) {
     for (const arkFile of map.values()) {
-        const defaultClass = arkFile.getDefaultClass();
-        defaultClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
-            const arkField = new ArkField();
-            arkField.setDeclaringClass(defaultClass);
-            arkField.setType(local.getType());
-            arkField.setName(local.getName());
-            arkField.genSignature();
-            defaultClass.addField(arkField);
-        });
-
-        let importInfos = arkFile.getImportInfos();
+        const importInfos = arkFile.getImportInfos();
         importInfos.forEach((item) => {
             if (item.getNameBeforeAs() === '*') {
                 let formFile = getArkFile(item);

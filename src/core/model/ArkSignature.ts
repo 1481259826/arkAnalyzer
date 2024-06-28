@@ -31,8 +31,8 @@ export interface ArkSignature {
  * @category core/model
  */
 export class FileSignature {
-    private projectName: string = "_UnkownProjectName";
-    private fileName: string = "_UnkownFileName";
+    private projectName: string = "_UnknownProjectName";
+    private fileName: string = "_UnknownFileName";
 
     constructor() {
     }
