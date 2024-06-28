@@ -18,7 +18,7 @@ import { dirname, join } from 'path';
 import { ArkFile } from '../core/model/ArkFile';
 import { ArkStream } from './ArkStream';
 import { DotFilePrinter } from './DotPrinter';
-import { SourceFilePrinter } from './source/SourcePrinter';
+import { SourceFilePrinter } from './source/SourceFilePrinter';
 import { Printer } from './Printer';
 
 /**
@@ -27,23 +27,23 @@ import { Printer } from './Printer';
  * let method: Method = xx;
  * let srcPrinter = new SourceMethodPrinter(method);
  * PrinterBuilder.dump(srcPrinter, 'output.ts');
- * 
+ *
  * // dump method original ts source
  * PrinterBuilder.dumpOriginal(srcPrinter, 'output.ts');
- * 
+ *
  * // dump method cfg to dot
  * let dotPrinter = new DotMethodPrinter(method);
  * PrinterBuilder.dump(dotPrinter, 'output.dot');
- * 
+ *
  * // dump method original dot
  * PrinterBuilder.dumpOriginal(dotPrinter, 'output.dot');
- * 
+ *
  * // dump project
  * let printer = new PrinterBuilder('output');
  * for (let f of scene.getFiles()) {
  *     printer.dumpToTs(f);
  * }
- * 
+ *
  * @category save
  */
 export class PrinterBuilder {
@@ -72,10 +72,16 @@ export class PrinterBuilder {
         }
     }
 
-    public dumpToDot(arkFile: ArkFile, output: string | undefined = undefined): void {
+    public dumpToDot(
+        arkFile: ArkFile,
+        output: string | undefined = undefined
+    ): void {
         let filename = output;
         if (output === undefined) {
-            filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.dot');
+            filename = join(
+                this.getOutputDir(arkFile),
+                arkFile.getName() + '.dot'
+            );
         }
         fs.mkdirSync(dirname(filename as string), { recursive: true });
 
@@ -83,7 +89,10 @@ export class PrinterBuilder {
         PrinterBuilder.dump(printer, filename as string);
     }
 
-    public dumpToTs(arkFile: ArkFile, output: string | undefined = undefined): void {
+    public dumpToTs(
+        arkFile: ArkFile,
+        output: string | undefined = undefined
+    ): void {
         let filename = output;
         if (output === undefined) {
             filename = join(this.getOutputDir(arkFile), arkFile.getName());

@@ -13,93 +13,48 @@
  * limitations under the License.
  */
 
-enum Direction1 {
-    Up = 1,
-    Down,
-    Left,
-    Right
+enum SceneBuildStage {
+    BUILD_INIT = 1 << 1,
+    CLASS_DONE = 1 << 2,
+    METHOD_DONE = BUILD_INIT | CLASS_DONE,
+    ALL = 'all'.length,
 }
 
-enum Direction2 {
-    Up = "UP",
-    Down = "DOWN",
-    Left = "LEFT",
-    Right = "RIGHT",
+const ALL_BUILD_STAGE = [
+    SceneBuildStage.BUILD_INIT,
+    SceneBuildStage.CLASS_DONE,
+    SceneBuildStage.METHOD_DONE,
+];
+
+export enum ValueTag {
+    TAINT,
 }
 
-enum BooleanLikeHeterogeneousEnum {
-    No = 0,
-    Yes = "YES",
+export enum ExportType {
+    NAME_SPACE = 0,
+    CLASS = 1,
+    METHOD = 2,
+    LOCAL = 3,
+    UNKNOWN = 4,
 }
 
-enum E1 { X, Y, Z }
-
-enum E2 {
-    A = 1, B, C
+declare enum ViewTreeNodeType {
+    SystemComponent,
+    CustomComponent,
+    Builder,
+    BuilderParam,
 }
 
-enum FileAccess {
-    // constant members
-    None,
-    Read    = 1 << 1,
-    Write   = 1 << 2,
-    ReadWrite  = Read | Write,
-    // computed member
-    G = "123".length
+let systemComponent = ViewTreeNodeType.SystemComponent;
+let nameOfsystemComponent = ViewTreeNodeType[systemComponent];
+
+let obj: Object = { x: 1 };
+for (const [key, value] of Object.entries(ViewTreeNodeType)) {
+    obj[key] = value;
 }
 
-enum Response1 {
-    No = 0,
-    Yes = 1,
+if (!obj.hasOwnProperty('SystemComponent')) {
+    console.log('error');
 }
 
-function respond(recipient: string, message: Response1): void {
-    // ...
-}
-
-respond("Princess Caroline", Response1.Yes)
-
-enum ShapeKind {
-    Circle,
-    Square,
-}
-
-interface Circle {
-    kind: ShapeKind.Circle;
-    radius: number;
-}
-
-interface Square {
-    kind: ShapeKind.Square;
-    sideLength: number;
-}
-
-let c: Circle = {
-    kind: ShapeKind.Circle,
-    radius: 100,
-}
-
-enum E {
-    X, Y, Z
-}
-
-function f(obj: { X: number }) {
-    return obj.X;
-}
-
-f(E);
-
-declare enum Enum {
-    A
-}
-let a2 = Enum.A;
-let nameOfA = Enum[a2];
-
-const enum Directions {
-    Up,
-    Down,
-    Left,
-    Right
-}
-
-let directions = [Directions.Up, Directions.Down, Directions.Left, Directions.Right]
+delete obj['x'];

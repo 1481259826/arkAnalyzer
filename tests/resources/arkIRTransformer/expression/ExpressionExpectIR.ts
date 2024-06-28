@@ -68,3 +68,12 @@ export const LiteralExpression_Expect_IR = {
         'arr3 = $temp2',
     ],
 };
+
+export const Operator_Expect_IR = {
+    stmts: [
+        '$temp0 = new @_UnkownProjectName/_UnkownFileName: Point',
+        'instanceinvoke $temp0.<@_UnkownProjectName/_UnkownFileName: Point.constructor()>()',
+        'p = $temp0',
+        '$temp1 = delete p.<@_UnkownProjectName/_UnkownFileName: .y>',
+    ],
+};

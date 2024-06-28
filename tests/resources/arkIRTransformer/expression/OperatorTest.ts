@@ -13,25 +13,5 @@
  * limitations under the License.
  */
 
-import { ArkCodeBuffer } from './ArkStream';
-
-/**
- * @category save
- */
-export abstract class Printer {
-    protected printer: ArkCodeBuffer;
-
-    public constructor(indent: string = '') {
-        this.printer = new ArkCodeBuffer(indent);
-    }
-
-    /**
-     * ArkIR dump
-     */
-    public abstract dump(): string;
-
-    /**
-     * Original dump
-     */
-    public abstract dumpOriginal(): string;
-}
+let p = new Point();
+delete p.y;

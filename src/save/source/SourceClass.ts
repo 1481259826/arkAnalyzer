@@ -13,20 +13,24 @@
  * limitations under the License.
  */
 
-import { ArkClass } from "../../core/model/ArkClass";
-import { SourceBase } from "./SourceBase";
-import { SourceMethod } from "./SourceMethod";
-import { SourceUtils } from "./SourceUtils";
+import { ArkClass } from '../../core/model/ArkClass';
+import { Dump, SourceBase } from './SourceBase';
+import { SourceField } from './SourceField';
+import { SourceMethod } from './SourceMethod';
+import { SourceTransformer } from './SourceTransformer';
+import { SourceUtils } from './SourceUtils';
 
 /**
  * @category save
  */
-export class SourceClass extends SourceBase{
-    cls: ArkClass;
+export class SourceClass extends SourceBase {
+    protected cls: ArkClass;
+    private transformer: SourceTransformer;
 
-    public constructor(indent: string, cls: ArkClass) {
-        super(indent);
+    public constructor(cls: ArkClass, indent: string = '') {
+        super(cls.getDeclaringArkFile(), indent);
         this.cls = cls;
+        this.transformer = new SourceTransformer(this);
     }
 
     public getLine(): number {
@@ -35,26 +39,53 @@ export class SourceClass extends SourceBase{
 
     public dump(): string {
         this.printer.clear();
-        // print export class name<> + extends c0 implements x1, x2 {
-        this.printer.writeIndent().writeSpace(this.modifiersToString(this.cls.getModifiers()))
-            .write(`${this.cls.getOriginType().toLowerCase()} ${this.cls.getName()}`);
-        if (this.cls.getTypeParameter().length > 0) {
-            this.printer.write(`<${SourceUtils.typeArrayToString(this.cls.getTypeParameter())}>`);
+
+        if (this.cls.getOriginType() == 'Object') {
+            return this.dumpObject();
         }
-        if (this.cls.getSuperClassName()) {
-            this.printer.write(` extends ${this.cls.getSuperClassName()} `);
+
+        if (this.cls.getOriginType() == 'TypeLiteral') {
+            return this.dumpTypeLiteral();
+        }
+
+        this.printDecorator(this.cls.getModifiers());
+        // print export class name<> + extends c0 implements x1, x2 {
+        this.printer
+            .writeIndent()
+            .writeSpace(this.modifiersToString(this.cls.getModifiers()))
+            .write(`${this.cls.getOriginType().toLowerCase()} `);
+
+        if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
+            this.printer.write(this.cls.getName());
+        }
+
+        if (this.cls.getTypeParameter().length > 0) {
+            this.printer.write(`<${this.transformer.typeArrayToString(this.cls.getTypeParameter())}>`);
+        }
+        if (this.cls.getSuperClassName() && !this.cls.hasComponentDecorator()) {
+            this.printer.write(` extends ${this.cls.getSuperClassName()}`);
         }
         if (this.cls.getImplementedInterfaceNames().length > 0) {
-            this.printer.write(` implements ${this.cls.getImplementedInterfaceNames().join(',')}`);
+            this.printer.write(` implements ${this.cls.getImplementedInterfaceNames().join(', ')}`);
         }
-        this.printer.writeLine('{');
-        this.printer.incIndent();
 
-        this.printFields();
-        this.printMethods();
-        
+        this.printer.writeLine(' {');
+        this.printer.incIndent();
+        let items: Dump[] = [];
+
+        items.push(...this.printFields());
+        items.push(...this.printMethods());
+
+        items.sort((a, b) => a.getLine() - b.getLine());
+        items.forEach((v): void => {
+            this.printer.write(v.dump());
+        });
+
         this.printer.decIndent();
-        this.printer.writeIndent().writeLine('}');
+        this.printer.writeIndent().write('}');
+        if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
+            this.printer.writeLine('');
+        }
         return this.printer.toString();
     }
 
@@ -62,43 +93,68 @@ export class SourceClass extends SourceBase{
         return this.cls.getCode() + '\n';
     }
 
-    protected printMethods(): void {
-        let items: SourceBase[] = [];
-        for (let method of this.cls.getMethods()) {
-            items.push(new SourceMethod(this.printer.getIndent(), method));
-        }
-        items.sort((a, b) => a.getLine() - b.getLine());
-        items.forEach((v):void => {
-            this.printer.write(v.dump());
+    private dumpObject(): string {
+        this.printer.write('{');
+
+        this.cls.getFields().forEach((field, index, array) => {
+            this.printer.write(field.getName());
+            let initializer = field.getInitializer();
+            if (initializer) {
+                this.printer.write(`: ${this.transformer.valueToString(initializer)}`);
+            }
+
+            if (index != array.length - 1) {
+                this.printer.write(`, `);
+            }
         });
+        this.printer.write('}');
+        return this.printer.toString();
     }
 
-    private printFields(): void {
-        for (let field of this.cls.getFields()) {
-            this.printer.writeIndent()
-                .writeSpace(this.modifiersToString(field.getModifiers()))
-                .write(field.getName());
-            if (field.getQuestionToken()) {
-                this.printer.write('?');
+    private dumpTypeLiteral(): string {
+        this.printer.write('{');
+
+        this.cls.getFields().forEach((field, index, array) => {
+            this.printer.write(`${field.getName()}: ${this.transformer.typeToString(field.getType())}`);
+            if (index != array.length - 1) {
+                this.printer.write(`, `);
+            }
+        });
+        this.printer.write('}');
+        return this.printer.toString();
+    }
+
+    protected printMethods(): Dump[] {
+        let items: Dump[] = [];
+        for (let method of this.cls.getMethods()) {
+            if (SourceUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree()) {
+                continue;
             }
 
-            // property.getInitializer() PropertyAccessExpression ArrowFunction ClassExpression FirstLiteralToken StringLiteral 
-            // TODO: Initializer not ready
-            if (field.getType()) {
-                this.printer.write(':' + SourceUtils.typeToString(field.getType()));
-            }
-            if (field.getFieldType() == 'EnumMember') {
-                this.printer.writeLine(',');
-            } else {
-                this.printer.writeLine(';');
+            if (method.isDefaultArkMethod()) {
+                items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod());
+            } else if (!SourceUtils.isAnonymousMethod(method.getName())) {
+                items.push(new SourceMethod(method, this.printer.getIndent()));
             }
         }
+        return items;
+    }
+
+    private printFields(): Dump[] {
+        let items: Dump[] = [];
+        for (let field of this.cls.getFields()) {
+            if (field.getFieldType() == 'GetAccessor') {
+                continue;
+            }
+            items.push(new SourceField(field, this.printer.getIndent()));
+        }
+        return items;
     }
 }
 
 export class SourceDefaultClass extends SourceClass {
-    public constructor(indent: string, cls: ArkClass) {
-        super(indent, cls);
+    public constructor(cls: ArkClass, indent: string = '') {
+        super(cls, indent);
     }
 
     public getLine(): number {

@@ -64,7 +64,7 @@ class ArkIRTransformerTest {
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
-        // this.printScene(scene);
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -122,10 +122,10 @@ class ArkIRTransformerTest {
                     const body = arkMethod.getBody();
                     this.printStmts(body);
 
-                    // logger.error('-- locals:');
-                    // for (const local of arkMethod.getBody().getLocals()) {
-                    //     logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    // }
+                    logger.error('-- locals:');
+                    for (const local of arkMethod.getBody().getLocals()) {
+                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                    }
                 }
             }
         }

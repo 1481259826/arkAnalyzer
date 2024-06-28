@@ -625,6 +625,10 @@ export class ArkUnopExpr extends AbstractExpr {
         return uses;
     }
 
+    public getOp(): Value {
+        return this.op;
+    }
+
     public getType(): Type {
         return this.op.getType();
     }
@@ -646,6 +650,10 @@ export class ArrayLiteralExpr extends AbstractExpr {
         super();
         this.elements = elements;
         this.type = type;
+    }
+
+    public getElements(): Value[] {
+        return this.elements;
     }
 
     public getUses(): Value[] {

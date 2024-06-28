@@ -13,33 +13,78 @@
  * limitations under the License.
  */
 
-import { Decorator } from "../../core/base/Decorator";
-import { ArkFile } from "../../core/model/ArkFile";
-import { Printer } from "../Printer";
+import { Decorator } from '../../core/base/Decorator';
+import { Printer } from '../Printer';
+import { ArkFile } from '../../core/model/ArkFile';
+import { ArkMethod } from '../../core/model/ArkMethod';
+import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
+import { ArkClass } from '../../core/model/ArkClass';
+import { ArkCodeBuffer } from '../ArkStream';
+import { Local } from '../../core/base/Local';
+import { TransformerContext } from './SourceTransformer';
 
+export interface Dump {
+    getLine(): number;
+    dump(): string;
+}
 
-export abstract class SourceBase extends Printer {
+export abstract class SourceBase
+    extends Printer
+    implements Dump, TransformerContext
+{
     protected arkFile: ArkFile;
+    protected inBuilder: boolean;
 
-    public constructor(indent: string) {
+    public constructor(arkFile: ArkFile, indent: string = '') {
         super(indent);
+        this.arkFile = arkFile;
+    }
+
+    public getArkFile(): ArkFile {
+        return this.arkFile;
+    }
+
+    public getMethod(signature: MethodSignature): ArkMethod | null {
+        return this.getArkFile().getScene().getMethod(signature);
+    }
+
+    public getClass(signature: ClassSignature): ArkClass | null {
+        return this.getArkFile().getScene().getClass(signature);
+    }
+
+    public getPrinter(): ArkCodeBuffer {
+        return this.printer;
+    }
+
+    public transTemp2Code(temp: Local): string {
+        return temp.getName();
+    }
+
+    public isInBuilderMethod(): boolean {
+        return this.inBuilder;
     }
 
     public abstract getLine(): number;
 
+    protected printDecorator(modifiers: Set<string | Decorator>): void {
+        modifiers.forEach((value) => {
+            if (value instanceof Decorator) {
+                this.printer.writeIndent().writeLine(`@${value.getContent()}`);
+            }
+        });
+    }
+
     protected modifiersToString(modifiers: Set<string | Decorator>): string {
         let modifiersStr: string[] = [];
         modifiers.forEach((value) => {
-            if (value instanceof Decorator) {
-                // TODO
-            } else {
-                modifiersStr.push(this.resolveKeywordType(value))
+            if (!(value instanceof Decorator)) {
+                modifiersStr.push(this.resolveKeywordType(value));
             }
         });
-    
+
         return modifiersStr.join(' ');
     }
-    
+
     protected resolveKeywordType(keywordStr: string): string {
         // 'NumberKeyword | NullKeyword |
         let types: string[] = [];
@@ -49,14 +94,16 @@ export abstract class SourceBase extends Printer {
                 continue;
             }
             if (keyword.endsWith('Keyword')) {
-                keyword = keyword.substring(0, keyword.length - 'Keyword'.length).toLowerCase();
+                keyword = keyword
+                    .substring(0, keyword.length - 'Keyword'.length)
+                    .toLowerCase();
             }
             types.push(keyword);
         }
-        
+
         return types.join('|');
     }
-    
+
     protected resolveMethodName(name: string): string {
         if (name === '_Constructor') {
             return 'constructor';
@@ -68,6 +115,5 @@ export abstract class SourceBase extends Printer {
             return name.replace('Set-', 'set ');
         }
         return name;
-    }   
+    }
 }
-

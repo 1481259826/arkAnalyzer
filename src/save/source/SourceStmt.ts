@@ -13,341 +13,516 @@
  * limitations under the License.
  */
 
-import { Constant } from "../../core/base/Constant";
-import { ArkBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkLengthExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../core/base/Expr";
-import { Local } from "../../core/base/Local";
-import { ArkInstanceFieldRef, ArkParameterRef, ArkThisRef } from "../../core/base/Ref";
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
-import { Value } from "../../core/base/Value";
-import { ArkMethod } from "../../core/model/ArkMethod";
-import Logger from "../../utils/logger";
+import { Constant } from '../../core/base/Constant';
+import { ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { Local } from '../../core/base/Local';
+import { ArkArrayRef, ArkParameterRef } from '../../core/base/Ref';
+import {
+    ArkAssignStmt,
+    ArkGotoStmt,
+    ArkIfStmt,
+    ArkInvokeStmt,
+    ArkReturnStmt,
+    ArkReturnVoidStmt,
+    ArkSwitchStmt,
+    Stmt,
+} from '../../core/base/Stmt';
+import { ClassType, Type } from '../../core/base/Type';
+import { Value } from '../../core/base/Value';
+import Logger from '../../utils/logger';
+import { ArkCodeBuffer } from '../ArkStream';
+import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
-import { SourceMethod } from "./SourceMethod";
-import { SourceUtils } from "./SourceUtils";
+import { SourceTransformer, TransformerContext } from './SourceTransformer';
+import { SourceUtils } from './SourceUtils';
 
 const logger = Logger.getLogger();
 
-abstract class SourceStmt extends Stmt {
+export interface StmtPrinterContext extends TransformerContext {
+    getStmtReader(): StmtReader;
+    setTempCode(temp: string, code: string): void;
+    hasTempVisit(temp: string): boolean;
+    getLocals(): Set<Local>;
+    defineLocal(local: Local): void;
+    isLocalDefined(local: Local): boolean;
+    isInDefaultMethod(): boolean;
+}
+
+export abstract class SourceStmt implements Dump {
     original: Stmt;
-    method: ArkMethod;
+    context: StmtPrinterContext;
+    line: number;
+    text: string;
+    transformer: SourceTransformer;
 
-    constructor(original: Stmt, stmtReader: StmtReader, method: ArkMethod) {
-        super();
+    constructor(context: StmtPrinterContext, original: Stmt) {
         this.original = original;
-        this.method = method;
-        this.setPositionInfo(original.getPositionInfo());
-        this.transfer2ts(stmtReader);
+        this.context = context;
+        this.line = original.getOriginPositionInfo().getLineNo();
+        this.transformer = new SourceTransformer(context);
+        this.transfer2ts();
     }
 
-    protected abstract transfer2ts(stmtReader: StmtReader): void;
-
-    protected instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr) {
-        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-        let args: string[] = [];
-        invokeExpr.getArgs().forEach((v)=>{args.push(this.transferValueToString(v))});
-        if (invokeExpr.getBase() instanceof Local) {
-            return `${invokeExpr.getBase().getName()}.${methodName}(${args.join(',')})`;
-        } else if (invokeExpr.getBase() instanceof Constant) {
-            let base: Constant = invokeExpr.getBase() as unknown as Constant;
-            return `${base.getValue()}.${methodName}(${args.join(',')})`;
-        } else {
-            logger.info('= SourceStmt.instanceInvokeExprToString: error.', invokeExpr.getBase(), methodName);
-        }
+    public getLine(): number {
+        return this.line;
     }
 
-    protected staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr) {
-        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
-        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-        let args: string[] = [];
-        invokeExpr.getArgs().forEach((v)=>{args.push(v.toString())});
-        if (className && className.length > 0 && className != '_DEFAULT_ARK_CLASS') {
-            return `${className}.${methodName}(${args.join(',')})`;
-        }
-        return `${methodName}(${args.join(',')})`;
+    public setLine(line: number) {
+        this.line = line;
     }
 
-    protected transferValueToString(value: Value): string {
-        if (value instanceof Constant) {
-            if (value.getType() == 'string' && !value.getValue().startsWith('\'')) {
-                return `'${value.getValue()}'`;
-            } else {
-                return value.getValue();
-            }
+    public dump(): string {
+        if (this.text.length > 0) {
+            return `${this.printer.getIndent()}${this.text}\n`;
         }
-
-        if (value instanceof ArkInstanceFieldRef) {
-            let base = value.getBase() as any;
-            if (base instanceof Constant) {
-                return `${base.getValue()}.${value.getFieldName()}`;
-            } else if (base instanceof Local) {
-                return `${base.getName()}.${value.getFieldName()}`
-            } else if (base instanceof ArkCastExpr) {
-                let baseOp = base.getOp();
-                if (baseOp instanceof Local) {
-                    return `${baseOp.getName()}.${value.getFieldName()} as ${SourceUtils.typeToString(base.getType())}`
-                }
-                return value.toString();
-            }
-            return `${value.getBase().getName()}.${value.getFieldName()}`;
-        }
-
-        if (value instanceof ArkBinopExpr) {
-            let op1: Value = value.getOp1();
-            let op2: Value = value.getOp2();
-            let operator: string = value.getOperator();
-
-            return `${this.transferValueToString(op1)} ${operator} ${this.transferValueToString(op2)}`;
-        }
-
-        if (value instanceof ArkNewArrayExpr) {
-            return `new Array<${SourceUtils.typeToString(value.getBaseType())}>(${value.getSize()})`;
-        }
-
-        if (value instanceof ArkInstanceInvokeExpr) {
-            return `${this.instanceInvokeExprToString(value)}`;
-        }
-
-        if (value instanceof ArkStaticInvokeExpr) {
-            return `${this.staticInvokeExprToString(value)}`;
-        }
-
-        if (value instanceof ArkLengthExpr) {
-            return `${value.getOp()}.length`;
-        }
-
-        if (value instanceof Local) {
-            if (value.getName().startsWith('AnonymousFunc$_')) {
-                for (const anonymousMethod of this.method.getDeclaringArkClass().getMethods()) {
-                    if (anonymousMethod.getName() == value.getName()) {
-                       let _anonymous = new SourceMethod('', anonymousMethod);
-                       return _anonymous.dump();
-                    }
-                }
-            }
-        }
-
-        return `${value}`;
+        return ``;
     }
+
+    protected get printer(): ArkCodeBuffer {
+        return this.context.getPrinter();
+    }
+
+    public toString(): string {
+        return this.text;
+    }
+
+    protected setText(text: string): void {
+        this.text = text;
+    }
+
+    protected getIntent(): string {
+        return this.context.getPrinter().getIndent();
+    }
+
+    protected abstract transfer2ts(): void;
+
+    protected isLocalTempValue(value: Value): boolean {
+        if (!(value instanceof Local)) {
+            return false;
+        }
+
+        return SourceUtils.isTemp(value.getName());
+    }
+}
+
+enum AssignStmtDumpType {
+    NORMAL,
+    TEMP_REPLACE,
+    COMPONENT_CREATE,
 }
 
 export class SourceAssignStmt extends SourceStmt {
-    constructor(original: ArkAssignStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    private leftOp: Value;
+    private rightOp: Value;
+    private leftCode: string;
+    private rightCode: string;
+    private dumpType: AssignStmtDumpType;
+
+    constructor(context: StmtPrinterContext, original: ArkAssignStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
-        let leftOp = (this.original as ArkAssignStmt).getLeftOp();
-        let rightOp = (this.original as ArkAssignStmt).getRightOp();
-        logger.info('SourceAssignStmt->transfer2ts', leftOp, rightOp);
-        
+    protected transfer2ts(): void {
+        this.leftOp = (this.original as ArkAssignStmt).getLeftOp();
+        this.rightOp = (this.original as ArkAssignStmt).getRightOp();
+        logger.debug('SourceAssignStmt->transfer2ts', this.leftOp, this.rightOp);
+
+        if (
+            (this.leftOp instanceof Local && this.leftOp.getName() == 'this') ||
+            (this.rightOp instanceof Constant && this.rightOp.getValue() == 'undefined') ||
+            this.rightOp instanceof ArkParameterRef
+        ) {
+            this.setText('');
+            this.dumpType = AssignStmtDumpType.NORMAL;
+            return;
+        }
+
+        this.leftCode = this.transformer.valueToString(this.leftOp);
+
+        if (this.leftOp instanceof Local && this.rightOp instanceof ArkNewExpr) {
+            this.transferRightNewExpr();
+        } else if (this.leftOp instanceof Local && this.rightOp instanceof ArkNewArrayExpr) {
+            this.transferRightNewArrayExpr();
+        } else if (this.rightOp instanceof ArkStaticInvokeExpr && SourceUtils.isComponentCreate(this.rightOp)) {
+            this.transferRightComponentCreate();
+        } else if (
+            this.rightOp instanceof ArkInstanceInvokeExpr &&
+            SourceUtils.isComponentAttributeInvoke(this.rightOp)
+        ) {
+            this.transferRightComponentAttribute();
+        } else {
+            this.rightCode = this.transformer.valueToString(this.rightOp);
+        }
+
+        if (this.isLocalTempValue(this.leftOp)) {
+            this.context.setTempCode((this.leftOp as Local).getName(), this.rightCode);
+        }
+
+        if (this.dumpType == undefined) {
+            this.setText(`${this.leftCode} = ${this.rightCode}`);
+            this.dumpType = AssignStmtDumpType.TEMP_REPLACE;
+        }
+    }
+
+    public dump(): string {
         // omit this = this: <tests\sample\sample.ts>.<_DEFAULT_ARK_CLASS>
-        if (leftOp instanceof Local && leftOp.getName() == 'this') {
-            this.setText('');
-            return;
+        switch (this.dumpType) {
+            case AssignStmtDumpType.NORMAL:
+                return super.dump();
+
+            case AssignStmtDumpType.COMPONENT_CREATE:
+                let code = super.dump();
+                this.printer.incIndent();
+                return code;
         }
 
-        // name = parameter0: StringKeyword
-        if (rightOp instanceof ArkParameterRef) {
+        if (this.context.hasTempVisit(this.leftCode)) {
             this.setText('');
-            return;
-        }
-
-        // temp1 = new Person
-        // temp1.constructor(10)
-        if (leftOp instanceof Local && rightOp instanceof ArkNewExpr) {
-            if (stmtReader.hasNext()) {
-                let stmt = stmtReader.next();
-                let rollback = true;
-                if (stmt instanceof ArkInvokeStmt && stmt.getInvokeExpr() as ArkInstanceInvokeExpr) {
-                    let instanceInvokeExpr = stmt.getInvokeExpr() as ArkInstanceInvokeExpr;
-                    if ('constructor' == instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() && instanceInvokeExpr.getBase().getName() == leftOp.getName()) {
-                        let args: string[] = [];
-                        instanceInvokeExpr.getArgs().forEach((v)=>{args.push(v.toString())});
-                        this.setText(`${this.transferValueToString(leftOp)} = new ${SourceUtils.typeToString(rightOp.getType())}(${args.join(',')});`);
-                        rollback = false;
+        } else if (SourceUtils.isTemp(this.leftCode)) {
+            this.setText(`${this.rightCode};`);
+        } else {
+            if (
+                this.leftOp instanceof Local &&
+                this.context.getLocals().has(this.leftOp) &&
+                !this.isLocalTempValue(this.leftOp)
+            ) {
+                if (this.context.isLocalDefined(this.leftOp)) {
+                    this.setText(`${this.leftCode} = ${this.rightCode};`);
+                } else {
+                    if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
+                        this.setText(`export let ${this.leftCode} = ${this.rightCode};`);
+                    } else {
+                        this.setText(`let ${this.leftCode} = ${this.rightCode};`);
                     }
-                }
-                if (rollback) {
-                    stmtReader.rollback();
-                    this.setText(`${this.transferValueToString(leftOp)} = new ${SourceUtils.typeToString(rightOp.getType())}();`);
+
+                    this.context.defineLocal(this.leftOp);
                 }
             } else {
-                this.setText(`${this.transferValueToString(leftOp)} = new ${SourceUtils.typeToString(rightOp.getType())}();`);
+                this.setText(`${this.leftCode} = ${this.rightCode};`);
             }
-            return;
+        }
+        return super.dump();
+    }
+
+    private isComponentClassType(type: Type) {
+        if (!(type instanceof ClassType)) {
+            return false;
         }
 
-        if (rightOp instanceof ArkThisRef) {
-            this.setText(`${this.transferValueToString(leftOp)} = this;`);
-            return;    
+        let signature = type.getClassSignature();
+        let cls = this.context.getClass(signature);
+        if (!cls) {
+            return false;
         }
-        
-        this.setText(`${this.transferValueToString(leftOp)} = ${this.transferValueToString(rightOp)};`);
-    }  
+
+        return cls.hasComponentDecorator();
+    }
+
+    /**
+     * temp1 = new Person
+     * temp1.constructor(10)
+     */
+    private transferRightNewExpr(): void {
+        if (this.context.getStmtReader().hasNext()) {
+            let stmt = this.context.getStmtReader().next();
+            let rollback = true;
+            if (stmt instanceof ArkInvokeStmt && (stmt.getInvokeExpr() as ArkInstanceInvokeExpr)) {
+                let instanceInvokeExpr = stmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+                if (
+                    'constructor' == instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() &&
+                    instanceInvokeExpr.getBase().getName() == (this.leftOp as Local).getName()
+                ) {
+                    let args: string[] = [];
+                    instanceInvokeExpr.getArgs().forEach((v) => {
+                        args.push(this.transformer.valueToString(v));
+                    });
+                    if (this.isComponentClassType(this.rightOp.getType())) {
+                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(',')})`;
+                    } else {
+                        this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
+                            ','
+                        )})`;
+                    }
+                    return;
+                }
+            }
+            if (rollback) {
+                this.context.getStmtReader().rollback();
+            }
+        }
+
+        if (this.isComponentClassType(this.rightOp.getType())) {
+            this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}()`;
+        } else {
+            this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}()`;
+        }
+    }
+
+    /**
+     * $temp0 = newarray[4]
+     * $temp0[0] = 1
+     * $temp0[1] = 2
+     * $temp0[2] = 3
+     */
+    private transferRightNewArrayExpr(): void {
+        let arrayExpr = new SourceNewArrayExpr(this.rightOp as ArkNewArrayExpr);
+        let localName = (this.leftOp as Local).getName();
+        while (this.context.getStmtReader().hasNext()) {
+            let stmt = this.context.getStmtReader().next();
+            if (stmt instanceof ArkAssignStmt) {
+                let left = stmt.getLeftOp();
+                if (left instanceof ArkArrayRef && left.getBase().getName() == localName) {
+                    arrayExpr.addInitValue(this.transformer.valueToString(stmt.getRightOp()));
+                } else {
+                    this.context.getStmtReader().rollback();
+                    break;
+                }
+            } else {
+                this.context.getStmtReader().rollback();
+                break;
+            }
+        }
+        this.rightCode = arrayExpr.toString();
+    }
+
+    private transferRightComponentCreate(): void {
+        this.rightCode = this.transformer.valueToString(this.rightOp);
+        if (this.context.getStmtReader().hasNext()) {
+            let stmt = this.context.getStmtReader().next();
+            if (stmt instanceof ArkInvokeStmt) {
+                let expr = stmt.getInvokeExpr();
+                if (expr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentPop(expr)) {
+                    this.setText(`${this.rightCode}`);
+                    this.dumpType = AssignStmtDumpType.NORMAL;
+                    return;
+                }
+            }
+
+            this.context.getStmtReader().rollback();
+        }
+        this.setText(`${this.rightCode} {`);
+        this.dumpType = AssignStmtDumpType.COMPONENT_CREATE;
+    }
+
+    private transferRightComponentAttribute(): void {
+        this.rightCode = this.transformer.valueToString(this.rightOp);
+        this.setText(`${this.rightCode}`);
+        this.dumpType = AssignStmtDumpType.NORMAL;
+    }
 }
 
 export class SourceInvokeStmt extends SourceStmt {
-    constructor(original: ArkInvokeStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkInvokeStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
+    protected transfer2ts(): void {
         let invokeExpr = this.original.getInvokeExpr();
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
-            this.setText(`${this.staticInvokeExprToString(invokeExpr)};`);
+            this.setText(`${this.transformer.staticInvokeExprToString(invokeExpr)}`);
             return;
         } else if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-            this.setText(`${this.instanceInvokeExprToString(invokeExpr)};`);
+            this.setText(`${this.transformer.instanceInvokeExprToString(invokeExpr)}`);
             return;
-        } else {
-            this.setText(this.original + ';');
         }
+    }
+
+    public dump(): string {
+        let invokeExpr = this.original.getInvokeExpr();
+        if (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentPop(invokeExpr)) {
+            this.printer.decIndent();
+            return `${this.printer.getIndent()}}\n`;
+        }
+
+        if (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentIfElseInvoke(invokeExpr)) {
+            this.printer.decIndent();
+            let code = `${this.printer.getIndent()}${this.text}\n`;
+            this.printer.incIndent();
+            return code;
+        }
+
+        if (this.text.length > 0) {
+            if (invokeExpr instanceof ArkInstanceInvokeExpr && SourceUtils.isComponentAttributeInvoke(invokeExpr)) {
+                return `${this.printer.getIndent()}${this.text}\n`;
+            } else {
+                return `${this.printer.getIndent()}${this.text};\n`;
+            }
+        }
+        return ``;
     }
 }
 
 export class SourceIfStmt extends SourceStmt {
-    constructor(original: ArkIfStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
+    protected transfer2ts(): void {
         let code: string;
-        code = `if (${(this.original as ArkIfStmt).getConditionExprExpr().getOp1()}`;
-        code += ` ${(this.original as ArkIfStmt).getConditionExprExpr().getOperator()} `;
-        code += `${(this.original as ArkIfStmt).getConditionExprExpr().getOp2()}) {`;
+        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        code = `if (${this.transformer.valueToString(expr.getOp1())}`;
+        code += ` ${SourceUtils.flipOperator(expr.getOperator())} `;
+        code += `${this.transformer.valueToString(expr.getOp2())}) {`;
         this.setText(code);
+    }
+
+    public dump(): string {
+        let code = super.dump();
+        this.printer.incIndent();
+        return code;
     }
 }
 
 export class SourceWhileStmt extends SourceStmt {
-    constructor(original: ArkIfStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
+    public dump(): string {
+        let code = super.dump();
+        this.printer.incIndent();
+        return code;
+    }
+
+    protected transfer2ts(): void {
         let code: string;
-        code = `while (${(this.original as ArkIfStmt).getConditionExprExpr().getOp1()}`;
+        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        code = `while (${this.transformer.valueToString(expr.getOp1())}`;
         code += ` ${this.transferOperator()} `;
-        code += `${(this.original as ArkIfStmt).getConditionExprExpr().getOp2()}) {`;
+        code += `${this.transformer.valueToString(expr.getOp2())}) {`;
         this.setText(code);
     }
-    
+
     protected transferOperator(): string {
         let operator = (this.original as ArkIfStmt).getConditionExprExpr().getOperator().trim();
-        if (this.isRelationalOperator(operator)) {
-            return this.flipOperator(operator);
-        }
-        return operator;
-    }
-
-    protected isRelationalOperator(operator: string): boolean {
-        return operator == '<' || operator == '<=' || operator == '>' || operator == '>=' ||
-            operator == '==' || operator == '===' || operator == '!=' || operator == '!==';
-    }
-
-    protected flipOperator(operator: string): string {
-        let newOperater = '';
-        switch (operator) {
-            case '<':
-                newOperater = '>='
-                break;
-            case '<=':
-                newOperater = '>'
-                break;
-            case '>':
-                newOperater = '<='
-                break;
-            case '>=':
-                newOperater = '<'
-                break;
-            case '==':
-                newOperater = '!='
-                break;
-            case '===':
-                newOperater = '!=='
-                break;
-            case '!=':
-                newOperater = '=='
-                break;
-            case '!==':
-                newOperater = '==='
-                break;
-            default:
-                break;
-        }
-        return newOperater;
+        return SourceUtils.flipOperator(operator);
     }
 }
 
 export class SourceForStmt extends SourceWhileStmt {
-    constructor(original: ArkIfStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
+    /**
+     * source: for (let entry of someArray)
+     * IR:
+     *   entry = undefined
+     *   $temp2 = lengthof someArray
+     *   $temp1 = 0
+     *   if $temp1 >= $temp2
+     *   entry = someArray[$temp1]
+     *   $temp1 = $temp1 + 1
+     */
+    private forOf2ts(): boolean {
+        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let op1 = expr.getOp1();
+        let op2 = expr.getOp2();
+        let firstStmt = this.context.getStmtReader().first();
+        if (!(firstStmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        if (!(this.isLocalTempValue(op1) && this.isLocalTempValue(op2))) {
+            return false;
+        }
+
+        let op1Code = this.transformer.valueToString(op1);
+        let op2Code = this.transformer.valueToString(op2);
+
+        if (!op1Code || !op2Code) {
+            return false;
+        }
+
+        if (op1Code != '0' || !op2Code.endsWith('.length')) {
+            return false;
+        }
+
+        while (this.context.getStmtReader().hasNext()) {
+            this.context.getStmtReader().next();
+        }
+
+        let v = firstStmt.getLeftOp();
+        this.setText(`for (let ${(v as Local).getName()} of ${op2Code.replace('.length', '')}) {`);
+
+        return true;
+    }
+
+    protected transfer2ts(): void {
+        if (this.forOf2ts()) {
+            return;
+        }
         let code: string;
-        code = `for (; ${(this.original as ArkIfStmt).getConditionExprExpr().getOp1()}`;
+        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        code = `for (; ${this.transformer.valueToString(expr.getOp1())}`;
         code += ` ${this.transferOperator()} `;
-        code += `${(this.original as ArkIfStmt).getConditionExprExpr().getOp2()}; `;
-        while (stmtReader.hasNext()) {
-            code += `${stmtReader.next()}`;
-            if (stmtReader.hasNext()) {
+        code += `${this.transformer.valueToString(expr.getOp2())}; `;
+        while (this.context.getStmtReader().hasNext()) {
+            code += stmt2SourceStmt(this.context, this.context.getStmtReader().next()).toString();
+            if (this.context.getStmtReader().hasNext()) {
                 code += ', ';
             }
         }
         code += `) {`;
         this.setText(code);
-        logger.info('SourceForStmt->transfer2ts:', (this.original as ArkIfStmt).getConditionExprExpr());
+        logger.debug('SourceForStmt->transfer2ts:', expr);
     }
 }
 
 export class SourceElseStmt extends SourceStmt {
-    constructor(original: ArkIfStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
+    protected transfer2ts(): void {
         this.setText('} else {');
+    }
+
+    public dump(): string {
+        this.printer.decIndent();
+        let code = super.dump();
+        this.printer.incIndent();
+        return code;
     }
 }
 
 export class SourceContinueStmt extends SourceStmt {
-    constructor(original: ArkGotoStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
+        super(context, original);
     }
     // trans 2 break or continue
-    protected transfer2ts(stmtReader: StmtReader): void {
+    protected transfer2ts(): void {
         this.setText('continue;');
     }
 }
 
 export class SourceBreakStmt extends SourceStmt {
-    constructor(original: ArkGotoStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
+        super(context, original);
     }
     // trans 2 break or continue
-    protected transfer2ts(stmtReader: StmtReader): void {
+    protected transfer2ts(): void {
         this.setText('break;');
     }
 }
 
 export class SourceReturnStmt extends SourceStmt {
-    constructor(original: ArkReturnStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkReturnStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
-        this.setText(`return ${(this.original as ArkReturnStmt).getOp()};`);
+    protected transfer2ts(): void {
+        this.setText(`return ${this.transformer.valueToString((this.original as ArkReturnStmt).getOp())};`);
     }
 }
 
 export class SourceReturnVoidStmt extends SourceStmt {
-    constructor(original: ArkReturnVoidStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkReturnVoidStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
-        if (this.original.getOriginPositionInfo().getLineNo() == 0) {
+    protected transfer2ts(): void {
+        if (this.original.getOriginPositionInfo().getLineNo() <= 0) {
             this.setText('');
         } else {
             this.setText('return;');
@@ -356,21 +531,27 @@ export class SourceReturnVoidStmt extends SourceStmt {
 }
 
 export class SourceSwitchStmt extends SourceStmt {
-    constructor(original: ArkSwitchStmt, stmtReader: StmtReader, method: ArkMethod) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkSwitchStmt) {
+        super(context, original);
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
-        this.setText(`switch (${(this.original as ArkSwitchStmt).getKey()}) {`);
+    protected transfer2ts(): void {
+        this.setText(`switch (${this.transformer.valueToString((this.original as ArkSwitchStmt).getKey())}) {`);
+    }
+
+    public dump(): string {
+        let code = super.dump();
+        this.printer.incIndent();
+        return code;
     }
 }
 
 export class SourceCaseStmt extends SourceStmt {
     caseIndex: number;
-    constructor(original: ArkSwitchStmt, stmtReader: StmtReader, method: ArkMethod, index:number) {
-        super(original, stmtReader, method);
+    constructor(context: StmtPrinterContext, original: ArkSwitchStmt, index: number) {
+        super(context, original);
         this.caseIndex = index;
-        this.transfer2ts(stmtReader);
+        this.transfer2ts();
     }
 
     public isDefault(): boolean {
@@ -378,19 +559,78 @@ export class SourceCaseStmt extends SourceStmt {
         return this.caseIndex >= cases.length;
     }
 
-    protected transfer2ts(stmtReader: StmtReader): void {
+    protected transfer2ts(): void {
         let cases = (this.original as ArkSwitchStmt).getCases();
         if (this.caseIndex < cases.length) {
-            this.setText(`case ${(this.original as ArkSwitchStmt).getCases()[this.caseIndex]}:`);
+            let value = (this.original as ArkSwitchStmt).getCases()[this.caseIndex];
+            this.setText(`case ${this.transformer.valueToString(value)}:`);
         } else {
             this.setText('default: ');
         }
     }
+
+    public dump(): string {
+        let code = super.dump();
+        this.printer.incIndent();
+        return code;
+    }
 }
 
-export class SourceCompoundEndStmt extends Stmt {
-    constructor(text: string) {
-        super();
+export class SourceCompoundEndStmt extends SourceStmt {
+    constructor(context: StmtPrinterContext, stmt: Stmt, text: string) {
+        super(context, stmt);
         this.setText(text);
     }
+
+    protected transfer2ts(): void {}
+
+    public dump(): string {
+        this.printer.decIndent();
+        return super.dump();
+    }
+}
+
+export class SourceCommonStmt extends SourceStmt {
+    constructor(context: StmtPrinterContext, stmt: Stmt) {
+        super(context, stmt);
+    }
+
+    protected transfer2ts(): void {
+        this.setText(this.original.toString());
+        logger.debug('SourceCommonStmt->transfer2ts:', this.original.toString());
+    }
+}
+
+export class SourceNewArrayExpr {
+    expr: ArkNewArrayExpr;
+    values: string[];
+
+    constructor(expr: ArkNewArrayExpr) {
+        this.expr = expr;
+        this.values = [];
+    }
+
+    public addInitValue(value: string) {
+        this.values.push(value);
+    }
+
+    public toString(): string {
+        return `[${this.values.join(', ')}]`;
+    }
+}
+
+export function stmt2SourceStmt(context: StmtPrinterContext, stmt: Stmt): SourceStmt {
+    if (stmt instanceof ArkAssignStmt) {
+        return new SourceAssignStmt(context, stmt);
+    }
+    if (stmt instanceof ArkInvokeStmt) {
+        return new SourceInvokeStmt(context, stmt);
+    }
+    if (stmt instanceof ArkReturnVoidStmt) {
+        return new SourceReturnVoidStmt(context, stmt);
+    }
+    if (stmt instanceof ArkReturnStmt) {
+        return new SourceReturnStmt(context, stmt);
+    }
+    return new SourceCommonStmt(context, stmt);
 }

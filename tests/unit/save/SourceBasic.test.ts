@@ -1,0 +1,164 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+    SceneConfig,
+    Scene,
+    SourceClassPrinter,
+    SourceMethodPrinter,
+} from '../../../src/index';
+import { assert, describe, expect, it } from 'vitest';
+import path from 'path';
+
+const SourceBasicTest_CASE1_EXPECT = `class Person {
+  x: number = 0;
+  constructor(age: number) {
+  }
+  growOld = () => {
+    this.age = this.age + 1;
+  };
+  public getAge() {
+    return this.age;
+  }
+  static wooooof() {
+    logger.info('not a person sound');
+  }
+}
+`;
+
+const SourceBasicTest_CASE2_EXPECT = `export class SecurityDoor extends Door implements Alarm, Alarm2 {
+  x: number = 0;
+  y: string = '';
+  alert(): void {
+    logger.info('SecurityDoor alert');
+  }
+  alert2(): void {
+    logger.info('SecurityDoor alert2');
+  }
+  public Members = ;
+  public fooo() {
+    logger.info('This is fooo!');
+  }
+  constructor(x: number, y: string) {
+    super();
+    this.x = x;
+    this.y = y;
+    logger.info('This is a constrctor!');
+  }
+}
+`;
+
+const SourceBasicTest_CASE3_EXPECT = `export function listParameters(u: number, v: number, w: string): {x: number, y: number, z: string} {
+  return {x: u, y: v, z: w};
+}
+`;
+
+const SourceBasicTest_CASE4_EXPECT = `configure({appenders: {console: {type: 'console', layout: {type: 'pattern', pattern: '[%d] [%p] [%z] [ArkAnalyzer] - %m'}}}, categories: {default: {appenders: ['console'], level: 'info', enableCallStack: false}}});
+let logger = getLogger();
+let someClass = class <Type> {
+  content: Type;
+  constructor(value: Type) {
+    this.content = value;
+  }
+};
+let m = new someClass('Hello, world');
+export let x = 1;
+export let soo = 123;
+forLoopTest();
+controlTest();
+`;
+
+const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
+  private superAdd = .add;
+  add = (b: string): string => {
+    return this.superAdd(b);
+  };
+}
+`;
+
+describe('SourceBasicTest', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    let arkfile = scene.getFiles().find((value) => {
+        return value.getName().endsWith('basic.ts');
+    });
+
+    let defaultClass = arkfile?.getClasses().find((value) => {
+        return value.isDefaultArkClass();
+    });
+
+    it('case1: class-field-init-function-ref', () => {
+        let cls = arkfile?.getClassWithName('Person');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE1_EXPECT);
+    });
+
+    it('case2: class-field-init-super-wrong', () => {
+        let cls = arkfile?.getClassWithName('SecurityDoor');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE2_EXPECT);
+    });
+
+    it('case3: function-object-return', () => {
+        let method = defaultClass?.getMethodWithName('listParameters');
+        if (!method) {
+            assert.isDefined(method);
+            return;
+        }
+
+        let printer = new SourceMethodPrinter(method);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE3_EXPECT);
+    });
+
+    it('case4: default method', () => {
+        let method = defaultClass?.getMethodWithName('_DEFAULT_ARK_METHOD');
+        if (!method) {
+            assert.isDefined(method);
+            return;
+        }
+
+        let printer = new SourceMethodPrinter(method);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE4_EXPECT);
+    });
+
+    // error
+    it('case5: class field init', () => {
+        let cls = arkfile?.getClassWithName('ExtendedAdder');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE5_EXPECT);
+    });
+});

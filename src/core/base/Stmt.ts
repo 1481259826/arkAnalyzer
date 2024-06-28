@@ -460,37 +460,6 @@ export class ArkSwitchStmt extends Stmt {
     }
 }
 
-export class ArkDeleteStmt extends Stmt {
-    private field: AbstractFieldRef;
-
-    constructor(field: AbstractFieldRef) {
-        super();
-        this.field = field;
-        this.updateUses();
-        this.updateText();
-    }
-
-    public getField(): AbstractFieldRef {
-        return this.field;
-    }
-
-    public setField(newField: AbstractFieldRef): void {
-        this.field = newField;
-    }
-
-    public toString(): string {
-        const str = 'delete ' + this.field;
-        this.setText(str);
-        return str;
-    }
-
-    private updateUses(): void {
-        let uses: Value[] = [];
-        uses.push(this.field);
-        uses.push(...this.field.getUses());
-        this.replaceUses(uses);
-    }
-}
 
 export class ArkThrowStmt extends Stmt {
     private op: Value;

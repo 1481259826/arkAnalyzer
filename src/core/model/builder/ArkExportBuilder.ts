@@ -95,7 +95,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
                 let exportClauseName = property.name.text;
                 const exportInfo = new ExportInfo.Builder()
                     .exportClauseName(property.name.text)
-                    .exportClauseType(ExportType.LOCAL)
+                    .exportClauseType(ExportType.UNKNOWN)
                     .nameBeforeAs(property.name.text)
                     .modifiers(modifiers)
                     .tsSourceCode(tsSourceCode)
@@ -107,7 +107,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
         });
     } else {
         const exportInfo = new ExportInfo.Builder()
-            .exportClauseType(ExportType.LOCAL)
+            .exportClauseType(ExportType.UNKNOWN)
             .modifiers(modifiers)
             .tsSourceCode(tsSourceCode)
             .originTsPosition(originTsPosition)

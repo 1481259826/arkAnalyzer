@@ -13,66 +13,139 @@
  * limitations under the License.
  */
 
-import { ArrayType, ClassType, LiteralType, PrimitiveType, Type, TypeLiteralType, UnknownType } from "../../core/base/Type";
+import { Constant } from '../../core/base/Constant';
+import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { ArkAssignStmt } from '../../core/base/Stmt';
+import {
+    COMPONENT_BRANCH_FUNCTION,
+    COMPONENT_CREATE_FUNCTION,
+    COMPONENT_IF,
+    COMPONENT_POP_FUNCTION,
+    SPECIAL_CONTAINER_COMPONENT,
+    isEtsSystemComponent,
+} from '../../core/common/EtsConst';
 
 export class SourceUtils {
-    public static typeToString(type: Type): string {
-        if (type instanceof TypeLiteralType) {
-            let typesStr: string[] = [];
-            for (const member of type.getMembers()) {
-                typesStr.push(member.getName() + ':' + member.getType());
-            }
-            return `{${typesStr.join(',')}}`;
-        } else if (type instanceof Array) {
-            let typesStr: string[] = [];
-            for (const member of type) {
-                typesStr.push(this.typeToString(member));
-            }
-            return typesStr.join(' | ');
-        } else if (type instanceof LiteralType) {
-            let literalName = type.getliteralName() as string;            
-            return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
-        } else if (type instanceof UnknownType) {
-            return 'any';
-        } else if (type instanceof ClassType) {
-            let name = type.getClassSignature().getClassName();
-            if (name == '_DEFAULT_ARK_CLASS' || name.startsWith('AnonymousClass')) {
-                return 'any';
-            }
-            return name;
-        } else if (type instanceof ArrayType) {
-            let baseType = type.getBaseType();
-            if (baseType instanceof UnknownType) {
-                const strs: string[] = [];
-                strs.push('(any)');
-                for (let i = 0; i < type.getDimension(); i++) {
-                    strs.push('[]');
-                }
-                return strs.join('');
-            } else if (baseType instanceof PrimitiveType) {
-                const strs: string[] = [];
-                strs.push(`${baseType.getName()}`);
-                for (let i = 0; i < type.getDimension(); i++) {
-                    strs.push('[]');
-                }
-                return strs.join('');
-            } else {
-                return type.toString();
-            }
-        } else if (!type) {
-            return 'any';
-        } else {
-            return type.toString();
+    public static isAnonymousClass(name: string): boolean {
+        return name.startsWith('AnonymousClass-');
+    }
+
+    public static isDefaultClass(name: string): boolean {
+        return name == '_DEFAULT_ARK_CLASS';
+    }
+
+    public static isAnonymousMethod(name: string): boolean {
+        return name.startsWith('AnonymousMethod-');
+    }
+
+    public static isConstructorMethod(name: string): boolean {
+        return name == 'constructor';
+    }
+
+    public static isTemp(name: string): boolean {
+        return name.startsWith('$temp');
+    }
+
+    public static flipOperator(operator: string): string {
+        let newOperater = operator;
+        switch (operator) {
+            case '<':
+                newOperater = '>=';
+                break;
+            case '<=':
+                newOperater = '>';
+                break;
+            case '>':
+                newOperater = '<=';
+                break;
+            case '>=':
+                newOperater = '<';
+                break;
+            case '==':
+                newOperater = '!=';
+                break;
+            case '===':
+                newOperater = '!==';
+                break;
+            case '!=':
+                newOperater = '==';
+                break;
+            case '!==':
+                newOperater = '===';
+                break;
+            default:
+                break;
         }
+        return newOperater;
     }
 
-    public static typeArrayToString(types: Type[], split: string=','): string {
-        let typesStr: string[] = [];
-        types.forEach((t) => {
-            typesStr.push(SourceUtils.typeToString(t));
-        });
+    public static isComponentPop(invokeExpr: ArkStaticInvokeExpr): boolean {
+        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
 
-        return typesStr.join(split);
+        if (
+            methodName == COMPONENT_POP_FUNCTION &&
+            (isEtsSystemComponent(className) || SPECIAL_CONTAINER_COMPONENT.has(className))
+        ) {
+            return true;
+        }
+
+        return false;
     }
-    
+
+    public static isComponentCreate(invokeExpr: ArkStaticInvokeExpr): boolean {
+        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+
+        if (
+            methodName == COMPONENT_CREATE_FUNCTION &&
+            (isEtsSystemComponent(className) || SPECIAL_CONTAINER_COMPONENT.has(className))
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static isComponentAttributeInvoke(invokeExpr: ArkInstanceInvokeExpr): boolean {
+        let base = invokeExpr.getBase();
+        let stmt = base.getDeclaringStmt();
+        if (!stmt || !(stmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        let rightOp = stmt.getRightOp();
+        if (rightOp instanceof ArkInstanceInvokeExpr) {
+            return SourceUtils.isComponentAttributeInvoke(rightOp);
+        }
+
+        if (rightOp instanceof ArkStaticInvokeExpr) {
+            return SourceUtils.isComponentCreate(rightOp);
+        }
+
+        return false;
+    }
+
+    public static isComponentIfBranchInvoke(invokeExpr: ArkStaticInvokeExpr): boolean {
+        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+
+        if (className == COMPONENT_IF && methodName == COMPONENT_BRANCH_FUNCTION) {
+            return true;
+        }
+        return false;
+    }
+
+    public static isComponentIfElseInvoke(invokeExpr: ArkStaticInvokeExpr): boolean {
+        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+
+        if (className == COMPONENT_IF && methodName == COMPONENT_BRANCH_FUNCTION) {
+            let arg0 = invokeExpr.getArg(0) as Constant;
+            if (arg0.getValue() == '1') {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -357,6 +357,36 @@ export class TypeInference {
         }
     }
 
+    public static getClass(method: ArkMethod, signature: ClassSignature): ArkClass | null {
+        let cls = method.getDeclaringArkFile().getScene().getClass(signature);
+        if (cls) {
+            return cls;
+        }
+
+        let exportInfo = method.getDeclaringArkFile().getImportInfoBy(signature.getClassName())?.getLazyExportInfo();
+        let typeSignature = exportInfo?.getTypeSignature();
+        if (typeSignature instanceof ClassSignature) {
+            let cls = method.getDeclaringArkFile().getScene().getClass(typeSignature);
+            if (cls) {
+                return cls;
+            }
+        }
+
+        cls = method.getDeclaringArkClass().getDeclaringArkNamespace()?.getClassWithName(signature.getClassName());
+        if (cls) {
+            return cls;
+        }
+
+        for (const ns of method.getDeclaringArkFile().getAllNamespacesUnderThisFile()) {
+            cls = ns.getClassWithName(signature.getClassName());
+            if (cls) {
+                return cls;
+            }
+        }
+
+        return method.getDeclaringArkFile().getClassWithName(signature.getClassName());
+    }
+
     private static inferUnclearReferenceType(refName: string, arkMethod: ArkMethod) {
         let signature = ModelUtils.getClassWithName(refName, arkMethod)?.getSignature()
             ?? ModelUtils.getTypeSignatureInImportInfoWithName(refName, arkMethod.getDeclaringArkFile());

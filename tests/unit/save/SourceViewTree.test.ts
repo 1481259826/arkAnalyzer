@@ -1,0 +1,298 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { SceneConfig, Scene, SourceNamespacePrinter, SourceClassPrinter } from '../../../src/index';
+import { assert, describe, expect, it } from 'vitest';
+import path from 'path';
+
+const CASE1_EXPECT = `@Component
+struct HelloGrandsonComponent {
+  @Link
+  message: string;
+  build() {
+    Row() {
+      Text('HelloGrandsonComponent===' + this.message + '')
+      .fontSize(30)
+      .fontWeight(FontWeight.Bold)
+    }
+  }
+}
+`;
+
+const CASE2_EXPECT = `namespace Case2 {
+  class Tmp {
+    paramA1: string = '';
+  }
+  @Builder
+  function overBuilder($$: Tmp) {
+    Row() {
+      Column() {
+        Text('overBuilder===' + $$.paramA1 + '')
+        HelloComponent({message: $$.paramA1})
+      }
+    }
+  }
+  @Component
+  struct HelloComponent {
+    @Link
+    message: string;
+    build() {
+      Row() {
+        Text('HelloComponent===' + this.message + '')
+      }
+    }
+  }
+  @Entry
+  @Component
+  struct BuilderTest {
+    @State
+    label: string = 'Hello';
+    build() {
+      Column() {
+        overBuilder({paramA1: .label});
+        Button('Click me')
+        .onClick(() => {
+        this.label = 'ArkUI';
+      })
+      }
+    }
+  }
+}
+`;
+
+const CASE3_EXPECT = `namespace Case3 {
+  @Builder
+  function overBuilder(paramA1: string) {
+    Row() {
+      Text('UseStateVarByValue: ' + paramA1 + ' ')
+    }
+  }
+  @Entry
+  @Component
+  struct BuilderTest {
+    @State
+    label: string = 'Hello';
+    build() {
+      Column() {
+        overBuilder(this.label);
+      }
+    }
+  }
+}
+`;
+
+const CASE4_EXPECT = `@Entry
+@Component
+struct LazyForEachTest {
+  private moved: ArrayType = [];
+  @State
+  data: MyDataSource = new MyDataSource();
+  aboutToAppear() {
+    let i = 0;
+    for (; i <= 20; i = i + 1) {
+      this.data.pushData(new StringData(new NestedString('Hello ' + i + '')));
+    }
+  }
+  build() {
+    List({space: 3}) {
+      LazyForEach(this.data, (item: StringData, index: number) => {
+      ListItem() {
+        ChildComponent({data: item})
+      }
+      .onClick(() => {
+        item.message = new NestedString(item.message.message + '0');
+      })
+    }, (item: StringData, index: number) => {
+    })
+    }
+    .cachedCount(5)
+  }
+}
+`;
+
+const CASE5_EXPECT = `@Entry
+@Component
+struct IfElseTest1 {
+  @State
+  toggle: boolean = false;
+  @State
+  toggleColor: boolean = false;
+  build() {
+    Column() {
+      Text('Before')
+      .fontSize(15)
+      if (this.toggle != 0) {
+        Text('Top True, positive 1 top')
+        .backgroundColor('#aaffaa')
+        .fontSize(20)
+        if (this.toggleColor != 0) {
+          Text('Top True, Nested True, positive COLOR  Nested ')
+          .backgroundColor('#00aaaa')
+          .fontSize(15)
+        } else {
+          Text('Top True, Nested False, Negative COLOR  Nested ')
+          .backgroundColor('#aaaaff')
+          .fontSize(15)
+        }
+      } else {
+        Text('Top false, negative top level')
+        .fontSize(20)
+        .backgroundColor('#ffaaaa')
+        if (this.toggleColor != 0) {
+          Text('positive COLOR  Nested ')
+          .backgroundColor('#00aaaa')
+          .fontSize(15)
+        } else {
+          Text('Negative COLOR  Nested ')
+          .backgroundColor('#aaaaff')
+          .fontSize(15)
+        }
+      }
+      Text('After')
+      .fontSize(15)
+      Button('Toggle Outer')
+      .onClick(() => {
+      this.toggle = !this.toggle;
+    })
+      Button('Toggle Inner')
+      .onClick(() => {
+      this.toggleColor = !this.toggleColor;
+    })
+    }
+  }
+}
+`;
+
+const CASE6_EXPECT = `@Entry
+@Component
+struct BuilderParamTest {
+  @State
+  text: string = 'header';
+  build() {
+    Column() {
+      CustomContainer({header: .text}) {
+      Column() {
+        specificParam('testA', 'testB');
+      }
+      .backgroundColor(Color.Yellow)
+      .onClick(() => {
+        this.text = 'changeHeader';
+      })
+    }
+    }
+  }
+}
+`;
+
+describe('SourceViewTreeTest', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../../resources/viewtree'));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferSimpleTypes();
+
+    it('case1: class build', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('BuilderTest.ets');
+        });
+
+        let cls = arkfile?.getClassWithName('HelloGrandsonComponent');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(CASE1_EXPECT);
+    });
+
+    it('case2: class Decorator', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('BuilderTest.ets');
+        });
+
+        let ns = arkfile?.getNamespaceWithName('Case2');
+        if (!ns) {
+            assert.isDefined(ns);
+            return;
+        }
+        let printer = new SourceNamespacePrinter(ns);
+        let source = printer.dump();
+        expect(source).eq(CASE2_EXPECT);
+    });
+
+    it('case3: class Decorator', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('BuilderTest.ets');
+        });
+
+        let ns = arkfile?.getNamespaceWithName('Case3');
+        if (!ns) {
+            assert.isDefined(ns);
+            return;
+        }
+        let printer = new SourceNamespacePrinter(ns);
+        let source = printer.dump();
+        expect(source).eq(CASE3_EXPECT);
+    });
+
+    it('case4: LazyForEachTest', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('LazyForEachTest.ets');
+        });
+
+        let cls = arkfile?.getClassWithName('LazyForEachTest');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(CASE4_EXPECT);
+    });
+
+    it('case5: IfTest', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('IfElseTest1.ets');
+        });
+
+        let cls = arkfile?.getClassWithName('IfElseTest1');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(CASE5_EXPECT);
+    });
+
+    it('case6: BuilderParam', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('BuilderParamTest.ets');
+        });
+
+        let cls = arkfile?.getClassWithName('BuilderParamTest');
+        if (!cls) {
+            assert.isDefined(cls);
+            return;
+        }
+
+        let printer = new SourceClassPrinter(cls);
+        let source = printer.dump();
+        expect(source).eq(CASE6_EXPECT);
+    });
+});

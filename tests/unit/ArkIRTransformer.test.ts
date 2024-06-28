@@ -23,7 +23,7 @@ import { ArkIRTransformer } from '../../src/core/common/ArkIRTransformer';
 import {
     BinaryExpression_Expect_IR,
     LiteralExpression_Expect_IR,
-    NewExpression_Expect_IR,
+    NewExpression_Expect_IR, Operator_Expect_IR,
     UnaryExpression_Expect_IR,
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
@@ -93,6 +93,10 @@ describe('expression Test', () => {
 
     it('test literal expression', async () => {
         testStmts(path.join(expressionTestDir, 'LiteralExpressionTest.ts'), LiteralExpression_Expect_IR.stmts);
+    });
+
+    it('test operator', async () => {
+        testStmts(path.join(expressionTestDir, 'OperatorTest.ts'), Operator_Expect_IR.stmts);
     });
 });
 

@@ -19,7 +19,7 @@ export class ArkCodeBuffer {
     output: string[] = [];
     indent: string = '';
 
-    constructor(indent: string='') {
+    constructor(indent: string = '') {
         this.indent = indent;
     }
 
@@ -78,7 +78,7 @@ export class ArkCodeBuffer {
     }
 }
 
-export class ArkStream extends ArkCodeBuffer{
+export class ArkStream extends ArkCodeBuffer {
     streamOut: fs.WriteStream;
 
     constructor(streamOut: fs.WriteStream) {

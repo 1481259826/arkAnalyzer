@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-import { ExportInfo, ExportType } from "../../core/model/ArkExport";
-import { ImportInfo } from "../../core/model/ArkImport";
-import { SourceBase } from "./SourceBase";
+import { ExportInfo, ExportType } from '../../core/model/ArkExport';
+import { ImportInfo } from '../../core/model/ArkImport';
+import { SourceBase } from './SourceBase';
 
-export class SourceExportInfo extends SourceBase{
+export class SourceExportInfo extends SourceBase {
     info: ExportInfo;
 
-    public constructor(indent: string, info: ExportInfo) {
-        super(indent);
+    public constructor(info: ExportInfo, indent: string = '') {
+        super(info.getDeclaringArkFile(), indent);
         this.info = info;
     }
 
@@ -31,26 +31,43 @@ export class SourceExportInfo extends SourceBase{
 
     public dump(): string {
         this.printer.clear();
-        if (this.info.getExportClauseType() !== ExportType.NAME_SPACE && this.info.getExportClauseType() !== ExportType.NAME_SPACE) {
-            return '';
+
+        if (this.info.getExportClauseType() !== ExportType.UNKNOWN) {
+            return this.printer.toString();
         }
-        if (this.info.getExportClauseType() === ExportType.NAME_SPACE) {
+
+        if (this.info.getExportClauseName() === '*') {
             // just like: export * as xx from './yy'
-            if (this.info.getNameBeforeAs()) {
-                this.printer.writeIndent().write(`export ${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}`);
+            if (
+                this.info.getNameBeforeAs() &&
+                this.info.getNameBeforeAs() != '*'
+            ) {
+                this.printer
+                    .writeIndent()
+                    .write(
+                        `export ${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}`
+                    );
             } else {
-                this.printer.writeIndent().write(`export ${this.info.getExportClauseName()}`);
+                this.printer
+                    .writeIndent()
+                    .write(`export ${this.info.getExportClauseName()}`);
             }
-        } else if (this.info.getExportClauseType() === ExportType.NAME_SPACE) {
+        } else {
             // just like: export {xxx as x} from './yy'
             if (this.info.getNameBeforeAs()) {
-                this.printer.write(`export {${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}}`);
+                this.printer.write(
+                    `export {${this.info.getNameBeforeAs()} as ${this.info.getExportClauseName()}}`
+                );
             } else {
-                this.printer.write(`export {${this.info.getExportClauseName()}}`);
+                this.printer.write(
+                    `export {${this.info.getExportClauseName()}}`
+                );
             }
         }
         if (this.info.getExportFrom()) {
-            this.printer.write(` from '${this.info.getExportFrom() as string}'`);
+            this.printer.write(
+                ` from '${this.info.getExportFrom() as string}'`
+            );
         }
         this.printer.writeLine(';');
 
@@ -61,11 +78,11 @@ export class SourceExportInfo extends SourceBase{
     }
 }
 
-export class SourceImportInfo extends SourceBase{
+export class SourceImportInfo extends SourceBase {
     info: ImportInfo;
 
-    public constructor(indent: string, info: ImportInfo) {
-        super(indent);
+    public constructor(info: ImportInfo, indent: string = '') {
+        super(info.getDeclaringArkFile(), indent);
         this.info = info;
     }
 
@@ -76,23 +93,55 @@ export class SourceImportInfo extends SourceBase{
     public dump(): string {
         if (this.info.getImportType() === 'Identifier') {
             // import fs from 'fs'
-            this.printer.writeIndent().writeLine(`import ${this.info.getImportClauseName()} from '${this.info.getImportFrom() as string}';`);
+            this.printer
+                .writeIndent()
+                .writeLine(
+                    `import ${this.info.getImportClauseName()} from '${
+                        this.info.getImportFrom() as string
+                    }';`
+                );
         } else if (this.info.getImportType() === 'NamedImports') {
             // import {xxx} from './yyy'
             if (this.info.getNameBeforeAs()) {
-                this.printer.writeIndent().writeLine(`import {${this.info.getNameBeforeAs()} as ${this.info.getImportClauseName()}} from '${this.info.getImportFrom() as string}';`);
+                this.printer
+                    .writeIndent()
+                    .writeLine(
+                        `import {${this.info.getNameBeforeAs()} as ${this.info.getImportClauseName()}} from '${
+                            this.info.getImportFrom() as string
+                        }';`
+                    );
             } else {
-                this.printer.writeIndent().writeLine(`import {${this.info.getImportClauseName()}} from '${this.info.getImportFrom() as string}';`);
+                this.printer
+                    .writeIndent()
+                    .writeLine(
+                        `import {${this.info.getImportClauseName()}} from '${
+                            this.info.getImportFrom() as string
+                        }';`
+                    );
             }
         } else if (this.info.getImportType() === 'NamespaceImport') {
             // import * as ts from 'ohos-typescript'
-            this.printer.writeIndent().writeLine(`import * as ${this.info.getImportClauseName()} from '${this.info.getImportFrom() as string}';`);
+            this.printer
+                .writeIndent()
+                .writeLine(
+                    `import * as ${this.info.getImportClauseName()} from '${
+                        this.info.getImportFrom() as string
+                    }';`
+                );
         } else if (this.info.getImportType() == 'EqualsImport') {
             // import mmmm = require('./xxx')
-            this.printer.writeIndent().writeLine(`import ${this.info.getImportClauseName()} =  require('${this.info.getImportFrom() as string}');`);
+            this.printer
+                .writeIndent()
+                .writeLine(
+                    `import ${this.info.getImportClauseName()} =  require('${
+                        this.info.getImportFrom() as string
+                    }');`
+                );
         } else {
             // import '../xxx'
-            this.printer.writeIndent().writeLine(`import '${this.info.getImportFrom() as string}';`);
+            this.printer
+                .writeIndent()
+                .writeLine(`import '${this.info.getImportFrom() as string}';`);
         }
         return this.printer.toString();
     }
