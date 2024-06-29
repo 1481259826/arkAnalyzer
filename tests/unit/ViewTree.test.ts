@@ -50,6 +50,7 @@ import {
     Case1_BuilderTest_Expect_ViewTree,
     Case2_BuilderTest_Expect_ViewTree,
     Case3_BuilderTest_Expect_ViewTree,
+    Case_moreRootBuilderTest_Expect_ViewTree,
 } from '../resources/viewtree/builder/ExpectView';
 import {
     BuilderParamTest_Expect_ViewTree,
@@ -58,7 +59,6 @@ import {
     Case3_BuilderParamTest_Expect_ViewTree,
 } from '../resources/viewtree/builderparam/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
-import { ViewTree } from '../../src';
 
 function expectViewTree(root: ViewTreeNode, expectTree: any) {
     if (expectTree.skip) {
@@ -86,9 +86,7 @@ function expectViewTree(root: ViewTreeNode, expectTree: any) {
 }
 
 function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
-    let arkFile = scene
-        .getFiles()
-        .find((file) => file.getName().endsWith(`${clsName}.ets`));
+    let arkFile = scene.getFiles().find((file) => file.getName().endsWith(`${clsName}.ets`));
     let arkClass = arkFile?.getClassWithName(clsName);
     let vt = arkClass?.getViewTree();
     if (!vt) {
@@ -99,15 +97,8 @@ function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
     return vt;
 }
 
-function testNamespaceClassViewTree(
-    scene: Scene,
-    namespace: string,
-    clsName: string,
-    expectTree: any
-) {
-    let arkFile = scene
-        .getFiles()
-        .find((file) => file.getName() == `${clsName}.ets`);
+function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: string, expectTree: any) {
+    let arkFile = scene.getFiles().find((file) => file.getName() == `${clsName}.ets`);
     let ns = arkFile?.getNamespaceWithName(namespace);
     let arkClass = ns?.getClassWithName(clsName);
     let vt = arkClass?.getViewTree();
@@ -120,30 +111,19 @@ function testNamespaceClassViewTree(
 
 describe('control-contentslot Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(
-            __dirname,
-            '../../tests/resources/viewtree/control-contentslot'
-        )
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-contentslot'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test contentslot', async () => {
-        testClassViewTree(
-            scene,
-            'ContentSlotTest',
-            ContentSlotTest_Expect_ViewTree
-        );
+        testClassViewTree(scene, 'ContentSlotTest', ContentSlotTest_Expect_ViewTree);
     });
 });
 
 describe('control-foreach Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/control-foreach')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-foreach'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
@@ -167,9 +147,7 @@ describe('control-foreach Test', () => {
 
 describe('control-ifelse Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/control-ifelse')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-ifelse'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
@@ -189,30 +167,19 @@ describe('control-ifelse Test', () => {
 
 describe('control-lazyforeach Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(
-            __dirname,
-            '../../tests/resources/viewtree/control-lazyforeach'
-        )
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-lazyforeach'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test lazyforeach', async () => {
-        testClassViewTree(
-            scene,
-            'LazyForEachTest',
-            LazyForEachTest_Expect_ViewTree
-        );
+        testClassViewTree(scene, 'LazyForEachTest', LazyForEachTest_Expect_ViewTree);
     });
 });
 
 describe('control-repeat Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/control-repeat')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-repeat'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
@@ -228,9 +195,7 @@ describe('control-repeat Test', () => {
 
 describe('builder Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/builder')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builder'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
@@ -240,36 +205,19 @@ describe('builder Test', () => {
     });
 
     it('test builder case1', async () => {
-        testNamespaceClassViewTree(
-            scene,
-            'Case1',
-            'BuilderTest',
-            Case1_BuilderTest_Expect_ViewTree
-        );
+        testNamespaceClassViewTree(scene, 'Case1', 'BuilderTest', Case1_BuilderTest_Expect_ViewTree);
     });
 
     it('test builder case2', async () => {
-        testNamespaceClassViewTree(
-            scene,
-            'Case2',
-            'BuilderTest',
-            Case2_BuilderTest_Expect_ViewTree
-        );
+        testNamespaceClassViewTree(scene, 'Case2', 'BuilderTest', Case2_BuilderTest_Expect_ViewTree);
     });
 
     it('test builder case3', async () => {
-        testNamespaceClassViewTree(
-            scene,
-            'Case3',
-            'BuilderTest',
-            Case3_BuilderTest_Expect_ViewTree
-        );
+        testNamespaceClassViewTree(scene, 'Case3', 'BuilderTest', Case3_BuilderTest_Expect_ViewTree);
     });
 
     it('test @Builder-function-Decorator', async () => {
-        let arkFile = scene
-            .getFiles()
-            .find((file) => file.getName() == 'Builder.ets');
+        let arkFile = scene.getFiles().find((file) => file.getName() == 'Builder.ets');
         let arkDefaultClass = arkFile?.getDefaultClass();
         let method = arkDefaultClass?.getMethodWithName('childBuilder');
         if (method) {
@@ -283,67 +231,55 @@ describe('builder Test', () => {
             expect(hasBuilder).eq(true);
         }
     });
+
+    it('test moreRootBuilderTest ', async () => {
+        let arkFile = scene.getFiles().find((file) => file.getName() == 'Builder.ets');
+        let arkDefaultClass = arkFile?.getDefaultClass();
+        let method = arkDefaultClass?.getMethodWithName('moreRootBuilderTest');
+        if (!method) {
+            return;
+        }
+
+        let vt = method.getViewTree();
+        let root = vt.getRoot();
+        expectViewTree(root, Case_moreRootBuilderTest_Expect_ViewTree);
+    });
 });
 
 describe('builderParam Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/builderparam')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builderparam'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test builderparam', async () => {
-        testClassViewTree(
-            scene,
-            'BuilderParamTest',
-            BuilderParamTest_Expect_ViewTree
-        );
+        testClassViewTree(scene, 'BuilderParamTest', BuilderParamTest_Expect_ViewTree);
     });
 
     it('test builderparam case1', async () => {
-        testNamespaceClassViewTree(
-            scene,
-            'Case1',
-            'BuilderParamTest',
-            Case1_BuilderParamTest_Expect_ViewTree
-        );
+        testNamespaceClassViewTree(scene, 'Case1', 'BuilderParamTest', Case1_BuilderParamTest_Expect_ViewTree);
     });
 
     // TODO: This use case relies on the ObjectLiteral arrow function parsing
     it('test builderparam case2', async () => {
-        testNamespaceClassViewTree(
-            scene,
-            'Case2',
-            'BuilderParamTest',
-            Case2_BuilderParamTest_Expect_ViewTree
-        );
+        testNamespaceClassViewTree(scene, 'Case2', 'BuilderParamTest', Case2_BuilderParamTest_Expect_ViewTree);
     });
 
     it('test builderparam case3', async () => {
-        testNamespaceClassViewTree(
-            scene,
-            'Case3',
-            'BuilderParamTest',
-            Case3_BuilderParamTest_Expect_ViewTree
-        );
+        testNamespaceClassViewTree(scene, 'Case3', 'BuilderParamTest', Case3_BuilderParamTest_Expect_ViewTree);
     });
 });
 
 describe('localstorage Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/localstorage')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/localstorage'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
 
     it('test localstorage case1', async () => {
-        let arkFile = scene
-            .getFiles()
-            .find((file) => file.getName() == 'LocalStorageTest1.ets');
+        let arkFile = scene.getFiles().find((file) => file.getName() == 'LocalStorageTest1.ets');
         let arkClass = arkFile?.getClassWithName('LocalStorageTest1');
         expect(arkClass?.hasEntryDecorator()).eq(true);
         expect(arkClass?.hasComponentDecorator()).eq(true);
@@ -352,9 +288,7 @@ describe('localstorage Test', () => {
 
 describe('normal Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(
-        path.join(__dirname, '../../tests/resources/viewtree/normal')
-    );
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/normal'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
@@ -364,19 +298,11 @@ describe('normal Test', () => {
     });
 
     it('test ControlCenterComponent', async () => {
-        testClassViewTree(
-            scene,
-            'ControlCenterComponent',
-            ControlCenterComponent_Expect_ViewTree
-        );
+        testClassViewTree(scene, 'ControlCenterComponent', ControlCenterComponent_Expect_ViewTree);
     });
 
     it('test ParentComponent', async () => {
-        let vt = testClassViewTree(
-            scene,
-            'ParentComponent',
-            ParentComponent_Expect_ViewTree
-        );
+        let vt = testClassViewTree(scene, 'ParentComponent', ParentComponent_Expect_ViewTree);
         let root = vt?.getRoot();
         root?.children[3].stateValuesTransfer?.forEach((value, key) => {
             expect(value.getName()).eq('countDownStartValue');
@@ -385,12 +311,8 @@ describe('normal Test', () => {
     });
 
     it('test ForEach stateValues', async () => {
-        let arkFile = scene
-            .getFiles()
-            .find((file) => file.getName() == 'ControlCenterComponent.ets');
-        let arkClass = arkFile?.getClassWithName(
-            'ControlCenterComplexToggleLayout'
-        );
+        let arkFile = scene.getFiles().find((file) => file.getName() == 'ControlCenterComponent.ets');
+        let arkClass = arkFile?.getClassWithName('ControlCenterComplexToggleLayout');
         if (arkClass == null) {
             assert.isNotNull(arkClass);
             return;
@@ -400,21 +322,12 @@ describe('normal Test', () => {
         expect((type as Decorator).getKind()).equals('StorageLink');
         let stateValues = vt.getStateValues();
         expect(stateValues.size).eq(2);
-        expect(
-            stateValues.get(
-                arkClass.getFieldWithName('mComplexToggleLayout') as ArkField
-            )?.size
-        ).eq(2);
-        expectViewTree(
-            vt.getRoot(),
-            ControlCenterComplexToggleLayout_Expect_ViewTree
-        );
+        expect(stateValues.get(arkClass.getFieldWithName('mComplexToggleLayout') as ArkField)?.size).eq(2);
+        expectViewTree(vt.getRoot(), ControlCenterComplexToggleLayout_Expect_ViewTree);
     });
 
     it('test class.hasEntryDecorator()', async () => {
-        let arkFile = scene
-            .getFiles()
-            .find((file) => file.getName() == 'ParentComponent.ets');
+        let arkFile = scene.getFiles().find((file) => file.getName() == 'ParentComponent.ets');
         let arkClass = arkFile?.getClassWithName('ParentComponent');
         if (arkClass == null) {
             assert.isNotNull(arkClass);
@@ -432,12 +345,7 @@ describe('normal Test', () => {
 
 describe('project Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromJson(
-        path.join(
-            __dirname,
-            '../../tests/resources/viewtree/project/test-config.json'
-        )
-    );
+    config.buildFromJson(path.join(__dirname, '../../tests/resources/viewtree/project/test-config.json'));
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     scene.buildScene4HarmonyProject();
