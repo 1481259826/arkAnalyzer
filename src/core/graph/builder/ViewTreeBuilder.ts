@@ -218,7 +218,9 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         this.signature = builder.getSignature();
         this.classSignature = this.signature;
         if (builder.getViewTree().getRoot()) {
-            this.children.push(builder.getViewTree().getRoot() as ViewTreeNodeImpl);
+            for (let child of builder.getViewTree().getRoot().children) {
+                this.children.push(child as ViewTreeNodeImpl);
+            }
         } else {
             logger.error(
                 `ViewTree->changeBuilderParam2BuilderNode ${builder.getSignature().toString()} @Builder viewtree fail.`
@@ -415,7 +417,7 @@ class TreeNodeStack {
     }
 
     protected isContainer(name: string): boolean {
-        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name);
+        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name == BUILDER_DECORATOR;
     }
 }
 
@@ -477,6 +479,14 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         this.buildViewStatus = true;
         this.loadClasssFieldTypes();
+        
+        if (this.render.hasBuilderDecorator()) {
+            let node = ViewTreeNodeImpl.createBuilderNode();
+            node.signature = this.render.getSignature();
+            node.classSignature = node.signature;
+            this.push(node);
+        }
+
         buildViewTreeFromCfg(this, this.render.getCfg());
     }
 
@@ -591,20 +601,22 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @internal
      */
     public addBuilderNode(method: ArkMethod): ViewTreeNodeImpl {
-        let node = ViewTreeNodeImpl.createBuilderNode();
-        node.signature = method.getSignature();
-        node.classSignature = node.signature;
-        this.push(node);
-
         let builderViewTree = method.getViewTree();
         if (!builderViewTree || !builderViewTree.getRoot()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
+            // add empty node 
+            let node = ViewTreeNodeImpl.createBuilderNode();
+            node.signature = method.getSignature();
+            node.classSignature = node.signature;
+            this.push(node);
+            this.pop();
+            return node;
         } else {
-            node.children.push(builderViewTree.getRoot() as ViewTreeNodeImpl);
+            let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
+            this.push(root);
+            this.pop();
+            return root
         }
-
-        this.pop();
-        return node;
     }
 
     /**
@@ -762,6 +774,9 @@ function viewComponentCreationParser(
     let builder = expr.getArg(1) as Local;
     if (builder) {
         let method = viewtree.findMethod((builder.getType() as CallableType).getMethodSignature());
+        if (!method?.hasBuilderDecorator()) {
+            method?.addModifier(new Decorator(BUILDER_DECORATOR));
+        }
         if (!method?.hasViewTree()) {
             method?.setViewTree(new ViewTreeImpl(method));
         }
