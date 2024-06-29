@@ -219,8 +219,7 @@ export class TypeInference {
         }
         const leftOp = stmt.getLeftOp();
         if (leftOp instanceof Local) {
-            if ((leftOp.getType() instanceof UnknownType || leftOp.getType().toString().includes('Unknown'))
-                && !(stmt.getRightOp().getType() instanceof UnknownType || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
+            if (!(stmt.getRightOp().getType() instanceof UnknownType || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
                 leftOp.setType(stmt.getRightOp().getType());
                 return;
             }
