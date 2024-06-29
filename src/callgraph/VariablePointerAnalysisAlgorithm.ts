@@ -24,10 +24,11 @@ import { MethodSignature } from "../core/model/ArkSignature";
 import { isItemRegistered } from "../utils/callGraphUtils";
 import { AbstractCallGraph } from "./AbstractCallGraphAlgorithm";
 import { ClassHierarchyAnalysisAlgorithm } from "./ClassHierarchyAnalysisAlgorithm";
-import { LocalPointer, PointerTargetPair, PointerTarget, InstanceFieldPointer, StaticFieldPointer, Pointer } from "./PointerAnalysis/Pointer";
+import { LocalPointer, PointerTargetPair, PointerTarget, InstanceFieldPointer, StaticFieldPointer, Pointer} from "./PointerAnalysis/Pointer";
 import { PointerFlowGraph } from "./PointerAnalysis/PointerFlowGraph";
 import Logger from "../utils/logger";
 import { AbstractFieldRef, ArkInstanceFieldRef, ArkStaticFieldRef } from "../core/base/Ref";
+import { CallSiteSensitiveContext, Context, InsensitiveContext, MethodWithContext, ModifyCallSiteDepth, ValueWithContext } from "./PointerAnalysis/Context";
 
 const logger = Logger.getLogger();
 
@@ -37,39 +38,60 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     private workList: PointerTargetPair[]
     private reachableMethods: MethodSignature[]
     private CHAtool: ClassHierarchyAnalysisAlgorithm
+    public options: PointerAnalysisOptions
 
-    constructor(scene: Scene) {
+    constructor(scene: Scene, options: PointerAnalysisOptions) {
         super(scene)
         this.workList = []
         this.reachableStmts = []
         this.reachableMethods = []
         this.pointerFlowGraph = new PointerFlowGraph()
         this.CHAtool = this.scene.scene.makeCallGraphCHA([]) as ClassHierarchyAnalysisAlgorithm
+        this.options = options
     }
 
-    public loadCallGraph(entryPoints: MethodSignature[]) {
+    public loadCallGraph(entryPoints: MethodSignature[], options: {callSiteDepth: number}) {
+        ModifyCallSiteDepth(options.callSiteDepth)
         this.processWorkList(entryPoints);
         
         this.pointerFlowGraph.printPointerFlowGraph()
     }
 
+    protected initEntryPoints(entryPoints: MethodSignature[]): MethodWithContext[] {
+        const emptyMethodSignature = new MethodSignature()
+        return entryPoints.map(entryPoint => {
+            let methodWithContext: MethodWithContext
+            if (this.options.strategy == 'insensitive') {
+                methodWithContext = new MethodWithContext(
+                    entryPoint,
+                    new InsensitiveContext(emptyMethodSignature, 0))
+            } else if (this.options.strategy == 'callSite') {
+                methodWithContext = new MethodWithContext(
+                    entryPoint,
+                    new CallSiteSensitiveContext(undefined, emptyMethodSignature, 0)
+                )
+            }
+            return methodWithContext!;
+        });
+    }
+
     public processWorkList(entryPoints: MethodSignature[]): void {
-        this.addReachable(entryPoints)
+        this.addReachable(this.initEntryPoints(entryPoints))
         while (this.workList.length != 0) {
             let workElement = this.workList.shift()
-            let pointerSet: Pointer, identifier: Value | PointerTarget
+            let pointerSet: Pointer, identifier: ValueWithContext | PointerTarget
             // workList的结构是[指针，指向目标]
             let pointer = workElement!.getPointer(), pointerTarget = workElement!.getPointerTarget()
             if (pointer instanceof LocalPointer) {
-                identifier = pointer.getIdentifier()
+                identifier = pointer.getValueWithContext()
                 pointerSet = this.pointerFlowGraph.getPointerSetElement(identifier, null, null)
 
             } else if (pointer instanceof InstanceFieldPointer) {
                 identifier = pointer.getBasePointerTarget()
-                pointerSet = this.pointerFlowGraph.getPointerSetElement(null, identifier, pointer.getFieldSignature())
+                pointerSet = this.pointerFlowGraph.getPointerSetElement(null, identifier, pointer.getFieldWithContext())
 
             } else if (pointer instanceof StaticFieldPointer) {
-                pointerSet = this.pointerFlowGraph.getPointerSetElement(null, null, pointer.getFieldSignature())
+                pointerSet = this.pointerFlowGraph.getPointerSetElement(null, null, pointer.getFieldWithContext())
             }
 
             // 检查当前指针是否已经存在于对应指针集中
@@ -97,24 +119,27 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
         throw new Error("Method not implemented.");
     }
 
-    protected addReachable(entryPoints: MethodSignature[]) {
+    protected addReachable(entryPoints: MethodWithContext[]) {
         for (let method of entryPoints) {
             // logger.info("[addReachable] processing method: "+method.toString())
+            const sourceContext = method.getContext()
+            const methodSignature = method.getMethodSignature()
             if (isItemRegistered<MethodSignature>(
-                method, this.reachableMethods,
+                methodSignature, this.reachableMethods,
                 (a, b) => a.toString() === b.toString()
             )) {
                 continue
             }
 
-            this.reachableMethods.push(method)
-            let arkMethodInstance = this.scene.getMethod(method)
+            this.reachableMethods.push(methodSignature)
+            let arkMethodInstance = this.scene.getMethod(methodSignature)
             if (arkMethodInstance == null)
                 continue
             let stmts = arkMethodInstance.getCfg().getStmts()
             this.reachableStmts.push(...stmts)
 
             for (let stmt of stmts) {
+                const stmtPosition = stmt.getOriginPositionInfo()
                 if (stmt instanceof ArkAssignStmt) {
                     let leftOp = stmt.getLeftOp(), rightOp = stmt.getRightOp()
                     if (!(leftOp instanceof Local)) {
@@ -122,23 +147,26 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                     }
                     if (rightOp instanceof ArkNewExpr) {
                         let classType = rightOp.getType() as ClassType
-                        let pointer = new PointerTarget(classType, PointerTarget.genLocation(method, stmt))
+                        // TODO: 如何获取到当前上下文
+                        let pointer = new PointerTarget(classType, methodSignature, sourceContext,
+                             stmtPosition, this.options)
 
-                        // logger.info("\t[addReachable] find new expr in method, add workList: "+(leftOp as Local).getName()+" -> "+pointer.getType())
                         this.workList.push(
                             new PointerTargetPair(this.pointerFlowGraph.getPointerSetElement(leftOp, null, null), pointer))
                     } else if (rightOp instanceof Local) {
-                        // logger.info("\t[addReachable] find assign expr in method, add pointer flow edge: "+(rightOp as Local).getName()+" -> "+(leftOp as Local).getType())
                         this.addEdgeIntoPointerFlowGraph(
                             this.pointerFlowGraph.getPointerSetElement(rightOp, null, null),
                             this.pointerFlowGraph.getPointerSetElement(leftOp, null, null)
                         )
                     } else if (rightOp instanceof ArkStaticInvokeExpr) {
-                        let targetMethod = this.scene.getMethod(rightOp.getMethodSignature())
+                        const targetMethod = this.scene.getMethod(rightOp.getMethodSignature())
                         if (targetMethod == null) {
                             continue
                         }
-                        this.addReachable([targetMethod.getSignature()])
+                        const targetMethodSignature = targetMethod.getSignature()
+                        this.addReachable([this.trans2MethodWithContext(
+                            targetMethodSignature, methodSignature, sourceContext, stmtPosition
+                        )!])
                         this.processInvokePointerFlow(arkMethodInstance, targetMethod, stmt)
                     }
                 } else if (stmt instanceof ArkInvokeStmt) {
@@ -148,7 +176,9 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                         if (targetMethod == null) {
                             continue
                         }
-                        this.addReachable([invokeExpr.getMethodSignature()])
+                        this.addReachable([this.trans2MethodWithContext(
+                            invokeExpr.getMethodSignature(), methodSignature, sourceContext, stmtPosition
+                        )!])
                         this.processInvokePointerFlow(arkMethodInstance, targetMethod, stmt)
                     }
                 }
@@ -157,20 +187,20 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     }
 
     protected processInstanceInvokeStmt(identifier: Value, pointer: PointerTarget) {
-        // logger.info("[processInvokeStmt] process identifier: "+(identifier as Local).getName())
         for (let stmt of this.reachableStmts) {
             if (stmt.containsInvokeExpr()) {
                 let expr = stmt.getInvokeExpr()
                 if (expr === undefined) {
                     continue
                 }
-                // 判断是否是当前identifier的调用语句，否则continue
+                // check whether the call has the right identifier
                 if (expr instanceof ArkInstanceInvokeExpr) {
-                    // TODO: constructor调用
+                    // TODO: constructor calls has some error in parameter
                     if (identifier != expr.getBase()) {
                         continue
                     }
                 } else if (expr instanceof ArkStaticInvokeExpr) {
+                    // static invoke stmt has no identifier before, so will be discussed in `addReachable` method
                     continue
                 }
                 let sourceMethod: ArkMethod = stmt.getCfg()?.getDeclaringMethod()!
@@ -178,18 +208,16 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                 if (targetMethod == null) {
                     continue
                 }
-                let specificCallTarget = targetMethod.getSignature()
-                // logger.info("\t[processInvokeStmt] get specific call target: "+specificCallTarget.toString()+", from stmt: "+stmt.toString())
 
                 let targetMethodThisInstance: Value | null = targetMethod.getThisInstance()
                 if (targetMethodThisInstance == null) {
                     continue
                 }
 
-                // logger.info("\t[processInvokeStmt] add pointer to call target this instance: "+pointer.getType())
                 this.workList.push(new PointerTargetPair(
                     this.pointerFlowGraph.getPointerSetElement(targetMethodThisInstance, null, null),
-                    pointer))
+                    pointer)
+                )
 
                 this.processInvokePointerFlow(sourceMethod, targetMethod, stmt)
             }
@@ -197,7 +225,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     }
 
     protected processFieldReferenceStmt (identifier: Value, pointerTarget: PointerTarget) {
-        // 将field的存与取操作合并
         for (let stmt of this.reachableStmts) {
             // TODO: getFieldRef接口可能包含了左值
             if (stmt instanceof ArkAssignStmt && stmt.containsFieldRef()) {
@@ -251,7 +278,7 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
         )) {
             return
         }
-        // 如果当前调用关系没有被记录
+        // check whether the current call relation has been discussed
         let expr = stmt.getInvokeExpr()
         if (expr == undefined) {
             return
@@ -259,22 +286,25 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
         let sourceMethodSignature: MethodSignature = sourceMethod.getSignature()
         let targetMethodSignature: MethodSignature = targetMethod.getSignature()
 
+        // TODO: how to store current context?
+        // let targetContext = this.selectContext(, , sourceMethod, targetMethod, stmt.getOriginPositionInfo())
         this.addCall(sourceMethodSignature, targetMethodSignature)
         this.addMethod(sourceMethodSignature)
-        // 将被调用方法加入到可到达集合中
-        this.addReachable([targetMethodSignature])
+        this.addReachable([this.trans2MethodWithContext(
+            targetMethodSignature, sourceMethodSignature,
+        )])
 
         let parameters = expr.getArgs()
         let methodParameterInstances = targetMethod.getParameterInstances()
-        // logger.info("[processInvokeStmt] add pointer flow edges for invoke stmt parameter")
+
         for (let i = 0;i < parameters.length;i ++) {
-            // 参数指针传递
+            // pass the var pointer to parameter pointer
             this.addEdgeIntoPointerFlowGraph(
                 this.pointerFlowGraph.getPointerSetElement(parameters[i], null, null),
                 this.pointerFlowGraph.getPointerSetElement(methodParameterInstances[i], null, null)
             )
         }
-
+        // pass the return value pointer
         if (stmt instanceof ArkAssignStmt) {
             let returnValues = targetMethod.getReturnValues()
             for (let returnValue of returnValues) {
@@ -286,6 +316,22 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
         }
     }
 
+    /**
+     * select a new context for pointer
+     * @param sourceContext origin context
+     * @param pointerTarget new pointer target 
+     */
+    public selectContext(pointerTarget: PointerTarget, 
+        sourceMethod: MethodWithContext, targetMethod: MethodWithContext, sourcePosition: number) {
+        // WIP
+        // TODO: how to distinguish different C.S. strategy?
+        // Call-Site sentivity will only add context to method and var
+        let sourceContext = sourceMethod.getContext()
+        if (sourceContext instanceof CallSiteSensitiveContext) {
+            return new CallSiteSensitiveContext(sourceContext, sourceMethod.getMethodSignature(), sourcePosition)
+        }
+    }
+
     protected addEdgeIntoPointerFlowGraph(source: Pointer, target: Pointer) {
         let newWorkListItems = this.pointerFlowGraph.addPointerFlowEdge(
             source, target
@@ -293,6 +339,20 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
 
         for (let newWorkListItem of newWorkListItems) {
             this.workList.push(newWorkListItem)
+        }
+    }
+
+    protected trans2MethodWithContext(targetMethodSignature: MethodSignature, sourceMethodSignature: MethodSignature,
+         sourceContext: Context, position: number) {
+        if (this.options.strategy == 'insensitive') {
+            return new MethodWithContext(targetMethodSignature,
+                new InsensitiveContext(sourceMethodSignature, position))
+        } else if (this.options.strategy == 'callSite') {
+            if (sourceContext instanceof CallSiteSensitiveContext) {
+                return new MethodWithContext(targetMethodSignature,
+                    new CallSiteSensitiveContext(sourceContext, sourceMethodSignature, position)
+                )
+            }
         }
     }
 
@@ -329,8 +389,9 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
             return def as AbstractFieldRef;
         }
     }
+}
 
-    public updateVariableType() {
-        
-    }
+export interface PointerAnalysisOptions {
+    strategy: 'insensitive' |'callSite' | 'object'
+    depth?: number;
 }

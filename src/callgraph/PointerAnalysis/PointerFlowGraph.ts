@@ -17,6 +17,7 @@ import { Value } from "../../core/base/Value";
 import { LocalPointer, PointerTargetPair, PointerTarget, InstanceFieldPointer, Pointer, StaticFieldPointer } from "./Pointer";
 import Logger from "../../utils/logger";
 import { FieldSignature } from "../../core/model/ArkSignature";
+import { ValueWithContext } from "./Context";
 
 const logger = Logger.getLogger();
 
@@ -50,7 +51,7 @@ export class PointerFlowGraph {
     }
 
     public getPointerSetElement(
-        identifier: Value | null, 
+        identifier: ValueWithContext | null, 
         pointerTarget: PointerTarget | null, 
         fieldSignature: FieldSignature | null): Pointer {
         const pointerSet = this.getPointerSet()
@@ -58,16 +59,17 @@ export class PointerFlowGraph {
             if (fieldSignature != null) {
                 if (pointerTarget != null && set instanceof InstanceFieldPointer) {
                     if (set.getBasePointerTarget() === pointerTarget && 
-                        set.getFieldSignature().toString() === fieldSignature.toString()) {
+                    set.getFieldWithContext().getFieldSignature().toString() === fieldSignature.toString() 
+                    ) {
                         return set
                     }
                 } else if (set instanceof StaticFieldPointer) {
-                    if (set.getFieldSignature().toString() === fieldSignature.toString()) {
+                    if (set.getFieldWithContext().toString() === fieldSignature.toString()) {
                         return set
                     }
                 }
             } else if (identifier != null && set instanceof LocalPointer) {
-                if (set.getIdentifier() === identifier) {
+                if (set.getValueWithContext() === identifier) {
                     return set
                 }
             }
@@ -80,7 +82,7 @@ export class PointerFlowGraph {
                 newPointer = new InstanceFieldPointer(pointerTarget, fieldSignature)
             }
         } else {
-            newPointer = new LocalPointer(identifier!)
+            newPointer = new LocalPointer(identifier!.getValue(), identifier!.getContext())
         }
         this.pointerSet.add(newPointer)
         return newPointer

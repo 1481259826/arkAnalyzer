@@ -13,10 +13,13 @@
  * limitations under the License.
  */
 
-import { NodeID, Kind, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
-import { CallGraph, CallSite, CallSiteID } from './CallGraph';
+import { NodeID, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
+import { CallGraph, CallSite } from './CallGraph';
 import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
+import { ArkNewExpr } from '../base/Expr';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { Local } from '../base/Local';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -61,7 +64,8 @@ type PagEdgeSet = Set<PagEdge>;
 
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
-    private value: Value;
+    private value: Value
+    private pointerSet: Set<NodeID>
 
     private addressInEdges: PagEdgeSet;
     private addressOutEdges: PagEdgeSet;
@@ -72,10 +76,11 @@ export class PagNode extends BaseNode {
     private writeInEdges: PagEdgeSet;
     private wirteOutEdges: PagEdgeSet;
 
-    constructor (id: NodeID, cid: ContextID|undefined = undefined, v: Value) {
+    constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value) {
         super(id, 0);
         this.cid = cid;
-        this.value = v;
+        this.value = value
+        this.pointerSet = new Set<NodeID>
     }
 
     public addAddressInEdge(e: AddrPagEdge): void {
@@ -124,6 +129,30 @@ export class PagNode extends BaseNode {
     }
 }
 
+export class PagLocalNode extends PagNode {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, value: Local) {
+        super(id, cid, value)
+    }
+}
+
+export class PagInstanceFieldNode extends PagNode {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, instanceFieldRef: ArkInstanceFieldRef) {
+        super(id, cid, instanceFieldRef)
+    }
+}
+
+export class PagStaticFieldNode extends PagNode {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, staticFieldRef: ArkStaticFieldRef) {
+        super(id, cid, staticFieldRef)
+    }
+}
+
+export class PagNewExprNode extends PagNode {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr) {
+        super(id, cid, expr)
+    }
+}
+
 export class Pag extends BaseGraph {
 
     private cg: CallGraph;
@@ -132,12 +161,22 @@ export class Pag extends BaseGraph {
     public getCG(): CallGraph {
         return this.cg;
     }
-    public addPagNode(cid: ContextID, v: Value): PagNode{
+    public addPagNode(cid: ContextID, value: Value): PagNode{
         let id: NodeID = this.nodeNum++;
-        let pagNode = new PagNode(id, cid, v);
-        this.addNode(pagNode);
-        this.contextValueToIdMap.set([cid, v], id);
-        return pagNode;
+        let pagNode: PagNode
+        if (value instanceof Local) {
+            pagNode = new PagLocalNode(id, cid, value)
+        } else if (value instanceof ArkInstanceFieldRef) {
+            pagNode = new PagInstanceFieldNode(id, cid, value)
+        } else if (value instanceof ArkStaticFieldRef) {
+            pagNode = new PagStaticFieldNode(id, cid, value)
+        } else if (value instanceof ArkNewExpr) {
+            pagNode = new PagNewExprNode(id, cid, value)
+        }
+
+        this.addNode(pagNode!);
+        this.contextValueToIdMap.set([cid, value], id);
+        return pagNode!;
     }
 
     public getOrNewNode(cid: ContextID, v: Value): PagNode {
