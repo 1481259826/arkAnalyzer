@@ -42,7 +42,7 @@ export abstract class AbstractCallGraph {
         this._scene.scene = scene;
     }
 
-    public loadCallGraph(entryPoints: MethodSignature[]) {
+    public loadCallGraph(entryPoints: MethodSignature[], options?: {callSiteDepth: number}) {
         this.processWorkList(entryPoints);
     }
 
