@@ -38,7 +38,6 @@ describe("Infer Array Test", () => {
     projectScene.inferTypes();
     it('normal case', () => {
 
-
         const fileId = new FileSignature();
         fileId.setFileName("inferSample.ts");
         fileId.setProjectName(projectScene.getProjectName());
@@ -75,5 +74,16 @@ describe("Infer Array Test", () => {
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+    })
+
+    it('all case', () => {
+        projectScene.getMethods().forEach(m => {
+            m.getCfg().getStmts().forEach(s => {
+                const text = s.toString();
+                if (text.includes('Unknown')) {
+                    console.log(text + ' warning ' + m.getSignature().toString());
+                }
+            })
+        })
     })
 })

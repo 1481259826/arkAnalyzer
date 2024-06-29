@@ -279,8 +279,8 @@ export class ArkNewExpr extends AbstractExpr {
     public inferType(arkMethod: ArkMethod): ArkNewExpr {
         const className = this.classType.getClassSignature().getClassName();
         const type = TypeInference.inferUnclearReferenceType(className, arkMethod);
-        if (type && type instanceof ClassSignature) {
-            this.classType.setClassSignature(type);
+        if (type && type instanceof ClassType) {
+            this.classType = type;
         }
         return this;
     }

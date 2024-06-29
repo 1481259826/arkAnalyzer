@@ -125,21 +125,22 @@ export class TypeInference {
     }
 
     private static inferArkFieldType(arkField: ArkField, arkMethod: ArkMethod): Type | null {
-        let fieldType = arkField.getType();
-        if (!fieldType && arkField.getFieldType() === 'EnumMember') {
-            fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
+        let fieldType: Type | null = arkField.getType();
+        if (!fieldType) {
+            if (arkField.getFieldType() === 'EnumMember') {
+                fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
+            } else if (arkField.getInitializer()) {
+                fieldType = arkField.getInitializer().getType();
+            }
+        } else if (fieldType instanceof UnclearReferenceType) {
+            fieldType = this.inferUnclearReferenceType(fieldType.getName(), arkMethod);
+        }
+        if (!fieldType || fieldType instanceof UnknownType || fieldType instanceof UnclearReferenceType) {
+            return null;
+        }
+        if (arkField.getFieldType() !== 'EnumMember') {
             arkField.setType(fieldType);
             arkField.getSignature().setType(fieldType);
-        } else if (fieldType instanceof UnclearReferenceType) {
-            const inferType = this.inferUnclearReferenceType(fieldType.getName(), arkMethod);
-            if (inferType) {
-                arkField.setType(inferType);
-                arkField.getSignature().setType(inferType);
-            }
-        }
-        fieldType = arkField.getType();
-        if (fieldType instanceof UnknownType || fieldType instanceof UnclearReferenceType) {
-            return null;
         }
         return arkField.getType();
     }
@@ -218,7 +219,7 @@ export class TypeInference {
         }
         const leftOp = stmt.getLeftOp();
         if (leftOp instanceof Local) {
-            if (leftOp.getType() instanceof UnknownType
+            if ((leftOp.getType() instanceof UnknownType || leftOp.getType().toString().includes('Unknown'))
                 && !(stmt.getRightOp().getType() instanceof UnknownType || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
                 leftOp.setType(stmt.getRightOp().getType());
                 return;
@@ -348,9 +349,12 @@ export class TypeInference {
     }
 
     public static inferMethodReturnType(method: ArkMethod) {
-        let methodReturnType = method.getReturnType()
+        let methodReturnType: Type | null = method.getReturnType()
         if (methodReturnType instanceof UnclearReferenceType) {
-            this.inferUnclearReferenceType(methodReturnType.getName(), method);
+            methodReturnType = this.inferUnclearReferenceType(methodReturnType.getName(), method);
+        }
+        if (methodReturnType && !(methodReturnType instanceof UnknownType || methodReturnType instanceof UnclearReferenceType)) {
+            method.setReturnType(methodReturnType);
         }
     }
 
@@ -385,7 +389,15 @@ export class TypeInference {
     }
 
     public static inferUnclearReferenceType(refName: string, arkMethod: ArkMethod): Type | null {
-        const singleNames = refName.replace(/<\w+>/, '').split('.');
+        const stdName = refName.replace(/<\w+>/, '');
+        //import Reference
+        const importSignature = ModelUtils.getTypeSignatureInImportInfoWithName(stdName, arkMethod.getDeclaringArkFile());
+        const importType = this.parseSignature2Type(importSignature);
+        if (importType) {
+            return importType;
+        }
+        //split and iterate to infer each type
+        const singleNames = stdName.split('.');
         let type = this.inferBaseType(singleNames[0], arkMethod);
         for (let i = 1; i < singleNames.length; i++) {
             if (!type) {

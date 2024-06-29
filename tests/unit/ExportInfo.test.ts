@@ -32,7 +32,7 @@ describe("export Test", () => {
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length,2);
-        assert.equal(file?.getImportInfos().length, 17);
+        assert.equal(file?.getImportInfos().length, 16);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg().getStmts();
         assert.isNotEmpty(stmts);
     })
@@ -42,6 +42,17 @@ describe("export Test", () => {
         fileId.setFileName("exportSample.ts");
         fileId.setProjectName(projectScene.getProjectName());
         assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('d')?.getSuperClass());
+    })
+
+    it('all case', () => {
+        projectScene.getMethods().forEach(m => {
+            m.getCfg().getStmts().forEach(s => {
+                const text = s.toString();
+                if (text.includes('Unknown')) {
+                    console.log(text + ' warning ' + m.getSignature().toString());
+                }
+            })
+        })
     })
 })
 

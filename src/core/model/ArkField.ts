@@ -33,6 +33,7 @@ const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
  * @category core/model
  */
 export class ArkField {
+    public static DEFAULT_ARK_Field = '_DEFAULT_ARK_Field';
     private name: string = "";
     private code: string = "";
     private fieldType: string = "";

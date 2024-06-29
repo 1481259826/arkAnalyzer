@@ -71,9 +71,9 @@ export const LiteralExpression_Expect_IR = {
 
 export const Operator_Expect_IR = {
     stmts: [
-        '$temp0 = new @_UnkownProjectName/_UnkownFileName: Point',
-        'instanceinvoke $temp0.<@_UnkownProjectName/_UnkownFileName: Point.constructor()>()',
+        '$temp0 = new @_UnknownProjectName/_UnknownFileName: Point',
+        'instanceinvoke $temp0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
         'p = $temp0',
-        '$temp1 = delete p.<@_UnkownProjectName/_UnkownFileName: .y>',
+        '$temp1 = delete p.<@_UnknownProjectName/_UnknownFileName: .y>',
     ],
 };
