@@ -77,15 +77,15 @@ export class PointerFlowGraph {
         let newPointer: Pointer | null = null
         if (fieldSignature != null) {
             if (pointerTarget == null) {
-                newPointer = new StaticFieldPointer(fieldSignature)
+                // newPointer = new StaticFieldPointer(fieldSignature)
             } else {
-                newPointer = new InstanceFieldPointer(pointerTarget, fieldSignature)
+                // newPointer = new InstanceFieldPointer(pointerTarget, fieldSignature)
             }
         } else {
             newPointer = new LocalPointer(identifier!.getValue(), identifier!.getContext())
         }
-        this.pointerSet.add(newPointer)
-        return newPointer
+        this.pointerSet.add(newPointer!)
+        return newPointer!
     }
 
     public addPointerSetElement(pointerSet: Pointer, pointer: PointerTarget) {
