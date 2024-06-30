@@ -17,6 +17,7 @@ import { NodeID, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
 import { CallGraph, CallSite } from './CallGraph';
 import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
+import { ArkAssignStmt } from '../base/Stmt';
 import { ArkNewExpr } from '../base/Expr';
 import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
 import { Local } from '../base/Local';
@@ -26,7 +27,7 @@ import { Local } from '../base/Local';
  */
 
 export enum PagEdgeKind {
-    Address, Copy, Load, Write, 
+    Address, Copy, Read, Write, Unknown
 };
 
 export class PagEdge extends BaseEdge {
@@ -71,8 +72,8 @@ export class PagNode extends BaseNode {
     private addressOutEdges: PagEdgeSet;
     private copyInEdges: PagEdgeSet;
     private copyOutEdges: PagEdgeSet;
-    private loadInEdges: PagEdgeSet;
-    private loadOutEdges: PagEdgeSet;
+    private readInEdges: PagEdgeSet;
+    private readOutEdges: PagEdgeSet;
     private writeInEdges: PagEdgeSet;
     private wirteOutEdges: PagEdgeSet;
 
@@ -84,7 +85,7 @@ export class PagNode extends BaseNode {
     }
 
     public addAddressInEdge(e: AddrPagEdge): void {
-        this.addAddressInEdge == undefined ? this.addressInEdges = new Set(): undefined;
+        this.addressInEdges == undefined ? this.addressInEdges = new Set() : undefined;
         this.addressInEdges.add(e);
         this.addIncomingEdge(e);
     }
@@ -108,13 +109,15 @@ export class PagNode extends BaseNode {
         this.addOutgoingEdge(e);
     }
 
-    public addLoadInEdge(e: LoadPagEdge): void {
-        this.loadInEdges.add(e);
+    public addReadInEdge(e: LoadPagEdge): void {
+        this.readInEdges == undefined? this.readInEdges = new Set() : undefined;
+        this.readInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
-    public addLoadOutEdge(e: LoadPagEdge): void {
-        this.loadOutEdges.add(e);
+    public addReadOutEdge(e: LoadPagEdge): void {
+        this.readOutEdges == undefined ? this.readOutEdges = new Set() : undefined;
+        this.readOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
@@ -126,6 +129,10 @@ export class PagNode extends BaseNode {
     public addWriteOutEdge(e: LoadPagEdge): void {
         this.wirteOutEdges.add(e);
         this.addOutgoingEdge(e);
+    }
+
+    public getPointerSetElement(): Set<NodeID> {
+        return this.pointerSet
     }
 }
 
@@ -188,23 +195,47 @@ export class Pag extends BaseGraph {
         return this.addPagNode(cid, v);
     }
 
-    public addCopyEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind) {
+    public addPagEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind) {
         // TODO: check if the edge already existing
         let edge = new PagEdge(src, dst, kind); 
 
-        src.addOutgoingEdge(edge);
-        src.addCopyOutEdge(edge);
-        dst.addIncomingEdge(edge);
-        dst.addCopyInEdge(edge);
+        //src.addOutgoingEdge(edge);
+        //dst.addIncomingEdge(edge);
+        switch (kind) {
+            case PagEdgeKind.Copy:
+                src.addCopyOutEdge(edge);
+                dst.addCopyInEdge(edge);
+                break;
+            case PagEdgeKind.Address:
+                src.addAddressOutEdge(edge);
+                dst.addAddressInEdge(edge);
+                break;
+            case PagEdgeKind.Write:
+                src.addWriteOutEdge(edge);
+                dst.addWriteInEdge(edge);
+                break;
+            case PagEdgeKind.Read:
+                src.addReadOutEdge(edge);
+                dst.addReadInEdge(edge);
+                break;
+            default:
+                ;
+        }
     }
 }
 
+type InternalEdge = {src: Value, dst: Value, kind: PagEdgeKind}
+
 export class FuncPag {
     private funcID: number;
-    private interalEdges: Set<PagEdge>;
+    private internalEdges: Set<InternalEdge>;
     private normalCallSites: Set<CallSite>;
     private dynamicCallSites: Set<CallSite>;
     private funPtrCallSite: Set<CallSite>;
+
+    public getInternalEdges(): Set<InternalEdge> | undefined {
+        return this.internalEdges;
+    }
 
     public addNormalCallSite(cs: CallSite): void {
         if (this.normalCallSites == undefined) {
@@ -223,5 +254,16 @@ export class FuncPag {
 
     public getNormalCallSites(): Set<CallSite> {
         return this.normalCallSites;
+    }
+
+    public addInternalEdge(stmt: ArkAssignStmt, k: PagEdgeKind): boolean {
+        this.internalEdges == undefined ? this.internalEdges = new Set() : undefined;
+        let lhOp = stmt.getLeftOp();
+        let rhOp = stmt.getRightOp();
+
+        let iEdge: InternalEdge = { src: lhOp, dst: rhOp, kind: k};
+        this.internalEdges.add(iEdge);
+
+        return true;
     }
 }
