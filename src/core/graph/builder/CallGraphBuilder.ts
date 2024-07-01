@@ -44,6 +44,7 @@ export class CallGraphBuilder {
                 }
 
                 let callee: Method | undefined = this.getDCCallee(invokeExpr);
+                // abstract method will also be added into direct cg
                 if (callee != undefined) {
                     this.cg.addDirectCallEdge(method.getSignature(), callee, stmt);
                 }

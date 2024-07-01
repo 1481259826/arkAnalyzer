@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-import { CallGraph, CallSite, FuncID, CallGraphNode } from '../CallGraph';
+import { CallGraph, FuncID, CallGraphNode } from '../CallGraph';
 import { Pag, FuncPag, PagNode, PagEdgeKind } from '../Pag'
 import { Scene } from '../../../Scene'
-import { Stmt, ArkInvokeStmt, ArkAssignStmt } from '../../base/Stmt'
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { Stmt, ArkAssignStmt } from '../../base/Stmt'
+import { ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
 import { ContextID } from '../../pta/Context';
 import { ArkMethod } from '../../model/ArkMethod';
-import Logger, { LOG_LEVEL } from "../../../utils/logger";
+import Logger from "../../../utils/logger";
 import { Local } from '../../base/Local';
 
 const logger = Logger.getLogger();
 
-class CSFuncID{
+export class CSFuncID{
     public cid: ContextID;
     public funcID: FuncID;
     constructor(cid:ContextID, fid: FuncID ) {
