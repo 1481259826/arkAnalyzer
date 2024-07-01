@@ -15,6 +15,7 @@
 
 import { Constant } from '../../core/base/Constant';
 import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { Local } from '../../core/base/Local';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 import {
     COMPONENT_BRANCH_FUNCTION,
@@ -24,6 +25,9 @@ import {
     SPECIAL_CONTAINER_COMPONENT,
     isEtsSystemComponent,
 } from '../../core/common/EtsConst';
+import Logger from '../../utils/logger';
+
+const logger = Logger.getLogger();
 
 export class SourceUtils {
     public static isAnonymousClass(name: string): boolean {
@@ -107,8 +111,16 @@ export class SourceUtils {
         return false;
     }
 
-    public static isComponentAttributeInvoke(invokeExpr: ArkInstanceInvokeExpr): boolean {
+    public static isComponentAttributeInvoke(invokeExpr: ArkInstanceInvokeExpr, visitor: Set<ArkInstanceInvokeExpr> = new Set()): boolean {
+        if (visitor.has(invokeExpr)) {
+            return false;
+        }
+        visitor.add(invokeExpr);
         let base = invokeExpr.getBase();
+        if (!(base instanceof Local)) {
+            logger.error(`SourceUtils->isComponentAttributeInvoke illegal invoke expr ${invokeExpr}`);
+            return false;
+        }
         let stmt = base.getDeclaringStmt();
         if (!stmt || !(stmt instanceof ArkAssignStmt)) {
             return false;
@@ -116,7 +128,7 @@ export class SourceUtils {
 
         let rightOp = stmt.getRightOp();
         if (rightOp instanceof ArkInstanceInvokeExpr) {
-            return SourceUtils.isComponentAttributeInvoke(rightOp);
+            return SourceUtils.isComponentAttributeInvoke(rightOp, visitor);
         }
 
         if (rightOp instanceof ArkStaticInvokeExpr) {

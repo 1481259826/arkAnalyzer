@@ -22,10 +22,7 @@ struct IfElseTest3 {
     Column() {
       Text(`count=${this.count}`)
 
-      if (this.count > 0) {
-        Text(`count is positive`)
-          .fontColor(Color.Green)
-      }
+      this.testIfText();
 
       Button('increase count')
         .onClick(() => {
@@ -36,6 +33,17 @@ struct IfElseTest3 {
         .onClick(() => {
           this.count--;
         })
+    }
+  }
+
+  @Builder
+  testIfText() {
+    if (this.count > 0) {
+      Text(`count is positive`)
+        .fontColor(Color.Green)
+    } else {
+      Text(`count is negative`)
+        .fontColor(Color.Green)
     }
   }
 }
