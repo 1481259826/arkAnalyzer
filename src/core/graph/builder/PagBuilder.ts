@@ -13,24 +13,24 @@
  * limitations under the License.
  */
 
-import { CallGraph, CallSite, FuncID, CallGraphNode } from '../CallGraph';
+import { CallGraph, FuncID, CallGraphNode } from '../CallGraph';
 import { Pag, FuncPag, PagNode, PagEdgeKind } from '../Pag'
 import { Scene } from '../../../Scene'
-import { Stmt, ArkInvokeStmt, ArkAssignStmt } from '../../base/Stmt'
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { Stmt, ArkAssignStmt } from '../../base/Stmt'
+import { ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
 import { ContextID } from '../../pta/Context';
 import { ArkMethod } from '../../model/ArkMethod';
-import Logger, { LOG_LEVEL } from "../../../utils/logger";
+import Logger from "../../../utils/logger";
 import { Local } from '../../base/Local';
 import { NodeID } from '../BaseGraph';
 
 const logger = Logger.getLogger();
 type PointerPair = [NodeID, NodeID]
 
-class CSFuncID{
+export class CSFuncID{
     public cid: ContextID;
     public funcID: FuncID;
     constructor(cid:ContextID, fid: FuncID ) {
@@ -260,93 +260,5 @@ export class PagBuilder {
             return true;
         }
         return false;
-    }
-
-    public buildPointerAnalysis() {
-        // start pointer analysis
-        // TODO: select entries
-        this.addReachable([])
-        while (this.pointerPairList.length != 0) {
-            const pair = this.pointerPairList.shift()!
-            const targetNodeID = pair[0], sourceNodeID = pair[1]
-            const targetNode = this.cg.getNode(targetNodeID) as PagNode
-            const sourceNode = this.cg.getNode(sourceNodeID) as PagNode
-
-            // check whether the sourceNodeID has existed in targetNodeID's pts
-            if (targetNode.getPointerSetElement().has(sourceNodeID)) {
-                continue
-            }
-
-            this.propagate(targetNode, sourceNode).forEach((pair) => {
-                this.pointerPairList.push(pair)
-            })
-
-            this.processFieldRefStmt()
-            this.processInvokeStmt()
-        }
-    }
-
-    protected addReachable(funcs: CSFuncID[]) {
-        funcs.forEach((funcID) => {
-            // check whether the funcs is reachable
-            if (this.reachableMethods.has(funcID)) {
-                return
-            }
-
-            this.reachableMethods.add(funcID)
-            // TODO: should also add all stmt into ReachableStmt
-
-            const arkMethod = this.cg.getArkMethodByFuncID(funcID.funcID)
-            if (arkMethod == null) {
-                // logs
-                return 
-            }
-
-            arkMethod.getBody().getCfg().getStmts().forEach((stmt) => {
-                if (stmt.containsInvokeExpr()) {
-
-                } else if (stmt instanceof ArkAssignStmt) {
-                    const leftOp = stmt.getLeftOp(), rightOp = stmt.getRightOp()
-                    if (!(leftOp instanceof Local)) {
-                        return
-                    }
-
-                    if (rightOp instanceof ArkNewExpr) {
-                        // example: x = new Dog()
-                        // leftOp: x, rightOp: new Dog()
-                        let sourceNode = this.getOrNewPagNode(0, rightOp)
-                        let targetNode = this.getOrNewPagNode(0, leftOp)
-
-                        // this.addedge(sourceNode, targetNode)
-                        this.pointerPairList.push([targetNode.getID(), sourceNode.getID()])
-                    } else if (rightOp instanceof Local) {
-                        // example: x = y
-                        // leftOp: x, rightOp: y
-                        
-                    }
-                }
-            })
-        })
-    }
-
-    protected propagate(targetNode: PagNode, sourceNode: PagNode): PointerPair[] {
-        const newPointerPairList: PointerPair[] = []
-        // TODO: add pag edge between node
-        // this.addEdges(targetNodeID, sourceNodeID)
-
-        // get pointer set of target node
-        targetNode.getPointerSetElement().forEach((node) => {
-            newPointerPairList.push([node, sourceNode.getID()])
-        })
-
-        return newPointerPairList
-    }
-
-    protected processFieldRefStmt() {
-
-    }
-
-    protected processInvokeStmt() {
-
     }
 }

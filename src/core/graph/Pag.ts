@@ -131,6 +131,10 @@ export class PagNode extends BaseNode {
         this.addOutgoingEdge(e);
     }
 
+    public getValue(): Value {
+        return this.value
+    }
+
     public getPointerSetElement(): Set<NodeID> {
         return this.pointerSet
     }

@@ -37,14 +37,15 @@ export class CallGraphBuilder {
         for (const method of methods) {
             let stmts = method.getCfg().getStmts()
             for (const stmt of stmts) {
-                if (stmt.containsInvokeExpr()) {
-                    let invokeExpr = stmt.getInvokeExpr()!;
+                let invokeExpr = stmt.getInvokeExpr();
+                if (invokeExpr == undefined) {
+                    continue;
+                }
 
-                    let callee: Method | undefined = this.getDCCallee(invokeExpr);
-                    // abstract method will also be added into direct cg
-                    if (callee != undefined) {
-                        this.cg.addDirectCallEdge(method.getSignature(), callee, stmt);
-                    }
+                let callee: Method | undefined = this.getDCCallee(invokeExpr);
+                // abstract method will also be added into direct cg
+                if (callee != undefined) {
+                    this.cg.addDirectCallEdge(method.getSignature(), callee, stmt);
                 }
             }
         }
