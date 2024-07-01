@@ -46,9 +46,6 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
-    private pointerPairList: PointerPair[] = [];
-    private reachableMethods: Set<CSFuncID>
-    private reachableStmts: Set<Stmt>
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         this.pag = p;
