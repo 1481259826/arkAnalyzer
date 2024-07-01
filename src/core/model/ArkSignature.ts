@@ -162,6 +162,11 @@ export class FieldSignature {
         this.declaringSignature = declaringClassSignature;
     }
 
+    public getBaseName() {
+        return this.declaringSignature instanceof ClassSignature ? this.declaringSignature.getClassName()
+            : this.declaringSignature.getNamespaceName();
+    }
+
     public getFieldName() {
         return this.fieldName;
     }

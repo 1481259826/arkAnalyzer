@@ -63,10 +63,15 @@ const logger = Logger.getLogger();
 
 export interface TransformerContext {
     getArkFile(): ArkFile;
+
     getMethod(signature: MethodSignature): ArkMethod | null;
+
     getClass(signature: ClassSignature): ArkClass | null;
+
     getPrinter(): ArkCodeBuffer;
+
     transTemp2Code(temp: Local): string;
+
     isInBuilderMethod(): boolean;
 }
 
@@ -251,7 +256,7 @@ export class SourceTransformer {
         }
 
         if (value instanceof ArkStaticFieldRef) {
-            return `${value.getFieldSignature().getDeclaringClassSignature().getClassName()}.${value.getFieldName()}`;
+            return value.getFieldSignature().getBaseName();
         }
 
         if (value instanceof ArkArrayRef) {

@@ -1,4 +1,4 @@
-export namespace mySpace {
+export namespace MySpace {
 
     export function funcTarget() {
         console.log('funcTarget');
@@ -6,13 +6,13 @@ export namespace mySpace {
 
     export class ClassTarget {
         public fieldA = '111';
-        static staticField = 123;
+        public static staticField = 123;
 
         public methodTarget() {
             let a = this.fieldA;
         }
 
-        static staticFunc() {
+        public static staticFunc() {
             let b = ClassTarget.staticField;
             console.log('123');
         }
@@ -25,13 +25,13 @@ export namespace mySpace {
 
 export class ClassTarget {
     public fieldA = '1111';
-    static staticField = 1234;
+    public static staticField = 1234;
 
     public methodTarget() {
         let a = this.fieldA;
     }
 
-    static staticFunc() {
+    public static staticFunc() {
         let b = ClassTarget.staticField;
         console.log('1234');
     }

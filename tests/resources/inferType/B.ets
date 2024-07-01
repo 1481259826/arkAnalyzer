@@ -1,4 +1,4 @@
-import { mySpace } from './Target';
+import { MySpace } from './Target';
 
 export function funcB() {
     mySpace.funcTarget();
@@ -6,7 +6,7 @@ export function funcB() {
 
 export class ClassB {
     public methodB() {
-        let b = new mySpace.ClassTarget();
+        let b = new MySpace.ClassTarget();
         b.methodTarget();
         let d = b.funcTarget();
     }
