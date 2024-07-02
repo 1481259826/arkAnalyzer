@@ -13,12 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    SceneConfig,
-    Scene,
-    SourceFilePrinter,
-    SourceClassPrinter,
-} from '../../../src/index';
+import { Scene, SceneConfig, SourceClassPrinter, SourceFilePrinter, } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
@@ -126,7 +121,6 @@ export default class ZipCodeValidator implements StringValidator {
     return s.length === 5 && numberRegexp.test(s);
   }
 }
-export {ZipCodeValidator as ZipCodeValidator};
 export {ZipCodeValidator as mainValidator};
 export class ParseIntBasedZipCodeValidator {
   isAcceptable(s: string) {

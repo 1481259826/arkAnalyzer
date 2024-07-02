@@ -288,16 +288,4 @@ export class ModelUtils {
         return isArkUIBuilderMethod;
     }
 
-    public static getInvokerSignatureWithName(name: string, invokeMethod: ArkMethod): TypeSignature | undefined {
-        let signature: TypeSignature | undefined = this.getClassWithName(name, invokeMethod)?.getSignature();
-        if (signature) {
-            return signature;
-        }
-        signature = this.getNamespaceWithName(name, invokeMethod)?.getSignature();
-        if (signature) {
-            return signature;
-        }
-        signature = this.getTypeSignatureInImportInfoWithName(name, invokeMethod.getDeclaringArkFile());
-        return signature;
-    }
 }

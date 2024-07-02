@@ -37,6 +37,7 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from "./core/model/ArkExport";
+import { ArkField } from "./core/model/ArkField";
 
 const logger = Logger.getLogger();
 
@@ -135,6 +136,28 @@ export class Scene {
         });
     }
 
+    /**
+     * convert variable which declare in file or namespace to defaultClass field
+     * @param defaultClass
+     */
+    private generateDefaultClassField(defaultClass: ArkClass) {
+        const defaultArkMethod = defaultClass?.getDefaultArkMethod();
+        if (defaultArkMethod) {
+            TypeInference.inferTypeInMethod(defaultArkMethod);
+            defaultClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
+                if (local.getName() !== 'this' && !local.getName().startsWith('$temp')) {
+                    const arkField = new ArkField();
+                    arkField.setFieldType(ArkField.DEFAULT_ARK_Field);
+                    arkField.setDeclaringClass(defaultClass);
+                    arkField.setType(local.getType());
+                    arkField.setName(local.getName());
+                    arkField.genSignature();
+                    defaultClass.addField(arkField);
+                }
+            });
+        }
+    }
+
     private buildAllMethodBody() {
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
@@ -143,6 +166,7 @@ export class Scene {
                     method.buildBody();
                 }
             }
+            this.generateDefaultClassField(file.getDefaultClass());
         }
         for (const namespace of this.getNamespacesMap().values()) {
             for (const cls of namespace.getClasses()) {
@@ -150,6 +174,7 @@ export class Scene {
                     method.buildBody();
                 }
             }
+            this.generateDefaultClassField(namespace.getDefaultClass());
         }
 
         this.buildStage = SceneBuildStage.METHOD_DONE;
@@ -165,6 +190,7 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
+
         expandImportAll(this.filesMap);
     }
 
@@ -196,6 +222,7 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
+        expandImportAll(this.filesMap);
     }
 
     public buildModuleScene(moduleName: string, modulePath: string) {
@@ -415,20 +442,18 @@ export class Scene {
     }
 
     /**
-     * 对每个method方法体内部进行类型推导，将变量类型填入
+     * inference type for each non-default method
+     * because default method was finished
      */
     public inferTypes() {
-
-        for (let arkFile of this.getFiles()) {
-            for (let arkClass of arkFile.getClasses()) {
-                for (let arkMethod of arkClass.getMethods()) {
-                    TypeInference.inferTypeInMethod(arkMethod);
-                }
+        this.getMethodsMap().forEach(arkMethod => {
+            if (!arkMethod.isDefaultArkMethod()) {
+                TypeInference.inferTypeInMethod(arkMethod);
             }
-        }
+        })
 
         // get class hierarchy
-        this.genExtendedClasses()
+        this.genExtendedClasses();
     }
 
     public inferSimpleTypes() {

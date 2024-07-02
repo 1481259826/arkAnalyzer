@@ -26,6 +26,7 @@ import {
     ClassType,
     NumberType,
     Type,
+    UnclearReferenceType,
     UnknownType
 } from './Type';
 import { Value } from './Value';
@@ -147,27 +148,29 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             return this;
         }
 
-        if (this.base.getType() instanceof UnknownType) {
-            const signature = ModelUtils.getInvokerSignatureWithName(this.base.getName(), arkMethod);
-            const type = TypeInference.parseSignature2Type(signature);
-            if (type) {
-                this.base.setType(type);
-            }
+        let baseType: Type | null = this.base.getType();
+        if (baseType instanceof UnknownType) {
+            baseType = TypeInference.inferBaseType(this.base.getName(), arkMethod);
+        } else if (baseType instanceof UnclearReferenceType) {
+            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkMethod);
+        }
+        if (!baseType) {
+            logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
+            return this;
         }
 
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         const scene = arkMethod.getDeclaringArkFile().getScene();
-        if ((methodName === 'forEach') && (this.base.getType() instanceof ArrayType)) {
+        if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
             const arg = this.getArg(0);
             if (arg.getType() instanceof CallableType) {
-                const baseType = this.base.getType() as ArrayType;
                 const argMethodSignature = (arg.getType() as CallableType).getMethodSignature();
                 const argMethod = scene.getMethod(argMethodSignature);
                 if (argMethod != null) {
                     const firstStmt = argMethod.getBody().getCfg().getStmts()[0];
                     if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
                         const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
-                        parameterRef.setType(baseType.getBaseType());
+                        parameterRef.setType((baseType as ArrayType).getBaseType());
                     }
                     TypeInference.inferTypeInMethod(argMethod);
                 }
@@ -175,29 +178,29 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 logger.warn(`arg of forEach must be callable`);
             }
         }
-        let type = this.base.getType();
-        if (type instanceof ClassType) {
-            const arkClass = scene.getClass(type.getClassSignature());
+
+        if (baseType instanceof ClassType) {
+            const arkClass = scene.getClass(baseType.getClassSignature());
             let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
             if (method) {
                 TypeInference.inferMethodReturnType(method)
                 this.setMethodSignature(method.getSignature());
-                if (method.containsModifier('StaticKeyword')) {
+                if (method.isStatic()) {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
                 }
+                return this;
             } else if (methodName === 'constructor') { //隐式构造
                 const subSignature = new MethodSubSignature();
                 subSignature.setMethodName(methodName);
-                subSignature.setReturnType(new ClassType(type.getClassSignature()));
+                subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
                 const defaultMethod = new MethodSignature();
-                defaultMethod.setDeclaringClassSignature(type.getClassSignature());
+                defaultMethod.setDeclaringClassSignature(baseType.getClassSignature());
                 defaultMethod.setMethodSubSignature(subSignature);
                 this.setMethodSignature(defaultMethod);
-            } else {
-                logger.warn(`class ${type.getClassSignature().getClassName()} method ${methodName} does not exist`);
+                return this;
             }
-        } else if (type instanceof AnnotationNamespaceType) {
-            const defaultClass = scene.getNamespace(type.getNamespaceSignature())?.getDefaultClass();
+        } else if (baseType instanceof AnnotationNamespaceType) {
+            const defaultClass = scene.getNamespace(baseType.getNamespaceSignature())?.getDefaultClass();
             let foundMethod = defaultClass?.getMethodWithName(methodName) ?? defaultClass?.getStaticMethodWithName(methodName);
             if (foundMethod) {
                 TypeInference.inferMethodReturnType(foundMethod);
@@ -205,8 +208,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
             }
         } else {
-            logger.warn("invoke expr base type unknown:", type);
+            logger.warn("invoke ArkInstanceInvokeExpr base type unknown:", this.toString());
         }
+        logger.warn("invoke ArkInstanceInvokeExpr MethodSignature type fail: ", this.toString());
         return this;
     }
 }
@@ -274,14 +278,9 @@ export class ArkNewExpr extends AbstractExpr {
 
     public inferType(arkMethod: ArkMethod): ArkNewExpr {
         const className = this.classType.getClassSignature().getClassName();
-        const arkClass = ModelUtils.getClassWithName(className, arkMethod);
-        if (arkClass) {
-            this.classType.setClassSignature(arkClass.getSignature());
-            return this;
-        }
-        const type = ModelUtils.getTypeSignatureInImportInfoWithName(className, arkMethod.getDeclaringArkFile());
-        if (type && type instanceof ClassSignature) {
-            this.classType.setClassSignature(type);
+        const type = TypeInference.inferUnclearReferenceType(className, arkMethod);
+        if (type && type instanceof ClassType) {
+            this.classType = type;
         }
         return this;
     }

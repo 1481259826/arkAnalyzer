@@ -160,7 +160,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                         const _this = [...srcStmt.getCfg()!.getBlocks()][0].getStmts()[0].getDef();
                         const thisRef = new ArkInstanceFieldRef(_this as Local, dataFact.getFieldSignature());
                         ret.add(thisRef);
-                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringClassSignature()){
+                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringSignature()) {
                         ret.add(dataFact);
                     }
                     for (const sink of checkerInstance.sinks) {

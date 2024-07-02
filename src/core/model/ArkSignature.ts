@@ -31,8 +31,8 @@ export interface ArkSignature {
  * @category core/model
  */
 export class FileSignature {
-    private projectName: string = "_UnkownProjectName";
-    private fileName: string = "_UnkownFileName";
+    private projectName: string = "_UnknownProjectName";
+    private fileName: string = "_UnknownFileName";
 
     constructor() {
     }
@@ -146,18 +146,25 @@ export class ClassSignature {
     }
 }
 
+export type BaseSignature = ClassSignature | NamespaceSignature;
+
 export class FieldSignature {
-    private declaringClassSignature: ClassSignature = new ClassSignature();
+    private declaringSignature: BaseSignature = new ClassSignature();
     private fieldName: string = '';
     private type: Type = UnknownType.getInstance();
     private static: boolean = false;
 
-    public getDeclaringClassSignature() {
-        return this.declaringClassSignature;
+    public getDeclaringSignature() {
+        return this.declaringSignature;
     }
 
-    public setDeclaringClassSignature(declaringClassSignature: ClassSignature) {
-        this.declaringClassSignature = declaringClassSignature;
+    public setDeclaringSignature(declaringClassSignature: BaseSignature) {
+        this.declaringSignature = declaringClassSignature;
+    }
+
+    public getBaseName() {
+        return this.declaringSignature instanceof ClassSignature ? this.declaringSignature.getClassName()
+            : this.declaringSignature.getNamespaceName();
     }
 
     public getFieldName() {
@@ -192,7 +199,7 @@ export class FieldSignature {
         if (this.isStatic()) {
             tmpSig = '[static]' + tmpSig;
         }
-        return this.getDeclaringClassSignature().toString() + '.' + tmpSig;
+        return this.getDeclaringSignature().toString() + '.' + tmpSig;
     }
 }
 
@@ -251,7 +258,7 @@ export class MethodSubSignature {
             paraStr += parameterType.toString() + ", ";
         });
         paraStr = paraStr.replace(/, $/, '');
-        let tmpSig =  `${this.getMethodName()}(${paraStr})`;
+        let tmpSig = `${this.getMethodName()}(${paraStr})`;
         if (this.isStatic()) {
             tmpSig = '[static]' + tmpSig;
         }
@@ -331,7 +338,7 @@ export class InterfaceSignature {
 
 //TODO, reconstruct
 export function fieldSignatureCompare(leftSig: FieldSignature, rightSig: FieldSignature): boolean {
-    if (classSignatureCompare(leftSig.getDeclaringClassSignature(), rightSig.getDeclaringClassSignature()) &&
+    if (leftSig.getDeclaringSignature().toString() === rightSig.getDeclaringSignature().toString() &&
         (leftSig.getFieldName() == rightSig.getFieldName())) {
         return true;
     }
