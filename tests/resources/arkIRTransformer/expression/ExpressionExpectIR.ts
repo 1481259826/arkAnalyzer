@@ -75,5 +75,11 @@ export const Operator_Expect_IR = {
         'instanceinvoke $temp0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
         'p = $temp0',
         '$temp1 = delete p.<@_UnknownProjectName/_UnknownFileName: .y>',
+        'a = 0',
+        'b = 1',
+        '$temp2 = a + b',
+        '$temp3 = await 10',
+        'x = await 11',
+        '$temp4 = yield 20',
     ],
 };

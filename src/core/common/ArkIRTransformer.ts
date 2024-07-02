@@ -14,7 +14,9 @@
  */
 
 import {
+    AbstractExpr,
     AbstractInvokeExpr,
+    ArkAwaitExpr,
     ArkBinopExpr,
     ArkCastExpr,
     ArkConditionExpr,
@@ -25,6 +27,7 @@ import {
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
+    ArkYieldExpr,
 } from '../base/Expr';
 import {
     AbstractFieldRef,
@@ -214,9 +217,13 @@ export class ArkIRTransformer {
     }
 
     private expressionStatementToStmts(expressionStatement: ts.ExpressionStatement): Stmt[] {
-        const {value: expr, stmts: stmts} = this.tsNodeToValueAndStmts(expressionStatement.expression);
-        if (expr instanceof AbstractInvokeExpr) {
-            const arkInvokeStmt = new ArkInvokeStmt(expr);
+        return this.expressionToStmts(expressionStatement.expression);
+    }
+
+    private expressionToStmts(expression: ts.Expression): Stmt[] {
+        const {value: exprValue, stmts: stmts} = this.tsNodeToValueAndStmts(expression);
+        if (exprValue instanceof AbstractInvokeExpr) {
+            const arkInvokeStmt = new ArkInvokeStmt(exprValue);
             stmts.push(arkInvokeStmt);
 
             let hasRepeat: boolean = false;
@@ -237,8 +244,8 @@ export class ArkIRTransformer {
                 const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
                 stmts.push(popInvokeStmt);
             }
-        } else if (expr instanceof ArkDeleteExpr) {
-            const {value: _, stmts: exprStmts} = this.generateAssignStmtForValue(expr);
+        } else if (exprValue instanceof AbstractExpr) {
+            const {value: _, stmts: exprStmts} = this.generateAssignStmtForValue(exprValue);
             stmts.push(...exprStmts);
         }
         return stmts;
@@ -527,6 +534,8 @@ export class ArkIRTransformer {
             return this.templateExpressionToValueAndStmts(node);
         } else if (ts.isAwaitExpression(node)) {
             return this.awaitExpressionToValueAndStmts(node);
+        } else if (ts.isYieldExpression(node)) {
+            return this.yieldExpressionToValueAndStmts(node);
         } else if (ts.isDeleteExpression(node)) {
             return this.deleteExpressionToValueAndStmts(node);
         } else if (ts.isVoidExpression(node)) {
@@ -1009,11 +1018,24 @@ export class ArkIRTransformer {
         const operatorStr = ts.tokenToString(operator) as string;
         const binopExpr = new ArkBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), operatorStr[0]);
         stmts.push(new ArkAssignStmt(operandValue, binopExpr));
-        return {value: binopExpr, stmts: stmts};
+        return {value: operandValue, stmts: stmts};
     }
 
     private awaitExpressionToValueAndStmts(awaitExpression: ts.AwaitExpression): ValueAndStmts {
-        return this.tsNodeToValueAndStmts(awaitExpression.expression);
+        const {value: promiseValue, stmts: stmts} = this.tsNodeToValueAndStmts(awaitExpression.expression);
+        const awaitExpr = new ArkAwaitExpr(promiseValue);
+        return {value: awaitExpr, stmts: stmts};
+    }
+
+    private yieldExpressionToValueAndStmts(yieldExpression: ts.YieldExpression): ValueAndStmts {
+        let yieldValue: Value = ValueUtil.getUndefinedConst();
+        let stmts: Stmt[] = [];
+        if (yieldExpression.expression) {
+            ({value: yieldValue, stmts: stmts} = this.tsNodeToValueAndStmts(yieldExpression.expression));
+        }
+
+        const yieldExpr = new ArkYieldExpr(yieldValue);
+        return {value: yieldExpr, stmts: stmts};
     }
 
     private deleteExpressionToValueAndStmts(deleteExpression: ts.DeleteExpression): ValueAndStmts {
@@ -1023,7 +1045,7 @@ export class ArkIRTransformer {
     }
 
     private voidExpressionToValueAndStmts(voidExpression: ts.VoidExpression): ValueAndStmts {
-        const {value: _, stmts: stmts} = this.tsNodeToValueAndStmts(voidExpression.expression);
+        const stmts = this.expressionToStmts(voidExpression.expression);
         return {value: ValueUtil.getUndefinedConst(), stmts: stmts};
     }
 

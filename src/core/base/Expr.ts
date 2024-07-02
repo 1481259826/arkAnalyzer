@@ -398,6 +398,72 @@ export class ArkDeleteExpr extends AbstractExpr {
 
 }
 
+export class ArkAwaitExpr extends AbstractExpr {
+    private promise: Value;
+
+    constructor(promise: Value) {
+        super();
+        this.promise = promise;
+    }
+
+    public getPromise(): Value {
+        return this.promise;
+    }
+
+    public setPromise(newPromise: Value): void {
+        this.promise = newPromise;
+    }
+
+    public getType(): Type {
+        return this.promise.getType();
+    }
+
+    public getUses(): Value[] {
+        const uses: Value[] = [];
+        uses.push(this.promise);
+        uses.push(...this.promise.getUses());
+        return uses;
+    }
+
+    public toString(): string {
+        const str = 'await ' + this.promise;
+        return str;
+    }
+}
+
+export class ArkYieldExpr extends AbstractExpr {
+    private yieldValue: Value;
+
+    constructor(yieldValue: Value) {
+        super();
+        this.yieldValue = yieldValue;
+    }
+
+    public getYieldValue(): Value {
+        return this.yieldValue;
+    }
+
+    public setYieldValue(newYieldValue: Value): void {
+        this.yieldValue = newYieldValue;
+    }
+
+    public getType(): Type {
+        return this.yieldValue.getType();
+    }
+
+    public getUses(): Value[] {
+        const uses: Value[] = [];
+        uses.push(this.yieldValue);
+        uses.push(...this.yieldValue.getUses());
+        return uses;
+    }
+
+    public toString(): string {
+        const str = 'yield ' + this.yieldValue;
+        return str;
+    }
+}
+
 // 二元运算表达式
 export class ArkBinopExpr extends AbstractExpr {
     private op1: Value;
