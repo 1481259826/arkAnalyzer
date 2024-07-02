@@ -358,7 +358,7 @@ export class ArkClass implements ArkExport {
         return this.indexSignatureNumber++;
     }
 
-    getType(): ExportType {
+    getExportType(): ExportType {
         return ExportType.CLASS;
     }
 }
