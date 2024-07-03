@@ -36,10 +36,11 @@ export class SourceField extends SourceBase {
     public dump(): string {
         this.printer.clear();
         this.printDecorator(this.field.getModifiers());
-        this.printer
-            .writeIndent()
-            .writeSpace(this.modifiersToString(this.field.getModifiers()))
-            .write(this.field.getName());
+        this.printer.writeIndent();
+        if (this.field.getFieldType() !== 'EnumMember') {
+            this.printer.writeSpace(this.modifiersToString(this.field.getModifiers()))
+        }
+        this.printer.write(this.field.getName());
         if (this.field.getQuestionToken()) {
             this.printer.write('?');
         }
@@ -48,7 +49,7 @@ export class SourceField extends SourceBase {
         }
 
         // property.getInitializer() PropertyAccessExpression ArrowFunction ClassExpression FirstLiteralToken StringLiteral
-        if (this.field.getType()) {
+        if (this.field.getType() && this.field.getFieldType() !== 'EnumMember') {
             this.printer.write(
                 `: ${this.transformer.typeToString(this.field.getType())}`
             );
