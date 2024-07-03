@@ -90,7 +90,6 @@ import {
 import { tsNode2Value } from '../model/builder/builderUtils';
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
-import { TypeInference } from './TypeInference';
 
 const logger = Logger.getLogger();
 
@@ -726,7 +725,7 @@ export class ArkIRTransformer {
             let classSignature = new ClassSignature();
             classSignature.setClassName(callerName);
             // temp for component
-            let cls = TypeInference.getClass(this.declaringMethod, classSignature);
+            let cls = ModelUtils.getClass(this.declaringMethod, classSignature);
             if (cls?.hasComponentDecorator()) {
                 return this.createCustomViewStmt(callerName, args, callExpression);
             }

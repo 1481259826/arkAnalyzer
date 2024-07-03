@@ -38,6 +38,7 @@ import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from "./core/model/ArkExport";
 import { generateDefaultClassField } from "./core/model/builder/ArkClassBuilder";
+import { ClassType } from "./core/base/Type";
 
 const logger = Logger.getLogger();
 
@@ -455,19 +456,16 @@ export class Scene {
 
     private genExtendedClasses() {
         this.getClassesMap().forEach((cls) => {
-            let superClassName = cls.getSuperClassName();
-            let superClass: ArkClass | null = null;
-
-            superClass = ModelUtils.getClassWithNameFromClass(superClassName, cls);
-            if (!superClass) {
-                const signature = ModelUtils.getTypeSignatureInImportInfoWithName(superClassName, cls.getDeclaringArkFile());
-                if (signature instanceof ClassSignature) {
-                    superClass = cls.getDeclaringArkFile().getScene().getClass(signature);
+            if (cls.getSuperClassName() !== '') {
+                const type = TypeInference.inferUnclearReferenceType(cls.getSuperClassName(), cls);
+                let superClass;
+                if (type && type instanceof ClassType) {
+                    superClass = cls.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
                 }
-            }
-            if (superClass != null) {
-                cls.setSuperClass(superClass);
-                superClass.addExtendedClass(cls);
+                if (superClass) {
+                    cls.setSuperClass(superClass);
+                    superClass.addExtendedClass(cls);
+                }
             }
         });
     }

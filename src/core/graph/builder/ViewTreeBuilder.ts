@@ -38,8 +38,8 @@ import {
     COMPONENT_IF_BRANCH,
     COMPONENT_POP_FUNCTION,
     COMPONENT_REPEAT,
-    SPECIAL_CONTAINER_COMPONENT,
     isEtsContainerComponent,
+    SPECIAL_CONTAINER_COMPONENT,
 } from '../../common/EtsConst';
 import { ArkClass } from '../../model/ArkClass';
 import { ArkField } from '../../model/ArkField';
@@ -48,7 +48,7 @@ import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
 import { Cfg } from '../Cfg';
 import Logger from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
-import { TypeInference } from '../../common/TypeInference';
+import { ModelUtils } from "../../common/ModelUtils";
 
 const logger = Logger.getLogger();
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
@@ -594,7 +594,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @internal
      */
     public findClass(classSignature: ClassSignature): ArkClass | null {
-        return TypeInference.getClass(this.render, classSignature);
+        return ModelUtils.getClass(this.render, classSignature);
     }
 
     /**

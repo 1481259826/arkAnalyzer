@@ -22,7 +22,6 @@ import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import {
-    SourceStmt,
     SourceBreakStmt,
     SourceCaseStmt,
     SourceCompoundEndStmt,
@@ -30,16 +29,17 @@ import {
     SourceElseStmt,
     SourceForStmt,
     SourceIfStmt,
+    SourceStmt,
     SourceSwitchStmt,
     SourceWhileStmt,
-    StmtPrinterContext,
     stmt2SourceStmt,
+    StmtPrinterContext,
 } from './SourceStmt';
 import { CfgUitls } from '../../utils/CfgUtils';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
-import { MethodSignature, ClassSignature } from '../../core/model/ArkSignature';
-import { TypeInference } from '../../core/common/TypeInference';
+import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
+import { ModelUtils } from "../../core/common/ModelUtils";
 
 const logger = Logger.getLogger();
 
@@ -82,7 +82,7 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     public getClass(signature: ClassSignature): ArkClass | null {
-        return TypeInference.getClass(this.method, signature);
+        return ModelUtils.getClass(this.method, signature);
     }
 
     public getLocals(): Set<Local> {
