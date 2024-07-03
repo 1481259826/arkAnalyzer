@@ -21,7 +21,8 @@ import { FileSignature } from "../../src/core/model/ArkSignature";
 
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../resources/exports"))
+    config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") });
+    config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
@@ -31,7 +32,7 @@ describe("export Test", () => {
         fileId.setFileName("test.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
-        assert.equal(file?.getExportInfos().length,2);
+        assert.equal(file?.getExportInfos().length, 2);
         assert.equal(file?.getImportInfos().length, 16);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg().getStmts();
         assert.isNotEmpty(stmts);
@@ -42,6 +43,13 @@ describe("export Test", () => {
         fileId.setFileName("exportSample.ts");
         fileId.setProjectName(projectScene.getProjectName());
         assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('d')?.getSuperClass());
+    })
+
+    it('sdk case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("test.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        assert.isDefined(projectScene.getFile(fileId)?.getImportInfoBy('hilog')?.getLazyExportInfo());
     })
 
     it('all case', () => {

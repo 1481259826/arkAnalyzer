@@ -138,10 +138,9 @@ export class TypeInference {
         if (!fieldType || fieldType instanceof UnknownType || fieldType instanceof UnclearReferenceType) {
             return null;
         }
-        if (arkField.getFieldType() !== 'EnumMember') {
-            arkField.setType(fieldType);
-            arkField.getSignature().setType(fieldType);
-        }
+
+        arkField.setType(fieldType);
+        arkField.getSignature().setType(fieldType);
         return arkField.getType();
     }
 
@@ -175,7 +174,7 @@ export class TypeInference {
             return field;
         } else if (baseType instanceof AnnotationNamespaceType) {
             field.getFieldSignature().setDeclaringSignature(baseType.getNamespaceSignature());
-            return field;
+            return new ArkStaticFieldRef(field.getFieldSignature());
         }
         logger.warn('infer field ref FieldSignature type fail: ' + field.toString());
         return field;
@@ -219,10 +218,6 @@ export class TypeInference {
         }
         const leftOp = stmt.getLeftOp();
         if (leftOp instanceof Local) {
-            if (!(stmt.getRightOp().getType() instanceof UnknownType || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
-                leftOp.setType(stmt.getRightOp().getType());
-                return;
-            }
             const leftOpType = leftOp.getType();
             let type;
             if (leftOpType instanceof AnnotationNamespaceType) {
@@ -231,6 +226,7 @@ export class TypeInference {
                 for (const e of leftOpType.getTypes()) {
                     if (typeof e === typeof rightOp.getType()) {
                         leftOpType.setCurrType(rightOp.getType());
+                        type = leftOpType;
                         break;
                     }
                 }
@@ -240,10 +236,14 @@ export class TypeInference {
                 let baseType = this.inferUnclearReferenceType((leftOpType.getBaseType() as UnclearReferenceType).getName(), arkMethod);
                 if (baseType) {
                     leftOpType.setBaseType(baseType);
+                    type = leftOpType;
                 }
             }
             if (type) {
                 leftOp.setType(type);
+            } else if (!(stmt.getRightOp().getType() instanceof UnknownType || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
+                leftOp.setType(stmt.getRightOp().getType());
+                return;
             }
         } else if (leftOp instanceof ArkInstanceFieldRef) {
             const fieldRef = this.handleClassField(leftOp, arkMethod);

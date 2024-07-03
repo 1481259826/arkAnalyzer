@@ -1,7 +1,7 @@
 import { MySpace } from './Target';
 
 export function funcB() {
-    mySpace.funcTarget();
+    MySpace.funcTarget();
 }
 
 export class ClassB {
