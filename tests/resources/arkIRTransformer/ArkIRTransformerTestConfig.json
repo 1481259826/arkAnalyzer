@@ -1,6 +1,6 @@
 {
-    "targetProjectName": "AppSampleD",
-    "targetProjectDirectory": "D:\\Codes\\resources\\SE4OpenHarmony-main\\Apps\\OHApps\\AppSampleD",
+    "targetProjectName": "applications_photos",
+    "targetProjectDirectory": "D:\\Codes\\resources\\applications\\applications_photos",
 
     "logPath": "out/ArkAnalyzer.log",
     "logLevel": "ERROR",

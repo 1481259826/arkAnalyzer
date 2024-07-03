@@ -87,7 +87,7 @@ class ArkIRTransformerTest {
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
-        this.printScene(scene);
+        // this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -153,3 +153,4 @@ const arkIRTransformerTest = new ArkIRTransformerTest();
 arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
 // arkIRTransformerTest.printCfg();
+

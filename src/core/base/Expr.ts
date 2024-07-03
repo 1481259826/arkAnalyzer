@@ -398,6 +398,7 @@ export class ArkDeleteExpr extends AbstractExpr {
 
 }
 
+
 export class ArkAwaitExpr extends AbstractExpr {
     private promise: Value;
 
@@ -464,15 +465,52 @@ export class ArkYieldExpr extends AbstractExpr {
     }
 }
 
+export enum BinaryOperator {
+    // TODO: unfold it
+    NullishCoalescing = '??',
+
+    // arithmetic
+    Exponentiation = '**',
+    Division = '/',
+    Addition = '+',
+    Subtraction = '-',
+    Multiplication = '*',
+    Remainder = '%',
+
+    // shift
+    LeftShift = '<<',
+    RightShift = '>>',
+    UnsignedRightShift = '>>>',
+
+    // Bitwise
+    BitwiseAnd = '&',
+    BitwiseOr = '|',
+    BitwiseXor = '^',
+
+    // relational
+    LessThan = '<',
+    LessThanOrEqual = '<=',
+    GreaterThan = '>',
+    GreaterThanOrEqual = '>=',
+    Equality = '==',
+    InEquality = '!=',
+    StrictEquality = '===',
+    StrictInequality = '!==',
+
+    // Logical
+    LogicalAnd = '&&',
+    LogicalOr = '||',
+}
+
 // 二元运算表达式
 export class ArkBinopExpr extends AbstractExpr {
     private op1: Value;
     private op2: Value;
-    private operator: string;
+    private operator: BinaryOperator;
 
     private type: Type;
 
-    constructor(op1: Value, op2: Value, operator: string) {
+    constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super();
         this.op1 = op1;
         this.op2 = op2;
@@ -495,7 +533,7 @@ export class ArkBinopExpr extends AbstractExpr {
         this.op2 = newOp2;
     }
 
-    public getOperator(): string {
+    public getOperator(): BinaryOperator {
         return this.operator;
     }
 
@@ -595,7 +633,7 @@ export class ArkBinopExpr extends AbstractExpr {
 }
 
 export class ArkConditionExpr extends ArkBinopExpr {
-    constructor(op1: Value, op2: Value, operator: string) {
+    constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super(op1, op2, operator);
     }
 }
@@ -792,12 +830,18 @@ export class ArkPhiExpr extends AbstractExpr {
     }
 }
 
+export enum UnaryOperator {
+    Neg = '-',
+    BitwiseNot = '~',
+    LogicalNot = '!'
+}
+
 // unary operation expression
 export class ArkUnopExpr extends AbstractExpr {
     private op: Value;
-    private operator: string;
+    private operator: UnaryOperator;
 
-    constructor(op: Value, operator: string) {
+    constructor(op: Value, operator: UnaryOperator) {
         super();
         this.op = op;
         this.operator = operator;
@@ -818,7 +862,7 @@ export class ArkUnopExpr extends AbstractExpr {
         return this.op.getType();
     }
 
-    public getOperator(): string {
+    public getOperator(): UnaryOperator {
         return this.operator;
     }
 
