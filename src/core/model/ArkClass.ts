@@ -117,7 +117,7 @@ export class ArkClass implements ArkExport {
         return this.declaringArkNamespace;
     }
 
-    public setDeclaringArkNamespace(declaringArkNamespace: ArkNamespace) {
+    public setDeclaringArkNamespace(declaringArkNamespace: ArkNamespace | undefined) {
         this.declaringArkNamespace = declaringArkNamespace;
     }
 

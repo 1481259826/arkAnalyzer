@@ -51,8 +51,9 @@ export function buildDefaultArkClassFromArkNamespace(arkNamespace: ArkNamespace,
 
 export function buildNormalArkClassFromArkMethod(clsNode: ts.TypeLiteralNode,
                                                  cls: ArkClass, sourceFile: ts.SourceFile) {
-    if (cls.getDeclaringArkNamespace()) {
-        buildNormalArkClassFromArkNamespace(clsNode, cls.getDeclaringArkNamespace(), cls, sourceFile);
+    const namespace = cls.getDeclaringArkNamespace();
+    if (namespace) {
+        buildNormalArkClassFromArkNamespace(clsNode, namespace, cls, sourceFile);
     } else {
         buildNormalArkClassFromArkFile(clsNode, cls.getDeclaringArkFile(), cls, sourceFile);
     }
@@ -62,7 +63,7 @@ export function buildNormalArkClassFromArkFile(clsNode: ClassLikeNode, arkFile: 
                                                sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
     cls.setDeclaringArkFile(arkFile);
     cls.setCode(clsNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
@@ -78,7 +79,7 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode, arkN
     cls.setDeclaringArkNamespace(arkNamespace);
     cls.setDeclaringArkFile(arkNamespace.getDeclaringArkFile());
     cls.setCode(clsNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
