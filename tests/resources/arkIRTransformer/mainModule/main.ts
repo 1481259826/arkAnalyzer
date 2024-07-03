@@ -19,9 +19,9 @@
 // for i
 import { s } from 'vitest/dist/reporters-yx5ZTtEV';
 
-for (let i = 0; i < 10; i++) {
-    console.log(i);
-}
+// for (let i = 0; i < 10; i++) {
+//     console.log(i);
+// }
 //
 // for of
 // let arr = [1,2,3]
@@ -181,9 +181,5 @@ for (let i = 0; i < 10; i++) {
 // }
 
 function main() {
-    if (1) {
-        let a = 0;
-    } else {
-        let b = 1;
-    }
+    let obj = {i: 1};
 }

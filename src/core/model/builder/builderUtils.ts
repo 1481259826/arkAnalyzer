@@ -16,11 +16,11 @@
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
 import {
     AnyType,
-    ArrayType,
     CallableType,
     ClassType,
     NumberType,
-    StringType, TupleType,
+    StringType,
+    TupleType,
     Type,
     TypeParameterType,
     UnclearReferenceType,
@@ -402,7 +402,7 @@ export function buildTypeFromPreStr(preStr: string) {
     return TypeInference.buildTypeFromStr(postStr);
 }
 
-export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkClass): Value {
+export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkClass, declaringMethod?: ArkMethod): Value {
     let nodeKind = ts.SyntaxKind[node.kind];
     if (nodeKind === 'NumericLiteral' ||
         nodeKind === 'StringLiteral' ||
@@ -528,10 +528,10 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
         const declaringArkFile = cls.getDeclaringArkFile();
         let arkClass: ArkClass = new ArkClass();
         if (declaringArkNamespace) {
-            buildNormalArkClassFromArkNamespace(node, declaringArkNamespace, arkClass, sourceFile);
+            buildNormalArkClassFromArkNamespace(node, declaringArkNamespace, arkClass, sourceFile, declaringMethod);
             declaringArkNamespace.addArkClass(arkClass);
         } else {
-            buildNormalArkClassFromArkFile(node, declaringArkFile, arkClass, sourceFile);
+            buildNormalArkClassFromArkFile(node, declaringArkFile, arkClass, sourceFile, declaringMethod);
             declaringArkFile.addArkClass(arkClass);
         }
         let classSig = arkClass.getSignature();

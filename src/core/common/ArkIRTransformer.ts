@@ -59,7 +59,8 @@ import {
     NeverType,
     NullType,
     NumberType,
-    StringType, TupleType,
+    StringType,
+    TupleType,
     Type,
     UnclearReferenceType,
     UndefinedType,
@@ -512,7 +513,10 @@ export class ArkIRTransformer {
     }
 
     private objectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
-        return {value: tsNode2Value(node, this.sourceFile, this.declaringMethod.getDeclaringArkClass()), stmts: []};
+        return {
+            value: tsNode2Value(node, this.sourceFile, this.declaringMethod.getDeclaringArkClass(), this.declaringMethod),
+            stmts: [],
+        };
     }
 
     private createCustomViewStmt(componentName: string, args: Value[],
@@ -596,11 +600,11 @@ export class ArkIRTransformer {
         const declaringArkNamespace = declaringArkClass.getDeclaringArkNamespace();
         const newClass = new ArkClass();
         if (declaringArkNamespace) {
-            buildNormalArkClassFromArkNamespace(classExpression, declaringArkNamespace, newClass, this.sourceFile);
+            buildNormalArkClassFromArkNamespace(classExpression, declaringArkNamespace, newClass, this.sourceFile, this.declaringMethod);
             declaringArkNamespace.addArkClass(newClass);
         } else {
             const declaringArkFile = declaringArkClass.getDeclaringArkFile();
-            buildNormalArkClassFromArkFile(classExpression, declaringArkFile, newClass, this.sourceFile);
+            buildNormalArkClassFromArkFile(classExpression, declaringArkFile, newClass, this.sourceFile, this.declaringMethod);
             declaringArkFile.addArkClass(newClass);
         }
         const classValue = this.getOrCreatLocal(newClass.getName(), new ClassType(newClass.getSignature()));
