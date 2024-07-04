@@ -25,7 +25,7 @@ export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineColPosition): ExportInfo {
     return new ExportInfo.Builder()
         .exportClauseName(arkInstance.getName())
-        .exportClauseType(arkInstance.getType())
+        .exportClauseType(arkInstance.getExportType())
         .nameBeforeAs(arkInstance.getName())
         .modifiers(arkInstance.getModifiers())
         .typeSignature(arkInstance.getSignature() as TypeSignature)

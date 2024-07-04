@@ -1,10 +1,10 @@
 import { MySpace } from './Target';
 
 export function funcB() {
-    mySpace.funcTarget();
+    MySpace.funcTarget();
 }
 
-export class ClassB {
+export class ClassB extends MySpace.ClassTarget {
     public methodB() {
         let b = new MySpace.ClassTarget();
         b.methodTarget();

@@ -256,7 +256,7 @@ export class SourceTransformer {
         }
 
         if (value instanceof ArkStaticFieldRef) {
-            return value.getFieldSignature().getBaseName();
+            return `${value.getFieldSignature().getBaseName()}.${value.getFieldName()}`;
         }
 
         if (value instanceof ArkArrayRef) {

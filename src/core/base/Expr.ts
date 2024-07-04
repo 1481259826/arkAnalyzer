@@ -150,9 +150,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
 
         let baseType: Type | null = this.base.getType();
         if (baseType instanceof UnknownType) {
-            baseType = TypeInference.inferBaseType(this.base.getName(), arkMethod);
+            baseType = TypeInference.inferBaseType(this.base.getName(), arkMethod.getDeclaringArkClass());
         } else if (baseType instanceof UnclearReferenceType) {
-            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkMethod);
+            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkMethod.getDeclaringArkClass());
         }
         if (!baseType) {
             logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
@@ -278,7 +278,7 @@ export class ArkNewExpr extends AbstractExpr {
 
     public inferType(arkMethod: ArkMethod): ArkNewExpr {
         const className = this.classType.getClassSignature().getClassName();
-        const type = TypeInference.inferUnclearReferenceType(className, arkMethod);
+        const type = TypeInference.inferUnclearReferenceType(className, arkMethod.getDeclaringArkClass());
         if (type && type instanceof ClassType) {
             this.classType = type;
         }

@@ -39,7 +39,7 @@ export class ArkClass implements ArkExport {
     private column: number = -1;
 
     private declaringArkFile: ArkFile;
-    private declaringArkNamespace: ArkNamespace;
+    private declaringArkNamespace: ArkNamespace | undefined;
     private classSignature: ClassSignature;
 
     private superClassName: string = '';
@@ -113,11 +113,11 @@ export class ArkClass implements ArkExport {
         this.declaringArkFile = declaringArkFile;
     }
 
-    public getDeclaringArkNamespace() {
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
         return this.declaringArkNamespace;
     }
 
-    public setDeclaringArkNamespace(declaringArkNamespace: ArkNamespace) {
+    public setDeclaringArkNamespace(declaringArkNamespace: ArkNamespace | undefined) {
         this.declaringArkNamespace = declaringArkNamespace;
     }
 
@@ -358,7 +358,7 @@ export class ArkClass implements ArkExport {
         return this.indexSignatureNumber++;
     }
 
-    getType(): ExportType {
+    getExportType(): ExportType {
         return ExportType.CLASS;
     }
 }

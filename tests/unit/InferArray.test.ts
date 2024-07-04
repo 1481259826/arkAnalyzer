@@ -51,6 +51,19 @@ describe("Infer Array Test", () => {
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ArrayType);
     })
 
+    it('array case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("inferSample.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const method = file?.getDefaultClass().getMethodWithName('testArray');
+        const stmt = method?.getCfg().getStmts()[2];
+        assert.isTrue(stmt instanceof ArkAssignStmt);
+        const type = (stmt as ArkAssignStmt).getLeftOp().getType();
+        assert.isTrue(type instanceof ArrayType);
+        assert.isTrue((type as ArrayType).getBaseType() instanceof NumberType);
+    })
+
 
     it('demo case', () => {
         const fileId = new FileSignature();
@@ -74,6 +87,13 @@ describe("Infer Array Test", () => {
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+    })
+
+    it('supperClass Test case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("B.ets");
+        fileId.setProjectName(projectScene.getProjectName());
+        assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('ClassB')?.getSuperClass());
     })
 
     it('all case', () => {

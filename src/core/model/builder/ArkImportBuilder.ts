@@ -67,12 +67,15 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     } else if (/^@[a-z|\-]+?\//.test(from)) {
         return getOriginArkFile(im);
     } else {
-        const sdkMap = im.getDeclaringArkFile()?.getScene()?.getSdkArkFilesMap();
-        let prefix = /^@kit\./.test(from) ? '/kits/' : '/api/';
-        return getArkFileFormMap('etsSdk', prefix + from, sdkMap);
+        const scene = im.getDeclaringArkFile().getScene();
+        for (const sdkName of scene.getProjectSdkMap().keys()) {
+            const arkFile = getArkFileFormMap(processSdkPath(sdkName, from), scene.getSdkArkFilesMap());
+            if (arkFile) {
+                return arkFile;
+            }
+        }
     }
 }
-
 
 export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
     let file = getArkFile(fromInfo);
@@ -118,6 +121,20 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
     return eInfo;
 }
 
+function processSdkPath(sdkName: string, formPath: string): string {
+    let dir;
+    if (formPath.startsWith('@ohos.') || formPath.startsWith('@system.')) {
+        dir = 'api';
+    } else if (formPath.startsWith('@kit.')) {
+        dir = 'kits';
+    } else if (formPath.startsWith('@arkts.')) {
+        dir = 'arkts';
+    } else {
+        return formPath;
+    }
+    return `@${sdkName}/${dir}/${formPath}`;
+}
+
 function getArkFileFromScene(im: FromInfo, originPath: string) {
     let fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
     const scene = im.getDeclaringArkFile().getScene();
@@ -128,16 +145,17 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
         fromSignature.setFileName(fileName);
         return scene.getFile(fromSignature);
     }
-    if (projectName === 'etsSdk') {
-        return getArkFileFormMap(projectName, fileName, scene.getSdkArkFilesMap());
+    const filePath = `@${projectName}/${fileName}`;
+    if (projectName !== scene.getProjectName()) {
+        return getArkFileFormMap(filePath, scene.getSdkArkFilesMap());
     }
-    return getArkFileFormMap(projectName, fileName, scene.getFilesMap());
+    return getArkFileFormMap(filePath, scene.getFilesMap());
 }
 
-function getArkFileFormMap(projectName: string, fileName: string, map: Map<string, ArkFile>) {
-    const keyPrefix = transfer2UnixPath(`@${projectName}/${fileName}`);
+function getArkFileFormMap(filePath: string, map: Map<string, ArkFile>) {
+
     for (const suffix of fileSuffixArray) {
-        const arkFile = map.get(keyPrefix + suffix);
+        const arkFile = map.get(transfer2UnixPath(filePath) + suffix);
         if (arkFile) {
             return arkFile;
         }
@@ -163,13 +181,12 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
         if (exportInfo) {
             return setTypeForExportInfo(exportInfo);
         }
-        if (file.getName().endsWith('.d.ts')) {
+        if (/\.d\.e?ts$/.test(file.getName())) {
             return buildDefaultClassExportInfo(fromInfo, file);
         }
     }
     return file.getExportInfoBy(fromInfo.getOriginName());
 }
-
 
 function findDefaultMethodSetType(info: ExportInfo): boolean {
     let locals = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();

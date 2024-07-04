@@ -36,7 +36,7 @@ export interface ArkExport extends ArkSignature {
 
     getName(): string;
 
-    getType(): ExportType;
+    getExportType(): ExportType;
 
 }
 
@@ -66,7 +66,7 @@ export class ExportInfo implements FromInfo {
 
     private originTsPosition: LineColPosition;
     private tsSourceCode: string;
-    declaringArkFile: ArkFile;
+    private declaringArkFile: ArkFile;
 
     private constructor() {
     }
@@ -89,10 +89,6 @@ export class ExportInfo implements FromInfo {
 
     public getExportClauseType(): ExportType {
         return this.exportClauseType;
-    }
-
-    private setNameBeforeAs(nameBeforeAs: string): void {
-        this.nameBeforeAs = nameBeforeAs;
     }
 
     public getNameBeforeAs(): string | undefined {
@@ -121,27 +117,12 @@ export class ExportInfo implements FromInfo {
         return this._default;
     }
 
-    private addModifier(name: string | Decorator): void {
-        if (!this.modifiers) {
-            this.modifiers = new Set<string | Decorator>();
-        }
-        this.modifiers.add(name);
-    }
-
     public getModifiers(): Set<string | Decorator> {
         return this.modifiers;
     }
 
-    public setOriginTsPosition(originTsPosition: LineColPosition): void {
-        this.originTsPosition = originTsPosition;
-    }
-
     public getOriginTsPosition(): LineColPosition {
         return this.originTsPosition;
-    }
-
-    public setTsSourceCode(tsSourceCode: string): void {
-        this.tsSourceCode = tsSourceCode;
     }
 
     public getTsSourceCode(): string {
@@ -151,11 +132,6 @@ export class ExportInfo implements FromInfo {
     public getDeclaringArkFile(): ArkFile {
         return this.declaringArkFile;
     }
-
-    public setDeclaringArkFile(value: ArkFile): void {
-        this.declaringArkFile = value;
-    }
-
 
     public static Builder = class ArkExportBuilder {
         exportInfo: ExportInfo = new ExportInfo();
@@ -171,34 +147,37 @@ export class ExportInfo implements FromInfo {
         }
 
         public nameBeforeAs(nameBeforeAs: string): ArkExportBuilder {
-            this.exportInfo.setNameBeforeAs(nameBeforeAs);
+            this.exportInfo.nameBeforeAs = nameBeforeAs;
             return this;
         }
 
         public addModifier(name: string | Decorator): ArkExportBuilder {
-            this.exportInfo.addModifier(name);
+            if (!this.exportInfo.modifiers) {
+                this.exportInfo.modifiers = new Set<string | Decorator>();
+            }
+            this.exportInfo.modifiers.add(name);
             return this;
         }
 
         public modifiers(modifiers: Set<string | Decorator>): ArkExportBuilder {
             if (modifiers) {
-                modifiers.forEach(m => this.exportInfo.addModifier(m));
+                modifiers.forEach(m => this.addModifier(m));
             }
             return this;
         }
 
         public originTsPosition(originTsPosition: LineColPosition): ArkExportBuilder {
-            this.exportInfo.setOriginTsPosition(originTsPosition);
+            this.exportInfo.originTsPosition = originTsPosition;
             return this;
         }
 
         public tsSourceCode(tsSourceCode: string): ArkExportBuilder {
-            this.exportInfo.setTsSourceCode(tsSourceCode);
+            this.exportInfo.tsSourceCode = tsSourceCode;
             return this;
         }
 
         public declaringArkFile(value: ArkFile): ArkExportBuilder {
-            this.exportInfo.setDeclaringArkFile(value);
+            this.exportInfo.declaringArkFile = value;
             return this;
         }
 

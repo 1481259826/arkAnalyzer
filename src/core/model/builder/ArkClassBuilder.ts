@@ -24,6 +24,7 @@ import { ArkClass } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass } from './ArkMethodBuilder';
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
+import { TypeInference } from "../../common/TypeInference";
 
 const logger = Logger.getLogger();
 
@@ -50,8 +51,9 @@ export function buildDefaultArkClassFromArkNamespace(arkNamespace: ArkNamespace,
 
 export function buildNormalArkClassFromArkMethod(clsNode: ts.TypeLiteralNode,
                                                  cls: ArkClass, sourceFile: ts.SourceFile) {
-    if (cls.getDeclaringArkNamespace()) {
-        buildNormalArkClassFromArkNamespace(clsNode, cls.getDeclaringArkNamespace(), cls, sourceFile);
+    const namespace = cls.getDeclaringArkNamespace();
+    if (namespace) {
+        buildNormalArkClassFromArkNamespace(clsNode, namespace, cls, sourceFile);
     } else {
         buildNormalArkClassFromArkFile(clsNode, cls.getDeclaringArkFile(), cls, sourceFile);
     }
@@ -61,7 +63,7 @@ export function buildNormalArkClassFromArkFile(clsNode: ClassLikeNode, arkFile: 
                                                sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
     cls.setDeclaringArkFile(arkFile);
     cls.setCode(clsNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
@@ -77,7 +79,7 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode, arkN
     cls.setDeclaringArkNamespace(arkNamespace);
     cls.setDeclaringArkFile(arkNamespace.getDeclaringArkFile());
     cls.setCode(clsNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
@@ -341,6 +343,28 @@ function checkInitializer(field: ArkField, cls: ArkClass) {
             mtd.setDeclaringArkClass(anonymousClass);
             mtd.setDeclaringArkFile();
             mtd.genSignature();
+        });
+    }
+}
+
+/**
+ * convert variable which declare in file or namespace to defaultClass field
+ * @param defaultClass
+ */
+export function generateDefaultClassField(defaultClass: ArkClass) {
+    const defaultArkMethod = defaultClass?.getDefaultArkMethod();
+    if (defaultArkMethod) {
+        TypeInference.inferTypeInMethod(defaultArkMethod);
+        defaultClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
+            if (local.getName() !== 'this' && !local.getName().startsWith('$temp')) {
+                const arkField = new ArkField();
+                arkField.setFieldType(ArkField.DEFAULT_ARK_Field);
+                arkField.setDeclaringClass(defaultClass);
+                arkField.setType(local.getType());
+                arkField.setName(local.getName());
+                arkField.genSignature();
+                defaultClass.addField(arkField);
+            }
         });
     }
 }

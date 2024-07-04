@@ -59,7 +59,7 @@ export class ArkMethod implements ArkExport {
     constructor() {
     }
 
-    getType(): ExportType {
+    getExportType(): ExportType {
         return ExportType.METHOD;
     }
 
