@@ -61,8 +61,10 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     if (!from) {
         return null;
     }
-    if (/^\.{1,2}\//.test(from)) {
-        const originPath = path.resolve(path.dirname(im.getDeclaringArkFile().getFilePath()), from);
+    if (/^([^@]*\/)([^\/]*)$/.test(from)) {
+        const parentPath = /^\.{1,2}\//.test(from) ? path.dirname(im.getDeclaringArkFile().getFilePath())
+            : im.getDeclaringArkFile().getProjectDir();
+        const originPath = path.resolve(parentPath, from);
         return getArkFileFromScene(im, originPath);
     } else if (/^@[a-z|\-]+?\//.test(from)) {
         return getOriginArkFile(im);
@@ -138,13 +140,13 @@ function processSdkPath(sdkName: string, formPath: string): string {
 function getArkFileFromScene(im: FromInfo, originPath: string) {
     let fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
     const scene = im.getDeclaringArkFile().getScene();
-    const projectName = im.getDeclaringArkFile().getProjectName();
     if (/\.e?ts$/.test(originPath)) {
         const fromSignature = new FileSignature();
         fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
         fromSignature.setFileName(fileName);
         return scene.getFile(fromSignature);
     }
+    const projectName = im.getDeclaringArkFile().getProjectName();
     const filePath = `@${projectName}/${fileName}`;
     if (projectName !== scene.getProjectName()) {
         return getArkFileFormMap(filePath, scene.getSdkArkFilesMap());

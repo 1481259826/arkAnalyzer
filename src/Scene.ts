@@ -265,12 +265,9 @@ export class Scene {
     public getFile(fileSignature: FileSignature): ArkFile | null {
         if (this.projectName === fileSignature.getProjectName()) {
             return this.filesMap.get(fileSignature.toString()) || null;
-        } else if ('etsSdk' === fileSignature.getProjectName()) {
-            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
         } else {
-            logger.error("unknown file: " + fileSignature.toString());
+            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
         }
-        return null;
     }
 
     public getFiles(): ArkFile[] {
@@ -296,11 +293,10 @@ export class Scene {
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
         if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
-        } else if ('etsSdk' === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+        } else {
             const arkFile = this.sdkArkFilesMap.get(namespaceSignature.getDeclaringFileSignature().toString());
             return arkFile?.getNamespace(namespaceSignature) || null;
         }
-        return null;
     }
 
     private getNamespacesMap(): Map<string, ArkNamespace> {
@@ -321,11 +317,10 @@ export class Scene {
     public getClass(classSignature: ClassSignature): ArkClass | null {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getClassesMap().get(classSignature.toString()) || null;
-        } else if ('etsSdk' === classSignature.getDeclaringFileSignature().getProjectName()) {
+        } else {
             const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
-            return arkFile ? arkFile.getClass(classSignature) : null;
+            return arkFile?.getClass(classSignature) || null;
         }
-        return null;
     }
 
     private getClassesMap(): Map<string, ArkClass> {
