@@ -4,8 +4,10 @@ import { Local } from "../../base/Local";
 import { AbstractFieldRef } from "../../base/Ref";
 import { ArkAssignStmt, Stmt } from "../../base/Stmt";
 import { Value } from "../../base/Value";
+import { ArkMethod } from "../../model/ArkMethod";
+import { MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
-import { CallGraph } from "../CallGraph";
+import { CallGraph, Method } from "../CallGraph";
 import { Pag, PagLocalNode, PagNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
@@ -17,12 +19,14 @@ class PointerAnalysis extends AbstractAnalysis{
     private cg: CallGraph;
     private pointerPairList: PointerPair[] = [];
     private reachableMethods: Set<CSFuncID>
-    private reachableStmts: Set<Stmt>
+    private reachableStmts: Stmt[]
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         super(s)
         this.pag = p;
         this.cg = cg;
+        this.reachableStmts = []
+        this.reachableMethods = new Set()
     }
 
     public buildAnalysis(): void {
@@ -32,17 +36,16 @@ class PointerAnalysis extends AbstractAnalysis{
         while (this.pointerPairList.length != 0) {
             const pair = this.pointerPairList.shift()!
             const targetNodeID = pair[0], sourceNodeID = pair[1]
-            const targetNode = this.cg.getNode(targetNodeID) as PagNode
-            const sourceNode = this.cg.getNode(sourceNodeID) as PagNode
+            // TODO: 确认获取节点接口
+            const targetNode = this.pag.getNode(targetNodeID) as PagNode
+            const sourceNode = this.pag.getNode(sourceNodeID) as PagNode
 
             // check whether the sourceNodeID has existed in targetNodeID's pts
-            if (targetNode.getPointerSetElement().has(sourceNodeID)) {
+            if (targetNode.getPointerSet().has(sourceNodeID)) {
                 continue
             }
 
-            this.propagate(targetNode, sourceNode).forEach((pair) => {
-                this.pointerPairList.push(pair)
-            })
+            this.propagate(targetNode, sourceNode)
 
             if (targetNode instanceof PagLocalNode) {
                 this.processFieldRefStmt(targetNode)
@@ -58,53 +61,57 @@ class PointerAnalysis extends AbstractAnalysis{
                 return
             }
 
-            this.reachableMethods.add(funcID)
-            // TODO: should also add all stmt into ReachableStmt
-
             const arkMethod = this.cg.getArkMethodByFuncID(funcID.funcID)
             if (arkMethod == null) {
                 // logs
                 return 
             }
 
-            arkMethod.getBody().getCfg().getStmts().forEach((stmt) => {
-                if (stmt.containsInvokeExpr()) {
+            this.reachableMethods.add(funcID)
+            this.reachableStmts.push(...arkMethod.getCfg().getStmts())
 
+            arkMethod.getBody().getCfg().getStmts().forEach((stmt) => {
+                const invokeExpr = stmt.getInvokeExpr()
+                if (invokeExpr != undefined && invokeExpr instanceof ArkStaticInvokeExpr) {
+                    // all static invoke stmt
+                    this.processInvokePointerFlow()
                 } else if (stmt instanceof ArkAssignStmt) {
+                    // New stmt and assign stmt
                     const leftOp = stmt.getLeftOp(), rightOp = stmt.getRightOp()
                     if (!(leftOp instanceof Local)) {
                         return
                     }
 
+                    let sourceNode: PagNode, targetNode: PagNode
                     if (rightOp instanceof ArkNewExpr) {
                         // example: x = new Dog()
                         // leftOp: x, rightOp: new Dog()
-                        let sourceNode = this.pag.getOrNewNode(0, rightOp)
-                        let targetNode = this.pag.getOrNewNode(0, leftOp)
+                        sourceNode = this.pag.getOrNewNode(0, rightOp)
+                        targetNode = this.pag.getOrNewNode(0, leftOp)
 
-                        // this.addedge(sourceNode, targetNode)
                         this.pointerPairList.push([targetNode.getID(), sourceNode.getID()])
                     } else if (rightOp instanceof Local) {
                         // example: x = y
                         // leftOp: x, rightOp: y
-                         
+                        sourceNode = this.pag.getOrNewNode(0, rightOp)
+                        targetNode = this.pag.getOrNewNode(0, leftOp)
+
+                        this.pointerPairList.push([targetNode.getID(), sourceNode.getID()])
+                        this.addFakeEdge(targetNode, sourceNode)
                     }
                 }
             })
         })
     }
 
-    protected propagate(targetNode: PagNode, sourceNode: PagNode): PointerPair[] {
-        const newPointerPairList: PointerPair[] = []
-        // TODO: add pag edge between node
-        // this.addEdges(targetNodeID, sourceNodeID)
+    protected propagate(targetNode: PagNode, sourceNode: PagNode){
+        // TODO: need existence check or not?
+        targetNode.addPointerSetElement(sourceNode.getID())
 
-        // get pointer set of target node
-        targetNode.getPointerSetElement().forEach((node) => {
-            newPointerPairList.push([node, sourceNode.getID()])
-        })
-
-        return newPointerPairList
+        // TODO: get out edge of target node
+        // targetNode.getOutEdges().forEach((node) => {
+            // this.pointerPairList.push([node, sourceNode.getID()])
+        // })
     }
 
     protected processFieldRefStmt(targetNode: PagLocalNode) {
@@ -121,13 +128,15 @@ class PointerAnalysis extends AbstractAnalysis{
                 // x = y.f
                 const targetNode = this.pag.getOrNewNode(0, leftOp)
                 const sourceNode = this.pag.getOrNewNode(0, fieldMap.UseRef)
-                // TODO: addEdge
+
+                this.addFakeEdge(targetNode, sourceNode)
             } else if (fieldMap.DefRef != undefined) {
                 // y.f = x
                 // 3AC should not allow both two situations
                 const targetNode = this.pag.getOrNewNode(0, fieldMap.DefRef)
                 const sourceNode = this.pag.getOrNewNode(0, rightOp)
-                // TODO: addEdge
+
+                this.addFakeEdge(targetNode, sourceNode)
             }
         })
     }
@@ -145,24 +154,39 @@ class PointerAnalysis extends AbstractAnalysis{
                 return;
             }
 
-            // TODO: get ArkMethod according to invokeExpr, get current Method
-            // targetMethod = this.dispatch(invokeExpr)
+            // get ArkMethod according to invokeExpr, get current Method
+            let targetMethod = this.dispatchMethod(invokeExpr)
+            if (targetMethod == undefined) {
+                return
+            }
 
-            // TODO: get new call site context
-            // newContext = 
-
-            // TODO: add method `this` to processList
+            // TODO: get sourceMethod and pass the param to flow method
+            this.processInvokePointerFlow()
         })
     }
 
-    protected processInvokeFlow() {
-        // TODO: check whether call relation has been recorded in CG
+    protected processInvokePointerFlow(sourceMethod: MethodSignature, targetMethod: MethodSignature) {
+        // TODO: get new call site context, 
+        // newContext = 
 
-        // TODO: add pag edge
+        if (!targetMethod.isStatic()) {
+            // TODO: instance invoke: add method `this` to processList
+        }
+        // TODO: check whether call relation has been recorded in CG
+        if (this.cg.hasEdge()) {
+            return
+        }
+
+        // TODO: add CG edge
+        // this.cg.
+        // TODO: add target method to reachable
+        // this.addReachable()
+
+        // TODO: add pag edge: param, return val
     }
 
-    protected dispatch(invokeExpr: AbstractInvokeExpr) {
-
+    protected dispatchMethod(invokeExpr: AbstractInvokeExpr): ArkMethod | undefined {
+        return this.resolveInvokeExpr(invokeExpr)
     }
 
     protected getFieldRef(stmt: ArkAssignStmt) {
@@ -180,6 +204,39 @@ class PointerAnalysis extends AbstractAnalysis{
             fieldRefMap.DefRef = def
         }
         return fieldRefMap
+    }
+
+    /**
+     * only propagate pointer, pag edges have been created before
+     * @param dst pag node that will receive new pointer
+     * @param src pag node that provide pointer
+     */
+    protected addFakeEdge(dst: PagNode, src: PagNode) {
+        dst.getPointerSet().forEach((node) => {
+            this.pointerPairList.push([node, src.getID()])
+        })
+    }
+
+    public propagetePointerSet() {
+        while (this.pointerPairList.length != 0) {
+            const pair = this.pointerPairList.shift()!
+            const targetNodeID = pair[0], sourceNodeID = pair[1]
+
+            const targetNode = this.pag.getNode(targetNodeID) as PagNode
+
+            if (targetNode.getPointerSet().has(sourceNodeID)) {
+                continue
+            }
+
+            // add node to pointer set
+            targetNode.addPointerSetElement(sourceNodeID)
+
+            // propagate 获取到全部出边指向的节点
+            targetNode.getOutEdges().forEach((edge) => {
+                const node: NodeID = 0
+                this.pointerPairList.push([node, sourceNodeID])
+            })
+        }
     }
 
 }

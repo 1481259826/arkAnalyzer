@@ -83,7 +83,6 @@ export class PagBuilder {
         for (let stmt of arkMethod.getCfg().getStmts()){
             logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
-
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
                 if (kind != PagEdgeKind.Unknown) {

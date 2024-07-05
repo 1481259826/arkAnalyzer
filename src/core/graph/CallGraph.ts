@@ -183,6 +183,7 @@ export class CallGraph extends BaseGraph {
     public getArkMethodByFuncID(id: FuncID) : ArkMethod| null{
         let method = this.getMethodByFuncID(id);
         if (method != null) {
+            // TODO: SDK Method search
             return this.scene.getMethod(method);
         }
 
