@@ -28,7 +28,8 @@ let config: SceneConfig = new SceneConfig()
 config.buildFromJson("./tests/resources/callgraph/callGraphConfigUnix.json");
 Logger.setLogLevel(LOG_LEVEL.INFO)
 function runScene(config: SceneConfig) {
-    let projectScene: Scene = new Scene(config);
+    let projectScene: Scene = new Scene();
+    projectScene.buildSceneFromProjectDir(config)
     let entryPoints: MethodSignature[] = []
     // for (let method of projectScene.getMethods()) {
     //     entryPoints.push(method.getSignature())
@@ -76,9 +77,9 @@ function runScene(config: SceneConfig) {
     //         console.log("methods: "+methods)
     //     }
     // }
-    // let callGraph = projectScene.makeCallGraphCHA(entryPoints)
+    let callGraph = projectScene.makeCallGraphCHA(entryPoints)
     // let callGraph = projectScene.makeCallGraphRTA(entryPoints)
-    let callGraph = projectScene.makeCallGraphVPA(entryPoints)
+    // let callGraph = projectScene.makeCallGraphVPA(entryPoints)
     let methods = callGraph.getMethods()
     let calls = callGraph.getCalls()
     printCallGraphDetails(methods, calls, config.getTargetProjectDirectory())

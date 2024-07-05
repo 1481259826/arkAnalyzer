@@ -75,7 +75,7 @@ export class PagNode extends BaseNode {
     private readInEdges: PagEdgeSet;
     private readOutEdges: PagEdgeSet;
     private writeInEdges: PagEdgeSet;
-    private wirteOutEdges: PagEdgeSet;
+    private writeOutEdges: PagEdgeSet;
 
     constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value) {
         super(id, 0);
@@ -127,7 +127,7 @@ export class PagNode extends BaseNode {
     }
 
     public addWriteOutEdge(e: LoadPagEdge): void {
-        this.wirteOutEdges.add(e);
+        this.writeOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
@@ -135,8 +135,21 @@ export class PagNode extends BaseNode {
         return this.value
     }
 
-    public getPointerSetElement(): Set<NodeID> {
+    public getPointerSet(): Set<NodeID> {
         return this.pointerSet
+    }
+
+    public addPointerSetElement(node: NodeID) {
+        this.pointerSet.add(node)
+    }
+
+    public getOutEdges() {
+        return {
+            AddressEdge: this.addressOutEdges,
+            CopyEdge: this.copyOutEdges,
+            ReadEdge: this.readOutEdges,
+            WriteEdge: this.writeOutEdges
+        }
     }
 }
 
