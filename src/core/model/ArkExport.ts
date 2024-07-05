@@ -55,7 +55,7 @@ export interface FromInfo {
  */
 export class ExportInfo implements FromInfo {
 
-    private modifiers: Set<string | Decorator>;
+    private modifiers: Set<string | Decorator> = new Set();
     private _default: boolean;
     private nameBeforeAs: string | undefined;
     private exportClauseName: string;
