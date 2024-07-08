@@ -123,9 +123,9 @@ class ArkIRTransformerTest {
                     this.printStmts(body);
 
                     logger.error('-- locals:');
-                    for (const local of arkMethod.getBody().getLocals()) {
+                    arkMethod.getBody().getLocals().forEach(local => {
                         logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    }
+                    });
                 }
             }
         }

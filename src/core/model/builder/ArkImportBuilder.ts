@@ -195,15 +195,12 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
 }
 
 function findDefaultMethodSetType(info: ExportInfo): boolean {
-    let locals = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
-    if (locals) {
-        for (const local of locals) {
-            if (local.getName() === info.getOriginName()) {
-                info.setExportClauseType(ExportType.LOCAL);
-                info.setTypeSignature(local);
-                return true;
-            }
-        }
+    let local = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals()
+        .get(info.getOriginName());
+    if (local) {
+        info.setExportClauseType(ExportType.LOCAL);
+        info.setTypeSignature(local);
+        return true;
     }
     return false;
 }

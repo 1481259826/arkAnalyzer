@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import webview from "@ohos.web.webview";
+import i18n from "@ohos.i18n";
 
 export function something() {
     webview.WebviewController.setWebDebuggingAccess(false);
@@ -21,8 +22,13 @@ export function something() {
 }
 
 export function some() {
-    new dfs();
+    let calendar: i18n.Calendar = i18n.getCalendar('gregory');
+    calendar.getTimeZone();
+    return new dfs();
 }
+
+let calendar = i18n.getCalendar(i18n.getSystemLocale());
+calendar.getTimeZone();
 
 export default class dfs {
 

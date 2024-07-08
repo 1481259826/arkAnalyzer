@@ -584,11 +584,11 @@ export class Scene {
             const parentMap: Map<ArkNamespace, ArkNamespace | ArkFile> = new Map();
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
-            for (const local of file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+            file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
                 if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                     globalLocals.push(local);
                 }
-            }
+            });
             globalVariableMap.set(file.getFileSignature(), globalLocals);
             for (const ns of file.getNamespaces()) {
                 namespaceStack.push(ns);
@@ -599,11 +599,11 @@ export class Scene {
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
-                for (const local of ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+                ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
                     if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                         nsGlobalLocals.push(local);
                     }
-                }
+                });
                 globalVariableMap.set(ns.getNamespaceSignature(), nsGlobalLocals);
                 if (ns.getNamespaces().length == 0) {
                     finalNamespaces.push(ns);
@@ -619,13 +619,8 @@ export class Scene {
                 const finalNS = finalNamespaces.shift()!;
                 const exportLocal = [];
                 for (const exportInfo of finalNS.getExportInfos()) {
-                    if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
-                        for (const local of finalNS.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
-                            if (local.getName() == exportInfo.getExportClauseName()) {
-                                exportLocal.push(local);
-                                break;
-                            }
-                        }
+                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getTypeSignature()) {
+                        exportLocal.push(exportInfo.getTypeSignature() as Local);
                     }
                 }
                 const parent = parentMap.get(finalNS)!;

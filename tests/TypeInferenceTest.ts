@@ -57,9 +57,9 @@ export class TypeInferenceTest {
                 logger.error('========= arkClass:', arkClass.getName(), ' =======');
                 for (const arkMethod of arkClass.getMethods()) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
-                    for (const local of arkMethod.getBody().getLocals()) {
+                    arkMethod.getBody().getLocals().forEach(local => {
                         logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    }
+                    });
                 }
             }
         }
@@ -101,9 +101,9 @@ export class TypeInferenceTest {
                     // this.printStmts(body);
 
                     logger.error('-- locals:');
-                    for (const local of arkMethod.getBody().getLocals()) {
+                    arkMethod.getBody().getLocals().forEach(local => {
                         logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    }
+                    });
                 }
             }
         }

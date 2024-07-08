@@ -19,7 +19,7 @@ import { MethodSignature } from './ArkSignature';
 import { Stmt } from '../base/Stmt';
 
 export class ArkBody {
-    private locals: Set<Local>;
+    private locals: Map<string, Local>;
     private originalCfg: Cfg;
     private cfg: Cfg;
     private methodSignature: MethodSignature;
@@ -27,18 +27,21 @@ export class ArkBody {
 
     constructor(methodSignature: MethodSignature, locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>) {
         this.methodSignature = methodSignature;
-        this.locals = locals;
+        this.setLocals(locals);
         this.originalCfg = originalCfg;
         this.cfg = cfg;
         this.stmtToOriginalStmt = stmtToOriginalStmt;
     }
 
-    public getLocals(): Set<Local> {
+    public getLocals(): Map<string, Local> {
         return this.locals;
     }
 
     public setLocals(locals: Set<Local>): void {
-        this.locals = locals;
+        if (!this.locals) {
+            this.locals = new Map<string, Local>();
+        }
+        locals.forEach(local => this.locals.set(local.getName(), local));
     }
 
     public getCfg(): Cfg {
