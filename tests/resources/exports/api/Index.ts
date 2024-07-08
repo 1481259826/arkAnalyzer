@@ -12,18 +12,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import webview from "@ohos.web.webview";
 
-export function something() {
-    webview.WebviewController.setWebDebuggingAccess(false);
-    const controller: webview.WebviewController = new webview.WebviewController();
-    controller.loadUrl('https://www.example.com/cn');
-}
-
-export function some() {
-    new dfs();
-}
-
-export default class dfs {
-
-}
+export { default as Constants } from '../else'

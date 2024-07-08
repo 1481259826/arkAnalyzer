@@ -319,6 +319,10 @@ export class Scene {
             return this.getClassesMap().get(classSignature.toString()) || null;
         } else {
             const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
+            const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
+            if (namespaceSignature) {
+                return arkFile?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
+            }
             return arkFile?.getClass(classSignature) || null;
         }
     }

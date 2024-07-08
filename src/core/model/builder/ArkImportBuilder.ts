@@ -24,6 +24,7 @@ import { ExportInfo, ExportType, FromInfo } from "../ArkExport";
 import { FileSignature } from "../ArkSignature";
 import Logger from "../../../utils/logger";
 import { transfer2UnixPath } from "../../../utils/pathTransfer";
+import { FileUtils } from "../../../utils/FileUtils";
 
 const logger = Logger.getLogger();
 const moduleMap: Map<string, string> = new Map<string, string>();
@@ -138,7 +139,10 @@ function processSdkPath(sdkName: string, formPath: string): string {
 }
 
 function getArkFileFromScene(im: FromInfo, originPath: string) {
-    let fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
+    if (FileUtils.isDirectory(originPath)) {
+        originPath = path.join(originPath, FileUtils.getIndexFileName(originPath));
+    }
+    const fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
     const scene = im.getDeclaringArkFile().getScene();
     if (/\.e?ts$/.test(originPath)) {
         const fromSignature = new FileSignature();
