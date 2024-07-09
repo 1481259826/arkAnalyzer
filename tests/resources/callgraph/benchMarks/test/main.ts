@@ -20,3 +20,4 @@ export function func1(num: number) {
 }
 
 func1(1)
+console.log(1)
