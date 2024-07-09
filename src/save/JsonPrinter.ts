@@ -435,7 +435,10 @@ export class JsonPrinter extends Printer {
         } else {
             return {
                 _: 'UNKNOWN_VALUE',
-                // value, // TODO
+                // TODO: add simple 'value' field here to be able to see the "unknown" value
+                //       currently not possible due to circular structure
+                //       which cannot be serialized via `JSON.stringify`
+                // value,
             };
         }
     }
