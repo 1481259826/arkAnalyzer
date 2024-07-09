@@ -40,17 +40,17 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     private CHAtool: ClassHierarchyAnalysisAlgorithm
     public options: PointerAnalysisOptions
 
-    constructor(scene: Scene, options: PointerAnalysisOptions) {
+    constructor(scene: Scene) {
         super(scene)
         this.workList = []
         this.reachableStmts = []
         this.reachableMethods = []
         this.pointerFlowGraph = new PointerFlowGraph()
         this.CHAtool = this.scene.scene.makeCallGraphCHA([]) as ClassHierarchyAnalysisAlgorithm
-        this.options = options
+        // this.options = options
     }
 
-    public loadCallGraph(entryPoints: MethodSignature[], options: {callSiteDepth: number}) {
+    public loadCallGraph(entryPoints: MethodSignature[]) {
         // ModifyCallSiteDepth(options.callSiteDepth)
         this.processWorkList(entryPoints);
         
