@@ -147,7 +147,7 @@ export class JsonPrinter extends Printer {
     private serializeType(type: Type): any {
         if (type === undefined) {
             return {
-                "_": "UNKNOWN"
+                "_": "UnknownType"
             };
         }
 
@@ -227,7 +227,7 @@ export class JsonPrinter extends Printer {
             };
         } else {
             return {
-                "_": "UNKNOWN",
+                "_": "UNKNOWN_TYPE",
                 "type": type.toString(),
             };
         }
@@ -444,7 +444,7 @@ export class JsonPrinter extends Printer {
             };
         } else {
             return {
-                _: 'UNKNOWN',
+                _: 'UNKNOWN_VALUE',
                 // value, // TODO
             };
         }
@@ -497,7 +497,7 @@ export class JsonPrinter extends Printer {
             };
         } else {
             return {
-                _: 'UNKNOWN',
+                _: 'UNKNOWN_STMT',
                 stmt,
             };
         }
