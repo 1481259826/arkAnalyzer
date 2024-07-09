@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import {A, Dog as Cat, Main, Cat as NotCat} from './lib/a'
-import {B as C, C as Class, invokeParam} from "./lib/b";
-import { MacDonlad, fxxkkkkk } from './lib/c';
+// import {A, Dog as Cat, Main, Cat as NotCat} from './lib/a'
+// import {B as C, C as Class, invokeParam} from "./lib/b";
+// import { MacDonlad, fxxkkkkk } from './lib/c';
 // import {func1} from "./temp/a";
 // import taskpool from '@ohos.taskpool';
 // // namespace temp_temp {
@@ -86,3 +86,8 @@ import { MacDonlad, fxxkkkkk } from './lib/c';
 // MacDonlad.num = new Cat()
 // MacDonlad.num = new Cat()
 // let num = MacDonlad.num
+import { Type } from 'class-transformer'
+class A {
+    @Type(() => TestA, {passThrough: true})
+    num: number = 1
+}

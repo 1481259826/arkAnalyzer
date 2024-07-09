@@ -35,8 +35,7 @@ export class CallGraphBuilder {
         }
 
         for (const method of methods) {
-            let cfg = method.getCfg();
-            let stmts = cfg.getStmts()
+            let stmts = method.getCfg().getStmts()
             for (const stmt of stmts) {
                 let invokeExpr = stmt.getInvokeExpr();
                 if (invokeExpr == undefined) {
@@ -44,6 +43,7 @@ export class CallGraphBuilder {
                 }
 
                 let callee: Method | undefined = this.getDCCallee(invokeExpr);
+                // abstract method will also be added into direct cg
                 if (callee != undefined) {
                     this.cg.addDirectCallEdge(method.getSignature(), callee, stmt);
                 }
@@ -72,5 +72,15 @@ export class CallGraphBuilder {
         let nodesIter = this.cg.getNodesIter();
         let entries = Array.from(nodesIter).filter(node => node.hasIncomingEdges() == false).map(node => node.getID());
         this.cg.setEntries(entries);
+    }
+
+    public buildClassHierarchyAnalysis() {
+        // CHA
+
+    }
+
+    public buildRapidTypeAnalysis() {
+        // RTA
+
     }
 }

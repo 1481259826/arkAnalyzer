@@ -13,22 +13,24 @@
  * limitations under the License.
  */
 
-import { CallGraph, CallSite, FuncID, CallGraphNode } from '../CallGraph';
+import { CallGraph, FuncID, CallGraphNode } from '../CallGraph';
 import { Pag, FuncPag, PagNode, PagEdgeKind } from '../Pag'
 import { Scene } from '../../../Scene'
-import { Stmt, ArkInvokeStmt, ArkAssignStmt } from '../../base/Stmt'
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { Stmt, ArkAssignStmt } from '../../base/Stmt'
+import { ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
 import { ContextID } from '../../pta/Context';
 import { ArkMethod } from '../../model/ArkMethod';
-import Logger, { LOG_LEVEL } from "../../../utils/logger";
+import Logger from "../../../utils/logger";
 import { Local } from '../../base/Local';
+import { NodeID } from '../BaseGraph';
 
 const logger = Logger.getLogger();
+type PointerPair = [NodeID, NodeID]
 
-class CSFuncID{
+export class CSFuncID{
     public cid: ContextID;
     public funcID: FuncID;
     constructor(cid:ContextID, fid: FuncID ) {
@@ -83,7 +85,6 @@ export class PagBuilder {
         for (let stmt of arkMethod.getCfg().getStmts()){
             logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
-
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
                 if (kind != PagEdgeKind.Unknown) {
