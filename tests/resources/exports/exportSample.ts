@@ -15,6 +15,7 @@
 
 import { cc } from "./test";
 import dfs, { something } from "./else";
+import { Constants } from "./api";
 
 export * as z from './test'; //kind 278
 
@@ -44,7 +45,7 @@ export type MyType = string;
 export namespace MyNameSpace {
 
     export function doa() {
-
+        return new Constants();
     }
 }
 

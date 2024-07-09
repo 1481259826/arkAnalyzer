@@ -85,7 +85,7 @@ export class SourceBody implements StmtPrinterContext {
         return ModelUtils.getClass(this.method, signature);
     }
 
-    public getLocals(): Set<Local> {
+    public getLocals(): Map<string, Local> {
         return this.arkBody.getLocals();
     }
 

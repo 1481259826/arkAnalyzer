@@ -356,7 +356,9 @@ export function generateDefaultClassField(defaultClass: ArkClass) {
     if (defaultArkMethod) {
         TypeInference.inferTypeInMethod(defaultArkMethod);
         defaultClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
-            if (local.getName() !== 'this' && !local.getName().startsWith('$temp')) {
+            if (local.getName().startsWith('$temp') || defaultClass.getDeclaringArkFile().getImportInfoBy(local.getName())
+                || local.getName() === 'this') {
+            } else {
                 const arkField = new ArkField();
                 arkField.setFieldType(ArkField.DEFAULT_ARK_Field);
                 arkField.setDeclaringClass(defaultClass);

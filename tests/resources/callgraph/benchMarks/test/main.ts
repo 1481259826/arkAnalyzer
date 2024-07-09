@@ -12,24 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import webview from "@ohos.web.webview";
-import i18n from "@ohos.i18n";
 
-export function something() {
-    webview.WebviewController.setWebDebuggingAccess(false);
-    const controller: webview.WebviewController = new webview.WebviewController();
-    controller.loadUrl('https://www.example.com/cn');
-}
-
-export function some() {
-    let calendar: i18n.Calendar = i18n.getCalendar('gregory');
-    calendar.getTimeZone();
-    return new dfs();
-}
-
-let calendar = i18n.getCalendar(i18n.getSystemLocale());
-calendar.getTimeZone();
-
-export default class dfs {
+export function func1(num: number) {
+    console.log("fucn1(){")
+    console.log("}")
 
 }
+
+func1(1)
+console.log(1)

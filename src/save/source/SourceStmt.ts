@@ -42,7 +42,8 @@ export interface StmtPrinterContext extends TransformerContext {
     getStmtReader(): StmtReader;
     setTempCode(temp: string, code: string): void;
     hasTempVisit(temp: string): boolean;
-    getLocals(): Set<Local>;
+
+    getLocals(): Map<string, Local>;
     defineLocal(local: Local): void;
     isLocalDefined(local: Local): boolean;
     isInDefaultMethod(): boolean;
@@ -183,7 +184,7 @@ export class SourceAssignStmt extends SourceStmt {
         } else {
             if (
                 this.leftOp instanceof Local &&
-                this.context.getLocals().has(this.leftOp) &&
+                this.context.getLocals().has(this.leftOp.getName()) &&
                 !this.isLocalTempValue(this.leftOp)
             ) {
                 if (this.context.isLocalDefined(this.leftOp)) {
