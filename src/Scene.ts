@@ -265,12 +265,9 @@ export class Scene {
     public getFile(fileSignature: FileSignature): ArkFile | null {
         if (this.projectName === fileSignature.getProjectName()) {
             return this.filesMap.get(fileSignature.toString()) || null;
-        } else if ('etsSdk' === fileSignature.getProjectName()) {
-            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
         } else {
-            logger.error("unknown file: " + fileSignature.toString());
+            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
         }
-        return null;
     }
 
     public getFiles(): ArkFile[] {
@@ -296,11 +293,10 @@ export class Scene {
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
         if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
-        } else if ('etsSdk' === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+        } else {
             const arkFile = this.sdkArkFilesMap.get(namespaceSignature.getDeclaringFileSignature().toString());
             return arkFile?.getNamespace(namespaceSignature) || null;
         }
-        return null;
     }
 
     private getNamespacesMap(): Map<string, ArkNamespace> {
@@ -321,11 +317,14 @@ export class Scene {
     public getClass(classSignature: ClassSignature): ArkClass | null {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getClassesMap().get(classSignature.toString()) || null;
-        } else if ('etsSdk' === classSignature.getDeclaringFileSignature().getProjectName()) {
+        } else {
             const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
-            return arkFile ? arkFile.getClass(classSignature) : null;
+            const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
+            if (namespaceSignature) {
+                return arkFile?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
+            }
+            return arkFile?.getClass(classSignature) || null;
         }
-        return null;
     }
 
     private getClassesMap(): Map<string, ArkClass> {
@@ -585,11 +584,11 @@ export class Scene {
             const parentMap: Map<ArkNamespace, ArkNamespace | ArkFile> = new Map();
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
-            for (const local of file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+            file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
                 if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                     globalLocals.push(local);
                 }
-            }
+            });
             globalVariableMap.set(file.getFileSignature(), globalLocals);
             for (const ns of file.getNamespaces()) {
                 namespaceStack.push(ns);
@@ -600,11 +599,11 @@ export class Scene {
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
-                for (const local of ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+                ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
                     if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                         nsGlobalLocals.push(local);
                     }
-                }
+                });
                 globalVariableMap.set(ns.getNamespaceSignature(), nsGlobalLocals);
                 if (ns.getNamespaces().length == 0) {
                     finalNamespaces.push(ns);
@@ -620,13 +619,8 @@ export class Scene {
                 const finalNS = finalNamespaces.shift()!;
                 const exportLocal = [];
                 for (const exportInfo of finalNS.getExportInfos()) {
-                    if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
-                        for (const local of finalNS.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
-                            if (local.getName() == exportInfo.getExportClauseName()) {
-                                exportLocal.push(local);
-                                break;
-                            }
-                        }
+                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getTypeSignature()) {
+                        exportLocal.push(exportInfo.getTypeSignature() as Local);
                     }
                 }
                 const parent = parentMap.get(finalNS)!;

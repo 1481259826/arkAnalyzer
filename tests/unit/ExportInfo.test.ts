@@ -15,9 +15,7 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from "../../src/Config";
-import { Scene } from "../../src/Scene";
-import { FileSignature } from "../../src/core/model/ArkSignature";
+import { FileSignature, Scene, SceneConfig } from "../../src";
 
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
@@ -45,11 +43,32 @@ describe("export Test", () => {
         assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('d')?.getSuperClass());
     })
 
+    it('import index case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("exportSample.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        assert.isNotNull(projectScene.getFile(fileId)?.getImportInfoBy('Constants')?.getLazyExportInfo());
+    })
+
     it('sdk case', () => {
         const fileId = new FileSignature();
         fileId.setFileName("test.ts");
         fileId.setProjectName(projectScene.getProjectName());
         assert.isDefined(projectScene.getFile(fileId)?.getImportInfoBy('hilog')?.getLazyExportInfo());
+    })
+
+    it('namespace case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("else.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const stmts = projectScene.getFile(fileId)?.getDefaultClass()
+            .getMethodWithName('something')?.getCfg().getStmts();
+        assert.isNotEmpty(stmts);
+        if (stmts) {
+            assert.equal(stmts[2].toString(), 'staticinvoke <@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.[static]setWebDebuggingAccess(boolean)>(false)');
+            assert.equal(stmts[6].toString(), 'instanceinvoke controller.<@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.loadUrl(string|Resource, Array)>(\'https://www.example.com/cn\')')
+        }
+
     })
 
     it('all case', () => {
@@ -66,11 +85,9 @@ describe("export Test", () => {
 
 describe("function Test", () => {
     it('debug case', () => {
-        const s = 'D:/test/sfs.test'
-        let lw = s.replace(/\/*$/, '');
-        assert.isTrue(/^@\w+\./.test('@ohos.hilog'))
-        assert.isTrue(/^@\w+\./.test('@hwos.hilog'))
-        assert.isTrue(/\.e?ts$/.test('ets.d.ts'))
-        assert.isTrue(/\.e?ts$/.test('ts.d.ets'))
+
+        assert.isTrue(/^index/i.test('Index.ets'));
+        assert.isTrue(/^index/i.test('index.ets'));
+        assert.isTrue(/^index/i.test('INdex.ts'));
     })
 })
