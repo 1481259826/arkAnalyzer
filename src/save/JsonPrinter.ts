@@ -52,7 +52,6 @@ export class JsonPrinter extends Printer {
                 .map((info) => this.serializeImportInfo(info)),
             exportInfos: arkFile
                 .getExportInfos().map((info) => this.serializeExportInfo(info)),
-            // Add other fields as necessary
         };
     }
 
@@ -60,7 +59,6 @@ export class JsonPrinter extends Printer {
         return {
             name: ns.getName(),
             classes: ns.getClasses().map((cls) => this.serializeClass(cls)),
-            // Add other fields as necessary
         };
     }
 
@@ -229,7 +227,6 @@ export class JsonPrinter extends Printer {
     private serializeClassSignature(clazz: ClassSignature): any {
         return {
             name: clazz.getClassName(),
-            // type: this.serializeType(clazz.getType()),
         };
     }
 
