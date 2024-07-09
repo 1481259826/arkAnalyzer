@@ -12,7 +12,6 @@ import { Constant } from "../core/base/Constant";
 import { MethodParameter } from "../core/model/builder/ArkMethodBuilder";
 import { ImportInfo } from "../core/model/ArkImport";
 import { ExportInfo } from "../core/model/ArkExport";
-import { Decorator } from "../core/base/Decorator";
 import { ClassSignature, FieldSignature, MethodSignature } from "../core/model/ArkSignature";
 import { LineColPosition } from "../core/base/Position";
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from "../core/base/Ref";
@@ -68,9 +67,7 @@ export class JsonPrinter extends Printer {
     private serializeClass(cls: ArkClass): any {
         return {
             signature: this.serializeClassSignature(cls.getSignature()),
-            modifiers: Array.from(cls.getModifiers()).map(modifier =>
-                modifier instanceof Decorator ? modifier.getKind() : modifier
-            ),
+            modifiers: Array.from(cls.getModifiers()),
             typeParameters: cls.getTypeParameter().map((type) => this.serializeType(type)),
             superClassName: cls.getSuperClassName(),
             implementedInterfaceNames: cls.getImplementedInterfaceNames(),
@@ -93,7 +90,7 @@ export class JsonPrinter extends Printer {
     private serializeMethod(method: ArkMethod): any {
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
-            modifiers: Array.from(method.getModifiers()), // TODO: handle 'Decorator's
+            modifiers: Array.from(method.getModifiers()),
             typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
             body: {
                 locals: Array.from(method.getBody().getLocals()).map(local => this.serializeLocal(local)),
@@ -116,9 +113,7 @@ export class JsonPrinter extends Printer {
             importType: importInfo.getImportType(),
             importFrom: importInfo.getImportFrom(),
             nameBeforeAs: importInfo.getNameBeforeAs(),
-            modifiers: Array.from(importInfo.getModifiers()).map(modifier =>
-                modifier instanceof Decorator ? modifier.getKind() : modifier
-            ),
+            modifiers: Array.from(importInfo.getModifiers()),
             originTsPosition: this.serializeLineColPosition(importInfo.getOriginTsPosition()),
         };
     }
@@ -130,9 +125,7 @@ export class JsonPrinter extends Printer {
             exportFrom: exportInfo.getExportFrom(),
             nameBeforeAs: exportInfo.getNameBeforeAs(),
             isDefault: exportInfo.isDefault(),
-            modifiers: Array.from(exportInfo.getModifiers()).map(modifier =>
-                modifier instanceof Decorator ? modifier.getKind() : modifier
-            ),
+            modifiers: Array.from(exportInfo.getModifiers()),
             originTsPosition: this.serializeLineColPosition(exportInfo.getOriginTsPosition()),
         };
     }
