@@ -74,7 +74,7 @@ class PointerAnalysis extends AbstractAnalysis{
                 const invokeExpr = stmt.getInvokeExpr()
                 if (invokeExpr != undefined && invokeExpr instanceof ArkStaticInvokeExpr) {
                     // all static invoke stmt
-                    this.processInvokePointerFlow()
+                    // this.processInvokePointerFlow()
                 } else if (stmt instanceof ArkAssignStmt) {
                     // New stmt and assign stmt
                     const leftOp = stmt.getLeftOp(), rightOp = stmt.getRightOp()
@@ -161,7 +161,7 @@ class PointerAnalysis extends AbstractAnalysis{
             }
 
             // TODO: get sourceMethod and pass the param to flow method
-            this.processInvokePointerFlow()
+            // this.processInvokePointerFlow()
         })
     }
 
@@ -169,13 +169,13 @@ class PointerAnalysis extends AbstractAnalysis{
         // TODO: get new call site context, 
         // newContext = 
 
-        if (!targetMethod.isStatic()) {
-            // TODO: instance invoke: add method `this` to processList
-        }
-        // TODO: check whether call relation has been recorded in CG
-        if (this.cg.hasEdge()) {
-            return
-        }
+        // if (!targetMethod.isStatic()) {
+        //     // TODO: instance invoke: add method `this` to processList
+        // }
+        // // TODO: check whether call relation has been recorded in CG
+        // if (this.cg.hasEdge()) {
+        //     return
+        // }
 
         // TODO: add CG edge
         // this.cg.
@@ -232,10 +232,10 @@ class PointerAnalysis extends AbstractAnalysis{
             targetNode.addPointerSetElement(sourceNodeID)
 
             // propagate 获取到全部出边指向的节点
-            targetNode.getOutEdges().forEach((edge) => {
-                const node: NodeID = 0
-                this.pointerPairList.push([node, sourceNodeID])
-            })
+            // targetNode.getOutEdges().forEach((edge) => {
+            //     const node: NodeID = 0
+            //     this.pointerPairList.push([node, sourceNodeID])
+            // })
         }
     }
 
