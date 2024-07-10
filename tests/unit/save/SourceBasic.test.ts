@@ -78,6 +78,7 @@ export let x = 1;
 export let soo = 123;
 forLoopTest();
 controlTest();
+deleteTest();
 `;
 
 const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
