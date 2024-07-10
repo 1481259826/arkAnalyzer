@@ -146,4 +146,4 @@ function processInput(input: string | number): string {
 }
 
 // Export statements
-export { Person, Student, Shape, Circle, simpleFunction, complexFunction, sum, processInput };
+export { Person, Student, Shape, Circle, simpleFunction, complexFunction, sum, fileContent, processInput };
