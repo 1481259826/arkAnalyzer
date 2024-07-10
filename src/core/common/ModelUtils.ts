@@ -179,8 +179,8 @@ export class ModelUtils {
         return null;
     }
 
-    public static getStaticMethodWithName(methodName: string, startFrom: ArkMethod): ArkMethod | null {
-        const thisClass = startFrom.getDeclaringArkClass();
+    public static getStaticMethodWithName(methodName: string, thisClass: ArkClass): ArkMethod | null {
+
         const thisNamespace = thisClass.getDeclaringArkNamespace();
         if (thisNamespace) {
             const defaultClass = thisNamespace.getClassWithName('_DEFAULT_ARK_CLASS');
@@ -191,7 +191,7 @@ export class ModelUtils {
                 }
             }
         }
-        return this.getStaticMethodInFileWithName(methodName, startFrom.getDeclaringArkFile());
+        return this.getStaticMethodInFileWithName(methodName, thisClass.getDeclaringArkFile());
     }
 
     public static getStaticMethodInFileWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {

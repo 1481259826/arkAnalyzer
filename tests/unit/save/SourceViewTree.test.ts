@@ -61,7 +61,7 @@ const CASE2_EXPECT = `namespace Case2 {
     label: string = 'Hello';
     build() {
       Column() {
-        overBuilder({paramA1: .label});
+        overBuilder({paramA1: this.label});
         Button('Click me')
         .onClick(() => {
         this.label = 'ArkUI';
@@ -182,7 +182,7 @@ struct BuilderParamTest {
   text: string = 'header';
   build() {
     Column() {
-      CustomContainer({header: .text}) {
+      CustomContainer({header: this.text}) {
       Column() {
         specificParam('testA', 'testB');
       }
