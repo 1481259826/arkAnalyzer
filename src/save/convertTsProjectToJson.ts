@@ -12,17 +12,17 @@ function convertTsProjectToJson(inputDir: string, outDir: string) {
     config.buildFromProjectDir(inputDir);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
-    console.log("Built scene.")
 
     console.log("Dumping JSON...");
     let printer = new PrinterBuilder();
     for (let f of scene.getFiles()) {
         let filepath = f.getName();
         let outPath = path.join(outDir, filepath + '.json');
-        console.log(`Converting '${filepath}' to '${outPath}'...`);
+        console.log(`Dumping ArkIR for '${filepath}' to '${outPath}'...`);
         printer.dumpToJson(f, outPath);
     }
-    console.log("Dumped JSON.");
+
+    console.log("All done!");
 }
 
 if (require.main === module) {

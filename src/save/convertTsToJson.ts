@@ -12,12 +12,13 @@ function convertTsToJson(input: string, output: string) {
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
     buildArkFileFromFile(filepath, projectDir, arkFile);
-    console.log("Created ArkFile.");
 
     console.log("Dumping JSON...");
     let printer = new PrinterBuilder();
     printer.dumpToJson(arkFile, output);
     console.log(`Dumped JSON to '${output}'`);
+
+    console.log("All done!");
 }
 
 if (require.main === module) {
