@@ -110,16 +110,21 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
             if (!found) {
                 findDefaultMethodSetType(eInfo);
             }
+            if (!found) {
+                findImportSetType(eInfo);
+            }
         }
         return eInfo;
     } else if (eInfo.getExportClauseType() === ExportType.UNKNOWN) {
-        let result = findExportInfo(eInfo);
-        if (result !== null) {
-            return result;
+        const result = findExportInfo(eInfo);
+        if (result) {
+            eInfo.setExportClauseType(result.getExportClauseType());
+            eInfo.setTypeSignature(result.getTypeSignature());
         }
-        logger.warn(eInfo.getFrom() + 'trace end at' + eInfo.getDeclaringArkFile().getFileSignature().toString());
-    } else {
-        logger.error("unknown branch" + eInfo.getTsSourceCode(), eInfo.getDeclaringArkFile().getFileSignature().toString());
+    }
+    if (!eInfo.getTypeSignature()) {
+        logger.warn(eInfo.getExportClauseName() + ' get type signature fail from ' + eInfo.getFrom() + ' at '
+            + eInfo.getDeclaringArkFile().getFileSignature().toString());
     }
     return eInfo;
 }
@@ -211,6 +216,19 @@ function findClassSetType(info: ExportInfo): boolean {
         info.setExportClauseType(ExportType.CLASS);
         info.setTypeSignature(clazz.getSignature());
         return true;
+    }
+    return false;
+}
+
+function findImportSetType(info: ExportInfo): boolean {
+    const importInfo = info.getDeclaringArkFile().getImportInfoBy(info.getOriginName());
+    if (importInfo) {
+        const result = findExportInfo(importInfo);
+        if (result) {
+            info.setExportClauseType(result.getExportClauseType());
+            info.setTypeSignature(result.getTypeSignature());
+            return true;
+        }
     }
     return false;
 }

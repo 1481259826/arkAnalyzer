@@ -45,7 +45,7 @@ import {
 } from '../../base/Expr';
 import { ClassSignature, FieldSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
 import { Local } from '../../base/Local';
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkStaticFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { Decorator } from '../../base/Decorator';
@@ -292,13 +292,19 @@ export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, metho
 export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration, sourceFile: ts.SourceFile,
                             arkInstance: ArkMethod | ArkClass | ArkField): Type {
     if (ts.isTypeReferenceNode(typeNode)) {
+        const genericTypes: Type[] = [];
+        if (typeNode.typeArguments) {
+            for (const typeArgument of typeNode.typeArguments) {
+                genericTypes.push(tsNode2Type(typeArgument, sourceFile, arkInstance));
+            }
+        }
         let referenceNodeName = typeNode.typeName;
         if (ts.isQualifiedName(referenceNodeName)) {
             let parameterTypeStr = handleQualifiedName(referenceNodeName as ts.QualifiedName);
-            return new UnclearReferenceType(parameterTypeStr);
+            return new UnclearReferenceType(parameterTypeStr, genericTypes);
         } else {
             let parameterTypeStr = referenceNodeName.text;
-            return new UnclearReferenceType(parameterTypeStr);
+            return new UnclearReferenceType(parameterTypeStr, genericTypes);
         }
     } else if (ts.isUnionTypeNode(typeNode)) {
         let unionTypePara: Type[] = [];
@@ -556,7 +562,7 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
             logger.warn('Need to build ArrayBindingPattern value.');
         }
     } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
-        // TODO
+        return new ArkThisRef(cls.getSignature().getType());
     } else if (ts.isConditionalExpression(node)) {
         // TODO
     } else if (ts.isAsExpression(node)) {

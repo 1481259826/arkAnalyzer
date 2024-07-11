@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,19 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-class C1 {
-
-    public n: number = 1;
-    public c: C1 = new C1();
-    private string = 'test';
-    private number = 123.123;
-
-    private s = this.c.toString() ?? 'testing';
-}
-
-class C2 {
-    f2(p1: C1) {
-        console.log(p1.c, p1.n);
-    }
-}
+/**
+ * @file
+ * @kit PerformanceAnalysisKit
+ */
+import bytrace from '@ohos.bytrace';
+import FaultLogger from '@ohos.faultLogger';
+import hiAppEvent from '@ohos.hiviewdfx.hiAppEvent';
+import hichecker from '@ohos.hichecker';
+import hidebug from '@ohos.hidebug';
+import hilog from '@ohos.hilog';
+import hiTraceChain from '@ohos.hiTraceChain';
+import hiTraceMeter from '@ohos.hiTraceMeter';
+export { FaultLogger, bytrace, hiAppEvent, hiTraceChain, hiTraceMeter, hichecker, hidebug, hilog };
