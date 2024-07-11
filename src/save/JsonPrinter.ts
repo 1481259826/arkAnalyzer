@@ -68,6 +68,7 @@ export class JsonPrinter extends Printer {
     private serializeNamespace(ns: ArkNamespace): any {
         return {
             name: ns.getName(),
+            namespaces: ns.getNamespaces().map((ns) => this.serializeNamespace(ns)),
             classes: ns.getClasses().map((cls) => this.serializeClass(cls)),
         };
     }
