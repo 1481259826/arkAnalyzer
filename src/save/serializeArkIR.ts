@@ -26,12 +26,11 @@ function serializeTsFile(input: string, output: string) {
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
 
-    console.log("Creating Scene...");
+    console.log("Building scene...");
     let config = new SceneConfig();
     config.buildConfig("single-file", projectDir, "", "", []);
     config.getProjectFiles().push(filepath);
     let scene = new Scene();
-    // scene.buildBasicInfo(config);
     scene.buildSceneFromProjectDir(config);
 
     let files = scene.getFiles();
@@ -75,9 +74,8 @@ function serializeTsProject(inputDir: string, outDir: string) {
     console.log("All done!");
 }
 
-const program = new Command();
-program
-    .name('script')
+const program = new Command()
+    .name('serializeArkIR')
     .description('Serialize ArkIR for TypeScript files or projects to JSON')
     .argument('<input>', 'Input file or directory')
     .argument('<output>', 'Output file or directory')
@@ -99,4 +97,5 @@ program
             process.exit(1);
         }
     });
+
 program.parse(process.argv);
