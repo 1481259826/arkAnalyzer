@@ -161,13 +161,13 @@ const JsonPrinter_simpleFunction_EXPECTED = {
             {
                 "name": "$temp0",
                 "type": {
-                    "_": "NumberType"
+                    "_": "UnknownType"
                 }
             },
             {
                 "name": "$temp1",
                 "type": {
-                    "_": "NumberType"
+                    "_": "UnknownType"
                 }
             }
         ],
@@ -369,7 +369,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                     }
                                 },
                                 "type": {
-                                    "_": "BooleanType"
+                                    "_": "UnknownType"
                                 }
                             }
                         }
@@ -406,7 +406,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                     }
                                 },
                                 "type": {
-                                    "_": "BooleanType"
+                                    "_": "UnknownType"
                                 }
                             }
                         }
@@ -426,7 +426,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "_": "Local",
                                 "name": "$temp0",
                                 "type": {
-                                    "_": "NumberType"
+                                    "_": "UnknownType"
                                 }
                             },
                             "right": {
@@ -454,7 +454,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "_": "Local",
                                 "name": "$temp1",
                                 "type": {
-                                    "_": "NumberType"
+                                    "_": "UnknownType"
                                 }
                             },
                             "right": {
@@ -464,7 +464,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                     "_": "Local",
                                     "name": "$temp0",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "UnknownType"
                                     }
                                 },
                                 "right": {
@@ -492,7 +492,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                     "_": "Local",
                                     "name": "$temp1",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "UnknownType"
                                     }
                                 },
                                 "right": {
@@ -650,25 +650,25 @@ const JsonPrinter_complexFunction_EXPECTED = {
             {
                 "name": "$temp0",
                 "type": {
-                    "_": "NumberType"
+                    "_": "UnknownType"
                 }
             },
             {
                 "name": "$temp1",
                 "type": {
-                    "_": "NumberType"
+                    "_": "UnknownType"
                 }
             },
             {
                 "name": "$temp2",
                 "type": {
-                    "_": "NumberType"
+                    "_": "UnknownType"
                 }
             },
             {
                 "name": "$temp3",
                 "type": {
-                    "_": "NumberType"
+                    "_": "UnknownType"
                 }
             }
         ],
@@ -792,7 +792,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                     }
                                 },
                                 "type": {
-                                    "_": "BooleanType"
+                                    "_": "UnknownType"
                                 }
                             }
                         }
@@ -813,7 +813,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "_": "Local",
                                 "name": "$temp2",
                                 "type": {
-                                    "_": "NumberType"
+                                    "_": "UnknownType"
                                 }
                             },
                             "right": {
@@ -841,7 +841,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "_": "Local",
                                 "name": "$temp3",
                                 "type": {
-                                    "_": "NumberType"
+                                    "_": "UnknownType"
                                 }
                             },
                             "right": {
@@ -879,14 +879,14 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                     "_": "Local",
                                     "name": "$temp2",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "UnknownType"
                                     }
                                 },
                                 "right": {
                                     "_": "Local",
                                     "name": "$temp3",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "UnknownType"
                                     }
                                 }
                             }
@@ -924,7 +924,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                     }
                                 },
                                 "type": {
-                                    "_": "BooleanType"
+                                    "_": "UnknownType"
                                 }
                             }
                         }
@@ -960,7 +960,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                     }
                                 },
                                 "type": {
-                                    "_": "BooleanType"
+                                    "_": "UnknownType"
                                 }
                             }
                         }
@@ -1058,7 +1058,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "_": "Local",
                                 "name": "$temp0",
                                 "type": {
-                                    "_": "NumberType"
+                                    "_": "UnknownType"
                                 }
                             },
                             "right": {
@@ -1086,7 +1086,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "_": "Local",
                                 "name": "$temp1",
                                 "type": {
-                                    "_": "NumberType"
+                                    "_": "UnknownType"
                                 }
                             },
                             "right": {
@@ -1124,14 +1124,14 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                     "_": "Local",
                                     "name": "$temp0",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "UnknownType"
                                     }
                                 },
                                 "right": {
                                     "_": "Local",
                                     "name": "$temp1",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "UnknownType"
                                     }
                                 }
                             }
@@ -1312,25 +1312,25 @@ const JsonPrinter_Shape_EXPECTED = {
                     {
                         "name": "$temp0",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp1",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp2",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp3",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     }
                 ],
@@ -1369,7 +1369,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp0",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -1414,7 +1414,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp1",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -1424,7 +1424,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp0",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -1442,7 +1442,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp2",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -1452,7 +1452,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp1",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -1487,7 +1487,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp3",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -1497,7 +1497,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp2",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -1515,7 +1515,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp3",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -1946,13 +1946,13 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     {
                         "name": "$temp0",
                         "type": {
-                            "_": "NumberType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp1",
                         "type": {
-                            "_": "NumberType"
+                            "_": "UnknownType"
                         }
                     }
                 ],
@@ -2154,7 +2154,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -2191,7 +2191,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -2211,7 +2211,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp0",
                                         "type": {
-                                            "_": "NumberType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -2239,7 +2239,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp1",
                                         "type": {
-                                            "_": "NumberType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -2249,7 +2249,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp0",
                                             "type": {
-                                                "_": "NumberType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -2277,7 +2277,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp1",
                                             "type": {
-                                                "_": "NumberType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -2434,25 +2434,25 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     {
                         "name": "$temp0",
                         "type": {
-                            "_": "NumberType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp1",
                         "type": {
-                            "_": "NumberType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp2",
                         "type": {
-                            "_": "NumberType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp3",
                         "type": {
-                            "_": "NumberType"
+                            "_": "UnknownType"
                         }
                     }
                 ],
@@ -2576,7 +2576,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -2597,7 +2597,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp2",
                                         "type": {
-                                            "_": "NumberType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -2625,7 +2625,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp3",
                                         "type": {
-                                            "_": "NumberType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -2663,14 +2663,14 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp2",
                                             "type": {
-                                                "_": "NumberType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
                                             "_": "Local",
                                             "name": "$temp3",
                                             "type": {
-                                                "_": "NumberType"
+                                                "_": "UnknownType"
                                             }
                                         }
                                     }
@@ -2708,7 +2708,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -2744,7 +2744,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -2842,7 +2842,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp0",
                                         "type": {
-                                            "_": "NumberType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -2870,7 +2870,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp1",
                                         "type": {
-                                            "_": "NumberType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -2908,14 +2908,14 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp0",
                                             "type": {
-                                                "_": "NumberType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
                                             "_": "Local",
                                             "name": "$temp1",
                                             "type": {
-                                                "_": "NumberType"
+                                                "_": "UnknownType"
                                             }
                                         }
                                     }
@@ -2983,25 +2983,25 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     {
                         "name": "$temp0",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp1",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp2",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     },
                     {
                         "name": "$temp3",
                         "type": {
-                            "_": "StringType"
+                            "_": "UnknownType"
                         }
                     }
                 ],
@@ -3101,7 +3101,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -3148,7 +3148,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             }
                                         },
                                         "type": {
-                                            "_": "BooleanType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -3190,7 +3190,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp2",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -3226,7 +3226,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp3",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -3236,7 +3236,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp2",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -3254,7 +3254,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp3",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
@@ -3275,7 +3275,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp0",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -3311,7 +3311,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp1",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     },
                                     "right": {
@@ -3321,7 +3321,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                             "_": "Local",
                                             "name": "$temp0",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "UnknownType"
                                             }
                                         },
                                         "right": {
@@ -3339,7 +3339,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp1",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "UnknownType"
                                         }
                                     }
                                 }
