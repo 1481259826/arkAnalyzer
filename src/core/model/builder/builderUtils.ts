@@ -292,13 +292,19 @@ export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, metho
 export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration, sourceFile: ts.SourceFile,
                             arkInstance: ArkMethod | ArkClass | ArkField): Type {
     if (ts.isTypeReferenceNode(typeNode)) {
+        const genericTypes: Type[] = [];
+        if (typeNode.typeArguments) {
+            for (const typeArgument of typeNode.typeArguments) {
+                genericTypes.push(tsNode2Type(typeArgument, sourceFile, arkInstance));
+            }
+        }
         let referenceNodeName = typeNode.typeName;
         if (ts.isQualifiedName(referenceNodeName)) {
             let parameterTypeStr = handleQualifiedName(referenceNodeName as ts.QualifiedName);
-            return new UnclearReferenceType(parameterTypeStr);
+            return new UnclearReferenceType(parameterTypeStr, genericTypes);
         } else {
             let parameterTypeStr = referenceNodeName.text;
-            return new UnclearReferenceType(parameterTypeStr);
+            return new UnclearReferenceType(parameterTypeStr, genericTypes);
         }
     } else if (ts.isUnionTypeNode(typeNode)) {
         let unionTypePara: Type[] = [];
