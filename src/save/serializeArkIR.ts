@@ -47,9 +47,14 @@ function serializeTsFile(input: string, output: string, verbose: boolean = false
     //       so we expect there is only *one* ArkFile in the scene.
     let arkFile = scene.getFiles()[0];
 
-    let outPath = fs.statSync(output).isDirectory()
-        ? path.join(output, arkFile.getName() + '.json')
-        : output;
+    let outPath: string;
+    if (fs.existsSync(output) && fs.statSync(output).isDirectory()) {
+        outPath = path.join(output, arkFile.getName() + '.json');
+    } else if (!fs.existsSync(output) && output.endsWith("/")) {
+        outPath = path.join(output, arkFile.getName() + '.json');
+    } else {
+        outPath = output;
+    }
 
     console.log(`Dumping ArkIR for '${arkFile.getName()}' to '${outPath}'...`);
     let printer = new PrinterBuilder();
@@ -61,7 +66,7 @@ function serializeTsFile(input: string, output: string, verbose: boolean = false
 function serializeTsProject(inputDir: string, outDir: string, verbose: boolean = false) {
     console.log(`Serializing TS project to JSON: '${inputDir}' -> '${outDir}'`);
 
-    if (!fs.statSync(outDir).isDirectory()) {
+    if (fs.existsSync(outDir) && !fs.statSync(outDir).isDirectory()) {
         console.error(`ERROR: Output path must be a directory.`);
         process.exit(1);
     }
