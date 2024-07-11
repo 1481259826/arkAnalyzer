@@ -51,11 +51,6 @@ export class JsonPrinter extends Printer {
     private serializeArkFile(arkFile: ArkFile): any {
         return {
             name: arkFile.getName(),
-            // absoluteFilePath: arkFile.getFilePath(),
-            // projectDir: arkFile.getProjectDir(),
-            // projectName: arkFile.getProjectName(),
-            // code: arkFile.getCode(),
-            // defaultClass: this.serializeClass(arkFile.getDefaultClass()),
             namespaces: arkFile
                 .getNamespaces()
                 .map((ns) => this.serializeNamespace(ns)),
