@@ -424,6 +424,9 @@ export class Scene {
      * because default method was finished
      */
     public inferTypes() {
+        this.getClassesMap().forEach(arkClass => {
+            arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+        })
         this.getMethodsMap().forEach(arkMethod => {
             if (!arkMethod.isDefaultArkMethod()) {
                 TypeInference.inferTypeInMethod(arkMethod);

@@ -25,7 +25,7 @@ import {
     ArkStaticFieldRef,
     ArrayType,
     ClassType,
-    NumberType
+    NumberType, StringType
 } from "../../src";
 
 describe("Infer Array Test", () => {
@@ -87,6 +87,7 @@ describe("Infer Array Test", () => {
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+        assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance())
     })
 
     it('supperClass Test case', () => {

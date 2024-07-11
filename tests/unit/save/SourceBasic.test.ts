@@ -81,7 +81,7 @@ controlTest();
 `;
 
 const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
-  private superAdd = .add;
+  private superAdd = this.add;
   add = (b: string): string => {
     return this.superAdd(b);
   };
