@@ -74,7 +74,7 @@ function serializeTsProject(inputDir: string, outDir: string) {
     console.log("All done!");
 }
 
-const program = new Command()
+export const program = new Command()
     .name('serializeArkIR')
     .description('Serialize ArkIR for TypeScript files or projects to JSON')
     .argument('<input>', 'Input file or directory')
