@@ -21,12 +21,12 @@ import { SceneConfig } from "../Config";
 import { Scene } from "../Scene";
 
 function serializeTsFile(input: string, output: string) {
-    console.log(`Converting TS file to JSON: from '${input}' to '${output}'`);
+    console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
 
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
 
-    console.log("Building scene...");
+    // console.log("Building scene...");
     let config = new SceneConfig();
     config.buildConfig("single-file", projectDir, "", "", []);
     config.getProjectFiles().push(filepath);
@@ -46,23 +46,32 @@ function serializeTsFile(input: string, output: string) {
     //       so we expect there is only *one* ArkFile in the scene.
     let arkFile = scene.getFiles()[0];
 
-    console.log(`Dumping ArkIR for '${arkFile.getName()}'...`);
-    let printer = new PrinterBuilder();
-    printer.dumpToJson(arkFile, output);
+    let outPath = fs.statSync(output).isDirectory()
+        ? path.join(output, arkFile.getName() + '.json')
+        : output;
 
-    console.log("All done!");
+    console.log(`Dumping ArkIR for '${arkFile.getName()}' to '${outPath}'...`);
+    let printer = new PrinterBuilder();
+    printer.dumpToJson(arkFile, outPath);
+
+    // console.log("All done!");
 }
 
 function serializeTsProject(inputDir: string, outDir: string) {
-    console.log(`Serializing TS project to JSON: from '${inputDir}' into '${outDir}'`);
+    console.log(`Serializing TS project to JSON: '${inputDir}' -> '${outDir}'`);
 
-    console.log("Building scene...");
+    if (!fs.statSync(outDir).isDirectory()) {
+        console.error(`ERROR: Output path must be a directory.`);
+        process.exit(1);
+    }
+
+    // console.log("Building scene...");
     let config = new SceneConfig();
     config.buildFromProjectDir(inputDir);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
 
-    console.log("Serializing to JSON...");
+    // console.log("Serializing to JSON...");
     let printer = new PrinterBuilder();
     for (let f of scene.getFiles()) {
         let filepath = f.getName();
@@ -71,7 +80,7 @@ function serializeTsProject(inputDir: string, outDir: string) {
         printer.dumpToJson(f, outPath);
     }
 
-    console.log("All done!");
+    // console.log("All done!");
 }
 
 export const program = new Command()
@@ -86,15 +95,15 @@ export const program = new Command()
             process.exit(1);
         }
 
-        let isDirectory = fs.lstatSync(input).isDirectory();
-
-        if (isDirectory && options.project) {
+        if (options.project) {
             serializeTsProject(input, output);
-        } else if (!isDirectory) {
-            serializeTsFile(input, output);
         } else {
-            console.error(`ERROR: If the input is a directory, you must provide the '-p' or '--project' flag.`);
-            process.exit(1);
+            if (fs.statSync(input).isDirectory()) {
+                console.error(`ERROR: If the input is a directory, you must provide the '-p' or '--project' flag.`);
+                process.exit(1);
+            }
+
+            serializeTsFile(input, output);
         }
     });
 
