@@ -98,4 +98,6 @@ const program = new Command()
         }
     });
 
-program.parse(process.argv);
+if (require.main === module) {
+    program.parse(process.argv);
+}
