@@ -56,7 +56,7 @@ function serializeTsFile(input: string, output: string, verbose: boolean = false
         outPath = output;
     }
 
-    console.log(`Dumping ArkIR for '${arkFile.getName()}' to '${outPath}'...`);
+    console.log(`Serializing ArkIR for '${arkFile.getName()}' to '${outPath}'...`);
     let printer = new PrinterBuilder();
     printer.dumpToJson(arkFile, outPath);
 
