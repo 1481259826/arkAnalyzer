@@ -28,7 +28,7 @@ function serializeTsFile(input: string, output: string, verbose: boolean = false
 
     if (verbose) console.log("Building scene...");
     let config = new SceneConfig();
-    config.buildConfig("single-file", projectDir, "", "", []);
+    config.buildConfig("single-file", projectDir, []);
     config.getProjectFiles().push(filepath);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
