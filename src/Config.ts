@@ -15,11 +15,7 @@
 
 import fs from "fs";
 import path from "path";
-import { spawnSync } from 'child_process';
 import Logger, { LOG_LEVEL } from "./utils/logger";
-import { removeSync } from "fs-extra";
-import { transfer2UnixPath } from "./utils/pathTransfer";
-import { fetchDependenciesFromFile } from "./utils/json5parser";
 import { getAllFiles } from "./utils/getAllFiles";
 
 const logger = Logger.getLogger();
@@ -64,14 +60,16 @@ export class SceneConfig {
 
     private projectFiles: string[] = [];
 
-    constructor() { }
+    constructor() {
+    }
 
     public buildConfig(
         targetProjectName: string,
         targetProjectDirectory: string,
         logPath: string,
         logLevel: string,
-        sdks: Sdk[]
+        sdks: Sdk[],
+        fullFilePath?: string[]
     ) {
         if (logPath) {
             this.logPath = logPath;
@@ -85,6 +83,9 @@ export class SceneConfig {
 
         this.targetProjectName = targetProjectName;
         this.targetProjectDirectory = targetProjectDirectory;
+        if (fullFilePath) {
+            this.projectFiles.push(...fullFilePath);
+        }
     }
 
     public buildFromProjectDir(targetProjectDirectory: string) {
@@ -113,8 +114,7 @@ export class SceneConfig {
                 logLevel,
                 sdks
             );
-        }
-        else {
+        } else {
             logger.error(`Your configJsonPath: "${configJsonPath}" is not exist.`);
         }
     }
