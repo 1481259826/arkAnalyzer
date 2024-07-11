@@ -94,8 +94,8 @@ export const program = new Command()
     .description('Serialize ArkIR for TypeScript files or projects to JSON')
     .argument('<input>', 'Input file or directory')
     .argument('<output>', 'Output file or directory')
-    .option('-p, --project', 'Flag to indicate the input is a project directory')
-    .option('-v, --verbose', 'Verbose output')
+    .option('-p, --project', 'Flag to indicate the input is a project directory', false)
+    .option('-v, --verbose', 'Verbose output', false)
     .action((input, output, options) => {
         if (!fs.existsSync(input)) {
             console.error(`ERROR: The input path '${input}' does not exist.`);
