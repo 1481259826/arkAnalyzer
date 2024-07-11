@@ -20,19 +20,20 @@ import { PrinterBuilder } from "./PrinterBuilder";
 import { SceneConfig } from "../Config";
 import { Scene } from "../Scene";
 
-function serializeTsFile(input: string, output: string) {
-    console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
+function serializeTsFile(input: string, output: string, verbose: boolean = false) {
+    if (verbose) console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
 
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
 
-    // console.log("Building scene...");
+    if (verbose) console.log("Building scene...");
     let config = new SceneConfig();
     config.buildConfig("single-file", projectDir, "", "", []);
     config.getProjectFiles().push(filepath);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
 
+    if (verbose) console.log("Extracting single ArkFile...");
     let files = scene.getFiles();
     if (files.length === 0) {
         console.error(`ERROR: No files found in the project directory '${projectDir}'.`);
@@ -54,10 +55,10 @@ function serializeTsFile(input: string, output: string) {
     let printer = new PrinterBuilder();
     printer.dumpToJson(arkFile, outPath);
 
-    // console.log("All done!");
+    if (verbose) console.log("All done!");
 }
 
-function serializeTsProject(inputDir: string, outDir: string) {
+function serializeTsProject(inputDir: string, outDir: string, verbose: boolean = false) {
     console.log(`Serializing TS project to JSON: '${inputDir}' -> '${outDir}'`);
 
     if (!fs.statSync(outDir).isDirectory()) {
@@ -65,13 +66,13 @@ function serializeTsProject(inputDir: string, outDir: string) {
         process.exit(1);
     }
 
-    // console.log("Building scene...");
+    if (verbose) console.log("Building scene...");
     let config = new SceneConfig();
     config.buildFromProjectDir(inputDir);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
 
-    // console.log("Serializing to JSON...");
+    if (verbose) console.log("Serializing...");
     let printer = new PrinterBuilder();
     for (let f of scene.getFiles()) {
         let filepath = f.getName();
@@ -80,7 +81,7 @@ function serializeTsProject(inputDir: string, outDir: string) {
         printer.dumpToJson(f, outPath);
     }
 
-    // console.log("All done!");
+    if (verbose) console.log("All done!");
 }
 
 export const program = new Command()
@@ -89,6 +90,7 @@ export const program = new Command()
     .argument('<input>', 'Input file or directory')
     .argument('<output>', 'Output file or directory')
     .option('-p, --project', 'Flag to indicate the input is a project directory')
+    .option('-v, --verbose', 'Verbose output')
     .action((input, output, options) => {
         if (!fs.existsSync(input)) {
             console.error(`ERROR: The input path '${input}' does not exist.`);
@@ -96,14 +98,14 @@ export const program = new Command()
         }
 
         if (options.project) {
-            serializeTsProject(input, output);
+            serializeTsProject(input, output, options.verbose);
         } else {
             if (fs.statSync(input).isDirectory()) {
                 console.error(`ERROR: If the input is a directory, you must provide the '-p' or '--project' flag.`);
                 process.exit(1);
             }
 
-            serializeTsFile(input, output);
+            serializeTsFile(input, output, options.verbose);
         }
     });
 
