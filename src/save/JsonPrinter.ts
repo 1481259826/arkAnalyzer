@@ -246,7 +246,7 @@ export class JsonPrinter extends Printer {
             // TODO: handle NOT class signature
             enclosingClass: this.serializeClassSignature(field.getDeclaringSignature() as ClassSignature),
             name: field.getFieldName(),
-            fieldType: this.serializeType(field.getType()),
+            type: this.serializeType(field.getType()),
         };
     }
 
