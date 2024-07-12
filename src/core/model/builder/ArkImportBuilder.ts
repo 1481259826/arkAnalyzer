@@ -62,20 +62,23 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     if (!from) {
         return null;
     }
-    if (/^([^@]*\/)([^\/]*)$/.test(from)) {
+    if (/^([^@]*\/)([^\/]*)$/.test(from)) { //relative path
         const parentPath = /^\.{1,2}\//.test(from) ? path.dirname(im.getDeclaringArkFile().getFilePath())
             : im.getDeclaringArkFile().getProjectDir();
         const originPath = path.resolve(parentPath, from);
         return getArkFileFromScene(im, originPath);
-    } else if (/^@[a-z|\-]+?\//.test(from)) {
-        return getOriginArkFile(im);
-    } else {
-        const scene = im.getDeclaringArkFile().getScene();
-        for (const sdkName of scene.getProjectSdkMap().keys()) {
-            const arkFile = getArkFileFormMap(processSdkPath(sdkName, from), scene.getSdkArkFilesMap());
-            if (arkFile) {
-                return arkFile;
-            }
+    } else if (/^@[a-z|\-]+?\//.test(from)) { //module path
+        const arkFile = getArkFileFromOtherModule(im);
+        if (arkFile) {
+            return arkFile;
+        }
+    }
+    //sdk path
+    const scene = im.getDeclaringArkFile().getScene();
+    for (const sdkName of scene.getProjectSdkMap().keys()) {
+        const arkFile = getArkFileFormMap(processSdkPath(sdkName, from), scene.getSdkArkFilesMap());
+        if (arkFile) {
+            return arkFile;
         }
     }
 }
@@ -352,7 +355,7 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
     return importInfos;
 }
 
-function getOriginArkFile(fromInfo: FromInfo) {
+function getArkFileFromOtherModule(fromInfo: FromInfo) {
     const from = fromInfo.getFrom();
     if (moduleMap.size === 0) {
         generateModuleMap(fromInfo.getDeclaringArkFile());
@@ -360,16 +363,22 @@ function getOriginArkFile(fromInfo: FromInfo) {
     let index: number;
     let file;
     let modulePath;
+    //find module path index file
     if ((index = from.indexOf('src')) > 0 || (index = from.indexOf('Index')) > 0 || (index = from.indexOf('index')) > 0) {
-        modulePath = moduleMap.get(from.substring(0, index).replace(/\/*$/, '')) ?? '';
-        file = getArkFileFromScene(fromInfo, path.join(modulePath ?? '', from.substring(index)));
+        modulePath = moduleMap.get(from.substring(0, index).replace(/\/*$/, ''));
+        if (modulePath) {
+            file = getArkFileFromScene(fromInfo, path.join(modulePath, from.substring(index)));
+        }
     } else {
-        modulePath = moduleMap.get(from) ?? '';
-        file = getArkFileFromScene(fromInfo, path.join(modulePath, 'index.ets')) ?? getArkFileFromScene(fromInfo, path.join(modulePath, 'Index.ets'))
+        modulePath = moduleMap.get(from);
+        if (modulePath && FileUtils.isDirectory(modulePath)) {
+            const originPath = path.join(modulePath, FileUtils.getIndexFileName(modulePath));
+            file = getArkFileFromScene(fromInfo, originPath);
+        }
     }
     if (file && findExportInfoInfile(fromInfo, file)) {
         return file;
-    } else {
+    } else if (modulePath) { //find module path/src/main/ets/TsIndex.ts
         return getArkFileFromScene(fromInfo, path.join(modulePath, '/src/main/ets/TsIndex.ts'));
     }
 }
