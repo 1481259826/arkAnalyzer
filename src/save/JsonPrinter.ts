@@ -370,7 +370,6 @@ export class JsonPrinter extends Printer {
                 _: 'PhiExpr',
                 args: args.map(arg => this.serializeValue(arg)),
                 blocks: args.map(arg => argToBlock.get(arg)!.getId()),
-                // TODO: type
             };
         } else if (value instanceof ArrayLiteralExpr) {
             return {
