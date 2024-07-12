@@ -1543,7 +1543,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     "name": "_DEFAULT_ARK_CLASS"
                 },
                 "name": "sum",
-                "fieldType": {
+                "type": {
                     "_": "NumberType"
                 }
             },
@@ -1559,7 +1559,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     "name": "_DEFAULT_ARK_CLASS"
                 },
                 "name": "i",
-                "fieldType": {
+                "type": {
                     "_": "NumberType"
                 }
             },
@@ -1575,7 +1575,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     "name": "_DEFAULT_ARK_CLASS"
                 },
                 "name": "fileContent",
-                "fieldType": {
+                "type": {
                     "_": "StringType"
                 }
             },
