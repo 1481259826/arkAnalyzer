@@ -141,7 +141,7 @@ function processSdkPath(sdkName: string, formPath: string): string {
     } else if (formPath.startsWith('@arkts.')) {
         dir = 'arkts';
     } else {
-        return formPath;
+        return `@${sdkName}/${formPath}`;
     }
     return `@${sdkName}/${dir}/${formPath}`;
 }
