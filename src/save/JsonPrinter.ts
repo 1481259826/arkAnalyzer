@@ -350,7 +350,7 @@ export class JsonPrinter extends Printer {
             return {
                 _: 'InstanceOfExpr',
                 arg: this.serializeValue(value.getOp()),
-                checkType: this.serializeType(value.getCheckType()),
+                checkType: value.getCheckType(),
             };
         } else if (value instanceof ArkLengthExpr) {
             return {
