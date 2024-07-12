@@ -240,6 +240,7 @@ export class MethodParameter {
     private name: string = '';
     private type: Type;
     private optional: boolean = false;
+    private dotDotDotToken: boolean = false;
     private objElements: ObjectBindingPatternParameter[] = [];
     private arrayElements: ArrayBindingPatternParameter[] = [];
 
@@ -268,6 +269,14 @@ export class MethodParameter {
 
     public setOptional(optional: boolean) {
         this.optional = optional;
+    }
+
+    public hasDotDotDotToken() {
+        return this.dotDotDotToken;
+    }
+
+    public setDotDotDotToken(dotDotDotToken: boolean) {
+        this.dotDotDotToken = dotDotDotToken;
     }
 
     public addObjElement(element: ObjectBindingPatternParameter) {
