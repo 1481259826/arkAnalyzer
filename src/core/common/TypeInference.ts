@@ -62,6 +62,24 @@ export class TypeInference {
             }
         } else if (fieldType instanceof UnclearReferenceType) {
             fieldType = this.inferUnclearReferenceType(fieldType.getName(), arkField.getDeclaringClass());
+        } else if (fieldType instanceof UnionType) {
+            let types = fieldType.getTypes();
+            for (let i = 0; i < types.length; i++) {
+                let subType = types[i];
+                let newType;
+                if (subType instanceof ClassType) {
+                    newType = TypeInference.inferUnclearReferenceType(subType.getClassSignature().getClassName(), arkField.getDeclaringClass());
+                } else if (subType instanceof UnclearReferenceType) {
+                    newType = TypeInference.inferUnclearReferenceType(subType.getName(), arkField.getDeclaringClass());
+                }
+                if (newType) {
+                    types[i] = newType;
+                }
+            }
+
+            if (arkField.getInitializer()) {
+                fieldType.setCurrType(arkField.getInitializer().getType());
+            }
         }
         if (!fieldType || fieldType instanceof UnknownType || fieldType instanceof UnclearReferenceType) {
             return;
@@ -223,7 +241,7 @@ export class TypeInference {
     }
 
     private static canOverrideType(type: Type) {
-        if (type instanceof UnknownType || type instanceof UnclearReferenceType) {
+        if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType) {
             return true;
         } else if (type instanceof ClassType
             && type.getClassSignature().getDeclaringFileSignature().getFileName() === '_UnknownFileName') {

@@ -268,7 +268,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
 
         // dotDotDotToken
         if (parameter.dotDotDotToken) {
-            //
+            methodParameter.setDotDotDotToken(true);
         }
 
         // modifiers

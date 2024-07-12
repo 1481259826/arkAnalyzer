@@ -20,6 +20,8 @@ import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/Ar
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
+    AnyType,
+    ArrayObjectType,
     ArrayType,
     BooleanType,
     CallableType,
@@ -269,8 +271,7 @@ export class ArkNewExpr extends AbstractExpr {
     }
 
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        return uses;
+        return [];
     }
 
     public getType(): Type {
@@ -310,7 +311,6 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public getType(): ArrayType {
-        // TODO: support multi-dimension array
         return new ArrayType(this.baseType, 1);
     }
 
@@ -323,7 +323,25 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public inferType(arkClass: ArkClass): ArkNewArrayExpr {
-        if (this.baseType instanceof UnclearReferenceType) {
+        if (this.baseType instanceof UnionType) {
+            const types = this.baseType.getTypes();
+            for (let i = 1; i < types.length; i++) {
+                if (types[0] !== types[i]) {
+                    this.baseType = AnyType.getInstance();
+                    break;
+                }
+            }
+            if (this.baseType instanceof UnionType) {
+                if (types[0] instanceof ClassType) {
+                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
+                    if (type) {
+                        this.baseType = type;
+                    }
+                } else {
+                    this.baseType = types[0];
+                }
+            }
+        } else if (this.baseType instanceof UnclearReferenceType) {
             const referenceType = TypeInference.inferUnclearReferenceType(this.baseType.getName(), arkClass);
             if (referenceType) {
                 this.baseType = referenceType;
@@ -371,8 +389,7 @@ export class ArkDeleteExpr extends AbstractExpr {
     }
 
     public toString(): string {
-        const str = 'delete ' + this.field;
-        return str;
+        return 'delete ' + this.field;
     }
 
 }
@@ -738,7 +755,7 @@ export class ArkUnopExpr extends AbstractExpr {
 }
 
 export class ArrayLiteralExpr extends AbstractExpr {
-    private elements: Value[] = [];
+    private readonly elements: Value[] = [];
     private type: Type;
 
     constructor(elements: Value[], type: Type) {
@@ -753,6 +770,29 @@ export class ArrayLiteralExpr extends AbstractExpr {
         return uses;
     }
 
+    public inferType(arkClass: ArkClass): ArrayLiteralExpr {
+        if (this.type instanceof UnionType) {
+            const types = this.type.getTypes();
+            for (let i = 1; i < types.length; i++) {
+                if (types[0] !== types[i]) {
+                    this.type = new ArrayType(AnyType.getInstance(), 1);
+                    break;
+                }
+            }
+            if (this.type instanceof UnionType) {
+                if (types[0] instanceof ClassType) {
+                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
+                    if (type) {
+                        this.type = new ArrayObjectType(type, 1);
+                    }
+                } else {
+                    this.type = new ArrayType(types[0], 1);
+                }
+            }
+        }
+        return this;
+    }
+
     public getElements(): Value[] {
         return this.elements;
     }
@@ -762,8 +802,7 @@ export class ArrayLiteralExpr extends AbstractExpr {
     }
 
     public toString(): string {
-        //TODO
-        return '';
+        return '[' + this.elements.join() + ']';
     }
 }
 

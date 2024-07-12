@@ -55,17 +55,21 @@ export class SceneConfig {
 
     private projectFiles: string[] = [];
 
-    constructor() { }
+    constructor() {
+    }
 
     public buildConfig(
         targetProjectName: string,
         targetProjectDirectory: string,
-        sdks: Sdk[]
+        sdks: Sdk[],
+        fullFilePath?: string[]
     ) {
-        this.sdksObj = sdks;
-
         this.targetProjectName = targetProjectName;
         this.targetProjectDirectory = targetProjectDirectory;
+        this.sdksObj = sdks;
+        if (fullFilePath) {
+            this.projectFiles.push(...fullFilePath);
+        }
     }
 
     public buildFromProjectDir(targetProjectDirectory: string) {
@@ -95,8 +99,7 @@ export class SceneConfig {
                 targetProjectDirectory,
                 sdks
             );
-        }
-        else {
+        } else {
             logger.error(`Your configJsonPath: "${configJsonPath}" is not exist.`);
         }
     }
