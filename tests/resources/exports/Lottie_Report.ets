@@ -16,7 +16,7 @@
 import lottie from '@ohos/lottie';
 
 function testLottie() {
-    const anim = lottie.loadAnimation({name:"test"});
+    const anim = lottie.loadAnimation({name:'test'});
 }
 
 
