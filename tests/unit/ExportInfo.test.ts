@@ -19,7 +19,8 @@ import { FileSignature, Scene, SceneConfig } from "../../src";
 
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
-    config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") });
+    config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
+    config.getSdksObj().push({ moduleName: "", name: "lottie", path: path.join(__dirname, "../resources/thirdModule") });
     config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
