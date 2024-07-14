@@ -16,10 +16,10 @@
 import { CallGraph, FuncID, CallGraphNode } from '../CallGraph';
 import { Pag, FuncPag, PagNode, PagEdgeKind } from '../Pag'
 import { Scene } from '../../../Scene'
-import { Stmt, ArkAssignStmt } from '../../base/Stmt'
+import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
 import { ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
 import { ContextID } from '../../pta/Context';
 import { ArkMethod } from '../../model/ArkMethod';
@@ -55,6 +55,24 @@ export class PagBuilder {
         this.scene = s;
     }
 
+    public buildForEntry(funcID: FuncID): void {
+        this.worklist = [];
+        let cid = this.ctx.getEmptyContextID();
+        let csFuncID = new CSFuncID(cid, funcID);
+        this.worklist.push(csFuncID);
+
+        this.handleReachable();
+    }
+
+    public handleReachable() {
+        while (this.worklist.length > 0) {
+            let csFunc = this.worklist.shift() as CSFuncID
+            if (this.buildFunPag(csFunc.funcID)) {
+                this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
+            }
+        }
+    }
+
     public build(): void {
         for (let funcID of this.cg.getEntries()) {
             let cid = this.ctx.getEmptyContextID();
@@ -62,10 +80,11 @@ export class PagBuilder {
             this.worklist.push(csFuncID);
 
             while (this.worklist.length > 0) {
-                let csFunc = this.worklist.shift()
-                if (this.buildFunPag(csFuncID.funcID)) {
-                    this.buildPagFromFuncPag(csFuncID.funcID, csFuncID.cid);
-                }
+                let csFunc = this.worklist.shift() as CSFuncID;
+                //if (this.buildFunPag(csFunc.funcID)) {
+                this.buildFunPag(csFunc.funcID);
+                this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
+                //}
             }
         }
     }
@@ -103,6 +122,20 @@ export class PagBuilder {
                         // TODO: handle non-direct call
                     }
                 }
+            } else if (stmt instanceof ArkInvokeStmt) {
+                // TODO: discuss if we need a invokeStmt
+
+                // DUPILICATE code!!
+                let inkExpr = stmt.getInvokeExpr();
+                if (inkExpr instanceof ArkStaticInvokeExpr) {
+                    let cs = this.cg.getCallSiteByStmt(stmt);
+                    if (cs) {
+                        // direct call is already existing in CG
+                        fpag.addNormalCallSite(cs);
+                    } else {
+                        // TODO: handle non-direct call
+                    }
+                }
             } else {
                 // TODO: need handle other type of stmt?
             }
@@ -130,9 +163,9 @@ export class PagBuilder {
         }
 
         for (let e of inEdges) {
-            let srcPagNode = this.getOrNewPagNode(cid, e.src);
-            let dstPagNode = this.getOrNewPagNode(cid, e.dst);
-            this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind);
+            let srcPagNode = this.getOrNewPagNode(cid, e.src, e.stmt);
+            let dstPagNode = this.getOrNewPagNode(cid, e.dst, e.stmt);
+            this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind, e.stmt);
         }
 
         return true;
@@ -146,7 +179,9 @@ export class PagBuilder {
 
         for (let cs of funcPag.getNormalCallSites()) {
             let calleeCid = this.ctx.newContext(cid);
-            //let calleeCFId: ContextNFuncID = [calleeCid, cs.calleeFuncID];
+            // Add reachable
+            this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
+
             let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
             let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
             if (!calleeMethod) {
@@ -154,7 +189,10 @@ export class PagBuilder {
             }
 
             // TODO: getParameterInstances's performance is not good. Need to refactor 
-            let params = calleeMethod.getParameterInstances();
+            //let params = calleeMethod.getParameterInstances();
+            let params = calleeMethod.getCfg().getStmts()
+                .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
+                .map(stmt => (stmt as ArkAssignStmt).getRightOp());
             let argNum = cs.args?.length;
 
             if (argNum) {
@@ -166,33 +204,34 @@ export class PagBuilder {
                     //if (arg && param && param instanceof ArkParameterRef) {
                     if (arg && param) {
                         // Get or create new PAG node for argument and parameter
-                        let srcPagNode = this.getOrNewPagNode(cid, arg);
-                        let dstPagNode = this.getOrNewPagNode(calleeCid, param);
+                        let srcPagNode = this.getOrNewPagNode(cid, arg, cs.callStmt);
+                        let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
 
-                        this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy);
+                        this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
                     }
                     // TODO: handle other types of parmeters
                 }
             }
 
             // add ret to caller edges
-            let rets = calleeMethod.getReturnValues();
+            let retStmts = calleeMethod.getReturnStmt();
             // TODO: call statement must be a assignment state
             if (cs.callStmt instanceof ArkAssignStmt) {
                 let retDst = cs.callStmt.getLeftOp();
-                for (let retValue of rets) {
-                    let srcPagNode = this.getOrNewPagNode(calleeCid, retValue);
-                    let dstPagNode = this.getOrNewPagNode(calleeCid, retDst);
+                for (let retStmt of retStmts) {
+                    let retValue = (retStmt as ArkReturnStmt).getOp();
+                    let srcPagNode = this.getOrNewPagNode(calleeCid, retValue, retStmt);
+                    let dstPagNode = this.getOrNewPagNode(calleeCid, retDst, cs.callStmt);
 
-                    this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy);
+                    this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
                 }
             }
         }
         return true;
     }
 
-    public getOrNewPagNode(cid: ContextID, v: Value): PagNode {
-        return this.pag.getOrNewNode(cid, v);
+    public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
+        return this.pag.getOrNewNode(cid, v, s);
     }
 
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
@@ -205,7 +244,7 @@ export class PagBuilder {
         }
 
         if (this.stmtIsReadKind(stmt)) {
-            return PagEdgeKind.Read;
+            return PagEdgeKind.Load;
         }
 
         if (this.stmtIsWriteKind(stmt)) {
@@ -230,7 +269,7 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        if (lhOp instanceof Local && rhOp instanceof Local) {
+        if (lhOp instanceof Local && (rhOp instanceof Local || rhOp instanceof ArkParameterRef)) {
             return true;
         }
         return false;
@@ -240,8 +279,8 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        if (lhOp instanceof Local && 
-            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkStaticFieldRef)) {
+        if (rhOp instanceof Local && 
+            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkStaticFieldRef)) {
             return true;
         }
         return false;
@@ -251,8 +290,8 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        if (rhOp instanceof Local && 
-            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkStaticFieldRef)) {
+        if (lhOp instanceof Local && 
+            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkStaticFieldRef)) {
             return true;
         }
         return false;

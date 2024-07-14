@@ -23,18 +23,25 @@ import { ArkMethod } from "../../model/ArkMethod";
 import { MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, Method } from "../CallGraph";
-import { Pag, PagLocalNode, PagNode } from "../Pag";
+import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
+import { DiffPTData, PtsSet } from "../../pta/PtsDS";
+import { KLimitedContextSensitive } from "../../pta/Context";
 
 type PointerPair = [NodeID, NodeID]
 
 class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
+    private pagBuilder: PagBuilder;
     private cg: CallGraph;
     private pointerPairList: PointerPair[] = [];
     private reachableMethods: Set<CSFuncID>
     private reachableStmts: Stmt[]
+    private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
+    private entry: NodeID;
+    private ctx: KLimitedContextSensitive;
+    private worklist: NodeID[];
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         super(s)
@@ -42,7 +49,119 @@ class PointerAnalysis extends AbstractAnalysis{
         this.cg = cg;
         this.reachableStmts = []
         this.reachableMethods = new Set()
+        this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
     }
+
+    private init() {
+        // TODO: how to get entry
+        this.pagBuilder.buildForEntry(this.entry);
+
+    }
+
+    public start() {
+        this.init();
+        this.solveConstraint();
+    }
+
+    private solveConstraint() {
+        this.initWorklist();
+        let reanalyzer: boolean = true;
+
+        while (reanalyzer) {
+            reanalyzer = this.solveWorklist();
+        }
+
+    }
+
+    private initWorklist() {
+        for (let e of this.pag.getAddrEdges()) {
+            let { src, dst } = e.getEndPoints();
+            this.ptd.addPts(dst, src);
+
+            this.worklist.push(dst);
+        }
+    }
+
+    private solveWorklist(): boolean {
+
+        while (this.worklist.length > 0) {
+            let node = this.worklist.pop() as NodeID;
+            this.processNode(node);
+        }
+
+        return true;
+    }
+
+    private processNode(node: NodeID): boolean {
+        this.handleLoadWrite(node);
+        this.handleCopy(node);
+
+        return true;
+    }
+
+    private handleCopy(nodeID: NodeID): boolean {
+        let node = this.pag.getNode(nodeID) as PagNode;
+        node.getOutgoingCopyEdges()?.forEach(copyEdge => {
+            this.propagate(copyEdge);
+        });
+
+        return true;
+    }
+
+    private handleLoadWrite(nodeID: NodeID): boolean {
+        let node = this.pag.getNode(nodeID) as PagNode;
+        let diffPts = this.ptd.getDiffPts(nodeID);
+        if (!diffPts) {
+            return false;;
+        }
+
+        for (let pt of diffPts) {
+            node.getOutgoingLoadEdges()?.forEach(loadEdge => {
+                this.processLoad(pt, loadEdge);
+            });
+
+            node.getOutgoingWriteEdges()?.forEach(writeEdge => {
+                //TODO: processWrite
+            });
+        }
+
+        return true;
+    }
+
+    /*
+     *	src --load--> dst,
+     *	node \in pts(src) ==>  node--copy-->dst
+     */
+    private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
+        let src = this.pag.getNode(nodeID) as PagNode;
+        let dst = loadEdge.getDstNode() as PagNode;
+        if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
+            this.worklist.push(nodeID);
+        }
+    }
+
+    private propagate(edge: PagEdge): boolean {
+        let changed: boolean = false;
+        let { src, dst } = edge.getEndPoints();
+        let diffPts = this.ptd.getDiffPts(src)
+        if (!diffPts) {
+            return changed;
+        }
+
+        changed = this.ptd.unionDiffPts(dst, src);
+
+        // which one is better?
+        //for (let pt of diffPts) {
+        //    changed = changed || this.ptd.addPts(dst, pt);
+        //}
+
+        if (changed) {
+            this.worklist.push(dst);
+        }
+
+        return changed;
+    }
+
 
     public buildAnalysis(): void {
         // start pointer analysis
@@ -60,7 +179,7 @@ class PointerAnalysis extends AbstractAnalysis{
                 continue
             }
 
-            this.propagate(targetNode, sourceNode)
+            //this.propagate(targetNode, sourceNode)
 
             if (targetNode instanceof PagLocalNode) {
                 this.processFieldRefStmt(targetNode)
@@ -119,6 +238,7 @@ class PointerAnalysis extends AbstractAnalysis{
         })
     }
 
+    /*
     protected propagate(targetNode: PagNode, sourceNode: PagNode){
         // TODO: need existence check or not?
         targetNode.addPointerSetElement(sourceNode.getID())
@@ -128,6 +248,7 @@ class PointerAnalysis extends AbstractAnalysis{
             // this.pointerPairList.push([node, sourceNode.getID()])
         // })
     }
+        */
 
     protected processFieldRefStmt(targetNode: PagLocalNode) {
         const targetLocal = targetNode.getValue()
