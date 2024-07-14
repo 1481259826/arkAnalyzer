@@ -270,6 +270,10 @@ export class ArkMethod implements ArkExport {
         return resultValues;
     }
 
+    public getReturnStmt(): Stmt[] {
+        return this.getCfg()!.getStmts().filter(stmt => stmt instanceof ArkReturnStmt);
+    }
+
     public getDecorators(): Decorator[] {
         return Array.from(this.modifiers).filter((item) => {
             return item instanceof Decorator;

@@ -13,75 +13,120 @@
  * limitations under the License.
  */
 
-import { NodeID, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
+import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from './BaseGraph';
 import { CallGraph, CallSite } from './CallGraph';
 import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
-import { ArkAssignStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import { ArkNewExpr } from '../base/Expr';
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../base/Ref';
 import { Local } from '../base/Local';
+import { GraphPrinter } from '../../save/GraphPrinter';
+import { PrinterBuilder } from '../../save/PrinterBuilder';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
  */
 
 export enum PagEdgeKind {
-    Address, Copy, Read, Write, Unknown
+    Address, Copy, Load, Write, Unknown
 };
 
 export class PagEdge extends BaseEdge {
-    constructor(s: PagNode, d: PagNode, k: PagEdgeKind) {
-        super(s, d, k);
+    private stmt: Stmt | undefined;
+
+    constructor(n: PagNode, d: PagNode, k: PagEdgeKind, s?: Stmt) {
+        super(n, d, k);
+        this.stmt = s;
     };
 
+    public getDotAttr(): string {
+        switch(this.getKind()) {
+            case PagEdgeKind.Address:
+                return "color=green";
+            case PagEdgeKind.Copy:
+                if (this.stmt?.getInvokeExpr() != undefined || this.stmt instanceof ArkReturnStmt) {
+                    return "color=black,style=dotted"
+                }
+                return "color=black";
+            case PagEdgeKind.Load:
+                return "color=red";
+            case PagEdgeKind.Write:
+                return "color=blue"
+            default:
+                return "color=black";
+        }
+    }
 }
 
 export class AddrPagEdge extends PagEdge {
-    constructor(s: PagNode, d: PagNode) {
-        super(s, d, PagEdgeKind.Address);
+    constructor(n: PagNode, d: PagNode, s: Stmt) {
+        super(n, d, PagEdgeKind.Address, s);
     };
 }
 
 export class CopyPagEdge extends PagEdge {
-    constructor(s: PagNode, d: PagNode) {
-        super(s, d, PagEdgeKind.Copy);
+    constructor(n: PagNode, d: PagNode, s: Stmt) {
+        super(n, d, PagEdgeKind.Copy, s);
     };
 }
 
 export class LoadPagEdge extends PagEdge {
-    constructor(s: PagNode, d: PagNode) {
-        super(s, d, PagEdgeKind.Copy);
+    constructor(n: PagNode, d: PagNode, s: Stmt) {
+        super(n, d, PagEdgeKind.Copy, s);
     };
 }
 
 export class WritePagEdge extends PagEdge {
-    constructor(s: PagNode, d: PagNode) {
-        super(s, d, PagEdgeKind.Write);
+    constructor(n: PagNode, d: PagNode, s: Stmt) {
+        super(n, d, PagEdgeKind.Write, s);
     };
 }
 
 type PagEdgeSet = Set<PagEdge>;
 
+export enum PagNodeKind {HeapObj, LocalVar, RefVar, Param}
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
-    private value: Value
-    private pointerSet: Set<NodeID>
+    private value: Value;
+    private stmt: Stmt | undefined; // stmt is just used for graph print
+    private pointerSet: Set<NodeID>;
 
     private addressInEdges: PagEdgeSet;
     private addressOutEdges: PagEdgeSet;
     private copyInEdges: PagEdgeSet;
     private copyOutEdges: PagEdgeSet;
-    private readInEdges: PagEdgeSet;
-    private readOutEdges: PagEdgeSet;
+    private loadInEdges: PagEdgeSet;
+    private loadOutEdges: PagEdgeSet;
     private writeInEdges: PagEdgeSet;
     private writeOutEdges: PagEdgeSet;
 
-    constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value) {
-        super(id, 0);
+    constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value, k: Kind, s?: Stmt) {
+        super(id, k);
         this.cid = cid;
-        this.value = value
-        this.pointerSet = new Set<NodeID>
+        this.value = value;
+        this.stmt = s;
+        this.pointerSet = new Set<NodeID>;
+    }
+
+    public setStmt(s: Stmt) {
+        this.stmt = s;
+    }
+
+    public hasOutgoingCopyEdge(): boolean {
+        return (this.copyOutEdges.size !== 0);
+    }
+
+    public getOutgoingCopyEdges(): PagEdgeSet {
+        return this.copyOutEdges;
+    }
+
+    public getOutgoingLoadEdges(): PagEdgeSet {
+        return this.loadOutEdges;
+    }
+
+    public getOutgoingWriteEdges(): PagEdgeSet {
+        return this.writeOutEdges;
     }
 
     public addAddressInEdge(e: AddrPagEdge): void {
@@ -109,24 +154,26 @@ export class PagNode extends BaseNode {
         this.addOutgoingEdge(e);
     }
 
-    public addReadInEdge(e: LoadPagEdge): void {
-        this.readInEdges == undefined? this.readInEdges = new Set() : undefined;
-        this.readInEdges.add(e);
+    public addLoadInEdge(e: LoadPagEdge): void {
+        this.loadInEdges == undefined? this.loadInEdges = new Set() : undefined;
+        this.loadInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
-    public addReadOutEdge(e: LoadPagEdge): void {
-        this.readOutEdges == undefined ? this.readOutEdges = new Set() : undefined;
-        this.readOutEdges.add(e);
+    public addLoadOutEdge(e: LoadPagEdge): void {
+        this.loadOutEdges == undefined ? this.loadOutEdges = new Set() : undefined;
+        this.loadOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
     public addWriteInEdge(e: WritePagEdge): void {
+        this.writeInEdges = this.writeInEdges ?? new Set();
         this.writeInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
     public addWriteOutEdge(e: LoadPagEdge): void {
+        this.writeOutEdges = this.writeOutEdges ?? new Set();
         this.writeOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
@@ -147,74 +194,148 @@ export class PagNode extends BaseNode {
         return {
             AddressEdge: this.addressOutEdges,
             CopyEdge: this.copyOutEdges,
-            ReadEdge: this.readOutEdges,
+            LoadEdge: this.loadOutEdges,
             WriteEdge: this.writeOutEdges
         }
+    }
+
+    public getDotAttr(): string {
+        switch(this.getKind()) {
+            case PagNodeKind.HeapObj:
+                return 'shape=box3d';
+            case PagNodeKind.LocalVar:
+                return 'shape=box';
+            case PagNodeKind.RefVar:
+                return 'shape=component';
+            case PagNodeKind.Param:
+                return 'shape=box'
+            default:
+                return 'shape=box';
+        }
+    }
+
+    public getDotLabel(): string {
+        let lable: string;
+        let param: ArkParameterRef;
+
+        lable = PagNodeKind[this.getKind()];
+        lable = lable + ` ID: ${this.getID()} Ctx: ${this.cid}`;
+
+        if (this.getKind() == PagNodeKind.Param) {
+            param = this.value as ArkParameterRef;
+            lable = lable + `\nParam#${param.getIndex()} ${param.toString()}`;
+        }
+
+        if (this.stmt) {
+            lable = lable + `\n${this.stmt.toString()}`;
+        }
+
+        if (this.getKind() == PagNodeKind.Param) {
+            //lable = lable + '\n' + (this.value as ArkParameterRef).toString();
+
+        }
+
+        return lable;
     }
 }
 
 export class PagLocalNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, value: Local) {
-        super(id, cid, value)
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, value: Local, stmt?: Stmt) {
+        super(id, cid, value, PagNodeKind.LocalVar, stmt)
     }
 }
 
 export class PagInstanceFieldNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, instanceFieldRef: ArkInstanceFieldRef) {
-        super(id, cid, instanceFieldRef)
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, instanceFieldRef: ArkInstanceFieldRef, stmt?: Stmt) {
+        super(id, cid, instanceFieldRef,PagNodeKind.RefVar, stmt)
     }
 }
 
 export class PagStaticFieldNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, staticFieldRef: ArkStaticFieldRef) {
-        super(id, cid, staticFieldRef)
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, staticFieldRef: ArkStaticFieldRef, stmt?: Stmt) {
+        super(id, cid, staticFieldRef, PagNodeKind.RefVar, stmt)
     }
 }
 
 export class PagNewExprNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr) {
-        super(id, cid, expr)
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr, stmt?: Stmt) {
+        super(id, cid, expr, PagNodeKind.HeapObj, stmt)
+    }
+}
+
+export class PagParamNode extends PagNode {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, r: ArkParameterRef, stmt?: Stmt) {
+        super(id, cid, r, PagNodeKind.Param, stmt)
     }
 }
 
 export class Pag extends BaseGraph {
 
     private cg: CallGraph;
-    private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
+    //private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
+    private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
+    private addrEdges: PagEdgeSet = new Set();
 
     public getCG(): CallGraph {
         return this.cg;
     }
-    public addPagNode(cid: ContextID, value: Value): PagNode{
-        let id: NodeID = this.nodeNum++;
+    public addPagNode(cid: ContextID, value: Value, stmt?: Stmt): PagNode{
+        let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
-            pagNode = new PagLocalNode(id, cid, value)
+            pagNode = new PagLocalNode(id, cid, value, stmt)
         } else if (value instanceof ArkInstanceFieldRef) {
-            pagNode = new PagInstanceFieldNode(id, cid, value)
+            pagNode = new PagInstanceFieldNode(id, cid, value, stmt)
         } else if (value instanceof ArkStaticFieldRef) {
-            pagNode = new PagStaticFieldNode(id, cid, value)
+            pagNode = new PagStaticFieldNode(id, cid, value, stmt)
         } else if (value instanceof ArkNewExpr) {
-            pagNode = new PagNewExprNode(id, cid, value)
+            pagNode = new PagNewExprNode(id, cid, value, stmt)
+        } else if (value instanceof ArkParameterRef) {
+            pagNode = new PagParamNode(id, cid, value, stmt)
+        } else {
+            throw new Error('unsupported Value type ' + value.getType().toString())
         }
 
         this.addNode(pagNode!);
-        this.contextValueToIdMap.set([cid, value], id);
+        let ctx2NdMap = this.contextValueToIdMap.get(value);
+        if (!ctx2NdMap) {
+            ctx2NdMap = new Map();
+            this.contextValueToIdMap.set(value, ctx2NdMap);
+        }
+        ctx2NdMap.set(cid, id);
+        
         return pagNode!;
     }
 
-    public getOrNewNode(cid: ContextID, v: Value): PagNode {
-        let nodeId = this.contextValueToIdMap.get([cid, v]);
+    public hasCtxNode(cid: ContextID, v: Value): NodeID | undefined {
+        let ctx2nd = this.contextValueToIdMap.get(v);
+        if (!ctx2nd) {
+            return undefined;
+        }
+
+        let nd = ctx2nd.get(cid);
+        if(!nd) {
+            return undefined;
+        }
+
+        return nd;
+    }
+
+    public getOrNewNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
+        let nodeId = this.hasCtxNode(cid, v);
         if (nodeId != undefined) {
             return this.getNode(nodeId) as PagNode;
         }
 
-        return this.addPagNode(cid, v);
+        return this.addPagNode(cid, v, s);
     }
 
-    public addPagEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind) {
+    public addPagEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind, stmt?: Stmt): boolean {
         // TODO: check if the edge already existing
-        let edge = new PagEdge(src, dst, kind); 
+        let edge = new PagEdge(src, dst, kind, stmt); 
+        if (this.ifEdgeExisting(edge)) {
+            return false;
+        }
 
         //src.addOutgoingEdge(edge);
         //dst.addIncomingEdge(edge);
@@ -226,22 +347,37 @@ export class Pag extends BaseGraph {
             case PagEdgeKind.Address:
                 src.addAddressOutEdge(edge);
                 dst.addAddressInEdge(edge);
+                this.addrEdges.add(edge);
                 break;
             case PagEdgeKind.Write:
                 src.addWriteOutEdge(edge);
                 dst.addWriteInEdge(edge);
                 break;
-            case PagEdgeKind.Read:
-                src.addReadOutEdge(edge);
-                dst.addReadInEdge(edge);
+            case PagEdgeKind.Load:
+                src.addLoadOutEdge(edge);
+                dst.addLoadInEdge(edge);
                 break;
             default:
                 ;
         }
+        return true;
+    }
+
+    public getAddrEdges(): PagEdgeSet {
+        return this.addrEdges;
+    }
+
+    public getGraphName(): string {
+        return 'PAG';
+    }
+
+    public dump(name: string): void {
+        let printer = new GraphPrinter<this>(this);
+        PrinterBuilder.dump(printer, name);
     }
 }
 
-type InternalEdge = {src: Value, dst: Value, kind: PagEdgeKind}
+type InternalEdge = {src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt}
 
 export class FuncPag {
     private funcID: number;
@@ -255,10 +391,7 @@ export class FuncPag {
     }
 
     public addNormalCallSite(cs: CallSite): void {
-        if (this.normalCallSites == undefined) {
-            this.normalCallSites = new Set();
-        }
-
+        this.normalCallSites = this.normalCallSites ?? new Set();
         this.normalCallSites.add(cs);
     }
 
@@ -278,7 +411,7 @@ export class FuncPag {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        let iEdge: InternalEdge = { src: lhOp, dst: rhOp, kind: k};
+        let iEdge: InternalEdge = { src: rhOp, dst: lhOp, kind: k, stmt: stmt};
         this.internalEdges.add(iEdge);
 
         return true;
