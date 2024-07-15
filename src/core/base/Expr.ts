@@ -40,6 +40,7 @@ import { AbstractFieldRef, AbstractRef, ArkParameterRef } from './Ref';
 import { ModelUtils } from "../common/ModelUtils";
 import { ArkAssignStmt } from "./Stmt";
 import Logger from "../../utils/logger";
+import { Scene } from "../../Scene";
 
 const logger = Logger.getLogger();
 
@@ -179,8 +180,35 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             } else {
                 logger.warn(`arg of forEach must be callable`);
             }
+        } else if (methodName === 'constructor' && baseType instanceof ClassType) { //隐式构造
+            const subSignature = new MethodSubSignature();
+            subSignature.setMethodName(methodName);
+            subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
+            const defaultMethod = new MethodSignature();
+            defaultMethod.setDeclaringClassSignature(baseType.getClassSignature());
+            defaultMethod.setMethodSubSignature(subSignature);
+            this.setMethodSignature(defaultMethod);
+            return this;
         }
+        let result;
+        if (baseType instanceof UnionType) {
+            for (const type of baseType.getTypes()) {
+                result = this.inferMethod(type, methodName, scene);
+                if (result) {
+                    break;
+                }
+            }
+        } else {
+            result = this.inferMethod(baseType, methodName, scene);
+        }
+        if (result) {
+            return result;
+        }
+        logger.warn("invoke ArkInstanceInvokeExpr MethodSignature type fail: ", this.toString());
+        return this;
+    }
 
+    private inferMethod(baseType: Type, methodName: string, scene: Scene): AbstractInvokeExpr | null {
         if (baseType instanceof ClassType) {
             const arkClass = scene.getClass(baseType.getClassSignature());
             let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
@@ -191,15 +219,6 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
                 }
                 return this;
-            } else if (methodName === 'constructor') { //隐式构造
-                const subSignature = new MethodSubSignature();
-                subSignature.setMethodName(methodName);
-                subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
-                const defaultMethod = new MethodSignature();
-                defaultMethod.setDeclaringClassSignature(baseType.getClassSignature());
-                defaultMethod.setMethodSubSignature(subSignature);
-                this.setMethodSignature(defaultMethod);
-                return this;
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
             const defaultClass = scene.getNamespace(baseType.getNamespaceSignature())?.getDefaultClass();
@@ -209,11 +228,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 this.setMethodSignature(foundMethod.getSignature());
                 return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
             }
-        } else {
-            logger.warn("invoke ArkInstanceInvokeExpr base type unknown:", this.toString());
         }
-        logger.warn("invoke ArkInstanceInvokeExpr MethodSignature type fail: ", this.toString());
-        return this;
+        return null;
     }
 }
 

@@ -44,7 +44,7 @@ export class FileUtils {
 
     public static getIndexFileName(srcPath: string): string {
         for (const fileInDir of fs.readdirSync(srcPath, { withFileTypes: true })) {
-            if (fileInDir.isFile() && /^index/i.test(fileInDir.name)) {
+            if (fileInDir.isFile() && /^index(\.d)?\.e?ts$/i.test(fileInDir.name)) {
                 return fileInDir.name;
             }
         }

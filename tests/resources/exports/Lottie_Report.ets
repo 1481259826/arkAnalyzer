@@ -13,20 +13,11 @@
  * limitations under the License.
  */
 
-class C1 {
+import lottie from '@ohos/lottie';
 
-    public n: number = 1;
-    public c: C1 = new C1();
-    private string = 'test';
-    private number = 123.123;
-
-    private s = this.c.toString() ?? 'testing';
-    public objs: C1[] = [];
-    public objs2: C2[] = [new C2()];
+function testLottie() {
+    const anim = lottie.loadAnimation({name:'test'});
 }
 
-class C2 {
-    f2(p1: C1) {
-        console.log(p1.c, p1.n);
-    }
-}
+
+
