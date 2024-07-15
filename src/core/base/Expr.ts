@@ -801,6 +801,14 @@ export class ArrayLiteralExpr extends AbstractExpr {
                     this.type = new ArrayType(types[0], 1);
                 }
             }
+        } else if (this.type instanceof ArrayType) {
+            const baseType = this.type.getBaseType();
+            if (baseType instanceof UnclearReferenceType) {
+                const referenceType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
+                if (referenceType) {
+                    this.type.setBaseType(referenceType);
+                }
+            }
         }
         return this;
     }
