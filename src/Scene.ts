@@ -350,10 +350,9 @@ export class Scene {
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
         if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
             return this.getMethodsMap().get(methodSignature.toString()) || null;
-        } else if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
-            this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature);
+        } else {
+            return this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature) || null;
         }
-        return null;
     }
 
     private getMethodsMap(): Map<string, ArkMethod> {
@@ -437,6 +436,9 @@ export class Scene {
         this.genExtendedClasses();
     }
 
+    /**
+     * @Deprecated
+     */
     public inferSimpleTypes() {
 
         for (let arkFile of this.getFiles()) {
