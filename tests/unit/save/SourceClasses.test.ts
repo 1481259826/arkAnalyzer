@@ -30,10 +30,10 @@ const SourceClassesTest_CASE1_EXPECT = `class Animal {
   }
   set name(newName: string|undefined) {
   }
-  public print(a: ArrayType): number|null {
+  public print(a: Animal[]): number|null {
     return 0;
   }
-  public testArrayReturn(): ArrayType {
+  public testArrayReturn(): string[] {
     return [];
   }
 }
