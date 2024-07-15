@@ -88,7 +88,8 @@ class ContextCache {
     }
 
     public getContext(id: number): Context | undefined {
-        if (id === 0 || id > this.contextList.length) {
+        //if (id === 0 || id > this.contextList.length) {
+        if (id > this.contextList.length) {
             return undefined;
         }
         return this.contextList[id];
