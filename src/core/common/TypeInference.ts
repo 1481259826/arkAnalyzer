@@ -90,7 +90,7 @@ export class TypeInference {
                 if (newType) {
                     types[i] = newType;
                 }
-                if (typeof newType === typeof rightOp.getType()) {
+                if (rightOp && typeof newType === typeof rightOp.getType()) {
                     leftOpType.setCurrType(rightOp.getType());
                     type = leftOpType;
                 }
