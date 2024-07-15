@@ -21,6 +21,8 @@ class C1 {
     private number = 123.123;
 
     private s = this.c.toString() ?? 'testing';
+    public objs: C1[] = [];
+    public objs2: C2[] = [new C2()];
 }
 
 class C2 {

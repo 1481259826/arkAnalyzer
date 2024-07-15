@@ -53,17 +53,16 @@ export class TypeInference {
         if (arkField.getInitializer()) {
             this.inferValueType(arkField.getInitializer(), arkField.getDeclaringClass());
         }
-        let fieldType: Type | null = arkField.getType();
-        if (!fieldType) {
+        const beforeType = arkField.getType();
+        let fieldType;
+        if (!beforeType) {
             if (arkField.getFieldType() === 'EnumMember') {
                 fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
-            } else if (arkField.getInitializer()) {
-                fieldType = arkField.getInitializer().getType();
             }
-        } else if (fieldType instanceof UnclearReferenceType) {
-            fieldType = this.inferUnclearReferenceType(fieldType.getName(), arkField.getDeclaringClass());
-        } else if (fieldType instanceof UnionType) {
-            let types = fieldType.getTypes();
+        } else if (beforeType instanceof UnclearReferenceType) {
+            fieldType = this.inferUnclearReferenceType(beforeType.getName(), arkField.getDeclaringClass());
+        } else if (beforeType instanceof UnionType) {
+            let types = beforeType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let subType = types[i];
                 let newType;
@@ -76,17 +75,21 @@ export class TypeInference {
                     types[i] = newType;
                 }
             }
-
             if (arkField.getInitializer()) {
-                fieldType.setCurrType(arkField.getInitializer().getType());
+                beforeType.setCurrType(arkField.getInitializer().getType());
             }
         }
-        if (!fieldType || fieldType instanceof UnknownType || fieldType instanceof UnclearReferenceType) {
-            return;
+        if (fieldType) {
+            arkField.setType(fieldType);
+            arkField.getSignature().setType(fieldType);
+        } else {
+            if (this.canOverrideType(beforeType) && arkField.getInitializer()) {
+                fieldType = arkField.getInitializer().getType();
+                arkField.setType(fieldType);
+                arkField.getSignature().setType(fieldType);
+            }
         }
 
-        arkField.setType(fieldType);
-        arkField.getSignature().setType(fieldType);
     }
 
     public static inferTypeInMethod(arkMethod: ArkMethod): void {
@@ -240,7 +243,7 @@ export class TypeInference {
 
     }
 
-    private static canOverrideType(type: Type) {
+    private static canOverrideType(type: Type | null | undefined) {
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType) {
             return true;
         } else if (type instanceof ClassType
