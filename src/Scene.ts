@@ -708,6 +708,10 @@ export class Scene {
     public getModuleScene(moduleName: string) {
         return this.moduleScenesMap.get(moduleName);
     }
+
+    public getModuleSceneMap(): Map<string, ModuleScene> {
+        return this.moduleScenesMap;
+    }
 }
 
 export class ModuleScene {
