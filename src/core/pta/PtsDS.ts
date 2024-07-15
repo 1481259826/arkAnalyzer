@@ -42,6 +42,9 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     // static new<T extends Idx>(this: new () => PtsSet<T>): PtsSet<T> {
     //     return new this();
     // }
+    constructor() {
+        this.pts = new Set();
+    }
 
     contains(elem: T): boolean {
         return this.pts.has(elem);

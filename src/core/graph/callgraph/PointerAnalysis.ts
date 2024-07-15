@@ -22,7 +22,7 @@ import { Value } from "../../base/Value";
 import { ArkMethod } from "../../model/ArkMethod";
 import { MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
-import { CallGraph, Method } from "../CallGraph";
+import { CallGraph, FuncID, Method } from "../CallGraph";
 import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
@@ -31,7 +31,7 @@ import { KLimitedContextSensitive } from "../../pta/Context";
 
 type PointerPair = [NodeID, NodeID]
 
-class PointerAnalysis extends AbstractAnalysis{
+export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
     private pagBuilder: PagBuilder;
     private cg: CallGraph;
@@ -39,7 +39,7 @@ class PointerAnalysis extends AbstractAnalysis{
     private reachableMethods: Set<CSFuncID>
     private reachableStmts: Stmt[]
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
-    private entry: NodeID;
+    private entry: FuncID;
     private ctx: KLimitedContextSensitive;
     private worklist: NodeID[];
 
@@ -50,11 +50,13 @@ class PointerAnalysis extends AbstractAnalysis{
         this.reachableStmts = []
         this.reachableMethods = new Set()
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s);
     }
 
     private init() {
         // TODO: how to get entry
         this.pagBuilder.buildForEntry(this.entry);
+        this.pag.dump('ptaInit_pag.dot');
 
     }
 
@@ -63,17 +65,24 @@ class PointerAnalysis extends AbstractAnalysis{
         this.solveConstraint();
     }
 
+    public setEntry(fid: FuncID) {
+        this.entry = fid;
+    }
+
     private solveConstraint() {
         this.initWorklist();
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
             reanalyzer = this.solveWorklist();
+
+            break;
         }
 
     }
 
     private initWorklist() {
+        this.worklist = []
         for (let e of this.pag.getAddrEdges()) {
             let { src, dst } = e.getEndPoints();
             this.ptd.addPts(dst, src);
@@ -83,7 +92,6 @@ class PointerAnalysis extends AbstractAnalysis{
     }
 
     private solveWorklist(): boolean {
-
         while (this.worklist.length > 0) {
             let node = this.worklist.pop() as NodeID;
             this.processNode(node);
@@ -96,6 +104,7 @@ class PointerAnalysis extends AbstractAnalysis{
         this.handleLoadWrite(node);
         this.handleCopy(node);
 
+        this.ptd.flush(node);
         return true;
     }
 

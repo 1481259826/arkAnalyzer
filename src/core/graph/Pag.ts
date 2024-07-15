@@ -85,7 +85,7 @@ export class WritePagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-export enum PagNodeKind {HeapObj, LocalVar, RefVar, Param}
+export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param }
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -111,6 +111,10 @@ export class PagNode extends BaseNode {
 
     public setStmt(s: Stmt) {
         this.stmt = s;
+    }
+
+    public getStmt(): Stmt | undefined {
+        return this.stmt;
     }
 
     public hasOutgoingCopyEdge(): boolean {
@@ -283,17 +287,17 @@ export class Pag extends BaseGraph {
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
-            pagNode = new PagLocalNode(id, cid, value, stmt)
+            pagNode = new PagLocalNode(id, cid, value, stmt);
         } else if (value instanceof ArkInstanceFieldRef) {
-            pagNode = new PagInstanceFieldNode(id, cid, value, stmt)
+            pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
-            pagNode = new PagStaticFieldNode(id, cid, value, stmt)
+            pagNode = new PagStaticFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
-            pagNode = new PagNewExprNode(id, cid, value, stmt)
+            pagNode = new PagNewExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
-            pagNode = new PagParamNode(id, cid, value, stmt)
+            pagNode = new PagParamNode(id, cid, value, stmt);
         } else {
-            throw new Error('unsupported Value type ' + value.getType().toString())
+            throw new Error('unsupported Value type ' + value.getType().toString());
         }
 
         this.addNode(pagNode!);
@@ -313,14 +317,27 @@ export class Pag extends BaseGraph {
             return undefined;
         }
 
-        let nd = ctx2nd.get(cid);
-        if(!nd) {
+        let ndId = ctx2nd.get(cid);
+        if(!ndId) {
             return undefined;
         }
 
-        return nd;
+        return ndId;
     }
 
+    public hasCtxRetNode(cid: ContextID, v: Value): NodeID | undefined {
+        let ctx2nd = this.contextValueToIdMap.get(v);
+        if (!ctx2nd) {
+            return undefined;
+        }
+
+        let ndId = ctx2nd.get(cid);
+        if(!ndId) {
+            return undefined;
+        }
+
+        return ndId;
+    }
     public getOrNewNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
         let nodeId = this.hasCtxNode(cid, v);
         if (nodeId != undefined) {

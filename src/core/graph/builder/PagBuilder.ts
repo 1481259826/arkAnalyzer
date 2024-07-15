@@ -65,9 +65,8 @@ export class PagBuilder {
     public handleReachable() {
         while (this.worklist.length > 0) {
             let csFunc = this.worklist.shift() as CSFuncID
-            if (this.buildFunPag(csFunc.funcID)) {
-                this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
-            }
+            this.buildFunPag(csFunc.funcID);
+            this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
         }
     }
 
@@ -77,13 +76,7 @@ export class PagBuilder {
             let csFuncID =new CSFuncID(cid, funcID);
             this.worklist.push(csFuncID);
 
-            while (this.worklist.length > 0) {
-                let csFunc = this.worklist.shift() as CSFuncID;
-                //if (this.buildFunPag(csFunc.funcID)) {
-                this.buildFunPag(csFunc.funcID);
-                this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
-                //}
-            }
+            this.handleReachable();
         }
     }
 
@@ -164,6 +157,11 @@ export class PagBuilder {
             let srcPagNode = this.getOrNewPagNode(cid, e.src, e.stmt);
             let dstPagNode = this.getOrNewPagNode(cid, e.dst, e.stmt);
             this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind, e.stmt);
+
+            // Take place of the real stmt for return
+            if (dstPagNode.getStmt() instanceof ArkReturnStmt) {
+                dstPagNode.setStmt(e.stmt);
+            }
         }
 
         return true;

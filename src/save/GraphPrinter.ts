@@ -16,7 +16,6 @@
 import { BaseEdge, BaseNode, GraphTraits } from "../core/graph/BaseGraph";
 import { Printer } from "./Printer";
 
-
 function escapeStr(input: string): string {
     let str = input;
     for (let i = 0; i < str.length; ++i) {

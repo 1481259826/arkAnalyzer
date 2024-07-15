@@ -161,7 +161,6 @@ export class BaseGraph implements GraphTraits{
 
     public removeNode(id: NodeID): boolean {
         if(this.idToNodeMap.delete(id)) {
-            this.nodeNum--;
             return true;
         }
         return false;
