@@ -156,6 +156,14 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
     }
 
+    /*
+     *	src --store--> dst,
+     *	node \in pts(dst) ==>  src--copy-->node
+     */
+    private processWrite(nodeID: NodeID, loadEdge: PagEdge) {
+
+    }
+
     private propagate(edge: PagEdge): boolean {
         let changed: boolean = false;
         let { src, dst } = edge.getEndPoints();
