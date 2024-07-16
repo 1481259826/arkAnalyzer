@@ -40,6 +40,21 @@ export class CallSite {
         this.calleeFuncID = c;
     }
 }
+
+export class DynCallSite {
+    public callerFuncID: FuncID;
+    public callStmt: Stmt;
+    public args: Value[] | undefined;
+    public protentialCalleeFuncID: FuncID | undefined;
+
+    constructor(caller: FuncID, s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined) {
+        this.callerFuncID = caller;
+        this.callStmt = s;
+        this.args = a;
+        this.protentialCalleeFuncID = ptcCallee;
+    }
+}
+
 export class CSCallSite extends CallSite {
     public cid: ContextID;
 
@@ -86,6 +101,7 @@ export class CallGraph extends BaseGraph {
     private idToCallSiteMap: Map<CallSiteID, CallSite> = new Map();
     private callSiteToIdMap: Map<CallSite, CallSiteID> = new Map();
     private stmtToCallSitemap: Map<Stmt, CallSite> = new Map();
+    private stmtToDynCallSitemap: Map<Stmt, DynCallSite> = new Map();
     private methodToCGNodeMap: Map<Method, CallGraphNode> = new Map();
     private callPairToEdgeMap: Map<string, CallGraphEdge> = new Map();
     private callSiteNum: number = 0;
@@ -157,6 +173,22 @@ export class CallGraph extends BaseGraph {
             this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
         }
         callEdge.addDirectCallSite(callStmt);
+    }
+
+     public addDynamicCallInfo(callStmt: Stmt, caller: Method, protentialCallee?: Method ): void {
+        let callerNode = this.getCallGraphNodeByMethod(caller) as CallGraphNode;
+        let calleeNode;
+        if (protentialCallee) {
+            calleeNode = this.getCallGraphNodeByMethod(protentialCallee) as CallGraphNode;
+        }
+        let args = callStmt.getInvokeExpr()?.getArgs();
+
+        let cs = new DynCallSite(callerNode.getID(), callStmt, args, calleeNode?.getID())
+        this.stmtToDynCallSitemap.set(callStmt, cs);
+    }
+
+    public getDynCallsiteByStmt(stmt: Stmt): DynCallSite | undefined {
+        return this.stmtToDynCallSitemap.get(stmt);
     }
 
     public addStmtToCallSiteMap(stmt: Stmt, cs: CallSite): boolean{

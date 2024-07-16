@@ -20,7 +20,7 @@ import { AbstractFieldRef } from "../../base/Ref";
 import { ArkAssignStmt, Stmt } from "../../base/Stmt";
 import { Value } from "../../base/Value";
 import { ArkMethod } from "../../model/ArkMethod";
-import { MethodSignature } from "../../model/ArkSignature";
+import { ClassSignature, MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, FuncID, Method } from "../CallGraph";
 import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode } from "../Pag";
@@ -28,6 +28,7 @@ import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
 import { KLimitedContextSensitive } from "../../pta/Context";
+import { ArkClass } from "../../model/ArkClass";
 
 type PointerPair = [NodeID, NodeID]
 
@@ -57,12 +58,12 @@ export class PointerAnalysis extends AbstractAnalysis{
         // TODO: how to get entry
         this.pagBuilder.buildForEntry(this.entry);
         this.pag.dump('ptaInit_pag.dot');
-
     }
 
     public start() {
         this.init();
         this.solveConstraint();
+        this.pag.dump('ptaEnd_pag.dot');
     }
 
     public setEntry(fid: FuncID) {
@@ -74,9 +75,9 @@ export class PointerAnalysis extends AbstractAnalysis{
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
-            reanalyzer = this.solveWorklist();
+            this.solveWorklist();
 
-            break;
+            reanalyzer = this.updateCallGraph();
         }
 
     }
@@ -105,6 +106,12 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.handleCopy(node);
 
         this.ptd.flush(node);
+        try{
+            (this.pag.getNode(node) as PagNode).setPointerSet(this.ptd.getPropaPts(node)!.getProtoPtsSet());
+        } catch(e) {
+
+            let a = 0;
+        }
         return true;
     }
 
@@ -245,6 +252,48 @@ export class PointerAnalysis extends AbstractAnalysis{
                 }
             })
         })
+    }
+
+    private updateCallGraph() {
+        let changed = false;
+        let dynCallsites = this.pag.getDynamicCallSites();
+
+        for (let cs of dynCallsites) {
+
+            let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+            // Get local of base class
+            let base = ivkExpr.getBase();
+            // Get PAG nodes for this base's local
+            let ctx2NdMap = this.pag.getNodesByValue(base);
+            if (ctx2NdMap) {
+                for (let [cid, nodeId] of ctx2NdMap.entries()) {
+
+                    let pts = this.ptd.getPropaPts(nodeId);
+                    if (pts) {
+                        for(let pt of pts) {
+                            let srcNodes = this.pagBuilder.addDynamicCallEdge(cs, pt, cid);
+                            changed = this.addToReanalyze(srcNodes) || changed;
+                        }
+                    }
+                }
+            }
+        }
+        changed = this.pagBuilder.handleReachable() || changed;
+
+        this.pag.clearDynamicCallSiteSet();
+
+        // TODO: on The Fly UpdateCG
+        return changed;
+    }
+
+    private addToReanalyze(startNodes: NodeID[]): boolean {
+        for (let node of startNodes) {
+            if (!this.worklist.includes(node) && this.ptd.resetElem(node)) {
+                this.worklist.push(node);
+                return true;
+            }
+        }
+        return false;
     }
 
     /*

@@ -14,11 +14,11 @@
  */
 
 import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from './BaseGraph';
-import { CallGraph, CallSite } from './CallGraph';
+import { CallGraph, CallSite, DynCallSite } from './CallGraph';
 import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ArkNewExpr } from '../base/Expr';
+import { ArkInstanceInvokeExpr, ArkNewExpr } from '../base/Expr';
 import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../base/Ref';
 import { Local } from '../base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
@@ -194,6 +194,10 @@ export class PagNode extends BaseNode {
         this.pointerSet.add(node)
     }
 
+    public setPointerSet(pts: Set<NodeID>): void {
+        this.pointerSet = pts;
+    }
+
     public getOutEdges() {
         return {
             AddressEdge: this.addressOutEdges,
@@ -224,6 +228,7 @@ export class PagNode extends BaseNode {
 
         lable = PagNodeKind[this.getKind()];
         lable = lable + ` ID: ${this.getID()} Ctx: ${this.cid}`;
+        lable = lable + ` pts:{${Array.from(this.pointerSet).join(',')}}`
 
         if (this.getKind() == PagNodeKind.Param) {
             param = this.value as ArkParameterRef;
@@ -231,8 +236,10 @@ export class PagNode extends BaseNode {
         }
 
         if (this.stmt) {
-            lable = lable + `\n${this.stmt.toString()}`;
+            lable = lable + `\n${this.stmt.toString()} ln:`;
+            lable = lable + this.stmt.getOriginPositionInfo().getLineNo();
         }
+
 
         if (this.getKind() == PagNodeKind.Param) {
             //lable = lable + '\n' + (this.value as ArkParameterRef).toString();
@@ -279,10 +286,25 @@ export class Pag extends BaseGraph {
     //private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
     private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
     private addrEdges: PagEdgeSet = new Set();
+    private dynamicCallSites: Set<DynCallSite>;
 
     public getCG(): CallGraph {
         return this.cg;
     }
+
+    public addToDynamicCallSite(cs: DynCallSite): void {
+        this.dynamicCallSites = this.dynamicCallSites ?? new Set();
+        this.dynamicCallSites.add(cs);
+    }
+
+    public getDynamicCallSites(): Set<DynCallSite> {
+        return this.dynamicCallSites;
+    }
+
+    public clearDynamicCallSiteSet() {
+        this.dynamicCallSites.clear();
+    }
+
     public addPagNode(cid: ContextID, value: Value, stmt?: Stmt): PagNode{
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
@@ -347,6 +369,10 @@ export class Pag extends BaseGraph {
         return this.addPagNode(cid, v, s);
     }
 
+    public getNodesByValue(v: Value): Map<ContextID, NodeID> | undefined {
+        return this.contextValueToIdMap.get(v);
+    }
+
     public addPagEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind, stmt?: Stmt): boolean {
         // TODO: check if the edge already existing
         let edge = new PagEdge(src, dst, kind, stmt); 
@@ -400,7 +426,6 @@ export class FuncPag {
     private funcID: number;
     private internalEdges: Set<InternalEdge>;
     private normalCallSites: Set<CallSite>;
-    private dynamicCallSites: Set<CallSite>;
     private funPtrCallSite: Set<CallSite>;
 
     public getInternalEdges(): Set<InternalEdge> | undefined {
@@ -410,13 +435,6 @@ export class FuncPag {
     public addNormalCallSite(cs: CallSite): void {
         this.normalCallSites = this.normalCallSites ?? new Set();
         this.normalCallSites.add(cs);
-    }
-
-    public addDynamicCallSite(cs: CallSite): void {
-        if (this.dynamicCallSites == undefined) {
-            this.dynamicCallSites = new Set();
-        }
-        this.dynamicCallSites.add(cs);
     }
 
     public getNormalCallSites(): Set<CallSite> {
