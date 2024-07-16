@@ -14,7 +14,7 @@
  */
 
 import { ArkParameterRef, ArkThisRef } from "../base/Ref";
-import { ArkAssignStmt, ArkReturnStmt } from "../base/Stmt";
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from "../base/Stmt";
 import { Type, UnknownType } from "../base/Type";
 import { Value } from "../base/Value";
 import { Cfg } from "../graph/Cfg";
@@ -254,6 +254,10 @@ export class ArkMethod implements ArkExport {
             }
         }
         return resultValues
+    }
+
+    public getReturnStmt(): Stmt[] {
+        return this.getCfg().getStmts().filter(stmt => stmt instanceof ArkReturnStmt);
     }
 
     public getDecorators(): Decorator[] {

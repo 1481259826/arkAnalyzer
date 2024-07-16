@@ -16,7 +16,11 @@
 export type NodeID = number;
 export type Kind = number;
 
-export class BaseEdge {
+export interface GraphTraits {
+    nodesItor(): IterableIterator<BaseNode>;
+    getGraphName(): string;
+}
+export abstract class BaseEdge {
     private src: BaseNode;
     private dst: BaseNode;
     private kind: Kind;
@@ -46,9 +50,20 @@ export class BaseEdge {
     public getKind(): Kind {
         return this.kind;
     }
+
+    public getEndPoints(): { src: NodeID, dst: NodeID } {
+        return {
+            src: this.src.getID(),
+            dst: this.dst.getID()
+        }
+    }
+
+    public getDotAttr(): string {
+        return '';
+    }
 }
 
-export class BaseNode {
+export abstract class BaseNode {
     private id: NodeID;
     private kind: Kind;
     private inEdges: Set<BaseEdge> = new Set();
@@ -98,15 +113,33 @@ export class BaseNode {
     public removeOutgoingEdge(e: BaseEdge): boolean {
         return this.outEdges.delete(e);
     }
+
+    public getOutgoingEdges(): Set<BaseEdge> {
+        return this.outEdges;
+    }
+
+    public getDotAttr(): string {
+        return 'shape=box';
+    }
+
+    public getDotLabel(): string {
+        return ''
+    }
+
 }
 
-export class BaseGraph {
+export class BaseGraph implements GraphTraits{
     protected edgeNum: number;
     protected nodeNum: number = 0;
     protected idToNodeMap: Map<NodeID, BaseNode>;
+    protected edgeMarkSet: Set<string>;
 
     constructor() {
         this.idToNodeMap = new Map();
+        this.edgeMarkSet = new Set();
+    }
+    public nodesItor(): IterableIterator<BaseNode> {
+        return this.idToNodeMap.values();
     }
 
     public addNode(n: BaseNode): void {
@@ -128,23 +161,36 @@ export class BaseGraph {
 
     public removeNode(id: NodeID): boolean {
         if(this.idToNodeMap.delete(id)) {
-            this.nodeNum--;
             return true;
         }
         return false;
     }
 
     public hasEdge(src: BaseNode, dst: BaseNode): boolean {
-        let e = new BaseEdge(src, dst, 0);
-
-        if (src.hasOutgoingEdge(e) && dst.hasIncomingEdge(e)) {
-            return true;
+        for(let e of src.getOutgoingEdges()) {
+            if (e.getDstNode() === dst) {
+                return true;
+            }
         }
 
         return false;
     }
 
+    public ifEdgeExisting(edge: BaseEdge): boolean {
+        let edgeMark: string = `${edge.getSrcID()}-${edge.getDstID()}:${edge.getKind()}`;
+        if(this.edgeMarkSet.has(edgeMark)) {
+            return true;
+        }
+
+        this.edgeMarkSet.add(edgeMark);
+        return false;
+    }
+
     public getNodesIter(): IterableIterator<BaseNode> {
         return this.idToNodeMap.values();
+    }
+
+    public getGraphName(): string {
+        return '';
     }
 };
