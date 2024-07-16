@@ -302,7 +302,9 @@ export class Pag extends BaseGraph {
     }
 
     public clearDynamicCallSiteSet() {
-        this.dynamicCallSites.clear();
+        if (this.dynamicCallSites) {
+            this.dynamicCallSites.clear();
+        }
     }
 
     public addPagNode(cid: ContextID, value: Value, stmt?: Stmt): PagNode{

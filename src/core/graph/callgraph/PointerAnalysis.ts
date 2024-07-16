@@ -254,11 +254,12 @@ export class PointerAnalysis extends AbstractAnalysis{
         })
     }
 
-    private updateCallGraph() {
+    private updateCallGraph(): boolean {
         let changed = false;
         let dynCallsites = this.pag.getDynamicCallSites();
 
-        for (let cs of dynCallsites) {
+        dynCallsites?.forEach(cs => {
+        //for (let cs of dynCallsites) {
 
             let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
             // Get local of base class
@@ -277,7 +278,7 @@ export class PointerAnalysis extends AbstractAnalysis{
                     }
                 }
             }
-        }
+        })
         changed = this.pagBuilder.handleReachable() || changed;
 
         this.pag.clearDynamicCallSiteSet();
