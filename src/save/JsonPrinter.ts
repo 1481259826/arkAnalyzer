@@ -381,7 +381,7 @@ export class JsonPrinter extends Printer {
         } else if (value instanceof ObjectLiteralExpr) {
             return {
                 _: 'ObjectLiteralExpr',
-                anonymousClass: this.serializeClass(value.getAnonymousClass()),
+                anonymousClass: this.serializeClassSignature(value.getAnonymousClass().getSignature()),
                 type: this.serializeType(value.getType()),
             };
         } else if (value instanceof ArkConditionExpr) {
