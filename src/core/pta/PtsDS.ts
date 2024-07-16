@@ -122,6 +122,10 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         return false;
     }
 
+    public getProtoPtsSet(): Set<T> {
+        return this.pts;
+    }
+
     [Symbol.iterator](): IterableIterator<T> {
         return this.pts[Symbol.iterator]();
     }
@@ -149,6 +153,16 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         let diff = this.diffPtsMap.get(v) || new this.DSCreator();
         this.diffPtsMap.set(v, diff);
         return diff.insert(elem);
+    }
+
+    resetElem(v:K): boolean {
+        let propa = this.propaPtsMap.get(v);
+        if (propa) {
+            this.diffPtsMap.set(v, propa);
+            this.propaPtsMap.set(v, new this.DSCreator());
+            return true;
+        }
+        return false;
     }
 
     unionDiffPts(dstv: K, srcv: K): boolean {
@@ -213,17 +227,18 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         return this.propaPtsMap.get(v);
     }
 
-    getPropaPtsMut(v: K): DS | undefined {
+    getPropaPtsMut(v: K): DS {
         if (!this.propaPtsMap.has(v)) {
             this.propaPtsMap.set(v, new this.DSCreator());
         }
-        return this.propaPtsMap.get(v);
+        return this.propaPtsMap.get(v)!;
     }
 
     flush(v: K): void {
         if (!this.diffPtsMap.has(v)) return;
         let diff = this.diffPtsMap.get(v)!;
-        let propa = this.propaPtsMap.get(v) || new this.DSCreator();
+        let propa = this.getPropaPtsMut(v);
+        //let propa = this.propaPtsMap.get(v) || new this.DSCreator();
         propa.union(diff);
         diff.clear();
     }
