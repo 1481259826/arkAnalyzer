@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-for (let i =0 ;i<1;i++){}
-    
-    
+try{
+    console.log(1)
+} catch(err) {
+    console.log(2)
+} 
