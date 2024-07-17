@@ -1524,6 +1524,37 @@ const JsonPrinter_Shape_EXPECTED = {
                     ]
                 }
             }
+        },
+        {
+            "signature": {
+                "enclosingClass": {
+                    "name": "Shape"
+                },
+                "name": "constructor",
+                "parameters": [],
+                "returnType": {
+                    "_": "UnknownType"
+                }
+            },
+            "modifiers": [],
+            "typeParameters": [],
+            "body": {
+                "locals": [],
+                "cfg": {
+                    "blocks": [
+                        {
+                            "id": 0,
+                            "successors": [],
+                            "predecessors": [],
+                            "stmts": [
+                                {
+                                    "_": "ReturnVoidStmt"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
         }
     ]
 };
