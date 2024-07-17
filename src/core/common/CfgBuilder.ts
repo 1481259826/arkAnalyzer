@@ -566,30 +566,30 @@ export class CfgBuilder {
                 if (last instanceof ConditionStatementBuilder) {
                     if (last.nextT == exit) {
                         last.nextT = exit.next;
-                        const lasts = [...exit.next!.lasts];
-                        lasts[lasts.indexOf(exit)] = last;
-                        exit.next!.lasts = new Set(lasts);
+                        const lasts = exit.next!.lasts;
+                        lasts.delete(exit);
+                        lasts.add(last);
                     } else if (last.nextF == exit) {
                         last.nextF = exit.next;
-                        const lasts = [...exit.next!.lasts];
-                        lasts[lasts.indexOf(exit)] = last;
-                        exit.next!.lasts = new Set(lasts);
+                        const lasts = exit.next!.lasts;
+                        lasts.delete(exit);
+                        lasts.add(last);
                     }
                 } else if (last instanceof SwitchStatementBuilder) {
                     for (let i = 0; i < last.nexts.length; i++) {
                         const stmt = last.nexts[i];
                         if (stmt == exit) {
                             last.nexts[i] = exit.next!;
-                            const lasts = [...exit.next!.lasts];
-                            lasts[lasts.indexOf(exit)] = last;
-                            exit.next!.lasts = new Set(lasts);
+                            const lasts = exit.next!.lasts;
+                            lasts.delete(exit);
+                            lasts.add(last);
                         }
                     }
                 } else {
                     last.next = exit.next;
-                    const lasts = [...exit.next!.lasts];
-                    lasts[lasts.indexOf(exit)] = last;
-                    exit.next!.lasts = new Set(lasts);
+                    const lasts = exit.next!.lasts;
+                    lasts.delete(exit);
+                    lasts.add(last);
                 }
             }
         }
