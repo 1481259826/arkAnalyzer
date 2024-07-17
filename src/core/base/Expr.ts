@@ -282,6 +282,10 @@ export class ArkNewExpr extends AbstractExpr {
         this.classType = classType;
     }
 
+    public getClassType(): ClassType {
+        return this.classType;
+    }
+
     public getUses(): Value[] {
         return [];
     }
@@ -589,6 +593,10 @@ export class ArkInstanceOfExpr extends AbstractExpr {
         this.op = newOp;
     }
 
+    public getCheckType(): string {
+        return this.checkType;
+    }
+
     public getType(): Type {
         return BooleanType.getInstance();
     }
@@ -772,10 +780,6 @@ export class ArrayLiteralExpr extends AbstractExpr {
         this.type = type;
     }
 
-    public getElements(): Value[] {
-        return this.elements;
-    }
-
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push();
@@ -811,6 +815,10 @@ export class ArrayLiteralExpr extends AbstractExpr {
             }
         }
         return this;
+    }
+
+    public getElements(): Value[] {
+        return this.elements;
     }
 
     public getType(): Type {

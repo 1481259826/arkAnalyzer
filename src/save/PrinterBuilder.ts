@@ -20,6 +20,7 @@ import { ArkStream } from './ArkStream';
 import { DotFilePrinter } from './DotPrinter';
 import { SourceFilePrinter } from './source/SourceFilePrinter';
 import { Printer } from './Printer';
+import { JsonPrinter } from './JsonPrinter';
 
 /**
  * @example
@@ -94,12 +95,22 @@ export class PrinterBuilder {
         output: string | undefined = undefined
     ): void {
         let filename = output;
-        if (output === undefined) {
+        if (filename === undefined) {
             filename = join(this.getOutputDir(arkFile), arkFile.getName());
         }
-        fs.mkdirSync(dirname(filename as string), { recursive: true });
+        fs.mkdirSync(dirname(filename), { recursive: true });
 
         let printer: Printer = new SourceFilePrinter(arkFile);
-        PrinterBuilder.dump(printer, filename as string);
+        PrinterBuilder.dump(printer, filename);
+    }
+
+    public dumpToJson(arkFile: ArkFile, output: string | undefined = undefined): void {
+        let filename = output;
+        if (filename === undefined) {
+            filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.json');
+        }
+        fs.mkdirSync(dirname(filename), { recursive: true });
+        let printer: Printer = new JsonPrinter(arkFile);
+        PrinterBuilder.dump(printer, filename);
     }
 }

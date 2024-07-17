@@ -202,6 +202,15 @@ abstract class Animal {
     public abstract sayHi(): void;
 }
 
+function deleteTest() {
+    let x: { a?: number, b: number[] } = { a: 42, b: [5, 100] };
+    let bbb: number[] = x.b;
+    delete x.a;
+    delete bbb[0];
+    logger.info(x); // { b: [ undefined, 100 ] }
+    delete x;
+}
+
 export default 123;
 export let x: number = 1;
 export const soo = 123;
@@ -214,3 +223,4 @@ export { ExtendedAdder as ExtAdder, ExtendedAdder };
 
 forLoopTest();
 controlTest();
+deleteTest();
