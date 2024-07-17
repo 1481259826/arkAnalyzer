@@ -101,12 +101,32 @@ export class PagNode extends BaseNode {
     private writeInEdges: PagEdgeSet;
     private writeOutEdges: PagEdgeSet;
 
+    // Point-to node of base class
+    // Only PagInstanceRefNode has this field
+    // Define in base class is for dot print
+    protected basePt: NodeID;
+
     constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value, k: Kind, s?: Stmt) {
         super(id, k);
         this.cid = cid;
         this.value = value;
         this.stmt = s;
         this.pointerSet = new Set<NodeID>;
+    }
+
+    public getBasePt(): NodeID {
+        return this.basePt;
+    }
+
+    public setBasePt(pt: NodeID) {
+        this.basePt = pt;
+    }
+
+    public getCid(): ContextID {
+        if (this.cid == undefined) {
+            throw new Error('cid is undefine')
+        }
+        return this.cid;
     }
 
     public setStmt(s: Stmt) {
@@ -131,6 +151,10 @@ export class PagNode extends BaseNode {
 
     public getOutgoingWriteEdges(): PagEdgeSet {
         return this.writeOutEdges;
+    }
+
+    public getIncomingWriteEdges(): PagEdgeSet {
+        return this.writeInEdges;
     }
 
     public addAddressInEdge(e: AddrPagEdge): void {
@@ -228,6 +252,9 @@ export class PagNode extends BaseNode {
 
         lable = PagNodeKind[this.getKind()];
         lable = lable + ` ID: ${this.getID()} Ctx: ${this.cid}`;
+        if (this.basePt) {
+            lable = lable + ` base:{${this.basePt}}`;
+        }
         lable = lable + ` pts:{${Array.from(this.pointerSet).join(',')}}`
 
         if (this.getKind() == PagNodeKind.Param) {
@@ -238,12 +265,6 @@ export class PagNode extends BaseNode {
         if (this.stmt) {
             lable = lable + `\n${this.stmt.toString()} ln:`;
             lable = lable + this.stmt.getOriginPositionInfo().getLineNo();
-        }
-
-
-        if (this.getKind() == PagNodeKind.Param) {
-            //lable = lable + '\n' + (this.value as ArkParameterRef).toString();
-
         }
 
         return lable;
@@ -260,6 +281,7 @@ export class PagInstanceFieldNode extends PagNode {
     constructor(id: NodeID, cid: ContextID|undefined = undefined, instanceFieldRef: ArkInstanceFieldRef, stmt?: Stmt) {
         super(id, cid, instanceFieldRef,PagNodeKind.RefVar, stmt)
     }
+
 }
 
 export class PagStaticFieldNode extends PagNode {
@@ -287,6 +309,7 @@ export class Pag extends BaseGraph {
     private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
     private addrEdges: PagEdgeSet = new Set();
     private dynamicCallSites: Set<DynCallSite>;
+    private clonedNodeMap: Map<NodeID, Map<NodeID, NodeID>> = new Map();
 
     public getCG(): CallGraph {
         return this.cg;
@@ -307,7 +330,33 @@ export class Pag extends BaseGraph {
         }
     }
 
-    public addPagNode(cid: ContextID, value: Value, stmt?: Stmt): PagNode{
+    /*
+     * Clone a PagNode with same cid/value/stmt,
+     * but different Node ID
+     */
+    public getOrClonePagNode(src: PagNode, basePt: NodeID): PagNode {
+        if (src.getBasePt() != undefined) {
+            throw new Error ('This is a cloned ref node, can not be cloned again');
+        }
+
+        let cloneSet =  this.clonedNodeMap.get(src.getID());
+        if (!cloneSet) {
+            cloneSet = new Map<NodeID, NodeID>();
+            this.clonedNodeMap.set(src.getID(), cloneSet);
+        } else {
+            let nodeID = cloneSet.get(basePt);
+            if (nodeID) {
+                return this.getNode(nodeID) as PagNode;
+            }
+        }
+
+        // Not found
+        let cloneNode = this.addPagNode(src.getCid(), src.getValue(), src.getStmt(), false)
+        cloneSet.set(basePt, cloneNode.getID());
+        return cloneNode;
+    }
+
+    public addPagNode(cid: ContextID, value: Value, stmt?: Stmt, refresh: boolean = true): PagNode{
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
@@ -325,12 +374,14 @@ export class Pag extends BaseGraph {
         }
 
         this.addNode(pagNode!);
-        let ctx2NdMap = this.contextValueToIdMap.get(value);
-        if (!ctx2NdMap) {
-            ctx2NdMap = new Map();
-            this.contextValueToIdMap.set(value, ctx2NdMap);
+        if (refresh) {
+            let ctx2NdMap = this.contextValueToIdMap.get(value);
+            if (!ctx2NdMap) {
+                ctx2NdMap = new Map();
+                this.contextValueToIdMap.set(value, ctx2NdMap);
+            }
+            ctx2NdMap.set(cid, id);
         }
-        ctx2NdMap.set(cid, id);
         
         return pagNode!;
     }
