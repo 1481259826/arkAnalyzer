@@ -68,7 +68,7 @@ describe("export Test", () => {
         if (stmts) {
             assert.equal(stmts[2].toString(), 'staticinvoke <@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.[static]setWebDebuggingAccess(boolean)>(false)');
             assert.equal(stmts[6].toString(), 'instanceinvoke controller.<@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.loadUrl(string|Resource, Array)>(\'https://www.example.com/cn\')')
-            assert.equal(stmts[7].toString(),'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, ArrayType)>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
+            assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
         }
 
     })

@@ -15,7 +15,6 @@
 
 import { ArkField } from '../model/ArkField';
 import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
-import { NodeWithTypeArguments } from 'ohos-typescript';
 
 /**
  * @category core/base/type
@@ -374,7 +373,7 @@ export class ArrayType extends Type {
     public toString(): string {
         const strs: string[] = [];
         if (this.baseType) {
-            strs.push('(' + this.baseType.toString() + ')');
+            strs.push(this.baseType.toString());
         }
         for (let i = 0; i < this.dimension; i++) {
             strs.push('[]');

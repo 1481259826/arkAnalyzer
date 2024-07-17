@@ -16,6 +16,7 @@
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
 import {
     AnyType,
+    ArrayType,
     CallableType,
     ClassType,
     NumberType,
@@ -355,6 +356,8 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
             types.push(tsNode2Type(element, sourceFile, arkInstance));
         });
         return new TupleType(types);
+    } else if (ts.isArrayTypeNode(typeNode)) {
+        return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
     } else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }
