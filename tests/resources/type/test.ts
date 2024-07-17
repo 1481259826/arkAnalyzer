@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-try{
-    console.log(1)
-} catch(err) {
-    console.log(2)
-} 
+if(1){
+    console.log('1');
+} else {
+    console.log('2');
+}
