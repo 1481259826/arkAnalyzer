@@ -16,14 +16,14 @@
 import { Scene } from "../../../Scene";
 import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../base/Expr";
 import { Local } from "../../base/Local";
-import { AbstractFieldRef } from "../../base/Ref";
+import { AbstractFieldRef, ArkInstanceFieldRef } from "../../base/Ref";
 import { ArkAssignStmt, Stmt } from "../../base/Stmt";
 import { Value } from "../../base/Value";
 import { ArkMethod } from "../../model/ArkMethod";
 import { ClassSignature, MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, FuncID, Method } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode } from "../Pag";
+import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
@@ -43,6 +43,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     private entry: FuncID;
     private ctx: KLimitedContextSensitive;
     private worklist: NodeID[];
+    private handledNode: NodeID[] = [];
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         super(s)
@@ -125,6 +126,11 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private handleLoadWrite(nodeID: NodeID): boolean {
+        if (this.handledNode.includes(nodeID)) {
+            return false;
+        }
+        this.handledNode.push(nodeID);
+
         let node = this.pag.getNode(nodeID) as PagNode;
         let diffPts = this.ptd.getDiffPts(nodeID);
         if (!diffPts) {
@@ -135,33 +141,67 @@ export class PointerAnalysis extends AbstractAnalysis{
             node.getOutgoingLoadEdges()?.forEach(loadEdge => {
                 this.processLoad(pt, loadEdge);
             });
+        }       
 
-            node.getOutgoingWriteEdges()?.forEach(writeEdge => {
-                //TODO: processWrite
-            });
-        }
+        node.getOutgoingWriteEdges()?.forEach(writeEdge => {
+            this.processWrite(nodeID, writeEdge)
+        });
 
         return true;
     }
 
     /*
+     *  b = a.f
      *	src --load--> dst,
      *	node \in pts(src) ==>  node--copy-->dst
      */
     private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
         let src = this.pag.getNode(nodeID) as PagNode;
         let dst = loadEdge.getDstNode() as PagNode;
+
         if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
             this.worklist.push(nodeID);
         }
     }
 
     /*
+     *  a.f = b
      *	src --store--> dst,
      *	node \in pts(dst) ==>  src--copy-->node
      */
-    private processWrite(nodeID: NodeID, loadEdge: PagEdge) {
+    private processWrite(nodeID: NodeID, writeEdge: PagEdge) {
+        let src = this.pag.getNode(nodeID) as PagNode;
+        let wr2 = writeEdge.getDstNode() as PagNode;
 
+        let value = wr2.getValue();
+        if (!(value instanceof ArkInstanceFieldRef)) {
+            throw new Error ('Not a Ref field');
+        }
+        let base = value.getBase();
+        let ctx2NdMap = this.pag.getNodesByValue(base);
+        if (!ctx2NdMap) {
+            throw new Error ('Cannot find pag node for a local');
+        }
+
+        for (let [cid, nodeId] of ctx2NdMap.entries()) {
+            let pts = this.ptd.getPropaPts(nodeId);
+            if (pts) {
+                for (let pt of pts) {
+                    // 1st. clone the ref node for each base clase instance
+                    let newDst = this.pag.getOrClonePagNode(wr2, pt);
+                    (newDst as PagInstanceFieldNode).setBasePt(pt);
+                    if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
+                        this.worklist.push(src.getID());
+                    }
+
+                    // 2nd. add edge from cloned nodes to successor nodes
+                    wr2.getOutgoingEdges().forEach(edge => {
+                        let succNode = edge.getDstNode() as PagNode;
+                        this.pag.addPagEdge(newDst, succNode, edge.getKind());
+                    })
+                }
+            }
+        }
     }
 
     private propagate(edge: PagEdge): boolean {
