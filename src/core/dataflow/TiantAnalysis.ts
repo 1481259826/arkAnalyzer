@@ -30,6 +30,7 @@ import { ArkClass } from "../model/ArkClass";
 import Logger from "../../utils/logger";
 import { ArkNamespace } from "../model/ArkNamespace";
 import * as fs from 'fs';
+import { Cfg } from '../graph/Cfg';
 
 const logger = Logger.getLogger();
 
@@ -85,8 +86,8 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                 let ret: Set<Value> = new Set();
                 if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
-                    let body: ArkBody = entryMethod.getBody();
-                    const parameters =  [...entryMethod.getCfg().getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
+                    let body: ArkBody = entryMethod.getBody() as ArkBody;
+                    const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0; i < parameters.length;i++) {
                         const para  = parameters[i].getDef();
                         if (para)
@@ -178,11 +179,11 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                 const args = callStmt.getInvokeExpr().getArgs();
                 for (let i = 0; i < args.length; i++){
                     if (args[i] == dataFact || checkerInstance.callSource(args[i]) && checkerInstance.getZeroValue() == dataFact){
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...(method.getCfg() as Cfg).getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter)
                             ret.add(realParameter);
                     } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == args[i].toString()){
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...(method.getCfg() as Cfg).getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter) {
                             const retRef = new ArkInstanceFieldRef(realParameter as Local, dataFact.getFieldSignature());
                             ret.add(retRef);

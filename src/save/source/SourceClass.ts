@@ -169,7 +169,7 @@ export class SourceDefaultClass extends SourceClass {
     public dumpOriginal(): string {
         for (let method of this.cls.getMethods()) {
             if (method.isDefaultArkMethod()) {
-                for (let stmt of method.getBody().getOriginalCfg().getStmts()) {
+                for (let stmt of method.getOriginalCfg()!.getStmts()) {
                     let code = stmt.toString();
                     if (!code.startsWith('import') && code !== 'return;') {
                         this.printer.writeLine(code);

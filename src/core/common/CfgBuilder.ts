@@ -16,26 +16,12 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkParameterRef, ArkThisRef } from '../base/Ref';
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
-import {
-    AnnotationNamespaceType,
-    AnnotationTypeQueryType,
-    ArrayType,
-    TupleType,
-    Type,
-    UnionType,
-    UnknownType,
-} from '../base/Type';
+import { ArkGotoStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
-import { TypeInference } from './TypeInference';
 import { ArkIRTransformer } from './ArkIRTransformer';
-import { LineColPosition } from '../base/Position';
-import { COMPONENT_BUILD_FUNCTION } from './EtsConst';
-import { Decorator } from '../base/Decorator';
 import { ModelUtils } from './ModelUtils';
 
 const logger = Logger.getLogger();
@@ -727,7 +713,7 @@ export class CfgBuilder {
         if (notReturnStmts.length == 1 && notReturnStmts[0].block) {
             for (const stmt of notReturnStmts[0].block.stmts) {
                 if (stmt instanceof TryStatementBuilder) {
-                    tryExit =true;
+                    tryExit = true;
                     break;
                 }
             }
@@ -944,7 +930,7 @@ export class CfgBuilder {
         } else {
             this.handleBuilder(stmts);
         }
-        
+
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
@@ -965,6 +951,10 @@ export class CfgBuilder {
         }
         lastStmt.next = this.exit;
         this.exit.lasts.add(lastStmt);
+    }
+
+    public isBodyEmpty(): boolean {
+        return false;
     }
 
     public buildCfgAndOriginalCfg(): {

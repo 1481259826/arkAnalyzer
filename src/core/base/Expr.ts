@@ -41,6 +41,7 @@ import { ModelUtils } from "../common/ModelUtils";
 import { ArkAssignStmt } from "./Stmt";
 import Logger from "../../utils/logger";
 import { Scene } from "../../Scene";
+import { ArkBody } from '../model/ArkBody';
 
 const logger = Logger.getLogger();
 
@@ -169,8 +170,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             if (arg.getType() instanceof CallableType) {
                 const argMethodSignature = (arg.getType() as CallableType).getMethodSignature();
                 const argMethod = scene.getMethod(argMethodSignature);
-                if (argMethod != null) {
-                    const firstStmt = argMethod.getBody().getCfg().getStmts()[0];
+                if (argMethod != null && argMethod.getBody()) {
+                    const body = argMethod.getBody() as ArkBody;
+                    const firstStmt = body.getCfg().getStartingStmt();
                     if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
                         const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
                         parameterRef.setType((baseType as ArrayType).getBaseType());

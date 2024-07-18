@@ -102,8 +102,8 @@ export class JsonPrinter extends Printer {
             modifiers: Array.from(method.getModifiers()),
             typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
             body: {
-                locals: Array.from(method.getBody().getLocals().values()).map(local => this.serializeLocal(local)),
-                cfg: this.serializeCfg(method.getBody().getCfg()),
+                locals: Array.from(method.getBody()!.getLocals().values()).map(local => this.serializeLocal(local)),
+                cfg: this.serializeCfg(method.getBody()!.getCfg()),
             },
         };
     }

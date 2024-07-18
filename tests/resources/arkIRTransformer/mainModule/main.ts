@@ -38,5 +38,4 @@ class Har extends Bar implements IKai {
 let har = new Har(1);
 
 class Aa {
-
 }

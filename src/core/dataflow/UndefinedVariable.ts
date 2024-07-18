@@ -29,6 +29,7 @@ import { factEqual } from "../dataflow/DataflowSolver";
 import { FileSignature, NamespaceSignature } from "../model/ArkSignature";
 import { ArkClass } from "../model/ArkClass";
 import Logger from "../../utils/logger";
+import { Cfg } from '../graph/Cfg';
 
 const logger = Logger.getLogger();
 
@@ -73,8 +74,8 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                 let ret: Set<Value> = new Set();
                 if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
-                    let body: ArkBody = entryMethod.getBody();
-                    const parameters =  [...entryMethod.getCfg().getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
+                    let body: ArkBody = entryMethod.getBody() as ArkBody;
+                    const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0;i < parameters.length;i++) {
                         const para  = parameters[i].getDef();
                         if (para)
@@ -149,7 +150,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                         const baseType = callExpr.getBase().getType() as ClassType;
                         const arkClass = checkerInstance.scene.getClass(baseType.getClassSignature());
                         const constructor = arkClass?.getMethodWithName("constructor");
-                        const block = [...constructor!.getCfg().getBlocks()][0];
+                        const block = [...constructor!.getCfg()!.getBlocks()][0];
                         for (const stmt of block.getStmts()){
                             const def = stmt.getDef()
                             if (def && def instanceof ArkInstanceFieldRef && def.getBase().getName() == "this" && def.getFieldName() == dataFact.getFieldName()){
@@ -165,11 +166,11 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                 const args = callStmt.getInvokeExpr().getArgs();
                 for (let i = 0; i < args.length; i++){
                     if (args[i] == dataFact || checkerInstance.isUndefined(args[i]) && checkerInstance.getZeroValue() == dataFact){
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter)
                             ret.add(realParameter);
                     } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == args[i].toString()){
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter) {
                             const retRef = new ArkInstanceFieldRef(realParameter as Local, dataFact.getFieldSignature());
                             ret.add(retRef);

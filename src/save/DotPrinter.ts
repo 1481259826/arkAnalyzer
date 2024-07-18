@@ -19,6 +19,7 @@ import { ArkFile } from '../core/model/ArkFile';
 import { ArkMethod } from '../core/model/ArkMethod';
 import { ArkNamespace } from '../core/model/ArkNamespace';
 import { Printer } from './Printer';
+import { Cfg } from '../core/graph/Cfg';
 
 /**
  * @category save
@@ -51,7 +52,7 @@ export class DotMethodPrinter extends Printer {
             .writeIndent()
             .writeLine(`label="${this.method.getSignature()}";`);
 
-        let blocks = this.method.getBody().getCfg().getBlocks();
+        let blocks = (this.method.getCfg() as Cfg).getBlocks();
         let prefix = `Node${this.stringHashCode(
             this.method.getSignature().toString()
         )}`;
@@ -80,7 +81,7 @@ export class DotMethodPrinter extends Printer {
             .writeIndent()
             .writeLine(`label="${this.method.getSignature()}_original";`);
 
-        let blocks = this.method.getBody().getOriginalCfg().getBlocks();
+        let blocks = (this.method.getOriginalCfg() as Cfg).getBlocks();
         let prefix = `NodeOriginal${this.stringHashCode(
             this.method.getSignature().toString()
         )}`;
