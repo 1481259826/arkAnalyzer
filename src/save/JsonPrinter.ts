@@ -97,13 +97,14 @@ export class JsonPrinter extends Printer {
     }
 
     private serializeMethod(method: ArkMethod): any {
+        let body = method.getBody();
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
             modifiers: Array.from(method.getModifiers()),
             typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
             body: {
-                locals: Array.from(method.getBody()!.getLocals().values()).map(local => this.serializeLocal(local)),
-                cfg: this.serializeCfg(method.getBody()!.getCfg()),
+                locals: body ? Array.from(body.getLocals().values()).map((local) => this.serializeLocal(local)) : [],
+                cfg: body ? this.serializeCfg(body.getCfg()) : {},
             },
         };
     }

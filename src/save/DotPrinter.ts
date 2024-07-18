@@ -52,7 +52,7 @@ export class DotMethodPrinter extends Printer {
             .writeIndent()
             .writeLine(`label="${this.method.getSignature()}";`);
 
-        let blocks = (this.method.getCfg() as Cfg).getBlocks();
+        let blocks = (this.method.getCfg() as Cfg)?.getBlocks();
         let prefix = `Node${this.stringHashCode(
             this.method.getSignature().toString()
         )}`;
@@ -102,6 +102,9 @@ export class DotMethodPrinter extends Printer {
     }
 
     private printBlocks(blocks: Set<BasicBlock>, prefix: string): void {
+        if (!blocks) {
+            return;
+        }
         let blockToNode: Map<BasicBlock, string> = new Map<
             BasicBlock,
             string
