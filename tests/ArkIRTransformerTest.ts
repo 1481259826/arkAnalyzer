@@ -119,13 +119,14 @@ class ArkIRTransformerTest {
                 logger.error('========= arkClass:', arkClass.getName(), ' =======');
                 for (const arkMethod of arkClass.getMethods()) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
-                    const body = arkMethod.getBody()!;
-                    this.printStmts(body);
-
-                    logger.error('-- locals:');
-                    arkMethod.getBody()!.getLocals().forEach(local => {
-                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    });
+                    const body = arkMethod.getBody();
+                    if (body) {
+                        this.printStmts(body);
+                        logger.error('-- locals:');
+                        arkMethod.getBody()!.getLocals().forEach(local => {
+                            logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                        });
+                    }
                 }
             }
         }
