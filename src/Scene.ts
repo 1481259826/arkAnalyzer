@@ -17,28 +17,29 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from "./callgraph/AbstractCallGraphAlgorithm";
-import { ClassHierarchyAnalysisAlgorithm } from "./callgraph/ClassHierarchyAnalysisAlgorithm";
-import { RapidTypeAnalysisAlgorithm } from "./callgraph/RapidTypeAnalysisAlgorithm";
+import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
+import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
+import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
 import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
-import { ArkClass } from "./core/model/ArkClass";
-import { ArkFile } from "./core/model/ArkFile";
-import { ArkMethod } from "./core/model/ArkMethod";
-import { ArkNamespace } from "./core/model/ArkNamespace";
-import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
-import Logger from "./utils/logger";
+import { ArkClass } from './core/model/ArkClass';
+import { ArkFile } from './core/model/ArkFile';
+import { ArkMethod } from './core/model/ArkMethod';
+import { ArkNamespace } from './core/model/ArkNamespace';
+import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
+import Logger from './utils/logger';
 import { Local } from './core/base/Local';
 import { buildArkFileFromFile, expandImportAll } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
-import { ExportType } from "./core/model/ArkExport";
-import { generateDefaultClassField } from "./core/model/builder/ArkClassBuilder";
-import { ClassType } from "./core/base/Type";
+import { ExportType } from './core/model/ArkExport';
+import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
+import { ClassType } from './core/base/Type';
+import { buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 
 const logger = Logger.getLogger();
 
@@ -137,6 +138,15 @@ export class Scene {
         });
     }
 
+    private addDefaultConstructors(): void {
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                buildDefaultConstructor(cls);
+
+            }
+        }
+    }
+
     private buildAllMethodBody() {
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
@@ -169,8 +179,9 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
-
         expandImportAll(this.filesMap);
+        this.genExtendedClasses();
+        this.addDefaultConstructors();
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
@@ -202,6 +213,8 @@ export class Scene {
 
         this.buildAllMethodBody();
         expandImportAll(this.filesMap);
+        this.genExtendedClasses();
+        this.addDefaultConstructors();
     }
 
     public buildModuleScene(moduleName: string, modulePath: string) {
@@ -223,7 +236,7 @@ export class Scene {
         if (moduleOhPkgContent) {
             if (moduleOhPkgContent.dependencies instanceof Object) {
                 Object.entries(moduleOhPkgContent.dependencies).forEach(([k, v]) => {
-                    const pattern = new RegExp("^(\\.\\.\\/\|\\.\\/)");
+                    const pattern = new RegExp('^(\\.\\.\\/\|\\.\\/)');
                     if (typeof (v) === 'string') {
                         let dependencyModulePath: string = '';
                         if (pattern.test(v)) {
@@ -304,7 +317,7 @@ export class Scene {
             for (const file of this.getFiles()) {
                 ModelUtils.getAllNamespacesInFile(file).forEach((namespace) => {
                     this.namespacesMap.set(namespace.getNamespaceSignature().toString(), namespace);
-                })
+                });
             }
         }
         return this.namespacesMap;
@@ -393,29 +406,29 @@ export class Scene {
     }
 
     public getOhPkgFilePath() {
-        return this.ohPkgFilePath
+        return this.ohPkgFilePath;
     }
 
     public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph
+        let callGraphCHA: AbstractCallGraph;
         callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints)
-        return callGraphCHA
+        callGraphCHA.loadCallGraph(entryPoints);
+        return callGraphCHA;
     }
 
     public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph
+        let callGraphRTA: AbstractCallGraph;
         callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints)
-        return callGraphRTA
+        callGraphRTA.loadCallGraph(entryPoints);
+        return callGraphRTA;
     }
 
     public makeCallGraphVPA(entryPoints: MethodSignature[]): AbstractCallGraph {
         // WIP context-insensitive 上下文不敏感
-        let callGraphVPA: AbstractCallGraph
+        let callGraphVPA: AbstractCallGraph;
         callGraphVPA = new VariablePointerAnalysisAlogorithm(this);
-        callGraphVPA.loadCallGraph(entryPoints)
-        return callGraphVPA
+        callGraphVPA.loadCallGraph(entryPoints);
+        return callGraphVPA;
     }
 
     /**
@@ -425,15 +438,12 @@ export class Scene {
     public inferTypes() {
         this.getClassesMap().forEach(arkClass => {
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
-        })
+        });
         this.getMethodsMap().forEach(arkMethod => {
             if (!arkMethod.isDefaultArkMethod()) {
                 TypeInference.inferTypeInMethod(arkMethod);
             }
-        })
-
-        // get class hierarchy
-        this.genExtendedClasses();
+        });
     }
 
     /**
@@ -496,7 +506,7 @@ export class Scene {
                 const ns = namespaceStack.shift()!;
                 const nsClass: ArkClass[] = [];
                 for (const arkClass of ns.getClasses()) {
-                    nsClass.push(arkClass)
+                    nsClass.push(arkClass);
                 }
                 classMap.set(ns.getNamespaceSignature(), nsClass);
                 if (ns.getNamespaces().length == 0) {
@@ -590,7 +600,7 @@ export class Scene {
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
             file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
-                if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
+                if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
                     globalLocals.push(local);
                 }
             });
@@ -605,7 +615,7 @@ export class Scene {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
                 ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
-                    if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
+                    if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
                         nsGlobalLocals.push(local);
                     }
                 });

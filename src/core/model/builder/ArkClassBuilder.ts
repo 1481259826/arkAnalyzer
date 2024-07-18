@@ -24,9 +24,11 @@ import { ArkClass } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass } from './ArkMethodBuilder';
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
-import { TypeInference } from "../../common/TypeInference";
+import { TypeInference } from '../../common/TypeInference';
 
 const logger = Logger.getLogger();
+
+export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
 
 export type ClassLikeNode =
     ts.ClassDeclaration |
@@ -63,7 +65,7 @@ export function buildNormalArkClassFromArkFile(clsNode: ClassLikeNode, arkFile: 
                                                sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
     cls.setDeclaringArkFile(arkFile);
     cls.setCode(clsNode.getText(sourceFile));
-    const { line, character } = ts.getLineAndCharacterOfPosition(
+    const {line, character} = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
@@ -79,7 +81,7 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode, arkN
     cls.setDeclaringArkNamespace(arkNamespace);
     cls.setDeclaringArkFile(arkNamespace.getDeclaringArkFile());
     cls.setCode(clsNode.getText(sourceFile));
-    const { line, character } = ts.getLineAndCharacterOfPosition(
+    const {line, character} = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );

@@ -127,7 +127,7 @@ export class SourceClass extends SourceBase {
     protected printMethods(): Dump[] {
         let items: Dump[] = [];
         for (let method of this.cls.getMethods()) {
-            if (SourceUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree()) {
+            if (method.isGenerated() || (SourceUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree())) {
                 continue;
             }
 
