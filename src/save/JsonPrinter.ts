@@ -98,7 +98,6 @@ export class JsonPrinter extends Printer {
     }
 
     private serializeMethod(method: ArkMethod): any {
-        let body = method.getBody();
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
             modifiers: Array.from(method.getModifiers()),
