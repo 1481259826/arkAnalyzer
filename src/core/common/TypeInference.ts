@@ -63,14 +63,11 @@ export class TypeInference {
         if (fieldType) {
             arkField.setType(fieldType);
             arkField.getSignature().setType(fieldType);
-        } else {
-            if (this.canOverrideType(beforeType) && arkField.getInitializer()) {
-                fieldType = arkField.getInitializer().getType();
-                arkField.setType(fieldType);
-                arkField.getSignature().setType(fieldType);
-            }
+        } else if (this.isUnclearType(beforeType) && !this.isUnclearType(arkField.getInitializer()?.getType())) {
+            fieldType = arkField.getInitializer().getType();
+            arkField.setType(fieldType);
+            arkField.getSignature().setType(fieldType);
         }
-
     }
 
     private static inferDeclaredType(leftOpType: Type, declaringArkClass: ArkClass, rightOp: Value) {
@@ -229,10 +226,8 @@ export class TypeInference {
             let type = this.inferDeclaredType(leftOpType, declaringArkClass, rightOp);
             if (type) {
                 leftOp.setType(type);
-            } else if (this.canOverrideType(leftOpType) && !(stmt.getRightOp().getType() instanceof UnknownType
-                || stmt.getRightOp().getType() instanceof UnclearReferenceType)) {
+            } else if (this.isUnclearType(leftOpType) && !this.isUnclearType(stmt.getRightOp().getType())) {
                 leftOp.setType(stmt.getRightOp().getType());
-                return;
             }
         } else if (leftOp instanceof ArkInstanceFieldRef) {
             const fieldRef = leftOp.inferType(arkMethod.getDeclaringArkClass());
@@ -242,7 +237,7 @@ export class TypeInference {
         }
     }
 
-    private static canOverrideType(type: Type | null | undefined) {
+    private static isUnclearType(type: Type | null | undefined) {
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType) {
             return true;
         } else if (type instanceof ClassType
