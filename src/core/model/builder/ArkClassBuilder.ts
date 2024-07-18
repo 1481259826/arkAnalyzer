@@ -28,7 +28,7 @@ import { TypeInference } from '../../common/TypeInference';
 
 const logger = Logger.getLogger();
 
-export const defaultArkClassName = '_DEFAULT_ARK_CLASS';
+export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
 
 export type ClassLikeNode =
     ts.ClassDeclaration |

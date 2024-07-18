@@ -36,14 +36,14 @@ import { BasicBlock } from '../../graph/BasicBlock';
 import { ArkParameterRef } from '../../base/Ref';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
-import { defaultArkClassName } from './ArkClassBuilder';
+import { DEFAULT_ARK_CLASS_NAME } from './ArkClassBuilder';
 
 const logger = Logger.getLogger();
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
-const constructorName = 'constructor';
-const superName = 'super';
+const CONSTRUCTOR_NAME = 'constructor';
+const SUPER_NAME = 'super';
 
 export type MethodLikeNode =
     ts.FunctionDeclaration |
@@ -317,10 +317,7 @@ export class MethodParameter {
 
 function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
     const originClassType = arkClass.getOriginType();
-    if (arkClass.getMethodWithName(constructorName) == null && originClassType == 'Class' && arkClass.getName() != defaultArkClassName) {
-        return true;
-    }
-    return false;
+    return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null && originClassType == 'Class' && arkClass.getName() != DEFAULT_ARK_CLASS_NAME;
 }
 
 export function buildDefaultConstructor(arkClass: ArkClass): boolean {
@@ -331,7 +328,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     let parentConstructor: ArkMethod | null = null;
     let superClass: ArkClass | null = arkClass.getSuperClass() || null;
     while (superClass != null) {
-        parentConstructor = superClass.getMethodWithName(constructorName);
+        parentConstructor = superClass.getMethodWithName(CONSTRUCTOR_NAME);
         if (parentConstructor != null) {
             break;
         }
@@ -341,7 +338,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     const defaultConstructor: ArkMethod = new ArkMethod();
     defaultConstructor.setDeclaringArkClass(arkClass);
     defaultConstructor.setDeclaringArkFile();
-    defaultConstructor.setName(constructorName);
+    defaultConstructor.setName(CONSTRUCTOR_NAME);
     defaultConstructor.setCode('');
     defaultConstructor.setIsGeneratedFlag(true);
 
@@ -370,10 +367,10 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         const superMethodSignature = new MethodSignature();
         superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
         const superMethodSubSignature = new MethodSubSignature();
-        superMethodSubSignature.setMethodName(superName);
+        superMethodSubSignature.setMethodName(SUPER_NAME);
         superMethodSubSignature.setParameters(parentConstructor.getParameters());
         superMethodSubSignature.setReturnType(defaultConstructor.getReturnType());
-        superMethodSignature.setMethodSubSignature(superMethodSubSignature)
+        superMethodSignature.setMethodSubSignature(superMethodSubSignature);
 
         const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, parameterLocals);
         const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
