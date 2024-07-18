@@ -209,6 +209,7 @@ export class CfgBuilder {
     importFromPath: string[];
     catches: Catch[];
     exits: StatementBuilder[] = [];
+    emptyBody: boolean = false;
 
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
@@ -925,6 +926,9 @@ export class CfgBuilder {
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
         }
+        if (stmts.length == 0) {
+            this.emptyBody = true;
+        }
         if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
             this.walkAST(this.entry, this.exit, stmts);
         } else {
@@ -954,7 +958,7 @@ export class CfgBuilder {
     }
 
     public isBodyEmpty(): boolean {
-        return false;
+        return this.emptyBody;
     }
 
     public buildCfgAndOriginalCfg(): {

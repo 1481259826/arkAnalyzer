@@ -12,8 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-if(1){
-    console.log('1');
-} else {
-    console.log('2');
+function f(){}
+class a {
+    f1(){}
 }
