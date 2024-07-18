@@ -33,6 +33,7 @@ import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, A
 import { Local } from "../core/base/Local";
 import { Cfg } from "../core/graph/Cfg";
 import { BasicBlock } from "../core/graph/BasicBlock";
+import { ArkBody } from "../core/model/ArkBody";
 
 export class JsonPrinter extends Printer {
     constructor(private arkFile: ArkFile) {
@@ -102,10 +103,17 @@ export class JsonPrinter extends Printer {
             signature: this.serializeMethodSignature(method.getSignature()),
             modifiers: Array.from(method.getModifiers()),
             typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
-            body: {
-                locals: body ? Array.from(body.getLocals().values()).map((local) => this.serializeLocal(local)) : [],
-                cfg: body ? this.serializeCfg(body.getCfg()) : {},
-            },
+            body: this.serializeMethodBody(method.getBody()),
+        };
+    }
+
+    private serializeMethodBody(body: ArkBody | undefined) : any {
+        if (body === undefined) {
+            return null;
+        }
+        return {
+            locals: Array.from(body.getLocals().values()).map(local => this.serializeLocal(local)),
+            cfg: this.serializeCfg(body.getCfg()),
         };
     }
 

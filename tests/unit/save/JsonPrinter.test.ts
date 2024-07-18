@@ -1170,11 +1170,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "AbstractKeyword"
             ],
             "typeParameters": [],
-            "body": {
-                "locals": [],
-                "cfg": {
-                }
-            }
+            "body": null
         },
         {
             "signature": {
@@ -1191,12 +1187,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "AbstractKeyword"
             ],
             "typeParameters": [],
-            "body": {
-                "locals": [
-                ],
-                "cfg": {
-                }
-            }
+            "body": null
         },
         {
             "signature": {
