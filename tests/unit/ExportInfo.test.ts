@@ -33,7 +33,7 @@ describe("export Test", () => {
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
         assert.equal(file?.getImportInfos().length, 16);
-        const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg().getStmts();
+        const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
     })
 
@@ -63,7 +63,7 @@ describe("export Test", () => {
         fileId.setFileName("else.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const stmts = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('something')?.getCfg().getStmts();
+            .getMethodWithName('something')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
         if (stmts) {
             assert.equal(stmts[2].toString(), 'staticinvoke <@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.[static]setWebDebuggingAccess(boolean)>(false)');
@@ -75,7 +75,7 @@ describe("export Test", () => {
 
     it('all case', () => {
         projectScene.getMethods().forEach(m => {
-            m.getCfg().getStmts().forEach(s => {
+            m.getCfg()?.getStmts().forEach(s => {
                 const text = s.toString();
                 if (text.includes('Unknown')) {
                     console.log(text + ' warning ' + m.getSignature().toString());
