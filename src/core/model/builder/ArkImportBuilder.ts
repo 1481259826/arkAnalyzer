@@ -35,7 +35,8 @@ export function expandExportInfo(arkFile: ArkFile): void {
     exportInfos.forEach(exportInfo => {
         if (exportInfo.getNameBeforeAs() === '*') {
             let formFile = getArkFile(exportInfo);
-            if (formFile) {
+            if (formFile && formFile !== arkFile) {
+                exportInfo.clearNameBeforeAs();
                 expandExportInfo(formFile);
                 let prefix = exportInfo.getExportClauseName() === '*' ? '' : exportInfo.getExportClauseName() + '.';
                 formFile.getExportInfos().forEach(eInfo => {
@@ -51,7 +52,6 @@ export function expandExportInfo(arkFile: ArkFile): void {
                         .build();
                     arkFile.addExportInfo(newInfo);
                 })
-                arkFile.addExportInfo(exportInfo);
             }
         }
     })
