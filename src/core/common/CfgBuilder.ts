@@ -919,16 +919,18 @@ export class CfgBuilder {
         if (ts.isSourceFile(this.astRoot)) {
             stmts = [...this.astRoot.statements];
         } else if (ts.isFunctionDeclaration(this.astRoot) || ts.isMethodDeclaration(this.astRoot) || ts.isConstructorDeclaration(this.astRoot)
-            || ts.isGetAccessor(this.astRoot) || ts.isGetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
+            || ts.isGetAccessorDeclaration(this.astRoot) || ts.isSetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
             if (this.astRoot.body) {
                 stmts = [...this.astRoot.body.statements];
+            } else {
+                this.emptyBody = true;
             }
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
-        }
-        if (stmts.length == 0) {
-            this.emptyBody = true;
-        }
+        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot) 
+            || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
+                this.emptyBody = true;
+            }
         if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
             this.walkAST(this.entry, this.exit, stmts);
         } else {
