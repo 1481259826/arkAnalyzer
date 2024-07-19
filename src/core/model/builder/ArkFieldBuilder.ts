@@ -83,6 +83,10 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         field.setExclamationToken(true);
     }
 
+    if (ts.isEnumMember(member)) {
+        field.addModifier('StaticKeyword');
+    }
+
     if (cls) {
         cls.addField(field);
     }

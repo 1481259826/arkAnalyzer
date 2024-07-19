@@ -15,21 +15,13 @@
 
 import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import {
-    ArkAssignStmt,
-    ArkGotoStmt,
-    ArkIfStmt,
-    ArkInvokeStmt,
-    ArkSwitchStmt,
-    Stmt,
-} from '../../core/base/Stmt';
+import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import { ArkBody } from '../../core/model/ArkBody';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import {
-    SourceStmt,
     SourceBreakStmt,
     SourceCaseStmt,
     SourceCompoundEndStmt,
@@ -37,15 +29,17 @@ import {
     SourceElseStmt,
     SourceForStmt,
     SourceIfStmt,
+    SourceStmt,
     SourceSwitchStmt,
     SourceWhileStmt,
-    StmtPrinterContext,
     stmt2SourceStmt,
+    StmtPrinterContext,
 } from './SourceStmt';
 import { CfgUitls } from '../../utils/CfgUtils';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
-import { MethodSignature, ClassSignature } from '../../core/model/ArkSignature';
+import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
+import { ModelUtils } from "../../core/common/ModelUtils";
 
 const logger = Logger.getLogger();
 
@@ -59,16 +53,22 @@ export class SourceBody implements StmtPrinterContext {
     private tempVisitor: Set<string>;
     private stmtReader: StmtReader;
     private definedLocals: Set<Local>;
+    private inBuilder: boolean;
 
-    public constructor(indent: string, method: ArkMethod) {
+    public constructor(indent: string, method: ArkMethod, inBuilder: boolean) {
         this.printer = new ArkCodeBuffer(indent);
         this.method = method;
-        this.arkBody = method.getBody();
-        this.cfgUtils = new CfgUitls(method.getCfg());
+        this.arkBody = method.getBody()!;
+        this.cfgUtils = new CfgUitls(method.getCfg()!);
         this.tempCodeMap = new Map();
         this.tempVisitor = new Set();
         this.definedLocals = new Set();
+        this.inBuilder = inBuilder;
         this.buildSourceStmt();
+    }
+
+    isInBuilderMethod(): boolean {
+        return this.inBuilder;
     }
     isInDefaultMethod(): boolean {
         return this.method.isDefaultArkMethod();
@@ -78,17 +78,14 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     public getMethod(signature: MethodSignature): ArkMethod | null {
-        return this.method
-            .getDeclaringArkFile()
-            .getScene()
-            .getMethod(signature);
+        return this.method.getDeclaringArkFile().getScene().getMethod(signature);
     }
 
     public getClass(signature: ClassSignature): ArkClass | null {
-        return this.method.getDeclaringArkFile().getScene().getClass(signature);
+        return ModelUtils.getClass(this.method, signature);
     }
 
-    public getLocals(): Set<Local> {
+    public getLocals(): Map<string, Local> {
         return this.arkBody.getLocals();
     }
 
@@ -143,11 +140,7 @@ export class SourceBody implements StmtPrinterContext {
         }
     }
 
-    private buildBasicBlock(
-        block: BasicBlock,
-        visitor: Set<BasicBlock>,
-        parent: Stmt | null
-    ): void {
+    private buildBasicBlock(block: BasicBlock, visitor: Set<BasicBlock>, parent: Stmt | null): void {
         let originalStmts: Stmt[] = this.sortStmt(block.getStmts());
         this.stmtReader = new StmtReader(originalStmts);
         while (this.stmtReader.hasNext()) {
@@ -162,9 +155,7 @@ export class SourceBody implements StmtPrinterContext {
                     isLoop = true;
                 }
                 if (isLoop) {
-                    for (const sub of this.cfgUtils.getLoopPath(
-                        block
-                    ) as Set<BasicBlock>) {
+                    for (const sub of this.cfgUtils.getLoopPath(block) as Set<BasicBlock>) {
                         if (visitor.has(sub)) {
                             continue;
                         }
@@ -175,33 +166,19 @@ export class SourceBody implements StmtPrinterContext {
                 } else {
                     this.pushStmt(new SourceIfStmt(this, stmt));
                     let successorBlocks = block.getSuccessors();
-                    if (
-                        successorBlocks.length >= 2 &&
-                        this.cfgUtils.isIfElseBlock(block)
-                    ) {
-                        if (!visitor.has(successorBlocks[1])) {
-                            visitor.add(successorBlocks[1]);
-                            this.buildBasicBlock(
-                                successorBlocks[1],
-                                visitor,
-                                stmt
-                            );
-                        }
+                    if (successorBlocks.length > 0 && !visitor.has(successorBlocks[0])) {
+                        visitor.add(successorBlocks[0]);
+                        this.buildBasicBlock(successorBlocks[0], visitor, stmt);
                     }
 
                     if (
-                        successorBlocks.length > 0 &&
-                        !visitor.has(successorBlocks[0])
+                        successorBlocks.length > 1 &&
+                        this.cfgUtils.isIfElseBlock(block) &&
+                        !visitor.has(successorBlocks[1])
                     ) {
-                        if (!visitor.has(successorBlocks[0])) {
-                            this.pushStmt(new SourceElseStmt(this, stmt));
-                            visitor.add(successorBlocks[0]);
-                            this.buildBasicBlock(
-                                successorBlocks[0],
-                                visitor,
-                                stmt
-                            );
-                        }
+                        this.pushStmt(new SourceElseStmt(this, stmt));
+                        visitor.add(successorBlocks[1]);
+                        this.buildBasicBlock(successorBlocks[1], visitor, stmt);
                     }
                     this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
                 }
@@ -215,9 +192,7 @@ export class SourceBody implements StmtPrinterContext {
                         this.pushStmt(caseStmt);
                         this.buildBasicBlock(sub, visitor, stmt);
                         if (caseStmt.isDefault()) {
-                            this.pushStmt(
-                                new SourceCompoundEndStmt(this, stmt, '')
-                            );
+                            this.pushStmt(new SourceCompoundEndStmt(this, stmt, ''));
                         }
                     }
                     caseIdx++;
@@ -225,9 +200,7 @@ export class SourceBody implements StmtPrinterContext {
                 this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
             } else if (stmt instanceof ArkGotoStmt) {
                 if (parent instanceof ArkSwitchStmt) {
-                    this.pushStmt(
-                        new SourceCompoundEndStmt(this, stmt, '    break;')
-                    );
+                    this.pushStmt(new SourceCompoundEndStmt(this, stmt, '    break;'));
                 } else {
                     if (this.cfgUtils.isConinueBlock(block)) {
                         this.pushStmt(new SourceContinueStmt(this, stmt));
@@ -277,20 +250,9 @@ export class SourceBody implements StmtPrinterContext {
      */
     private sortStmt(stmts: Stmt[]): Stmt[] {
         for (let i = stmts.length - 1; i > 0; i--) {
-            if (
-                stmts[i] instanceof ArkInvokeStmt &&
-                (stmts[i].getInvokeExpr() as ArkInstanceInvokeExpr)
-            ) {
-                let instanceInvokeExpr = stmts[
-                    i
-                ].getInvokeExpr() as ArkInstanceInvokeExpr;
-                if (
-                    'constructor' ==
-                    instanceInvokeExpr
-                        .getMethodSignature()
-                        .getMethodSubSignature()
-                        .getMethodName()
-                ) {
+            if (stmts[i] instanceof ArkInvokeStmt && (stmts[i].getInvokeExpr() as ArkInstanceInvokeExpr)) {
+                let instanceInvokeExpr = stmts[i].getInvokeExpr() as ArkInstanceInvokeExpr;
+                if ('constructor' == instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName()) {
                     let localName = instanceInvokeExpr.getBase().getName();
                     let newExprIdx = findNewExpr(i, localName);
                     if (newExprIdx >= 0 && newExprIdx < i - 1) {
@@ -307,11 +269,7 @@ export class SourceBody implements StmtPrinterContext {
                     continue;
                 }
                 if ((stmts[j] as ArkAssignStmt).getLeftOp() instanceof Local) {
-                    if (
-                        (
-                            (stmts[j] as ArkAssignStmt).getLeftOp() as Local
-                        ).getName() == name
-                    ) {
+                    if (((stmts[j] as ArkAssignStmt).getLeftOp() as Local).getName() == name) {
                         return j;
                     }
                 }
@@ -358,9 +316,7 @@ export class StmtReader {
 
     rollback(): void {
         if (this.pos == 0) {
-            logger.error(
-                'SourceBody: StmtReader->rollback No more stmt to rollback.'
-            );
+            logger.error('SourceBody: StmtReader->rollback No more stmt to rollback.');
             throw new Error('No more stmt to rollback.');
         }
         this.pos--;

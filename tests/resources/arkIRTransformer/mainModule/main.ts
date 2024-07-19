@@ -13,173 +13,58 @@
  * limitations under the License.
  */
 
-// // call
-// console.log('hi');
-//
-// for i
-for (let i = 0; i < 10; i++) {
-    console.log(i);
+abstract class abstractBase {
+    protected constructor(i: number) {
+    }
 }
-//
-// for of
-// let arr = [1,2,3]
-// for (const arrayElement of arr) {
-//     console.log(arrayElement);
-// }
-//
-// // WhileStatement
-// let i = 0;
-// while (i < 10) {
-//     i++;
-// }
-//
-// // DoStatement
-// let i = 0;
-// do {
-//     i++;
-// } while (i < 10);
-//
-// // IfStatement
-// let i = 0;
-// if (i < 10) {
-//     i += 1;
-//     if (i < 8) {
-//         i += 2;
-//     }
-// } else {
-//     i -= 1;
-// }
-//
-// // PropertyAccessExpression
-// let arr = [1, 2];
-// let len = arr.length;
-//
-// array
-// const arr1 = [1, 2];
-// const arr2 = new Array(10);
-// const arr3 = new Array(1, 2, 3);
-// const arr4 = new Array();
 
-// // arrayLiteralExpression
-// // let arr = [[1], [2]];
-// let a = [[{'year': 2022}], [{'year': 2023}]];
+class Foo extends abstractBase {
+    constructor(i: number) {
+        super(i);
+    }
+}
 
-//
-// // 四则运算
-// const a = 1 + 2 * (4 - 5);
-//
-// // assignment
-// let i = 0;
-// i = 10;
-//
-// // prefixUnaryExpression、postfixUnaryExpression
-// let i = 0;
-// i++;
-// ++i;
-// i--;
-// --i;
-// -i;
-//
-// // templateExpression
-// let i = 10;
-// let s = `hi ${i}!`;
-//
-// // AwaitExpression
-// await func();
-//
-// // DeleteExpression
-// delete a.b;
-//
-// // ElementAccessExpression
-// let arr = [1, 2];
-// let a = arr[0];
-//
-// // NewExpression
-// let arr =new Array(1,2);
-//
-// // ParenthesizedExpression
-// let a = 2 * (1 + 2);
-//
-// // AsExpression
-// let a = 1 as number;
-//
-// // TypeAssertionExpression
-// let a = <number>1;
-//
-// // NonNullExpression
-// let a: number[] | null = [1, 1];
-// let b = a!.length;
-//
-// // TypeOfExpression
-// let a = 1;
-// let b = typeof a;
-//
-// // Literal
-// let a = 1;
-// let b = '2';
-// let c = /3/;
-// let d = false;
-// let e = true;
-//
+class Bar extends Foo {
 
-// global as size
-// let sz3 = 3;
+}
 
-// function main() {
-//     // let sz1 = 1;
-//     // let arr1 = new Array(sz1);
-//     // let arr2 = new Array(2);
-//     // let arr3 = new Array(sz3);
-//     //
-//     // let arr4 = [1, 2, 3];
-//     // let arr5 = [];
-//     //
-//     // let arr6 = new Array();
-//     //
-//     // let arr7 = new Array(1, 2, 3);
-//     // let arr8 = [1, 2, '3'];
-//
-//     let arr9:number[] = [];
-//     let arr10:any[] = [];
-// }
+interface IKai {
 
-// // ConditionalExpression
-// function main() {
-//     let a = 1 ? 10 : 0;
-// }
+}
 
-// function main(i: number) {
-//     if (1) {
-//         let a = 1;
-//         if (1) {
-//             let b = 2;
-//             if (b = 3) {
-//                 let c = 4;
-//             }
-//         }
-//         let d = 4;
-//     } else {
-//         let e = 5;
-//     }
-//     let f = 5;
-// }
+class Har extends Bar implements IKai {
+}
 
-// function main() {
-//     // let arr = [1, 2];
-//     // let a = ~arr[0] + 1;
-//
-//     let a = 1;
-//     let b = -a + 1;
-// }
+let har = new Har(1);
 
-// function main() {
-//     let i = 'hi'.charAt(0);
-//
-//     let j = /hjh/.test(i);
-// }
+class Aa {
 
-function main() {
-    const a = [1, 2];
-    a.forEach((i) => {
-    });
+}
+
+declare class ExampleClass {
+    get exampleProperty(): string;
+    set exampleProperty(value: string);
+}
+
+interface MethodSignature {
+    exampleMethodSignature(param: string): void;
+}
+
+interface ConstructSignatureDeclaration {
+    new(param: string): ExampleClass;
+}
+
+interface CallSignatureDeclaration {
+    (param: string): void;
+}
+
+type FunctionTypeNode = (param: string) => void;
+
+class Foo1 {
+    public bar1() {
+    }
+
+    public bar2() {
+        let bar1 = 1;
+    }
 }

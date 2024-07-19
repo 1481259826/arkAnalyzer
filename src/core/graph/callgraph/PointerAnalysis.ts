@@ -58,13 +58,13 @@ export class PointerAnalysis extends AbstractAnalysis{
     private init() {
         // TODO: how to get entry
         this.pagBuilder.buildForEntry(this.entry);
-        this.pag.dump('ptaInit_pag.dot');
+        this.pag.dump('out/ptaInit_pag.dot');
     }
 
     public start() {
         this.init();
         this.solveConstraint();
-        this.pag.dump('ptaEnd_pag.dot');
+        this.pag.dump('out/ptaEnd_pag.dot');
     }
 
     public setEntry(fid: FuncID) {
@@ -137,11 +137,9 @@ export class PointerAnalysis extends AbstractAnalysis{
             return false;;
         }
 
-        for (let pt of diffPts) {
-            node.getOutgoingLoadEdges()?.forEach(loadEdge => {
-                this.processLoad(pt, loadEdge);
-            });
-        }       
+        node.getOutgoingLoadEdges()?.forEach(loadEdge => {
+            this.processLoad(nodeID, loadEdge);
+        });   
 
         node.getOutgoingWriteEdges()?.forEach(writeEdge => {
             this.processWrite(nodeID, writeEdge)
@@ -156,12 +154,24 @@ export class PointerAnalysis extends AbstractAnalysis{
      *	node \in pts(src) ==>  node--copy-->dst
      */
     private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
-        let src = this.pag.getNode(nodeID) as PagNode;
-        let dst = loadEdge.getDstNode() as PagNode;
+        let src = this.pag.getNode(nodeID) as PagNode;  // field
+        let dst = loadEdge.getDstNode() as PagNode;     // Local
 
-        if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
-            this.worklist.push(nodeID);
+        const fieldValue = src.getValue()
+        if (!(fieldValue instanceof ArkInstanceFieldRef)) {
+            throw new Error('Not a Ref field')
         }
+        
+        const base = fieldValue.getBase()
+        let ctx2NdMap = this.pag.getNodesByValue(base); // get o_i nodes
+        if (!ctx2NdMap) {
+            throw new Error ('Cannot find pag node for a local');
+        }
+
+        // TODO: load edge will not be replaced by copy edge currently
+        // if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
+        //     this.worklist.push(src.getID());
+        // }
     }
 
     /*
@@ -212,12 +222,12 @@ export class PointerAnalysis extends AbstractAnalysis{
             return changed;
         }
 
-        changed = this.ptd.unionDiffPts(dst, src);
+        // changed = this.ptd.unionDiffPts(dst, src);
 
         // which one is better?
-        //for (let pt of diffPts) {
-        //    changed = changed || this.ptd.addPts(dst, pt);
-        //}
+        for (let pt of diffPts) {
+           changed = this.ptd.addPts(dst, pt) || changed;
+        }
 
         if (changed) {
             this.worklist.push(dst);
@@ -266,9 +276,9 @@ export class PointerAnalysis extends AbstractAnalysis{
             }
 
             this.reachableMethods.add(funcID)
-            this.reachableStmts.push(...arkMethod.getCfg().getStmts())
+            this.reachableStmts.push(...arkMethod.getCfg()!.getStmts())
 
-            arkMethod.getBody().getCfg().getStmts().forEach((stmt) => {
+            arkMethod.getBody()!.getCfg().getStmts().forEach((stmt) => {
                 const invokeExpr = stmt.getInvokeExpr()
                 if (invokeExpr != undefined && invokeExpr instanceof ArkStaticInvokeExpr) {
                     // all static invoke stmt

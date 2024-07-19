@@ -19,14 +19,22 @@ import { Stmt } from "../base/Stmt";
  * @category core/graph
  */
 export class BasicBlock {
+    private id: number = -1;
     private stmts: Stmt[] = [];
     private predecessorBlocks: BasicBlock[] = [];
     private successorBlocks: BasicBlock[] = [];
-    constructor() {
 
+    constructor() { }
+
+    public getId(): number {
+        return this.id;
     }
 
-    public getStmts() {
+    public setId(id: number): void {
+        this.id = id;
+    }
+
+    public getStmts(): Stmt[] {
         return this.stmts;
     }
 

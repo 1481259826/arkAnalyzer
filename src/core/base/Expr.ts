@@ -20,20 +20,28 @@ import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/Ar
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
+    AnyType,
+    ArrayObjectType,
     ArrayType,
     BooleanType,
     CallableType,
     ClassType,
+    NullType,
     NumberType,
+    StringType,
     Type,
+    UnclearReferenceType,
+    UndefinedType,
+    UnionType,
     UnknownType
 } from './Type';
 import { Value } from './Value';
-import { AbstractFieldRef, ArkParameterRef } from './Ref';
+import { AbstractFieldRef, AbstractRef, ArkParameterRef } from './Ref';
 import { ModelUtils } from "../common/ModelUtils";
-import { ArkMethod } from "../model/ArkMethod";
 import { ArkAssignStmt } from "./Stmt";
 import Logger from "../../utils/logger";
+import { Scene } from "../../Scene";
+import { ArkBody } from '../model/ArkBody';
 
 const logger = Logger.getLogger();
 
@@ -47,7 +55,7 @@ export abstract class AbstractExpr implements Value {
 
     abstract toString(): string;
 
-    public inferType(arkMethod: ArkMethod): AbstractExpr {
+    public inferType(arkClass: ArkClass): AbstractExpr {
         return this;
     }
 }
@@ -141,73 +149,89 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         return strs.join('');
     }
 
-    public inferType(arkMethod: ArkMethod): AbstractInvokeExpr {
-        if (!(this.base instanceof Local)) {
-            logger.warn("invoke expr base is not local")
+    public inferType(arkClass: ArkClass): AbstractInvokeExpr {
+        let baseType: Type | null = this.base.getType();
+        if (this.base instanceof Local && baseType instanceof UnknownType) {
+            baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
+        } else if (baseType instanceof UnclearReferenceType) {
+            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
+        }
+        if (!baseType) {
+            logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
             return this;
         }
-
-        if (this.base.getType() instanceof UnknownType) {
-            const signature = ModelUtils.getInvokerSignatureWithName(this.base.getName(), arkMethod);
-            const type = TypeInference.parseSignature2Type(signature);
-            if (type) {
-                this.base.setType(type);
-            }
+        if (this.base instanceof Local) {
+            this.base.setType(baseType);
         }
-
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
-        const scene = arkMethod.getDeclaringArkFile().getScene();
-        if ((methodName === 'forEach') && (this.base.getType() instanceof ArrayType)) {
+        const scene = arkClass.getDeclaringArkFile().getScene();
+        if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
             const arg = this.getArg(0);
             if (arg.getType() instanceof CallableType) {
-                const baseType = this.base.getType() as ArrayType;
                 const argMethodSignature = (arg.getType() as CallableType).getMethodSignature();
                 const argMethod = scene.getMethod(argMethodSignature);
-                if (argMethod != null) {
-                    const firstStmt = argMethod.getBody().getCfg().getStmts()[0];
+                if (argMethod != null && argMethod.getBody()) {
+                    const body = argMethod.getBody() as ArkBody;
+                    const firstStmt = body.getCfg().getStartingStmt();
                     if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
                         const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
-                        parameterRef.setType(baseType.getBaseType());
+                        parameterRef.setType((baseType as ArrayType).getBaseType());
                     }
                     TypeInference.inferTypeInMethod(argMethod);
                 }
             } else {
                 logger.warn(`arg of forEach must be callable`);
             }
+        } else if (methodName === 'constructor' && baseType instanceof ClassType) { //隐式构造
+            const subSignature = new MethodSubSignature();
+            subSignature.setMethodName(methodName);
+            subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
+            const defaultMethod = new MethodSignature();
+            defaultMethod.setDeclaringClassSignature(baseType.getClassSignature());
+            defaultMethod.setMethodSubSignature(subSignature);
+            this.setMethodSignature(defaultMethod);
+            return this;
         }
-        let type = this.base.getType();
-        if (type instanceof ClassType) {
-            const arkClass = scene.getClass(type.getClassSignature());
+        let result;
+        if (baseType instanceof UnionType) {
+            for (const type of baseType.getTypes()) {
+                result = this.inferMethod(type, methodName, scene);
+                if (result) {
+                    break;
+                }
+            }
+        } else {
+            result = this.inferMethod(baseType, methodName, scene);
+        }
+        if (result) {
+            return result;
+        }
+        logger.warn("invoke ArkInstanceInvokeExpr MethodSignature type fail: ", this.toString());
+        return this;
+    }
+
+    private inferMethod(baseType: Type, methodName: string, scene: Scene): AbstractInvokeExpr | null {
+        if (baseType instanceof ClassType) {
+            const arkClass = scene.getClass(baseType.getClassSignature());
             let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
             if (method) {
                 TypeInference.inferMethodReturnType(method)
                 this.setMethodSignature(method.getSignature());
-                if (method.containsModifier('StaticKeyword')) {
+                if (method.isStatic()) {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
                 }
-            } else if (methodName === 'constructor') { //隐式构造
-                const subSignature = new MethodSubSignature();
-                subSignature.setMethodName(methodName);
-                subSignature.setReturnType(new ClassType(type.getClassSignature()));
-                const defaultMethod = new MethodSignature();
-                defaultMethod.setDeclaringClassSignature(type.getClassSignature());
-                defaultMethod.setMethodSubSignature(subSignature);
-                this.setMethodSignature(defaultMethod);
-            } else {
-                logger.warn(`class ${type.getClassSignature().getClassName()} method ${methodName} does not exist`);
+                return this;
             }
-        } else if (type instanceof AnnotationNamespaceType) {
-            const defaultClass = scene.getNamespace(type.getNamespaceSignature())?.getDefaultClass();
+        } else if (baseType instanceof AnnotationNamespaceType) {
+            const defaultClass = scene.getNamespace(baseType.getNamespaceSignature())?.getDefaultClass();
             let foundMethod = defaultClass?.getMethodWithName(methodName) ?? defaultClass?.getStaticMethodWithName(methodName);
             if (foundMethod) {
                 TypeInference.inferMethodReturnType(foundMethod);
                 this.setMethodSignature(foundMethod.getSignature());
                 return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
             }
-        } else {
-            logger.warn("invoke expr base type unknown:", type);
         }
-        return this;
+        return null;
     }
 }
 
@@ -232,15 +256,16 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         return strs.join('');
     }
 
-    public inferType(arkMethod: ArkMethod): ArkStaticInvokeExpr {
+    public inferType(arkClass: ArkClass): ArkStaticInvokeExpr {
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
-        let method = ModelUtils.getStaticMethodWithName(methodName, arkMethod);
+        let method = ModelUtils.getStaticMethodWithName(methodName, arkClass);
         if (!method) {
-            const type = ModelUtils.getTypeSignatureInImportInfoWithName(methodName, arkMethod.getDeclaringArkFile());
+            let arkFile = arkClass.getDeclaringArkFile();
+            const type = ModelUtils.getTypeSignatureInImportInfoWithName(methodName, arkFile);
             if (type && type instanceof MethodSignature) {
-                method = arkMethod.getDeclaringArkFile().getScene().getMethod(type);
+                method = arkFile.getScene().getMethod(type);
             } else if (type && type instanceof ClassSignature) {
-                method = arkMethod.getDeclaringArkFile().getScene().getClass(type)?.getMethodWithName('constructor') || null;
+                method = arkFile.getScene().getClass(type)?.getMethodWithName('constructor') || null;
             }
         }
         if (method) {
@@ -259,9 +284,12 @@ export class ArkNewExpr extends AbstractExpr {
         this.classType = classType;
     }
 
+    public getClassType(): ClassType {
+        return this.classType;
+    }
+
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        return uses;
+        return [];
     }
 
     public getType(): Type {
@@ -272,16 +300,11 @@ export class ArkNewExpr extends AbstractExpr {
         return 'new ' + this.classType;
     }
 
-    public inferType(arkMethod: ArkMethod): ArkNewExpr {
+    public inferType(arkClass: ArkClass): ArkNewExpr {
         const className = this.classType.getClassSignature().getClassName();
-        const arkClass = ModelUtils.getClassWithName(className, arkMethod);
-        if (arkClass) {
-            this.classType.setClassSignature(arkClass.getSignature());
-            return this;
-        }
-        const type = ModelUtils.getTypeSignatureInImportInfoWithName(className, arkMethod.getDeclaringArkFile());
-        if (type && type instanceof ClassSignature) {
-            this.classType.setClassSignature(type);
+        const type = TypeInference.inferUnclearReferenceType(className, arkClass);
+        if (type && type instanceof ClassType) {
+            this.classType = type;
         }
         return this;
     }
@@ -306,7 +329,6 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public getType(): ArrayType {
-        // TODO: support multi-dimension array
         return new ArrayType(this.baseType, 1);
     }
 
@@ -316,6 +338,34 @@ export class ArkNewArrayExpr extends AbstractExpr {
 
     public setBaseType(newType: Type): void {
         this.baseType = newType;
+    }
+
+    public inferType(arkClass: ArkClass): ArkNewArrayExpr {
+        if (this.baseType instanceof UnionType) {
+            const types = this.baseType.getTypes();
+            for (let i = 1; i < types.length; i++) {
+                if (types[0] !== types[i]) {
+                    this.baseType = AnyType.getInstance();
+                    break;
+                }
+            }
+            if (this.baseType instanceof UnionType) {
+                if (types[0] instanceof ClassType) {
+                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
+                    if (type) {
+                        this.baseType = type;
+                    }
+                } else {
+                    this.baseType = types[0];
+                }
+            }
+        } else if (this.baseType instanceof UnclearReferenceType) {
+            const referenceType = TypeInference.inferUnclearReferenceType(this.baseType.getName(), arkClass);
+            if (referenceType) {
+                this.baseType = referenceType;
+            }
+        }
+        return this;
     }
 
     public getUses(): Value[] {
@@ -357,8 +407,7 @@ export class ArkDeleteExpr extends AbstractExpr {
     }
 
     public toString(): string {
-        const str = 'delete ' + this.field;
-        return str;
+        return 'delete ' + this.field;
     }
 
 }
@@ -368,6 +417,8 @@ export class ArkBinopExpr extends AbstractExpr {
     private op1: Value;
     private op2: Value;
     private operator: string;
+
+    private type: Type;
 
     constructor(op1: Value, op2: Value, operator: string) {
         super();
@@ -397,7 +448,7 @@ export class ArkBinopExpr extends AbstractExpr {
     }
 
     public getType(): Type {
-        return TypeInference.inferTypeOfBinopExpr(this);
+        return this.type;
     }
 
     public getUses(): Value[] {
@@ -411,6 +462,80 @@ export class ArkBinopExpr extends AbstractExpr {
 
     public toString(): string {
         return this.op1 + ' ' + this.operator + ' ' + this.op2;
+    }
+
+    private inferOpType(op: Value, arkClass: ArkClass) {
+        if (op instanceof AbstractExpr || op instanceof AbstractRef) {
+            TypeInference.inferValueType(op, arkClass);
+        }
+    }
+
+    private setType() {
+        let op1Type = this.op1.getType();
+        let op2Type = this.op2.getType();
+        if (op1Type instanceof UnionType) {
+            op1Type = op1Type.getCurrType();
+        }
+        if (op2Type instanceof UnionType) {
+            op2Type = op2Type.getCurrType();
+        }
+        let type = UnknownType.getInstance();
+        switch (this.operator) {
+            case "+":
+                if (op1Type === StringType.getInstance() || op2Type === StringType.getInstance()) {
+                    type = StringType.getInstance();
+                }
+                if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
+                    type = NumberType.getInstance();
+                }
+                break;
+            case "-":
+            case "*":
+            case "/":
+            case "%":
+                if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
+                    type = NumberType.getInstance();
+                }
+                break;
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+            case "==":
+            case "!=":
+            case "===":
+            case "!==":
+            case "&&":
+            case "||":
+                type = BooleanType.getInstance();
+                break;
+            case "&":
+            case "|":
+            case "^":
+            case "<<":
+            case ">>":
+            case ">>>":
+                if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
+                    type = NumberType.getInstance();
+                }
+                break;
+            case "??":
+                if (op1Type === UnknownType.getInstance() || op1Type === UndefinedType.getInstance()
+                    || op1Type === NullType.getInstance()) {
+                    type = op2Type;
+                } else {
+                    type = op1Type;
+                }
+                break;
+        }
+        this.type = type;
+    }
+
+    public inferType(arkClass: ArkClass): ArkBinopExpr {
+        this.inferOpType(this.op1, arkClass);
+        this.inferOpType(this.op2, arkClass);
+        this.setType();
+        return this;
     }
 }
 
@@ -444,7 +569,7 @@ export class ArkTypeOfExpr extends AbstractExpr {
     }
 
     public getType(): Type {
-        return this.op.getType();
+        return StringType.getInstance();
     }
 
     public toString(): string {
@@ -468,6 +593,10 @@ export class ArkInstanceOfExpr extends AbstractExpr {
 
     public setOp(newOp: Value): void {
         this.op = newOp;
+    }
+
+    public getCheckType(): string {
+        return this.checkType;
     }
 
     public getType(): Type {
@@ -626,6 +755,10 @@ export class ArkUnopExpr extends AbstractExpr {
         return uses;
     }
 
+    public getOp(): Value {
+        return this.op;
+    }
+
     public getType(): Type {
         return this.op.getType();
     }
@@ -640,7 +773,7 @@ export class ArkUnopExpr extends AbstractExpr {
 }
 
 export class ArrayLiteralExpr extends AbstractExpr {
-    private elements: Value[] = [];
+    private readonly elements: Value[] = [];
     private type: Type;
 
     constructor(elements: Value[], type: Type) {
@@ -649,14 +782,45 @@ export class ArrayLiteralExpr extends AbstractExpr {
         this.type = type;
     }
 
-    public getElements(): Value[] {
-        return this.elements;
-    }
-
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push();
         return uses;
+    }
+
+    public inferType(arkClass: ArkClass): ArrayLiteralExpr {
+        if (this.type instanceof UnionType) {
+            const types = this.type.getTypes();
+            for (let i = 1; i < types.length; i++) {
+                if (types[0] !== types[i]) {
+                    this.type = new ArrayType(AnyType.getInstance(), 1);
+                    break;
+                }
+            }
+            if (this.type instanceof UnionType) {
+                if (types[0] instanceof ClassType) {
+                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
+                    if (type) {
+                        this.type = new ArrayObjectType(type, 1);
+                    }
+                } else {
+                    this.type = new ArrayType(types[0], 1);
+                }
+            }
+        } else if (this.type instanceof ArrayType) {
+            const baseType = this.type.getBaseType();
+            if (baseType instanceof UnclearReferenceType) {
+                const referenceType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
+                if (referenceType) {
+                    this.type.setBaseType(referenceType);
+                }
+            }
+        }
+        return this;
+    }
+
+    public getElements(): Value[] {
+        return this.elements;
     }
 
     public getType(): Type {
@@ -664,8 +828,7 @@ export class ArrayLiteralExpr extends AbstractExpr {
     }
 
     public toString(): string {
-        //TODO
-        return '';
+        return '[' + this.elements.join() + ']';
     }
 }
 

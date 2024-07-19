@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
-import {Scene} from "../../Scene";
-import {ClassHierarchyAnalysisAlgorithm} from "../../callgraph/ClassHierarchyAnalysisAlgorithm";
-import { AbstractInvokeExpr } from "../base/Expr";
-import {ArkInstanceFieldRef, ArkStaticFieldRef} from "../base/Ref";
-import {ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt} from "../base/Stmt";
-import {ArkClass} from "../model/ArkClass";
-import {ArkMethod} from "../model/ArkMethod";
-import {DataflowProblem, FlowFunction} from "./DataflowProblem";
-import {PathEdge, PathEdgePoint} from "./Edge"
+import { Scene } from '../../Scene';
+import { ClassHierarchyAnalysisAlgorithm } from '../../callgraph/ClassHierarchyAnalysisAlgorithm';
+import { AbstractInvokeExpr } from '../base/Expr';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkClass } from '../model/ArkClass';
+import { ArkMethod } from '../model/ArkMethod';
+import { DataflowProblem, FlowFunction } from './DataflowProblem';
+import { PathEdge, PathEdgePoint } from './Edge';
+import { BasicBlock } from '../graph/BasicBlock';
 
 /*
 this program is roughly an implementation of the paper: Practical Extensions to the IFDS Algorithm.
@@ -60,7 +61,6 @@ export abstract class DataflowSolver<D> {
         this.stmtNexts = new Map();
     }
 
-
     public solve() {
         this.init();
         this.doSolve();
@@ -87,15 +87,20 @@ export abstract class DataflowSolver<D> {
 
         // build CHA
         this.CHA = this.scene.makeCallGraphCHA([this.problem.getEntryMethod().getSignature()]) as ClassHierarchyAnalysisAlgorithm;
-        this.buildStmtMap()
+        this.buildStmtMap();
 
         return;
     }
 
     private buildStmtMapInClass(clas: ArkClass) {
         for (const method of clas.getMethods()) {
-            for (const block of method.getCfg().getBlocks()) {
-                const stmts = block.getStmts()
+            const cfg = method.getCfg();
+            const blocks: BasicBlock[] = [];
+            if (cfg) {
+                blocks.push(...cfg.getBlocks());
+            }
+            for (const block of blocks) {
+                const stmts = block.getStmts();
                 for (let stmtIndex = 0; stmtIndex < stmts.length; stmtIndex++) {
                     const stmt = stmts[stmtIndex];
                     if (stmtIndex != stmts.length - 1) {
@@ -144,10 +149,9 @@ export abstract class DataflowSolver<D> {
 
     protected getStartOfCallerMethod(call: Stmt): Stmt {
         const cfg = call.getCfg()!;
-        const paraNum = cfg.getDeclaringMethod().getParameters().length
+        const paraNum = cfg.getDeclaringMethod().getParameters().length;
         return [...cfg.getBlocks()][0].getStmts()[paraNum];
     }
-
 
     protected pathEdgeSetHasEdge(edge: PathEdge<D>) {
         for (const path of this.pathEdgeSet) {
@@ -180,7 +184,7 @@ export abstract class DataflowSolver<D> {
             if (startEdgePoint.node.getCfg()!.getDeclaringMethod() == this.problem.getEntryMethod()) {
                 return;
             }
-            throw new Error("incoming does not have " + startEdgePoint.node.getCfg()?.getDeclaringMethod().toString());
+            throw new Error('incoming does not have ' + startEdgePoint.node.getCfg()?.getDeclaringMethod().toString());
         }
         for (let callEdgePoint of callEdgePoints) {
             let returnSite: Stmt = this.getReturnSiteOfCall(callEdgePoint.node);
@@ -230,7 +234,7 @@ export abstract class DataflowSolver<D> {
         let returnSite: Stmt = this.getReturnSiteOfCall(callEdgePoint.node);
         for (let callee of callees) {
             let callFlowFunc: FlowFunction<D> = this.problem.getCallFlowFunction(callNode, callee);
-            let firstStmt: Stmt = [...callee.getCfg().getBlocks()][0].getStmts()[callee.getParameters().length];
+            let firstStmt: Stmt = [...callee.getCfg()!.getBlocks()][0].getStmts()[callee.getParameters().length];
             let facts: Set<D> = callFlowFunc.getDataFacts(callEdgePoint.fact);
             for (let fact of facts) {
                 // method start loop path edge
@@ -281,7 +285,7 @@ export abstract class DataflowSolver<D> {
             let pathEdge: PathEdge<D> = this.workList.shift()!;
             let targetStmt: Stmt = pathEdge.edgeEnd.node;
             if (this.isCallStatement(targetStmt)) {
-                this.processCallNode(pathEdge)
+                this.processCallNode(pathEdge);
             } else if (this.isExitStatement(targetStmt)) {
                 this.processExitNode(pathEdge);
             } else {
@@ -310,12 +314,11 @@ export abstract class DataflowSolver<D> {
     }
 }
 
-
 export function factEqual<D>(fact1: D, fact2: D): boolean {
     if (fact1 instanceof ArkInstanceFieldRef && fact2 instanceof ArkInstanceFieldRef) {
         return fact1.getFieldSignature().getFieldName() == fact2.getFieldSignature().getFieldName() && fact1.getBase().getName() == fact2.getBase().getName();
     } else if (fact1 instanceof ArkStaticFieldRef && fact2 instanceof ArkStaticFieldRef) {
-        return fact1.getFieldSignature() == fact2.getFieldSignature()
+        return fact1.getFieldSignature() == fact2.getFieldSignature();
     }
     return fact1 == fact2;
 }

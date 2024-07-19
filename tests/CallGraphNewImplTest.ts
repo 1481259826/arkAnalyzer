@@ -28,7 +28,7 @@ const logger = Logger.getLogger();
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('./tests/resources/callgraph/calltest');
+config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
 //config.buildFromProjectDir('./tests/resources/callgraph/simpleCall');
 //config.buildFromProjectDir('./tests/resources/callgraph/swap');
 Logger.setLogLevel(LOG_LEVEL.DEBUG)
@@ -49,7 +49,7 @@ function runScene(config: SceneConfig) {
         for (let arkClass of arkFile.getClasses()) {
             // if (arkClass.getName() === "_DEFAULT_ARK_CLASS") {
             for (let arkMethod of arkClass.getMethods()) {
-                let stmts = arkMethod.getCfg().getStmts();
+                let stmts = arkMethod.getCfg()!.getStmts();
                 logger.info(arkMethod.getSignature().toString())
                 for (let s of stmts) {
                     logger.info("  " + s.toString());
@@ -72,6 +72,7 @@ function runScene(config: SceneConfig) {
     let pta = new PointerAnalysis(pag, cg, projectScene)
     pta.setEntry(entry[0]);
     pta.start();
+    console.log("fin")
 }
 
 

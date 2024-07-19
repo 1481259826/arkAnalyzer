@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { ArkField } from "../model/ArkField";
-import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
+import { ArkField } from '../model/ArkField';
+import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 
 /**
  * @category core/base/type
@@ -39,7 +39,7 @@ export class AnyType extends Type {
     }
 
     public toString(): string {
-        return 'any'
+        return 'any';
     }
 }
 
@@ -59,7 +59,7 @@ export class UnknownType extends Type {
     }
 
     public toString(): string {
-        return 'unknown'
+        return 'unknown';
     }
 }
 
@@ -97,17 +97,27 @@ export class TypeParameterType extends Type {
  */
 export class UnclearReferenceType extends Type {
     private name: string;
+    private genericTypes: Type[];
 
-    constructor(name: string) {
+    constructor(name: string, genericTypes: Type[] = []) {
         super();
         this.name = name;
+        this.genericTypes = genericTypes;
     }
 
     public getName() {
         return this.name;
     }
 
+    public getGenericTypes(): Type[] {
+        return this.genericTypes;
+    }
+
     public toString() {
+        const str = this.name;
+        if (this.genericTypes.length > 0) {
+            const typeStr = '<' + this.genericTypes.join(',') + '>';
+        }
         return this.name;
     }
 }
@@ -250,7 +260,7 @@ export class UnionType extends Type {
     public toString(): string {
         let typeStr = this.types.join('|');
         if (!(this.currType instanceof UnknownType) && this.currType != this) {
-            typeStr += '-' + this.currType
+            typeStr += '-' + this.currType;
         }
         return typeStr;
     }
@@ -272,7 +282,7 @@ export class VoidType extends Type {
     }
 
     public toString(): string {
-        return 'void'
+        return 'void';
     }
 }
 
@@ -288,7 +298,7 @@ export class NeverType extends Type {
     }
 
     public toString(): string {
-        return 'never'
+        return 'never';
     }
 }
 
@@ -363,12 +373,12 @@ export class ArrayType extends Type {
     public toString(): string {
         const strs: string[] = [];
         if (this.baseType) {
-            strs.push('(' + this.baseType.toString() + ')');
+            strs.push(this.baseType.toString());
         }
         for (let i = 0; i < this.dimension; i++) {
             strs.push('[]');
         }
-        return strs.join('')
+        return strs.join('');
     }
 }
 
@@ -456,15 +466,15 @@ export class TypeLiteralType extends Type {
 }
 
 export abstract class AnnotationType extends Type {
-    private originType: string
+    private originType: string;
 
     protected constructor(originType: string) {
         super();
-        this.originType = originType
+        this.originType = originType;
     }
 
     public getOriginType(): string {
-        return this.originType
+        return this.originType;
     }
 
     public toString() {
