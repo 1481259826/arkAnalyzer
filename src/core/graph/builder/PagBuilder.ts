@@ -266,7 +266,6 @@ export class PagBuilder {
         let calleeCid = this.ctx.newContext(CallerCid);
         let srcNodes: NodeID[] = []
         // Add reachable
-        this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
@@ -274,6 +273,7 @@ export class PagBuilder {
             //throw new Error(`Failed to get ArkMethod`);
             return srcNodes;
         }
+        this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
 
         // TODO: getParameterInstances's performance is not good. Need to refactor 
         //let params = calleeMethod.getParameterInstances();

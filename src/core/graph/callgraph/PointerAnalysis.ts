@@ -168,9 +168,10 @@ export class PointerAnalysis extends AbstractAnalysis{
             throw new Error ('Cannot find pag node for a local');
         }
 
-        if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
-            this.worklist.push(src.getID());
-        }
+        // TODO: load edge will not be replaced by copy edge currently
+        // if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
+        //     this.worklist.push(src.getID());
+        // }
     }
 
     /*
