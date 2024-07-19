@@ -147,7 +147,7 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
     protected collectInstantiatedClassesInMethod(methodSignature: MethodSignature): ClassSignature[] {
         // TODO: 需要考虑怎么收集不在当前method方法内的instancedClass
         //       确定哪些范围的变量需要收集信息
-        let cfg: Cfg = this.scene.getMethod(methodSignature)!.getCfg()
+        let cfg: Cfg = this.scene.getMethod(methodSignature)!.getCfg()!
         let newInstancedClass: ClassSignature[]
         newInstancedClass = []
         for (let stmt of cfg.getStmts()) {

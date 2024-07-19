@@ -18,7 +18,20 @@ import path from 'path';
 import { SceneConfig } from "../../src/Config";
 import { Scene } from "../../src/Scene";
 import { FileSignature } from "../../src/core/model/ArkSignature";
-import { ArkAssignStmt, ArkNewArrayExpr, ArkStaticFieldRef, ArrayType, NumberType } from "../../src";
+import {
+    ArkAssignStmt,
+    ArkInstanceFieldRef,
+    ArkNewArrayExpr,
+    ArkStaticFieldRef,
+    ArrayType,
+    ClassType,
+    NumberType, StringType
+} from "../../src";
+import Logger, { LOG_LEVEL } from '../../src/utils/logger';
+
+const logPath = 'out/ArkAnalyzer.log';
+const logger = Logger.getLogger();
+Logger.configure(logPath, LOG_LEVEL.DEBUG);
 
 describe("Infer Array Test", () => {
 
@@ -30,18 +43,30 @@ describe("Infer Array Test", () => {
     projectScene.inferTypes();
     it('normal case', () => {
 
-
         const fileId = new FileSignature();
         fileId.setFileName("inferSample.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('test_new_array');
         assert.isDefined(method);
-        const stmt = method?.getCfg().getStmts()[1];
+        const stmt = method?.getCfg()?.getStmts()[1];
         assert.isTrue(stmt instanceof ArkAssignStmt);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkNewArrayExpr);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp().getType() instanceof ArrayType);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ArrayType);
+    })
+
+    it('array case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("inferSample.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const method = file?.getDefaultClass().getMethodWithName('testArray');
+        const stmt = method?.getCfg()?.getStmts()[2];
+        assert.isTrue(stmt instanceof ArkAssignStmt);
+        const type = (stmt as ArkAssignStmt).getLeftOp().getType();
+        assert.isTrue(type instanceof ArrayType);
+        assert.isTrue((type as ArrayType).getBaseType() instanceof NumberType);
     })
 
 
@@ -51,9 +76,40 @@ describe("Infer Array Test", () => {
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
         const method = file?.getClassWithName('StaticUserB')?.getMethodWithName('f1');
-        const stmt = method?.getCfg().getStmts()[1];
+        const stmt = method?.getCfg()?.getStmts()[1];
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof NumberType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkStaticFieldRef);
+    })
+
+    it('field case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("Field.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const method = file?.getClassWithName('C2')?.getMethodWithName('f2');
+        const stmt = method?.getCfg()?.getStmts()[2];
+        assert.isDefined(stmt);
+        assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
+        assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+        assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance())
+    })
+
+    it('supperClass Test case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("B.ets");
+        fileId.setProjectName(projectScene.getProjectName());
+        assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('ClassB')?.getSuperClass());
+    })
+
+    it('all case', () => {
+        projectScene.getMethods().forEach(m => {
+            m.getCfg()?.getStmts().forEach(s => {
+                const text = s.toString();
+                if (text.includes('Unknown')) {
+                    logger.log(text + ' warning ' + m.getSignature().toString());
+                }
+            })
+        })
     })
 })

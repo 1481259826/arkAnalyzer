@@ -36,7 +36,13 @@ export class ClassHierarchyAnalysisAlgorithm extends AbstractCallGraph {
             invokeExpressionExpr,
             sourceMethodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getFileName(),
             sourceMethodSignature)
-        if (methodsFromInvoke == null) {
+        if (methodsFromInvoke.length == 0) {
+            if (invokeExpressionExpr instanceof ArkInstanceInvokeExpr &&
+                invokeExpressionExpr.getBase().getName() == "console" &&
+                invokeExpressionExpr.getMethodSignature().getMethodSubSignature().getMethodName() == "log"
+            ) {
+                callTargetMethods.push(invokeExpressionExpr.getMethodSignature())
+            }
             return callTargetMethods
         }
         for (let methodFromInvoke of methodsFromInvoke) {

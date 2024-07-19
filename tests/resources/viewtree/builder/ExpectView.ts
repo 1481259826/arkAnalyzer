@@ -223,3 +223,17 @@ export const Case3_BuilderTest_Expect_ViewTree = {
         }
     ]
 }
+
+export const Case_moreRootBuilderTest_Expect_ViewTree = {
+    name: 'Builder',
+    children: [
+        {
+            name: 'Column',
+            children: []
+        },
+        {
+            name: 'Column',
+            children: []
+        }
+    ]
+}

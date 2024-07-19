@@ -140,9 +140,19 @@ export const IfElseTest3_Expect_ViewTree =
     name: 'Column',
     children: [
         { name: 'Text', children: [], stateValues: ['count'] },
-        {
+        { name: 'Builder', children:[
+            {
             name: 'If',
             children: [
+                {
+                    name: 'IfBranch',
+                    children: [
+                        {
+                            name: 'Text',
+                            children: []
+                        }
+                    ]
+                },
                 {
                     name: 'IfBranch',
                     children: [
@@ -154,7 +164,9 @@ export const IfElseTest3_Expect_ViewTree =
                 }
             ],
             stateValues: ['count']
-        },
+        }
+    ]},
+        
         { name: 'Button', children: [], stateValues: ['count'] },
         { name: 'Button', children: [], stateValues: ['count'] }
     ]

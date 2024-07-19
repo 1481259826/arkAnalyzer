@@ -17,26 +17,29 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from "./callgraph/AbstractCallGraphAlgorithm";
-import { ClassHierarchyAnalysisAlgorithm } from "./callgraph/ClassHierarchyAnalysisAlgorithm";
-import { RapidTypeAnalysisAlgorithm } from "./callgraph/RapidTypeAnalysisAlgorithm";
+import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
+import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
+import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
 import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
-import { ArkClass } from "./core/model/ArkClass";
-import { ArkFile } from "./core/model/ArkFile";
-import { ArkMethod } from "./core/model/ArkMethod";
-import { ArkNamespace } from "./core/model/ArkNamespace";
-import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from "./core/model/ArkSignature";
-import Logger from "./utils/logger";
+import { ArkClass } from './core/model/ArkClass';
+import { ArkFile } from './core/model/ArkFile';
+import { ArkMethod } from './core/model/ArkMethod';
+import { ArkNamespace } from './core/model/ArkNamespace';
+import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
+import Logger from './utils/logger';
 import { Local } from './core/base/Local';
 import { buildArkFileFromFile, expandImportAll } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
-import { ExportType } from "./core/model/ArkExport";
+import { ExportType } from './core/model/ArkExport';
+import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
+import { ClassType } from './core/base/Type';
+import { buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 
 const logger = Logger.getLogger();
 
@@ -135,6 +138,15 @@ export class Scene {
         });
     }
 
+    private addDefaultConstructors(): void {
+        for (const file of this.getFiles()) {
+            for (const cls of file.getClasses()) {
+                buildDefaultConstructor(cls);
+
+            }
+        }
+    }
+
     private buildAllMethodBody() {
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
@@ -143,6 +155,7 @@ export class Scene {
                     method.buildBody();
                 }
             }
+            generateDefaultClassField(file.getDefaultClass());
         }
         for (const namespace of this.getNamespacesMap().values()) {
             for (const cls of namespace.getClasses()) {
@@ -150,6 +163,7 @@ export class Scene {
                     method.buildBody();
                 }
             }
+            generateDefaultClassField(namespace.getDefaultClass());
         }
 
         this.buildStage = SceneBuildStage.METHOD_DONE;
@@ -166,6 +180,8 @@ export class Scene {
         });
         this.buildAllMethodBody();
         expandImportAll(this.filesMap);
+        this.genExtendedClasses();
+        this.addDefaultConstructors();
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
@@ -196,6 +212,9 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
+        expandImportAll(this.filesMap);
+        this.genExtendedClasses();
+        this.addDefaultConstructors();
     }
 
     public buildModuleScene(moduleName: string, modulePath: string) {
@@ -217,7 +236,7 @@ export class Scene {
         if (moduleOhPkgContent) {
             if (moduleOhPkgContent.dependencies instanceof Object) {
                 Object.entries(moduleOhPkgContent.dependencies).forEach(([k, v]) => {
-                    const pattern = new RegExp("^(\\.\\.\\/\|\\.\\/)");
+                    const pattern = new RegExp('^(\\.\\.\\/\|\\.\\/)');
                     if (typeof (v) === 'string') {
                         let dependencyModulePath: string = '';
                         if (pattern.test(v)) {
@@ -259,12 +278,9 @@ export class Scene {
     public getFile(fileSignature: FileSignature): ArkFile | null {
         if (this.projectName === fileSignature.getProjectName()) {
             return this.filesMap.get(fileSignature.toString()) || null;
-        } else if ('etsSdk' === fileSignature.getProjectName()) {
-            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
         } else {
-            logger.error("unknown file: " + fileSignature.toString());
+            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
         }
-        return null;
     }
 
     public getFiles(): ArkFile[] {
@@ -290,11 +306,10 @@ export class Scene {
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
         if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
-        } else if ('etsSdk' === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
+        } else {
             const arkFile = this.sdkArkFilesMap.get(namespaceSignature.getDeclaringFileSignature().toString());
             return arkFile?.getNamespace(namespaceSignature) || null;
         }
-        return null;
     }
 
     private getNamespacesMap(): Map<string, ArkNamespace> {
@@ -302,7 +317,7 @@ export class Scene {
             for (const file of this.getFiles()) {
                 ModelUtils.getAllNamespacesInFile(file).forEach((namespace) => {
                     this.namespacesMap.set(namespace.getNamespaceSignature().toString(), namespace);
-                })
+                });
             }
         }
         return this.namespacesMap;
@@ -315,11 +330,14 @@ export class Scene {
     public getClass(classSignature: ClassSignature): ArkClass | null {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getClassesMap().get(classSignature.toString()) || null;
-        } else if ('etsSdk' === classSignature.getDeclaringFileSignature().getProjectName()) {
+        } else {
             const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
-            return arkFile ? arkFile.getClass(classSignature) : null;
+            const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
+            if (namespaceSignature) {
+                return arkFile?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
+            }
+            return arkFile?.getClass(classSignature) || null;
         }
-        return null;
     }
 
     private getClassesMap(): Map<string, ArkClass> {
@@ -345,10 +363,9 @@ export class Scene {
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
         if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
             return this.getMethodsMap().get(methodSignature.toString()) || null;
-        } else if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
-            this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature);
+        } else {
+            return this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature) || null;
         }
-        return null;
     }
 
     private getMethodsMap(): Map<string, ArkMethod> {
@@ -389,21 +406,21 @@ export class Scene {
     }
 
     public getOhPkgFilePath() {
-        return this.ohPkgFilePath
+        return this.ohPkgFilePath;
     }
 
     public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph
+        let callGraphCHA: AbstractCallGraph;
         callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints)
-        return callGraphCHA
+        callGraphCHA.loadCallGraph(entryPoints);
+        return callGraphCHA;
     }
 
     public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph
+        let callGraphRTA: AbstractCallGraph;
         callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints)
-        return callGraphRTA
+        callGraphRTA.loadCallGraph(entryPoints);
+        return callGraphRTA;
     }
 
     public makeCallGraphVPA(entryPoints: MethodSignature[]) {
@@ -415,22 +432,23 @@ export class Scene {
     }
 
     /**
-     * 对每个method方法体内部进行类型推导，将变量类型填入
+     * inference type for each non-default method
+     * because default method was finished
      */
     public inferTypes() {
-
-        for (let arkFile of this.getFiles()) {
-            for (let arkClass of arkFile.getClasses()) {
-                for (let arkMethod of arkClass.getMethods()) {
-                    TypeInference.inferTypeInMethod(arkMethod);
-                }
+        this.getClassesMap().forEach(arkClass => {
+            arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+        });
+        this.getMethodsMap().forEach(arkMethod => {
+            if (!arkMethod.isDefaultArkMethod()) {
+                TypeInference.inferTypeInMethod(arkMethod);
             }
-        }
-
-        // get class hierarchy
-        this.genExtendedClasses()
+        });
     }
 
+    /**
+     * @Deprecated
+     */
     public inferSimpleTypes() {
 
         for (let arkFile of this.getFiles()) {
@@ -452,19 +470,16 @@ export class Scene {
 
     private genExtendedClasses() {
         this.getClassesMap().forEach((cls) => {
-            let superClassName = cls.getSuperClassName();
-            let superClass: ArkClass | null = null;
-
-            superClass = ModelUtils.getClassWithNameFromClass(superClassName, cls);
-            if (!superClass) {
-                const signature = ModelUtils.getTypeSignatureInImportInfoWithName(superClassName, cls.getDeclaringArkFile());
-                if (signature instanceof ClassSignature) {
-                    superClass = cls.getDeclaringArkFile().getScene().getClass(signature);
+            if (cls.getSuperClassName() !== '') {
+                const type = TypeInference.inferUnclearReferenceType(cls.getSuperClassName(), cls);
+                let superClass;
+                if (type && type instanceof ClassType) {
+                    superClass = cls.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
                 }
-            }
-            if (superClass != null) {
-                cls.setSuperClass(superClass);
-                superClass.addExtendedClass(cls);
+                if (superClass) {
+                    cls.setSuperClass(superClass);
+                    superClass.addExtendedClass(cls);
+                }
             }
         });
     }
@@ -491,7 +506,7 @@ export class Scene {
                 const ns = namespaceStack.shift()!;
                 const nsClass: ArkClass[] = [];
                 for (const arkClass of ns.getClasses()) {
-                    nsClass.push(arkClass)
+                    nsClass.push(arkClass);
                 }
                 classMap.set(ns.getNamespaceSignature(), nsClass);
                 if (ns.getNamespaces().length == 0) {
@@ -584,11 +599,11 @@ export class Scene {
             const parentMap: Map<ArkNamespace, ArkNamespace | ArkFile> = new Map();
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
-            for (const local of file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+            file.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
                 if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                     globalLocals.push(local);
                 }
-            }
+            });
             globalVariableMap.set(file.getFileSignature(), globalLocals);
             for (const ns of file.getNamespaces()) {
                 namespaceStack.push(ns);
@@ -599,11 +614,11 @@ export class Scene {
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
-                for (const local of ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
+                ns.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
                     if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                         nsGlobalLocals.push(local);
                     }
-                }
+                });
                 globalVariableMap.set(ns.getNamespaceSignature(), nsGlobalLocals);
                 if (ns.getNamespaces().length == 0) {
                     finalNamespaces.push(ns);
@@ -619,13 +634,8 @@ export class Scene {
                 const finalNS = finalNamespaces.shift()!;
                 const exportLocal = [];
                 for (const exportInfo of finalNS.getExportInfos()) {
-                    if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
-                        for (const local of finalNS.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals()) {
-                            if (local.getName() == exportInfo.getExportClauseName()) {
-                                exportLocal.push(local);
-                                break;
-                            }
-                        }
+                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getTypeSignature()) {
+                        exportLocal.push(exportInfo.getTypeSignature() as Local);
                     }
                 }
                 const parent = parentMap.get(finalNS)!;
@@ -709,6 +719,10 @@ export class Scene {
 
     public getModuleScene(moduleName: string) {
         return this.moduleScenesMap.get(moduleName);
+    }
+
+    public getModuleSceneMap(): Map<string, ModuleScene> {
+        return this.moduleScenesMap;
     }
 }
 

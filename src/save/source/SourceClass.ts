@@ -60,21 +60,13 @@ export class SourceClass extends SourceBase {
         }
 
         if (this.cls.getTypeParameter().length > 0) {
-            this.printer.write(
-                `<${this.transformer.typeArrayToString(
-                    this.cls.getTypeParameter()
-                )}>`
-            );
+            this.printer.write(`<${this.transformer.typeArrayToString(this.cls.getTypeParameter())}>`);
         }
         if (this.cls.getSuperClassName() && !this.cls.hasComponentDecorator()) {
             this.printer.write(` extends ${this.cls.getSuperClassName()}`);
         }
         if (this.cls.getImplementedInterfaceNames().length > 0) {
-            this.printer.write(
-                ` implements ${this.cls
-                    .getImplementedInterfaceNames()
-                    .join(', ')}`
-            );
+            this.printer.write(` implements ${this.cls.getImplementedInterfaceNames().join(', ')}`);
         }
 
         this.printer.writeLine(' {');
@@ -108,9 +100,7 @@ export class SourceClass extends SourceBase {
             this.printer.write(field.getName());
             let initializer = field.getInitializer();
             if (initializer) {
-                this.printer.write(
-                    `: ${this.transformer.valueToString(initializer)}`
-                );
+                this.printer.write(`: ${this.transformer.valueToString(initializer)}`);
             }
 
             if (index != array.length - 1) {
@@ -125,11 +115,7 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            this.printer.write(
-                `${field.getName()}: ${this.transformer.typeToString(
-                    field.getType()
-                )}`
-            );
+            this.printer.write(`${field.getName()}: ${this.transformer.typeToString(field.getType())}`);
             if (index != array.length - 1) {
                 this.printer.write(`, `);
             }
@@ -141,13 +127,12 @@ export class SourceClass extends SourceBase {
     protected printMethods(): Dump[] {
         let items: Dump[] = [];
         for (let method of this.cls.getMethods()) {
+            if (method.isGenerated() || (SourceUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree())) {
+                continue;
+            }
+
             if (method.isDefaultArkMethod()) {
-                items.push(
-                    ...new SourceMethod(
-                        method,
-                        this.printer.getIndent()
-                    ).dumpDefaultMethod()
-                );
+                items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod());
             } else if (!SourceUtils.isAnonymousMethod(method.getName())) {
                 items.push(new SourceMethod(method, this.printer.getIndent()));
             }
@@ -184,7 +169,7 @@ export class SourceDefaultClass extends SourceClass {
     public dumpOriginal(): string {
         for (let method of this.cls.getMethods()) {
             if (method.isDefaultArkMethod()) {
-                for (let stmt of method.getBody().getOriginalCfg().getStmts()) {
+                for (let stmt of method.getOriginalCfg()!.getStmts()) {
                     let code = stmt.toString();
                     if (!code.startsWith('import') && code !== 'return;') {
                         this.printer.writeLine(code);

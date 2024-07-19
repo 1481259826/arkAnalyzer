@@ -33,6 +33,7 @@ const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
  * @category core/model
  */
 export class ArkField {
+    public static DEFAULT_ARK_Field = '_DEFAULT_ARK_Field';
     private name: string = "";
     private code: string = "";
     private fieldType: string = "";
@@ -138,7 +139,7 @@ export class ArkField {
     public genSignature() {
         let fieldSig = new FieldSignature();
         fieldSig.setType(this.type);
-        fieldSig.setDeclaringClassSignature(this.declaringClass.getSignature());
+        fieldSig.setDeclaringSignature(this.declaringClass.getSignature());
         fieldSig.setFieldName(this.name);
         if (this.isStatic()) {
             fieldSig.setStatic();

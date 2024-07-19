@@ -12,14 +12,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import webview from "@ohos.web.webview";
+import i18n from "@ohos.i18n";
+import {hilog} from '@kit.PerformanceAnalysisKit';
 
 export function something() {
-
+    webview.WebviewController.setWebDebuggingAccess(false);
+    const controller: webview.WebviewController = new webview.WebviewController();
+    controller.loadUrl('https://www.example.com/cn');
+    hilog.info(0x0000, 'func', '%{public}', 'Ability onCreate');
 }
 
 export function some() {
-    new dfs();
+    let calendar: i18n.Calendar = i18n.getCalendar('gregory');
+    calendar.getTimeZone();
+    return new dfs();
 }
+
+let calendar = i18n.getCalendar(i18n.getSystemLocale());
+calendar.getTimeZone();
 
 export default class dfs {
 

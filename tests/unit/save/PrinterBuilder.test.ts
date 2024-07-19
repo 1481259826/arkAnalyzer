@@ -153,6 +153,22 @@ describe('PrinterBuilderTest', () => {
         let dot = new DotFilePrinter(arkfile);
         expect(dot.dumpOriginal()).eq(PrinterBuilderTest_CASE_EXPECT);
     });
+
+    it('case8: dumpToJson', () => {
+        arkfile = scene
+            .getFiles()
+            .find((file) => file.getName() == 'sample.ts');
+        if (arkfile == null) {
+            assert.isNotNull(arkfile);
+            return;
+        }
+        let file = outputDir + '/sample.json';
+        printer.dumpToJson(arkfile, file);
+        setTimeout(
+            () => fs.access(file, fs.constants.F_OK, (err) => assert.isNull(err)),
+            1000
+        );
+    });
 });
 
 const PrinterBuilderTest_CASE_EXPECT = `digraph "modules.ts" {

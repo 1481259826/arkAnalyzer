@@ -18,19 +18,18 @@ import { ArkBody } from "../model/ArkBody";
 import { DataflowProblem, FlowFunction } from "./DataflowProblem"
 import { Local } from "../base/Local"
 import { Value } from "../base/Value"
-import { ClassType, NumberType, Type } from "../base/Type"
+import { ClassType, UndefinedType } from "../base/Type"
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from "../base/Stmt"
 import { ArkMethod } from "../model/ArkMethod";
 import { Constant } from "../base/Constant"
 import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
 import { DataflowSolver } from "./DataflowSolver"
 import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
-import { UndefinedType } from "../base/Type";
 import { factEqual } from "../dataflow/DataflowSolver";
-import { FileSignature } from "../model/ArkSignature";
-import { NamespaceSignature } from "../model/ArkSignature";
+import { FileSignature, NamespaceSignature } from "../model/ArkSignature";
 import { ArkClass } from "../model/ArkClass";
 import Logger from "../../utils/logger";
+import { Cfg } from '../graph/Cfg';
 
 const logger = Logger.getLogger();
 
@@ -75,8 +74,8 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                 let ret: Set<Value> = new Set();
                 if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
-                    let body: ArkBody = entryMethod.getBody();
-                    const parameters =  [...entryMethod.getCfg().getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
+                    let body: ArkBody = entryMethod.getBody() as ArkBody;
+                    const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0;i < parameters.length;i++) {
                         const para  = parameters[i].getDef();
                         if (para)
@@ -151,7 +150,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                         const baseType = callExpr.getBase().getType() as ClassType;
                         const arkClass = checkerInstance.scene.getClass(baseType.getClassSignature());
                         const constructor = arkClass?.getMethodWithName("constructor");
-                        const block = [...constructor!.getCfg().getBlocks()][0];
+                        const block = [...constructor!.getCfg()!.getBlocks()][0];
                         for (const stmt of block.getStmts()){
                             const def = stmt.getDef()
                             if (def && def instanceof ArkInstanceFieldRef && def.getBase().getName() == "this" && def.getFieldName() == dataFact.getFieldName()){
@@ -159,7 +158,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                                 break;
                             }
                         }
-                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringClassSignature()){
+                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringSignature()) {
                         ret.add(dataFact);
                     }
                 }
@@ -167,11 +166,11 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                 const args = callStmt.getInvokeExpr().getArgs();
                 for (let i = 0; i < args.length; i++){
                     if (args[i] == dataFact || checkerInstance.isUndefined(args[i]) && checkerInstance.getZeroValue() == dataFact){
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter)
                             ret.add(realParameter);
                     } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == args[i].toString()){
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter) {
                             const retRef = new ArkInstanceFieldRef(realParameter as Local, dataFact.getFieldSignature());
                             ret.add(retRef);

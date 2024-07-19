@@ -39,7 +39,7 @@ export class Test {
                     console.log('*** arkMethod: ', arkMethod.getName());
 
                     const body = arkMethod.getBody();
-                    const blocks = [...body.getOriginalCfg().getBlocks()]
+                    const blocks = [...body!.getOriginalCfg().getBlocks()]
                     for (let i = 0; i < blocks.length; i++){
 
                         const block = blocks[i]

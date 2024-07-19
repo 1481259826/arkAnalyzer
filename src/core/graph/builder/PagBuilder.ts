@@ -32,7 +32,6 @@ import { ClassType } from '../../base/Type';
 import { ArkField } from '../../model/ArkField';
 
 const logger = Logger.getLogger();
-type PointerPair = [NodeID, NodeID]
 
 export class CSFuncID{
     public cid: ContextID;
@@ -107,7 +106,7 @@ export class PagBuilder {
             return false;
         }
 
-        for (let stmt of arkMethod.getCfg().getStmts()){
+        for (let stmt of arkMethod.getCfg()!.getStmts()){
             logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
                 // Add non-call edges
@@ -268,7 +267,6 @@ export class PagBuilder {
         let calleeCid = this.ctx.newContext(CallerCid);
         let srcNodes: NodeID[] = []
         // Add reachable
-        this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
@@ -276,10 +274,11 @@ export class PagBuilder {
             //throw new Error(`Failed to get ArkMethod`);
             return srcNodes;
         }
+        this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
 
         // TODO: getParameterInstances's performance is not good. Need to refactor 
         //let params = calleeMethod.getParameterInstances();
-        let params = calleeMethod.getCfg().getStmts()
+        let params = calleeMethod.getCfg()!.getStmts()
             .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
             .map(stmt => (stmt as ArkAssignStmt).getRightOp());
         let argNum = cs.args?.length;
@@ -337,7 +336,7 @@ export class PagBuilder {
         }
 
         let sig = v.getFieldSignature();
-        let cls = this.scene.getClass(sig.getDeclaringClassSignature());
+        let cls = this.scene.getClass(sig.getDeclaringSignature() as ClassSignature);
         if (!cls) {
             throw new Error('Can not find ArkClass');
         }

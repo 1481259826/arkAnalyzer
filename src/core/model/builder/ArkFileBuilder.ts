@@ -164,12 +164,13 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
 }
 
 /**
+ *
  * 展开 import * 和 export *
  * @param map
  */
 export function expandImportAll(map: Map<string, ArkFile>) {
     for (const arkFile of map.values()) {
-        let importInfos = arkFile.getImportInfos();
+        const importInfos = arkFile.getImportInfos();
         importInfos.forEach((item) => {
             if (item.getNameBeforeAs() === '*') {
                 let formFile = getArkFile(item);

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "class-transformer": "^0.5.1",
+    "commander": "^12.1.0",
     "fs-extra": "^11.1.0",
     "log4js": "6.7.1",
     "ohos-typescript": "^4.9.5-r6"
