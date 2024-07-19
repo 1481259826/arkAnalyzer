@@ -29,6 +29,7 @@ import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
+import { ArkField } from '../../model/ArkField';
 
 const logger = Logger.getLogger();
 type PointerPair = [NodeID, NodeID]
@@ -49,6 +50,7 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
+    private field2UniqInstanceMap: Map<ArkField, Value> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         this.pag = p;
@@ -318,7 +320,38 @@ export class PagBuilder {
     }
 
     public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
+        v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
+    }
+
+    /*
+     * In ArkIR, ArkField has multiple instances for each stmt which use it
+     * But the unique one is needed for pointer analysis
+     * This is a temp solution to use a ArkField->(first instance) 
+     *  as the unique instance
+     */
+    public getRealInstanceRef(v: Value): Value {
+        if (!(v instanceof ArkInstanceFieldRef)) {
+            return v;
+        }
+
+        let sig = v.getFieldSignature();
+        let cls = this.scene.getClass(sig.getDeclaringClassSignature());
+        if (!cls) {
+            throw new Error('Can not find ArkClass');
+        }
+
+        let field = cls.getFieldWithName(sig.getFieldName());
+        if (!field) {
+            throw new Error('Can not find ArkField');
+        }
+        let real = this.field2UniqInstanceMap.get(field);
+        if (!real) {
+            this.field2UniqInstanceMap.set(field, v);
+            real = v;
+        }
+
+        return real;
     }
 
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
