@@ -57,13 +57,13 @@ export class StaticSingleAssignmentFormer {
 
 
     private decideBlockToPhiStmts(body: ArkBody, dominanceFinder: DominanceFinder,
-        blockToDefs: Map<BasicBlock, Set<Local>>, localToBlocks: Map<Local, Set<BasicBlock>>):
+                                  blockToDefs: Map<BasicBlock, Set<Local>>, localToBlocks: Map<Local, Set<BasicBlock>>):
         Map<BasicBlock, Set<Stmt>> {
         let blockToPhiStmts = new Map<BasicBlock, Set<Stmt>>();
         let blockToPhiLocals = new Map<BasicBlock, Set<Local>>();
         let localToPhiBlock = new Map<Local, Set<BasicBlock>>();
 
-        for (const local of body.getLocals()) {
+        for (const [name, local] of body.getLocals()) {
             localToPhiBlock.set(local, new Set());
             let phiBlocks = localToPhiBlock.get(local) as Set<BasicBlock>;
             let blocks = Array.from(localToBlocks.get(local) as Set<BasicBlock>);
@@ -100,7 +100,7 @@ export class StaticSingleAssignmentFormer {
     }
 
     private addPhiStmts(blockToPhiStmts: Map<BasicBlock, Set<Stmt>>, cfg: Cfg,
-        blockToDefs: Map<BasicBlock, Set<Local>>): void {
+                        blockToDefs: Map<BasicBlock, Set<Local>>): void {
 
         let phiArgsNum = new Map<Stmt, number>();
         for (const block of cfg.getBlocks()) {
@@ -138,8 +138,8 @@ export class StaticSingleAssignmentFormer {
     }
 
     private renameLocals(body: ArkBody, dominanceTree: DominanceTree,
-        blockToPhiStmts: Map<BasicBlock, Set<Stmt>>): void {
-        let newLocals = new Set(body.getLocals());
+                         blockToPhiStmts: Map<BasicBlock, Set<Stmt>>): void {
+        let newLocals = new Set(body.getLocals().values());
         let localToNameStack = new Map<Local, Local[]>();
         for (const local of newLocals) {
             localToNameStack.set(local, new Array<Local>())

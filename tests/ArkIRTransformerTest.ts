@@ -57,14 +57,14 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfSimpleProject start');
 
         // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        const projectDir = 'tests/resources/arkIRTransformer/expression';
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        // const projectDir = 'tests/resources/arkIRTransformer/expression';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
-        // this.printScene(scene);
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -120,12 +120,13 @@ class ArkIRTransformerTest {
                 for (const arkMethod of arkClass.getMethods()) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
-                    this.printStmts(body);
-
-                    // logger.error('-- locals:');
-                    // for (const local of arkMethod.getBody().getLocals()) {
-                    //     logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    // }
+                    if (body) {
+                        this.printStmts(body);
+                        logger.error('-- locals:');
+                        arkMethod.getBody()!.getLocals().forEach(local => {
+                            logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                        });
+                    }
                 }
             }
         }

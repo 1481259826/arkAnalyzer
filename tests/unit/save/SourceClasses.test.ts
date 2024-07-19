@@ -13,12 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    SceneConfig,
-    Scene,
-    SourceFilePrinter,
-    SourceClassPrinter,
-} from '../../../src/index';
+import { Scene, SceneConfig, SourceClassPrinter, SourceFilePrinter, } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
@@ -34,11 +29,12 @@ const SourceClassesTest_CASE1_EXPECT = `class Animal {
     return this._name;
   }
   set name(newName: string|undefined) {
+    this._name = newName;
   }
-  public print(a: ArrayType): number|null {
+  public print(a: Animal[]): number|null {
     return 0;
   }
-  public testArrayReturn(): ArrayType {
+  public testArrayReturn(): string[] {
     return [];
   }
 }
@@ -126,7 +122,6 @@ export default class ZipCodeValidator implements StringValidator {
     return s.length === 5 && numberRegexp.test(s);
   }
 }
-export {ZipCodeValidator as ZipCodeValidator};
 export {ZipCodeValidator as mainValidator};
 export class ParseIntBasedZipCodeValidator {
   isAcceptable(s: string) {
@@ -162,6 +157,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
     return this.id;
   }
   set accountID(value: string) {
+    this.id = value;
   }
   private makeRequest() {
   }

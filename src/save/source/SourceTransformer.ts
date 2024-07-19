@@ -15,13 +15,18 @@
 
 import { Constant } from '../../core/base/Constant';
 import {
+    AbstractExpr,
     ArkBinopExpr,
     ArkCastExpr,
+    ArkDeleteExpr,
     ArkInstanceInvokeExpr,
+    ArkInstanceOfExpr,
     ArkLengthExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkStaticInvokeExpr,
+    ArkTypeOfExpr,
+    ArkUnopExpr,
     ArrayLiteralExpr,
     ObjectLiteralExpr,
 } from '../../core/base/Expr';
@@ -45,17 +50,29 @@ import {
 } from '../../core/base/Type';
 import { SourceClass } from './SourceClass';
 import { Value } from '../../core/base/Value';
-import { ArkArrayRef, ArkInstanceFieldRef } from '../../core/base/Ref';
+import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { ArkFile } from '../../core/model/ArkFile';
+import {
+    COMPONENT_CREATE_FUNCTION,
+    COMPONENT_CUSTOMVIEW,
+    COMPONENT_IF,
+    COMPONENT_POP_FUNCTION,
+} from '../../core/common/EtsConst';
 
 const logger = Logger.getLogger();
 
 export interface TransformerContext {
     getArkFile(): ArkFile;
+
     getMethod(signature: MethodSignature): ArkMethod | null;
+
     getClass(signature: ClassSignature): ArkClass | null;
+
     getPrinter(): ArkCodeBuffer;
+
     transTemp2Code(temp: Local): string;
+
+    isInBuilderMethod(): boolean;
 }
 
 export class SourceTransformer {
@@ -65,51 +82,82 @@ export class SourceTransformer {
         this.context = context;
     }
 
-    public instanceInvokeExprToString(
-        invokeExpr: ArkInstanceInvokeExpr
-    ): string {
-        let methodName = invokeExpr
-            .getMethodSignature()
-            .getMethodSubSignature()
-            .getMethodName();
+    private anonymousMethodToString(method: ArkMethod): string {
+        let mtdPrinter = new SourceMethod(method, this.context.getPrinter().getIndent());
+        mtdPrinter.setInBuilder(this.context.isInBuilderMethod());
+        let body = mtdPrinter.dump();
+        return body.substring(this.context.getPrinter().getIndent().length);
+    }
+
+    private anonymousClassToString(cls: ArkClass): string {
+        let clsPrinter = new SourceClass(cls);
+        return clsPrinter.dump();
+    }
+
+    public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr): string {
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
         });
 
-        return `${this.valueToString(
-            invokeExpr.getBase()
-        )}.${methodName}(${args.join(', ')})`;
+        if (SourceUtils.isComponentAttributeInvoke(invokeExpr) && this.context.isInBuilderMethod()) {
+            return `.${methodName}(${args.join(', ')})`;
+        }
+
+        return `${this.valueToString(invokeExpr.getBase())}.${methodName}(${args.join(', ')})`;
     }
 
     public staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr): string {
         let methodSignature = invokeExpr.getMethodSignature();
         let method = this.context.getMethod(methodSignature);
         if (method && SourceUtils.isAnonymousMethod(method.getName())) {
-            let body = new SourceMethod(
-                method,
-                this.context.getPrinter().getIndent()
-            ).dump();
-            return body.substring(this.context.getPrinter().getIndent().length);
+            return this.anonymousMethodToString(method);
         }
 
-        let className = invokeExpr
-            .getMethodSignature()
-            .getDeclaringClassSignature()
-            .getClassName();
-        let methodName = invokeExpr
-            .getMethodSignature()
-            .getMethodSubSignature()
-            .getMethodName();
+        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
         });
-        if (
-            className &&
-            className.length > 0 &&
-            !SourceUtils.isDefaultClass(className)
-        ) {
+
+        if (this.context.isInBuilderMethod()) {
+            if (className == COMPONENT_CUSTOMVIEW) {
+                if (methodName == COMPONENT_CREATE_FUNCTION) {
+                    // Anonymous @Builder method
+                    if (args.length > 1) {
+                        args[1] = args[1].substring('() => '.length);
+                    }
+                    return `${args.join(' ')}`;
+                }
+                if (methodName == COMPONENT_POP_FUNCTION) {
+                    return '';
+                }
+            }
+
+            if (SourceUtils.isComponentCreate(invokeExpr)) {
+                if (className == COMPONENT_IF) {
+                    return `if (${args.join(', ')})`;
+                }
+                return `${className}(${args.join(', ')})`;
+            }
+
+            if (SourceUtils.isComponentIfBranchInvoke(invokeExpr)) {
+                let arg0 = invokeExpr.getArg(0) as Constant;
+                if (arg0.getValue() == '0') {
+                    return ``;
+                } else {
+                    return '} else {';
+                }
+            }
+
+            if (SourceUtils.isComponentPop(invokeExpr)) {
+                return '}';
+            }
+        }
+
+        if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
             return `${className}.${methodName}(${args.join(', ')})`;
         }
         return `${methodName}(${args.join(', ')})`;
@@ -126,10 +174,7 @@ export class SourceTransformer {
 
     public static constToString(value: Constant): string {
         if (value.getType() == 'string') {
-            if (
-                value.getValue().startsWith("'") ||
-                value.getValue().startsWith('"')
-            ) {
+            if (value.getValue().startsWith("'") || value.getValue().startsWith('"')) {
                 return `${value.getValue()}`;
             } else {
                 return `'${value.getValue()}'`;
@@ -139,107 +184,138 @@ export class SourceTransformer {
         }
     }
 
+    public exprToString(expr: AbstractExpr): string {
+        if (expr instanceof ArkInstanceInvokeExpr) {
+            return `${this.instanceInvokeExprToString(expr)}`;
+        }
+
+        if (expr instanceof ArkStaticInvokeExpr) {
+            return `${this.staticInvokeExprToString(expr)}`;
+        }
+
+        if (expr instanceof ArkNewArrayExpr) {
+            return `new Array<${this.typeToString(expr.getBaseType())}>(${expr.getSize()})`;
+        }
+
+        if (expr instanceof ArkNewExpr) {
+            return `new ${this.typeToString(expr.getType())}()`;
+        }
+
+        if (expr instanceof ArkDeleteExpr) {
+            return `delete ${this.valueToString(expr.getField())}`;
+        }
+
+        if (expr instanceof ArkBinopExpr) {
+            let op1: Value = expr.getOp1();
+            let op2: Value = expr.getOp2();
+            let operator: string = expr.getOperator();
+
+            return `${this.valueToString(op1)} ${operator} ${this.valueToString(op2)}`;
+        }
+
+        if (expr instanceof ArkTypeOfExpr) {
+            return `typeof(${this.valueToString(expr.getOp())})`;
+        }
+
+        if (expr instanceof ArkInstanceOfExpr) {
+            return `${this.valueToString(expr.getOp())} instanceof ${this.typeToString(expr.getType())}`;
+        }
+
+        if (expr instanceof ArkLengthExpr) {
+            return `${this.valueToString(expr.getOp())}.length`;
+        }
+
+        if (expr instanceof ArkCastExpr) {
+            let baseOp = expr.getOp();
+            return `${this.valueToString(baseOp)} as ${this.typeToString(expr.getType())}`;
+        }
+
+        if (expr instanceof ArkUnopExpr) {
+            return `${expr.getOperator()}${this.valueToString(expr.getOp())}`;
+        }
+
+        if (expr instanceof ArrayLiteralExpr) {
+            let elements: string[] = [];
+            expr.getElements().forEach((element) => {
+                elements.push(this.valueToString(element));
+            });
+            return `[${elements.join(', ')}]`;
+        }
+
+        if (expr instanceof ObjectLiteralExpr) {
+            return this.anonymousClassToString(expr.getAnonymousClass());
+        }
+
+        // ArkPhiExpr
+        return `${expr}`;
+    }
+
+    public refToString(value: AbstractRef): string {
+        if (value instanceof ArkInstanceFieldRef) {
+            return `${this.valueToString(value.getBase())}.${value.getFieldName()}`;
+        }
+
+        if (value instanceof ArkStaticFieldRef) {
+            return `${value.getFieldSignature().getBaseName()}.${value.getFieldName()}`;
+        }
+
+        if (value instanceof ArkArrayRef) {
+            return `${this.valueToString(value.getBase())}[${this.valueToString(value.getIndex())}]`;
+        }
+
+        if (value instanceof ArkThisRef) {
+            return 'this';
+        }
+
+        // ArkCaughtExceptionRef
+        return `${value}`;
+    }
+
     public valueToString(value: Value): string {
+        if (value instanceof AbstractExpr) {
+            return this.exprToString(value);
+        }
+
+        if (value instanceof AbstractRef) {
+            return this.refToString(value);
+        }
+
         if (value instanceof Constant) {
             return SourceTransformer.constToString(value);
         }
 
         if (value instanceof Local) {
             if (SourceUtils.isAnonymousMethod(value.getName())) {
-                let methodSignature = (
-                    value.getType() as CallableType
-                ).getMethodSignature();
+                let methodSignature = (value.getType() as CallableType).getMethodSignature();
                 let anonymousMethod = this.context.getMethod(methodSignature);
                 if (anonymousMethod) {
-                    let body = new SourceMethod(
-                        anonymousMethod,
-                        this.context.getPrinter().getIndent()
-                    ).dump();
-                    return body.substring(
-                        this.context.getPrinter().getIndent().length
-                    );
+                    return this.anonymousMethodToString(anonymousMethod);
                 }
             }
             if (SourceUtils.isAnonymousClass(value.getName())) {
-                let clsSignature = (
-                    value.getType() as ClassType
-                ).getClassSignature();
+                let clsSignature = (value.getType() as ClassType).getClassSignature();
                 let cls = this.context.getClass(clsSignature);
                 if (cls) {
-                    return new SourceClass(cls).dump();
+                    return this.anonymousClassToString(cls);
                 }
             }
 
             return this.context.transTemp2Code(value);
         }
 
-        if (value instanceof ArkInstanceInvokeExpr) {
-            return `${this.instanceInvokeExprToString(value)}`;
-        }
-
-        if (value instanceof ArkStaticInvokeExpr) {
-            return `${this.staticInvokeExprToString(value)}`;
-        }
-
-        if (value instanceof ArkBinopExpr) {
-            let op1: Value = value.getOp1();
-            let op2: Value = value.getOp2();
-            let operator: string = value.getOperator();
-
-            return `${this.valueToString(op1)} ${operator} ${this.valueToString(
-                op2
-            )}`;
-        }
-
-        if (value instanceof ArkInstanceFieldRef) {
-            return `${this.valueToString(
-                value.getBase()
-            )}.${value.getFieldName()}`;
-        }
-
-        if (value instanceof ArkCastExpr) {
-            let baseOp = value.getOp();
-            return `${this.valueToString(baseOp)}} as ${this.typeToString(
-                value.getType()
-            )}`;
-        }
-
-        if (value instanceof ArkNewArrayExpr) {
-            return `new Array<${this.typeToString(
-                value.getBaseType()
-            )}>(${value.getSize()})`;
-        }
-
-        if (value instanceof ArkArrayRef) {
-            return `${this.valueToString(value.getBase())}[${this.valueToString(
-                value.getIndex()
-            )}]`;
-        }
-
-        if (value instanceof ArkLengthExpr) {
-            return `${value.getOp()}.length`;
-        }
-
-        if (value instanceof ObjectLiteralExpr) {
-            return new SourceClass(value.getAnonymousClass()).dump();
-        }
-
-        if (value instanceof ArrayLiteralExpr) {
-            let elements: string[] = [];
-            value.getElements().forEach((element) => {
-                elements.push(this.valueToString(element));
-            });
-            return `[${elements.join(', ')}]`;
-        }
-
-        if (value instanceof ArkNewExpr) {
-            return `new ${this.typeToString(value.getType())}()`;
-        }
-
         return `${value}`;
     }
 
     public typeToString(type: Type): string {
+        if (type instanceof LiteralType) {
+            let literalName = type.getliteralName() as string;
+            return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
+        }
+
+        if (type instanceof PrimitiveType) {
+            return type.getName();
+        }
+
         if (type instanceof TypeLiteralType) {
             let typesStr: string[] = [];
             for (const member of type.getMembers()) {
@@ -256,13 +332,6 @@ export class SourceTransformer {
             return typesStr.join(' | ');
         }
 
-        if (type instanceof LiteralType) {
-            let literalName = type.getliteralName() as string;
-            return literalName
-                .substring(0, literalName.length - 'Keyword'.length)
-                .toLowerCase();
-        }
-
         if (type instanceof UnknownType) {
             return 'any';
         }
@@ -272,16 +341,10 @@ export class SourceTransformer {
             if (SourceUtils.isDefaultClass(name)) {
                 return 'any';
             }
-            let cls = this.context.getClass(type.getClassSignature());
-            if (
-                cls?.getOriginType() == 'Object' ||
-                cls?.getOriginType() == 'TypeLiteral'
-            ) {
-            }
             if (SourceUtils.isAnonymousClass(name)) {
                 let cls = this.context.getClass(type.getClassSignature());
                 if (cls) {
-                    return new SourceClass(cls).dump();
+                    return this.anonymousClassToString(cls);
                 }
                 return 'any';
             }

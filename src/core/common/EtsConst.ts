@@ -13,111 +13,109 @@
  * limitations under the License.
  */
 
-export const ETS_COMPILER_OPTIONS =
-{
-    'ets':
-    {
-        'emitDecorators': [
+export const ETS_COMPILER_OPTIONS = {
+    ets: {
+        emitDecorators: [
             {
-                'name': 'Entry',
-                'emitParameters': true
+                name: 'Entry',
+                emitParameters: true,
             },
             {
-                'name': 'Component',
-                'emitParameters': false
+                name: 'Component',
+                emitParameters: false,
             },
             {
-                'name': 'Reusable',
-                'emitParameters': false
+                name: 'Reusable',
+                emitParameters: false,
             },
             {
-                'name': 'CustomDialog',
-                'emitParameters': false
+                name: 'CustomDialog',
+                emitParameters: false,
             },
             {
-                'name': 'Consume',
-                'emitParameters': true
+                name: 'Consume',
+                emitParameters: true,
             },
             {
-                'name': 'Link',
-                'emitParameters': false
+                name: 'Link',
+                emitParameters: false,
             },
             {
-                'name': 'LocalStorageLink',
-                'emitParameters': true
+                name: 'LocalStorageLink',
+                emitParameters: true,
             },
             {
-                'name': 'LocalStorageProp',
-                'emitParameters': true
+                name: 'LocalStorageProp',
+                emitParameters: true,
             },
             {
-                'name': 'ObjectLink',
-                'emitParameters': false
+                name: 'ObjectLink',
+                emitParameters: false,
             },
             {
-                'name': 'Prop',
-                'emitParameters': false
+                name: 'Prop',
+                emitParameters: false,
             },
             {
-                'name': 'Provide',
-                'emitParameters': true
+                name: 'Provide',
+                emitParameters: true,
             },
             {
-                'name': 'State',
-                'emitParameters': false
+                name: 'State',
+                emitParameters: false,
             },
             {
-                'name': 'StorageLink',
-                'emitParameters': true
+                name: 'StorageLink',
+                emitParameters: true,
             },
             {
-                'name': 'StorageProp',
-                'emitParameters': true
+                name: 'StorageProp',
+                emitParameters: true,
             },
             {
-                'name': 'Builder',
-                'emitParameters': false
+                name: 'Builder',
+                emitParameters: false,
             },
             {
-                'name': 'BuilderParam',
-                'emitParameters': false
+                name: 'BuilderParam',
+                emitParameters: false,
             },
             {
-                'name': 'Observed',
-                'emitParameters': false
+                name: 'Observed',
+                emitParameters: false,
             },
             {
-                'name': 'Require',
-                'emitParameters': false
+                name: 'Require',
+                emitParameters: false,
             },
             {
-                'name': 'Sendable',
-                'emitParameters': false
-            }
+                name: 'Sendable',
+                emitParameters: false,
+            },
         ],
-        'propertyDecorators': [
+        propertyDecorators: [
             {
-                'name': 'Link',
-                'needInitialization': false
+                name: 'Link',
+                needInitialization: false,
             },
             {
-                'name': 'Prop',
-                'needInitialization': false
+                name: 'Prop',
+                needInitialization: false,
             },
             {
-                'name': 'ObjectLink',
-                'needInitialization': false
+                name: 'ObjectLink',
+                needInitialization: false,
             },
             {
-                'name': 'Consume',
-                'needInitialization': false
-            }
+                name: 'Consume',
+                needInitialization: false,
+            },
         ],
-        'render': {
-            'method': ['build', 'pageTransition'],
-            'decorator': 'Builder'
+        render: {
+            method: ['build', 'pageTransition'],
+            decorator: 'Builder',
         },
-        'components': [
+        components: [
             'AbilityComponent',
             'AlphabetIndexer',
             'Animator',
@@ -241,599 +239,642 @@ export const ETS_COMPILER_OPTIONS =
             'RichEditor',
             'Component3D',
             'ContainerSpan',
-            'ForEach', 
-            'LazyForEach'
+            'ForEach',
+            'LazyForEach',
         ],
-        'extend': {
-            'decorator': ['Extend', 'AnimatableExtend'],
-            'components': [
+        extend: {
+            decorator: ['Extend', 'AnimatableExtend'],
+            components: [
                 {
-                    'name': 'AbilityComponent',
-                    'type': 'AbilityComponentAttribute',
-                    'instance': 'AbilityComponentInstance'
+                    name: 'AbilityComponent',
+                    type: 'AbilityComponentAttribute',
+                    instance: 'AbilityComponentInstance',
                 },
                 {
-                    'name': 'AlphabetIndexer',
-                    'type': 'AlphabetIndexerAttribute',
-                    'instance': 'AlphabetIndexerInstance'
+                    name: 'AlphabetIndexer',
+                    type: 'AlphabetIndexerAttribute',
+                    instance: 'AlphabetIndexerInstance',
                 },
                 {
-                    'name': 'Animator',
-                    'type': 'AnimatorAttribute',
-                    'instance': 'AnimatorInstance'
+                    name: 'Animator',
+                    type: 'AnimatorAttribute',
+                    instance: 'AnimatorInstance',
                 },
                 {
-                    'name': 'Badge',
-                    'type': 'BadgeAttribute',
-                    'instance': 'BadgeInstance'
+                    name: 'Badge',
+                    type: 'BadgeAttribute',
+                    instance: 'BadgeInstance',
                 },
                 {
-                    'name': 'Blank',
-                    'type': 'BlankAttribute',
-                    'instance': 'BlankInstance'
+                    name: 'Blank',
+                    type: 'BlankAttribute',
+                    instance: 'BlankInstance',
                 },
                 {
-                    'name': 'Button',
-                    'type': 'ButtonAttribute',
-                    'instance': 'ButtonInstance'
+                    name: 'Button',
+                    type: 'ButtonAttribute',
+                    instance: 'ButtonInstance',
                 },
                 {
-                    'name': 'Calendar',
-                    'type': 'CalendarAttribute',
-                    'instance': 'CalendarInstance'
+                    name: 'Calendar',
+                    type: 'CalendarAttribute',
+                    instance: 'CalendarInstance',
                 },
                 {
-                    'name': 'CalendarPicker',
-                    'type': 'CalendarPickerAttribute',
-                    'instance': 'CalendarPickerInstance'
+                    name: 'CalendarPicker',
+                    type: 'CalendarPickerAttribute',
+                    instance: 'CalendarPickerInstance',
                 },
                 {
-                    'name': 'Camera',
-                    'type': 'CameraAttribute',
-                    'instance': 'CameraInstance'
+                    name: 'Camera',
+                    type: 'CameraAttribute',
+                    instance: 'CameraInstance',
                 },
                 {
-                    'name': 'Canvas',
-                    'type': 'CanvasAttribute',
-                    'instance': 'CanvasInstance'
+                    name: 'Canvas',
+                    type: 'CanvasAttribute',
+                    instance: 'CanvasInstance',
                 },
                 {
-                    'name': 'Checkbox',
-                    'type': 'CheckboxAttribute',
-                    'instance': 'CheckboxInstance'
+                    name: 'Checkbox',
+                    type: 'CheckboxAttribute',
+                    instance: 'CheckboxInstance',
                 },
                 {
-                    'name': 'CheckboxGroup',
-                    'type': 'CheckboxGroupAttribute',
-                    'instance': 'CheckboxGroupInstance'
+                    name: 'CheckboxGroup',
+                    type: 'CheckboxGroupAttribute',
+                    instance: 'CheckboxGroupInstance',
                 },
                 {
-                    'name': 'Circle',
-                    'type': 'CircleAttribute',
-                    'instance': 'CircleInstance'
+                    name: 'Circle',
+                    type: 'CircleAttribute',
+                    instance: 'CircleInstance',
                 },
                 {
-                    'name': 'ColorPicker',
-                    'type': 'ColorPickerAttribute',
-                    'instance': 'ColorPickerInstance'
+                    name: 'ColorPicker',
+                    type: 'ColorPickerAttribute',
+                    instance: 'ColorPickerInstance',
                 },
                 {
-                    'name': 'ColorPickerDialog',
-                    'type': 'ColorPickerDialogAttribute',
-                    'instance': 'ColorPickerDialogInstance'
+                    name: 'ColorPickerDialog',
+                    type: 'ColorPickerDialogAttribute',
+                    instance: 'ColorPickerDialogInstance',
                 },
                 {
-                    'name': 'Column',
-                    'type': 'ColumnAttribute',
-                    'instance': 'ColumnInstance'
+                    name: 'Column',
+                    type: 'ColumnAttribute',
+                    instance: 'ColumnInstance',
                 },
                 {
-                    'name': 'ColumnSplit',
-                    'type': 'ColumnSplitAttribute',
-                    'instance': 'ColumnSplitInstance'
+                    name: 'ColumnSplit',
+                    type: 'ColumnSplitAttribute',
+                    instance: 'ColumnSplitInstance',
                 },
                 {
-                    'name': 'Counter',
-                    'type': 'CounterAttribute',
-                    'instance': 'CounterInstance'
+                    name: 'Counter',
+                    type: 'CounterAttribute',
+                    instance: 'CounterInstance',
                 },
                 {
-                    'name': 'DataPanel',
-                    'type': 'DataPanelAttribute',
-                    'instance': 'DataPanelInstance'
+                    name: 'DataPanel',
+                    type: 'DataPanelAttribute',
+                    instance: 'DataPanelInstance',
                 },
                 {
-                    'name': 'DatePicker',
-                    'type': 'DatePickerAttribute',
-                    'instance': 'DatePickerInstance'
+                    name: 'DatePicker',
+                    type: 'DatePickerAttribute',
+                    instance: 'DatePickerInstance',
                 },
                 {
-                    'name': 'Divider',
-                    'type': 'DividerAttribute',
-                    'instance': 'DividerInstance'
+                    name: 'Divider',
+                    type: 'DividerAttribute',
+                    instance: 'DividerInstance',
                 },
                 {
-                    'name': 'EffectComponent',
-                    'type': 'EffectComponentAttribute',
-                    'instance': 'EffectComponentInstance'
+                    name: 'EffectComponent',
+                    type: 'EffectComponentAttribute',
+                    instance: 'EffectComponentInstance',
                 },
                 {
-                    'name': 'Ellipse',
-                    'type': 'EllipseAttribute',
-                    'instance': 'EllipseInstance'
+                    name: 'Ellipse',
+                    type: 'EllipseAttribute',
+                    instance: 'EllipseInstance',
                 },
                 {
-                    'name': 'EmbeddedComponent',
-                    'type': 'EmbeddedComponentAttribute',
-                    'instance': 'EmbeddedComponentInstance'
+                    name: 'EmbeddedComponent',
+                    type: 'EmbeddedComponentAttribute',
+                    instance: 'EmbeddedComponentInstance',
                 },
                 {
-                    'name': 'Flex',
-                    'type': 'FlexAttribute',
-                    'instance': 'FlexInstance'
+                    name: 'Flex',
+                    type: 'FlexAttribute',
+                    instance: 'FlexInstance',
                 },
                 {
-                    'name': 'FormComponent',
-                    'type': 'FormComponentAttribute',
-                    'instance': 'FormComponentInstance'
+                    name: 'FormComponent',
+                    type: 'FormComponentAttribute',
+                    instance: 'FormComponentInstance',
                 },
                 {
-                    'name': 'Gauge',
-                    'type': 'GaugeAttribute',
-                    'instance': 'GaugeInstance'
+                    name: 'Gauge',
+                    type: 'GaugeAttribute',
+                    instance: 'GaugeInstance',
                 },
                 {
-                    'name': 'GeometryView',
-                    'type': 'GeometryViewAttribute',
-                    'instance': 'GeometryViewInstance'
+                    name: 'GeometryView',
+                    type: 'GeometryViewAttribute',
+                    instance: 'GeometryViewInstance',
                 },
                 {
-                    'name': 'Grid',
-                    'type': 'GridAttribute',
-                    'instance': 'GridInstance'
+                    name: 'Grid',
+                    type: 'GridAttribute',
+                    instance: 'GridInstance',
                 },
                 {
-                    'name': 'GridItem',
-                    'type': 'GridItemAttribute',
-                    'instance': 'GridItemInstance'
+                    name: 'GridItem',
+                    type: 'GridItemAttribute',
+                    instance: 'GridItemInstance',
                 },
                 {
-                    'name': 'GridContainer',
-                    'type': 'GridContainerAttribute',
-                    'instance': 'GridContainerInstance'
+                    name: 'GridContainer',
+                    type: 'GridContainerAttribute',
+                    instance: 'GridContainerInstance',
                 },
                 {
-                    'name': 'Hyperlink',
-                    'type': 'HyperlinkAttribute',
-                    'instance': 'HyperlinkInstance'
+                    name: 'Hyperlink',
+                    type: 'HyperlinkAttribute',
+                    instance: 'HyperlinkInstance',
                 },
                 {
-                    'name': 'Image',
-                    'type': 'ImageAttribute',
-                    'instance': 'ImageInstance'
+                    name: 'Image',
+                    type: 'ImageAttribute',
+                    instance: 'ImageInstance',
                 },
                 {
-                    'name': 'ImageAnimator',
-                    'type': 'ImageAnimatorAttribute',
-                    'instance': 'ImageAnimatorInstance'
+                    name: 'ImageAnimator',
+                    type: 'ImageAnimatorAttribute',
+                    instance: 'ImageAnimatorInstance',
                 },
                 {
-                    'name': 'Line',
-                    'type': 'LineAttribute',
-                    'instance': 'LineInstance'
+                    name: 'Line',
+                    type: 'LineAttribute',
+                    instance: 'LineInstance',
                 },
                 {
-                    'name': 'List',
-                    'type': 'ListAttribute',
-                    'instance': 'ListInstance'
+                    name: 'List',
+                    type: 'ListAttribute',
+                    instance: 'ListInstance',
                 },
                 {
-                    'name': 'ListItem',
-                    'type': 'ListItemAttribute',
-                    'instance': 'ListItemInstance'
+                    name: 'ListItem',
+                    type: 'ListItemAttribute',
+                    instance: 'ListItemInstance',
                 },
                 {
-                    'name': 'ListItemGroup',
-                    'type': 'ListItemGroupAttribute',
-                    'instance': 'ListItemGroupInstance'
+                    name: 'ListItemGroup',
+                    type: 'ListItemGroupAttribute',
+                    instance: 'ListItemGroupInstance',
                 },
                 {
-                    'name': 'LoadingProgress',
-                    'type': 'LoadingProgressAttribute',
-                    'instance': 'LoadingProgressInstance'
+                    name: 'LoadingProgress',
+                    type: 'LoadingProgressAttribute',
+                    instance: 'LoadingProgressInstance',
                 },
                 {
-                    'name': 'Marquee',
-                    'type': 'MarqueeAttribute',
-                    'instance': 'MarqueeInstance'
+                    name: 'Marquee',
+                    type: 'MarqueeAttribute',
+                    instance: 'MarqueeInstance',
                 },
                 {
-                    'name': 'MediaCachedImage',
-                    'type': 'MediaCachedImageAttribute',
-                    'instance': 'MediaCachedImageInstance'
+                    name: 'MediaCachedImage',
+                    type: 'MediaCachedImageAttribute',
+                    instance: 'MediaCachedImageInstance',
                 },
                 {
-                    'name': 'Menu',
-                    'type': 'MenuAttribute',
-                    'instance': 'MenuInstance'
+                    name: 'Menu',
+                    type: 'MenuAttribute',
+                    instance: 'MenuInstance',
                 },
                 {
-                    'name': 'MenuItem',
-                    'type': 'MenuItemAttribute',
-                    'instance': 'MenuItemInstance'
+                    name: 'MenuItem',
+                    type: 'MenuItemAttribute',
+                    instance: 'MenuItemInstance',
                 },
                 {
-                    'name': 'MenuItemGroup',
-                    'type': 'MenuItemGroupAttribute',
-                    'instance': 'MenuItemGroupInstance'
+                    name: 'MenuItemGroup',
+                    type: 'MenuItemGroupAttribute',
+                    instance: 'MenuItemGroupInstance',
                 },
                 {
-                    'name': 'NavDestination',
-                    'type': 'NavDestinationAttribute',
-                    'instance': 'NavDestinationInstance'
+                    name: 'NavDestination',
+                    type: 'NavDestinationAttribute',
+                    instance: 'NavDestinationInstance',
                 },
                 {
-                    'name': 'NavRouter',
-                    'type': 'NavRouterAttribute',
-                    'instance': 'NavRouterInstance'
+                    name: 'NavRouter',
+                    type: 'NavRouterAttribute',
+                    instance: 'NavRouterInstance',
                 },
                 {
-                    'name': 'Navigation',
-                    'type': 'NavigationAttribute',
-                    'instance': 'NavigationInstance'
+                    name: 'Navigation',
+                    type: 'NavigationAttribute',
+                    instance: 'NavigationInstance',
                 },
                 {
-                    'name': 'Navigator',
-                    'type': 'NavigatorAttribute',
-                    'instance': 'NavigatorInstance'
+                    name: 'Navigator',
+                    type: 'NavigatorAttribute',
+                    instance: 'NavigatorInstance',
                 },
                 {
-                    'name': 'Option',
-                    'type': 'OptionAttribute',
-                    'instance': 'OptionInstance'
+                    name: 'Option',
+                    type: 'OptionAttribute',
+                    instance: 'OptionInstance',
                 },
                 {
-                    'name': 'PageTransitionEnter',
-                    'type': 'PageTransitionEnterAttribute',
-                    'instance': 'PageTransitionEnterInstance'
+                    name: 'PageTransitionEnter',
+                    type: 'PageTransitionEnterAttribute',
+                    instance: 'PageTransitionEnterInstance',
                 },
                 {
-                    'name': 'PageTransitionExit',
-                    'type': 'PageTransitionExitAttribute',
-                    'instance': 'PageTransitionExitInstance'
+                    name: 'PageTransitionExit',
+                    type: 'PageTransitionExitAttribute',
+                    instance: 'PageTransitionExitInstance',
                 },
                 {
-                    'name': 'Panel',
-                    'type': 'PanelAttribute',
-                    'instance': 'PanelInstance'
+                    name: 'Panel',
+                    type: 'PanelAttribute',
+                    instance: 'PanelInstance',
                 },
                 {
-                    'name': 'Path',
-                    'type': 'PathAttribute',
-                    'instance': 'PathInstance'
+                    name: 'Path',
+                    type: 'PathAttribute',
+                    instance: 'PathInstance',
                 },
                 {
-                    'name': 'PatternLock',
-                    'type': 'PatternLockAttribute',
-                    'instance': 'PatternLockInstance'
+                    name: 'PatternLock',
+                    type: 'PatternLockAttribute',
+                    instance: 'PatternLockInstance',
                 },
                 {
-                    'name': 'Piece',
-                    'type': 'PieceAttribute',
-                    'instance': 'PieceInstance'
+                    name: 'Piece',
+                    type: 'PieceAttribute',
+                    instance: 'PieceInstance',
                 },
                 {
-                    'name': 'PluginComponent',
-                    'type': 'PluginComponentAttribute',
-                    'instance': 'PluginComponentInstance'
+                    name: 'PluginComponent',
+                    type: 'PluginComponentAttribute',
+                    instance: 'PluginComponentInstance',
                 },
                 {
-                    'name': 'Polygon',
-                    'type': 'PolygonAttribute',
-                    'instance': 'PolygonInstance'
+                    name: 'Polygon',
+                    type: 'PolygonAttribute',
+                    instance: 'PolygonInstance',
                 },
                 {
-                    'name': 'Polyline',
-                    'type': 'PolylineAttribute',
-                    'instance': 'PolylineInstance'
+                    name: 'Polyline',
+                    type: 'PolylineAttribute',
+                    instance: 'PolylineInstance',
                 },
                 {
-                    'name': 'Progress',
-                    'type': 'ProgressAttribute',
-                    'instance': 'ProgressInstance'
+                    name: 'Progress',
+                    type: 'ProgressAttribute',
+                    instance: 'ProgressInstance',
                 },
                 {
-                    'name': 'QRCode',
-                    'type': 'QRCodeAttribute',
-                    'instance': 'QRCodeInstance'
+                    name: 'QRCode',
+                    type: 'QRCodeAttribute',
+                    instance: 'QRCodeInstance',
                 },
                 {
-                    'name': 'Radio',
-                    'type': 'RadioAttribute',
-                    'instance': 'RadioInstance'
+                    name: 'Radio',
+                    type: 'RadioAttribute',
+                    instance: 'RadioInstance',
                 },
                 {
-                    'name': 'Rating',
-                    'type': 'RatingAttribute',
-                    'instance': 'RatingInstance'
+                    name: 'Rating',
+                    type: 'RatingAttribute',
+                    instance: 'RatingInstance',
                 },
                 {
-                    'name': 'Rect',
-                    'type': 'RectAttribute',
-                    'instance': 'RectInstance'
+                    name: 'Rect',
+                    type: 'RectAttribute',
+                    instance: 'RectInstance',
                 },
                 {
-                    'name': 'RelativeContainer',
-                    'type': 'RelativeContainerAttribute',
-                    'instance': 'RelativeContainerInstance'
+                    name: 'RelativeContainer',
+                    type: 'RelativeContainerAttribute',
+                    instance: 'RelativeContainerInstance',
                 },
                 {
-                    'name': 'Refresh',
-                    'type': 'RefreshAttribute',
-                    'instance': 'RefreshInstance'
+                    name: 'Refresh',
+                    type: 'RefreshAttribute',
+                    instance: 'RefreshInstance',
                 },
                 {
-                    'name': 'RemoteWindow',
-                    'type': 'RemoteWindowAttribute',
-                    'instance': 'RemoteWindowInstance'
+                    name: 'RemoteWindow',
+                    type: 'RemoteWindowAttribute',
+                    instance: 'RemoteWindowInstance',
                 },
                 {
-                    'name': 'RootScene',
-                    'type': 'RootSceneAttribute',
-                    'instance': 'RootSceneInstance'
+                    name: 'RootScene',
+                    type: 'RootSceneAttribute',
+                    instance: 'RootSceneInstance',
                 },
                 {
-                    'name': 'Row',
-                    'type': 'RowAttribute',
-                    'instance': 'RowInstance'
+                    name: 'Row',
+                    type: 'RowAttribute',
+                    instance: 'RowInstance',
                 },
                 {
-                    'name': 'RowSplit',
-                    'type': 'RowSplitAttribute',
-                    'instance': 'RowSplitInstance'
+                    name: 'RowSplit',
+                    type: 'RowSplitAttribute',
+                    instance: 'RowSplitInstance',
                 },
                 {
-                    'name': 'RichText',
-                    'type': 'RichTextAttribute',
-                    'instance': 'RichTextInstance'
+                    name: 'RichText',
+                    type: 'RichTextAttribute',
+                    instance: 'RichTextInstance',
                 },
                 {
-                    'name': 'Screen',
-                    'type': 'ScreenAttribute',
-                    'instance': 'ScreenInstance'
+                    name: 'Screen',
+                    type: 'ScreenAttribute',
+                    instance: 'ScreenInstance',
                 },
                 {
-                    'name': 'Scroll',
-                    'type': 'ScrollAttribute',
-                    'instance': 'ScrollInstance'
+                    name: 'Scroll',
+                    type: 'ScrollAttribute',
+                    instance: 'ScrollInstance',
                 },
                 {
-                    'name': 'ScrollBar',
-                    'type': 'ScrollBarAttribute',
-                    'instance': 'ScrollBarInstance'
+                    name: 'ScrollBar',
+                    type: 'ScrollBarAttribute',
+                    instance: 'ScrollBarInstance',
                 },
                 {
-                    'name': 'Search',
-                    'type': 'SearchAttribute',
-                    'instance': 'SearchInstance'
+                    name: 'Search',
+                    type: 'SearchAttribute',
+                    instance: 'SearchInstance',
                 },
                 {
-                    'name': 'Section',
-                    'type': 'SectionAttribute',
-                    'instance': 'SectionInstance'
+                    name: 'Section',
+                    type: 'SectionAttribute',
+                    instance: 'SectionInstance',
                 },
                 {
-                    'name': 'Select',
-                    'type': 'SelectAttribute',
-                    'instance': 'SelectInstance'
+                    name: 'Select',
+                    type: 'SelectAttribute',
+                    instance: 'SelectInstance',
                 },
                 {
-                    'name': 'Shape',
-                    'type': 'ShapeAttribute',
-                    'instance': 'ShapeInstance'
+                    name: 'Shape',
+                    type: 'ShapeAttribute',
+                    instance: 'ShapeInstance',
                 },
                 {
-                    'name': 'Sheet',
-                    'type': 'SheetAttribute',
-                    'instance': 'SheetInstance'
+                    name: 'Sheet',
+                    type: 'SheetAttribute',
+                    instance: 'SheetInstance',
                 },
                 {
-                    'name': 'SideBarContainer',
-                    'type': 'SideBarContainerAttribute',
-                    'instance': 'SideBarContainerInstance'
+                    name: 'SideBarContainer',
+                    type: 'SideBarContainerAttribute',
+                    instance: 'SideBarContainerInstance',
                 },
                 {
-                    'name': 'Slider',
-                    'type': 'SliderAttribute',
-                    'instance': 'SliderInstance'
+                    name: 'Slider',
+                    type: 'SliderAttribute',
+                    instance: 'SliderInstance',
                 },
                 {
-                    'name': 'Span',
-                    'type': 'SpanAttribute',
-                    'instance': 'SpanInstance'
+                    name: 'Span',
+                    type: 'SpanAttribute',
+                    instance: 'SpanInstance',
                 },
                 {
-                    'name': 'Stack',
-                    'type': 'StackAttribute',
-                    'instance': 'StackInstance'
+                    name: 'Stack',
+                    type: 'StackAttribute',
+                    instance: 'StackInstance',
                 },
                 {
-                    'name': 'Stepper',
-                    'type': 'StepperAttribute',
-                    'instance': 'StepperInstance'
+                    name: 'Stepper',
+                    type: 'StepperAttribute',
+                    instance: 'StepperInstance',
                 },
                 {
-                    'name': 'StepperItem',
-                    'type': 'StepperItemAttribute',
-                    'instance': 'StepperItemInstance'
+                    name: 'StepperItem',
+                    type: 'StepperItemAttribute',
+                    instance: 'StepperItemInstance',
                 },
                 {
-                    'name': 'Swiper',
-                    'type': 'SwiperAttribute',
-                    'instance': 'SwiperInstance'
+                    name: 'Swiper',
+                    type: 'SwiperAttribute',
+                    instance: 'SwiperInstance',
                 },
                 {
-                    'name': 'TabContent',
-                    'type': 'TabContentAttribute',
-                    'instance': 'TabContentInstance'
+                    name: 'TabContent',
+                    type: 'TabContentAttribute',
+                    instance: 'TabContentInstance',
                 },
                 {
-                    'name': 'Tabs',
-                    'type': 'TabsAttribute',
-                    'instance': 'TabsInstance'
+                    name: 'Tabs',
+                    type: 'TabsAttribute',
+                    instance: 'TabsInstance',
                 },
                 {
-                    'name': 'Text',
-                    'type': 'TextAttribute',
-                    'instance': 'TextInstance'
+                    name: 'Text',
+                    type: 'TextAttribute',
+                    instance: 'TextInstance',
                 },
                 {
-                    'name': 'TextPicker',
-                    'type': 'TextPickerAttribute',
-                    'instance': 'TextPickerInstance'
+                    name: 'TextPicker',
+                    type: 'TextPickerAttribute',
+                    instance: 'TextPickerInstance',
                 },
                 {
-                    'name': 'TextClock',
-                    'type': 'TextClockAttribute',
-                    'instance': 'TextClockInstance'
+                    name: 'TextClock',
+                    type: 'TextClockAttribute',
+                    instance: 'TextClockInstance',
                 },
                 {
-                    'name': 'TextArea',
-                    'type': 'TextAreaAttribute',
-                    'instance': 'TextAreaInstance'
+                    name: 'TextArea',
+                    type: 'TextAreaAttribute',
+                    instance: 'TextAreaInstance',
                 },
                 {
-                    'name': 'TextInput',
-                    'type': 'TextInputAttribute',
-                    'instance': 'TextInputInstance'
+                    name: 'TextInput',
+                    type: 'TextInputAttribute',
+                    instance: 'TextInputInstance',
                 },
                 {
-                    'name': 'TextTimer',
-                    'type': 'TextTimerAttribute',
-                    'instance': 'TextTimerInstance'
+                    name: 'TextTimer',
+                    type: 'TextTimerAttribute',
+                    instance: 'TextTimerInstance',
                 },
                 {
-                    'name': 'TimePicker',
-                    'type': 'TimePickerAttribute',
-                    'instance': 'TimePickerInstance'
+                    name: 'TimePicker',
+                    type: 'TimePickerAttribute',
+                    instance: 'TimePickerInstance',
                 },
                 {
-                    'name': 'Toggle',
-                    'type': 'ToggleAttribute',
-                    'instance': 'ToggleInstance'
+                    name: 'Toggle',
+                    type: 'ToggleAttribute',
+                    instance: 'ToggleInstance',
                 },
                 {
-                    'name': 'Video',
-                    'type': 'VideoAttribute',
-                    'instance': 'VideoInstance'
+                    name: 'Video',
+                    type: 'VideoAttribute',
+                    instance: 'VideoInstance',
                 },
                 {
-                    'name': 'Web',
-                    'type': 'WebAttribute',
-                    'instance': 'WebInstance'
+                    name: 'Web',
+                    type: 'WebAttribute',
+                    instance: 'WebInstance',
                 },
                 {
-                    'name': 'WindowScene',
-                    'type': 'WindowSceneAttribute',
-                    'instance': 'WindowSceneInstance'
+                    name: 'WindowScene',
+                    type: 'WindowSceneAttribute',
+                    instance: 'WindowSceneInstance',
                 },
                 {
-                    'name': 'XComponent',
-                    'type': 'XComponentAttribute',
-                    'instance': 'XComponentInstance'
+                    name: 'XComponent',
+                    type: 'XComponentAttribute',
+                    instance: 'XComponentInstance',
                 },
                 {
-                    'name': 'GridRow',
-                    'type': 'GridRowAttribute',
-                    'instance': 'GridRowInstance'
+                    name: 'GridRow',
+                    type: 'GridRowAttribute',
+                    instance: 'GridRowInstance',
                 },
                 {
-                    'name': 'GridCol',
-                    'type': 'GridColAttribute',
-                    'instance': 'GridColInstance'
+                    name: 'GridCol',
+                    type: 'GridColAttribute',
+                    instance: 'GridColInstance',
                 },
                 {
-                    'name': 'WaterFlow',
-                    'type': 'WaterFlowAttribute',
-                    'instance': 'WaterFlowInstance'
+                    name: 'WaterFlow',
+                    type: 'WaterFlowAttribute',
+                    instance: 'WaterFlowInstance',
                 },
                 {
-                    'name': 'FlowItem',
-                    'type': 'FlowItemAttribute',
-                    'instance': 'FlowItemInstance'
+                    name: 'FlowItem',
+                    type: 'FlowItemAttribute',
+                    instance: 'FlowItemInstance',
                 },
                 {
-                    'name': 'ImageSpan',
-                    'type': 'ImageSpanAttribute',
-                    'instance': 'ImageSpanInstance'
+                    name: 'ImageSpan',
+                    type: 'ImageSpanAttribute',
+                    instance: 'ImageSpanInstance',
                 },
                 {
-                    'name': 'LocationButton',
-                    'type': 'LocationButtonAttribute',
-                    'instance': 'LocationButtonInstance'
+                    name: 'LocationButton',
+                    type: 'LocationButtonAttribute',
+                    instance: 'LocationButtonInstance',
                 },
                 {
-                    'name': 'PasteButton',
-                    'type': 'PasteButtonAttribute',
-                    'instance': 'PasteButtonInstance'
+                    name: 'PasteButton',
+                    type: 'PasteButtonAttribute',
+                    instance: 'PasteButtonInstance',
                 },
                 {
-                    'name': 'SaveButton',
-                    'type': 'SaveButtonAttribute',
-                    'instance': 'SaveButtonInstance'
+                    name: 'SaveButton',
+                    type: 'SaveButtonAttribute',
+                    instance: 'SaveButtonInstance',
                 },
                 {
-                    'name': 'UIExtensionComponent',
-                    'type': 'UIExtensionComponentAttribute',
-                    'instance': 'UIExtensionComponentInstance'
+                    name: 'UIExtensionComponent',
+                    type: 'UIExtensionComponentAttribute',
+                    instance: 'UIExtensionComponentInstance',
                 },
                 {
-                    'name': 'RichEditor',
-                    'type': 'RichEditorAttribute',
-                    'instance': 'RichEditorInstance'
+                    name: 'RichEditor',
+                    type: 'RichEditorAttribute',
+                    instance: 'RichEditorInstance',
                 },
                 {
-                    'name': 'Component3D',
-                    'type': 'Component3DAttribute',
-                    'instance': 'Component3DInstance'
+                    name: 'Component3D',
+                    type: 'Component3DAttribute',
+                    instance: 'Component3DInstance',
                 },
                 {
-                    'name': 'ContainerSpan',
-                    'type': 'ContainerSpanAttribute',
-                    'instance': 'ContainerSpanInstance'
-                }
-            ]
+                    name: 'ContainerSpan',
+                    type: 'ContainerSpanAttribute',
+                    instance: 'ContainerSpanInstance',
+                },
+            ],
         },
-        'styles': {
-            'decorator': 'Styles',
-            'component': {
-                'name': 'Common',
-                'type': 'T',
-                'instance': 'CommonInstance'
+        styles: {
+            decorator: 'Styles',
+            component: {
+                name: 'Common',
+                type: 'T',
+                instance: 'CommonInstance',
             },
-            'property': 'stateStyles'
+            property: 'stateStyles',
         },
-        'concurrent': {
-            'decorator': 'Concurrent'
+        concurrent: {
+            decorator: 'Concurrent',
         },
-        'customComponent': 'CustomComponent',
-        'libs': []
-    }
+        customComponent: 'CustomComponent',
+        libs: [],
+    },
 };
 
 export const BUILDIN_SYSTEM_COMPONENT: Set<string> = new Set(ETS_COMPILER_OPTIONS.ets.components);
 
 export const BUILDIN_ATOMIC_COMPONENT: Set<string> = new Set([
-    'AbilityComponent', 'AlphabetIndexer', 'Animator', 'Blank', 'CalendarPicker',
-    'Camera', 'Circle', 'Component3D', 'ContentSlot', 'Divider', 'Ellipse',
-    'EmbeddedComponent', 'FormComponent', 'FrictionMotion', 'GeometryView',
-    'Image', 'ImageAnimator', 'ImageSpan', 'Line', 'LoadingProgress', 'LocationButton',
-    'Marquee', 'MediaCachedImage', 'NodeContainer', 'PageTransitionEnter',
-    'PageTransitionExit', 'Particle', 'PasteButton', 'Path', 'PatternLock', 'Polygon',
-    'Polyline', 'Progress', 'Radio', 'Rect', 'RemoteWindow', 'RichEditor', 'RichText',
-    'SaveButton', 'ScrollMotion', 'Search', 'Slider', 'Span', 'SpringMotion', 'SpringProp',
-    'SymbolSpan', 'SymbolGlyph', 'TextArea', 'TextInput', 'UIExtensionComponent', 'Video', 'Web'
-])
+    'AbilityComponent',
+    'AlphabetIndexer',
+    'Animator',
+    'Blank',
+    'CalendarPicker',
+    'Camera',
+    'Circle',
+    'Component3D',
+    'ContentSlot',
+    'Divider',
+    'Ellipse',
+    'EmbeddedComponent',
+    'FormComponent',
+    'FrictionMotion',
+    'GeometryView',
+    'Image',
+    'ImageAnimator',
+    'ImageSpan',
+    'Line',
+    'LoadingProgress',
+    'LocationButton',
+    'Marquee',
+    'MediaCachedImage',
+    'NodeContainer',
+    'PageTransitionEnter',
+    'PageTransitionExit',
+    'Particle',
+    'PasteButton',
+    'Path',
+    'PatternLock',
+    'Polygon',
+    'Polyline',
+    'Progress',
+    'Radio',
+    'Rect',
+    'RemoteWindow',
+    'RichEditor',
+    'RichText',
+    'SaveButton',
+    'ScrollMotion',
+    'Search',
+    'Slider',
+    'Span',
+    'SpringMotion',
+    'SpringProp',
+    'SymbolSpan',
+    'SymbolGlyph',
+    'TextArea',
+    'TextInput',
+    'UIExtensionComponent',
+    'Video',
+    'Web',
+]);
 
 export const COMPONENT_DECORATOR: Set<string> = new Set(['Reusable', 'Component', 'ComponentV2', 'CustomDialog']);
 export const ENTRY_DECORATOR: string = 'Entry';
@@ -852,7 +893,6 @@ export function isEtsContainerComponent(name: string): boolean {
     return isEtsSystemComponent(name) && !isEtsAtomicComponent(name);
 }
 
-
 export const COMPONENT_CREATE_FUNCTION: string = 'create';
 export const COMPONENT_POP_FUNCTION: string = 'pop';
 export const COMPONENT_CUSTOMVIEW: string = 'View';
@@ -862,3 +902,10 @@ export const COMPONENT_IF: string = 'If';
 export const COMPONENT_IF_BRANCH: string = 'IfBranch';
 export const COMPONENT_BRANCH_FUNCTION: string = 'branch';
 export const COMPONENT_BUILD_FUNCTION: string = 'build';
+
+export const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([
+    COMPONENT_IF,
+    COMPONENT_IF_BRANCH,
+    COMPONENT_CUSTOMVIEW,
+    COMPONENT_REPEAT,
+]);

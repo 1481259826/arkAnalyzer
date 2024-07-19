@@ -21,18 +21,19 @@ import * as ts from 'ohos-typescript';
 
 export class BodyBuilder {
     private cfgBuilder: CfgBuilder;
-    private methodSignature: MethodSignature;
 
     constructor(methodSignature: MethodSignature, sourceAstNode: ts.Node, declaringMethod: ArkMethod, sourceFile: ts.SourceFile) {
-        this.methodSignature = methodSignature;
-        this.cfgBuilder = new CfgBuilder(sourceAstNode, this.methodSignature.getMethodSubSignature().getMethodName(), declaringMethod, sourceFile);
+        this.cfgBuilder = new CfgBuilder(sourceAstNode, methodSignature.getMethodSubSignature().getMethodName(), declaringMethod, sourceFile);
     }
 
-    public build(): ArkBody {
+    public build(): ArkBody | null {
         this.cfgBuilder.buildCfgBuilder();
-        const {cfg, originalCfg, stmtToOriginalStmt, locals} = this.cfgBuilder.buildCfgAndOriginalCfg();
-        cfg.buildDefUseStmt();
+        if (!this.cfgBuilder.isBodyEmpty()) {
+            const {cfg, originalCfg, stmtToOriginalStmt, locals} = this.cfgBuilder.buildCfgAndOriginalCfg();
+            cfg.buildDefUseStmt();
 
-        return new ArkBody(this.methodSignature, locals, originalCfg, cfg, stmtToOriginalStmt);
+            return new ArkBody(locals, originalCfg, cfg, stmtToOriginalStmt);
+        }
+        return null;
     }
 }

@@ -51,8 +51,9 @@ export class ModelUtils {
     public static getClassWithNameFromClass(className: string, startFrom: ArkClass): ArkClass | null {
         if (!className.includes('.')) {
             let res: ArkClass | null = null;
-            if (startFrom.getDeclaringArkNamespace() != null) {
-                res = this.getClassWithNameInNamespaceRecursively(className, startFrom.getDeclaringArkNamespace());
+            const arkNamespace = startFrom.getDeclaringArkNamespace();
+            if (arkNamespace) {
+                res = this.getClassWithNameInNamespaceRecursively(className, arkNamespace);
             } else {
                 res = this.getClassInFileWithName(className, startFrom.getDeclaringArkFile());
             }
@@ -74,35 +75,15 @@ export class ModelUtils {
     /**
      *  search class within the file that contain the given method
      */
-    public static getClassWithName(className: string, startFrom: ArkMethod): ArkClass | null {
-        if (!className.includes('.')) {
-            const thisClass = startFrom.getDeclaringArkClass();
-            if (thisClass.getName() == className) {
-                return thisClass;
-            }
-            const thisNamespace = thisClass.getDeclaringArkNamespace();
-            let classSearched: ArkClass | null = null;
-            if (thisNamespace) {
-                classSearched = thisNamespace.getClassWithName(className);
-                if (classSearched) {
-                    return classSearched;
-                }
-            }
-            const thisFile = thisClass.getDeclaringArkFile();
-            classSearched = this.getClassInFileWithName(className, thisFile);
-            return classSearched;
-        } else {
-            const names = className.split('.');
-            let nameSpace = this.getNamespaceWithName(names[0], startFrom);
-            for (let i = 1; i < names.length - 1; i++) {
-                if (nameSpace)
-                    nameSpace = nameSpace.getNamespaceWithName(names[i]);
-            }
-            if (nameSpace) {
-                return nameSpace.getClassWithName(names[names.length - 1]);
-            }
+    public static getClassWithName(className: string, thisClass: ArkClass): ArkClass | null {
+        if (thisClass.getName() == className) {
+            return thisClass;
         }
-        return null;
+        let classSearched = thisClass.getDeclaringArkNamespace()?.getClassWithName(className);
+        if (!classSearched) {
+            classSearched = thisClass.getDeclaringArkFile().getClassWithName(className)
+        }
+        return classSearched;
     }
 
     /** search class within the given file */
@@ -142,7 +123,7 @@ export class ModelUtils {
             return methodSearched;
         } else {
             const names = methodName.split('.');
-            let nameSpace = this.getNamespaceWithName(names[0], startFrom);
+            let nameSpace = this.getNamespaceWithName(names[0], startFrom.getDeclaringArkClass());
             for (let i = 1; i < names.length - 1; i++) {
                 if (nameSpace) {
                     nameSpace = nameSpace.getNamespaceWithName(names[i]);
@@ -169,18 +150,15 @@ export class ModelUtils {
         return namespaceSearched;
     }
 
-    public static getNamespaceWithName(namespaceName: string, startFrom: ArkMethod): ArkNamespace | null {
-        const thisClass = startFrom.getDeclaringArkClass();
+    public static getNamespaceWithName(namespaceName: string, thisClass: ArkClass): ArkNamespace | null {
         const thisNamespace = thisClass.getDeclaringArkNamespace();
         let namespaceSearched: ArkNamespace | null = null;
         if (thisNamespace) {
             namespaceSearched = thisNamespace.getNamespaceWithName(namespaceName);
-            if (namespaceSearched) {
-                return namespaceSearched;
-            }
         }
-        const thisFile = thisClass.getDeclaringArkFile();
-        namespaceSearched = this.getNamespaceInFileWithName(namespaceName, thisFile);
+        if (!namespaceSearched) {
+            namespaceSearched = thisClass.getDeclaringArkFile().getNamespaceWithName(namespaceName);
+        }
         return namespaceSearched;
     }
 
@@ -201,8 +179,8 @@ export class ModelUtils {
         return null;
     }
 
-    public static getStaticMethodWithName(methodName: string, startFrom: ArkMethod): ArkMethod | null {
-        const thisClass = startFrom.getDeclaringArkClass();
+    public static getStaticMethodWithName(methodName: string, thisClass: ArkClass): ArkMethod | null {
+
         const thisNamespace = thisClass.getDeclaringArkNamespace();
         if (thisNamespace) {
             const defaultClass = thisNamespace.getClassWithName('_DEFAULT_ARK_CLASS');
@@ -213,7 +191,7 @@ export class ModelUtils {
                 }
             }
         }
-        return this.getStaticMethodInFileWithName(methodName, startFrom.getDeclaringArkFile());
+        return this.getStaticMethodInFileWithName(methodName, thisClass.getDeclaringArkFile());
     }
 
     public static getStaticMethodInFileWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
@@ -288,16 +266,35 @@ export class ModelUtils {
         return isArkUIBuilderMethod;
     }
 
-    public static getInvokerSignatureWithName(name: string, invokeMethod: ArkMethod): TypeSignature | undefined {
-        let signature: TypeSignature | undefined = this.getClassWithName(name, invokeMethod)?.getSignature();
-        if (signature) {
-            return signature;
+
+    public static getClass(method: ArkMethod, signature: ClassSignature): ArkClass | null {
+        let cls: ArkClass | undefined | null = method.getDeclaringArkFile().getScene().getClass(signature);
+        if (cls) {
+            return cls;
         }
-        signature = this.getNamespaceWithName(name, invokeMethod)?.getSignature();
-        if (signature) {
-            return signature;
+
+        let exportInfo = method.getDeclaringArkFile().getImportInfoBy(signature.getClassName())?.getLazyExportInfo();
+        let typeSignature = exportInfo?.getTypeSignature();
+        if (typeSignature instanceof ClassSignature) {
+            let cls = method.getDeclaringArkFile().getScene().getClass(typeSignature);
+            if (cls) {
+                return cls;
+            }
         }
-        signature = this.getTypeSignatureInImportInfoWithName(name, invokeMethod.getDeclaringArkFile());
-        return signature;
+
+        cls = method.getDeclaringArkClass().getDeclaringArkNamespace()?.getClassWithName(signature.getClassName());
+        if (cls) {
+            return cls;
+        }
+
+        for (const ns of method.getDeclaringArkFile().getAllNamespacesUnderThisFile()) {
+            cls = ns.getClassWithName(signature.getClassName());
+            if (cls) {
+                return cls;
+            }
+        }
+
+        return method.getDeclaringArkFile().getClassWithName(signature.getClassName());
     }
+
 }

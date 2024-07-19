@@ -242,7 +242,7 @@ export class ArkNamespace implements ArkExport {
         return this.anonymousClassNumber++;
     }
 
-    getType(): ExportType {
+    getExportType(): ExportType {
         return ExportType.NAME_SPACE;
     }
 }

@@ -13,34 +13,64 @@
  * limitations under the License.
  */
 
-import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from "ohos-typescript";
-import { AnyType, ArrayType, CallableType, ClassType, LiteralType, NumberType, StringType, Type, TypeLiteralType, UnclearReferenceType, UnionType, UnknownType, TypeParameterType } from "../../base/Type";
-import { TypeInference } from "../../common/TypeInference";
-import { ArkField } from "../ArkField";
-import Logger from "../../../utils/logger";
-import { LineColPosition } from "../../base/Position";
-import { Value } from "../../base/Value";
-import { Constant } from "../../base/Constant";
-import { ArkBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr, ArkUnopExpr, ArrayLiteralExpr, ObjectLiteralExpr } from "../../base/Expr";
-import { ClassSignature, FieldSignature, MethodSignature, MethodSubSignature } from "../ArkSignature";
-import { Local } from "../../base/Local";
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../../base/Ref";
-import { ArkClass } from "../ArkClass";
-import { ArkMethod } from "../ArkMethod";
-import { Decorator } from "../../base/Decorator";
-import { buildProperty2ArkField } from "./ArkFieldBuilder";
-import { ArrayBindingPatternParameter, MethodParameter, ObjectBindingPatternParameter, arkMethodNodeKind, buildArkMethodFromArkClass } from "./ArkMethodBuilder";
-import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkMethod, buildNormalArkClassFromArkNamespace } from "./ArkClassBuilder";
+import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
+import {
+    AnyType,
+    ArrayType,
+    CallableType,
+    ClassType,
+    NumberType,
+    StringType,
+    TupleType,
+    Type,
+    TypeParameterType,
+    UnclearReferenceType,
+    UnionType,
+    UnknownType,
+} from '../../base/Type';
+import { TypeInference } from '../../common/TypeInference';
+import { ArkField } from '../ArkField';
+import Logger from '../../../utils/logger';
+import { Value } from '../../base/Value';
+import { Constant } from '../../base/Constant';
+import {
+    ArkBinopExpr,
+    ArkCastExpr,
+    ArkInstanceInvokeExpr,
+    ArkNewArrayExpr,
+    ArkNewExpr,
+    ArkStaticInvokeExpr,
+    ArkUnopExpr,
+    ArrayLiteralExpr,
+    ObjectLiteralExpr,
+} from '../../base/Expr';
+import { ClassSignature, FieldSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
+import { Local } from '../../base/Local';
+import { ArkInstanceFieldRef, ArkStaticFieldRef, ArkThisRef } from '../../base/Ref';
+import { ArkClass } from '../ArkClass';
+import { ArkMethod } from '../ArkMethod';
+import { Decorator } from '../../base/Decorator';
+import {
+    ArrayBindingPatternParameter,
+    buildArkMethodFromArkClass,
+    MethodParameter,
+    ObjectBindingPatternParameter,
+} from './ArkMethodBuilder';
+import {
+    buildNormalArkClassFromArkFile,
+    buildNormalArkClassFromArkMethod,
+    buildNormalArkClassFromArkNamespace,
+} from './ArkClassBuilder';
 
 const logger = Logger.getLogger();
+export const DECLARE_KEYWORD = 'DeclareKeyword';
 
 export function handleQualifiedName(node: ts.QualifiedName): string {
     let right = (node.right as ts.Identifier).text;
     let left: string = '';
     if (ts.SyntaxKind[node.left.kind] == 'Identifier') {
         left = (node.left as ts.Identifier).text;
-    }
-    else if (ts.SyntaxKind[node.left.kind] == 'QualifiedName') {
+    } else if (ts.SyntaxKind[node.left.kind] == 'QualifiedName') {
         left = handleQualifiedName(node.left as ts.QualifiedName);
     }
     let qualifiedName = left + '.' + right;
@@ -52,11 +82,9 @@ export function handlePropertyAccessExpression(node: ts.PropertyAccessExpression
     let left: string = '';
     if (ts.SyntaxKind[node.expression.kind] == 'Identifier') {
         left = (node.expression as ts.Identifier).text;
-    }
-    else if (ts.isStringLiteral(node.expression)) {
+    } else if (ts.isStringLiteral(node.expression)) {
         left = node.expression.text;
-    }
-    else if (ts.isPropertyAccessExpression(node.expression)) {
+    } else if (ts.isPropertyAccessExpression(node.expression)) {
         left = handlePropertyAccessExpression(node.expression as ts.PropertyAccessExpression);
     }
     let propertyAccessExpressionName = left + '.' + right;
@@ -71,8 +99,8 @@ export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<st
             modifiers.add('AbstractKeyword');
         } else if (ts.isDecorator(modifier)) {
             if (modifier.expression) {
-                let kind = "";
-                let param = "";
+                let kind = '';
+                let param = '';
                 if (ts.isIdentifier(modifier.expression)) {
                     kind = modifier.expression.text;
                 } else if (ts.isCallExpression(modifier.expression)) {
@@ -91,7 +119,7 @@ export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<st
                 }
                 const decorator = new Decorator(kind);
                 decorator.setContent(modifier.expression.getText(sourceFile));
-                if (param != "") {
+                if (param != '') {
                     decorator.setParam(param);
                 }
                 modifiers.add(decorator);
@@ -117,12 +145,10 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
             let heritageClauseName: string = '';
             if (ts.isIdentifier(type.expression)) {
                 heritageClauseName = (type.expression as ts.Identifier).text;
-            }
-            else if (ts.isPropertyAccessExpression(type.expression)) {
+            } else if (ts.isPropertyAccessExpression(type.expression)) {
                 heritageClauseName = handlePropertyAccessExpression(type.expression);
-            }
-            else {
-                logger.warn("Other type expression found!!!");
+            } else {
+                logger.warn('Other type expression found!!!');
             }
             heritageClausesMap.set(heritageClauseName, ts.SyntaxKind[heritageClause.token]);
         });
@@ -131,17 +157,17 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
 }
 
 export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDeclaration>,
-    sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): Type[] {
+                                    sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): Type[] {
     let typeParams: Type[] = [];
     typeParameters.forEach((typeParameter) => {
         typeParams.push(tsNode2Type(typeParameter, sourceFile, arkInstance));
 
         if (typeParameter.modifiers) {
-            logger.warn("This typeparameter has modifiers.");
+            logger.warn('This typeparameter has modifiers.');
         }
 
         if (typeParameter.expression) {
-            logger.warn("This typeparameter has expression.");
+            logger.warn('This typeparameter has expression.');
         }
     });
     return typeParams;
@@ -155,32 +181,29 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
         // name
         if (ts.isIdentifier(parameter.name)) {
             methodParameter.setName(parameter.name.text);
-        }
-        else if (ts.isObjectBindingPattern(parameter.name)) {
-            methodParameter.setName("ObjectBindingPattern");
+        } else if (ts.isObjectBindingPattern(parameter.name)) {
+            methodParameter.setName('ObjectBindingPattern');
             let elements: ObjectBindingPatternParameter[] = [];
             parameter.name.elements.forEach((element) => {
                 let paraElement = new ObjectBindingPatternParameter();
                 if (element.propertyName) {
                     if (ts.isIdentifier(element.propertyName)) {
                         paraElement.setPropertyName(element.propertyName.text);
-                    }
-                    else {
-                        logger.warn("New propertyName of ObjectBindingPattern found, please contact developers to support this!");
+                    } else {
+                        logger.warn('New propertyName of ObjectBindingPattern found, please contact developers to support this!');
                     }
                 }
 
                 if (element.name) {
                     if (ts.isIdentifier(element.name)) {
                         paraElement.setName(element.name.text);
-                    }
-                    else {
-                        logger.warn("New name of ObjectBindingPattern found, please contact developers to support this!");
+                    } else {
+                        logger.warn('New name of ObjectBindingPattern found, please contact developers to support this!');
                     }
                 }
 
                 if (element.initializer) {
-                    logger.warn("TODO: support ObjectBindingPattern initializer.");
+                    logger.warn('TODO: support ObjectBindingPattern initializer.');
                 }
 
                 if (element.dotDotDotToken) {
@@ -189,9 +212,8 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
                 elements.push(paraElement);
             });
             methodParameter.setObjElements(elements);
-        }
-        else if (ts.isArrayBindingPattern(parameter.name)) {
-            methodParameter.setName("ArrayBindingPattern");
+        } else if (ts.isArrayBindingPattern(parameter.name)) {
+            methodParameter.setName('ArrayBindingPattern');
             let elements: ArrayBindingPatternParameter[] = [];
             parameter.name.elements.forEach((element) => {
                 let paraElement = new ArrayBindingPatternParameter();
@@ -199,38 +221,34 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
                     if (element.propertyName) {
                         if (ts.isIdentifier(element.propertyName)) {
                             paraElement.setPropertyName(element.propertyName.text);
-                        }
-                        else {
-                            logger.warn("New propertyName of ArrayBindingPattern found, please contact developers to support this!");
+                        } else {
+                            logger.warn('New propertyName of ArrayBindingPattern found, please contact developers to support this!');
                         }
                     }
 
                     if (element.name) {
                         if (ts.isIdentifier(element.name)) {
                             paraElement.setName(element.name.text);
-                        }
-                        else {
-                            logger.warn("New name of ArrayBindingPattern found, please contact developers to support this!");
+                        } else {
+                            logger.warn('New name of ArrayBindingPattern found, please contact developers to support this!');
                         }
                     }
 
                     if (element.initializer) {
-                        logger.warn("TODO: support ArrayBindingPattern initializer.");
+                        logger.warn('TODO: support ArrayBindingPattern initializer.');
                     }
 
                     if (element.dotDotDotToken) {
                         paraElement.setOptional(true);
                     }
-                }
-                else if (ts.isOmittedExpression(element)) {
-                    logger.warn("TODO: support OmittedExpression for ArrayBindingPattern parameter name.");
+                } else if (ts.isOmittedExpression(element)) {
+                    logger.warn('TODO: support OmittedExpression for ArrayBindingPattern parameter name.');
                 }
                 elements.push(paraElement);
             });
             methodParameter.setArrayElements(elements);
-        }
-        else {
-            logger.warn("Parameter name is not identifier, ObjectBindingPattern nor ArrayBindingPattern, please contact developers to support this!");
+        } else {
+            logger.warn('Parameter name is not identifier, ObjectBindingPattern nor ArrayBindingPattern, please contact developers to support this!');
         }
 
         // questionToken
@@ -241,8 +259,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
         // type
         if (parameter.type) {
             methodParameter.setType(tsNode2Type(parameter.type, sourceFile, arkMethod));
-        }
-        else {
+        } else {
             methodParameter.setType(UnknownType.getInstance());
         }
 
@@ -253,7 +270,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
 
         // dotDotDotToken
         if (parameter.dotDotDotToken) {
-            //
+            methodParameter.setDotDotDotToken(true);
         }
 
         // modifiers
@@ -269,124 +286,125 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
 export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, method: ArkMethod) {
     if (node) {
         return tsNode2Type(node, sourceFile, method);
-    }
-    else {
+    } else {
         return new UnknownType();
     }
 }
 
 export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration, sourceFile: ts.SourceFile,
-    arkInstance: ArkMethod | ArkClass | ArkField) {
+                            arkInstance: ArkMethod | ArkClass | ArkField): Type {
     if (ts.isTypeReferenceNode(typeNode)) {
+        const genericTypes: Type[] = [];
+        if (typeNode.typeArguments) {
+            for (const typeArgument of typeNode.typeArguments) {
+                genericTypes.push(tsNode2Type(typeArgument, sourceFile, arkInstance));
+            }
+        }
         let referenceNodeName = typeNode.typeName;
         if (ts.isQualifiedName(referenceNodeName)) {
             let parameterTypeStr = handleQualifiedName(referenceNodeName as ts.QualifiedName);
-            return new UnclearReferenceType(parameterTypeStr);
-        }
-        else {
+            return new UnclearReferenceType(parameterTypeStr, genericTypes);
+        } else {
             let parameterTypeStr = referenceNodeName.text;
-            return new UnclearReferenceType(parameterTypeStr);
+            return new UnclearReferenceType(parameterTypeStr, genericTypes);
         }
-    }
-    else if (ts.isUnionTypeNode(typeNode)) {
+    } else if (ts.isUnionTypeNode(typeNode)) {
         let unionTypePara: Type[] = [];
         typeNode.types.forEach((tmpType) => {
             unionTypePara.push(tsNode2Type(tmpType, sourceFile, arkInstance));
         });
         return new UnionType(unionTypePara);
-    }
-    else if (ts.isLiteralTypeNode(typeNode)) {
+    } else if (ts.isLiteralTypeNode(typeNode)) {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.literal.kind]);
-    }
-    else if (ts.isTypeLiteralNode(typeNode)) {
+    } else if (ts.isTypeLiteralNode(typeNode)) {
         let cls: ArkClass = new ArkClass();
         let declaringClass: ArkClass;
 
         if (arkInstance instanceof ArkMethod) {
             declaringClass = arkInstance.getDeclaringArkClass();
-        }
-        else if (arkInstance instanceof ArkField) {
+        } else if (arkInstance instanceof ArkField) {
             declaringClass = arkInstance.getDeclaringClass();
-        }
-        else {
+        } else {
             declaringClass = arkInstance;
         }
         if (declaringClass.getDeclaringArkNamespace()) {
             cls.setDeclaringArkNamespace(declaringClass.getDeclaringArkNamespace());
             cls.setDeclaringArkFile(declaringClass.getDeclaringArkFile());
-        }
-        else {
+        } else {
             cls.setDeclaringArkFile(declaringClass.getDeclaringArkFile());
         }
         buildNormalArkClassFromArkMethod(typeNode, cls, sourceFile);
 
         return new ClassType(cls.getSignature());
-    }
-    else if (ts.isFunctionTypeNode(typeNode)) {
+    } else if (ts.isFunctionTypeNode(typeNode)) {
         let mtd: ArkMethod = new ArkMethod();
         let cls: ArkClass;
         if (arkInstance instanceof ArkMethod) {
             cls = arkInstance.getDeclaringArkClass();
-        }
-        else if (arkInstance instanceof ArkClass) {
+        } else if (arkInstance instanceof ArkClass) {
             cls = arkInstance;
-        }
-        else {
+        } else {
             cls = arkInstance.getDeclaringClass();
         }
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
         return new CallableType(mtd.getSignature());
-    }
-    else if (ts.isTypeParameterDeclaration(typeNode)) {
+    } else if (ts.isTypeParameterDeclaration(typeNode)) {
         const typeParameterName = typeNode.name.text;
         return new TypeParameterType(typeParameterName);
-    }
-    else {
+    } else if (ts.isTupleTypeNode(typeNode)) {
+        const types: Type[] = [];
+        typeNode.elements.forEach(element => {
+            types.push(tsNode2Type(element, sourceFile, arkInstance));
+        });
+        return new TupleType(types);
+    } else if (ts.isArrayTypeNode(typeNode)) {
+        return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
+    } else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }
 }
 
 export function buildTypeFromPreStr(preStr: string) {
-    let postStr = "";
+    let postStr = '';
     switch (preStr) {
         case 'BooleanKeyword':
-            postStr = "boolean";
+            postStr = 'boolean';
             break;
         case 'FalseKeyword':
-            postStr = "boolean";
+            postStr = 'boolean';
             break;
         case 'TrueKeyword':
-            postStr = "boolean";
+            postStr = 'boolean';
             break;
         case 'NumberKeyword':
-            postStr = "number";
+            postStr = 'number';
             break;
         case 'NumericLiteral':
-            postStr = "number";
+            postStr = 'number';
             break;
         case 'FirstLiteralToken':
-            postStr = "number";
+            postStr = 'number';
             break;
         case 'StringKeyword':
-            postStr = "string";
+            postStr = 'string';
             break;
         case 'StringLiteral':
-            postStr = "string";
+            postStr = 'string';
             break;
         case 'UndefinedKeyword':
-            postStr = "undefined";
+            postStr = 'undefined';
             break;
         case 'NullKeyword':
-            postStr = "null";
+            postStr = 'null';
             break;
         case 'AnyKeyword':
-            postStr = "any";
+            postStr = 'any';
             break;
         case 'VoidKeyword':
-            postStr = "void";
+            postStr = 'void';
             break;
         case 'NeverKeyword':
-            postStr = "never";
+            postStr = 'never';
             break;
         default:
             postStr = preStr;
@@ -394,7 +412,7 @@ export function buildTypeFromPreStr(preStr: string) {
     return TypeInference.buildTypeFromStr(postStr);
 }
 
-export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkClass): Value {
+export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkClass, declaringMethod?: ArkMethod): Value {
     let nodeKind = ts.SyntaxKind[node.kind];
     if (nodeKind === 'NumericLiteral' ||
         nodeKind === 'StringLiteral' ||
@@ -406,8 +424,7 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
         let type = buildTypeFromPreStr(nodeKind);
         let value = node.getText(sourceFile);
         return new Constant(value, type);
-    }
-    else if (ts.isNewExpression(node)) {
+    } else if (ts.isNewExpression(node)) {
         if (ts.isIdentifier(node.expression)) {
             let className = node.expression.escapedText.toString();
             let tmpTypes: Type[] = [];
@@ -427,48 +444,40 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
             if (className === 'Array') {
                 if (arrayArguments.length === 0) {
                     return new ArkNewArrayExpr(typeArguments, new Constant('0', new NumberType()));
-                }
-                else if (arrayArguments.length == 1 && (arrayArguments[0].getType() instanceof NumberType)) {
+                } else if (arrayArguments.length == 1 && (arrayArguments[0].getType() instanceof NumberType)) {
                     return new ArkNewArrayExpr(typeArguments, arrayArguments[0]);
-                }
-                else if (arrayArguments.length == 1 && !(arrayArguments[0].getType() instanceof NumberType)) {
+                } else if (arrayArguments.length == 1 && !(arrayArguments[0].getType() instanceof NumberType)) {
                     //TODO, Local number or others
-                    logger.warn("TODO, Local number or others.");
-                }
-                else if (arrayArguments.length > 1) {
+                    logger.warn('TODO, Local number or others.');
+                } else if (arrayArguments.length > 1) {
                     let newArrayExpr = new ArkNewArrayExpr(typeArguments, new Constant(arrayArguments.length.toString(), NumberType.getInstance()));
                     //TODO: add each value for this array
-                    logger.warn("TODO, Local number or others.");
+                    logger.warn('TODO, Local number or others.');
                     return newArrayExpr;
                 }
-            }
-            else {
+            } else {
                 let classSignature = new ClassSignature();
                 classSignature.setClassName(className);
                 const classType = new ClassType(classSignature);
                 return new ArkNewExpr(classType);
             }
-        }
-        else if (ts.isPropertyAccessExpression(node.expression)) {
+        } else if (ts.isPropertyAccessExpression(node.expression)) {
             const className = handlePropertyAccessExpression(node.expression);
             let classSignature = new ClassSignature();
             classSignature.setClassName(className);
             const classType = new ClassType(classSignature);
             return new ArkNewExpr(classType);
-        }
-        else {
-            logger.warn("Other newExpr type found for ts node.");
+        } else {
+            logger.warn('Other newExpr type found for ts node.');
         }
 
-    }
-    else if (ts.isArrayLiteralExpression(node)) {
+    } else if (ts.isArrayLiteralExpression(node)) {
         let elements: Value[] = [];
         node.elements.forEach((element) => {
             let value = tsNode2Value(element, sourceFile, cls);
             if (value == undefined) {
                 elements.push(new Constant('', buildTypeFromPreStr('UndefinedKeyword')));
-            }
-            else {
+            } else {
                 elements.push(value);
             }
         });
@@ -477,32 +486,28 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
             types.push(element.getType());
         });
         let type = new UnionType(types);
-        return new ArrayLiteralExpr(elements, type);;
-    }
-    else if (ts.isBinaryExpression(node)) {
+        return new ArrayLiteralExpr(elements, type);
+        ;
+    } else if (ts.isBinaryExpression(node)) {
         let leftOp = tsNode2Value(node.left, sourceFile, cls);
         let rightOp = tsNode2Value(node.right, sourceFile, cls);
         let op = ts.tokenToString(node.operatorToken.kind) as string;
         return new ArkBinopExpr(leftOp, rightOp, op);
-    }
-    else if (ts.isPrefixUnaryExpression(node)) {
+    } else if (ts.isPrefixUnaryExpression(node)) {
         let op = ts.SyntaxKind[node.operator];
         let value = tsNode2Value(node.operand, sourceFile, cls);
         return new ArkUnopExpr(value, op);
-    }
-    else if (ts.isIdentifier(node)) {
+    } else if (ts.isIdentifier(node)) {
         let name = node.escapedText.toString();
         return new Local(name);
-    }
-    else if (ts.isPropertyAccessExpression(node)) {
+    } else if (ts.isPropertyAccessExpression(node)) {
         let fieldName = node.name.escapedText.toString();
         const fieldSignature = new FieldSignature();
         fieldSignature.setFieldName(fieldName);
         let base = tsNode2Value(node.expression, sourceFile, cls);
         //TODO: support question token?
         return new ArkInstanceFieldRef(base as Local, fieldSignature);
-    }
-    else if (ts.isCallExpression(node)) {
+    } else if (ts.isCallExpression(node)) {
         let exprValue = tsNode2Value(node.expression, sourceFile, cls);
         let argumentParas: Value[] = [];
         node.arguments.forEach((argument) => {
@@ -518,7 +523,7 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
 
         if (exprValue instanceof ArkInstanceFieldRef) {
             let methodName = exprValue.getFieldName();
-            let base = exprValue.getBase()
+            let base = exprValue.getBase();
             methodSubSignature.setMethodName(methodName);
             return new ArkInstanceInvokeExpr(base, methodSignature, argumentParas);
         } else if (exprValue instanceof ArkStaticFieldRef) {
@@ -528,24 +533,21 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
             methodSubSignature.setMethodName(node.getText(sourceFile));
             return new ArkStaticInvokeExpr(methodSignature, argumentParas);
         }
-    }
-    else if (ts.isObjectLiteralExpression(node)) {
+    } else if (ts.isObjectLiteralExpression(node)) {
         const declaringArkNamespace = cls.getDeclaringArkNamespace();
         const declaringArkFile = cls.getDeclaringArkFile();
         let arkClass: ArkClass = new ArkClass();
         if (declaringArkNamespace) {
-            buildNormalArkClassFromArkNamespace(node, declaringArkNamespace, arkClass, sourceFile);
+            buildNormalArkClassFromArkNamespace(node, declaringArkNamespace, arkClass, sourceFile, declaringMethod);
             declaringArkNamespace.addArkClass(arkClass);
-        }
-        else {
-            buildNormalArkClassFromArkFile(node, declaringArkFile, arkClass, sourceFile);
+        } else {
+            buildNormalArkClassFromArkFile(node, declaringArkFile, arkClass, sourceFile, declaringMethod);
             declaringArkFile.addArkClass(arkClass);
         }
         let classSig = arkClass.getSignature();
         const classType = new ClassType(classSig);
         return new ObjectLiteralExpr(arkClass, classType);
-    }
-    else if (ts.isArrowFunction(node)) {
+    } else if (ts.isArrowFunction(node)) {
         let mthd: ArkMethod = new ArkMethod();
         buildArkMethodFromArkClass(node, cls, mthd, sourceFile);
         let argumentParas: Value[] = [];
@@ -553,32 +555,25 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
             argumentParas.push(tsNode2Value(argument, sourceFile, cls));
         });
         cls.addMethod(mthd);
-        return new ArkStaticInvokeExpr(mthd.getSignature(), argumentParas)
-    }
-    else if (ts.isParameter(node)) {
+        return new ArkStaticInvokeExpr(mthd.getSignature(), argumentParas);
+    } else if (ts.isParameter(node)) {
         if (ts.isIdentifier(node.name)) {
             return new Local(node.name.getText(sourceFile));
-        }
-        else if (ts.isObjectBindingPattern(node.name)) {
+        } else if (ts.isObjectBindingPattern(node.name)) {
             logger.warn('Need to build ObjectBindingPattern value.');
-        }
-        else {
+        } else {
             // ArrayBindingPattern
             logger.warn('Need to build ArrayBindingPattern value.');
         }
-    }
-    else if (node.kind === ts.SyntaxKind.ThisKeyword) {
+    } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
+        return new ArkThisRef(cls.getSignature().getType());
+    } else if (ts.isConditionalExpression(node)) {
         // TODO
-    }
-    else if (ts.isConditionalExpression(node)) {
-        // TODO
-    }
-    else if (ts.isAsExpression(node)) {
+    } else if (ts.isAsExpression(node)) {
         const value = tsNode2Value(node.expression, sourceFile, cls);
         const type = tsNode2Type(node.type, sourceFile, cls);
         return new ArkCastExpr(value, type);
-    }
-    else if (ts.isTemplateExpression(node)) {
+    } else if (ts.isTemplateExpression(node)) {
         let values: Value[] = [];
         node.templateSpans.forEach((templateSpan) => {
             values.push(tsNode2Value(templateSpan.expression, sourceFile, cls));
@@ -587,23 +582,18 @@ export function tsNode2Value(node: ts.Node, sourceFile: ts.SourceFile, cls: ArkC
             values.push(new Constant(literalStr, StringType.getInstance()));
         });
         // TODO
-    }
-    else if (ts.isParenthesizedExpression(node)) {
+    } else if (ts.isParenthesizedExpression(node)) {
         return tsNode2Value(node.expression, sourceFile, cls);
-    }
-    else if (ts.isAwaitExpression(node)) {
+    } else if (ts.isAwaitExpression(node)) {
         return tsNode2Value(node.expression, sourceFile, cls);
-    }
-    else if (ts.isNonNullExpression(node)) {
+    } else if (ts.isNonNullExpression(node)) {
         return tsNode2Value(node.expression, sourceFile, cls);
-    }
-    else if (ts.isElementAccessExpression(node)) {
+    } else if (ts.isElementAccessExpression(node)) {
         //TODO
+    } else {
+        logger.warn('Other type found for ts node.');
     }
-    else {
-        logger.warn("Other type found for ts node.");
-    }
-    return new Constant('', UnknownType.getInstance())
+    return new Constant('', UnknownType.getInstance());
 }
 
 

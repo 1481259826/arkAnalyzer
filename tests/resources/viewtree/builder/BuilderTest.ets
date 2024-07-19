@@ -191,3 +191,9 @@ struct BuilderTest {
     }
   }
 }
+
+@Builder
+function moreRootBuilderTest() {
+  Column()
+  Column()
+}

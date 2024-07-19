@@ -41,6 +41,25 @@ export class FileUtils {
             }
         });
     }
+
+    public static getIndexFileName(srcPath: string): string {
+        for (const fileInDir of fs.readdirSync(srcPath, { withFileTypes: true })) {
+            if (fileInDir.isFile() && /^index(\.d)?\.e?ts$/i.test(fileInDir.name)) {
+                return fileInDir.name;
+            }
+        }
+        return '';
+    }
+
+    public static isDirectory(srcPath: string): boolean {
+        try {
+            return fs.statSync(srcPath).isDirectory();
+        } catch (e) {
+
+        }
+        return false;
+    }
+
 }
 
 export function getFileRecursively(srcDir: string, fileName: string): string {

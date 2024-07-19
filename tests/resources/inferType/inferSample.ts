@@ -18,3 +18,9 @@ import { Constants } from "./constants";
 function test_new_array(): void {
     let arr11: number[] = new Array(Constants.ARRAY_SIZE);
 }
+
+function testArray(): void {
+    const arr13: number[] = new Array();
+    arr13[0] = 1;
+    let a13 = arr13[0] + 1;
+}
