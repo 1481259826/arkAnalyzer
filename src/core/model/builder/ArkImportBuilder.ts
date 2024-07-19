@@ -25,6 +25,7 @@ import { FileSignature } from "../ArkSignature";
 import Logger from "../../../utils/logger";
 import { transfer2UnixPath } from "../../../utils/pathTransfer";
 import { FileUtils } from "../../../utils/FileUtils";
+import { Sdk } from "../../../Config";
 
 const logger = Logger.getLogger();
 const moduleMap: Map<string, string> = new Map<string, string>();
@@ -75,8 +76,8 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     }
     //sdk path
     const scene = im.getDeclaringArkFile().getScene();
-    for (const sdkName of scene.getProjectSdkMap().keys()) {
-        const arkFile = getArkFileFormMap(processSdkPath(sdkName, from), scene.getSdkArkFilesMap());
+    for (const sdk of scene.getProjectSdkMap().values()) {
+        const arkFile = getArkFileFormMap(processSdkPath(sdk, from), scene.getSdkArkFilesMap());
         if (arkFile) {
             return arkFile;
         }
@@ -132,7 +133,8 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
     return eInfo;
 }
 
-function processSdkPath(sdkName: string, formPath: string): string {
+function processSdkPath(sdk: Sdk, formPath: string): string {
+    const sdkName = sdk.name;
     let dir;
     if (formPath.startsWith('@ohos.') || formPath.startsWith('@system.')) {
         dir = 'api';
@@ -141,6 +143,10 @@ function processSdkPath(sdkName: string, formPath: string): string {
     } else if (formPath.startsWith('@arkts.')) {
         dir = 'arkts';
     } else {
+        let originPath = path.join(sdk.path, formPath);
+        if (FileUtils.isDirectory(originPath)) {
+            formPath = path.join(formPath, FileUtils.getIndexFileName(originPath));
+        }
         return `@${sdkName}/${formPath}`;
     }
     return `@${sdkName}/${dir}/${formPath}`;
@@ -167,7 +173,9 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
 }
 
 function getArkFileFormMap(filePath: string, map: Map<string, ArkFile>) {
-
+    if (/\.e?ts$/.test(filePath)) {
+        return map.get(transfer2UnixPath(filePath) + ': ');
+    }
     for (const suffix of fileSuffixArray) {
         const arkFile = map.get(transfer2UnixPath(filePath) + suffix);
         if (arkFile) {
