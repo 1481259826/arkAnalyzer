@@ -51,6 +51,7 @@ export class PagBuilder {
     private scene: Scene;
     private worklist: CSFuncID[] = [];
     private field2UniqInstanceMap: Map<ArkField, Value> = new Map();
+    private dynamicCallSites: Set<DynCallSite>;
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         this.pag = p;
@@ -129,7 +130,7 @@ export class PagBuilder {
                 } else if (inkExpr instanceof ArkInstanceInvokeExpr) {
                     let ptcs = this.cg.getDynCallsiteByStmt(stmt);
                     if (ptcs) {
-                        this.pag.addToDynamicCallSite(ptcs);
+                        this.addToDynamicCallSite(ptcs);
                     }
                 }
             } else if (stmt instanceof ArkInvokeStmt) {
@@ -144,7 +145,7 @@ export class PagBuilder {
 
                 let dycs = this.cg.getDynCallsiteByStmt(stmt);
                 if (dycs) {
-                    this.pag.addToDynamicCallSite(dycs);
+                    this.addToDynamicCallSite(dycs);
                 } else {
                     throw new Error('Can not find callsite by stmt');
                 }
@@ -416,4 +417,21 @@ export class PagBuilder {
         }
         return false;
     }
+    
+    public addToDynamicCallSite(cs: DynCallSite): void {
+        this.dynamicCallSites = this.dynamicCallSites ?? new Set();
+        this.dynamicCallSites.add(cs);
+    }
+
+    public getDynamicCallSites(): Set<DynCallSite> {
+        return this.dynamicCallSites;
+    }
+
+    public clearDynamicCallSiteSet() {
+        if (this.dynamicCallSites) {
+            this.dynamicCallSites.clear();
+        }
+    }
+
+
 }
