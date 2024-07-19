@@ -17,34 +17,34 @@ import { Stmt } from "../../core/base/Stmt";
 import { Type } from "../../core/base/Type";
 import { Value } from "../../core/base/Value";
 import { FieldSignature, MethodSignature } from "../../core/model/ArkSignature";
+import { PointerAnalysisOptions } from "../VariablePointerAnalysisAlgorithm";
+import { CallSiteSensitiveContext, Context, FieldWithContext, InsensitiveContext, ValueWithContext } from "./Context";
 
-// TODO: 对指向目标进行细分，后续PointerTarget将作为抽象类
 export class PointerTarget {
     private type: Type
-    // 后续如果有需要回溯到对应文件位置的情况后，需要改用具体数据结构，目前仅重复检查，暂时使用string
-    private location: string
+    private context: Context
 
-    constructor(type: Type, location: string) {
+    constructor(type: Type, sourceMethod: MethodSignature, sourceContext: Context, position: number, options: PointerAnalysisOptions) {
         this.type = type
-        this.location = location
+        if (options.strategy == 'insensitive') {
+            this.context = new InsensitiveContext(sourceMethod, position)
+        } else if (options.strategy == 'callSite' && sourceContext instanceof CallSiteSensitiveContext) {
+            this.context = new CallSiteSensitiveContext(sourceContext, sourceMethod, position)
+        }
     }
 
     public getType(): Type {
         return this.type
     }
 
-    public getLocation() {
-        return this.location
+    public getContext() {
+        return this.context
     }
 
     public static genLocation(method: MethodSignature, stmt: Stmt): string {
         return method.toString() + stmt.getOriginPositionInfo()
     }
 }
-
-/**
- * 指针需要全局唯一，需要根据语句信息确定唯一位置
- */
 
 export abstract class Pointer {
     private pointerTargetSet: Set<PointerTarget>
@@ -55,7 +55,7 @@ export abstract class Pointer {
 
     public addPointerTarget(newPointerTarget: PointerTarget) {
         for (let pointerTarget of this.pointerTargetSet) {
-            if (pointerTarget.getLocation() == newPointerTarget.getLocation()) {
+            if (pointerTarget.getContext().equal(newPointerTarget.getContext())) {
                 return
             }
         }
@@ -78,86 +78,83 @@ export abstract class Pointer {
         }
         return results
     }
+
+    public abstract toString(): string
 }
 
 export class LocalPointer extends Pointer {
-    private identifier: Value // 用于表示指针集的唯一归属
+    private identifier: ValueWithContext // 用于表示指针集的唯一归属
 
-    constructor(identifier: Value) {
+    constructor(identifier: Value, context: Context) {
         super()
-        this.identifier = identifier
+        this.identifier = new ValueWithContext(identifier, context)
     }
 
-    public getIdentifier(): Value {
+    public getValueWithContext(): ValueWithContext {
         return this.identifier
     }
 
     public toString() {
         let resultString = "[LocalPointer] "
-        resultString += this.getIdentifier().toString() + " pointer: {"
+        resultString += this.getValueWithContext().toString() + " pointer: {"
         const pointerTargets = this.getAllPointerTargets()
         for (let pointerTarget of pointerTargets) {
-            resultString += " " + pointerTarget.getType() + "." + pointerTarget.getLocation()
+            resultString += " " + pointerTarget.getType() + "." + pointerTarget.getContext().toString()
         }
         return resultString + "}"
     }
 }
 
-/**
- * TODO: 需要考虑在调用类的属性的时候如何将同一个类的不同实例区分开
- * 目前想法是让InstanceFieldPointer的标识符属性改成LocalPointer，这样能够区分具体构造位置
- */
 
 export class InstanceFieldPointer extends Pointer {
-    // private identifier: Value // 用于表示指针集的唯一归属
     private basePointerTarget: PointerTarget
-    private fieldSignature: FieldSignature
+    private fieldSignature: FieldWithContext
 
-    constructor(basePointerTarget: PointerTarget, field: FieldSignature) {
+    constructor(basePointerTarget: PointerTarget, field: FieldSignature, context: Context) {
         super()
         this.basePointerTarget = basePointerTarget
-        this.fieldSignature = field
+        this.fieldSignature = new FieldWithContext(field, context)
     }
 
     public getBasePointerTarget() {
         return this.basePointerTarget
     }
 
-    public getFieldSignature() {
+    public getFieldWithContext() {
         return this.fieldSignature
     }
 
     public toString() {
         let resultString = "[InstanceFieldPointer] "
         resultString += this.getBasePointerTarget().getType()
-            + "." + this.fieldSignature.getFieldName() + " pointer: {"
+            + "." + this.fieldSignature.getFieldSignature().getFieldName() + " pointer: {"
         const pointerTargets = this.getAllPointerTargets()
         for (let pointerTarget of pointerTargets) {
-            resultString += " " + pointerTarget.getType() + "." + pointerTarget.getLocation()
+            resultString += " " + pointerTarget.getType() + "." + pointerTarget.getContext().toString()
         }
         return resultString + "}"
     }
 }
 
 export class StaticFieldPointer extends Pointer {
-    private fieldSignature: FieldSignature
+    private fieldSignature: FieldWithContext
 
-    constructor(field: FieldSignature) {
+    constructor(field: FieldSignature, context: Context) {
         super()
-        this.fieldSignature = field
+        this.fieldSignature = new FieldWithContext(field, context)
     }
 
-    public getFieldSignature() {
+    public getFieldWithContext() {
         return this.fieldSignature
     }
 
     public toString() {
         let resultString = "[StaticFieldPointer] "
-        resultString += this.fieldSignature.getBaseName() + "."
-            + this.fieldSignature.getFieldName() + " pointer: {"
+        resultString += this.fieldSignature.getFieldSignature().getDeclaringClassSignature().getClassName() + "."
+            + this.fieldSignature.getFieldSignature().getFieldName() + " pointer: {"
         const pointerTargets = this.getAllPointerTargets()
         for (let pointerTarget of pointerTargets) {
-            resultString += " " + pointerTarget.getType() + "." + pointerTarget.getLocation()
+            resultString += " " + pointerTarget.getType() + "." + pointerTarget.getContext().toString()
         }
         return resultString + "}"
     }

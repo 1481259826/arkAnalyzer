@@ -95,6 +95,12 @@ export class ExportInfo implements FromInfo {
         return this.nameBeforeAs;
     }
 
+    public clearNameBeforeAs() {
+        if (this.nameBeforeAs === '*') {
+            this.nameBeforeAs = undefined;
+        }
+    }
+
     public setTypeSignature(value: TypeSignature) {
         this.typeSignature = value;
     }
