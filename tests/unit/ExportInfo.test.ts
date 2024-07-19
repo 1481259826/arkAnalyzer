@@ -73,6 +73,14 @@ describe("export Test", () => {
 
     })
 
+    it('thirdModule case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("Lottie_Report.ets");
+        fileId.setProjectName(projectScene.getProjectName());
+        const signature = projectScene.getFile(fileId)?.getImportInfoBy('lottie')?.getLazyExportInfo()?.getTypeSignature().toString();
+        assert.equal(signature, '@lottie/@ohos/lottie.d.ts: LottiePlayer')
+    })
+
     it('all case', () => {
         projectScene.getMethods().forEach(m => {
             m.getCfg()?.getStmts().forEach(s => {
