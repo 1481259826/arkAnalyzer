@@ -120,12 +120,13 @@ class ArkIRTransformerTest {
                 for (const arkMethod of arkClass.getMethods()) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
-                    this.printStmts(body);
-
-                    logger.error('-- locals:');
-                    arkMethod.getBody().getLocals().forEach(local => {
-                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    });
+                    if (body) {
+                        this.printStmts(body);
+                        logger.error('-- locals:');
+                        arkMethod.getBody()!.getLocals().forEach(local => {
+                            logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                        });
+                    }
                 }
             }
         }

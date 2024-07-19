@@ -1170,55 +1170,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "AbstractKeyword"
             ],
             "typeParameters": [],
-            "body": {
-                "locals": [
-                    {
-                        "name": "this",
-                        "type": {
-                            "_": "ClassType",
-                            "signature": {
-                                "name": "Shape"
-                            }
-                        }
-                    }
-                ],
-                "cfg": {
-                    "blocks": [
-                        {
-                            "id": 0,
-                            "successors": [],
-                            "predecessors": [],
-                            "stmts": [
-                                {
-                                    "_": "AssignStmt",
-                                    "left": {
-                                        "_": "Local",
-                                        "name": "this",
-                                        "type": {
-                                            "_": "ClassType",
-                                            "signature": {
-                                                "name": "Shape"
-                                            }
-                                        }
-                                    },
-                                    "right": {
-                                        "_": "ThisRef",
-                                        "type": {
-                                            "_": "ClassType",
-                                            "signature": {
-                                                "name": "Shape"
-                                            }
-                                        }
-                                    }
-                                },
-                                {
-                                    "_": "ReturnVoidStmt"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
+            "body": null
         },
         {
             "signature": {
@@ -1235,55 +1187,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "AbstractKeyword"
             ],
             "typeParameters": [],
-            "body": {
-                "locals": [
-                    {
-                        "name": "this",
-                        "type": {
-                            "_": "ClassType",
-                            "signature": {
-                                "name": "Shape"
-                            }
-                        }
-                    }
-                ],
-                "cfg": {
-                    "blocks": [
-                        {
-                            "id": 0,
-                            "successors": [],
-                            "predecessors": [],
-                            "stmts": [
-                                {
-                                    "_": "AssignStmt",
-                                    "left": {
-                                        "_": "Local",
-                                        "name": "this",
-                                        "type": {
-                                            "_": "ClassType",
-                                            "signature": {
-                                                "name": "Shape"
-                                            }
-                                        }
-                                    },
-                                    "right": {
-                                        "_": "ThisRef",
-                                        "type": {
-                                            "_": "ClassType",
-                                            "signature": {
-                                                "name": "Shape"
-                                            }
-                                        }
-                                    }
-                                },
-                                {
-                                    "_": "ReturnVoidStmt"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
+            "body": null
         },
         {
             "signature": {

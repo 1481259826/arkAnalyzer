@@ -22,11 +22,9 @@ export class ArkBody {
     private locals: Map<string, Local>;
     private originalCfg: Cfg;
     private cfg: Cfg;
-    private methodSignature: MethodSignature;
     private stmtToOriginalStmt: Map<Stmt, Stmt>;
 
-    constructor(methodSignature: MethodSignature, locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>) {
-        this.methodSignature = methodSignature;
+    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>) {
         this.setLocals(locals);
         this.originalCfg = originalCfg;
         this.cfg = cfg;
@@ -58,14 +56,6 @@ export class ArkBody {
 
     public setOriginalCfg(originalCfg: Cfg): void {
         this.originalCfg = originalCfg;
-    }
-
-    public getMethodSignature(): MethodSignature {
-        return this.methodSignature;
-    }
-
-    public setMethodSignature(methodSignature: MethodSignature): void {
-        this.methodSignature = methodSignature;
     }
 
     public getStmtToOriginalStmt(): Map<Stmt, Stmt> {

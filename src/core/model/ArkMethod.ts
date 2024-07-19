@@ -14,7 +14,7 @@
  */
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
-import { ArkAssignStmt, ArkReturnStmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import { Type, UnknownType } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
@@ -51,7 +51,7 @@ export class ArkMethod implements ArkExport {
     private methodSignature: MethodSignature;
     private methodSubSignature: MethodSubSignature;
 
-    private body: ArkBody;
+    private body?: ArkBody;
     private viewTree: ViewTree;
 
     private bodyBuilder?: BodyBuilder;
@@ -199,7 +199,7 @@ export class ArkMethod implements ArkExport {
         return this.modifiers.has(name);
     }
 
-    public getBody() {
+    public getBody(): ArkBody | undefined {
         return this.body;
     }
 
@@ -207,17 +207,21 @@ export class ArkMethod implements ArkExport {
         this.body = body;
     }
 
-    public getCfg(): Cfg {
-        return this.body.getCfg();
+    public getCfg(): Cfg | undefined {
+        return this.body?.getCfg();
     }
 
-    public getOriginalCfg() {
-        return this.body.getOriginalCfg();
+    public getOriginalCfg(): Cfg | undefined {
+        return this.body?.getOriginalCfg();
     }
 
     public getParameterInstances(): Value[] {
         // 获取方法体中参数Local实例
-        let stmts = this.getCfg().getStmts();
+        let stmts: Stmt[] = [];
+        if (this.getCfg()) {
+            const cfg = this.getCfg() as Cfg;
+            stmts.push(...cfg.getStmts());
+        }
         let results: Value[] = [];
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt) {
@@ -234,7 +238,11 @@ export class ArkMethod implements ArkExport {
 
     public getThisInstance(): Value | null {
         // 获取方法体中This实例
-        let stmts = this.getCfg().getStmts();
+        let stmts: Stmt[] = [];
+        if (this.getCfg()) {
+            const cfg = this.getCfg() as Cfg;
+            stmts.push(...cfg.getStmts());
+        }
         let results: Value[] = [];
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt) {
@@ -249,7 +257,11 @@ export class ArkMethod implements ArkExport {
     public getReturnValues(): Value[] {
         // 获取方法体中return值实例
         let resultValues: Value[] = [];
-        let stmts = this.getCfg().getStmts();
+        let stmts: Stmt[] = [];
+        if (this.getCfg()) {
+            const cfg = this.getCfg() as Cfg;
+            stmts.push(...cfg.getStmts());
+        }
         for (let stmt of stmts) {
             if (stmt instanceof ArkReturnStmt) {
                 resultValues.push(stmt.getOp());
@@ -292,8 +304,12 @@ export class ArkMethod implements ArkExport {
 
     public buildBody() {
         if (this.bodyBuilder) {
-            this.setBody(this.bodyBuilder.build());
-            this.getCfg().setDeclaringMethod(this);
+            const arkBody: ArkBody | null = this.bodyBuilder.build();
+            if (arkBody) {
+                this.setBody(arkBody);
+                arkBody.getCfg().setDeclaringMethod(this);
+
+            }
             this.bodyBuilder = undefined;
         }
     }

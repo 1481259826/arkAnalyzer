@@ -599,8 +599,8 @@ export class Scene {
             const parentMap: Map<ArkNamespace, ArkNamespace | ArkFile> = new Map();
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
-            file.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
-                if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
+            file.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
+                if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                     globalLocals.push(local);
                 }
             });
@@ -614,8 +614,8 @@ export class Scene {
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
-                ns.getDefaultClass().getDefaultArkMethod()!.getBody().getLocals().forEach(local => {
-                    if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
+                ns.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
+                    if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                         nsGlobalLocals.push(local);
                     }
                 });

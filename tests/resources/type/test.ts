@@ -12,8 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-if(1){
-    console.log('1');
-} else {
-    console.log('2');
+
+declare class ExampleClass {
+    get exampleProperty(): string;
+    set exampleProperty(value: string);
 }
+
+interface MethodSignature {
+    exampleMethodSignature(param: string): void;
+}
+
+interface ConstructSignatureDeclaration {
+    new(param: string): ExampleClass;
+}
+
+interface CallSignatureDeclaration {
+    (param: string): void;
+}
+
+type FunctionTypeNode = (param: string) => void;
+
+

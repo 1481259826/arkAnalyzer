@@ -23,7 +23,7 @@ import {
     buildModifiers,
     buildParameters,
     buildReturnType,
-    buildTypeParameters,
+    buildTypeParameters, DECLARE_KEYWORD,
     handlePropertyAccessExpression,
 } from './builderUtils';
 import Logger from '../../../utils/logger';
@@ -317,7 +317,8 @@ export class MethodParameter {
 
 function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
     const originClassType = arkClass.getOriginType();
-    return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null && originClassType == 'Class' && arkClass.getName() != DEFAULT_ARK_CLASS_NAME;
+    return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null && originClassType == 'Class' &&
+        arkClass.getName() != DEFAULT_ARK_CLASS_NAME && !arkClass.getModifiers().has(DECLARE_KEYWORD);
 }
 
 export function buildDefaultConstructor(arkClass: ArkClass): boolean {
@@ -402,7 +403,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     cfg.setStartingStmt(startingStmt);
     const originalCfg = new Cfg();
 
-    defaultConstructor.setBody(new ArkBody(defaultConstructor.getSignature(), locals, originalCfg, cfg, new Map()));
+    defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map()));
     arkClass.addMethod(defaultConstructor);
 
     return true;

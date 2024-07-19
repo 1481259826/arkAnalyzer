@@ -21,6 +21,7 @@ import { SourceBody } from './SourceBody';
 import { SourceStmt } from './SourceStmt';
 import { SourceTransformer } from './SourceTransformer';
 import { SourceUtils } from './SourceUtils';
+import { Stmt } from '../../core/base/Stmt';
 
 /**
  * @category save
@@ -60,7 +61,12 @@ export class SourceMethod extends SourceBase {
             return line;
         }
 
-        for (const stmt of this.method.getCfg().getStmts().reverse()) {
+        const stmts: Stmt[] = [];
+        const cfg = this.method.getCfg();
+        if (cfg) {
+            stmts.push(...cfg.getStmts().reverse());
+        }
+        for (const stmt of stmts) {
             if (stmt.getOriginPositionInfo().getLineNo() > 0) {
                 return stmt.getOriginPositionInfo().getLineNo();
             }
