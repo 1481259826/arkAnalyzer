@@ -105,6 +105,7 @@ export class PagNode extends BaseNode {
     // Only PagInstanceRefNode has this field
     // Define in base class is for dot print
     protected basePt: NodeID;
+    protected clonedFrom: NodeID;
 
     constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value, k: Kind, s?: Stmt) {
         super(id, k);
@@ -231,6 +232,14 @@ export class PagNode extends BaseNode {
         }
     }
 
+    public getClonedFrom(): NodeID {
+        return this.clonedFrom;
+    }
+
+    public setClonedFrom(id: NodeID): void{
+        this.clonedFrom = id;
+    }
+
     public getDotAttr(): string {
         switch(this.getKind()) {
             case PagNodeKind.HeapObj:
@@ -336,6 +345,7 @@ export class Pag extends BaseGraph {
 
         // Not found
         let cloneNode = this.addPagNode(src.getCid(), src.getValue(), src.getStmt(), false)
+        cloneNode.setClonedFrom(src.getID());
         cloneSet.set(basePt, cloneNode.getID());
         return cloneNode;
     }
