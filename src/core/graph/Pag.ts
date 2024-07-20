@@ -308,26 +308,10 @@ export class Pag extends BaseGraph {
     //private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
     private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
     private addrEdges: PagEdgeSet = new Set();
-    private dynamicCallSites: Set<DynCallSite>;
     private clonedNodeMap: Map<NodeID, Map<NodeID, NodeID>> = new Map();
 
     public getCG(): CallGraph {
         return this.cg;
-    }
-
-    public addToDynamicCallSite(cs: DynCallSite): void {
-        this.dynamicCallSites = this.dynamicCallSites ?? new Set();
-        this.dynamicCallSites.add(cs);
-    }
-
-    public getDynamicCallSites(): Set<DynCallSite> {
-        return this.dynamicCallSites;
-    }
-
-    public clearDynamicCallSiteSet() {
-        if (this.dynamicCallSites) {
-            this.dynamicCallSites.clear();
-        }
     }
 
     /*

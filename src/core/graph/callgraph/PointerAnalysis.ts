@@ -44,6 +44,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     private ctx: KLimitedContextSensitive;
     private worklist: NodeID[];
     private handledNode: NodeID[] = [];
+    private ptaStat: PTAStat;
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         super(s)
@@ -53,17 +54,28 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.reachableMethods = new Set()
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
         this.pagBuilder = new PagBuilder(this.pag, this.cg, s);
+        this.ptaStat = new PTAStat();
     }
 
     private init() {
+
         // TODO: how to get entry
         this.pagBuilder.buildForEntry(this.entry);
         this.pag.dump('out/ptaInit_pag.dot');
     }
 
     public start() {
+        this.ptaStat.startStat();
+
         this.init();
         this.solveConstraint();
+
+        this.postProcess();
+    }
+
+    private postProcess() {
+        this.ptaStat.endStat();
+        this.ptaStat.printStat();
         this.pag.dump('out/ptaEnd_pag.dot');
     }
 
@@ -76,8 +88,9 @@ export class PointerAnalysis extends AbstractAnalysis{
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
-            this.solveWorklist();
+            this.ptaStat.iterTimes++;
 
+            this.solveWorklist();
             reanalyzer = this.updateCallGraph();
         }
 
@@ -86,6 +99,8 @@ export class PointerAnalysis extends AbstractAnalysis{
     private initWorklist() {
         this.worklist = []
         for (let e of this.pag.getAddrEdges()) {
+            this.ptaStat.numProcessedAddr++;
+
             let { src, dst } = e.getEndPoints();
             this.ptd.addPts(dst, src);
 
@@ -110,13 +125,14 @@ export class PointerAnalysis extends AbstractAnalysis{
         try{
             (this.pag.getNode(node) as PagNode).setPointerSet(this.ptd.getPropaPts(node)!.getProtoPtsSet());
         } catch(e) {
-
-            let a = 0;
+            console.log(e);
         }
         return true;
     }
 
     private handleCopy(nodeID: NodeID): boolean {
+        this.ptaStat.numProcessedCopy++;
+
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingCopyEdges()?.forEach(copyEdge => {
             this.propagate(copyEdge);
@@ -154,6 +170,8 @@ export class PointerAnalysis extends AbstractAnalysis{
      *	node \in pts(src) ==>  node--copy-->dst
      */
     private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
+        this.ptaStat.numProcessedLoad++;
+
         let src = this.pag.getNode(nodeID) as PagNode;  // field
         let dst = loadEdge.getDstNode() as PagNode;     // Local
 
@@ -180,6 +198,8 @@ export class PointerAnalysis extends AbstractAnalysis{
      *	node \in pts(dst) ==>  src--copy-->node
      */
     private processWrite(nodeID: NodeID, writeEdge: PagEdge) {
+        this.ptaStat.numProcessedWrite++;
+
         let src = this.pag.getNode(nodeID) as PagNode;
         let wr2 = writeEdge.getDstNode() as PagNode;
 
@@ -201,6 +221,8 @@ export class PointerAnalysis extends AbstractAnalysis{
                     let newDst = this.pag.getOrClonePagNode(wr2, pt);
                     (newDst as PagInstanceFieldNode).setBasePt(pt);
                     if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
+                        this.ptaStat.numRealWrite++;
+
                         this.worklist.push(src.getID());
                     }
 
@@ -314,11 +336,9 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     private updateCallGraph(): boolean {
         let changed = false;
-        let dynCallsites = this.pag.getDynamicCallSites();
+        let dynCallsites = this.pagBuilder.getDynamicCallSites();
 
         dynCallsites?.forEach(cs => {
-        //for (let cs of dynCallsites) {
-
             let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
             // Get local of base class
             let base = ivkExpr.getBase();
@@ -339,7 +359,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         })
         changed = this.pagBuilder.handleReachable() || changed;
 
-        this.pag.clearDynamicCallSiteSet();
+        this.pagBuilder.clearDynamicCallSiteSet();
 
         // TODO: on The Fly UpdateCG
         return changed;
@@ -492,4 +512,68 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
     }
 
+}
+
+//TODO: to be defined and move to seperated source file
+interface StatTraits {}
+class PTAStat implements StatTraits {
+    numProcessedAddr: number = 0;
+    numProcessedCopy: number = 0;
+    numProcessedLoad: number = 0;
+    numProcessedWrite: number = 0;
+    numRealWrite: number = 0;
+
+    numDynamicCall: number = 0;
+    numDirectCall: number = 0;
+
+    iterTimes: number = 0;
+    TotalTime: number;
+
+    startTime: number;
+    endTime: number;
+
+    startMemUsage: any;
+    endMemUsage: any;
+    rssUsed: number;
+    heapUsed: number;
+
+    public startStat(): void {
+        this.startTime = this.getNow();
+        this.startMemUsage = process.memoryUsage();
+    }
+
+    public endStat(): void {
+        this.endTime = this.getNow();
+        this.endMemUsage = process.memoryUsage();
+        this.TotalTime = (this.endTime - this.startTime) / 1000;
+        this.rssUsed = Number(this.endMemUsage.rss - this.startMemUsage.rss) / Number(1024 * 1024);
+        this.heapUsed = Number(this.endMemUsage.heapTotal - this.startMemUsage.heapTotal) / Number(1024 * 1024);
+    }
+
+    public getNow(): number {
+        return new Date().getTime();
+    }
+
+    public getStat(): string {
+        // TODO: get PAG stat and CG stat
+        let output: string;
+        output = '==== Pointer analysis Statictics: ====\n'
+        output = output + `Processed address\t${this.numProcessedAddr}\n`
+        output = output + `Processed copy\t\t${this.numProcessedCopy}\n`
+        output = output + `Processed load\t\t${this.numProcessedLoad}\n`
+        output = output + `Processed write\t\t${this.numProcessedWrite}\n`
+        output = output + `Real write\t\t${this.numRealWrite}\n\n`
+        output = output + `Dynamic call\t\t${this.numDynamicCall}\n`
+        output = output + `Direct call\t\t${this.numDirectCall}\n\n`
+        output = output + `Totol Time\t\t${this.TotalTime} S\n`
+        output = output + `Totol iterator Times\t${this.iterTimes}\n`
+        output = output + `RSS used\t\t${this.rssUsed.toFixed(3)} Mb\n`
+        output = output + `Heap used\t\t${this.heapUsed.toFixed(3)} Mb\n`
+        return output;
+
+    }
+
+    public printStat(): void {
+        console.log(this.getStat());
+    }
 }
