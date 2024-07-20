@@ -58,15 +58,13 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private init() {
-
+        this.ptaStat.startStat();
         // TODO: how to get entry
         this.pagBuilder.buildForEntry(this.entry);
         this.pag.dump('out/ptaInit_pag.dot');
     }
 
     public start() {
-        this.ptaStat.startStat();
-
         this.init();
         this.solveConstraint();
 
@@ -153,12 +151,6 @@ export class PointerAnalysis extends AbstractAnalysis{
             return false;;
         }
 
-        for (let pt of diffPts) {
-            node.getOutgoingLoadEdges()?.forEach(loadEdge => {
-                //this.processLoad(pt, loadEdge);
-            });
-        }       
-
         node.getOutgoingLoadEdges()?.forEach(loadEdge => {
             this.processLoad(nodeID, loadEdge);
         });   
@@ -178,34 +170,27 @@ export class PointerAnalysis extends AbstractAnalysis{
     private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
         this.ptaStat.numProcessedLoad++;
 
-        let src = this.pag.getNode(nodeID) as PagNode;
-        let dst = loadEdge.getDstNode() as PagNode;
-=======
         let src = this.pag.getNode(nodeID) as PagNode;  // field
         let dst = loadEdge.getDstNode() as PagNode;     // Local
->>>>>>> 12ff9fc8876d3838762867f376d862fb6ec1f464
-=======
-        this.ptaStat.numProcessedLoad++;
 
-        let src = this.pag.getNode(nodeID) as PagNode;  // field
-        let dst = loadEdge.getDstNode() as PagNode;     // Local
->>>>>>> ba7c62bc8cdec62064a2c9812de2662215644fe8
+        // In case src node is a cloned instance field node
+        if (src.getClonedFrom()) {
+            src.getOutgoingLoadEdges().forEach(edge => {
+                src.removeOutgoingEdge(edge);
+            });
 
-        const fieldValue = src.getValue()
-        if (!(fieldValue instanceof ArkInstanceFieldRef)) {
-            throw new Error('Not a Ref field')
+            if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
+                this.worklist.push(src.getID());
+            }
+        } else {
+            let basePts = this.getBasePts(src);
+            for (let pt of basePts) {
+                let newSrc = this.pag.getOrClonePagNode(src, pt);
+                if (this.pag.addPagEdge(newSrc, dst, PagEdgeKind.Copy)) {
+                    this.worklist.push(newSrc.getID());
+                }
+            }
         }
-        
-        const base = fieldValue.getBase()
-        let ctx2NdMap = this.pag.getNodesByValue(base); // get o_i nodes
-        if (!ctx2NdMap) {
-            throw new Error ('Cannot find pag node for a local');
-        }
-
-        // TODO: load edge will not be replaced by copy edge currently
-        // if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
-        //     this.worklist.push(src.getID());
-        // }
     }
 
     /*
@@ -219,11 +204,36 @@ export class PointerAnalysis extends AbstractAnalysis{
         let src = this.pag.getNode(nodeID) as PagNode;
         let wr2 = writeEdge.getDstNode() as PagNode;
 
-        let value = wr2.getValue();
+        let basePts = this.getBasePts(wr2);
+        for (let pt of basePts) {
+            // 1st. clone the ref node for each base clase instance
+            let newDst = this.pag.getOrClonePagNode(wr2, pt);
+            (newDst as PagInstanceFieldNode).setBasePt(pt);
+            if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
+                this.ptaStat.numRealWrite++;
+
+                this.worklist.push(src.getID());
+            }
+
+            // 2nd. add edge from cloned nodes to successor nodes
+            wr2.getOutgoingEdges().forEach(edge => {
+                let succNode = edge.getDstNode() as PagNode;
+                this.pag.addPagEdge(newDst, succNode, edge.getKind());
+            })
+        }
+    }
+
+    /*
+     * a.f
+     * Get a's pts
+     */
+    private getBasePts(inNode: PagNode) {
+        let ret: Set<NodeID> = new Set();
+        let value = inNode.getValue();
         if (!(value instanceof ArkInstanceFieldRef)) {
             throw new Error ('Not a Ref field');
         }
-        let base = value.getBase();
+        let base: Local = value.getBase();
         let ctx2NdMap = this.pag.getNodesByValue(base);
         if (!ctx2NdMap) {
             throw new Error ('Cannot find pag node for a local');
@@ -231,26 +241,20 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         for (let [cid, nodeId] of ctx2NdMap.entries()) {
             let pts = this.ptd.getPropaPts(nodeId);
-            if (pts) {
-                for (let pt of pts) {
-                    // 1st. clone the ref node for each base clase instance
-                    let newDst = this.pag.getOrClonePagNode(wr2, pt);
-                    (newDst as PagInstanceFieldNode).setBasePt(pt);
-                    if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
-                        this.ptaStat.numRealWrite++;
+            if (!pts) {
+                throw new Error (`Can't find pts for Node${nodeId}}`);
+            }
 
-                        this.worklist.push(src.getID());
-                    }
-
-                    // 2nd. add edge from cloned nodes to successor nodes
-                    wr2.getOutgoingEdges().forEach(edge => {
-                        let succNode = edge.getDstNode() as PagNode;
-                        this.pag.addPagEdge(newDst, succNode, edge.getKind());
-                    })
+            for(let pt of pts) {
+                if (!ret.has(pt)) {
+                    ret.add(pt);
                 }
             }
         }
+
+        return ret;
     }
+
 
     private propagate(edge: PagEdge): boolean {
         let changed: boolean = false;
