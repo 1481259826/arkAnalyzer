@@ -69,18 +69,14 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         this.init();
         this.solveConstraint();
-<<<<<<< HEAD
 
         this.postProcess();
     }
 
     private postProcess() {
-        this.pag.dump('ptaEnd_pag.dot');
         this.ptaStat.endStat();
         this.ptaStat.printStat();
-=======
         this.pag.dump('out/ptaEnd_pag.dot');
->>>>>>> 12ff9fc8876d3838762867f376d862fb6ec1f464
     }
 
     public setEntry(fid: FuncID) {
@@ -157,17 +153,15 @@ export class PointerAnalysis extends AbstractAnalysis{
             return false;;
         }
 
-<<<<<<< HEAD
         for (let pt of diffPts) {
             node.getOutgoingLoadEdges()?.forEach(loadEdge => {
                 //this.processLoad(pt, loadEdge);
             });
         }       
-=======
+
         node.getOutgoingLoadEdges()?.forEach(loadEdge => {
             this.processLoad(nodeID, loadEdge);
         });   
->>>>>>> 12ff9fc8876d3838762867f376d862fb6ec1f464
 
         node.getOutgoingWriteEdges()?.forEach(writeEdge => {
             this.processWrite(nodeID, writeEdge)
@@ -182,7 +176,6 @@ export class PointerAnalysis extends AbstractAnalysis{
      *	node \in pts(src) ==>  node--copy-->dst
      */
     private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
-<<<<<<< HEAD
         this.ptaStat.numProcessedLoad++;
 
         let src = this.pag.getNode(nodeID) as PagNode;
@@ -191,6 +184,12 @@ export class PointerAnalysis extends AbstractAnalysis{
         let src = this.pag.getNode(nodeID) as PagNode;  // field
         let dst = loadEdge.getDstNode() as PagNode;     // Local
 >>>>>>> 12ff9fc8876d3838762867f376d862fb6ec1f464
+=======
+        this.ptaStat.numProcessedLoad++;
+
+        let src = this.pag.getNode(nodeID) as PagNode;  // field
+        let dst = loadEdge.getDstNode() as PagNode;     // Local
+>>>>>>> ba7c62bc8cdec62064a2c9812de2662215644fe8
 
         const fieldValue = src.getValue()
         if (!(fieldValue instanceof ArkInstanceFieldRef)) {
