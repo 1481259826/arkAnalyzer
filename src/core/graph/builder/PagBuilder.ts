@@ -19,7 +19,7 @@ import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
 import { ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../base/Ref';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
 import { ContextID } from '../../pta/Context';
 import { ArkMethod } from '../../model/ArkMethod';
@@ -30,6 +30,7 @@ import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
 import { ArkField } from '../../model/ArkField';
+import { instanceToPlain } from 'class-transformer';
 
 const logger = Logger.getLogger();
 
@@ -51,6 +52,7 @@ export class PagBuilder {
     private worklist: CSFuncID[] = [];
     private field2UniqInstanceMap: Map<ArkField, Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
+    private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         this.pag = p;
@@ -222,12 +224,12 @@ export class PagBuilder {
         return true;
     }
 
-    public addDynamicCallEdge(cs: DynCallSite, pointToNode: NodeID, cid: ContextID): NodeID[] {
+    public addDynamicCallEdge(cs: DynCallSite, baseClassPTNode: NodeID, cid: ContextID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
-        let mtdName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        let calleeName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
 
-        let ptNode = this.pag.getNode(pointToNode);
+        let ptNode = this.pag.getNode(baseClassPTNode);
         let value = (ptNode as PagNode).getValue();
         if (value instanceof ArkNewExpr) {
             // get class signature
@@ -236,35 +238,63 @@ export class PagBuilder {
 
             cls = this.scene.getClass(clsSig) as ArkClass;
 
-            let mtd = undefined;
-            while (!mtd) {
-                mtd = cls.getMethodWithName(mtdName);
+            let callee = undefined;
+            while (!callee) {
+                callee = cls.getMethodWithName(calleeName);
                 cls = cls.getSuperClass();
             }
 
-            if (!mtd) {
+            if (!callee) {
                 throw new Error("Can not get method for a dynmic call")
             }
 
-            let dstCGNode = this.cg.getCallGraphNodeByMethod(mtd.getSignature());
+            let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
 
+            let calleeCid = this.ctx.newContext(cid);
             let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID())
-            let staticSrcNodes = this.addStaticCallEdge(staticCS, cid);
+            let staticSrcNodes = this.addStaticCallEdge(staticCS, cid, calleeCid);
             srcNodes.push(...staticSrcNodes);
 
-            // TODO: pass base's pts to callee's this pointer
-
+            // Pass base's pts to callee's this pointer
+            let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid);
+            srcNodes.push(srcBaseNode);
         }
         return srcNodes;
-        
     }
+
+    private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
+        ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID): NodeID {
+        //let thisPtr = callee.getThisInstance();
+        let thisAssignStmt = callee.getCfg()?.getStmts().filter(s =>
+            s instanceof ArkAssignStmt && s.getRightOp() instanceof ArkThisRef);
+        let thisPtr = (thisAssignStmt?.at(0) as ArkAssignStmt).getRightOp() as ArkThisRef;
+        if (!thisPtr) {
+            throw new Error('Can not get this ptr');
+        }
+
+        // IMPORTANT: set cid 2 base Pt info firstly
+        this.cid2ThisRefPtMap.set(calleeCid, baseClassPTNode);
+        let thisNode = this.getOrNewThisNode(calleeCid, thisPtr);
+        let srcBaseLocal = ivkExpr.getBase();
+        let srcNodeId = this.pag.hasCtxNode(cid, srcBaseLocal);
+        if (!srcNodeId) {
+            throw new Error('Can not get base node');
+        }
+
+        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisNode, PagEdgeKind.Copy);
+        return srcNodeId;
+    }
+
     /*
      * Add copy edges from arguments to parameters
      *     ret edges from return values to callsite
      * Return src node
      */
-    public addStaticCallEdge(cs: CallSite, CallerCid: ContextID): NodeID[] {
-        let calleeCid = this.ctx.newContext(CallerCid);
+    public addStaticCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
+        if(!calleeCid) {
+            calleeCid = this.ctx.newContext(callerCid);
+        }
+
         let srcNodes: NodeID[] = []
         // Add reachable
         this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
@@ -292,7 +322,7 @@ export class PagBuilder {
                 //if (arg && param && param instanceof ArkParameterRef) {
                 if (arg && param) {
                     // Get or create new PAG node for argument and parameter
-                    let srcPagNode = this.getOrNewPagNode(CallerCid, arg, cs.callStmt);
+                    let srcPagNode = this.getOrNewPagNode(callerCid, arg, cs.callStmt);
                     let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
 
                     this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
@@ -310,7 +340,7 @@ export class PagBuilder {
             for (let retStmt of retStmts) {
                 let retValue = (retStmt as ArkReturnStmt).getOp();
                 let srcPagNode = this.getOrNewPagNode(calleeCid, retValue, retStmt);
-                let dstPagNode = this.getOrNewPagNode(CallerCid, retDst, cs.callStmt);
+                let dstPagNode = this.getOrNewPagNode(callerCid, retDst, cs.callStmt);
 
                 this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
             }
@@ -320,8 +350,20 @@ export class PagBuilder {
     }
 
     public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
+        if (v instanceof ArkThisRef) {
+            return this.getOrNewThisNode(cid, v as ArkThisRef);
+        }
         v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
+    }
+
+    public getOrNewThisNode(cid: ContextID, v: ArkThisRef): PagNode {
+        let baseClassPTNodeId = this.cid2ThisRefPtMap.get(cid);
+        if (!baseClassPTNodeId) {
+            baseClassPTNodeId = -1;
+        }
+
+        return this.pag.getOrNewThisRefNode(baseClassPTNodeId, v)
     }
 
     /*
@@ -389,7 +431,8 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        if (lhOp instanceof Local && (rhOp instanceof Local || rhOp instanceof ArkParameterRef)) {
+        if (lhOp instanceof Local 
+            && (rhOp instanceof Local || rhOp instanceof ArkParameterRef || rhOp instanceof ArkThisRef)) {
             return true;
         }
         return false;

@@ -43,7 +43,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     private entry: FuncID;
     private ctx: KLimitedContextSensitive;
     private worklist: NodeID[];
-    private handledNode: NodeID[] = [];
+    private handledNodes: NodeID[] = [];
     private ptaStat: PTAStat;
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
@@ -86,10 +86,12 @@ export class PointerAnalysis extends AbstractAnalysis{
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
+            this.handledNodes = [];
             this.ptaStat.iterTimes++;
 
             this.solveWorklist();
             reanalyzer = this.updateCallGraph();
+            this.pag.dump('out/pta_pag.dot');
         }
 
     }
@@ -140,10 +142,10 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private handleLoadWrite(nodeID: NodeID): boolean {
-        if (this.handledNode.includes(nodeID)) {
+        if (this.handledNodes.includes(nodeID)) {
             return false;
         }
-        this.handledNode.push(nodeID);
+        this.handledNodes.push(nodeID);
 
         let node = this.pag.getNode(nodeID) as PagNode;
         let diffPts = this.ptd.getDiffPts(nodeID);
@@ -204,6 +206,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         let src = this.pag.getNode(nodeID) as PagNode;
         let wr2 = writeEdge.getDstNode() as PagNode;
 
+        try{
         let basePts = this.getBasePts(wr2);
         for (let pt of basePts) {
             // 1st. clone the ref node for each base clase instance
@@ -220,6 +223,9 @@ export class PointerAnalysis extends AbstractAnalysis{
                 let succNode = edge.getDstNode() as PagNode;
                 this.pag.addPagEdge(newDst, succNode, edge.getKind());
             })
+        }
+        }
+        catch {
         }
     }
 
