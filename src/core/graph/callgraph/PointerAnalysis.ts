@@ -206,7 +206,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         let src = this.pag.getNode(nodeID) as PagNode;
         let wr2 = writeEdge.getDstNode() as PagNode;
 
-        try{
         let basePts = this.getBasePts(wr2);
         for (let pt of basePts) {
             // 1st. clone the ref node for each base clase instance
@@ -223,9 +222,6 @@ export class PointerAnalysis extends AbstractAnalysis{
                 let succNode = edge.getDstNode() as PagNode;
                 this.pag.addPagEdge(newDst, succNode, edge.getKind());
             })
-        }
-        }
-        catch {
         }
     }
 
