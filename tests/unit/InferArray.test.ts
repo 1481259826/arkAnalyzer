@@ -25,7 +25,8 @@ import {
     ArkStaticFieldRef,
     ArrayType,
     ClassType,
-    NumberType, StringType
+    NumberType,
+    StringType
 } from "../../src";
 import Logger, { LOG_LEVEL } from '../../src/utils/logger';
 
@@ -100,6 +101,17 @@ describe("Infer Array Test", () => {
         fileId.setFileName("B.ets");
         fileId.setProjectName(projectScene.getProjectName());
         assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('ClassB')?.getSuperClass());
+    })
+
+    it('constructor case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("demo.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const returnType = file?.getClassWithName('Test')?.getMethodWithName('constructor')
+            ?.getReturnType();
+        assert.isTrue(returnType instanceof ClassType);
+        assert.equal((returnType as ClassType).getClassSignature().toString(), '@inferType/demo.ts: Test');
     })
 
     it('all case', () => {

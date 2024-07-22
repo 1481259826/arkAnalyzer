@@ -140,7 +140,7 @@ export class SourceMethod extends SourceBase {
         });
         code.write(`(${parameters.join(', ')})`);
         const returnType = method.getReturnType();
-        if (!(returnType instanceof UnknownType)) {
+        if (method.getName() !== 'constructor' && !(returnType instanceof UnknownType)) {
             code.write(`: ${this.transformer.typeToString(returnType)}`);
         }
         if (SourceUtils.isAnonymousMethod(method.getName())) {

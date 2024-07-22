@@ -119,6 +119,7 @@ export class TypeInference {
                 stmt.updateText();
             }
         }
+        this.inferMethodReturnType(arkMethod);
     }
 
     /**
@@ -299,12 +300,17 @@ export class TypeInference {
     }
 
     public static inferMethodReturnType(method: ArkMethod) {
-        let methodReturnType: Type | null = method.getReturnType()
-        if (methodReturnType instanceof UnclearReferenceType) {
-            methodReturnType = this.inferUnclearReferenceType(methodReturnType.getName(), method.getDeclaringArkClass());
+        if (method.getName() === 'constructor') {
+            method.setReturnType(new ClassType(method.getDeclaringArkClass().getSignature()));
+            return;
         }
-        if (methodReturnType && !(methodReturnType instanceof UnknownType || methodReturnType instanceof UnclearReferenceType)) {
-            method.setReturnType(methodReturnType);
+        const returnType = method.getReturnType();
+        let inferType;
+        if (returnType instanceof UnclearReferenceType) {
+            inferType = this.inferUnclearReferenceType(returnType.getName(), method.getDeclaringArkClass());
+        }
+        if (inferType) {
+            method.setReturnType(inferType);
         }
     }
 

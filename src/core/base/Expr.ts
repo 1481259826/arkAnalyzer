@@ -16,7 +16,7 @@
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
 import { ArkClass } from '../model/ArkClass';
-import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
+import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
@@ -182,15 +182,6 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             } else {
                 logger.warn(`arg of forEach must be callable`);
             }
-        } else if (methodName === 'constructor' && baseType instanceof ClassType) { //隐式构造
-            const subSignature = new MethodSubSignature();
-            subSignature.setMethodName(methodName);
-            subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
-            const defaultMethod = new MethodSignature();
-            defaultMethod.setDeclaringClassSignature(baseType.getClassSignature());
-            defaultMethod.setMethodSubSignature(subSignature);
-            this.setMethodSignature(defaultMethod);
-            return this;
         }
         let result;
         if (baseType instanceof UnionType) {
@@ -215,7 +206,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             const arkClass = scene.getClass(baseType.getClassSignature());
             let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
             if (method) {
-                TypeInference.inferMethodReturnType(method)
+                TypeInference.inferMethodReturnType(method);
                 this.setMethodSignature(method.getSignature());
                 if (method.isStatic()) {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
