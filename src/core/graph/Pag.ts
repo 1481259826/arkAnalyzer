@@ -19,7 +19,7 @@ import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import { ArkInstanceInvokeExpr, ArkNewExpr } from '../base/Expr';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../base/Ref';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../base/Ref';
 import { Local } from '../base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
@@ -27,6 +27,8 @@ import { PrinterBuilder } from '../../save/PrinterBuilder';
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
  */
+
+const DUMMY_PAG_NODE_ID = -1
 
 export enum PagEdgeKind {
     Address, Copy, Load, Write, Unknown
@@ -85,7 +87,7 @@ export class WritePagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param }
+export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef }
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -105,6 +107,7 @@ export class PagNode extends BaseNode {
     // Only PagInstanceRefNode has this field
     // Define in base class is for dot print
     protected basePt: NodeID;
+    protected clonedFrom: NodeID;
 
     constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value, k: Kind, s?: Stmt) {
         super(id, k);
@@ -231,6 +234,14 @@ export class PagNode extends BaseNode {
         }
     }
 
+    public getClonedFrom(): NodeID {
+        return this.clonedFrom;
+    }
+
+    public setClonedFrom(id: NodeID): void{
+        this.clonedFrom = id;
+    }
+
     public getDotAttr(): string {
         switch(this.getKind()) {
             case PagNodeKind.HeapObj:
@@ -262,6 +273,10 @@ export class PagNode extends BaseNode {
             lable = lable + `\nParam#${param.getIndex()} ${param.toString()}`;
         }
 
+        if (this.getKind() == PagNodeKind.ThisRef) {
+            lable = lable + `\n${(this.value as ArkThisRef).toString()}`
+        }
+
         if (this.stmt) {
             lable = lable + `\n${this.stmt.toString()} ln:`;
             lable = lable + this.stmt.getOriginPositionInfo().getLineNo();
@@ -290,6 +305,19 @@ export class PagStaticFieldNode extends PagNode {
     }
 }
 
+export class PagThisRefNode extends PagNode {
+    pointToNode: NodeID;
+    constructor(id: NodeID, ptNode: NodeID, thisRef: ArkThisRef) {
+        super(id, DUMMY_PAG_NODE_ID, thisRef, PagNodeKind.ThisRef);
+        this.pointToNode = ptNode;
+    }
+
+    public getThisPTNode(): NodeID {
+        return this.pointToNode;
+    }
+}
+
+
 export class PagNewExprNode extends PagNode {
     constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
@@ -309,6 +337,7 @@ export class Pag extends BaseGraph {
     private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
     private addrEdges: PagEdgeSet = new Set();
     private clonedNodeMap: Map<NodeID, Map<NodeID, NodeID>> = new Map();
+    private baseClsNode2ThisNodeMap: Map<NodeID, NodeID> = new Map();
 
     public getCG(): CallGraph {
         return this.cg;
@@ -336,6 +365,7 @@ export class Pag extends BaseGraph {
 
         // Not found
         let cloneNode = this.addPagNode(src.getCid(), src.getValue(), src.getStmt(), false)
+        cloneNode.setClonedFrom(src.getID());
         cloneSet.set(basePt, cloneNode.getID());
         return cloneNode;
     }
@@ -353,6 +383,8 @@ export class Pag extends BaseGraph {
             pagNode = new PagNewExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
+        } else if (value instanceof ArkThisRef) {
+            throw new Error('This Node need use addThisNode method');
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
@@ -368,6 +400,29 @@ export class Pag extends BaseGraph {
         }
         
         return pagNode!;
+    }
+
+    /*
+     * This node has no context info
+     * but point to node info
+     */
+    public addPagThisRefNode(ptNode: NodeID, value: ArkThisRef): PagNode{
+        let id: NodeID = this.nodeNum;
+        let pagNode = new PagThisRefNode(id, ptNode, value);
+        this.addNode(pagNode);
+
+        return pagNode;
+    }
+
+    public getOrNewThisRefNode(ptNode: NodeID, value: ArkThisRef): PagNode {
+        let thisNodeId = this.baseClsNode2ThisNodeMap.get(ptNode);
+        if(thisNodeId) {
+            return this.getNode(thisNodeId) as PagNode;
+        }
+
+        let thisNode = this.addPagThisRefNode(ptNode, value);
+        this.baseClsNode2ThisNodeMap.set(ptNode, thisNode.getID());
+        return thisNode;
     }
 
     public hasCtxNode(cid: ContextID, v: Value): NodeID | undefined {
