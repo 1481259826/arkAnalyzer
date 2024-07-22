@@ -143,6 +143,9 @@ export class ArkIRTransformer {
 
     public prebuildStmts(): Stmt[] {
         const stmts: Stmt[] = [];
+        const thisRef = new ArkThisRef(this.getThisLocal().getType() as ClassType);
+        stmts.push(new ArkAssignStmt(this.getThisLocal(), thisRef));
+
         let index = 0;
         for (const methodParameter of this.declaringMethod.getParameters()) {
             const parameterRef = new ArkParameterRef(index, methodParameter.getType());
@@ -150,8 +153,6 @@ export class ArkIRTransformer {
             index++;
         }
 
-        const thisRef = new ArkThisRef(this.getThisLocal().getType() as ClassType);
-        stmts.push(new ArkAssignStmt(this.getThisLocal(), thisRef));
         return stmts;
     }
 
