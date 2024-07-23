@@ -377,7 +377,7 @@ export class PagBuilder {
      *  as the unique instance
      */
     public getRealInstanceRef(v: Value): Value {
-        if (!(v instanceof ArkInstanceFieldRef)) {
+        if (!(v instanceof ArkInstanceFieldRef || v instanceof ArkStaticFieldRef)) {
             return v;
         }
 

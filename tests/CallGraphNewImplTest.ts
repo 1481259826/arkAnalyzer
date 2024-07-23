@@ -28,7 +28,7 @@ const logger = Logger.getLogger();
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('./tests/resources/callgraph/calltest');
+config.buildFromProjectDir('./tests/resources/callgraph/loadtest2');
 //config.buildFromProjectDir('./tests/resources/callgraph/simpleCall');
 //config.buildFromProjectDir('./tests/resources/callgraph/swap');
 Logger.setLogLevel(LOG_LEVEL.DEBUG)

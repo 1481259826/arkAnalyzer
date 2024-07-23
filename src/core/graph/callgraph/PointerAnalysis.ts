@@ -23,7 +23,7 @@ import { ArkMethod } from "../../model/ArkMethod";
 import { ClassSignature, MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, FuncID, Method } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
+import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNode, PagStaticFieldNode, PagThisRefNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
@@ -202,6 +202,8 @@ export class PointerAnalysis extends AbstractAnalysis{
             if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
                 this.worklist.push(src.getID());
             }
+        } else if (src instanceof PagStaticFieldNode) {
+            this.propagate(loadEdge)
         } else {
             let basePts = this.getBasePts(src);
             for (let pt of basePts) {
@@ -224,28 +226,36 @@ export class PointerAnalysis extends AbstractAnalysis{
         let src = this.pag.getNode(nodeID) as PagNode;
         let wr2 = writeEdge.getDstNode() as PagNode;
 
-        let basePts = this.getBasePts(wr2);
-        for (let pt of basePts) {
-            // 1st. clone the ref node for each base class instance
-            let newDst = this.pag.getOrClonePagNode(wr2, pt);
-            (newDst as PagInstanceFieldNode).setBasePt(pt);
-            if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
-                this.ptaStat.numRealWrite++;
+        if (wr2 instanceof PagInstanceFieldNode) {
+            let basePts = this.getBasePts(wr2);
+            for (let pt of basePts) {
+                // 1st. clone the ref node for each base class instance
+                let newDst = this.pag.getOrClonePagNode(wr2, pt);
+                (newDst as PagInstanceFieldNode).setBasePt(pt);
+                if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
+                    this.ptaStat.numRealWrite++;
 
-                this.worklist.push(src.getID());
+                    this.worklist.push(src.getID());
+                }
+
+                // 2nd. add edge from cloned nodes to successor nodes
+                wr2.getOutgoingEdges().forEach(edge => {
+                    let succNode = edge.getDstNode() as PagNode;
+                    this.pag.addPagEdge(newDst, succNode, edge.getKind());
+                })
             }
-
-            // 2nd. add edge from cloned nodes to successor nodes
-            wr2.getOutgoingEdges().forEach(edge => {
-                let succNode = edge.getDstNode() as PagNode;
-                this.pag.addPagEdge(newDst, succNode, edge.getKind());
-            })
+        } else if (wr2 instanceof PagStaticFieldNode) {
+            // TODO:?
+            this.propagate(writeEdge)
+        } else {
+            throw new Error ('dst not a field ref node')
         }
     }
 
     /*
      * a.f
      * Get a's pts
+     * only process instance field ref
      */
     private getBasePts(inNode: PagNode) {
         let ret: Set<NodeID> = new Set();
