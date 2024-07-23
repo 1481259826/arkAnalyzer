@@ -31,7 +31,7 @@ import { PrinterBuilder } from '../../save/PrinterBuilder';
 const DUMMY_PAG_NODE_ID = -1
 
 export enum PagEdgeKind {
-    Address, Copy, Load, Write, Unknown
+    Address, Copy, Load, Write, This, Unknown
 };
 
 export class PagEdge extends BaseEdge {
@@ -55,6 +55,8 @@ export class PagEdge extends BaseEdge {
                 return "color=red";
             case PagEdgeKind.Write:
                 return "color=blue"
+            case PagEdgeKind.This:
+                return "color=orange"
             default:
                 return "color=black";
         }
@@ -85,6 +87,12 @@ export class WritePagEdge extends PagEdge {
     };
 }
 
+export class ThisPagEdge extends PagEdge {
+    constructor(n: PagNode, d: PagNode, s: Stmt) {
+        super(n, d, PagEdgeKind.This, s);
+    };
+}
+
 type PagEdgeSet = Set<PagEdge>;
 
 export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef }
@@ -102,6 +110,8 @@ export class PagNode extends BaseNode {
     private loadOutEdges: PagEdgeSet;
     private writeInEdges: PagEdgeSet;
     private writeOutEdges: PagEdgeSet;
+    private thisInEdges: PagEdgeSet;
+    private thisOutEdges: PagEdgeSet;
 
     // Point-to node of base class
     // Only PagInstanceRefNode has this field
@@ -160,6 +170,14 @@ export class PagNode extends BaseNode {
         return this.writeInEdges;
     }
 
+    public getOutgoingThisEdges(): PagEdgeSet {
+        return this.thisOutEdges;
+    }
+
+    public getIncomingThisEdges(): PagEdgeSet {
+        return this.thisInEdges;
+    }
+
     public addAddressInEdge(e: AddrPagEdge): void {
         this.addressInEdges == undefined ? this.addressInEdges = new Set() : undefined;
         this.addressInEdges.add(e);
@@ -206,6 +224,18 @@ export class PagNode extends BaseNode {
     public addWriteOutEdge(e: LoadPagEdge): void {
         this.writeOutEdges = this.writeOutEdges ?? new Set();
         this.writeOutEdges.add(e);
+        this.addOutgoingEdge(e);
+    }
+
+    public addThisInEdge(e: ThisPagEdge): void {
+        this.thisInEdges = this.thisInEdges ?? new Set();
+        this.thisInEdges.add(e);
+        this.addIncomingEdge(e);
+    }
+
+    public addThisOutEdge(e: ThisPagEdge): void {
+        this.thisOutEdges = this.thisOutEdges ?? new Set();
+        this.thisOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
@@ -258,31 +288,31 @@ export class PagNode extends BaseNode {
     }
 
     public getDotLabel(): string {
-        let lable: string;
+        let label: string;
         let param: ArkParameterRef;
 
-        lable = PagNodeKind[this.getKind()];
-        lable = lable + ` ID: ${this.getID()} Ctx: ${this.cid}`;
+        label = PagNodeKind[this.getKind()];
+        label = label + ` ID: ${this.getID()} Ctx: ${this.cid}`;
         if (this.basePt) {
-            lable = lable + ` base:{${this.basePt}}`;
+            label = label + ` base:{${this.basePt}}`;
         }
-        lable = lable + ` pts:{${Array.from(this.pointerSet).join(',')}}`
+        label = label + ` pts:{${Array.from(this.pointerSet).join(',')}}`
 
         if (this.getKind() == PagNodeKind.Param) {
             param = this.value as ArkParameterRef;
-            lable = lable + `\nParam#${param.getIndex()} ${param.toString()}`;
+            label = label + `\nParam#${param.getIndex()} ${param.toString()}`;
         }
 
         if (this.getKind() == PagNodeKind.ThisRef) {
-            lable = lable + `\n${(this.value as ArkThisRef).toString()}`
+            label = label + `\n${(this.value as ArkThisRef).toString()}`
         }
 
         if (this.stmt) {
-            lable = lable + `\n${this.stmt.toString()} ln:`;
-            lable = lable + this.stmt.getOriginPositionInfo().getLineNo();
+            label = label + `\n${this.stmt.toString()} ln:`;
+            label = label + this.stmt.getOriginPositionInfo().getLineNo();
         }
 
-        return lable;
+        return label;
     }
 }
 
@@ -492,6 +522,9 @@ export class Pag extends BaseGraph {
                 src.addLoadOutEdge(edge);
                 dst.addLoadInEdge(edge);
                 break;
+            case PagEdgeKind.This:
+                src.addThisOutEdge(edge)
+                dst.addThisInEdge(edge)
             default:
                 ;
         }

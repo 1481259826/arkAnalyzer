@@ -76,7 +76,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     union(other: this): boolean {
         let changed = false;
         for (const elem of other.pts) {
-            changed = changed || this.insert(elem);
+            changed = this.insert(elem) || changed;
         }
         return changed;
     }
@@ -236,8 +236,8 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
 
     flush(v: K): void {
         if (!this.diffPtsMap.has(v)) return;
-        let diff = this.diffPtsMap.get(v)!;
-        let propa = this.getPropaPtsMut(v);
+        let diff = this.diffPtsMap.get(v)!; 
+        let propa = this.getPropaPtsMut(v); 
         //let propa = this.propaPtsMap.get(v) || new this.DSCreator();
         propa.union(diff);
         diff.clear();

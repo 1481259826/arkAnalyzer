@@ -281,7 +281,7 @@ export class PagBuilder {
             throw new Error('Can not get base node');
         }
 
-        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisNode, PagEdgeKind.Copy);
+        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisNode, PagEdgeKind.This);
         return srcNodeId;
     }
 
@@ -339,10 +339,14 @@ export class PagBuilder {
             let retDst = cs.callStmt.getLeftOp();
             for (let retStmt of retStmts) {
                 let retValue = (retStmt as ArkReturnStmt).getOp();
-                let srcPagNode = this.getOrNewPagNode(calleeCid, retValue, retStmt);
-                let dstPagNode = this.getOrNewPagNode(callerCid, retDst, cs.callStmt);
+                if (retValue instanceof Local) {
+                    let srcPagNode = this.getOrNewPagNode(calleeCid, retValue, retStmt);
+                    let dstPagNode = this.getOrNewPagNode(callerCid, retDst, cs.callStmt);
 
-                this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
+                    this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
+                } else {
+                    throw new Error ('return dst not a local')
+                }
             }
         }
 

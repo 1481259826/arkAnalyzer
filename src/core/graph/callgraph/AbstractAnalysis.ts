@@ -49,6 +49,6 @@ export abstract class AbstractAnalysis {
         }
     }
 
-    public abstract buildAnalysis(): void
+    public abstract start(): void
 
 }
