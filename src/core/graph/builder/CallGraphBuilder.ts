@@ -36,6 +36,10 @@ export class CallGraphBuilder {
 
         for (const method of methods) {
             let cfg = method.getCfg();
+            if (cfg === undefined) {
+                // abstract method cfg is undefined
+                continue
+            }
             let stmts = cfg.getStmts()
             for (const stmt of stmts) {
                 let invokeExpr = stmt.getInvokeExpr();
