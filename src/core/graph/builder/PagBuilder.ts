@@ -302,6 +302,8 @@ export class PagBuilder {
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
         if (!calleeMethod) {
             //throw new Error(`Failed to get ArkMethod`);
+            // TODO: delete cg edge/node and other possible edge/node
+            // this.cg.removeCallGraphNode(cs.calleeFuncID)
             return srcNodes;
         }
         this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));

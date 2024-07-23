@@ -20,6 +20,8 @@ import { Value } from '../base/Value'
 import { Scene } from '../../Scene';
 import { ArkMethod } from '../model/ArkMethod';
 import { ContextID } from '../pta/Context';
+import { GraphPrinter } from '../../save/GraphPrinter';
+import { PrinterBuilder } from '../../save/PrinterBuilder';
 //import { } from '../pta/Context'
 
 export type Method = MethodSignature;
@@ -81,6 +83,13 @@ export class CallGraphEdge extends BaseEdge {
     public addInDirectCallSite(stmt: Stmt) {
         this.indirectCalls.add(stmt);
     }
+
+    public getDotAttr(): string {
+        switch(this.getKind()) {
+            default:
+                return "color=black";
+        }
+    }
 }
 
 export class CallGraphNode extends BaseNode {
@@ -93,6 +102,18 @@ export class CallGraphNode extends BaseNode {
 
     public getMethod(): Method {
         return this.method;
+    }
+
+    public getDotAttr(): string {
+        return 'shape=box'
+    }
+
+    public getDotLabel(): string {
+        let label: string;
+
+        label = this.getMethod().toString()
+
+        return label;
     }
 }
 
@@ -129,6 +150,15 @@ export class CallGraph extends BaseGraph {
         this.addNode(cgNode);
         this.methodToCGNodeMap.set(method, cgNode);
         return cgNode;
+    }
+
+    public removeCallGraphNode(nodeID: NodeID) {
+        // remove edge relate to node first
+        this.removeCallGraphEdge(nodeID)
+        let node = this.getNode(nodeID) as CallGraphNode
+        // remove node itself
+        this.removeNode(nodeID)
+        this.methodToCGNodeMap.delete(node.getMethod())
     }
 
     public getCallGraphNodeByMethod(method: Method): CallGraphNode {
@@ -173,6 +203,18 @@ export class CallGraph extends BaseGraph {
             this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
         }
         callEdge.addDirectCallSite(callStmt);
+    }
+
+    public removeCallGraphEdge(nodeID: NodeID) {
+        let node = this.getNode(nodeID) as CallGraphNode
+
+        for (const inEdge of node.getIncomingEdge()) {
+            node.removeIncomingEdge(inEdge);
+        }
+
+        for (const outEdge of node.getOutgoingEdges()) {
+            node.removeIncomingEdge(outEdge);
+        }
     }
 
      public addDynamicCallInfo(callStmt: Stmt, caller: Method, protentialCallee?: Method ): void {
@@ -228,5 +270,10 @@ export class CallGraph extends BaseGraph {
 
     public setEntries(n : NodeID[]): void {
         this.entries = n;
+    }
+
+    public dump(name: string): void {
+        let printer = new GraphPrinter<this>(this);
+        PrinterBuilder.dump(printer, name);
     }
 }
