@@ -388,8 +388,13 @@ export class PagBuilder {
         if (!cls) {
             throw new Error('Can not find ArkClass');
         }
+        let field: ArkField | null
 
-        let field = cls.getFieldWithName(sig.getFieldName());
+        if (sig.isStatic()) {
+            field = cls.getStaticFieldWithName(sig.getFieldName())
+        } else {
+            field = cls.getFieldWithName(sig.getFieldName());
+        }
         if (!field) {
             throw new Error('Can not find ArkField');
         }
