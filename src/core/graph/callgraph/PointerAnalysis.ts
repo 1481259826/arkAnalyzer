@@ -23,7 +23,7 @@ import { ArkMethod } from "../../model/ArkMethod";
 import { ClassSignature, MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, FuncID, Method } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNode } from "../Pag";
+import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
@@ -110,7 +110,7 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     private solveWorklist(): boolean {
         while (this.worklist.length > 0) {
-            let node = this.worklist.pop() as NodeID;
+            let node = this.worklist.shift() as NodeID;
             this.processNode(node);
         }
 
@@ -118,6 +118,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private processNode(node: NodeID): boolean {
+        this.handleThis(node)
         this.handleLoadWrite(node);
         this.handleCopy(node);
 
@@ -150,7 +151,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         let node = this.pag.getNode(nodeID) as PagNode;
         let diffPts = this.ptd.getDiffPts(nodeID);
         if (!diffPts) {
-            return false;;
+            return false;
         }
 
         node.getOutgoingLoadEdges()?.forEach(loadEdge => {
@@ -162,6 +163,23 @@ export class PointerAnalysis extends AbstractAnalysis{
         });
 
         return true;
+    }
+
+    private handleThis(nodeID: NodeID): boolean {
+        this.ptaStat.numProcessedThis++;
+
+        let node = this.pag.getNode(nodeID) as PagNode;
+        node.getOutgoingThisEdges()?.forEach(thisEdge => {
+            const dst = thisEdge.getDstID()
+            this.ptd.addPts(
+                dst, 
+                (thisEdge.getDstNode() as PagThisRefNode).getThisPTNode()
+            )
+
+            this.processNode(dst)
+        });
+
+        return true
     }
 
     /*
@@ -208,7 +226,7 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         let basePts = this.getBasePts(wr2);
         for (let pt of basePts) {
-            // 1st. clone the ref node for each base clase instance
+            // 1st. clone the ref node for each base class instance
             let newDst = this.pag.getOrClonePagNode(wr2, pt);
             (newDst as PagInstanceFieldNode).setBasePt(pt);
             if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
@@ -242,6 +260,9 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
 
         for (let [cid, nodeId] of ctx2NdMap.entries()) {
+            if (cid != inNode.getCid()) {
+                continue
+            }
             let pts = this.ptd.getPropaPts(nodeId);
             if (!pts) {
                 throw new Error (`Can't find pts for Node${nodeId}}`);
@@ -543,6 +564,7 @@ class PTAStat implements StatTraits {
     numProcessedCopy: number = 0;
     numProcessedLoad: number = 0;
     numProcessedWrite: number = 0;
+    numProcessedThis: number = 0;
     numRealWrite: number = 0;
 
     numDynamicCall: number = 0;
@@ -584,6 +606,7 @@ class PTAStat implements StatTraits {
         output = output + `Processed copy\t\t${this.numProcessedCopy}\n`
         output = output + `Processed load\t\t${this.numProcessedLoad}\n`
         output = output + `Processed write\t\t${this.numProcessedWrite}\n`
+        output = output + `Processed write\t\t${this.numProcessedThis}\n`
         output = output + `Real write\t\t${this.numRealWrite}\n\n`
         output = output + `Dynamic call\t\t${this.numDynamicCall}\n`
         output = output + `Direct call\t\t${this.numDirectCall}\n\n`

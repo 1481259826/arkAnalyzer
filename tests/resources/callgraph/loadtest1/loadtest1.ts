@@ -22,6 +22,14 @@ namespace loadTest1 {
     }
     class Circle {
         line: Line
+
+        getLine() {
+            return this.line
+        }
+
+        setLine(line: Line) {
+            this.line = line
+        }
     }
 
     function main() {
@@ -30,7 +38,23 @@ namespace loadTest1 {
         let c = new Circle();
         const c2 = new Circle();
         c = c2;
-        c.line = e;
-        let f = c.line
+        c.setLine(e)
+        let f = c.getLine()
+        // c.line = e
+        // let f = c.line
+        c = new Circle()
+        // call()
+        // let g = returnLine()
+        // let te = g
+        // te.obj = d
+        // g.obj = new Dummy()
+    }
+
+    function call() {
+
+    }
+
+    function returnLine(): Line {
+        return new Line()
     }
 }
