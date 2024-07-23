@@ -246,7 +246,6 @@ export class PointerAnalysis extends AbstractAnalysis{
                 })
             }
         } else if (wr2 instanceof PagStaticFieldNode) {
-            // TODO:?
             this.propagate(writeEdge)
         } else {
             throw new Error ('dst not a field ref node')
