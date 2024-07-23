@@ -75,6 +75,8 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.pag.dump('ptaEnd_pag.dot');
         this.ptaStat.endStat();
         this.ptaStat.printStat();
+        this.pag.dump('out/ptaEnd_pag.dot');
+        this.cg.dump('out/cgEnd.dot')
     }
 
     public setEntry(fid: FuncID) {

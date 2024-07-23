@@ -38,7 +38,7 @@ namespace globalVarTest {
 
     function main() {
         makeSound(globalDog)
-        // let newDog = new Dog()
-        // makeSound(newDog)
+        let newDog = new Dog()
+        makeSound(newDog)
     }
 }
