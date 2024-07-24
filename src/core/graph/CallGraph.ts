@@ -86,6 +86,7 @@ export class CallGraphEdge extends BaseEdge {
 
     public getDotAttr(): string {
         switch(this.getKind()) {
+            // TODO: separate static call and dynamic call
             default:
                 return "color=black";
         }
@@ -105,13 +106,13 @@ export class CallGraphNode extends BaseNode {
     }
 
     public getDotAttr(): string {
-        return 'shape=box'
+        return 'shape=box';
     }
 
     public getDotLabel(): string {
         let label: string;
 
-        label = this.getMethod().toString()
+        label = this.getMethod().toString();
 
         return label;
     }
@@ -154,11 +155,11 @@ export class CallGraph extends BaseGraph {
 
     public removeCallGraphNode(nodeID: NodeID) {
         // remove edge relate to node first
-        this.removeCallGraphEdge(nodeID)
-        let node = this.getNode(nodeID) as CallGraphNode
+        this.removeCallGraphEdge(nodeID);
+        let node = this.getNode(nodeID) as CallGraphNode;
         // remove node itself
-        this.removeNode(nodeID)
-        this.methodToCGNodeMap.delete(node.getMethod())
+        this.removeNode(nodeID);
+        this.methodToCGNodeMap.delete(node.getMethod());
     }
 
     public getCallGraphNodeByMethod(method: Method): CallGraphNode {
@@ -206,7 +207,7 @@ export class CallGraph extends BaseGraph {
     }
 
     public removeCallGraphEdge(nodeID: NodeID) {
-        let node = this.getNode(nodeID) as CallGraphNode
+        let node = this.getNode(nodeID) as CallGraphNode;
 
         for (const inEdge of node.getIncomingEdge()) {
             node.removeIncomingEdge(inEdge);

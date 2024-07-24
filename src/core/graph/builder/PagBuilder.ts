@@ -77,7 +77,7 @@ export class PagBuilder {
         }
 
         while (this.worklist.length > 0) {
-            let csFunc = this.worklist.shift() as CSFuncID
+            let csFunc = this.worklist.shift() as CSFuncID;
             this.buildFunPag(csFunc.funcID);
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
         }
@@ -303,6 +303,7 @@ export class PagBuilder {
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
         if (!calleeMethod) {
             //throw new Error(`Failed to get ArkMethod`);
+            // TODO: check if nodes need to delete
             // this.cg.removeCallGraphNode(cs.calleeFuncID)
             return srcNodes;
         }
@@ -387,10 +388,10 @@ export class PagBuilder {
         if (!cls) {
             throw new Error('Can not find ArkClass');
         }
-        let field: ArkField | null
+        let field: ArkField | null;
 
         if (sig.isStatic()) {
-            field = cls.getStaticFieldWithName(sig.getFieldName())
+            field = cls.getStaticFieldWithName(sig.getFieldName());
         } else {
             field = cls.getFieldWithName(sig.getFieldName());
         }
