@@ -174,6 +174,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
 
 export class ArkStaticFieldRef extends AbstractFieldRef {
     constructor(fieldSignature: FieldSignature) {
+        fieldSignature.setStatic();
         super(fieldSignature);
     }
 
