@@ -48,6 +48,14 @@ export class ValueUtil {
         return new Constant(str, StringType.getInstance());
     }
 
+    public static createConst(str: string): Constant {
+        const n = Number(str);
+        if (!isNaN(n)) {
+            return this.getOrCreateNumberConst(n);
+        }
+        return new Constant(str, StringType.getInstance());
+    }
+
     public static getUndefinedConst(): Constant {
         return this.UndefinedConstant;
     }

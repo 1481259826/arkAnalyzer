@@ -26,7 +26,8 @@ function test_new_array(): void {
     let a = 1;
     let b = 2;
     let c = Constants.INFO[a + b];
-    const arr = new Array<number>();
+    let s = Constants.INFO[a];
+    let n = Constants.INFO[3];
 }
 
 function testArray(): void {

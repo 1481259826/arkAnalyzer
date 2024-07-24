@@ -16,7 +16,7 @@
 import Logger from "../../utils/logger";
 import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
 import { Local } from "../base/Local";
-import { AbstractRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
+import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
 import {
     AnnotationNamespaceType,
@@ -43,6 +43,7 @@ import { TypeSignature } from "../model/ArkExport";
 import { ArkClass } from "../model/ArkClass";
 import { ArkField } from "../model/ArkField";
 import { Value } from "../base/Value";
+import { Constant } from "../base/Constant";
 
 const logger = Logger.getLogger();
 
@@ -168,10 +169,17 @@ export class TypeInference {
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
                 const fieldRef = use.inferType(arkMethod.getDeclaringArkClass());
-                if (stmt instanceof ArkAssignStmt && fieldRef instanceof ArkStaticFieldRef) {
-                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
+                if (stmt instanceof ArkAssignStmt) {
+                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef && fieldRef instanceof ArkStaticFieldRef) {
                         stmt.setRightOp(fieldRef);
                     } else {
+                        if (fieldRef instanceof ArkArrayRef && fieldRef.getIndex() instanceof Constant) {
+                            const value = (fieldRef.getIndex() as Constant).getValue();
+                            const local = arkMethod.getBody()?.getLocals().get(value);
+                            if (local) {
+                                fieldRef.setIndex(local);
+                            }
+                        }
                         stmt.replaceUse(use, fieldRef);
                         stmt.setRightOp(stmt.getRightOp());
                     }

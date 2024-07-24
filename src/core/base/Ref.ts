@@ -20,6 +20,7 @@ import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceTy
 import { Value } from "./Value";
 import { ArkClass } from "../model/ArkClass";
 import { TypeInference } from "../common/TypeInference";
+import { ValueUtil } from "../common/ValueUtil";
 
 const logger = Logger.getLogger();
 
@@ -149,9 +150,15 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
             logger.warn('infer field ref base type fail: ' + this.toString());
             return this;
         }
+
+        if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
+            return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
+        }
+
         if (this.base instanceof Local) {
             this.base.setType(baseType);
         }
+
         const fieldType = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
         if (fieldType) {
             this.getFieldSignature().setType(fieldType);
