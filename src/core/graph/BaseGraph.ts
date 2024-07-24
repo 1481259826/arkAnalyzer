@@ -115,7 +115,7 @@ export abstract class BaseNode {
     }
 
     public getIncomingEdge(): Set<BaseEdge> {
-        return this.inEdges
+        return this.inEdges;
     }
 
     public getOutgoingEdges(): Set<BaseEdge> {
@@ -165,7 +165,7 @@ export class BaseGraph implements GraphTraits{
 
     public removeNode(id: NodeID): boolean {
         if(this.idToNodeMap.delete(id)) {
-            this.nodeNum --
+            this.nodeNum --;
             return true;
         }
         return false;
