@@ -70,6 +70,36 @@ describe("Infer Array Test", () => {
         assert.isTrue((type as ArrayType).getBaseType() instanceof NumberType);
     })
 
+    it('array Expr case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("inferSample.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const method = file?.getDefaultClass().getMethodWithName('arrayExpr');
+        const stmts = method?.getCfg()?.getStmts();
+        assert.equal(stmts[1].toString(), '$temp0 = newarray (number)[0]');
+        assert.equal(stmts[2].toString(), '$temp1 = newarray (string)[0]');
+        assert.equal(stmts[3].toString(), '$temp2 = newarray (@inferType/inferSample.ts: Sample)[0]');
+        assert.equal(stmts[4].toString(), '$temp3 = newarray (string|@inferType/inferSample.ts: Sample)[2]');
+        assert.equal(stmts[5].toString(), '$temp4 = newarray (any)[0]');
+    })
+
+    it('array Literal case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("inferSample.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const method = file?.getDefaultClass().getMethodWithName('arrayLiteral');
+        const stmts = method?.getCfg()?.getStmts();
+        assert.isDefined(stmts);
+        assert.equal(stmts[1].toString(), '$temp0 = newarray (number)[3]');
+        assert.equal(stmts[6].toString(), '$temp1 = newarray (string)[2]');
+        assert.equal(stmts[12].toString(), '$temp3 = newarray (@inferType/inferSample.ts: Sample)[1]');
+        assert.equal(stmts[15].toString(), '$temp4 = newarray (number|string)[2]');
+        assert.equal(stmts[19].toString(), '$temp5 = newarray (any)[0]');
+        assert.equal(stmts[23].toString(), '$temp7 = newarray (number|string|@inferType/inferSample.ts: Sample)[3]');
+    })
+
 
     it('demo case', () => {
         const fileId = new FileSignature();
@@ -125,3 +155,8 @@ describe("Infer Array Test", () => {
         })
     })
 })
+
+function equals(actual: any, expect: string) {
+    assert.isDefined(actual);
+    assert.equal(actual, expect);
+}

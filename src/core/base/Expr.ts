@@ -332,29 +332,9 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public inferType(arkClass: ArkClass): ArkNewArrayExpr {
-        if (this.baseType instanceof UnionType) {
-            const types = this.baseType.getTypes();
-            for (let i = 1; i < types.length; i++) {
-                if (types[0] !== types[i]) {
-                    this.baseType = AnyType.getInstance();
-                    break;
-                }
-            }
-            if (this.baseType instanceof UnionType) {
-                if (types[0] instanceof ClassType) {
-                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
-                    if (type) {
-                        this.baseType = type;
-                    }
-                } else {
-                    this.baseType = types[0];
-                }
-            }
-        } else if (this.baseType instanceof UnclearReferenceType) {
-            const referenceType = TypeInference.inferUnclearReferenceType(this.baseType.getName(), arkClass);
-            if (referenceType) {
-                this.baseType = referenceType;
-            }
+        const type = TypeInference.inferUnclearedType(this.baseType, arkClass);
+        if (type) {
+            this.baseType = type;
         }
         return this;
     }

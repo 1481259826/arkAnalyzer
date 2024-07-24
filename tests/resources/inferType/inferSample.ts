@@ -15,12 +15,40 @@
 
 import { Constants } from "./constants";
 
+class Sample {
+
+}
+
 function test_new_array(): void {
     let arr11: number[] = new Array(Constants.ARRAY_SIZE);
+    let index = 0;
+    let a2 = arr11[2];
+    let a = 1;
+    let b = 2;
+    let c = Constants.INFO[a + b];
+    const arr = new Array<number>();
 }
 
 function testArray(): void {
     const arr13: number[] = new Array();
     arr13[0] = 1;
     let a13 = arr13[0] + 1;
+
+}
+
+function arrayExpr(): void {
+    new Array<number>();
+    new Array<string>();
+    new Array<Sample>();
+    new Array<string | Sample>(2);
+    new Array();
+}
+
+function arrayLiteral(): void {
+    let arr1: number[] = [1, 1.1, 2];
+    const arr2 = ['a', 'c'];
+    const arr3 = [new Sample()];
+    const arr4 = [1, 'hello'];
+    const arr5 = [];
+    const arr6 = [1, 'hello', new Sample()];
 }
