@@ -23,11 +23,11 @@ import { ArkMethod } from "../../model/ArkMethod";
 import { ClassSignature, MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, FuncID, Method } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNode, PagStaticFieldNode, PagThisRefNode } from "../Pag";
+import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNewExprNode, PagNode, PagStaticFieldNode, PagThisRefNode } from "../Pag";
 import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
-import { KLimitedContextSensitive } from "../../pta/Context";
+import { ContextID, KLimitedContextSensitive } from "../../pta/Context";
 import { ArkClass } from "../../model/ArkClass";
 
 type PointerPair = [NodeID, NodeID]
@@ -45,6 +45,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     private worklist: NodeID[];
     private handledNodes: NodeID[] = [];
     private ptaStat: PTAStat;
+    private baseID2NodesMap: Map<NodeID, NodeID[]> = new Map()
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         super(s)
@@ -62,6 +63,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         // TODO: how to get entry
         this.pagBuilder.buildForEntry(this.entry);
         this.pag.dump('out/ptaInit_pag.dot');
+        this.cg.dump('out/cg_init.dot');
     }
 
     public start() {
@@ -83,6 +85,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private solveConstraint() {
+        this.worklist = []
         this.initWorklist();
         let reanalyzer: boolean = true;
 
@@ -98,7 +101,6 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private initWorklist() {
-        this.worklist = []
         for (let e of this.pag.getAddrEdges()) {
             this.ptaStat.numProcessedAddr++;
 
@@ -107,6 +109,7 @@ export class PointerAnalysis extends AbstractAnalysis{
 
             this.worklist.push(dst);
         }
+        this.pag.resetAddrEdges()
     }
 
     private solveWorklist(): boolean {
@@ -144,24 +147,71 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private handleLoadWrite(nodeID: NodeID): boolean {
-        if (this.handledNodes.includes(nodeID)) {
-            return false;
-        }
-        this.handledNodes.push(nodeID);
-
         let node = this.pag.getNode(nodeID) as PagNode;
         let diffPts = this.ptd.getDiffPts(nodeID);
         if (!diffPts) {
             return false;
         }
 
-        node.getOutgoingLoadEdges()?.forEach(loadEdge => {
-            this.processLoad(nodeID, loadEdge);
-        });   
+        // get related field node with current node's value
+        // TODO: 写这个map不对，Map里只有loadtest2/x1的3个映射
+        let instanceFieldNodeMap = this.pag.getNodesByBaseValue(node.getValue());
 
-        node.getOutgoingWriteEdges()?.forEach(writeEdge => {
-            this.processWrite(nodeID, writeEdge);
-        });
+        if (instanceFieldNodeMap === undefined) {
+            return true;
+        }
+
+        instanceFieldNodeMap.forEach((nodeIDs, cid) => {
+            // TODO: check cid
+            nodeIDs.forEach((nodeID) => {
+                let fieldNode = this.pag.getNode(nodeID) as PagNode;
+                fieldNode?.getIncomingEdge().forEach((edge) => {
+                    if (edge.getKind() != PagEdgeKind.Write) {
+                        throw new Error ("field node in edge is not write edge")
+                    }
+                    let srcNode = edge.getSrcNode() as PagNode;
+                    for (let pt of diffPts) {
+                        // filter pt
+                        let dstNode
+                        let baseNode = this.pag.getNode(pt) as PagNewExprNode
+                        let dstNodeID = baseNode.getFieldNode(fieldNode.getValue() as AbstractFieldRef)
+                        if (!dstNodeID) {
+                            dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
+                            (dstNode as PagInstanceFieldNode).setBasePt(pt);
+                        } else {
+                            dstNode = this.pag.getNode(dstNodeID) as PagNode
+                        }
+                        if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
+                            this.ptaStat.numRealWrite++;
+
+                            this.ptd.resetElem(srcNode.getID());
+                            this.worklist.push(srcNode.getID());
+                        }
+                    }
+                })
+
+                fieldNode.getOutgoingEdges().forEach((edge) => {
+                    if (edge.getKind() != PagEdgeKind.Load) {
+                        throw new Error ("field node out edge is not load edge")
+                    }
+                    let dstNode = edge.getDstNode() as PagNode;
+                    for (let pt of diffPts) {
+                        let basePt = this.pagBuilder.getBasePtWithCid(dstNode.getCid())
+                        if (basePt && basePt != pt) {
+                            continue
+                        }
+                        let newSrc = this.pag.getOrClonePagFieldNode(fieldNode, pt);
+                        (newSrc as PagInstanceFieldNode).setBasePt(pt);
+                        if (this.pag.addPagEdge(newSrc, dstNode, PagEdgeKind.Copy)) {
+                            this.ptaStat.numRealWrite++;
+
+                            // TODO: if field is used before initialzed, newSrc node has no diff pts
+                            this.worklist.push(newSrc.getID());
+                        }
+                    }
+                })
+            })
+        })
 
         return true;
     }
@@ -184,79 +234,11 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     /*
-     *  b = a.f
-     *	src --load--> dst,
-     *	node \in pts(src) ==>  node--copy-->dst
-     */
-    private processLoad(nodeID: NodeID, loadEdge: PagEdge) {
-        this.ptaStat.numProcessedLoad++;
-
-        let src = this.pag.getNode(nodeID) as PagNode;  // field
-        let dst = loadEdge.getDstNode() as PagNode;     // Local
-
-        // In case src node is a cloned instance field node
-        if (src.getClonedFrom()) {
-            src.getOutgoingLoadEdges().forEach(edge => {
-                src.removeOutgoingEdge(edge);
-            });
-
-            if (this.pag.addPagEdge(src, dst, PagEdgeKind.Copy)) {
-                this.worklist.push(src.getID());
-            }
-        } else if (src instanceof PagStaticFieldNode) {
-            this.propagate(loadEdge);
-        } else {
-            let basePts = this.getBasePts(src);
-            for (let pt of basePts) {
-                let newSrc = this.pag.getOrClonePagNode(src, pt);
-                if (this.pag.addPagEdge(newSrc, dst, PagEdgeKind.Copy)) {
-                    this.worklist.push(newSrc.getID());
-                }
-            }
-        }
-    }
-
-    /*
-     *  a.f = b
-     *	src --store--> dst,
-     *	node \in pts(dst) ==>  src--copy-->node
-     */
-    private processWrite(nodeID: NodeID, writeEdge: PagEdge) {
-        this.ptaStat.numProcessedWrite++;
-
-        let src = this.pag.getNode(nodeID) as PagNode;
-        let wr2 = writeEdge.getDstNode() as PagNode;
-
-        if (wr2 instanceof PagInstanceFieldNode) {
-            let basePts = this.getBasePts(wr2);
-            for (let pt of basePts) {
-                // 1st. clone the ref node for each base class instance
-                let newDst = this.pag.getOrClonePagNode(wr2, pt);
-                (newDst as PagInstanceFieldNode).setBasePt(pt);
-                if (this.pag.addPagEdge(src, newDst, PagEdgeKind.Copy)) {
-                    this.ptaStat.numRealWrite++;
-
-                    this.worklist.push(src.getID());
-                }
-
-                // 2nd. add edge from cloned nodes to successor nodes
-                wr2.getOutgoingEdges().forEach(edge => {
-                    let succNode = edge.getDstNode() as PagNode;
-                    this.pag.addPagEdge(newDst, succNode, edge.getKind());
-                })
-            }
-        } else if (wr2 instanceof PagStaticFieldNode) {
-            this.propagate(writeEdge);
-        } else {
-            throw new Error ('dst not a field ref node');
-        }
-    }
-
-    /*
      * a.f
      * Get a's pts
      * only process instance field ref
      */
+    // TODO: Deprecated?
     private getBasePts(inNode: PagNode) {
         let ret: Set<NodeID> = new Set();
         let value = inNode.getValue();
@@ -288,7 +270,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         return ret;
     }
 
-
     private propagate(edge: PagEdge): boolean {
         let changed: boolean = false;
         let { src, dst } = edge.getEndPoints();
@@ -296,11 +277,12 @@ export class PointerAnalysis extends AbstractAnalysis{
         if (!diffPts) {
             return changed;
         }
+        let realDiffPts = this.ptd.calculateDiff(src, dst);
 
         // changed = this.ptd.unionDiffPts(dst, src);
 
         // which one is better?
-        for (let pt of diffPts) {
+        for (let pt of realDiffPts) {
            changed = this.ptd.addPts(dst, pt) || changed;
         }
 
@@ -334,22 +316,26 @@ export class PointerAnalysis extends AbstractAnalysis{
                 }
             }
         })
+        
         changed = this.pagBuilder.handleReachable() || changed;
 
-        this.pagBuilder.clearDynamicCallSiteSet();
+        this.initWorklist();
+
+        // this.pagBuilder.clearDynamicCallSiteSet();
 
         // TODO: on The Fly UpdateCG
         return changed;
     }
 
     private addToReanalyze(startNodes: NodeID[]): boolean {
+        let flag = false
         for (let node of startNodes) {
             if (!this.worklist.includes(node) && this.ptd.resetElem(node)) {
                 this.worklist.push(node);
-                return true;
+                flag = true
             }
         }
-        return false;
+        return flag;
     }
 }
 

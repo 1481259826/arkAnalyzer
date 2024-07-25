@@ -28,7 +28,11 @@ const logger = Logger.getLogger();
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('./tests/resources/callgraph/loadtest2');
+config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
+// config.buildFromProjectDir('./tests/resources/callgraph/test2');
+// config.buildFromProjectDir('./tests/resources/pta/InstanceField');
+// config.buildFromProjectDir('./tests/resources/callgraph/temp');
+// config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
 //config.buildFromProjectDir('./tests/resources/callgraph/swap');
 Logger.setLogLevel(LOG_LEVEL.DEBUG)
@@ -44,20 +48,20 @@ function runScene(config: SceneConfig) {
 
 
 
-    for (let arkFile of projectScene.getFiles()) {
-        let locals = 0, methods = 0
-        for (let arkClass of arkFile.getClasses()) {
-            // if (arkClass.getName() === "_DEFAULT_ARK_CLASS") {
-            for (let arkMethod of arkClass.getMethods()) {
-                let stmts = arkMethod.getCfg()!.getStmts();
-                logger.info(arkMethod.getSignature().toString())
-                for (let s of stmts) {
-                    logger.info("  " + s.toString());
-                }
-                logger.info("\n")
-            }
-        }
-    }
+    // for (let arkFile of projectScene.getFiles()) {
+    //     let locals = 0, methods = 0
+    //     for (let arkClass of arkFile.getClasses()) {
+    //         // if (arkClass.getName() === "_DEFAULT_ARK_CLASS") {
+    //         for (let arkMethod of arkClass.getMethods()) {
+    //             let stmts = arkMethod.getCfg()!.getStmts();
+    //             logger.info(arkMethod.getSignature().toString())
+    //             for (let s of stmts) {
+    //                 logger.info("  " + s.toString());
+    //             }
+    //             logger.info("\n")
+    //         }
+    //     }
+    // }
 
     let cg = new CallGraph(projectScene);
     let cgBuilder = new CallGraphBuilder(cg, projectScene);
