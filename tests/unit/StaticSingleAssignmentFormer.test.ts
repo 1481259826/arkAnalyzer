@@ -14,14 +14,19 @@
  */
 
 import { describe, it } from 'vitest';
-import { Scene, SceneConfig } from "../../src";
+import { Scene, SceneConfig } from '../../src';
 import path from 'path';
-import { StaticSingleAssignmentFormer } from "../../src/transformer/StaticSingleAssignmentFormer";
+import { StaticSingleAssignmentFormer } from '../../src/transformer/StaticSingleAssignmentFormer';
+import Logger, { LOG_LEVEL } from '../../src/utils/logger';
 
-describe("StaticSingleAssignmentFormer Test", () => {
+const logPath = 'out/ArkAnalyzer.log';
+const logger = Logger.getLogger();
+Logger.configure(logPath, LOG_LEVEL.DEBUG);
+
+describe('StaticSingleAssignmentFormer Test', () => {
     let config: SceneConfig = new SceneConfig();
 
-    config.buildFromProjectDir(path.join(__dirname, "../resources/ssa"));
+    config.buildFromProjectDir(path.join(__dirname, '../resources/ssa'));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
@@ -34,19 +39,22 @@ describe("StaticSingleAssignmentFormer Test", () => {
                     if (arkMethod.getName() == '_DEFAULT_ARK_METHOD') {
                         continue;
                     }
-                    for (const threeAddressStmt of arkMethod.getCfg().getStmts()) {
-                        console.info(threeAddressStmt.toString());
+
+                    const body = arkMethod.getBody();
+                    if (body) {
+                        for (const threeAddressStmt of body.getCfg().getStmts()) {
+                            logger.info(threeAddressStmt.toString());
+                        }
+                        staticSingleAssignmentFormer.transformBody(body);
+                        for (const threeAddressStmt of body.getCfg().getStmts()) {
+                            logger.info(threeAddressStmt.toString());
+                        }
+                        body.getLocals().forEach(local => {
+                            logger.info('ssa form:' + local.toString() + ', original form: ' + local.getOriginalValue()?.toString());
+                        });
                     }
-                    let body = arkMethod.getBody();
-                    staticSingleAssignmentFormer.transformBody(body);
-                    for (const threeAddressStmt of arkMethod.getCfg().getStmts()) {
-                        console.info(threeAddressStmt.toString());
-                    }
-                    arkMethod.getBody().getLocals().forEach(local => {
-                        console.info('ssa form:' + local.toString() + ', original form: ' + local.getOriginalValue()?.toString());
-                    })
                 }
             }
         }
-    })
+    });
 });

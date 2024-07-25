@@ -58,8 +58,8 @@ export class SourceBody implements StmtPrinterContext {
     public constructor(indent: string, method: ArkMethod, inBuilder: boolean) {
         this.printer = new ArkCodeBuffer(indent);
         this.method = method;
-        this.arkBody = method.getBody();
-        this.cfgUtils = new CfgUitls(method.getCfg());
+        this.arkBody = method.getBody()!;
+        this.cfgUtils = new CfgUitls(method.getCfg()!);
         this.tempCodeMap = new Map();
         this.tempVisitor = new Set();
         this.definedLocals = new Set();

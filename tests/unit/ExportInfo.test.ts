@@ -33,7 +33,7 @@ describe("export Test", () => {
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
         assert.equal(file?.getImportInfos().length, 16);
-        const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg().getStmts();
+        const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
     })
 
@@ -63,19 +63,27 @@ describe("export Test", () => {
         fileId.setFileName("else.ts");
         fileId.setProjectName(projectScene.getProjectName());
         const stmts = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('something')?.getCfg().getStmts();
+            .getMethodWithName('something')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
         if (stmts) {
             assert.equal(stmts[2].toString(), 'staticinvoke <@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.[static]setWebDebuggingAccess(boolean)>(false)');
             assert.equal(stmts[6].toString(), 'instanceinvoke controller.<@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.loadUrl(string|Resource, Array)>(\'https://www.example.com/cn\')')
-            assert.equal(stmts[7].toString(),'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, ArrayType)>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
+            assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
         }
 
     })
 
+    it('thirdModule case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("Lottie_Report.ets");
+        fileId.setProjectName(projectScene.getProjectName());
+        const signature = projectScene.getFile(fileId)?.getImportInfoBy('lottie')?.getLazyExportInfo()?.getTypeSignature().toString();
+        assert.equal(signature, '@lottie/@ohos/lottie.d.ts: LottiePlayer')
+    })
+
     it('all case', () => {
         projectScene.getMethods().forEach(m => {
-            m.getCfg().getStmts().forEach(s => {
+            m.getCfg()?.getStmts().forEach(s => {
                 const text = s.toString();
                 if (text.includes('Unknown')) {
                     console.log(text + ' warning ' + m.getSignature().toString());

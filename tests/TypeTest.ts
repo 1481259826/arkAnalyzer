@@ -16,7 +16,6 @@
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { ArkBody } from "../src/core/model/ArkBody";
-import { StaticSingleAssignmentFormer } from "../src/transformer/StaticSingleAssignmentFormer";
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
@@ -35,28 +34,6 @@ export class TypeInferenceTest {
         let scene = this.buildScene();
         scene.inferTypes();
         // scene.inferSimpleTypes();
-        let staticSingleAssignmentFormer = new StaticSingleAssignmentFormer();
-        for (const arkFile of scene.getFiles()) {
-            console.log('=============== arkFile:', arkFile.getName(), ' ================');
-            for (const arkClass of arkFile.getClasses()) {
-                for (const arkMethod of arkClass.getMethods()) {
-                    console.log('*** arkMethod: ', arkMethod.getName());
-
-                    const body = arkMethod.getBody();
-                    console.log("*****before ssa")
-                    this.printStmts(body);
-                    console.log("*****after ssa")
-                    staticSingleAssignmentFormer.transformBody(body);
-                    this.printStmts(body);
-
-                    
-                    // console.log('-- locals:');
-                    // for (const local of arkMethod.getBody().getLocals()) {
-                    //     console.log('name: ' + local.toString() + ', type: ' + local.getType());
-                    // }
-                }
-            }
-        }
     }
 
     public printStmts(body: ArkBody): void {

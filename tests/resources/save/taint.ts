@@ -13,8 +13,31 @@
  * limitations under the License.
  */
 
-export class Constants {
-    public static readonly ARRAY_SIZE: number = 9999;
-    public static readonly INDEX_SIZE: number = 9999;
-    public static readonly INFO: number[] = [1, 2, 3, 4, 5, 6, 7];
+function source(): number | null {
+    return null
+}
+
+function pass(data: number | null): number | null {
+    return data
+}
+
+function validate(data: number | null): number {
+    if (data == null) return 0
+    return data
+}
+
+function sink(data: number | null) {
+    if (data == null) throw new Error("Error!")
+}
+
+function bad() {
+    let data = source()
+    data = pass(data)
+    sink(data)
+}
+
+function good() {
+    let data = source()
+    data = validate(data)
+    sink(data)
 }

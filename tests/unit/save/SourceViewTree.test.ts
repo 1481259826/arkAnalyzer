@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { SceneConfig, Scene, SourceNamespacePrinter, SourceClassPrinter } from '../../../src/index';
+import { Scene, SceneConfig, SourceClassPrinter, SourceNamespacePrinter } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
@@ -96,7 +96,7 @@ const CASE3_EXPECT = `namespace Case3 {
 const CASE4_EXPECT = `@Entry
 @Component
 struct LazyForEachTest {
-  private moved: ArrayType = [];
+  private moved: number[] = [];
   @State
   data: MyDataSource = new MyDataSource();
   aboutToAppear() {

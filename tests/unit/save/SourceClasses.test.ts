@@ -29,11 +29,12 @@ const SourceClassesTest_CASE1_EXPECT = `class Animal {
     return this._name;
   }
   set name(newName: string|undefined) {
+    this._name = newName;
   }
-  public print(a: ArrayType): number|null {
+  public print(a: Animal[]): number|null {
     return 0;
   }
-  public testArrayReturn(): ArrayType {
+  public testArrayReturn(): string[] {
     return [];
   }
 }
@@ -156,6 +157,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
     return this.id;
   }
   set accountID(value: string) {
+    this.id = value;
   }
   private makeRequest() {
   }

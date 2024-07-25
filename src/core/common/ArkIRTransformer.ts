@@ -1283,6 +1283,11 @@ export class ArkIRTransformer {
                 return new UnclearReferenceType(type.getText(this.sourceFile));
             case ts.SyntaxKind.ArrayType:
                 return new ArrayType(this.resolveTypeNode((type as ts.ArrayTypeNode).elementType), 1);
+            case ts.SyntaxKind.UnionType:
+                const cur = type as ts.UnionTypeNode;
+                const mayTypes: Type[] = [];
+                cur.types.forEach(t => mayTypes.push(this.resolveTypeNode(t)));
+                return new UnionType(mayTypes);
             case ts.SyntaxKind.TupleType:
                 const types: Type[] = [];
                 (type as ts.TupleTypeNode).elements.forEach(element => {

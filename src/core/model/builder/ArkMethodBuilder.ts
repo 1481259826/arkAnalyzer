@@ -17,28 +17,34 @@ import { ClassType, Type } from '../../base/Type';
 import { BodyBuilder } from '../../common/BodyBuilder';
 import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
 import { ArkClass } from '../ArkClass';
-import { Decorator } from '../../base/Decorator';
 import { ArkMethod } from '../ArkMethod';
 import ts from 'ohos-typescript';
 import {
     buildModifiers,
     buildParameters,
     buildReturnType,
-    buildTypeParameters,
+    buildTypeParameters, DECLARE_KEYWORD,
     handlePropertyAccessExpression,
 } from './builderUtils';
 import Logger from '../../../utils/logger';
-import { ArkAssignStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
-import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
+import { ArkThisRef } from '../../base/Ref';
 import { ArkBody } from '../ArkBody';
-import { BasicBlock } from '../../graph/BasicBlock';
-import { Local } from '../../base/Local';
 import { Cfg } from '../../graph/Cfg';
+import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { MethodSignature, MethodSubSignature } from '../ArkSignature';
+import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
+import { BasicBlock } from '../../graph/BasicBlock';
+import { ArkParameterRef } from '../../base/Ref';
+import { Local } from '../../base/Local';
+import { Value } from '../../base/Value';
+import { DEFAULT_ARK_CLASS_NAME } from './ArkClassBuilder';
 
 const logger = Logger.getLogger();
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
+const CONSTRUCTOR_NAME = 'constructor';
+const SUPER_NAME = 'super';
 
 export type MethodLikeNode =
     ts.FunctionDeclaration |
@@ -310,9 +316,104 @@ export class MethodParameter {
     }
 }
 
+function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
+    const originClassType = arkClass.getOriginType();
+    return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null && originClassType == 'Class' &&
+        arkClass.getName() != DEFAULT_ARK_CLASS_NAME && !arkClass.getModifiers().has(DECLARE_KEYWORD);
+}
+
+export function buildDefaultConstructor(arkClass: ArkClass): boolean {
+    if (!needDefaultConstructorInClass(arkClass)) {
+        return false;
+    }
+
+    let parentConstructor: ArkMethod | null = null;
+    let superClass: ArkClass | null = arkClass.getSuperClass() || null;
+    while (superClass != null) {
+        parentConstructor = superClass.getMethodWithName(CONSTRUCTOR_NAME);
+        if (parentConstructor != null) {
+            break;
+        }
+        superClass = superClass.getSuperClass() || null;
+    }
+
+    const defaultConstructor: ArkMethod = new ArkMethod();
+    defaultConstructor.setDeclaringArkClass(arkClass);
+    defaultConstructor.setDeclaringArkFile();
+    defaultConstructor.setName(CONSTRUCTOR_NAME);
+    defaultConstructor.setCode('');
+    defaultConstructor.setIsGeneratedFlag(true);
+
+    const basicBlock = new BasicBlock();
+    basicBlock.addStmt(new ArkAssignStmt(new Local('this'), new ArkThisRef(new ClassType(arkClass.getSignature()))));
+    const locals: Set<Local> = new Set();
+    let startingStmt: Stmt;
+    if (parentConstructor != null) {
+        parentConstructor.getParameters().forEach(parameter => {
+            defaultConstructor.addParameter(parameter);
+        });
+        defaultConstructor.setReturnType(parentConstructor.getReturnType());
+        defaultConstructor.genSignature();
+
+        const stmts: Stmt[] = [];
+        let index = 0;
+        const parameterLocals: Value[] = [];
+        for (const methodParameter of defaultConstructor.getParameters()) {
+            const parameterRef = new ArkParameterRef(index, methodParameter.getType());
+            const parameterLocal = new Local(methodParameter.getName(), parameterRef.getType());
+            locals.add(parameterLocal);
+            parameterLocals.push(parameterLocal);
+            stmts.push(new ArkAssignStmt(parameterLocal, parameterRef));
+            index++;
+        }
+
+        const superMethodSignature = new MethodSignature();
+        superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
+        const superMethodSubSignature = new MethodSubSignature();
+        superMethodSubSignature.setMethodName(SUPER_NAME);
+        superMethodSubSignature.setParameters(parentConstructor.getParameters());
+        superMethodSubSignature.setReturnType(defaultConstructor.getReturnType());
+        superMethodSignature.setMethodSubSignature(superMethodSubSignature);
+
+        const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, parameterLocals);
+        const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
+        basicBlock.addStmt(superInvokeStmt);
+        startingStmt = superInvokeStmt;
+        const returnVoidStmt = new ArkReturnVoidStmt();
+        basicBlock.addStmt(returnVoidStmt);
+    } else {
+        defaultConstructor.genSignature();
+
+        if (arkClass.getSuperClass()) {
+            const superMethodSignature = new MethodSignature();
+            superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
+            const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, []);
+            const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
+            basicBlock.addStmt(superInvokeStmt);
+            startingStmt = superInvokeStmt;
+            const returnVoidStmt = new ArkReturnVoidStmt();
+            basicBlock.addStmt(returnVoidStmt);
+        } else {
+            const returnVoidStmt = new ArkReturnVoidStmt();
+            basicBlock.addStmt(returnVoidStmt);
+            startingStmt = returnVoidStmt;
+        }
+
+    }
+    const cfg = new Cfg();
+    cfg.addBlock(basicBlock);
+    cfg.setStartingStmt(startingStmt);
+    const originalCfg = new Cfg();
+
+    defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map()));
+    arkClass.addMethod(defaultConstructor);
+
+    return true;
+}
+
 export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
     const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
-    const cThis = new Local('this', classType);
+    const cThis = new Local('this');
     const assignStmt = new ArkAssignStmt(cThis, new ArkThisRef(classType));
     const block = new BasicBlock();
     block.addStmt(assignStmt);
@@ -327,6 +428,21 @@ export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
     const cfg = new Cfg();
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
-    initMethod.setBody(new ArkBody(initMethod.getSignature(), locals, new Cfg(), cfg, new Map()));
+    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, new Map()));
     
+}
+
+export function addInitInConstructor(arkClass: ArkClass) {
+    for (const method of arkClass.getMethods()) {
+        if (method.getName() == 'constructor') {
+            const _this = new Local('this');
+            const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(_this, arkClass.getInstanceInitMethod().getSignature(), []));
+            const firstBlockStmts = [...method.getCfg()!.getBlocks()!][0].getStmts();
+            let index = 0;
+            if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() == 'this') {
+                index = 1;
+            }
+            firstBlockStmts.splice(index, 0, initInvokeStmt);
+        }
+    }
 }

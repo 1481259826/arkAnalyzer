@@ -16,6 +16,7 @@
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
 import {
     AnyType,
+    ArrayType,
     CallableType,
     ClassType,
     NumberType,
@@ -62,6 +63,7 @@ import {
 } from './ArkClassBuilder';
 
 const logger = Logger.getLogger();
+export const DECLARE_KEYWORD = 'DeclareKeyword';
 
 export function handleQualifiedName(node: ts.QualifiedName): string {
     let right = (node.right as ts.Identifier).text;
@@ -355,6 +357,8 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
             types.push(tsNode2Type(element, sourceFile, arkInstance));
         });
         return new TupleType(types);
+    } else if (ts.isArrayTypeNode(typeNode)) {
+        return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
     } else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }

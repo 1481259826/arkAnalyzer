@@ -16,26 +16,12 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkParameterRef, ArkThisRef } from '../base/Ref';
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
-import {
-    AnnotationNamespaceType,
-    AnnotationTypeQueryType,
-    ArrayType,
-    TupleType,
-    Type,
-    UnionType,
-    UnknownType,
-} from '../base/Type';
+import { ArkGotoStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
-import { TypeInference } from './TypeInference';
 import { ArkIRTransformer } from './ArkIRTransformer';
-import { LineColPosition } from '../base/Position';
-import { COMPONENT_BUILD_FUNCTION } from './EtsConst';
-import { Decorator } from '../base/Decorator';
 import { ModelUtils } from './ModelUtils';
 
 const logger = Logger.getLogger();
@@ -223,6 +209,7 @@ export class CfgBuilder {
     importFromPath: string[];
     catches: Catch[];
     exits: StatementBuilder[] = [];
+    emptyBody: boolean = false;
 
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
@@ -727,7 +714,7 @@ export class CfgBuilder {
         if (notReturnStmts.length == 1 && notReturnStmts[0].block) {
             for (const stmt of notReturnStmts[0].block.stmts) {
                 if (stmt instanceof TryStatementBuilder) {
-                    tryExit =true;
+                    tryExit = true;
                     break;
                 }
             }
@@ -932,19 +919,24 @@ export class CfgBuilder {
         if (ts.isSourceFile(this.astRoot)) {
             stmts = [...this.astRoot.statements];
         } else if (ts.isFunctionDeclaration(this.astRoot) || ts.isMethodDeclaration(this.astRoot) || ts.isConstructorDeclaration(this.astRoot)
-            || ts.isGetAccessor(this.astRoot) || ts.isGetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
+            || ts.isGetAccessorDeclaration(this.astRoot) || ts.isSetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
             if (this.astRoot.body) {
                 stmts = [...this.astRoot.body.statements];
+            } else {
+                this.emptyBody = true;
             }
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
-        }
+        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot) 
+            || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
+                this.emptyBody = true;
+            }
         if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
             this.walkAST(this.entry, this.exit, stmts);
         } else {
             this.handleBuilder(stmts);
         }
-        
+
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
@@ -965,6 +957,10 @@ export class CfgBuilder {
         }
         lastStmt.next = this.exit;
         this.exit.lasts.add(lastStmt);
+    }
+
+    public isBodyEmpty(): boolean {
+        return this.emptyBody;
     }
 
     public buildCfgAndOriginalCfg(): {

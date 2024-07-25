@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
-import { ArkParameterRef, ArkThisRef } from "../base/Ref";
-import { ArkAssignStmt, ArkReturnStmt } from "../base/Stmt";
-import { Type, UnknownType } from "../base/Type";
-import { Value } from "../base/Value";
-import { Cfg } from "../graph/Cfg";
-import { ViewTree } from "../graph/ViewTree";
-import { ArkBody } from "./ArkBody";
-import { ArkClass } from "./ArkClass";
-import { ArkFile } from "./ArkFile";
-import { MethodSignature, MethodSubSignature } from "./ArkSignature";
-import { Decorator } from "../base/Decorator";
-import { MethodParameter } from "./builder/ArkMethodBuilder";
-import { BodyBuilder } from "../common/BodyBuilder";
-import { ArkExport, ExportType } from "./ArkExport";
+import { ArkParameterRef, ArkThisRef } from '../base/Ref';
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
+import { Type, UnknownType } from '../base/Type';
+import { Value } from '../base/Value';
+import { Cfg } from '../graph/Cfg';
+import { ViewTree } from '../graph/ViewTree';
+import { ArkBody } from './ArkBody';
+import { ArkClass } from './ArkClass';
+import { ArkFile } from './ArkFile';
+import { MethodSignature, MethodSubSignature } from './ArkSignature';
+import { Decorator } from '../base/Decorator';
+import { MethodParameter } from './builder/ArkMethodBuilder';
+import { BodyBuilder } from '../common/BodyBuilder';
+import { ArkExport, ExportType } from './ArkExport';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -51,10 +51,12 @@ export class ArkMethod implements ArkExport {
     private methodSignature: MethodSignature;
     private methodSubSignature: MethodSubSignature;
 
-    private body: ArkBody;
+    private body?: ArkBody;
     private viewTree: ViewTree;
 
     private bodyBuilder?: BodyBuilder;
+
+    private isGeneratedFlag: boolean = false;
 
     constructor() {
     }
@@ -116,14 +118,14 @@ export class ArkMethod implements ArkExport {
     }
 
     public isStatic(): boolean {
-        if (this.modifiers.has("StaticKeyword")) {
+        if (this.modifiers.has('StaticKeyword')) {
             return true;
         }
         return false;
     }
 
     public isDefaultArkMethod(): boolean {
-        return this.getName() === "_DEFAULT_ARK_METHOD";
+        return this.getName() === '_DEFAULT_ARK_METHOD';
     }
 
     public getParameters() {
@@ -197,7 +199,7 @@ export class ArkMethod implements ArkExport {
         return this.modifiers.has(name);
     }
 
-    public getBody() {
+    public getBody(): ArkBody | undefined {
         return this.body;
     }
 
@@ -205,55 +207,67 @@ export class ArkMethod implements ArkExport {
         this.body = body;
     }
 
-    public getCfg(): Cfg {
-        return this.body.getCfg();
+    public getCfg(): Cfg | undefined {
+        return this.body?.getCfg();
     }
 
-    public getOriginalCfg() {
-        return this.body.getOriginalCfg();
+    public getOriginalCfg(): Cfg | undefined {
+        return this.body?.getOriginalCfg();
     }
 
     public getParameterInstances(): Value[] {
         // 获取方法体中参数Local实例
-        let stmts = this.getCfg().getStmts()
-        let results: Value[] = []
+        let stmts: Stmt[] = [];
+        if (this.getCfg()) {
+            const cfg = this.getCfg() as Cfg;
+            stmts.push(...cfg.getStmts());
+        }
+        let results: Value[] = [];
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt) {
                 if (stmt.getRightOp() instanceof ArkParameterRef) {
-                    results.push((stmt as ArkAssignStmt).getLeftOp())
+                    results.push((stmt as ArkAssignStmt).getLeftOp());
                 }
             }
             if (results.length == this.getParameters().length) {
-                return results
+                return results;
             }
         }
-        return results
+        return results;
     }
 
     public getThisInstance(): Value | null {
         // 获取方法体中This实例
-        let stmts = this.getCfg().getStmts()
-        let results: Value[] = []
+        let stmts: Stmt[] = [];
+        if (this.getCfg()) {
+            const cfg = this.getCfg() as Cfg;
+            stmts.push(...cfg.getStmts());
+        }
+        let results: Value[] = [];
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt) {
                 if (stmt.getRightOp() instanceof ArkThisRef) {
-                    return stmt.getLeftOp()
+                    return stmt.getLeftOp();
                 }
             }
         }
-        return null
+        return null;
     }
 
     public getReturnValues(): Value[] {
         // 获取方法体中return值实例
-        let resultValues: Value[] = []
-        let stmts = this.getCfg().getStmts()
+        let resultValues: Value[] = [];
+        let stmts: Stmt[] = [];
+        if (this.getCfg()) {
+            const cfg = this.getCfg() as Cfg;
+            stmts.push(...cfg.getStmts());
+        }
         for (let stmt of stmts) {
             if (stmt instanceof ArkReturnStmt) {
-                resultValues.push(stmt.getOp())
+                resultValues.push(stmt.getOp());
             }
         }
-        return resultValues
+        return resultValues;
     }
 
     public getDecorators(): Decorator[] {
@@ -290,9 +304,21 @@ export class ArkMethod implements ArkExport {
 
     public buildBody() {
         if (this.bodyBuilder) {
-            this.setBody(this.bodyBuilder.build());
-            this.getCfg().setDeclaringMethod(this);
+            const arkBody: ArkBody | null = this.bodyBuilder.build();
+            if (arkBody) {
+                this.setBody(arkBody);
+                arkBody.getCfg().setDeclaringMethod(this);
+
+            }
             this.bodyBuilder = undefined;
         }
+    }
+
+    public isGenerated(): boolean {
+        return this.isGeneratedFlag;
+    }
+
+    public setIsGeneratedFlag(isGeneratedFlag: boolean) {
+        this.isGeneratedFlag = isGeneratedFlag;
     }
 }

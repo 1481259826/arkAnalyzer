@@ -16,7 +16,7 @@
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
 import { ArkClass } from '../model/ArkClass';
-import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
+import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
@@ -41,6 +41,7 @@ import { ModelUtils } from "../common/ModelUtils";
 import { ArkAssignStmt } from "./Stmt";
 import Logger from "../../utils/logger";
 import { Scene } from "../../Scene";
+import { ArkBody } from '../model/ArkBody';
 
 const logger = Logger.getLogger();
 
@@ -169,8 +170,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             if (arg.getType() instanceof CallableType) {
                 const argMethodSignature = (arg.getType() as CallableType).getMethodSignature();
                 const argMethod = scene.getMethod(argMethodSignature);
-                if (argMethod != null) {
-                    const firstStmt = argMethod.getBody().getCfg().getStmts()[0];
+                if (argMethod != null && argMethod.getBody()) {
+                    const body = argMethod.getBody() as ArkBody;
+                    const firstStmt = body.getCfg().getStartingStmt();
                     if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
                         const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
                         parameterRef.setType((baseType as ArrayType).getBaseType());
@@ -180,15 +182,6 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             } else {
                 logger.warn(`arg of forEach must be callable`);
             }
-        } else if (methodName === 'constructor' && baseType instanceof ClassType) { //隐式构造
-            const subSignature = new MethodSubSignature();
-            subSignature.setMethodName(methodName);
-            subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
-            const defaultMethod = new MethodSignature();
-            defaultMethod.setDeclaringClassSignature(baseType.getClassSignature());
-            defaultMethod.setMethodSubSignature(subSignature);
-            this.setMethodSignature(defaultMethod);
-            return this;
         }
         let result;
         if (baseType instanceof UnionType) {
@@ -213,7 +206,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             const arkClass = scene.getClass(baseType.getClassSignature());
             let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
             if (method) {
-                TypeInference.inferMethodReturnType(method)
+                TypeInference.inferMethodReturnType(method);
                 this.setMethodSignature(method.getSignature());
                 if (method.isStatic()) {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
@@ -282,6 +275,10 @@ export class ArkNewExpr extends AbstractExpr {
         this.classType = classType;
     }
 
+    public getClassType(): ClassType {
+        return this.classType;
+    }
+
     public getUses(): Value[] {
         return [];
     }
@@ -335,29 +332,9 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public inferType(arkClass: ArkClass): ArkNewArrayExpr {
-        if (this.baseType instanceof UnionType) {
-            const types = this.baseType.getTypes();
-            for (let i = 1; i < types.length; i++) {
-                if (types[0] !== types[i]) {
-                    this.baseType = AnyType.getInstance();
-                    break;
-                }
-            }
-            if (this.baseType instanceof UnionType) {
-                if (types[0] instanceof ClassType) {
-                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
-                    if (type) {
-                        this.baseType = type;
-                    }
-                } else {
-                    this.baseType = types[0];
-                }
-            }
-        } else if (this.baseType instanceof UnclearReferenceType) {
-            const referenceType = TypeInference.inferUnclearReferenceType(this.baseType.getName(), arkClass);
-            if (referenceType) {
-                this.baseType = referenceType;
-            }
+        const type = TypeInference.inferUnclearedType(this.baseType, arkClass);
+        if (type) {
+            this.baseType = type;
         }
         return this;
     }
@@ -589,6 +566,10 @@ export class ArkInstanceOfExpr extends AbstractExpr {
         this.op = newOp;
     }
 
+    public getCheckType(): string {
+        return this.checkType;
+    }
+
     public getType(): Type {
         return BooleanType.getInstance();
     }
@@ -772,10 +753,6 @@ export class ArrayLiteralExpr extends AbstractExpr {
         this.type = type;
     }
 
-    public getElements(): Value[] {
-        return this.elements;
-    }
-
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push();
@@ -801,8 +778,20 @@ export class ArrayLiteralExpr extends AbstractExpr {
                     this.type = new ArrayType(types[0], 1);
                 }
             }
+        } else if (this.type instanceof ArrayType) {
+            const baseType = this.type.getBaseType();
+            if (baseType instanceof UnclearReferenceType) {
+                const referenceType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
+                if (referenceType) {
+                    this.type.setBaseType(referenceType);
+                }
+            }
         }
         return this;
+    }
+
+    public getElements(): Value[] {
+        return this.elements;
     }
 
     public getType(): Type {

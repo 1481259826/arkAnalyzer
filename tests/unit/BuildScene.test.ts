@@ -23,7 +23,7 @@ describe("build scene Test", () => {
 
     const config: SceneConfig = new SceneConfig();
     const singleFile = path.join(__dirname, "../resources/inferType/Target.ets");
-    config.buildConfig('must','','','',[],[singleFile]);
+    config.buildConfig('must','',[],[singleFile]);
     const projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();

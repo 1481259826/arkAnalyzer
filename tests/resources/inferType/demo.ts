@@ -50,3 +50,18 @@ class C {
 }
 
 export {}
+
+class Test {
+    public a = this.pass();
+
+    public pass() {
+        return new C();
+    }
+
+    constructor() {
+        console.log('123');
+    }
+}
+
+const d = new Test();
+let b = d.pass();

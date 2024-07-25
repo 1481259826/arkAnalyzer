@@ -13,7 +13,58 @@
  * limitations under the License.
  */
 
-class Main {
-    private map: Map<string, number>;
-    private set: Set<string>;
+abstract class abstractBase {
+    protected constructor(i: number) {
+    }
+}
+
+class Foo extends abstractBase {
+    constructor(i: number) {
+        super(i);
+    }
+}
+
+class Bar extends Foo {
+
+}
+
+interface IKai {
+
+}
+
+class Har extends Bar implements IKai {
+}
+
+let har = new Har(1);
+
+class Aa {
+
+}
+
+declare class ExampleClass {
+    get exampleProperty(): string;
+    set exampleProperty(value: string);
+}
+
+interface MethodSignature {
+    exampleMethodSignature(param: string): void;
+}
+
+interface ConstructSignatureDeclaration {
+    new(param: string): ExampleClass;
+}
+
+interface CallSignatureDeclaration {
+    (param: string): void;
+}
+
+type FunctionTypeNode = (param: string) => void;
+
+class Foo1 {
+    public bar1() {
+    }
+
+    public bar2() {
+        let bar1 = 1;
+    }
 }
