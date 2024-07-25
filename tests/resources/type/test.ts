@@ -13,23 +13,10 @@
  * limitations under the License.
  */
 
-declare class ExampleClass {
-    get exampleProperty(): string;
-    set exampleProperty(value: string);
+class A {
+    num: Number = 1;
+    cat: Cat = new Cat('kitty');
+    dog: Dog = foo()
+    static num1: Number = 1 + 2 + 3
 }
-
-interface MethodSignature {
-    exampleMethodSignature(param: string): void;
-}
-
-interface ConstructSignatureDeclaration {
-    new(param: string): ExampleClass;
-}
-
-interface CallSignatureDeclaration {
-    (param: string): void;
-}
-
-type FunctionTypeNode = (param: string) => void;
-
-
+let x = 1

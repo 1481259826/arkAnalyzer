@@ -48,7 +48,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         this.entryPoint = stmt;
         this.entryMethod = method;
         this.scene = method.getDeclaringArkFile().getScene();
-        this.classMap = this.scene.getClassMap();
+        // this.classMap = this.scene.getClassMap();
         this.globalVariableMap = this.scene.getGlobalVariableMap();
     }
 
