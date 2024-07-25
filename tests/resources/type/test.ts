@@ -12,8 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-if(1){
-    console.log('1');
-} else {
-    console.log('2');
+class A {
+    num: Number = 1;
+    cat: Cat = new Cat('kitty');
+    dog: Dog = foo()
+    static num1: Number = 1 + 2 + 3
 }
+let x = 1

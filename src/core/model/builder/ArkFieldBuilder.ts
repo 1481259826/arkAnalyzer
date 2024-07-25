@@ -26,7 +26,7 @@ const logger = Logger.getLogger();
 export type PropertyLike = ts.PropertyDeclaration | ts.PropertyAssignment;
 
 export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment
-    | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass) {
+    | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass): ArkField {
     let field = new ArkField();
     field.setFieldType(ts.SyntaxKind[member.kind]);
     field.setCode(member.getText(sourceFile));
@@ -92,6 +92,8 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     }
 
     field.genSignature();
+
+    return field;
 }
 
 export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass) {

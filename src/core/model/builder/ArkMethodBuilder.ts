@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Type } from '../../base/Type';
+import { ClassType, Type } from '../../base/Type';
 import { BodyBuilder } from '../../common/BodyBuilder';
 import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
 import { ArkClass } from '../ArkClass';
@@ -28,6 +28,12 @@ import {
     handlePropertyAccessExpression,
 } from './builderUtils';
 import Logger from '../../../utils/logger';
+import { ArkAssignStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
+import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
+import { ArkBody } from '../ArkBody';
+import { BasicBlock } from '../../graph/BasicBlock';
+import { Local } from '../../base/Local';
+import { Cfg } from '../../graph/Cfg';
 
 const logger = Logger.getLogger();
 
@@ -302,4 +308,25 @@ export class MethodParameter {
     public setArrayElements(arrayElements: ArrayBindingPatternParameter[]) {
         this.arrayElements = arrayElements;
     }
+}
+
+export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
+    const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
+    const cThis = new Local('this', classType);
+    const assignStmt = new ArkAssignStmt(cThis, new ArkThisRef(classType));
+    const block = new BasicBlock();
+    block.addStmt(assignStmt);
+    const locals: Set<Local> = new Set();
+    for (const stmt of stmts) {
+        block.addStmt(stmt);
+        if (stmt.getDef() && stmt.getDef() instanceof Local) {
+            locals.add(stmt.getDef() as Local);
+        }
+    }
+    block.addStmt(new ArkReturnVoidStmt());
+    const cfg = new Cfg();
+    cfg.addBlock(block);
+    cfg.setStartingStmt(assignStmt);
+    initMethod.setBody(new ArkBody(initMethod.getSignature(), locals, new Cfg(), cfg, new Map()));
+    
 }
