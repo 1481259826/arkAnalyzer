@@ -16,7 +16,7 @@
 import Logger from "../../utils/logger";
 import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
 import { Local } from "../base/Local";
-import { AbstractRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
+import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
 import {
     AnnotationNamespaceType,
@@ -43,6 +43,7 @@ import { TypeSignature } from "../model/ArkExport";
 import { ArkClass } from "../model/ArkClass";
 import { ArkField } from "../model/ArkField";
 import { Value } from "../base/Value";
+import { Constant } from "../base/Constant";
 
 const logger = Logger.getLogger();
 
@@ -58,7 +59,7 @@ export class TypeInference {
         if (!beforeType && arkField.getFieldType() === 'EnumMember') {
             fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
         } else {
-            fieldType = this.inferDeclaredType(beforeType, arkField.getDeclaringClass(), arkField.getInitializer());
+            fieldType = this.inferUnclearedType(beforeType, arkField.getDeclaringClass(), arkField.getInitializer());
         }
         if (fieldType) {
             arkField.setType(fieldType);
@@ -70,19 +71,22 @@ export class TypeInference {
         }
     }
 
-    private static inferDeclaredType(leftOpType: Type, declaringArkClass: ArkClass, rightOp: Value) {
+    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightOp?: Value) {
         let type;
-        if (leftOpType instanceof AnnotationNamespaceType) {
-            type = this.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
+        if (leftOpType instanceof UnclearReferenceType) {
+            type = this.inferUnclearReferenceType(leftOpType.getName(), declaringArkClass);
+        } else if (leftOpType instanceof ClassType
+            && leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === '_UnknownFileName') {
+            type = TypeInference.inferUnclearReferenceType(leftOpType.getClassSignature().getClassName(), declaringArkClass);
         } else if (leftOpType instanceof UnionType) {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
-                let subType = types[i];
+                let optionType = types[i];
                 let newType;
-                if (subType instanceof ClassType) {
-                    newType = TypeInference.inferUnclearReferenceType(subType.getClassSignature().getClassName(), declaringArkClass);
-                } else if (subType instanceof UnclearReferenceType) {
-                    newType = TypeInference.inferUnclearReferenceType(subType.getName(), declaringArkClass);
+                if (optionType instanceof ClassType) {
+                    newType = TypeInference.inferUnclearReferenceType(optionType.getClassSignature().getClassName(), declaringArkClass);
+                } else if (optionType instanceof UnclearReferenceType) {
+                    newType = TypeInference.inferUnclearReferenceType(optionType.getName(), declaringArkClass);
                 }
                 if (newType) {
                     types[i] = newType;
@@ -92,14 +96,14 @@ export class TypeInference {
                     type = leftOpType;
                 }
             }
-        } else if (leftOpType instanceof UnclearReferenceType) {
-            type = this.inferUnclearReferenceType(leftOpType.getName(), declaringArkClass);
         } else if (leftOpType instanceof ArrayType && leftOpType.getBaseType() instanceof UnclearReferenceType) {
             let baseType = this.inferUnclearReferenceType((leftOpType.getBaseType() as UnclearReferenceType).getName(), declaringArkClass);
             if (baseType) {
                 leftOpType.setBaseType(baseType);
                 type = leftOpType;
             }
+        } else if (leftOpType instanceof AnnotationNamespaceType) {
+            type = this.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
         }
         return type;
     }
@@ -165,10 +169,17 @@ export class TypeInference {
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
                 const fieldRef = use.inferType(arkMethod.getDeclaringArkClass());
-                if (stmt instanceof ArkAssignStmt && fieldRef instanceof ArkStaticFieldRef) {
-                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
+                if (stmt instanceof ArkAssignStmt) {
+                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef && fieldRef instanceof ArkStaticFieldRef) {
                         stmt.setRightOp(fieldRef);
                     } else {
+                        if (fieldRef instanceof ArkArrayRef && fieldRef.getIndex() instanceof Constant) {
+                            const value = (fieldRef.getIndex() as Constant).getValue();
+                            const local = arkMethod.getBody()?.getLocals().get(value);
+                            if (local) {
+                                fieldRef.setIndex(local);
+                            }
+                        }
                         stmt.replaceUse(use, fieldRef);
                         stmt.setRightOp(stmt.getRightOp());
                     }
@@ -224,7 +235,7 @@ export class TypeInference {
         const leftOp = stmt.getLeftOp();
         if (leftOp instanceof Local) {
             const leftOpType = leftOp.getType();
-            let type = this.inferDeclaredType(leftOpType, declaringArkClass, rightOp);
+            let type = this.inferUnclearedType(leftOpType, declaringArkClass, rightOp);
             if (type) {
                 leftOp.setType(type);
             } else if (this.isUnclearType(leftOpType) && !this.isUnclearType(stmt.getRightOp().getType())) {
