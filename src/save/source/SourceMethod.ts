@@ -84,10 +84,7 @@ export class SourceMethod extends SourceBase {
         this.printDecorator(method.getModifiers());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
-        if (
-            method.containsModifier('AbstractKeyword') ||
-            method.getDeclaringArkClass().getOriginType().toLowerCase() == 'interface'
-        ) {
+        if (!method.getBody()) {
             this.printer.writeLine(';');
             return;
         }

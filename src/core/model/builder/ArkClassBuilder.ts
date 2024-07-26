@@ -142,12 +142,14 @@ function init4InitMethod(cls: ArkClass) {
     instanceInit.setName('$instance_init');
     instanceInit.setDeclaringArkClass(cls);
     instanceInit.setDeclaringArkFile();
+    instanceInit.setIsGeneratedFlag(true);
     cls.addMethod(instanceInit);
     cls.setInstanceInitMethod(instanceInit);
     const staticInit = new ArkMethod();
     staticInit.setName('$static_init');
     staticInit.setDeclaringArkClass(cls);
     staticInit.setDeclaringArkFile();
+    staticInit.setIsGeneratedFlag(true);
     cls.addMethod(staticInit);
     cls.setStaticInitMethod(staticInit);
 }

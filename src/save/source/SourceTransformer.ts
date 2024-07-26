@@ -96,6 +96,9 @@ export class SourceTransformer {
 
     public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr): string {
         let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        if (methodName == '$instance_init') {
+            return '';
+        }
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
