@@ -23,11 +23,13 @@ import { SourceTransformer } from './SourceTransformer';
 export class SourceField extends SourceBase {
     private field: ArkField;
     private transformer: SourceTransformer;
+    private initializer: Map<string, string>;
 
-    public constructor(field: ArkField, indent: string = '') {
+    public constructor(field: ArkField, indent: string = '', initializer: Map<string, string>) {
         super(field.getDeclaringClass().getDeclaringArkFile(), indent);
         this.field = field;
         this.transformer = new SourceTransformer(this);
+        this.initializer = initializer;
     }
 
     public getLine(): number {
@@ -38,7 +40,7 @@ export class SourceField extends SourceBase {
         this.printDecorator(this.field.getModifiers());
         this.printer.writeIndent();
         if (this.field.getFieldType() !== 'EnumMember') {
-            this.printer.writeSpace(this.modifiersToString(this.field.getModifiers()))
+            this.printer.writeSpace(this.modifiersToString(this.field.getModifiers()));
         }
         this.printer.write(this.field.getName());
         if (this.field.getQuestionToken()) {
@@ -50,16 +52,17 @@ export class SourceField extends SourceBase {
 
         // property.getInitializer() PropertyAccessExpression ArrowFunction ClassExpression FirstLiteralToken StringLiteral
         if (this.field.getType() && this.field.getFieldType() !== 'EnumMember') {
-            this.printer.write(
-                `: ${this.transformer.typeToString(this.field.getType())}`
-            );
+            this.printer.write(`: ${this.transformer.typeToString(this.field.getType())}`);
         }
-
-        let initializer = this.field.getInitializer();
-        if (initializer) {
-            this.printer.write(
-                ` = ${this.transformer.valueToString(initializer)}`
-            );
+        if (this.field.getFieldType() == 'EnumMember') {
+            let initializer = this.field.getInitializer();
+            if (initializer) {
+                this.printer.write(` = ${this.transformer.valueToString(initializer)}`);
+            }
+        } else {
+            if (this.initializer.has(this.field.getName())) {
+                this.printer.write(` = ${this.initializer.get(this.field.getName())}`);
+            }
         }
 
         if (this.field.getFieldType() == 'EnumMember') {

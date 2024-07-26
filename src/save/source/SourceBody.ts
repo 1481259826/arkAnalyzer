@@ -39,7 +39,7 @@ import { CfgUitls } from '../../utils/CfgUtils';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
-import { ModelUtils } from "../../core/common/ModelUtils";
+import { ModelUtils } from '../../core/common/ModelUtils';
 
 const logger = Logger.getLogger();
 
@@ -112,6 +112,10 @@ export class SourceBody implements StmtPrinterContext {
         }
 
         return temp.getName();
+    }
+
+    public getTempCodeMap(): Map<string, string> {
+        return this.tempCodeMap;
     }
 
     public hasTempVisit(temp: string): boolean {

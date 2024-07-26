@@ -15,6 +15,7 @@
 
 import { ArkClass } from '../../core/model/ArkClass';
 import { Dump, SourceBase } from './SourceBase';
+import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
@@ -141,14 +142,31 @@ export class SourceClass extends SourceBase {
     }
 
     private printFields(): Dump[] {
+        let instanceInitializer = this.parseFieldInitMethod('$instance_init');
+        let staticInitializer = this.parseFieldInitMethod('$static_init');
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
             if (field.getFieldType() == 'GetAccessor') {
                 continue;
             }
-            items.push(new SourceField(field, this.printer.getIndent()));
+            if (field.getModifiers().has('StaticKeyword')) {
+                items.push(new SourceField(field, this.printer.getIndent(), staticInitializer));
+            } else {
+                items.push(new SourceField(field, this.printer.getIndent(), instanceInitializer));
+            }
         }
         return items;
+    }
+
+    private parseFieldInitMethod(name: string): Map<string, string> {
+        let method = this.cls.getMethodWithName(name);
+        if (!method || method?.getBody() == undefined) {
+            return new Map<string, string>();
+        }
+
+        let srcBody = new SourceBody(this.printer.getIndent(), method, false);
+        srcBody.dump();
+        return srcBody.getTempCodeMap();
     }
 }
 
