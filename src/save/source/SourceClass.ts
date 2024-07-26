@@ -100,9 +100,9 @@ export class SourceClass extends SourceBase {
 
         this.cls.getFields().forEach((field, index, array) => {
             this.printer.write(field.getName());
-            let initializer = field.getInitializer();
-            if (initializer) {
-                this.printer.write(`: ${this.transformer.valueToString(initializer)}`);
+            let instanceInitializer = this.parseFieldInitMethod(InstanceInitMethodName);
+            if (instanceInitializer.has(field.getName())) {
+                this.printer.write(`: ${instanceInitializer.get(field.getName())}`);
             }
 
             if (index != array.length - 1) {

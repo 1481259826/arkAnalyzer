@@ -54,15 +54,9 @@ export class SourceField extends SourceBase {
         if (this.field.getType() && this.field.getFieldType() !== 'EnumMember') {
             this.printer.write(`: ${this.transformer.typeToString(this.field.getType())}`);
         }
-        if (this.field.getFieldType() == 'EnumMember') {
-            let initializer = this.field.getInitializer();
-            if (initializer) {
-                this.printer.write(` = ${this.transformer.valueToString(initializer)}`);
-            }
-        } else {
-            if (this.initializer.has(this.field.getName())) {
-                this.printer.write(` = ${this.initializer.get(this.field.getName())}`);
-            }
+
+        if (this.initializer.has(this.field.getName())) {
+            this.printer.write(` = ${this.initializer.get(this.field.getName())}`);
         }
 
         if (this.field.getFieldType() == 'EnumMember') {
