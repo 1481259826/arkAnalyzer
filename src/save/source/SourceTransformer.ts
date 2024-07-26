@@ -58,6 +58,7 @@ import {
     COMPONENT_IF,
     COMPONENT_POP_FUNCTION,
 } from '../../core/common/EtsConst';
+import { InstanceInitMethodName } from '../../core/model/builder/ArkClassBuilder';
 
 const logger = Logger.getLogger();
 
@@ -96,7 +97,7 @@ export class SourceTransformer {
 
     public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr): string {
         let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-        if (methodName == '$instance_init') {
+        if (methodName == InstanceInitMethodName) {
             return '';
         }
         let args: string[] = [];

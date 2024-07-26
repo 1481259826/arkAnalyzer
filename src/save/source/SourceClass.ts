@@ -14,6 +14,7 @@
  */
 
 import { ArkClass } from '../../core/model/ArkClass';
+import { InstanceInitMethodName, StaticInitMethodName } from '../../core/model/builder/ArkClassBuilder';
 import { Dump, SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
@@ -142,8 +143,8 @@ export class SourceClass extends SourceBase {
     }
 
     private printFields(): Dump[] {
-        let instanceInitializer = this.parseFieldInitMethod('$instance_init');
-        let staticInitializer = this.parseFieldInitMethod('$static_init');
+        let instanceInitializer = this.parseFieldInitMethod(InstanceInitMethodName);
+        let staticInitializer = this.parseFieldInitMethod(StaticInitMethodName);
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
             if (field.getFieldType() == 'GetAccessor') {
