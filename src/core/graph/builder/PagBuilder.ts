@@ -250,7 +250,7 @@ export class PagBuilder {
 
             let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
 
-            let calleeCid = this.ctx.newContext(cid);
+            let calleeCid = this.ctx.getOrNewContext(cid);
             let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID())
             let staticSrcNodes = this.addStaticCallEdge(staticCS, cid, calleeCid);
             srcNodes.push(...staticSrcNodes);
@@ -292,7 +292,7 @@ export class PagBuilder {
      */
     public addStaticCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
         if(!calleeCid) {
-            calleeCid = this.ctx.newContext(callerCid);
+            calleeCid = this.ctx.getOrNewContext(callerCid);
         }
 
         let srcNodes: NodeID[] = []
