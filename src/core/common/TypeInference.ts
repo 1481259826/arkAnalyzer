@@ -51,24 +51,24 @@ const logger = Logger.getLogger();
 export class TypeInference {
 
     public static inferTypeInArkField(arkField: ArkField): void {
-        if (arkField.getInitializer()) {
-            this.inferValueType(arkField.getInitializer(), arkField.getDeclaringClass());
-        }
-        const beforeType = arkField.getType();
-        let fieldType;
-        if (!beforeType && arkField.getFieldType() === 'EnumMember') {
-            fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
-        } else {
-            fieldType = this.inferUnclearedType(beforeType, arkField.getDeclaringClass(), arkField.getInitializer());
-        }
-        if (fieldType) {
-            arkField.setType(fieldType);
-            arkField.getSignature().setType(fieldType);
-        } else if (this.isUnclearType(beforeType) && !this.isUnclearType(arkField.getInitializer()?.getType())) {
-            fieldType = arkField.getInitializer().getType();
-            arkField.setType(fieldType);
-            arkField.getSignature().setType(fieldType);
-        }
+        // if (arkField.getInitializer()) {
+        //     this.inferValueType(arkField.getInitializer(), arkField.getDeclaringClass());
+        // }
+        // const beforeType = arkField.getType();
+        // let fieldType;
+        // if (!beforeType && arkField.getFieldType() === 'EnumMember') {
+        //     fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
+        // } else {
+        //     fieldType = this.inferUnclearedType(beforeType, arkField.getDeclaringClass(), arkField.getInitializer());
+        // }
+        // if (fieldType) {
+        //     arkField.setType(fieldType);
+        //     arkField.getSignature().setType(fieldType);
+        // } else if (this.isUnclearType(beforeType) && !this.isUnclearType(arkField.getInitializer()?.getType())) {
+        //     fieldType = arkField.getInitializer().getType();
+        //     arkField.setType(fieldType);
+        //     arkField.getSignature().setType(fieldType);
+        // }
     }
 
     public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightOp?: Value) {

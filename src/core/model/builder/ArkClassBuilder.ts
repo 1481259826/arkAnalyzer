@@ -409,9 +409,10 @@ function getInitStmts(transformer: ArkIRTransformer, initNode: ts.Node, field: A
     const valueAndStmts = transformer.tsNodeToValueAndStmts(initNode);
     const stmts = valueAndStmts.stmts
     const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
-    initStmts.push(...stmts)
     const assignStmt = new ArkAssignStmt(fieldRef, valueAndStmts.value);
-    initStmts.push(assignStmt);
+    stmts.push(assignStmt);
+    field.setInitializer(stmts);
+    initStmts.push(...stmts)
 }
 
 function checkInitializer(field: ArkField, cls: ArkClass) {

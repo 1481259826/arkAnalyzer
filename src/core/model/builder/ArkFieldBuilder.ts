@@ -51,19 +51,6 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         logger.warn("Other type of property name found!");
     }
 
-    // construct initializer
-    if (ts.isPropertyDeclaration(member) || ts.isPropertyAssignment(member) || ts.isEnumMember(member)) {
-        if (member.initializer) {
-            field.setInitializer(tsNode2Value(member.initializer, sourceFile, cls));
-        }
-    } else if (ts.isShorthandPropertyAssignment(member)) {
-        if (member.objectAssignmentInitializer) {
-            field.setInitializer(tsNode2Value(member.objectAssignmentInitializer, sourceFile, cls));
-        }
-    } else if (ts.isSpreadAssignment(member)) {
-        field.setInitializer(tsNode2Value(member.expression, sourceFile, cls));
-    }
-
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
         let modifiers = buildModifiers(member, sourceFile);
         modifiers.forEach((modifier) => {

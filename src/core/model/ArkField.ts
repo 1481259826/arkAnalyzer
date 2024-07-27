@@ -15,6 +15,7 @@
 
 import { Decorator } from "../base/Decorator";
 import { LineColPosition } from "../base/Position";
+import { Stmt } from "../base/Stmt";
 import { Type } from "../base/Type";
 import { Value } from "../base/Value";
 import { BUILDER_PARAM_DECORATOR } from "../common/EtsConst";
@@ -52,7 +53,7 @@ export class ArkField {
 
     private arkMethodSignature: MethodSignature;
 
-    private initializer: Value;
+    private initializer: Stmt[];
 
     constructor() { }
 
@@ -147,11 +148,11 @@ export class ArkField {
         this.setSignature(fieldSig);
     }
 
-    public getInitializer() {
+    public getInitializer(): Stmt[] {
         return this.initializer;
     }
 
-    public setInitializer(initializer: Value) {
+    public setInitializer(initializer: Stmt[]) {
         this.initializer = initializer;
     }
 

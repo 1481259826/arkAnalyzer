@@ -12,11 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let person = {
-    name: "Alice",
-    age: 30,
-    greet: function() {
-      console.log("Hello!");
-    }
-  };
-  
+class a{
+  a = 1+2+3
+}
