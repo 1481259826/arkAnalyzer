@@ -13,5 +13,10 @@
  * limitations under the License.
  */
 class a{
-  a = 1+2+3
+  a:number | undefined = undefined
+  b
+  static c;
+  static d = undefined
 }
+
+let x = undefined

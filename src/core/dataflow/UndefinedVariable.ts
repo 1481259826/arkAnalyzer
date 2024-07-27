@@ -86,7 +86,8 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                     // 加入所有的全局变量和静态属性（may analysis）
                     const staticFields = entryMethod.getDeclaringArkClass().getStaticFields(checkerInstance.classMap);
                     for (const field of staticFields) {
-                        if (field.getInitializer() == undefined) {
+                        const initializer = field.getInitializer()
+                        if (initializer.length == 1 && initializer[0] instanceof ArkAssignStmt && initializer[0].getRightOp() == undefined) {
                             ret.add(new ArkStaticFieldRef(field.getSignature()));
                         }
                     }
