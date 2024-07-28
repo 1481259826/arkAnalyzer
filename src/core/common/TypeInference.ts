@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import Logger from "../../utils/logger";
-import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
-import { Local } from "../base/Local";
-import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from "../base/Ref";
-import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
+import Logger from '../../utils/logger';
+import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
+import { Local } from '../base/Local';
+import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../base/Ref';
+import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import {
     AnnotationNamespaceType,
     AnyType,
@@ -34,16 +34,16 @@ import {
     UndefinedType,
     UnionType,
     UnknownType,
-    VoidType
-} from "../base/Type";
-import { ArkMethod } from "../model/ArkMethod";
-import { ClassSignature, MethodSignature, NamespaceSignature } from "../model/ArkSignature";
-import { ModelUtils } from "./ModelUtils";
-import { TypeSignature } from "../model/ArkExport";
-import { ArkClass } from "../model/ArkClass";
-import { ArkField } from "../model/ArkField";
-import { Value } from "../base/Value";
-import { Constant } from "../base/Constant";
+    VoidType,
+} from '../base/Type';
+import { ArkMethod } from '../model/ArkMethod';
+import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ModelUtils } from './ModelUtils';
+import { TypeSignature } from '../model/ArkExport';
+import { ArkClass } from '../model/ArkClass';
+import { ArkField } from '../model/ArkField';
+import { Value } from '../base/Value';
+import { Constant } from '../base/Constant';
 
 const logger = Logger.getLogger();
 
@@ -51,27 +51,41 @@ const logger = Logger.getLogger();
 export class TypeInference {
 
     public static inferTypeInArkField(arkField: ArkField): void {
-        // if (arkField.getInitializer()) {
-        //     this.inferValueType(arkField.getInitializer(), arkField.getDeclaringClass());
-        // }
-        // const beforeType = arkField.getType();
-        // let fieldType;
-        // if (!beforeType && arkField.getFieldType() === 'EnumMember') {
-        //     fieldType = new ClassType(arkField.getDeclaringClass().getSignature());
-        // } else {
-        //     fieldType = this.inferUnclearedType(beforeType, arkField.getDeclaringClass(), arkField.getInitializer());
-        // }
-        // if (fieldType) {
-        //     arkField.setType(fieldType);
-        //     arkField.getSignature().setType(fieldType);
-        // } else if (this.isUnclearType(beforeType) && !this.isUnclearType(arkField.getInitializer()?.getType())) {
-        //     fieldType = arkField.getInitializer().getType();
-        //     arkField.setType(fieldType);
-        //     arkField.getSignature().setType(fieldType);
-        // }
+        const arkClass = arkField.getDeclaringClass();
+        const stmts = arkField.getInitializer();
+        let rightType: Type | undefined;
+        if (stmts) {
+            for (const stmt of stmts) {
+                this.resolveExprsInStmt(stmt, arkClass);
+                this.resolveFieldRefsInStmt(stmt, arkClass);
+                this.resolveArkAssignStmt(stmt, arkClass);
+                stmt.updateText();
+            }
+            const lastStmt = stmts[stmts.length - 1];
+            if (lastStmt instanceof ArkAssignStmt) {
+                rightType = lastStmt.getLeftOp().getType();
+            } else if (lastStmt instanceof ArkInvokeStmt) {
+                rightType = lastStmt.getInvokeExpr().getType();
+            }
+        }
+
+        const beforeType = arkField.getType();
+        let fieldType;
+        if (arkField.getFieldType() === 'EnumMember') {
+            fieldType = new ClassType(arkClass.getSignature());
+        } else if (beforeType) {
+            fieldType = this.inferUnclearedType(beforeType, arkClass, rightType);
+        }
+        if (fieldType) {
+            arkField.setType(fieldType);
+            arkField.getSignature().setType(fieldType);
+        } else if (rightType && this.isUnclearType(beforeType) && !this.isUnclearType(rightType)) {
+            arkField.setType(rightType);
+            arkField.getSignature().setType(rightType);
+        }
     }
 
-    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightOp?: Value) {
+    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type) {
         let type;
         if (leftOpType instanceof UnclearReferenceType) {
             type = this.inferUnclearReferenceType(leftOpType.getName(), declaringArkClass);
@@ -91,13 +105,13 @@ export class TypeInference {
                 if (newType) {
                     types[i] = newType;
                 }
-                if (rightOp && typeof newType === typeof rightOp.getType()) {
-                    leftOpType.setCurrType(rightOp.getType());
+                if (rightType && typeof newType === typeof rightType) {
+                    leftOpType.setCurrType(rightType);
                     type = leftOpType;
                 }
             }
-        } else if (leftOpType instanceof ArrayType && leftOpType.getBaseType() instanceof UnclearReferenceType) {
-            let baseType = this.inferUnclearReferenceType((leftOpType.getBaseType() as UnclearReferenceType).getName(), declaringArkClass);
+        } else if (leftOpType instanceof ArrayType) {
+            let baseType = this.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
             if (baseType) {
                 leftOpType.setBaseType(baseType);
                 type = leftOpType;
@@ -115,11 +129,12 @@ export class TypeInference {
             return;
         }
         const cfg = body.getCfg();
+        const arkClass = arkMethod.getDeclaringArkClass();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
-                this.resolveExprsInStmt(stmt, arkMethod);
-                this.resolveFieldRefsInStmt(stmt, arkMethod);
-                this.resolveArkAssignStmt(stmt, arkMethod);
+                this.resolveExprsInStmt(stmt, arkClass);
+                this.resolveFieldRefsInStmt(stmt, arkClass, arkMethod);
+                this.resolveArkAssignStmt(stmt, arkClass);
                 stmt.updateText();
             }
         }
@@ -148,15 +163,15 @@ export class TypeInference {
      * infer type for Exprs in stmt which invoke method.
      * such as ArkInstanceInvokeExpr ArkStaticInvokeExpr ArkNewExpr
      */
-    private static resolveExprsInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
+    private static resolveExprsInStmt(stmt: Stmt, arkClass: ArkClass): void {
         const exprs = stmt.getExprs();
         for (const expr of exprs) {
-            const newExpr = expr.inferType(arkMethod.getDeclaringArkClass());
+            const newExpr = expr.inferType(arkClass);
             if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
                 if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
-                    stmt.setRightOp(newExpr)
+                    stmt.setRightOp(newExpr);
                 } else if (stmt instanceof ArkInvokeStmt) {
-                    stmt.replaceInvokeExpr(newExpr)
+                    stmt.replaceInvokeExpr(newExpr);
                 }
             }
         }
@@ -165,17 +180,17 @@ export class TypeInference {
     /**
      * infer type for fieldRefs in stmt.
      */
-    private static resolveFieldRefsInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
+    private static resolveFieldRefsInStmt(stmt: Stmt, arkClass: ArkClass, arkMethod?: ArkMethod): void {
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
-                const fieldRef = use.inferType(arkMethod.getDeclaringArkClass());
+                const fieldRef = use.inferType(arkClass);
                 if (stmt instanceof ArkAssignStmt) {
                     if (stmt.getRightOp() instanceof ArkInstanceFieldRef && fieldRef instanceof ArkStaticFieldRef) {
                         stmt.setRightOp(fieldRef);
                     } else {
                         if (fieldRef instanceof ArkArrayRef && fieldRef.getIndex() instanceof Constant) {
                             const value = (fieldRef.getIndex() as Constant).getValue();
-                            const local = arkMethod.getBody()?.getLocals().get(value);
+                            const local = arkMethod?.getBody()?.getLocals().get(value);
                             if (local) {
                                 fieldRef.setIndex(local);
                             }
@@ -188,7 +203,7 @@ export class TypeInference {
         }
         const stmtDef = stmt.getDef();
         if (stmtDef && stmtDef instanceof AbstractRef) {
-            const fieldRef = stmtDef.inferType(arkMethod.getDeclaringArkClass());
+            const fieldRef = stmtDef.inferType(arkClass);
             if (fieldRef instanceof ArkStaticFieldRef) {
                 stmt.setDef(fieldRef);
             }
@@ -218,16 +233,15 @@ export class TypeInference {
     /**
      * infer and pass type for ArkAssignStmt right and left
      * @param stmt
-     * @param arkMethod
+     * @param arkClass
      */
-    public static resolveArkAssignStmt(stmt: Stmt, arkMethod: ArkMethod): void {
+    public static resolveArkAssignStmt(stmt: Stmt, arkClass: ArkClass): void {
         if (!(stmt instanceof ArkAssignStmt)) {
             return;
         }
         const rightOp = stmt.getRightOp();
-        const declaringArkClass = arkMethod.getDeclaringArkClass();
         if (rightOp.getType() instanceof UnclearReferenceType) {
-            const type = this.inferUnclearReferenceType((rightOp.getType() as UnclearReferenceType).getName(), declaringArkClass);
+            const type = this.inferUnclearReferenceType((rightOp.getType() as UnclearReferenceType).getName(), arkClass);
             if (type && rightOp instanceof ArkParameterRef) {
                 rightOp.setType(type);
             }
@@ -235,17 +249,21 @@ export class TypeInference {
         const leftOp = stmt.getLeftOp();
         if (leftOp instanceof Local) {
             const leftOpType = leftOp.getType();
-            let type = this.inferUnclearedType(leftOpType, declaringArkClass, rightOp);
+            let type = this.inferUnclearedType(leftOpType, arkClass, rightOp.getType());
             if (type) {
                 leftOp.setType(type);
             } else if (this.isUnclearType(leftOpType) && !this.isUnclearType(stmt.getRightOp().getType())) {
                 leftOp.setType(stmt.getRightOp().getType());
             }
         } else if (leftOp instanceof ArkInstanceFieldRef) {
-            const fieldRef = leftOp.inferType(arkMethod.getDeclaringArkClass());
+            const fieldRef = leftOp.inferType(arkClass);
+            if (this.isUnclearType(leftOp.getType()) && !this.isUnclearType(stmt.getRightOp().getType())) {
+                leftOp.getFieldSignature().setType(stmt.getRightOp().getType());
+            }
             if (fieldRef instanceof ArkStaticFieldRef) {
                 stmt.setLeftOp(fieldRef);
             }
+
         }
     }
 
