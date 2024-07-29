@@ -28,7 +28,8 @@ const logger = Logger.getLogger();
 export function getAllFiles(
   srcPath: string,
   exts: string[],
-  filenameArr: string[] = []
+  filenameArr: string[] = [],
+  visited: Set<string> = new Set<string>()
 ): string[] {
   // 如果源目录不存在，直接结束程序
   if (!fs.existsSync(srcPath)) {
@@ -38,6 +39,10 @@ export function getAllFiles(
 
   // 获取src的绝对路径
   const realSrc = fs.realpathSync(srcPath);
+  if (visited.has(realSrc)) {
+    return filenameArr;
+  }
+  visited.add(realSrc);
 
   // 遍历src，判断文件类型
   fs.readdirSync(realSrc).forEach(filename => {
@@ -55,7 +60,7 @@ export function getAllFiles(
 
     // 如果是目录，递归提取
     if (fs.statSync(realFile).isDirectory()) {
-      getAllFiles(realFile, exts, filenameArr);
+      getAllFiles(realFile, exts, filenameArr, visited);
     } else {
       // 如果是文件，则判断其扩展名是否在给定的扩展名数组中
       if (exts.includes(path.extname(filename))) {
