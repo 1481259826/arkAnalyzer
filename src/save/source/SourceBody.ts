@@ -39,7 +39,8 @@ import { CfgUitls } from '../../utils/CfgUtils';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
-import { ModelUtils } from "../../core/common/ModelUtils";
+import { ModelUtils } from '../../core/common/ModelUtils';
+import { SourceUtils } from './SourceUtils';
 
 const logger = Logger.getLogger();
 
@@ -106,12 +107,16 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     public transTemp2Code(temp: Local): string {
-        if (this.tempCodeMap.has(temp.getName())) {
+        if (this.tempCodeMap.has(temp.getName()) && SourceUtils.isTemp(temp.getName())) {
             this.tempVisitor.add(temp.getName());
             return this.tempCodeMap.get(temp.getName())!;
         }
 
         return temp.getName();
+    }
+
+    public getTempCodeMap(): Map<string, string> {
+        return this.tempCodeMap;
     }
 
     public hasTempVisit(temp: string): boolean {

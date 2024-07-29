@@ -58,6 +58,7 @@ import {
     COMPONENT_IF,
     COMPONENT_POP_FUNCTION,
 } from '../../core/common/EtsConst';
+import { InstanceInitMethodName } from '../../core/model/builder/ArkClassBuilder';
 
 const logger = Logger.getLogger();
 
@@ -89,13 +90,16 @@ export class SourceTransformer {
         return body.substring(this.context.getPrinter().getIndent().length);
     }
 
-    private anonymousClassToString(cls: ArkClass): string {
-        let clsPrinter = new SourceClass(cls);
-        return clsPrinter.dump();
+    private anonymousClassToString(cls: ArkClass, indent: string = ''): string {
+        let clsPrinter = new SourceClass(cls, indent);
+        return clsPrinter.dump().trimStart();
     }
 
     public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr): string {
         let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        if (methodName == InstanceInitMethodName) {
+            return '';
+        }
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
@@ -296,7 +300,7 @@ export class SourceTransformer {
                 let clsSignature = (value.getType() as ClassType).getClassSignature();
                 let cls = this.context.getClass(clsSignature);
                 if (cls) {
-                    return this.anonymousClassToString(cls);
+                    return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
                 }
             }
 

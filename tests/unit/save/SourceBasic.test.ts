@@ -41,13 +41,15 @@ const SourceBasicTest_CASE1_EXPECT = `class Person {
 const SourceBasicTest_CASE2_EXPECT = `export class SecurityDoor extends Door implements Alarm, Alarm2 {
   x: number = 0;
   y: string = '';
+  z: Person = new Person(10);
   alert(): void {
     logger.info('SecurityDoor alert');
   }
   alert2(): void {
     logger.info('SecurityDoor alert2');
   }
-  public Members = ;
+  public Members = class  {
+  };
   public fooo() {
     logger.info('This is fooo!');
   }

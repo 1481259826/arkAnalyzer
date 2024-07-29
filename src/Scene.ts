@@ -39,7 +39,7 @@ import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
 import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
 import { ClassType } from './core/base/Type';
-import { buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
+import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 
 const logger = Logger.getLogger();
 
@@ -142,7 +142,7 @@ export class Scene {
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
                 buildDefaultConstructor(cls);
-
+                addInitInConstructor(cls);
             }
         }
     }

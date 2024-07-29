@@ -12,24 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+class C1 {
 
-declare class ExampleClass {
-    get exampleProperty(): string;
-    set exampleProperty(value: string);
+  public n: number = 1;
+  public c: C1 = new C1();
+  private s = this.c.toString() ?? 'testing';
 }
-
-interface MethodSignature {
-    exampleMethodSignature(param: string): void;
-}
-
-interface ConstructSignatureDeclaration {
-    new(param: string): ExampleClass;
-}
-
-interface CallSignatureDeclaration {
-    (param: string): void;
-}
-
-type FunctionTypeNode = (param: string) => void;
-
-

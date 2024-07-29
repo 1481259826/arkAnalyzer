@@ -16,7 +16,7 @@
 import { Constant } from '../../core/base/Constant';
 import { ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkArrayRef, ArkParameterRef } from '../../core/base/Ref';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef } from '../../core/base/Ref';
 import {
     ArkAssignStmt,
     ArkGotoStmt,
@@ -157,6 +157,10 @@ export class SourceAssignStmt extends SourceStmt {
 
         if (this.isLocalTempValue(this.leftOp)) {
             this.context.setTempCode((this.leftOp as Local).getName(), this.rightCode);
+        }
+
+        if (this.leftOp instanceof ArkInstanceFieldRef && this.leftOp.getBase().getName() == 'this') {
+            this.context.setTempCode(this.leftOp.getFieldName(), this.rightCode);
         }
 
         if (this.dumpType == undefined) {

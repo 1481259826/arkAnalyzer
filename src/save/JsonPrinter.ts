@@ -93,7 +93,7 @@ export class JsonPrinter extends Printer {
             typeParameters: field.getTypeParameters().map(type => this.serializeType(type)),
             questionToken: field.getQuestionToken(),
             exclamationToken: field.getExclamationToken(),
-            initializer: this.serializeValue(field.getInitializer()),
+            // initializer: this.serializeValue(field.getInitializer()),
         };
     }
 

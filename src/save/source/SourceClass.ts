@@ -14,7 +14,9 @@
  */
 
 import { ArkClass } from '../../core/model/ArkClass';
+import { InstanceInitMethodName, StaticInitMethodName } from '../../core/model/builder/ArkClassBuilder';
 import { Dump, SourceBase } from './SourceBase';
+import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
@@ -98,9 +100,9 @@ export class SourceClass extends SourceBase {
 
         this.cls.getFields().forEach((field, index, array) => {
             this.printer.write(field.getName());
-            let initializer = field.getInitializer();
-            if (initializer) {
-                this.printer.write(`: ${this.transformer.valueToString(initializer)}`);
+            let instanceInitializer = this.parseFieldInitMethod(InstanceInitMethodName);
+            if (instanceInitializer.has(field.getName())) {
+                this.printer.write(`: ${instanceInitializer.get(field.getName())}`);
             }
 
             if (index != array.length - 1) {
@@ -141,14 +143,31 @@ export class SourceClass extends SourceBase {
     }
 
     private printFields(): Dump[] {
+        let instanceInitializer = this.parseFieldInitMethod(InstanceInitMethodName);
+        let staticInitializer = this.parseFieldInitMethod(StaticInitMethodName);
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
             if (field.getFieldType() == 'GetAccessor') {
                 continue;
             }
-            items.push(new SourceField(field, this.printer.getIndent()));
+            if (field.getModifiers().has('StaticKeyword')) {
+                items.push(new SourceField(field, this.printer.getIndent(), staticInitializer));
+            } else {
+                items.push(new SourceField(field, this.printer.getIndent(), instanceInitializer));
+            }
         }
         return items;
+    }
+
+    private parseFieldInitMethod(name: string): Map<string, string> {
+        let method = this.cls.getMethodWithName(name);
+        if (!method || method?.getBody() == undefined) {
+            return new Map<string, string>();
+        }
+
+        let srcBody = new SourceBody(this.printer.getIndent(), method, false);
+        srcBody.dump();
+        return srcBody.getTempCodeMap();
     }
 }
 

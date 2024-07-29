@@ -48,7 +48,7 @@ import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
 import { Cfg } from '../Cfg';
 import Logger from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
-import { ModelUtils } from "../../common/ModelUtils";
+import { ModelUtils } from '../../common/ModelUtils';
 
 const logger = Logger.getLogger();
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
@@ -479,7 +479,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         this.buildViewStatus = true;
         this.loadClasssFieldTypes();
-        
+
         if (this.render.hasBuilderDecorator()) {
             let node = ViewTreeNodeImpl.createBuilderNode();
             node.signature = this.render.getSignature();
@@ -604,7 +604,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let builderViewTree = method.getViewTree();
         if (!builderViewTree || !builderViewTree.getRoot()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
-            // add empty node 
+            // add empty node
             let node = ViewTreeNodeImpl.createBuilderNode();
             node.signature = method.getSignature();
             node.classSignature = node.signature;
@@ -615,7 +615,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
             this.push(root);
             this.pop();
-            return root
+            return root;
         }
     }
 
@@ -709,7 +709,18 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                         return;
                     }
 
-                    let value = field.getInitializer();
+                    let stmts = field.getInitializer();
+                    stmts = stmts.reverse();
+                    if (stmts.length == 0) {
+                        return;
+                    }
+
+                    let assignStmt = stmts[0];
+                    if (!(assignStmt instanceof ArkAssignStmt)) {
+                        return;
+                    }
+
+                    let value = assignStmt.getRightOp();
                     if (dstField?.hasBuilderParamDecorator()) {
                         let method: ArkMethod | undefined | null;
                         if (value instanceof ArkInstanceFieldRef) {

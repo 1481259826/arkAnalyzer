@@ -1160,6 +1160,106 @@ const JsonPrinter_Shape_EXPECTED = {
                 "enclosingClass": {
                     "name": "Shape"
                 },
+                "name": "@instance_init",
+                "parameters": [],
+                "returnType": {
+                    "_": "UnknownType"
+                }
+            },
+            "modifiers": [],
+            "typeParameters": [],
+            "body": {
+                "locals": [],
+                "cfg": {
+                    "blocks": [
+                        {
+                            "id": 0,
+                            "successors": [],
+                            "predecessors": [],
+                            "stmts": [
+                                {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "this",
+                                        "type": {
+                                            "_": "UnknownType"
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "ThisRef",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "ReturnVoidStmt"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "signature": {
+                "enclosingClass": {
+                    "name": "Shape"
+                },
+                "name": "@static_init",
+                "parameters": [],
+                "returnType": {
+                    "_": "UnknownType"
+                }
+            },
+            "modifiers": [],
+            "typeParameters": [],
+            "body": {
+                "locals": [],
+                "cfg": {
+                    "blocks": [
+                        {
+                            "id": 0,
+                            "successors": [],
+                            "predecessors": [],
+                            "stmts": [
+                                {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "this",
+                                        "type": {
+                                            "_": "UnknownType"
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "ThisRef",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "ReturnVoidStmt"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "signature": {
+                "enclosingClass": {
+                    "name": "Shape"
+                },
                 "name": "area",
                 "parameters": [],
                 "returnType": {
@@ -1452,6 +1552,49 @@ const JsonPrinter_Shape_EXPECTED = {
                             "predecessors": [],
                             "stmts": [
                                 {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "this",
+                                        "type": {
+                                            "_": "UnknownType"
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "ThisRef",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "CallStmt",
+                                    "expr": {
+                                        "_": "InstanceCallExpr",
+                                        "instance": {
+                                            "_": "Local",
+                                            "name": "this",
+                                            "type": {
+                                                "_": "UnknownType"
+                                            }
+                                        },
+                                        "method": {
+                                            "enclosingClass": {
+                                                "name": "Shape"
+                                            },
+                                            "name": "@instance_init",
+                                            "parameters": [],
+                                            "returnType": {
+                                                "_": "UnknownType"
+                                            }
+                                        },
+                                        "args": []
+                                    }
+                                },
+                                {
                                     "_": "ReturnVoidStmt"
                                 }
                             ]
@@ -1486,7 +1629,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
             "typeParameters": [],
             "questionToken": false,
             "exclamationToken": false,
-            "initializer": null
         },
         {
             "signature": {
@@ -1502,7 +1644,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
             "typeParameters": [],
             "questionToken": false,
             "exclamationToken": false,
-            "initializer": null
         },
         {
             "signature": {
@@ -1518,7 +1659,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
             "typeParameters": [],
             "questionToken": false,
             "exclamationToken": false,
-            "initializer": null
         }
     ],
     "methods": [

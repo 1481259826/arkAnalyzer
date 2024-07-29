@@ -97,41 +97,41 @@ export class Cfg {
         return this.defUseChains;
     }
 
-    public constructorAddInit(arkMethod: ArkMethod): void {
+    // public constructorAddInit(arkMethod: ArkMethod): void {
 
-        const stmts = [...this.blocks][0].getStmts();
-        let index = arkMethod.getParameters().length;
-        const cThis = stmts[index].getDef()!;
-        if (stmts.length > index + 1 && stmts[index + 1] instanceof ArkInvokeStmt) {
-            const invokeStmt = stmts[index + 1];
-            if (invokeStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() == "super") {
-                index++;
-            }
-        }
-        for (const field of arkMethod.getDeclaringArkClass().getFields()){
-            let init = field.getInitializer();
-            if (init == undefined){
-                init = new Constant('undefined', UndefinedType.getInstance());
-            }
-            let leftOp: AbstractFieldRef;
-            if (field.isStatic()){
-                leftOp = new ArkStaticFieldRef(field.getSignature());
-            }
-            else {
-                leftOp = new ArkInstanceFieldRef(cThis as Local, field.getSignature());
-            }
-            if (init instanceof ArkClass)
-                continue;
-            try{
-                const assignStmt = new ArkAssignStmt(leftOp, init);
-                index++;
-                stmts.splice(index, 0, assignStmt);
-            } catch{
-                // logger.log(init.toString());
-            }
+    //     const stmts = [...this.blocks][0].getStmts();
+    //     let index = arkMethod.getParameters().length;
+    //     const cThis = stmts[index].getDef()!;
+    //     if (stmts.length > index + 1 && stmts[index + 1] instanceof ArkInvokeStmt) {
+    //         const invokeStmt = stmts[index + 1];
+    //         if (invokeStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() == "super") {
+    //             index++;
+    //         }
+    //     }
+    //     for (const field of arkMethod.getDeclaringArkClass().getFields()){
+    //         let init = field.getInitializer();
+    //         if (init == undefined){
+    //             init = new Constant('undefined', UndefinedType.getInstance());
+    //         }
+    //         let leftOp: AbstractFieldRef;
+    //         if (field.isStatic()){
+    //             leftOp = new ArkStaticFieldRef(field.getSignature());
+    //         }
+    //         else {
+    //             leftOp = new ArkInstanceFieldRef(cThis as Local, field.getSignature());
+    //         }
+    //         if (init instanceof ArkClass)
+    //             continue;
+    //         try{
+    //             const assignStmt = new ArkAssignStmt(leftOp, init);
+    //             index++;
+    //             stmts.splice(index, 0, assignStmt);
+    //         } catch{
+    //             // logger.log(init.toString());
+    //         }
 
-        }
-    }
+    //     }
+    // }
 
     // TODO: 整理成类似jimple的输出
     public toString(): string {

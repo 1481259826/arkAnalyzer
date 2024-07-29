@@ -20,8 +20,6 @@ import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
-    AnyType,
-    ArrayObjectType,
     ArrayType,
     BooleanType,
     CallableType,
@@ -33,14 +31,14 @@ import {
     UnclearReferenceType,
     UndefinedType,
     UnionType,
-    UnknownType
+    UnknownType,
 } from './Type';
 import { Value } from './Value';
 import { AbstractFieldRef, AbstractRef, ArkParameterRef } from './Ref';
-import { ModelUtils } from "../common/ModelUtils";
-import { ArkAssignStmt } from "./Stmt";
-import Logger from "../../utils/logger";
-import { Scene } from "../../Scene";
+import { ModelUtils } from '../common/ModelUtils';
+import { ArkAssignStmt } from './Stmt';
+import Logger from '../../utils/logger';
+import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
 
 const logger = Logger.getLogger();
@@ -197,7 +195,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         if (result) {
             return result;
         }
-        logger.warn("invoke ArkInstanceInvokeExpr MethodSignature type fail: ", this.toString());
+        logger.warn('invoke ArkInstanceInvokeExpr MethodSignature type fail: ', this.toString());
         return this;
     }
 
@@ -452,7 +450,7 @@ export class ArkBinopExpr extends AbstractExpr {
         }
         let type = UnknownType.getInstance();
         switch (this.operator) {
-            case "+":
+            case '+':
                 if (op1Type === StringType.getInstance() || op2Type === StringType.getInstance()) {
                     type = StringType.getInstance();
                 }
@@ -460,37 +458,37 @@ export class ArkBinopExpr extends AbstractExpr {
                     type = NumberType.getInstance();
                 }
                 break;
-            case "-":
-            case "*":
-            case "/":
-            case "%":
+            case '-':
+            case '*':
+            case '/':
+            case '%':
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
                 }
                 break;
-            case "<":
-            case "<=":
-            case ">":
-            case ">=":
-            case "==":
-            case "!=":
-            case "===":
-            case "!==":
-            case "&&":
-            case "||":
+            case '<':
+            case '<=':
+            case '>':
+            case '>=':
+            case '==':
+            case '!=':
+            case '===':
+            case '!==':
+            case '&&':
+            case '||':
                 type = BooleanType.getInstance();
                 break;
-            case "&":
-            case "|":
-            case "^":
-            case "<<":
-            case ">>":
-            case ">>>":
+            case '&':
+            case '|':
+            case '^':
+            case '<<':
+            case '>>':
+            case '>>>':
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
                 }
                 break;
-            case "??":
+            case '??':
                 if (op1Type === UnknownType.getInstance() || op1Type === UndefinedType.getInstance()
                     || op1Type === NullType.getInstance()) {
                     type = op2Type;
@@ -760,32 +758,9 @@ export class ArrayLiteralExpr extends AbstractExpr {
     }
 
     public inferType(arkClass: ArkClass): ArrayLiteralExpr {
-        if (this.type instanceof UnionType) {
-            const types = this.type.getTypes();
-            for (let i = 1; i < types.length; i++) {
-                if (types[0] !== types[i]) {
-                    this.type = new ArrayType(AnyType.getInstance(), 1);
-                    break;
-                }
-            }
-            if (this.type instanceof UnionType) {
-                if (types[0] instanceof ClassType) {
-                    const type = TypeInference.inferUnclearReferenceType(types[0].getClassSignature().getClassName(), arkClass);
-                    if (type) {
-                        this.type = new ArrayObjectType(type, 1);
-                    }
-                } else {
-                    this.type = new ArrayType(types[0], 1);
-                }
-            }
-        } else if (this.type instanceof ArrayType) {
-            const baseType = this.type.getBaseType();
-            if (baseType instanceof UnclearReferenceType) {
-                const referenceType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
-                if (referenceType) {
-                    this.type.setBaseType(referenceType);
-                }
-            }
+        const type = TypeInference.inferUnclearedType(this.type, arkClass);
+        if (type) {
+            this.type = type;
         }
         return this;
     }
