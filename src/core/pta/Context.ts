@@ -65,11 +65,15 @@ class Context {
         }
         return this.contextElems[index];
     }
+
+    public toString(): String {
+        return this.contextElems.join('-')
+    }
 }
 
 class ContextCache {
     private contextList: Context[] = [];
-    private contextToIndexMap: Map<Context, number> = new Map();
+    private contextToIndexMap: Map<String, number> = new Map();
 
     constructor() {
         this.contextList = [];
@@ -77,12 +81,13 @@ class ContextCache {
     }
 
     public getContextID(context: Context): number {
-        if (this.contextToIndexMap.has(context)) {
-            return this.contextToIndexMap.get(context) as number;
+        let cStr = context.toString();
+        if (this.contextToIndexMap.has(cStr)) {
+            return this.contextToIndexMap.get(cStr) as number;
         } else {
             const id = this.contextList.length;
             this.contextList.push(context);
-            this.contextToIndexMap.set(context, id);
+            this.contextToIndexMap.set(cStr, id);
             return id;
         }
     }
@@ -133,7 +138,7 @@ export class KLimitedContextSensitive {
         throw new Error("Method not implemented.");
     }
 
-    public newContext(callerCid: ContextID): ContextID {
+    public getOrNewContext(callerCid: ContextID): ContextID {
         const callerCtx = this.ctxCache.getContext(callerCid);
         if (!callerCtx) {
             throw new Error(`Context with id ${callerCid} not found.`);
