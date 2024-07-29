@@ -12,11 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class a{
-  a:number | undefined = undefined
-  b
-  static c;
-  static d = undefined
-}
+class C1 {
 
-let x = undefined
+  public n: number = 1;
+  public c: C1 = new C1();
+  private s = this.c.toString() ?? 'testing';
+}

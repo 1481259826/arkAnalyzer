@@ -410,11 +410,12 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
 function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmts: Stmt[], initNode?: ts.Node) {
     if (initNode) {
         const valueAndStmts = transformer.tsNodeToValueAndStmts(initNode);
-        const stmts = valueAndStmts.stmts
+        const stmts = valueAndStmts.stmts;
         const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
-        initStmts.push(...stmts)
         const assignStmt = new ArkAssignStmt(fieldRef, valueAndStmts.value);
-        initStmts.push(assignStmt);
+        stmts.push(assignStmt);
+        field.setInitializer(stmts);
+        initStmts.push(...stmts)
     }
 }
 
