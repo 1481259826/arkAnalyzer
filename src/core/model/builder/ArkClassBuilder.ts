@@ -364,10 +364,14 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
-            if (arkField.isStatic()) {
-                getInitStmts(staticIRTransformer, arkField, staticInitStmts, member.initializer);
-            } else {
-                getInitStmts(instanceIRTransformer, arkField, instanceInitStmts, member.initializer);
+            if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
+                if (arkField.isStatic()) {
+                    getInitStmts(staticIRTransformer, arkField, staticInitStmts, member.initializer);
+                } else {
+                    if (!instanceIRTransformer)
+                    console.log(clsNode.getText(sourceFile))
+                    getInitStmts(instanceIRTransformer, arkField, instanceInitStmts, member.initializer);
+                }
             }
         } else if (ts.isEnumMember(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
@@ -404,19 +408,14 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
 }
 
 function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmts: Stmt[], initNode?: ts.Node) {
-    let stmts: Stmt[] = [];
-    const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
-    let assignStmt: ArkAssignStmt;
     if (initNode) {
         const valueAndStmts = transformer.tsNodeToValueAndStmts(initNode);
-        stmts = valueAndStmts.stmts;
-        assignStmt = new ArkAssignStmt(fieldRef, valueAndStmts.value);
-    } else {
-        assignStmt = new ArkAssignStmt(fieldRef, new Local('undefined', UnknownType));
+        const stmts = valueAndStmts.stmts
+        const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
+        initStmts.push(...stmts)
+        const assignStmt = new ArkAssignStmt(fieldRef, valueAndStmts.value);
+        initStmts.push(assignStmt);
     }
-    stmts.push(assignStmt);
-    field.setInitializer(stmts);
-    initStmts.push(...stmts)
 }
 
 function checkInitializer(field: ArkField, cls: ArkClass) {

@@ -1629,7 +1629,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
             "typeParameters": [],
             "questionToken": false,
             "exclamationToken": false,
-            "initializer": null
         },
         {
             "signature": {
@@ -1645,7 +1644,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
             "typeParameters": [],
             "questionToken": false,
             "exclamationToken": false,
-            "initializer": null
         },
         {
             "signature": {
@@ -1661,7 +1659,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
             "typeParameters": [],
             "questionToken": false,
             "exclamationToken": false,
-            "initializer": null
         }
     ],
     "methods": [

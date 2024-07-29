@@ -53,7 +53,7 @@ export class ArkField {
 
     private arkMethodSignature: MethodSignature;
 
-    private initializer: Stmt[];
+    private initializer: Stmt[] = [];
 
     constructor() { }
 
