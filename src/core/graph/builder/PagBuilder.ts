@@ -255,7 +255,7 @@ export class PagBuilder {
             if (!callerNode) {
                 throw new Error("Can not get caller method node");
             }
-            let calleeCid = this.ctx.newContext(cid);
+            let calleeCid = this.ctx.getOrNewContext(cid);
             let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID());
             let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
@@ -298,7 +298,7 @@ export class PagBuilder {
      */
     public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
         if(!calleeCid) {
-            calleeCid = this.ctx.newContext(callerCid);
+            calleeCid = this.ctx.getOrNewContext(callerCid);
         }
 
         let srcNodes: NodeID[] = []
