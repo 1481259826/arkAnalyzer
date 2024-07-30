@@ -13,4 +13,11 @@
  * limitations under the License.
  */
 
-let a = func({i: 1, date: {j: 2, k: 3}});
+let a: number[] = [1, 2, 3];
+// for (let i of a) {
+//     console.log(i);
+// }
+
+for (let i = 0; i < 3; i++) {
+    console.log(i);
+}

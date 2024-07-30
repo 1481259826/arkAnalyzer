@@ -93,6 +93,7 @@ import {
 } from './EtsConst';
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
+import { Builtin } from './Builtin';
 
 const logger = Logger.getLogger();
 
@@ -296,30 +297,92 @@ export class ArkIRTransformer {
         return stmts;
     }
 
-    // 暂时只支持数组遍历
     private rangeForStatementToStmts(forOfStatement: ts.ForOfStatement | ts.ForInStatement): Stmt[] {
         const stmts: Stmt[] = [];
-        const {
-            value: itemValue,
-            stmts: itemStmts,
-        } = this.tsNodeToValueAndStmts(forOfStatement.initializer);
-        stmts.push(...itemStmts);
-        const {
+        let {
             value: iterableValue,
             stmts: iterableStmts,
         } = this.tsNodeToValueAndStmts(forOfStatement.expression);
         stmts.push(...iterableStmts);
-        const lengthLocal = this.generateTempLocal(NumberType.getInstance());
-        stmts.push(new ArkAssignStmt(lengthLocal, new ArkLengthExpr(iterableValue)));
-        const indexLocal = this.generateTempLocal(NumberType.getInstance());
-        stmts.push(new ArkAssignStmt(indexLocal, ValueUtil.getOrCreateNumberConst(0)));
+        if (!(iterableValue instanceof Local)) {
+            ({value: iterableValue, stmts: iterableStmts} = this.generateAssignStmtForValue(iterableValue));
+            stmts.push(...iterableStmts);
+        }
+        const iteratorMethodSignature = new MethodSignature();
+        iteratorMethodSignature.getMethodSubSignature().setReturnType(Builtin.ITERATOR_CLASS_SIGNATURE.getType());
+        iteratorMethodSignature.getMethodSubSignature().setMethodName(Builtin.ITERATOR_FUNCTION);
+        const iteratorInvokeExpr = new ArkInstanceInvokeExpr(iterableValue as Local, iteratorMethodSignature, []);
+        const {value: iterator, stmts: iteratorStmts} = this.generateAssignStmtForValue(iteratorInvokeExpr);
+        stmts.push(...iteratorStmts);
+        (iterator as Local).setType(Builtin.ITERATOR_CLASS_SIGNATURE.getType());
 
-        const conditionExpr = new ArkConditionExpr(indexLocal, lengthLocal, '>=');
+        const nextMethodSignature = new MethodSignature();
+        nextMethodSignature.getMethodSubSignature().setReturnType(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
+        nextMethodSignature.getMethodSubSignature().setMethodName(Builtin.ITERATOR_NEXT);
+        const iteratorNextInvokeExpr = new ArkInstanceInvokeExpr(iterator as Local, nextMethodSignature, []);
+        const {
+            value: iteratorResult,
+            stmts: iteratorResultStmts,
+        } = this.generateAssignStmtForValue(iteratorNextInvokeExpr);
+        stmts.push(...iteratorResultStmts);
+        (iteratorResult as Local).setType(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
+        const doneFieldSignature = new FieldSignature();
+        doneFieldSignature.setDeclaringSignature(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE);
+        doneFieldSignature.setFieldName(Builtin.ITERATOR_RESULT_DONE);
+        const {
+            value: doneFlag,
+            stmts: doneFlagStmts,
+        } = this.generateAssignStmtForValue(new ArkInstanceFieldRef(iteratorResult as Local, doneFieldSignature));
+        stmts.push(...doneFlagStmts);
+        const conditionExpr = new ArkConditionExpr(doneFlag, ValueUtil.getBooleanConstant(true), '==');
         stmts.push(new ArkIfStmt(conditionExpr));
-        const currArrayRef = new ArkArrayRef(iterableValue as Local, indexLocal);
-        stmts.push(new ArkAssignStmt(itemValue, currArrayRef));
-        const incrExpr = new ArkBinopExpr(indexLocal, ValueUtil.getOrCreateNumberConst(1), '+');
-        stmts.push(new ArkAssignStmt(indexLocal, incrExpr));
+
+        const valueFieldSignature = new FieldSignature();
+        valueFieldSignature.setDeclaringSignature(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE);
+        valueFieldSignature.setFieldName(Builtin.ITERATOR_RESULT_VALUE);
+        const {
+            value: yieldValue,
+            stmts: yieldValueStmts,
+        } = this.generateAssignStmtForValue(new ArkInstanceFieldRef(iteratorResult as Local, valueFieldSignature));
+        stmts.push(...yieldValueStmts);
+
+        // TODO: Support generics and then fill in the exact type
+        const castExpr = new ArkCastExpr(yieldValue, UnknownType.getInstance());
+        if (ts.isArrayBindingPattern(forOfStatement.initializer)) {
+            const {
+                value: arrayItem,
+                stmts: arrayItemStmts,
+            } = this.generateAssignStmtForValue(castExpr);
+            stmts.push(...arrayItemStmts);
+
+            const elements = forOfStatement.initializer.elements;
+            let index = 0;
+            for (const element of elements) {
+                let arrayRef = new ArkArrayRef(arrayItem as Local, new Constant(index.toString(), NumberType.getInstance()));
+                let item = new Local(element.getText(this.sourceFile));
+                stmts.push(new ArkAssignStmt(item, arrayRef));
+                index++;
+            }
+        } else if (ts.isObjectBindingPattern(forOfStatement.initializer)) {
+            const {
+                value: objectItem,
+                stmts: objectItemStmts,
+            } = this.generateAssignStmtForValue(castExpr);
+            stmts.push(...objectItemStmts);
+
+            const elements = forOfStatement.initializer.elements;
+            for (const element of elements) {
+                const fieldName = element.propertyName ? element.propertyName.getText(this.sourceFile) : element.name.getText(this.sourceFile);
+                const fieldSignature = new FieldSignature();
+                fieldSignature.setFieldName(fieldName);
+                const fieldRef = new ArkInstanceFieldRef(objectItem as Local, fieldSignature);
+                const fieldLocal = this.getOrCreatLocal(element.name.getText(this.sourceFile));
+                stmts.push(new ArkAssignStmt(fieldLocal, fieldRef));
+            }
+        } else {
+            const {value: item, stmts: itemStmts} = this.tsNodeToValueAndStmts(forOfStatement.initializer);
+            stmts.push(new ArkAssignStmt(item, castExpr));
+        }
         return stmts;
     }
 
