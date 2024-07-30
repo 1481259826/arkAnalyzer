@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {CSCallSite} from '../graph/CallGraph'
+import {CSCallSite, FuncID} from '../graph/CallGraph'
 
 export type ContextID = number
 
@@ -130,21 +130,17 @@ export class KLimitedContextSensitive {
         return this.ctxCache.getContext(context_id);
     }
 
-    public newInstanceCallContext(callsite: CSCallSite, receiver?: any): number | undefined {
-        throw new Error("Method not implemented.");
+    public getNewContextID(callerFuncId: FuncID): ContextID {
+         return this.ctxCache.getContextID(Context.new([callerFuncId]));
     }
 
-    public newStaticCallContext(callsite: CSCallSite): number {
-        throw new Error("Method not implemented.");
-    }
-
-    public getOrNewContext(callerCid: ContextID): ContextID {
+    public getOrNewContext(callerCid: ContextID, calleeFuncId: FuncID): ContextID {
         const callerCtx = this.ctxCache.getContext(callerCid);
         if (!callerCtx) {
             throw new Error(`Context with id ${callerCid} not found.`);
         }
 
-        const calleeCtx = Context.newKLimitedContext(callerCtx, callerCid, this.k);
+        const calleeCtx = Context.newKLimitedContext(callerCtx, calleeFuncId, this.k);
         const calleeCid = this.ctxCache.getContextID(calleeCtx);
         return calleeCid;
     }
