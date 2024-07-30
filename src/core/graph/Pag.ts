@@ -336,14 +336,18 @@ export class PagStaticFieldNode extends PagNode {
 }
 
 export class PagThisRefNode extends PagNode {
-    pointToNode: NodeID;
-    constructor(id: NodeID, ptNode: NodeID, thisRef: ArkThisRef) {
+    pointToNode: NodeID[];
+    constructor(id: NodeID, thisRef: ArkThisRef) {
         super(id, DUMMY_PAG_NODE_ID, thisRef, PagNodeKind.ThisRef);
-        this.pointToNode = ptNode;
+        this.pointToNode = [];
     }
 
-    public getThisPTNode(): NodeID {
+    public getThisPTNode(): NodeID[] {
         return this.pointToNode;
+    }
+
+    public addPTNode(ptNode: NodeID) {
+        this.pointToNode.push(ptNode)
     }
 }
 
@@ -400,6 +404,19 @@ export class Pag extends BaseGraph {
         return cloneNode;
     }
 
+    public getOrClonePagFieldNode(src: PagInstanceFieldNode, basePt: NodeID): PagInstanceFieldNode {
+        let baseNode = this.getNode(basePt) as PagNewExprNode
+        let existedNode = baseNode.getFieldNode(src.getValue() as ArkInstanceFieldRef)
+        if (existedNode) {
+            return this.getNode(existedNode) as PagInstanceFieldNode
+        }
+
+        let fieldNode = this.getOrClonePagNode(src, basePt)
+        baseNode.addFieldNode(src.getValue() as ArkInstanceFieldRef, fieldNode.getID())
+        fieldNode.setBasePt(basePt)
+        return fieldNode
+    }
+
     public addPagNode(cid: ContextID, value: Value, stmt?: Stmt, refresh: boolean = true): PagNode{
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
@@ -436,23 +453,37 @@ export class Pag extends BaseGraph {
      * This node has no context info
      * but point to node info
      */
-    public addPagThisRefNode(ptNode: NodeID, value: ArkThisRef): PagNode{
+    public addPagThisRefNode(value: ArkThisRef): PagNode{
         let id: NodeID = this.nodeNum;
-        let pagNode = new PagThisRefNode(id, ptNode, value);
+        let pagNode = new PagThisRefNode(id, value);
         this.addNode(pagNode);
 
         return pagNode;
     }
 
-    public getOrNewThisRefNode(ptNode: NodeID, value: ArkThisRef): PagNode {
-        let thisNodeId = this.baseClsNode2ThisNodeMap.get(ptNode);
-        if(thisNodeId) {
-            return this.getNode(thisNodeId) as PagNode;
+    public addPagThisLocalNode(ptNode: NodeID, value: Local): PagNode{
+        let id: NodeID = this.nodeNum;
+        let pagNode = new PagLocalNode(id, ptNode, value);
+        this.addNode(pagNode);
+
+        return pagNode;
+    }
+
+    public getOrNewThisRefNode(thisRefNodeID: NodeID, value: ArkThisRef): PagNode {
+        // let thisNodeId = this.baseClsNode2ThisNodeMap.get(ptNode);
+        // if (thisNodeId) {
+        //     return this.getNode(thisNodeId) as PagNode;
+        // }
+
+        // let thisNode = this.addPagThisRefNode(ptNode, value);
+        // this.baseClsNode2ThisNodeMap.set(ptNode, thisNode.getID());
+        // return thisNode;
+        if (thisRefNodeID != -1) {
+            return this.getNode(thisRefNodeID) as PagNode
         }
 
-        let thisNode = this.addPagThisRefNode(ptNode, value);
-        this.baseClsNode2ThisNodeMap.set(ptNode, thisNode.getID());
-        return thisNode;
+        let thisRefNode = this.addPagThisRefNode(value)
+        return thisRefNode
     }
 
     public hasCtxNode(cid: ContextID, v: Value): NodeID | undefined {

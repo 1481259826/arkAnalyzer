@@ -23,6 +23,7 @@ class ThrowTest {
         line: Line
 
         getLine() {
+            // return this
             return this.line
         }
 
@@ -34,14 +35,17 @@ class ThrowTest {
 
     function main() {
         let d = new Dummy();
-        // let e = new Line();
-        // let c = new Circle();
-        // const c2 = new Circle();
+        let e = new Line();
+        let temp = new Line()
+        let c = new Circle();
+        const c2 = new Circle();
         // c = c2;
-        // c.setLine(e)
+        c.setLine(e)
+        c2.setLine(e)
+        // c.setLine(temp)
         // let f = c.getLine()
         // c.line = e
-        // let f = c.line
+        let f = c.line
         // c = new Circle()
         // call()
         // let g = returnLine()
