@@ -25,23 +25,6 @@ export class FileUtils {
         include: /(?<!\.d)\.(ets|ts|json5)$/
     }
 
-    public static getFilesRecursively(srcPath: string, files: string[]) {
-        if (!fs.existsSync(srcPath)) {
-            logger.warn(`Input directory ${srcPath} is not exist`);
-            return;
-        }
-
-        const filesUnderThisDir = fs.readdirSync(srcPath, { withFileTypes: true });
-        filesUnderThisDir.forEach(file => {
-            const realFile = path.resolve(srcPath, file.name);
-            if (file.isDirectory() && (!FileUtils.FILE_FILTER.ignores.includes(file.name))) {
-                FileUtils.getFilesRecursively(realFile, files);
-            } else if ((path.basename(realFile).match(FileUtils.FILE_FILTER.include))) {
-                files.push(realFile);
-            }
-        });
-    }
-
     public static getIndexFileName(srcPath: string): string {
         for (const fileInDir of fs.readdirSync(srcPath, { withFileTypes: true })) {
             if (fileInDir.isFile() && /^index(\.d)?\.e?ts$/i.test(fileInDir.name)) {
@@ -62,7 +45,7 @@ export class FileUtils {
 
 }
 
-export function getFileRecursively(srcDir: string, fileName: string): string {
+export function getFileRecursively(srcDir: string, fileName: string, visited: Set<string> = new Set<string>()): string {
     let res = '';
     if (!fs.existsSync(srcDir) || !fs.statSync(srcDir).isDirectory()) {
         logger.warn(`Input directory ${srcDir} is not exist`);
@@ -70,12 +53,22 @@ export function getFileRecursively(srcDir: string, fileName: string): string {
     }
 
     const filesUnderThisDir = fs.readdirSync(srcDir, { withFileTypes: true });
+    const realSrc = fs.realpathSync(srcDir)
+    if (visited.has(realSrc)) {
+        return res;
+    }
+    visited.add(realSrc);
+
     filesUnderThisDir.forEach(file => {
+        if (res !== '') {
+            return res;
+        }
         if (file.name === fileName) {
-            return path.resolve(srcDir, file.name);
+            res = path.resolve(srcDir, file.name);
+            return res;
         }
         const tmpDir = path.resolve(srcDir, '../');
-        getFileRecursively(tmpDir, fileName);
+        res = getFileRecursively(tmpDir, fileName, visited);
     });
     return res;
 }
