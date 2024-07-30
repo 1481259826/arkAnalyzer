@@ -184,20 +184,23 @@ export class TypeInference {
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
                 const fieldRef = use.inferType(arkClass);
-                if (stmt instanceof ArkAssignStmt) {
-                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef && fieldRef instanceof ArkStaticFieldRef) {
+                if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
+                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
                         stmt.setRightOp(fieldRef);
                     } else {
-                        if (fieldRef instanceof ArkArrayRef && fieldRef.getIndex() instanceof Constant) {
-                            const value = (fieldRef.getIndex() as Constant).getValue();
-                            const local = arkMethod?.getBody()?.getLocals().get(value);
-                            if (local) {
-                                fieldRef.setIndex(local);
-                            }
-                        }
                         stmt.replaceUse(use, fieldRef);
                         stmt.setRightOp(stmt.getRightOp());
                     }
+                } else if (use instanceof ArkInstanceFieldRef && fieldRef instanceof ArkArrayRef && stmt instanceof ArkAssignStmt) {
+                    const index = fieldRef.getIndex();
+                    if (index instanceof Constant && index.getType() instanceof StringType) {
+                        const local = arkMethod?.getBody()?.getLocals().get(index.getValue());
+                        if (local) {
+                            fieldRef.setIndex(local);
+                        }
+                    }
+                    stmt.replaceUse(use, fieldRef);
+                    stmt.setRightOp(stmt.getRightOp());
                 }
             }
         }

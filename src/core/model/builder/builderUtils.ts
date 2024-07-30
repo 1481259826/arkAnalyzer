@@ -359,6 +359,8 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         return new TupleType(types);
     } else if (ts.isArrayTypeNode(typeNode)) {
         return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
+    } else if (ts.isParenthesizedTypeNode(typeNode)) {
+        return tsNode2Type(typeNode.type, sourceFile, arkInstance);
     } else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }

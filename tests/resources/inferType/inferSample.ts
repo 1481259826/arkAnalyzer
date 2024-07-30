@@ -28,6 +28,7 @@ function test_new_array(): void {
     let c = Constants.INFO[a + b];
     let s = Constants.INFO[a];
     let n = Constants.INFO[3];
+    let y = Constants.INFO['b'];
 }
 
 function testArray(): void {

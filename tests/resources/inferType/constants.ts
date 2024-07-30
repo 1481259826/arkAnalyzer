@@ -17,4 +17,8 @@ export class Constants {
     public static readonly ARRAY_SIZE: number = 9999;
     public static readonly INDEX_SIZE: number = 9999;
     public static readonly INFO: number[] = [1, 2, 3, 4, 5, 6, 7];
+
+    static staticFunc(): string {
+        return '';
+    }
 }

@@ -372,7 +372,9 @@ export class ArrayType extends Type {
 
     public toString(): string {
         const strs: string[] = [];
-        if (this.baseType) {
+        if (this.baseType instanceof UnionType) {
+            strs.push('(' + this.baseType.toString() + ')');
+        } else if (this.baseType) {
             strs.push(this.baseType.toString());
         }
         for (let i = 0; i < this.dimension; i++) {
