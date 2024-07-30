@@ -53,6 +53,7 @@ export class PagBuilder {
     private field2UniqInstanceMap: Map<ArkField, Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
+    private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
     private ThisRef2ThisLocalPtMap: Map<NodeID, NodeID> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
@@ -246,7 +247,8 @@ export class PagBuilder {
             }
 
             if (!callee) {
-                throw new Error("Can not get method for a dynmic call")
+                // throw new Error("Can not get method for a dynmic call")
+                return []
             }
 
             let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
@@ -280,14 +282,15 @@ export class PagBuilder {
 
         // IMPORTANT: set cid 2 base Pt info firstly
         this.cid2ThisRefPtMap.set(calleeCid, baseClassPTNode);
-        let thisNode = this.getOrNewThisRefNode(calleeCid, thisPtr);
+        let thisRefNode = this.getOrNewThisRefNode(calleeCid, thisPtr) as PagThisRefNode;
+        thisRefNode.addPTNode(baseClassPTNode);
         let srcBaseLocal = ivkExpr.getBase();
         let srcNodeId = this.pag.hasCtxNode(cid, srcBaseLocal);
         if (!srcNodeId) {
             throw new Error('Can not get base node');
         }
 
-        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisNode, PagEdgeKind.This);
+        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisRefNode, PagEdgeKind.This);
         return srcNodeId;
     }
 
@@ -364,52 +367,60 @@ export class PagBuilder {
     public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
         if (v instanceof ArkThisRef) {
             return this.getOrNewThisRefNode(cid, v as ArkThisRef);
-        } else if (v instanceof Local && v.getName() == "this") {
-            let thisLocalNode = this.getOrNewThisLocalNode(cid, v, s);
-            if (thisLocalNode) {
-                return thisLocalNode;
-            }
+        // } else if (v instanceof Local && v.getName() == "this") {
+        //     let thisLocalNode = this.getOrNewThisLocalNode(cid, v, s);
+        //     if (thisLocalNode) {
+        //         return thisLocalNode;
+        //     }
+        // }
         }
         v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
     }
 
-    public getOrNewThisLocalNode(cid: ContextID, v: Local, s?: Stmt): PagNode | undefined {
-        let baseThisRefNodeID = this.cid2ThisRefPtMap.get(cid);
-        if (!baseThisRefNodeID) {
-            // throw new Error("this local has no base thisRef");
-            return undefined
-        }
+    // public getOrNewThisLocalNode(cid: ContextID, v: Local, s?: Stmt): PagNode | undefined {
+    //     let baseThisRefNodeID = this.cid2ThisRefPtMap.get(cid);
+    //     if (!baseThisRefNodeID) {
+    //         // throw new Error("this local has no base thisRef");
+    //         return undefined
+    //     }
 
-        let singleThisLocalNodeID = this.ThisRef2ThisLocalPtMap.get(baseThisRefNodeID)
-        if (!singleThisLocalNodeID) {
-            singleThisLocalNodeID = -1;
-        }
+    //     let singleThisLocalNodeID = this.ThisRef2ThisLocalPtMap.get(baseThisRefNodeID)
+    //     if (!singleThisLocalNodeID) {
+    //         singleThisLocalNodeID = -1;
+    //     }
 
-        let singleThisLocalNode = this.pag.getOrNewThisLocalNode(cid, singleThisLocalNodeID, v, s);
-        this.ThisRef2ThisLocalPtMap.set(baseThisRefNodeID, singleThisLocalNode.getID())
+    //     let singleThisLocalNode = this.pag.getOrNewThisLocalNode(cid, singleThisLocalNodeID, v, s);
+    //     this.ThisRef2ThisLocalPtMap.set(baseThisRefNodeID, singleThisLocalNode.getID())
 
-        return singleThisLocalNode
-    }
+    //     return singleThisLocalNode
+    // }
 
     public getOrNewThisRefNode(cid: ContextID, v: ArkThisRef): PagNode {
         // get this ref node base pt according to cid
-        let baseClassPTNodeId = this.cid2ThisRefPtMap.get(cid);
-        if (!baseClassPTNodeId) {
-            baseClassPTNodeId = -1;
+        // let baseClassPTNodeId = this.cid2ThisRefPtMap.get(cid);
+        let thisRefNodeID = this.cid2ThisRefMap.get(cid)
+        if (!thisRefNodeID) {
+            thisRefNodeID = -1;
         }
+        // if (!baseClassPTNodeId) {
+        //     baseClassPTNodeId = -1;
+        // }
 
-        return this.pag.getOrNewThisRefNode(baseClassPTNodeId, v)
+        // return this.pag.getOrNewThisRefNode(baseClassPTNodeId, v)
+        let thisRefNode = this.pag.getOrNewThisRefNode(thisRefNodeID, v)
+        this.cid2ThisRefMap.set(cid, thisRefNode.getID())
+        return thisRefNode
     }
 
-    public getThisLocalWithCid(cid: ContextID): PagNode | undefined {
-        const thisRefNode = this.cid2ThisRefPtMap.get(cid)
-        if (!thisRefNode) {
-            return undefined
-        }
+    // public getThisLocalWithCid(cid: ContextID): PagNode | undefined {
+    //     const thisRefNode = this.cid2ThisRefPtMap.get(cid)
+    //     if (!thisRefNode) {
+    //         return undefined
+    //     }
 
-        return this.pag.getNode(this.ThisRef2ThisLocalPtMap.get(thisRefNode)!) as PagNode
-    }
+    //     return this.pag.getNode(this.ThisRef2ThisLocalPtMap.get(thisRefNode)!) as PagNode
+    // }
 
     public getBasePtWithCid(cid: ContextID): NodeID | undefined {
         const thisRefNode = this.cid2ThisRefPtMap.get(cid)
@@ -427,6 +438,7 @@ export class PagBuilder {
      *  as the unique instance
      */
     public getRealInstanceRef(v: Value): Value {
+        // TODO: need to fix, a1.f and a2.f will be recognized as a same node
         if (!(v instanceof ArkInstanceFieldRef || v instanceof ArkStaticFieldRef)) {
             return v;
         }

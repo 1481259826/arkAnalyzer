@@ -149,7 +149,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     private handleLoadWrite(nodeID: NodeID): boolean {
         let node = this.pag.getNode(nodeID) as PagNode;
         let diffPts = this.ptd.getDiffPts(nodeID);
-        if (!diffPts) {
+        if (!diffPts || diffPts.count() == 0) {
             return false;
         }
 
@@ -172,20 +172,13 @@ export class PointerAnalysis extends AbstractAnalysis{
                     let srcNode = edge.getSrcNode() as PagNode;
                     for (let pt of diffPts) {
                         // filter pt
-                        let dstNode
-                        let baseNode = this.pag.getNode(pt) as PagNewExprNode
-                        let dstNodeID = baseNode.getFieldNode(fieldNode.getValue() as AbstractFieldRef)
-                        if (!dstNodeID) {
-                            dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
-                            (dstNode as PagInstanceFieldNode).setBasePt(pt);
-                        } else {
-                            dstNode = this.pag.getNode(dstNodeID) as PagNode
-                        }
+                        let dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                         if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
                             this.ptaStat.numRealWrite++;
 
-                            this.ptd.resetElem(srcNode.getID());
-                            this.worklist.push(srcNode.getID());
+                            if (this.ptd.resetElem(srcNode.getID())) {
+                                this.worklist.push(srcNode.getID());
+                            }
                         }
                     }
                 })
@@ -196,17 +189,14 @@ export class PointerAnalysis extends AbstractAnalysis{
                     }
                     let dstNode = edge.getDstNode() as PagNode;
                     for (let pt of diffPts) {
-                        let basePt = this.pagBuilder.getBasePtWithCid(dstNode.getCid())
-                        if (basePt && basePt != pt) {
-                            continue
-                        }
-                        let newSrc = this.pag.getOrClonePagFieldNode(fieldNode, pt);
-                        (newSrc as PagInstanceFieldNode).setBasePt(pt);
-                        if (this.pag.addPagEdge(newSrc, dstNode, PagEdgeKind.Copy)) {
+                        let srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
+                        if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
                             this.ptaStat.numRealWrite++;
 
                             // TODO: if field is used before initialzed, newSrc node has no diff pts
-                            this.worklist.push(newSrc.getID());
+                            if (this.ptd.resetElem(srcNode.getID())) {
+                                this.worklist.push(srcNode.getID());
+                            }
                         }
                     }
                 })
@@ -222,10 +212,10 @@ export class PointerAnalysis extends AbstractAnalysis{
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingThisEdges()?.forEach(thisEdge => {
             const dst = thisEdge.getDstID();
-            this.ptd.addPts(
-                dst, 
-                (thisEdge.getDstNode() as PagThisRefNode).getThisPTNode()
-            );
+            let thisRefNode = thisEdge.getDstNode() as PagThisRefNode;
+            thisRefNode.getThisPTNode().forEach((basePT) => {
+                this.ptd.addPts(dst, basePT);
+            })
 
             this.processNode(dst);
         });
