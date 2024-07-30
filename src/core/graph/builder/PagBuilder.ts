@@ -64,7 +64,7 @@ export class PagBuilder {
 
     public buildForEntry(funcID: FuncID): void {
         this.worklist = [];
-        let cid = this.ctx.getEmptyContextID();
+        let cid = this.ctx.getNewContextID(funcID);
         let csFuncID = new CSFuncID(cid, funcID);
         this.worklist.push(csFuncID);
 
@@ -87,7 +87,7 @@ export class PagBuilder {
 
     public build(): void {
         for (let funcID of this.cg.getEntries()) {
-            let cid = this.ctx.getEmptyContextID();
+            let cid = this.ctx.getNewContextID(funcID);
             let csFuncID =new CSFuncID(cid, funcID);
             this.worklist.push(csFuncID);
 
@@ -250,7 +250,7 @@ export class PagBuilder {
 
             let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
 
-            let calleeCid = this.ctx.getOrNewContext(cid);
+            let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
             let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID())
             let staticSrcNodes = this.addStaticCallEdge(staticCS, cid, calleeCid);
             srcNodes.push(...staticSrcNodes);
@@ -292,7 +292,7 @@ export class PagBuilder {
      */
     public addStaticCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
         if(!calleeCid) {
-            calleeCid = this.ctx.getOrNewContext(callerCid);
+            calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID);
         }
 
         let srcNodes: NodeID[] = []
