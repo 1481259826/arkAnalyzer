@@ -146,6 +146,19 @@ describe("Infer Array Test", () => {
         assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance())
     })
 
+    it('field type case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("Field.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const fields = file?.getClassWithName('FieldType')?.getFields();
+        if (fields) {
+            const arkField = fields[0];
+            assert.equal(arkField.getType(), '(number|string)[]');
+            assert.equal(fields[1].getType(), StringType.getInstance())
+        }
+    })
+
     it('supperClass Test case', () => {
         const fileId = new FileSignature();
         fileId.setFileName("B.ets");

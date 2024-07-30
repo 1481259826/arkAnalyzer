@@ -22,6 +22,7 @@ export function cc(){
     let dd = new t.d();
     dd.dos();
     hilog.info('print log');
+    t.MyNameSpace.write();
     let ab = t.default;
     return ab;
 }

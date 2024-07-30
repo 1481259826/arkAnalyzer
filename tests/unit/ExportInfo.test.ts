@@ -37,6 +37,18 @@ describe("export Test", () => {
         assert.isNotEmpty(stmts);
     })
 
+    it('namespace export case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("test.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
+        assert.isNotEmpty(stmts);
+        if (stmts) {
+            assert.equal(stmts[10].toString(), 'staticinvoke <@exports/exportSample.ts: _DEFAULT_ARK_CLASS.write()>()');
+        }
+    })
+
     it('supperClass Test case', () => {
         const fileId = new FileSignature();
         fileId.setFileName("exportSample.ts");
@@ -70,7 +82,6 @@ describe("export Test", () => {
             assert.equal(stmts[6].toString(), 'instanceinvoke controller.<@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.loadUrl(string|Resource, Array)>(\'https://www.example.com/cn\')')
             assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
         }
-
     })
 
     it('thirdModule case', () => {

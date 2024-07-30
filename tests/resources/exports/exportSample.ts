@@ -42,12 +42,13 @@ type s = object;
 
 export type MyType = string;
 
-export namespace MyNameSpace {
+export declare namespace MyNameSpace {
+    export { write };
 
-    export function doa() {
-        return new Constants();
-    }
+    export function doa(): Constants;
 }
+
+declare function write(): void;
 
 export class d extends dfs {
 

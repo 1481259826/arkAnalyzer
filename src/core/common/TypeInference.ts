@@ -377,10 +377,17 @@ export class TypeInference {
                 type = this.parseSignature2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getTypeSignature());
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
-            const signature = baseType.getNamespaceSignature();
-            const arkClass = declareClass.getDeclaringArkFile().getScene().getNamespace(signature)?.getClassWithName(fieldName);
+            const namespace = declareClass.getDeclaringArkFile().getScene().getNamespace(baseType.getNamespaceSignature());
+            const arkClass = namespace?.getClassWithName(fieldName);
             if (arkClass) {
                 type = new ClassType(arkClass.getSignature());
+            } else {
+                const sub = namespace?.getNamespaceWithName(fieldName);
+                if (sub) {
+                    const ant = new AnnotationNamespaceType(fieldName);
+                    ant.setNamespaceSignature(sub.getSignature());
+                    type = ant;
+                }
             }
         } else {
             logger.warn('infer unclear reference type fail: ' + fieldName);

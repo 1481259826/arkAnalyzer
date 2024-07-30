@@ -212,8 +212,14 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 return this;
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
-            const defaultClass = scene.getNamespace(baseType.getNamespaceSignature())?.getDefaultClass();
-            let foundMethod = defaultClass?.getMethodWithName(methodName) ?? defaultClass?.getStaticMethodWithName(methodName);
+            const namespace = scene.getNamespace(baseType.getNamespaceSignature());
+            let foundMethod = namespace?.getDefaultClass()?.getMethodWithName(methodName);
+            if (!foundMethod) {
+                const signature = namespace?.getExportInfoBy(methodName)?.getTypeSignature();
+                if (signature && signature instanceof MethodSignature) {
+                    foundMethod = scene.getMethod(signature);
+                }
+            }
             if (foundMethod) {
                 TypeInference.inferMethodReturnType(foundMethod);
                 this.setMethodSignature(foundMethod.getSignature());
