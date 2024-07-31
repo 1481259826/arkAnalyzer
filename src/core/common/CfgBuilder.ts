@@ -150,14 +150,12 @@ class Scope {
 class Block {
     id: number;
     stmts: StatementBuilder[];
-    nexts: Set<Block>;
-    lasts: Set<Block>;
+    nexts: Block[] = [];
+    lasts: Block[] = [];
     walked: boolean = false;
 
     constructor(stmts: StatementBuilder[]) {
         this.stmts = stmts;
-        this.nexts = new Set();
-        this.lasts = new Set();
     }
 }
 
@@ -664,34 +662,34 @@ export class CfgBuilder {
                 if (originStatement instanceof ConditionStatementBuilder) {
                     let nextT = originStatement.nextT?.block;
                     if (nextT && (lastStatement || nextT != block) && !originStatement.nextT?.type.includes(' exit')) {
-                        block.nexts.add(nextT);
-                        nextT.lasts.add(block);
+                        block.nexts.push(nextT);
+                        nextT.lasts.push(block);
                     }
                     let nextF = originStatement.nextF?.block;
                     if (nextF && (lastStatement || nextF != block) && !originStatement.nextF?.type.includes(' exit')) {
-                        block.nexts.add(nextF);
-                        nextF.lasts.add(block);
+                        block.nexts.push(nextF);
+                        nextF.lasts.push(block);
                     }
                 } else if (originStatement instanceof SwitchStatementBuilder) {
                     for (const cas of originStatement.cases) {
                         const next = cas.stmt.block;
                         if (next && (lastStatement || next != block) && !cas.stmt.type.includes(' exit')) {
-                            block.nexts.add(next);
-                            next.lasts.add(block);
+                            block.nexts.push(next);
+                            next.lasts.push(block);
                         }
                     }
                     if (originStatement.default) {
                         const next = originStatement.default.block;
                         if (next && (lastStatement || next != block) && !originStatement.default.type.includes(' exit')) {
-                            block.nexts.add(next);
-                            next.lasts.add(block);
+                            block.nexts.push(next);
+                            next.lasts.push(block);
                         }
                     }
                 } else {
                     let next = originStatement.next?.block;
                     if (next && (lastStatement || next != block) && !originStatement.next?.type.includes(' exit')) {
-                        block.nexts.add(next);
-                        next.lasts.add(block);
+                        block.nexts.push(next);
+                        next.lasts.push(block);
                     }
                 }
 
@@ -740,7 +738,7 @@ export class CfgBuilder {
                 const lasts = [...this.exit.lasts];
                 lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
                 this.exit.lasts = new Set(lasts);
-                notReturnStmt.block?.nexts.add(returnBlock);
+                notReturnStmt.block?.nexts.push(returnBlock);
             }
         }
     }

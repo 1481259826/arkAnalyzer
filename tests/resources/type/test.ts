@@ -12,9 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class C1 {
-
-  public n: number = 1;
-  public c: C1 = new C1();
-  private s = this.c.toString() ?? 'testing';
+let  x=1
+while(x<10){
+  x++
 }
