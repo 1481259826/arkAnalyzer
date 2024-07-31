@@ -58,6 +58,10 @@ namespace loadTest1 {
 
     }
 
+    function set(c: Circle, e: Line) {
+        c.setLine(e)
+    }
+
     function returnLine(): Line {
         return new Line()
     }

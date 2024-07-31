@@ -47,7 +47,7 @@ namespace instance_field {
     function main(): void {
         const a = new A();
         a.longAP();
-        // a.cycle();
-        // a.callField();
+        a.cycle();
+        a.callField();
     }
 }

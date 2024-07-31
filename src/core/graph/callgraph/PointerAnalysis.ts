@@ -36,23 +36,15 @@ export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
     private pagBuilder: PagBuilder;
     private cg: CallGraph;
-    private pointerPairList: PointerPair[] = [];
-    private reachableMethods: Set<CSFuncID>
-    private reachableStmts: Stmt[]
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
     private entry: FuncID;
-    private ctx: KLimitedContextSensitive;
     private worklist: NodeID[];
-    private handledNodes: NodeID[] = [];
     private ptaStat: PTAStat;
-    private baseID2NodesMap: Map<NodeID, NodeID[]> = new Map()
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         super(s)
         this.pag = p;
         this.cg = cg;
-        this.reachableStmts = []
-        this.reachableMethods = new Set()
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
         this.pagBuilder = new PagBuilder(this.pag, this.cg, s);
         this.ptaStat = new PTAStat();
@@ -90,14 +82,13 @@ export class PointerAnalysis extends AbstractAnalysis{
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
-            this.handledNodes = [];
             this.ptaStat.iterTimes++;
 
             this.solveWorklist();
+            // process dynamic call
             reanalyzer = this.updateCallGraph();
             this.pag.dump('out/pta_pag.dot');
         }
-
     }
 
     private initWorklist() {
@@ -154,7 +145,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
 
         // get related field node with current node's value
-        // TODO: 写这个map不对，Map里只有loadtest2/x1的3个映射
         let instanceFieldNodeMap = this.pag.getNodesByBaseValue(node.getValue());
 
         if (instanceFieldNodeMap === undefined) {
@@ -310,8 +300,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         changed = this.pagBuilder.handleReachable() || changed;
 
         this.initWorklist();
-
-        // this.pagBuilder.clearDynamicCallSiteSet();
 
         // TODO: on The Fly UpdateCG
         return changed;
