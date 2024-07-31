@@ -16,7 +16,7 @@
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
 import { ArkClass } from '../model/ArkClass';
-import { ClassSignature, MethodSignature } from '../model/ArkSignature';
+import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
@@ -209,6 +209,15 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 if (method.isStatic()) {
                     return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
                 }
+                return this;
+            } else if (methodName === 'constructor') { //sdk隐式构造
+                const subSignature = new MethodSubSignature();
+                subSignature.setMethodName(methodName);
+                subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
+                const signature = new MethodSignature();
+                signature.setDeclaringClassSignature(baseType.getClassSignature());
+                signature.setMethodSubSignature(subSignature);
+                this.setMethodSignature(signature);
                 return this;
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
@@ -423,6 +432,9 @@ export class ArkBinopExpr extends AbstractExpr {
     }
 
     public getType(): Type {
+        if (!this.type) {
+            this.setType();
+        }
         return this.type;
     }
 

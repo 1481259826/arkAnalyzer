@@ -250,8 +250,9 @@ export class ArkClass implements ArkExport {
         return false;
     }
 
-    public getMethods(): ArkMethod[] {
-        const allMethods = Array.from(this.methods.values());
+    public getMethods(generated?: boolean): ArkMethod[] {
+        const allMethods = Array.from(this.methods.values())
+            .filter(f => !generated && !f.isGenerated() || generated);
         allMethods.push(...this.staticMethods.values());
         return allMethods;
     }
@@ -377,7 +378,7 @@ export class ArkClass implements ArkExport {
         this.instanceInitMethod = arkMethod;
     }
 
-    public setStaticInitMethod (arkMethod: ArkMethod): void {
+    public setStaticInitMethod(arkMethod: ArkMethod): void {
         this.staticInitMethod = arkMethod;
     }
 }

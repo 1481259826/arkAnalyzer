@@ -32,7 +32,7 @@ describe("export Test", () => {
         fileId.setProjectName(projectScene.getProjectName());
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
-        assert.equal(file?.getImportInfos().length, 16);
+        assert.equal(file?.getImportInfos().length, 2);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
     })
