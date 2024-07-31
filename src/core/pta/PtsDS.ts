@@ -158,8 +158,8 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
     resetElem(v:K): boolean {
         let propa = this.propaPtsMap.get(v);
         if (propa) {
-            this.diffPtsMap.set(v, propa);
-            this.propaPtsMap.set(v, new this.DSCreator());
+            this.diffPtsMap.set(v, propa.clone());
+            // this.propaPtsMap.set(v, new this.DSCreator());
             return true;
         }
         return false;
@@ -238,6 +238,7 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         if (!this.diffPtsMap.has(v)) return;
         let diff = this.diffPtsMap.get(v)!; 
         let propa = this.getPropaPtsMut(v); 
+        // do not clear origin propa, only copy the pt and add it to diff
         //let propa = this.propaPtsMap.get(v) || new this.DSCreator();
         propa.union(diff);
         diff.clear();
@@ -264,6 +265,19 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         // TODO: to be implemented
         console.log(this.diffPtsMap);
         console.log(this.propaPtsMap);
+    }
+
+    calculateDiff(src: K, dst: K): DS {
+        let srcDiff = this.diffPtsMap.get(src)!;
+        let dstPropa = this.propaPtsMap.get(dst);
+        if (!dstPropa) {
+            return srcDiff.clone();
+        }
+    
+        let result = srcDiff.clone();
+    
+        result.subtract(dstPropa);
+        return result;
     }
 }
 

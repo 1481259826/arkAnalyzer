@@ -14,7 +14,7 @@
  */
 
 import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite } from '../CallGraph';
-import { Pag, FuncPag, PagNode, PagEdgeKind } from '../Pag'
+import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
 import { ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
@@ -50,15 +50,17 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
-    private field2UniqInstanceMap: Map<ArkField, Value> = new Map();
+    private staticField2UniqInstanceMap: Map<ArkField, Value> = new Map();
+    private instanceField2UniqInstanceMap: Map<[ArkField, Value], Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
+    private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         this.pag = p;
         this.cg = cg;
         this.funcPags = new Map<FuncID, FuncPag>;
-        this.ctx = new KLimitedContextSensitive(1);
+        this.ctx = new KLimitedContextSensitive(2);
         this.scene = s;
     }
 
@@ -77,7 +79,7 @@ export class PagBuilder {
         }
 
         while (this.worklist.length > 0) {
-            let csFunc = this.worklist.shift() as CSFuncID
+            let csFunc = this.worklist.shift() as CSFuncID;
             this.buildFunPag(csFunc.funcID);
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
         }
@@ -218,7 +220,7 @@ export class PagBuilder {
         }
 
         for (let cs of funcPag.getNormalCallSites()) {
-            this.addStaticCallEdge(cs, cid);
+            this.addStaticPagCallEdge(cs, cid);
         }
 
         return true;
@@ -245,14 +247,21 @@ export class PagBuilder {
             }
 
             if (!callee) {
-                throw new Error("Can not get method for a dynmic call")
+                // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
+                // return empty node when {o_2} come in
+                return []
             }
 
             let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
 
+            let callerNode = this.cg.getNode(cs.callerFuncID);
+            if (!callerNode) {
+                throw new Error("Can not get caller method node");
+            }
             let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
-            let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID())
-            let staticSrcNodes = this.addStaticCallEdge(staticCS, cid, calleeCid);
+            let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID());
+            let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
+            this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             srcNodes.push(...staticSrcNodes);
 
             // Pass base's pts to callee's this pointer
@@ -274,14 +283,15 @@ export class PagBuilder {
 
         // IMPORTANT: set cid 2 base Pt info firstly
         this.cid2ThisRefPtMap.set(calleeCid, baseClassPTNode);
-        let thisNode = this.getOrNewThisNode(calleeCid, thisPtr);
+        let thisRefNode = this.getOrNewThisRefNode(calleeCid, thisPtr) as PagThisRefNode;
+        thisRefNode.addPTNode(baseClassPTNode);
         let srcBaseLocal = ivkExpr.getBase();
         let srcNodeId = this.pag.hasCtxNode(cid, srcBaseLocal);
         if (!srcNodeId) {
             throw new Error('Can not get base node');
         }
 
-        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisNode, PagEdgeKind.This);
+        this.pag.addPagEdge(this.pag.getNode(srcNodeId) as PagNode, thisRefNode, PagEdgeKind.This);
         return srcNodeId;
     }
 
@@ -290,7 +300,7 @@ export class PagBuilder {
      *     ret edges from return values to callsite
      * Return src node
      */
-    public addStaticCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
+    public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
         if(!calleeCid) {
             calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID);
         }
@@ -302,6 +312,8 @@ export class PagBuilder {
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
         if (!calleeMethod) {
             //throw new Error(`Failed to get ArkMethod`);
+            // TODO: check if nodes need to delete
+            // this.cg.removeCallGraphNode(cs.calleeFuncID)
             return srcNodes;
         }
         this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
@@ -355,19 +367,25 @@ export class PagBuilder {
 
     public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
         if (v instanceof ArkThisRef) {
-            return this.getOrNewThisNode(cid, v as ArkThisRef);
+            return this.getOrNewThisRefNode(cid, v as ArkThisRef);
         }
         v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
     }
 
-    public getOrNewThisNode(cid: ContextID, v: ArkThisRef): PagNode {
-        let baseClassPTNodeId = this.cid2ThisRefPtMap.get(cid);
-        if (!baseClassPTNodeId) {
-            baseClassPTNodeId = -1;
+    /**
+     * return ThisRef PAG node according to cid, a cid has a unique ThisRef node
+     * @param cid: current contextID
+     */
+    public getOrNewThisRefNode(cid: ContextID, v: ArkThisRef): PagNode {
+        let thisRefNodeID = this.cid2ThisRefMap.get(cid)
+        if (!thisRefNodeID) {
+            thisRefNodeID = -1;
         }
 
-        return this.pag.getOrNewThisRefNode(baseClassPTNodeId, v)
+        let thisRefNode = this.pag.getOrNewThisRefNode(thisRefNodeID, v)
+        this.cid2ThisRefMap.set(cid, thisRefNode.getID())
+        return thisRefNode
     }
 
     /*
@@ -375,9 +393,13 @@ export class PagBuilder {
      * But the unique one is needed for pointer analysis
      * This is a temp solution to use a ArkField->(first instance) 
      *  as the unique instance
+     * 
+     * node merge condition:
+     * instance field: value and ArkField
+     * static field: ArkField
      */
     public getRealInstanceRef(v: Value): Value {
-        if (!(v instanceof ArkInstanceFieldRef)) {
+        if (!(v instanceof ArkInstanceFieldRef || v instanceof ArkStaticFieldRef)) {
             return v;
         }
 
@@ -386,15 +408,31 @@ export class PagBuilder {
         if (!cls) {
             throw new Error('Can not find ArkClass');
         }
+        let field: ArkField | null;
+        let base: Value
 
-        let field = cls.getFieldWithName(sig.getFieldName());
+        if (sig.isStatic()) {
+            field = cls.getStaticFieldWithName(sig.getFieldName());
+        } else {
+            field = cls.getFieldWithName(sig.getFieldName());
+            base = (v as ArkInstanceFieldRef).getBase()
+        }
         if (!field) {
             throw new Error('Can not find ArkField');
         }
-        let real = this.field2UniqInstanceMap.get(field);
-        if (!real) {
-            this.field2UniqInstanceMap.set(field, v);
-            real = v;
+        let real
+        if (sig.isStatic()) {
+            real = this.staticField2UniqInstanceMap.get(field);
+            if (!real) {
+                this.staticField2UniqInstanceMap.set(field, v);
+                real = v;
+            }
+        } else {
+            real = this.instanceField2UniqInstanceMap.get([field, base!]);
+            if (!real) {
+                this.instanceField2UniqInstanceMap.set([field, base!], v);
+                real = v;
+            }
         }
 
         return real;
@@ -435,8 +473,13 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        if (lhOp instanceof Local 
-            && (rhOp instanceof Local || rhOp instanceof ArkParameterRef || rhOp instanceof ArkThisRef)) {
+        let condition: boolean = 
+            (lhOp instanceof Local && (
+                rhOp instanceof Local || rhOp instanceof ArkParameterRef || 
+                rhOp instanceof ArkThisRef || rhOp instanceof ArkStaticFieldRef)) || 
+            (lhOp instanceof ArkStaticFieldRef && rhOp instanceof Local)
+
+        if (condition) {
             return true;
         }
         return false;
@@ -447,7 +490,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (rhOp instanceof Local && 
-            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkStaticFieldRef)) {
+            (lhOp instanceof ArkInstanceFieldRef)) {
             return true;
         }
         return false;
@@ -458,7 +501,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (lhOp instanceof Local && 
-            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkStaticFieldRef)) {
+            (rhOp instanceof ArkInstanceFieldRef)) {
             return true;
         }
         return false;
@@ -470,7 +513,9 @@ export class PagBuilder {
     }
 
     public getDynamicCallSites(): Set<DynCallSite> {
-        return this.dynamicCallSites;
+        let tempSet = new Set(this.dynamicCallSites);
+        this.clearDynamicCallSiteSet()
+        return tempSet
     }
 
     public clearDynamicCallSiteSet() {
@@ -478,6 +523,4 @@ export class PagBuilder {
             this.dynamicCallSites.clear();
         }
     }
-
-
 }

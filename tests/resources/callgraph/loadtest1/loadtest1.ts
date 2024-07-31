@@ -24,6 +24,7 @@ namespace loadTest1 {
         line: Line
 
         getLine() {
+            // return this
             return this.line
         }
 
@@ -35,14 +36,17 @@ namespace loadTest1 {
     function main() {
         let d = new Dummy();
         let e = new Line();
+        let temp = new Line()
         let c = new Circle();
         const c2 = new Circle();
-        c = c2;
+        // c = c2;
         c.setLine(e)
-        let f = c.getLine()
+        c2.setLine(e)
+        // c.setLine(temp)
+        // let f = c.getLine()
         // c.line = e
-        // let f = c.line
-        c = new Circle()
+        let f = c.line
+        // c = new Circle()
         // call()
         // let g = returnLine()
         // let te = g
@@ -52,6 +56,10 @@ namespace loadTest1 {
 
     function call() {
 
+    }
+
+    function set(c: Circle, e: Line) {
+        c.setLine(e)
     }
 
     function returnLine(): Line {
