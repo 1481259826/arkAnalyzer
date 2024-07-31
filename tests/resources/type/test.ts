@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 let  x=1
-while(x<10){
+do {
   x++
-}
+} while(x<10)

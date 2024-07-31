@@ -409,6 +409,7 @@ export class CfgBuilder {
                 loopExit.lasts.add(loopstm);
                 loopstm.condition = c.expression.getText(this.sourceFile);
                 loopstm.code = 'while (' + loopstm.condition + ')';
+                loopstm.isDoWhile = true;
                 if (ts.isBlock(c.statement)) {
                     this.walkAST(lastStatement, loopstm, [...c.statement.statements]);
                 } else {
@@ -594,7 +595,7 @@ export class CfgBuilder {
             const block = new Block([]);
             this.blocks.push(block);
             while (stmt && !handledStmts.has(stmt)) {
-                if (stmt.type == 'loopStatement' && block.stmts.length > 0) {
+                if (stmt.type == 'loopStatement' && block.stmts.length > 0 && !stmt.isDoWhile) {
                     stmtQueue.push(stmt);
                     break;
                 }
@@ -649,7 +650,6 @@ export class CfgBuilder {
                             stmt = stmt.next;
                         }
                     }
-
                 }
             }
         }
