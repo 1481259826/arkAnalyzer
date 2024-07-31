@@ -20,7 +20,6 @@ import {
     ArkConditionExpr,
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
-    ArkLengthExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkStaticInvokeExpr,
@@ -94,8 +93,11 @@ import {
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
+import { IterationStatement } from 'ohos-typescript';
 
 const logger = Logger.getLogger();
+
+export const DUMMY_INITIALIZER_STMT = 'dummyInitializerStmt';
 
 type ValueAndStmts = {
     value: Value,
@@ -283,6 +285,10 @@ export class ArkIRTransformer {
         if (forStatement.initializer) {
             stmts.push(...this.tsNodeToValueAndStmts(forStatement.initializer).stmts);
         }
+        const dummyInitializerStmt = new Stmt();
+        dummyInitializerStmt.setText(DUMMY_INITIALIZER_STMT);
+        stmts.push(dummyInitializerStmt);
+
         if (forStatement.condition) {
             const {
                 value: conditionValue,
@@ -334,6 +340,7 @@ export class ArkIRTransformer {
             stmts: doneFlagStmts,
         } = this.generateAssignStmtForValue(new ArkInstanceFieldRef(iteratorResult as Local, doneFieldSignature));
         stmts.push(...doneFlagStmts);
+        (doneFlag as Local).setType(BooleanType.getInstance());
         const conditionExpr = new ArkConditionExpr(doneFlag, ValueUtil.getBooleanConstant(true), '==');
         stmts.push(new ArkIfStmt(conditionExpr));
 
@@ -348,39 +355,47 @@ export class ArkIRTransformer {
 
         // TODO: Support generics and then fill in the exact type
         const castExpr = new ArkCastExpr(yieldValue, UnknownType.getInstance());
-        if (ts.isArrayBindingPattern(forOfStatement.initializer)) {
-            const {
-                value: arrayItem,
-                stmts: arrayItemStmts,
-            } = this.generateAssignStmtForValue(castExpr);
-            stmts.push(...arrayItemStmts);
+        if (ts.isVariableDeclarationList(forOfStatement.initializer)) {
+            const variableDeclaration = forOfStatement.initializer.declarations[0];
+            if (ts.isArrayBindingPattern(variableDeclaration.name)) {
+                const {
+                    value: arrayItem,
+                    stmts: arrayItemStmts,
+                } = this.generateAssignStmtForValue(castExpr);
+                stmts.push(...arrayItemStmts);
+                (arrayItem as Local).setType(new ArrayType(UnknownType.getInstance(), 1));
 
-            const elements = forOfStatement.initializer.elements;
-            let index = 0;
-            for (const element of elements) {
-                let arrayRef = new ArkArrayRef(arrayItem as Local, new Constant(index.toString(), NumberType.getInstance()));
-                let item = new Local(element.getText(this.sourceFile));
-                stmts.push(new ArkAssignStmt(item, arrayRef));
-                index++;
-            }
-        } else if (ts.isObjectBindingPattern(forOfStatement.initializer)) {
-            const {
-                value: objectItem,
-                stmts: objectItemStmts,
-            } = this.generateAssignStmtForValue(castExpr);
-            stmts.push(...objectItemStmts);
+                const elements = variableDeclaration.name.elements;
+                let index = 0;
+                for (const element of elements) {
+                    let arrayRef = new ArkArrayRef(arrayItem as Local, new Constant(index.toString(), NumberType.getInstance()));
+                    let item = new Local(element.getText(this.sourceFile));
+                    stmts.push(new ArkAssignStmt(item, arrayRef));
+                    index++;
+                }
+            } else if (ts.isObjectBindingPattern(variableDeclaration.name)) {
+                const {
+                    value: objectItem,
+                    stmts: objectItemStmts,
+                } = this.generateAssignStmtForValue(castExpr);
+                stmts.push(...objectItemStmts);
 
-            const elements = forOfStatement.initializer.elements;
-            for (const element of elements) {
-                const fieldName = element.propertyName ? element.propertyName.getText(this.sourceFile) : element.name.getText(this.sourceFile);
-                const fieldSignature = new FieldSignature();
-                fieldSignature.setFieldName(fieldName);
-                const fieldRef = new ArkInstanceFieldRef(objectItem as Local, fieldSignature);
-                const fieldLocal = this.getOrCreatLocal(element.name.getText(this.sourceFile));
-                stmts.push(new ArkAssignStmt(fieldLocal, fieldRef));
+                const elements = variableDeclaration.name.elements;
+                for (const element of elements) {
+                    const fieldName = element.propertyName ? element.propertyName.getText(this.sourceFile) : element.name.getText(this.sourceFile);
+                    const fieldSignature = new FieldSignature();
+                    fieldSignature.setFieldName(fieldName);
+                    const fieldRef = new ArkInstanceFieldRef(objectItem as Local, fieldSignature);
+                    const fieldLocal = this.getOrCreatLocal(element.name.getText(this.sourceFile));
+                    stmts.push(new ArkAssignStmt(fieldLocal, fieldRef));
+                }
+            } else {
+                const item = this.getOrCreatLocal(variableDeclaration.name.getText(this.sourceFile));
+                stmts.push(new ArkAssignStmt(item, castExpr));
             }
         } else {
             const {value: item, stmts: itemStmts} = this.tsNodeToValueAndStmts(forOfStatement.initializer);
+            stmts.push(...itemStmts);
             stmts.push(new ArkAssignStmt(item, castExpr));
         }
         return stmts;
@@ -388,6 +403,10 @@ export class ArkIRTransformer {
 
     private whileStatementToStmts(whileStatement: ts.WhileStatement): Stmt[] {
         const stmts: Stmt[] = [];
+        const dummyInitializerStmt = new Stmt();
+        dummyInitializerStmt.setText(DUMMY_INITIALIZER_STMT);
+        stmts.push(dummyInitializerStmt);
+
         const {
             value: conditionExpr,
             stmts: conditionStmts,

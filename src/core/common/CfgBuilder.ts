@@ -16,13 +16,15 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkGotoStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
-import { ArkIRTransformer } from './ArkIRTransformer';
+import { ArkIRTransformer, DUMMY_INITIALIZER_STMT } from './ArkIRTransformer';
 import { ModelUtils } from './ModelUtils';
+import { AbstractInvokeExpr } from '../base/Expr';
+import { Builtin } from './Builtin';
 
 const logger = Logger.getLogger();
 
@@ -922,10 +924,10 @@ export class CfgBuilder {
             }
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
-        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot) 
+        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot)
             || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
-                this.emptyBody = true;
-            }
+            this.emptyBody = true;
+        }
         if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
             this.walkAST(this.entry, this.exit, stmts);
         } else {
@@ -972,6 +974,7 @@ export class CfgBuilder {
 
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
+        const blocksContainLoop = new Set<Block>();
         for (let i = 0; i < this.blocks.length; i++) {
             // build block in Cfg
             const stmtsInBlock: Stmt[] = [];
@@ -979,6 +982,9 @@ export class CfgBuilder {
                 stmtsInBlock.push(...arkIRTransformer.prebuildStmts());
             }
             for (const statementBuilder of this.blocks[i].stmts) {
+                if (statementBuilder.type == 'loopStatement') {
+                    blocksContainLoop.add(this.blocks[i]);
+                }
                 if (statementBuilder.astNode && statementBuilder.code != '') {
                     stmtsInBlock.push(...arkIRTransformer.tsNodeToStmts(statementBuilder.astNode));
                 } else if (statementBuilder.code.startsWith('return')) {
@@ -1014,10 +1020,57 @@ export class CfgBuilder {
 
         // link blocks
         for (const [blockBuilder, cfgBlock] of blockBuilderToCfgBlock) {
-            for (const successorBuilder of blockBuilder.nexts) {
-                const successorBlock = blockBuilderToCfgBlock.get(successorBuilder) as BasicBlock;
-                successorBlock.addPredecessorBlock(cfgBlock);
+            for (const successorBlockBuilder of blockBuilder.nexts) {
+                const successorBlock = blockBuilderToCfgBlock.get(successorBlockBuilder) as BasicBlock;
                 cfgBlock.addSuccessorBlock(successorBlock);
+            }
+            for (const predecessorBlockBuilder of blockBuilder.lasts) {
+                const predecessorBlock = blockBuilderToCfgBlock.get(predecessorBlockBuilder) as BasicBlock;
+                cfgBlock.addPredecessorBlock(predecessorBlock);
+            }
+        }
+
+        // put statement within loop in right position
+        for (const blockBuilder of blocksContainLoop) {
+            const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
+            const stmts = block.getStmts();
+            const stmtsCnt = stmts.length;
+            let ifStmtIdx = -1;
+            let nextInvokeStmtIdx = -1;
+            let dummyInitializerStmtIdx = -1;
+            for (let i = 0; i < stmtsCnt; i++) {
+                const stmt = stmts[i];
+                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof AbstractInvokeExpr) {
+                    const invokeExpr = stmt.getRightOp() as AbstractInvokeExpr;
+                    if (invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() == Builtin.ITERATOR_NEXT) {
+                        nextInvokeStmtIdx = i;
+                        continue;
+                    }
+                }
+                if (stmt.toString() == DUMMY_INITIALIZER_STMT) {
+                    dummyInitializerStmtIdx = i;
+                    continue;
+                }
+                if (stmt instanceof ArkIfStmt) {
+                    ifStmtIdx = i;
+                    break;
+                }
+            }
+
+            if (nextInvokeStmtIdx != -1) {
+                const blockBeforeLoop = block.getPredecessors()[0];
+                blockBeforeLoop.getStmts().push(...stmts.slice(0, nextInvokeStmtIdx));
+                const blockWithinLoop = block.getSuccessors()[0];
+                blockWithinLoop.getStmts().splice(0, 0, ...stmts.slice(ifStmtIdx + 1));
+                stmts.splice(0, nextInvokeStmtIdx);
+                stmts.splice(ifStmtIdx - nextInvokeStmtIdx + 1, stmtsCnt - ifStmtIdx - 1);
+            } else if(dummyInitializerStmtIdx != -1){
+                const blockBeforeLoop = block.getPredecessors()[0];
+                blockBeforeLoop.getStmts().push(...stmts.slice(0, dummyInitializerStmtIdx));
+                const blockReenterLoop = block.getPredecessors()[1];
+                blockReenterLoop.getStmts().push(...stmts.slice(ifStmtIdx + 1));
+                stmts.splice(0, dummyInitializerStmtIdx + 1);
+                stmts.splice(ifStmtIdx - dummyInitializerStmtIdx, stmtsCnt - ifStmtIdx);
             }
         }
 

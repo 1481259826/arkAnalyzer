@@ -117,7 +117,7 @@ class ArkIRTransformerTest {
             logger.error('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
             for (const arkClass of arkFile.getClasses()) {
                 logger.error('========= arkClass:', arkClass.getName(), ' =======');
-                for (const arkMethod of arkClass.getMethods()) {
+                for (const arkMethod of arkClass.getMethods(true)) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
                     if (body) {

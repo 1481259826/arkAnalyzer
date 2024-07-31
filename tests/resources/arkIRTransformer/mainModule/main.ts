@@ -13,11 +13,40 @@
  * limitations under the License.
  */
 
-let a: number[] = [1, 2, 3];
+// let a: number[] = [1, 2, 3];
 // for (let i of a) {
 //     console.log(i);
 // }
+//
+// for (let i = 0; i < 3; i++) {
+//     console.log(i);
+// }
 
-for (let i = 0; i < 3; i++) {
-    console.log(i);
+// let i = 0;
+// for (let j = 0, k = 1; j < 10 && k < 11; j++) {
+//     i = j;
+//     k++;
+// }
+
+// let i = 0;
+// while ((i + 1) < 10) {
+//     let a = i + 1;
+// }
+
+// let i = 0;
+// do {
+//     i++;
+//     for (let j = 0; j < 100; j++) {
+//         i+=3;
+//     }
+// } while ((i + 2) < 10);
+
+// let arr1 = [1, 2];
+// for (const [id, n] of arr1.entries()) {
+//     console.log(id, n);
+// }
+
+let arr2 = [{i: 1, j: 2}];
+for (const {i, j} of arr2) {
+    console.log(i, j);
 }
