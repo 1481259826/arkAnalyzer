@@ -50,11 +50,11 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
-    private field2UniqInstanceMap: Map<ArkField, Value> = new Map();
+    private staticField2UniqInstanceMap: Map<ArkField, Value> = new Map();
+    private instanceField2UniqInstanceMap: Map<[ArkField, Value], Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
-    private ThisRef2ThisLocalPtMap: Map<NodeID, NodeID> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene) {
         this.pag = p;
@@ -409,19 +409,30 @@ export class PagBuilder {
             throw new Error('Can not find ArkClass');
         }
         let field: ArkField | null;
+        let base: Value
 
         if (sig.isStatic()) {
             field = cls.getStaticFieldWithName(sig.getFieldName());
         } else {
             field = cls.getFieldWithName(sig.getFieldName());
+            base = (v as ArkInstanceFieldRef).getBase()
         }
         if (!field) {
             throw new Error('Can not find ArkField');
         }
-        let real = this.field2UniqInstanceMap.get(field);
-        if (!real) {
-            this.field2UniqInstanceMap.set(field, v);
-            real = v;
+        let real
+        if (sig.isStatic()) {
+            real = this.staticField2UniqInstanceMap.get(field);
+            if (!real) {
+                this.staticField2UniqInstanceMap.set(field, v);
+                real = v;
+            }
+        } else {
+            real = this.instanceField2UniqInstanceMap.get([field, base!]);
+            if (!real) {
+                this.instanceField2UniqInstanceMap.set([field, base!], v);
+                real = v;
+            }
         }
 
         return real;
