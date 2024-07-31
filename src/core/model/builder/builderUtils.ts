@@ -65,6 +65,7 @@ import {
 const logger = Logger.getLogger();
 export const DECLARE_KEYWORD = 'DeclareKeyword';
 
+
 export function handleQualifiedName(node: ts.QualifiedName): string {
     let right = (node.right as ts.Identifier).text;
     let left: string = '';
