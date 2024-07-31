@@ -19,6 +19,7 @@ import { ArkClass } from "./ArkClass";
 import { ArkFile } from "./ArkFile";
 import { ArkMethod } from "./ArkMethod";
 import { ClassSignature, NamespaceSignature } from "./ArkSignature";
+import { setTypeForExportInfo } from "./builder/ArkImportBuilder";
 
 /**
  * @category core/model
@@ -187,8 +188,12 @@ export class ArkNamespace implements ArkExport {
         return Array.from(this.exportInfos.values());
     }
 
-    public getExportInfosMap(): Map<string, ExportInfo> {
-        return this.exportInfos;
+    public getExportInfoBy(name: string): ExportInfo | null {
+        const exportInfo = this.exportInfos.get(name);
+        if (exportInfo) {
+            return setTypeForExportInfo(exportInfo);
+        }
+        return null;
     }
 
     public addExportInfo(exportInfo: ExportInfo) {

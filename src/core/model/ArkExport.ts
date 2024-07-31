@@ -193,7 +193,9 @@ export class ExportInfo implements FromInfo {
         }
 
         public exportFrom(exportFrom: string): ArkExportBuilder {
-            this.exportInfo.exportFrom = exportFrom;
+            if (exportFrom !== '') {
+                this.exportInfo.exportFrom = exportFrom;
+            }
             return this;
         }
 

@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import { Constants } from "./constants";
+
 class C1 {
 
     public n: number = 1;
@@ -29,4 +31,20 @@ class C2 {
     f2(p1: C1) {
         console.log(p1.c, p1.n);
     }
+
+    test_report() {
+        let a: number[] = [1, 2, 3];
+        a['a'] = 2;
+        let b = a['b'];
+        b = (a['a'] == a[a[2]]);
+        if (a['b'] === 0) {
+            b = 1;
+        }
+    }
+}
+
+class FieldType {
+    arrUnionHa: (number | string)[] = [1, 'hello'];
+    public field1 = Constants.staticFunc();
+
 }

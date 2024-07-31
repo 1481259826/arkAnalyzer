@@ -184,20 +184,23 @@ export class TypeInference {
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
                 const fieldRef = use.inferType(arkClass);
-                if (stmt instanceof ArkAssignStmt) {
-                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef && fieldRef instanceof ArkStaticFieldRef) {
+                if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
+                    if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
                         stmt.setRightOp(fieldRef);
                     } else {
-                        if (fieldRef instanceof ArkArrayRef && fieldRef.getIndex() instanceof Constant) {
-                            const value = (fieldRef.getIndex() as Constant).getValue();
-                            const local = arkMethod?.getBody()?.getLocals().get(value);
-                            if (local) {
-                                fieldRef.setIndex(local);
-                            }
-                        }
                         stmt.replaceUse(use, fieldRef);
                         stmt.setRightOp(stmt.getRightOp());
                     }
+                } else if (use instanceof ArkInstanceFieldRef && fieldRef instanceof ArkArrayRef && stmt instanceof ArkAssignStmt) {
+                    const index = fieldRef.getIndex();
+                    if (index instanceof Constant && index.getType() instanceof StringType) {
+                        const local = arkMethod?.getBody()?.getLocals().get(index.getValue());
+                        if (local) {
+                            fieldRef.setIndex(local);
+                        }
+                    }
+                    stmt.replaceUse(use, fieldRef);
+                    stmt.setRightOp(stmt.getRightOp());
                 }
             }
         }
@@ -377,10 +380,17 @@ export class TypeInference {
                 type = this.parseSignature2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getTypeSignature());
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
-            const signature = baseType.getNamespaceSignature();
-            const arkClass = declareClass.getDeclaringArkFile().getScene().getNamespace(signature)?.getClassWithName(fieldName);
+            const namespace = declareClass.getDeclaringArkFile().getScene().getNamespace(baseType.getNamespaceSignature());
+            const arkClass = namespace?.getClassWithName(fieldName);
             if (arkClass) {
                 type = new ClassType(arkClass.getSignature());
+            } else {
+                const sub = namespace?.getNamespaceWithName(fieldName);
+                if (sub) {
+                    const ant = new AnnotationNamespaceType(fieldName);
+                    ant.setNamespaceSignature(sub.getSignature());
+                    type = ant;
+                }
             }
         } else {
             logger.warn('infer unclear reference type fail: ' + fieldName);

@@ -32,7 +32,7 @@ import { ArkNamespace } from './core/model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
 import Logger from './utils/logger';
 import { Local } from './core/base/Local';
-import { buildArkFileFromFile, expandImportAll } from './core/model/builder/ArkFileBuilder';
+import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
@@ -151,19 +151,17 @@ export class Scene {
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
-                for (const method of cls.getMethods()) {
+                for (const method of cls.getMethods(true)) {
                     method.buildBody();
                 }
             }
-            generateDefaultClassField(file.getDefaultClass());
         }
         for (const namespace of this.getNamespacesMap().values()) {
             for (const cls of namespace.getClasses()) {
-                for (const method of cls.getMethods()) {
+                for (const method of cls.getMethods(true)) {
                     method.buildBody();
                 }
             }
-            generateDefaultClassField(namespace.getDefaultClass());
         }
 
         this.buildStage = SceneBuildStage.METHOD_DONE;
@@ -179,7 +177,6 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
-        expandImportAll(this.filesMap);
         this.genExtendedClasses();
         this.addDefaultConstructors();
     }
@@ -195,7 +192,6 @@ export class Scene {
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
-        expandImportAll(this.sdkArkFilesMap);
     }
 
     public buildScene4HarmonyProject() {
@@ -212,7 +208,6 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
-        expandImportAll(this.filesMap);
         this.genExtendedClasses();
         this.addDefaultConstructors();
     }
@@ -371,7 +366,7 @@ export class Scene {
     private getMethodsMap(): Map<string, ArkMethod> {
         if (this.methodsMap.size == 0) {
             for (const cls of this.getClassesMap().values()) {
-                for (const method of cls.getMethods()) {
+                for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
                 }
             }
@@ -437,6 +432,9 @@ export class Scene {
      */
     public inferTypes() {
         this.getClassesMap().forEach(arkClass => {
+            if (arkClass.isDefaultArkClass()) {
+                generateDefaultClassField(arkClass);
+            }
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
         });
         this.getMethodsMap().forEach(arkMethod => {
