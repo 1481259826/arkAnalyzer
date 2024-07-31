@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
 import { PrinterBuilder } from '../src/save/PrinterBuilder';
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
@@ -24,14 +27,19 @@ import { Pag } from '../src/core/graph/Pag'
 import { PagBuilder } from '../src/core/graph/builder/PagBuilder'
 import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
  
-const logger = Logger.getLogger();
+// const logger = Logger.getLogger();
 
-//let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
+// let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('./tests/resources/callgraph/loadtest2');
+// config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
+// config.buildFromProjectDir('./tests/resources/callgraph/test2');
+config.buildFromProjectDir('./tests/resources/pta/StaticCall');
+// config.buildFromProjectDir('./tests/resources/callgraph/temp');
+// config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
 //config.buildFromProjectDir('./tests/resources/callgraph/swap');
-Logger.setLogLevel(LOG_LEVEL.DEBUG)
+// Logger.setLogLevel(LOG_LEVEL.DEBUG)
+runScene(config);
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
@@ -74,5 +82,20 @@ function runScene(config: SceneConfig) {
     pta.start();
 }
 
+const rootDir = './tests/resources/pta';
+const outputDir = './out';
 
-runScene(config);
+const subdirs = fs.readdirSync(rootDir).filter(subdir => {
+    return fs.statSync(path.join(rootDir, subdir)).isDirectory();
+});
+
+// for (const subdir of subdirs) {
+//     const projectPath = path.join(rootDir, subdir);
+//     const config: SceneConfig = new SceneConfig();
+//     config.buildFromProjectDir(projectPath);
+//     runScene(config);
+//     const dotFile = 'out/ptaEnd_pag.dot';
+//     const pngFile = `out/${subdir}.png`;
+//     execSync(`dot -Tpng ${dotFile} -o ${pngFile}`);
+//     console.log(`Generated PNG: ${pngFile}`);
+// }

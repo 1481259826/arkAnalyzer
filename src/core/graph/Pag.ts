@@ -14,12 +14,12 @@
  */
 
 import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from './BaseGraph';
-import { CallGraph, CallSite, DynCallSite } from './CallGraph';
+import { CallGraph, CallSite } from './CallGraph';
 import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ArkInstanceInvokeExpr, ArkNewExpr } from '../base/Expr';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../base/Ref';
+import { ArkNewExpr } from '../base/Expr';
+import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../base/Ref';
 import { Local } from '../base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
@@ -353,8 +353,34 @@ export class PagThisRefNode extends PagNode {
 
 
 export class PagNewExprNode extends PagNode {
+    fieldNodes: Map<string, NodeID>
     constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
+    }
+
+    public addFieldNode(fieldSignature: AbstractFieldRef, nodeID: NodeID): boolean {
+        if (!this.fieldNodes) {
+            this.fieldNodes = new Map()
+        }
+        if (this.fieldNodes.has(fieldSignature.getFieldSignature().toString())) {
+            return false
+        }
+        this.fieldNodes.set(fieldSignature.getFieldSignature().toString(), nodeID);
+        return true
+    }
+
+    public getFieldNode(fieldSignature: AbstractFieldRef): NodeID | undefined {
+        if (!this.fieldNodes) {
+            return undefined
+        }
+        return this.fieldNodes.get(fieldSignature.getFieldSignature().toString())
+    }
+
+    public getFieldNodes(): Map<string, NodeID> | undefined {
+        if (!this.fieldNodes) {
+            return undefined
+        }
+        return this.fieldNodes
     }
 }
 
@@ -369,9 +395,13 @@ export class Pag extends BaseGraph {
     private cg: CallGraph;
     //private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
     private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
-    private addrEdges: PagEdgeSet = new Set();
+    // contextBaseToIdMap will only be used in instance field
+    // Value: instance field base value, NodeID: abstract nodes
+    private contextBaseToIdMap: Map<Value, Map<ContextID,NodeID[]>> = new Map();
+    // for reanalyze, will return new addr edges
+    private stashAddrEdge: PagEdgeSet = new Set();
+    private addrEdge: PagEdgeSet = new Set();
     private clonedNodeMap: Map<NodeID, Map<NodeID, NodeID>> = new Map();
-    private baseClsNode2ThisNodeMap: Map<NodeID, NodeID> = new Map();
 
     public getCG(): CallGraph {
         return this.cg;
@@ -417,7 +447,7 @@ export class Pag extends BaseGraph {
         return fieldNode
     }
 
-    public addPagNode(cid: ContextID, value: Value, stmt?: Stmt, refresh: boolean = true): PagNode{
+    public addPagNode(cid: ContextID, value: Value, stmt?: Stmt, refresh: boolean = true): PagNode {
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
@@ -470,14 +500,6 @@ export class Pag extends BaseGraph {
     }
 
     public getOrNewThisRefNode(thisRefNodeID: NodeID, value: ArkThisRef): PagNode {
-        // let thisNodeId = this.baseClsNode2ThisNodeMap.get(ptNode);
-        // if (thisNodeId) {
-        //     return this.getNode(thisNodeId) as PagNode;
-        // }
-
-        // let thisNode = this.addPagThisRefNode(ptNode, value);
-        // this.baseClsNode2ThisNodeMap.set(ptNode, thisNode.getID());
-        // return thisNode;
         if (thisRefNodeID != -1) {
             return this.getNode(thisRefNodeID) as PagNode
         }
@@ -543,7 +565,8 @@ export class Pag extends BaseGraph {
             case PagEdgeKind.Address:
                 src.addAddressOutEdge(edge);
                 dst.addAddressInEdge(edge);
-                this.addrEdges.add(edge);
+                this.addrEdge.add(edge);
+                this.stashAddrEdge.add(edge)
                 break;
             case PagEdgeKind.Write:
                 src.addWriteOutEdge(edge);
@@ -563,7 +586,11 @@ export class Pag extends BaseGraph {
     }
 
     public getAddrEdges(): PagEdgeSet {
-        return this.addrEdges;
+        return this.stashAddrEdge;
+    }
+
+    public resetAddrEdges() {
+        this.stashAddrEdge.clear();
     }
 
     public getGraphName(): string {
