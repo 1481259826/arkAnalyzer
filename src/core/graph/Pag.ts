@@ -23,6 +23,7 @@ import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldR
 import { Local } from '../base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
+import { Constant } from '../base/Constant';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -628,6 +629,10 @@ export class FuncPag {
         this.internalEdges == undefined ? this.internalEdges = new Set() : undefined;
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
+
+        if (rhOp instanceof Constant) {
+            return false;
+        }
 
         let iEdge: InternalEdge = { src: rhOp, dst: lhOp, kind: k, stmt: stmt};
         this.internalEdges.add(iEdge);
