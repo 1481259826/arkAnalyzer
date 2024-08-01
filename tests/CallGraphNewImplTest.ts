@@ -33,9 +33,9 @@ import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
 let config: SceneConfig = new SceneConfig()
 // config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
-config.buildFromProjectDir('./tests/resources/pta/StaticCall');
+// config.buildFromProjectDir('./tests/resources/pta/StaticCall');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
-// config.buildFromProjectDir('./tests/resources/callgraph/calltest');
+config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
 //config.buildFromProjectDir('./tests/resources/callgraph/swap');
 // Logger.setLogLevel(LOG_LEVEL.DEBUG)
@@ -72,13 +72,10 @@ function runScene(config: SceneConfig) {
     cgBuilder.buildDirectCallGraph();
 
     let pag = new Pag();
-    // let pagBuilder = new PagBuilder(pag, cg, projectScene);
-    // pagBuilder.build();
-    // pag.dump('pag.dot');
 
     let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
-    let pta = new PointerAnalysis(pag, cg, projectScene)
-    pta.setEntry(entry[0]);
+    let pta = new PointerAnalysis(pag, cg, projectScene, true)
+    pta.setEntries([entry[0]]);
     pta.start();
     console.log("fin")
 }
