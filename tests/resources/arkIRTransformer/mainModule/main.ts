@@ -46,7 +46,18 @@
 //     console.log(id, n);
 // }
 
-let arr2 = [{i: 1, j: 2}];
-for (const {i, j} of arr2) {
-    console.log(i, j);
+
+// let arr2 = [{i: 1, j: 2}];
+// for (const {i, j} of arr2) {
+//     console.log(i, j);
+// }
+
+let i = 0;
+while (i < 4) {
+    if (i == 3) {
+        i += 3;
+        break;
+    }
+    i++;
 }
+i = 10;

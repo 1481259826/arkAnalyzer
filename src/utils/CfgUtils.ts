@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import { Constant } from "../core/base/Constant";
-import { Local } from "../core/base/Local";
-import { ArkInstanceFieldRef } from "../core/base/Ref";
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, Stmt } from "../core/base/Stmt";
-import { Value } from "../core/base/Value";
-import { BasicBlock } from "../core/graph/BasicBlock";
-import { Cfg } from "../core/graph/Cfg";
+import { Constant } from '../core/base/Constant';
+import { Local } from '../core/base/Local';
+import { ArkInstanceFieldRef } from '../core/base/Ref';
+import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, Stmt } from '../core/base/Stmt';
+import { Value } from '../core/base/Value';
+import { BasicBlock } from '../core/graph/BasicBlock';
+import { Cfg } from '../core/graph/Cfg';
 
 enum BlockType {
     NORMAL,

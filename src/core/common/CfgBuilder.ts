@@ -16,7 +16,7 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
@@ -989,8 +989,6 @@ export class CfgBuilder {
                     stmtsInBlock.push(...arkIRTransformer.tsNodeToStmts(statementBuilder.astNode));
                 } else if (statementBuilder.code.startsWith('return')) {
                     stmtsInBlock.push(new ArkReturnVoidStmt());
-                } else if (statementBuilder.type == 'gotoStatement') {
-                    stmtsInBlock.push(new ArkGotoStmt());
                 }
             }
             const blockInCfg = new BasicBlock();

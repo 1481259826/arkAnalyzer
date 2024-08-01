@@ -40,7 +40,6 @@ import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
 import {
     ArkAssignStmt,
-    ArkGotoStmt,
     ArkIfStmt,
     ArkInvokeStmt,
     ArkReturnStmt,
@@ -93,7 +92,6 @@ import {
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
-import { IterationStatement } from 'ohos-typescript';
 
 const logger = Logger.getLogger();
 
@@ -482,7 +480,7 @@ export class ArkIRTransformer {
     }
 
     private gotoStatementToStmts(gotoStatement: ts.BreakStatement | ts.ContinueStatement): Stmt[] {
-        return [new ArkGotoStmt()];
+        return [];
     }
 
     private throwStatementToStmts(throwStatement: ts.ThrowStatement): Stmt[] {
