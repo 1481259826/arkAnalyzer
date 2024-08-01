@@ -30,7 +30,6 @@ import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
 import { ArkField } from '../../model/ArkField';
-import { instanceToPlain } from 'class-transformer';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -59,11 +58,11 @@ export class PagBuilder {
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
 
-    constructor(p: Pag, cg: CallGraph, s: Scene) {
+    constructor(p: Pag, cg: CallGraph, s: Scene, contextDepth: number) {
         this.pag = p;
         this.cg = cg;
         this.funcPags = new Map<FuncID, FuncPag>;
-        this.ctx = new KLimitedContextSensitive(2);
+        this.ctx = new KLimitedContextSensitive(contextDepth);
         this.scene = s;
     }
 

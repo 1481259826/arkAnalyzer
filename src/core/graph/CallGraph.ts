@@ -124,7 +124,7 @@ export class CallGraph extends BaseGraph {
     private callSiteToIdMap: Map<CallSite, CallSiteID> = new Map();
     private stmtToCallSitemap: Map<Stmt, CallSite> = new Map();
     private stmtToDynCallSitemap: Map<Stmt, DynCallSite> = new Map();
-    private methodToCGNodeMap: Map<Method, CallGraphNode> = new Map();
+    private methodToCGNodeMap: Map<string, NodeID> = new Map();
     private callPairToEdgeMap: Map<string, CallGraphEdge> = new Map();
     private callSiteNum: number = 0;
     private directCallEdgeNum: number;
@@ -149,7 +149,7 @@ export class CallGraph extends BaseGraph {
         let id: NodeID = this.nodeNum;
         let cgNode = new CallGraphNode(id, method, kind);
         this.addNode(cgNode);
-        this.methodToCGNodeMap.set(method, cgNode);
+        this.methodToCGNodeMap.set(method.toString(), cgNode.getID());
         return cgNode;
     }
 
@@ -172,7 +172,7 @@ export class CallGraph extends BaseGraph {
             return this.addCallGraphNode(method, CallGraphNodeKind.vitual)
         }
 
-        return n;
+        return this.getNode(n) as CallGraphNode;
     } 
 
     public addDirectCallEdge(caller: Method, callee: Method, callStmt: Stmt): void {

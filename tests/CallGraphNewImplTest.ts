@@ -16,20 +16,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { PrinterBuilder } from '../src/save/PrinterBuilder';
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { MethodSignature } from "../src/core/model/ArkSignature";
-import Logger, { LOG_LEVEL } from "../src/utils/logger";
 import { CallGraph } from '../src/core/graph/CallGraph';
 import { CallGraphBuilder } from '../src/core/graph/builder/CallGraphBuilder'
 import { Pag } from '../src/core/graph/Pag'
-import { PagBuilder } from '../src/core/graph/builder/PagBuilder'
 import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
+import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
  
 // const logger = Logger.getLogger();
 
-function runScene(config: SceneConfig) {
+function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.buildScene4HarmonyProject()
@@ -63,36 +61,48 @@ function runScene(config: SceneConfig) {
     let pag = new Pag();
 
     let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
-    let pta = new PointerAnalysis(pag, cg, projectScene, true)
+    let ptaConfig = new PointerAnalysisConfig(2, output, true)
+    let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries([entry[0]]);
     pta.start();
 }
 
-// let config: SceneConfig = new SceneConfig()
+let config: SceneConfig = new SceneConfig()
 // config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
-// config.buildFromProjectDir('./tests/resources/pta/StaticCall');
+config.buildFromProjectDir('./tests/resources/pta/CallField');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
 // config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
 //config.buildFromProjectDir('./tests/resources/callgraph/swap');
 // Logger.setLogLevel(LOG_LEVEL.DEBUG)
-// runScene(config);
+runScene(config, "./out/CallField");
 
 const rootDir = './tests/resources/pta';
 const outputDir = './out';
 
-const subdirs = fs.readdirSync(rootDir).filter(subdir => {
-    return fs.statSync(path.join(rootDir, subdir)).isDirectory();
-});
+// const subdirs = fs.readdirSync(rootDir).filter(subdir => {
+//     return fs.statSync(path.join(rootDir, subdir)).isDirectory();
+// });
 
-for (const subdir of subdirs) {
-    const projectPath = path.join(rootDir, subdir);
-    const config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(projectPath);
-    runScene(config);
-    const dotFile = 'out/ptaEnd_pag.dot';
-    const pngFile = `out/${subdir}.png`;
-    execSync(`dot -Tpng ${dotFile} -o ${pngFile}`);
-    console.log(`Generated PNG: ${pngFile}`);
-}
+// for (const subdir of subdirs) {
+//     try {
+//         const projectPath = path.join(rootDir, subdir);
+//         let config: SceneConfig = new SceneConfig();
+//         config.buildFromProjectDir(projectPath);
+//         runScene(config, `./out/${subdir}`);
+//     } catch (error) {
+//         console.log(error);
+//     }
+//     setTimeout(function() {
+//         console.log('wait')
+//     }, 10000)
+//     const dotFile = `out/${subdir}/ptaEnd_pag.dot`;
+//     const pngFile = `out/${subdir}/ptaEnd_pag.png`;
+//     try {
+//         execSync(`dot -Tpng ${dotFile} -o ${pngFile}`);
+//         console.log(`Generated PNG: ${pngFile}`);
+//     } catch (error) {
+//         console.error(`Error generating PNG for ${subdir}:`, error);
+//     }
+// }

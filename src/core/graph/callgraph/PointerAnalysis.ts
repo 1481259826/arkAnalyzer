@@ -19,13 +19,15 @@ import { Local } from "../../base/Local";
 import { ArkInstanceFieldRef } from "../../base/Ref";
 import { Value } from "../../base/Value";
 import { NodeID } from "../BaseGraph";
-import { CallGraph, FuncID, Method } from "../CallGraph";
+import path from "path";
+import { CallGraph, FuncID } from "../CallGraph";
 import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
 import { PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
 import { ClassType, Type } from "../../base/Type";
 import { CallGraphBuilder } from "../builder/CallGraphBuilder";
+import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
@@ -36,29 +38,33 @@ export class PointerAnalysis extends AbstractAnalysis{
     private entries: FuncID[];
     private worklist: NodeID[];
     private ptaStat: PTAStat;
+    private dumpPath: string
     private typeDiffMap: Map<Value, Set<Type>>;
     private needDetectTypeDiff: boolean;
 
-    constructor(p: Pag, cg: CallGraph, s: Scene, needDetectTypeDiff: boolean = false) {
+    constructor(p: Pag, cg: CallGraph, s: Scene, config: PointerAnalysisConfig) {
         super(s)
         this.pag = p;
         this.cg = cg;
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.getContextDepth());
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat();
-        this.needDetectTypeDiff = needDetectTypeDiff;
+        this.needDetectTypeDiff = config.getDetectTypeDiff();
+        this.dumpPath = config.getOutputDirectory()
     }
 
-    static pointerAnalysisForWholeProject(projectScene: Scene): PointerAnalysis {
+    static pointerAnalysisForWholeProject(projectScene: Scene, config?: PointerAnalysisConfig): PointerAnalysis {
         let cg = new CallGraph(projectScene);
         let pag = new Pag();
+        if (!config) {
+            config = new PointerAnalysisConfig(1, "out/", false)
+        }
 
         let entries: FuncID[] = [];// to get from dummy main
-        let pta = new PointerAnalysis(pag, cg, projectScene, true)
+        let pta = new PointerAnalysis(pag, cg, projectScene, config)
         pta.setEntries(entries);
         pta.start();
-
         return pta;
     }
 
@@ -67,8 +73,8 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.cgBuilder.buildDirectCallGraph();
         // TODO: how to get entry
         this.pagBuilder.buildForEntries(this.entries);
-        this.pag.dump('out/ptaInit_pag.dot');
-        this.cg.dump('out/cg_init.dot');
+        this.pag.dump(path.join(this.dumpPath, 'ptaInit_pag.dot'));
+        this.cg.dump(path.join(this.dumpPath, 'cg_init.dot'));
     }
 
     public start() {
@@ -81,8 +87,8 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.pag.dump('ptaEnd_pag.dot');
         this.ptaStat.endStat();
         this.ptaStat.printStat();
-        this.pag.dump('out/ptaEnd_pag.dot');
-        this.cg.dump('out/cgEnd.dot')
+        this.pag.dump(path.join(this.dumpPath, 'ptaEnd_pag.dot'));
+        this.cg.dump(path.join(this.dumpPath, 'cgEnd.dot'))
     }
 
     public setEntries(fIds: FuncID[]) {
@@ -99,7 +105,7 @@ export class PointerAnalysis extends AbstractAnalysis{
             this.solveWorklist();
             // process dynamic call
             reanalyzer = this.updateCallGraph();
-            this.pag.dump('out/pta_pag.dot');
+            this.pag.dump(path.join(this.dumpPath, 'pta_pag.dot'));
         }
     }
 
@@ -167,6 +173,9 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         instanceFieldNodeMap.forEach((nodeIDs, cid) => {
             // TODO: check cid
+            if (cid != node.getCid()) {
+                return
+            }
             nodeIDs.forEach((nodeID) => {
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
                 fieldNode?.getIncomingEdge().forEach((edge) => {
@@ -396,6 +405,43 @@ export class PointerAnalysis extends AbstractAnalysis{
         return false;
     }
 
+    /**
+     * compare interface
+     */
+    public noAlias(leftValue: Value, rightValue: Value) {
+        let leftValueNodes = this.pag.getNodesByValue(leftValue)?.values()!
+        let rightValueNodes = this.pag.getNodesByValue(rightValue)?.values()!
+
+        let leftValuePts: Set<NodeID> = new Set(), rightValuePts: Set<NodeID> = new Set()
+
+        for (let nodeID of leftValueNodes) {
+            let node = this.pag.getNode(nodeID) as PagNode
+            for (let pt of node.getPointTo()) {
+                leftValuePts.add(pt)
+            }
+        }
+
+        for (let nodeID of rightValueNodes) {
+            let node = this.pag.getNode(nodeID) as PagNode
+            for (let pt of node.getPointTo()) {
+                rightValuePts.add(pt)
+            }
+        }
+
+        if (leftValuePts.size > rightValuePts.size) {
+            [leftValuePts, rightValuePts] = [rightValuePts, leftValuePts];
+        }
+        
+        for (const elem of leftValuePts) {
+            if (rightValuePts.has(elem)) {
+                return false;
+            }
+        }
+        
+        // no alias
+        return true;
+    }
+
     private detectTypeDiff(nodeId: NodeID): void {
         if (this.needDetectTypeDiff == false) {
             return;
@@ -498,8 +544,8 @@ class PTAStat implements StatTraits {
         output = output + `Real write\t\t${this.numRealWrite}\n\n`
         output = output + `Dynamic call\t\t${this.numDynamicCall}\n`
         output = output + `Direct call\t\t${this.numDirectCall}\n\n`
-        output = output + `Totol Time\t\t${this.TotalTime} S\n`
-        output = output + `Totol iterator Times\t${this.iterTimes}\n`
+        output = output + `Total Time\t\t${this.TotalTime} S\n`
+        output = output + `Total iterator Times\t${this.iterTimes}\n`
         output = output + `RSS used\t\t${this.rssUsed.toFixed(3)} Mb\n`
         output = output + `Heap used\t\t${this.heapUsed.toFixed(3)} Mb\n`
         return output;
