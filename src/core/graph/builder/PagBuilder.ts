@@ -58,11 +58,11 @@ export class PagBuilder {
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
 
-    constructor(p: Pag, cg: CallGraph, s: Scene, contextDepth: number) {
+    constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
         this.cg = cg;
         this.funcPags = new Map<FuncID, FuncPag>;
-        this.ctx = new KLimitedContextSensitive(contextDepth);
+        this.ctx = new KLimitedContextSensitive(kLimit);
         this.scene = s;
     }
 
@@ -191,13 +191,13 @@ export class PagBuilder {
             //throw new Error("No Func PAG is found for #" + funcID);
             return;
         }
-        if (this.handledFunc.has(`[${cid}, ${funcID}]`)) {
+        if (this.handledFunc.has(`${cid}-${funcID}`)) {
             return;
         }
 
         this.addEdgesFromFuncPag(funcPag, cid);
         this.addCallsEdgesFromFuncPag(funcPag, cid);
-        this.handledFunc.add(`[${cid}, ${funcID}]`)
+        this.handledFunc.add(`${cid}-${funcID}`)
     }
 
     /// Add Pag Nodes and Edges in function

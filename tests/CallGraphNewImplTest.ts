@@ -61,7 +61,7 @@ function runScene(config: SceneConfig, output: string) {
     let pag = new Pag();
 
     let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
-    let ptaConfig = new PointerAnalysisConfig(2, output, true)
+    let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries([entry[0]]);
     pta.start();
