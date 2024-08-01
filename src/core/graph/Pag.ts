@@ -100,7 +100,7 @@ export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
     private stmt: Stmt | undefined; // stmt is just used for graph print
-    private pointerSet: Set<NodeID>;
+    private pointTo: Set<NodeID>;
 
     private addressInEdges: PagEdgeSet;
     private addressOutEdges: PagEdgeSet;
@@ -124,7 +124,7 @@ export class PagNode extends BaseNode {
         this.cid = cid;
         this.value = value;
         this.stmt = s;
-        this.pointerSet = new Set<NodeID>;
+        this.pointTo = new Set<NodeID>;
     }
 
     public getBasePt(): NodeID {
@@ -243,16 +243,16 @@ export class PagNode extends BaseNode {
         return this.value
     }
 
-    public getPointerSet(): Set<NodeID> {
-        return this.pointerSet
+    public getPointTo(): Set<NodeID> {
+        return this.pointTo
     }
 
-    public addPointerSetElement(node: NodeID) {
-        this.pointerSet.add(node)
+    public addPointToElement(node: NodeID) {
+        this.pointTo.add(node)
     }
 
-    public setPointerSet(pts: Set<NodeID>): void {
-        this.pointerSet = pts;
+    public setPointTo(pts: Set<NodeID>): void {
+        this.pointTo = pts;
     }
 
     public getOutEdges() {
@@ -296,7 +296,7 @@ export class PagNode extends BaseNode {
         if (this.basePt) {
             label = label + ` base:{${this.basePt}}`;
         }
-        label = label + ` pts:{${Array.from(this.pointerSet).join(',')}}`
+        label = label + ` pts:{${Array.from(this.pointTo).join(',')}}`
 
         if (this.getKind() == PagNodeKind.Param) {
             param = this.value as ArkParameterRef;

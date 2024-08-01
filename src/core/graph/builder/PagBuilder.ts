@@ -31,6 +31,7 @@ import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
 import { ArkField } from '../../model/ArkField';
 import { instanceToPlain } from 'class-transformer';
+import { PtsSet } from '../../pta/PtsDS';
 
 const logger = Logger.getLogger();
 
@@ -64,11 +65,13 @@ export class PagBuilder {
         this.scene = s;
     }
 
-    public buildForEntry(funcID: FuncID): void {
+    public buildForEntries(funcIDs: FuncID[]): void {
         this.worklist = [];
-        let cid = this.ctx.getNewContextID(funcID);
-        let csFuncID = new CSFuncID(cid, funcID);
-        this.worklist.push(csFuncID);
+        funcIDs.forEach(funcID => {
+            let cid = this.ctx.getNewContextID(funcID);
+            let csFuncID = new CSFuncID(cid, funcID);
+            this.worklist.push(csFuncID)
+        });
 
         this.handleReachable();
     }
@@ -517,5 +520,12 @@ export class PagBuilder {
         }
     }
 
+    public setPtForNode(node: NodeID, pts: PtsSet<NodeID> | undefined): void {
+        if (!pts) {
+            return;
+        }
+
+        (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
+    }
 
 }
