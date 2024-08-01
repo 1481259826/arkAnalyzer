@@ -38,27 +38,25 @@ export class PointerAnalysis extends AbstractAnalysis{
     private entries: FuncID[];
     private worklist: NodeID[];
     private ptaStat: PTAStat;
-    private dumpPath: string
     private typeDiffMap: Map<Value, Set<Type>>;
-    private needDetectTypeDiff: boolean;
+    private config: PointerAnalysisConfig
 
     constructor(p: Pag, cg: CallGraph, s: Scene, config: PointerAnalysisConfig) {
         super(s)
         this.pag = p;
         this.cg = cg;
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.getContextDepth());
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat();
-        this.needDetectTypeDiff = config.getDetectTypeDiff();
-        this.dumpPath = config.getOutputDirectory()
+        this.config = config
     }
 
     static pointerAnalysisForWholeProject(projectScene: Scene, config?: PointerAnalysisConfig): PointerAnalysis {
         let cg = new CallGraph(projectScene);
         let pag = new Pag();
         if (!config) {
-            config = new PointerAnalysisConfig(1, "out/", false)
+            config = new PointerAnalysisConfig(1, "out/", false, false)
         }
 
         let entries: FuncID[] = [];// to get from dummy main
@@ -73,8 +71,10 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.cgBuilder.buildDirectCallGraph();
         // TODO: how to get entry
         this.pagBuilder.buildForEntries(this.entries);
-        this.pag.dump(path.join(this.dumpPath, 'ptaInit_pag.dot'));
-        this.cg.dump(path.join(this.dumpPath, 'cg_init.dot'));
+        if (this.config.dotDump) {
+            this.pag.dump(path.join(this.config.outputDirectory, 'ptaInit_pag.dot'));
+            this.cg.dump(path.join(this.config.outputDirectory, 'cg_init.dot'));
+        }
     }
 
     public start() {
@@ -86,8 +86,10 @@ export class PointerAnalysis extends AbstractAnalysis{
     private postProcess() {
         this.ptaStat.endStat();
         this.ptaStat.printStat();
-        this.pag.dump(path.join(this.dumpPath, 'ptaEnd_pag.dot'));
-        this.cg.dump(path.join(this.dumpPath, 'cgEnd.dot'))
+        if (this.config.dotDump) {
+            this.pag.dump(path.join(this.config.outputDirectory, 'ptaEnd_pag.dot'));
+            this.cg.dump(path.join(this.config.outputDirectory, 'cgEnd.dot'))
+        }
     }
 
     public setEntries(fIds: FuncID[]) {
@@ -105,7 +107,9 @@ export class PointerAnalysis extends AbstractAnalysis{
             this.solveWorklist();
             // process dynamic call
             reanalyzer = this.updateCallGraph();
-            this.pag.dump(path.join(this.dumpPath, 'pta_pag.dot'));
+            if (this.config.dotDump) {
+                this.pag.dump(path.join(this.config.outputDirectory, 'pta_pag.dot'));
+            }
         }
     }
 
@@ -372,7 +376,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private detectTypeDiff(nodeId: NodeID): void {
-        if (this.needDetectTypeDiff == false) {
+        if (this.config.detectTypeDiff == false) {
             return;
         }
 

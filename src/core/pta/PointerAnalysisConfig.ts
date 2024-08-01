@@ -17,29 +17,22 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class PointerAnalysisConfig {
-    private contextSensitiveDepth: number
-    private outputDirectory: string
-    private detectTypeDiff: boolean
+    public kLimit: number
+    public outputDirectory: string
+    public detectTypeDiff: boolean
+    public dotDump: boolean
 
-    constructor(contextDepth: number, outputDirectory: string, detectTypeDiff: boolean) {
-        this.contextSensitiveDepth = contextDepth;
+    constructor(kLimit: number, outputDirectory: string, detectTypeDiff: boolean=false, dotDump: boolean=false) {
+        if (kLimit > 5) {
+            throw new Error("K Limit too large");
+        }
+        this.kLimit = kLimit;
         this.outputDirectory = outputDirectory;
         this.detectTypeDiff = detectTypeDiff
+        this.dotDump = dotDump
 
         if (!fs.existsSync(outputDirectory)) {
             fs.mkdirSync(outputDirectory, { recursive: true });
         }
-    }
-
-    public getContextDepth(): number {
-        return this.contextSensitiveDepth
-    }
-
-    public getOutputDirectory(): string {
-        return this.outputDirectory
-    }
-
-    public getDetectTypeDiff(): boolean {
-        return this.detectTypeDiff
     }
 }
