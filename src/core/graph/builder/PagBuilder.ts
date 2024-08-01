@@ -30,7 +30,7 @@ import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
 import { ArkField } from '../../model/ArkField';
-import { instanceToPlain } from 'class-transformer';
+import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
 const logger = Logger.getLogger();
@@ -48,6 +48,7 @@ export class PagBuilder {
     private pag: Pag;
     private cg: CallGraph;
     private funcPags: Map<FuncID, FuncPag>;
+    private handledFunc: Set<string> = new Set()
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
@@ -57,11 +58,11 @@ export class PagBuilder {
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
 
-    constructor(p: Pag, cg: CallGraph, s: Scene) {
+    constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
         this.cg = cg;
         this.funcPags = new Map<FuncID, FuncPag>;
-        this.ctx = new KLimitedContextSensitive(2);
+        this.ctx = new KLimitedContextSensitive(kLimit);
         this.scene = s;
     }
 
@@ -190,9 +191,13 @@ export class PagBuilder {
             //throw new Error("No Func PAG is found for #" + funcID);
             return;
         }
+        if (this.handledFunc.has(`${cid}-${funcID}`)) {
+            return;
+        }
 
         this.addEdgesFromFuncPag(funcPag, cid);
         this.addCallsEdgesFromFuncPag(funcPag, cid);
+        this.handledFunc.add(`${cid}-${funcID}`)
     }
 
     /// Add Pag Nodes and Edges in function
@@ -336,6 +341,9 @@ export class PagBuilder {
                 // TODO: param type should be ArkParameterRef?
                 //if (arg && param && param instanceof ArkParameterRef) {
                 if (arg && param) {
+                    if (arg instanceof Constant) {
+                        continue
+                    }
                     // Get or create new PAG node for argument and parameter
                     let srcPagNode = this.getOrNewPagNode(callerCid, arg, cs.callStmt);
                     let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
