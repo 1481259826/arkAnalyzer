@@ -14,46 +14,59 @@
  */
 
 import { Scene } from "../../../Scene";
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../base/Expr";
+import { ArkInstanceInvokeExpr } from "../../base/Expr";
 import { Local } from "../../base/Local";
-import { AbstractFieldRef, ArkInstanceFieldRef } from "../../base/Ref";
-import { ArkAssignStmt, Stmt } from "../../base/Stmt";
+import { ArkInstanceFieldRef } from "../../base/Ref";
 import { Value } from "../../base/Value";
-import { ArkMethod } from "../../model/ArkMethod";
-import { ClassSignature, MethodSignature } from "../../model/ArkSignature";
 import { NodeID } from "../BaseGraph";
 import { CallGraph, FuncID, Method } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagInstanceFieldNode, PagLocalNode, PagNewExprNode, PagNode, PagStaticFieldNode, PagThisRefNode } from "../Pag";
-import { CSFuncID, PagBuilder } from "../builder/PagBuilder";
+import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
+import { PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import { DiffPTData, PtsSet } from "../../pta/PtsDS";
-import { ContextID, KLimitedContextSensitive } from "../../pta/Context";
-import { ArkClass } from "../../model/ArkClass";
-
-type PointerPair = [NodeID, NodeID]
+import { ClassType, Type } from "../../base/Type";
+import { CallGraphBuilder } from "../builder/CallGraphBuilder";
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
     private pagBuilder: PagBuilder;
     private cg: CallGraph;
+    private cgBuilder: CallGraphBuilder;
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
-    private entry: FuncID;
+    private entries: FuncID[];
     private worklist: NodeID[];
     private ptaStat: PTAStat;
+    private typeDiffMap: Map<Value, Set<Type>>;
+    private needDetectTypeDiff: boolean;
 
-    constructor(p: Pag, cg: CallGraph, s: Scene) {
+    constructor(p: Pag, cg: CallGraph, s: Scene, needDetectTypeDiff: boolean = false) {
         super(s)
         this.pag = p;
         this.cg = cg;
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
         this.pagBuilder = new PagBuilder(this.pag, this.cg, s);
+        this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat();
+        this.needDetectTypeDiff = needDetectTypeDiff;
+    }
+
+    static pointerAnalysisForWholeProject(projectScene: Scene): PointerAnalysis {
+        let cg = new CallGraph(projectScene);
+        let pag = new Pag();
+
+        let entries: FuncID[] = [];// to get from dummy main
+        let pta = new PointerAnalysis(pag, cg, projectScene, true)
+        pta.setEntries(entries);
+        pta.start();
+
+        return pta;
     }
 
     private init() {
         this.ptaStat.startStat();
+        this.cgBuilder.buildDirectCallGraph();
         // TODO: how to get entry
-        this.pagBuilder.buildForEntry(this.entry);
+        this.pagBuilder.buildForEntries(this.entries);
         this.pag.dump('out/ptaInit_pag.dot');
         this.cg.dump('out/cg_init.dot');
     }
@@ -61,7 +74,6 @@ export class PointerAnalysis extends AbstractAnalysis{
     public start() {
         this.init();
         this.solveConstraint();
-
         this.postProcess();
     }
 
@@ -72,8 +84,8 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.cg.dump('out/cgEnd.dot')
     }
 
-    public setEntry(fid: FuncID) {
-        this.entry = fid;
+    public setEntries(fIds: FuncID[]) {
+        this.entries = fIds;
     }
 
     private solveConstraint() {
@@ -112,17 +124,14 @@ export class PointerAnalysis extends AbstractAnalysis{
         return true;
     }
 
-    private processNode(node: NodeID): boolean {
-        this.handleThis(node)
-        this.handleLoadWrite(node);
-        this.handleCopy(node);
+    private processNode(nodeId: NodeID): boolean {
+        this.handleThis(nodeId)
+        this.handleLoadWrite(nodeId);
+        this.handleCopy(nodeId);
 
-        this.ptd.flush(node);
-        try{
-            (this.pag.getNode(node) as PagNode).setPointerSet(this.ptd.getPropaPts(node)!.getProtoPtsSet());
-        } catch(e) {
-            console.log(e);
-        }
+        this.ptd.flush(nodeId);
+        this.pagBuilder.setPtForNode(nodeId, this.ptd.getPropaPts(nodeId));
+        this.detectTypeDiff(nodeId);
         return true;
     }
 
@@ -314,6 +323,54 @@ export class PointerAnalysis extends AbstractAnalysis{
             }
         }
         return flag;
+    }
+
+    private detectTypeDiff(nodeId: NodeID): void {
+        if (this.needDetectTypeDiff == false) {
+            return;
+        }
+
+        this.typeDiffMap = this.typeDiffMap ?? new Map();
+        let node = this.pag.getNode(nodeId) as PagNode;
+        // We any consider type diff for Local node
+        if (!(node instanceof PagLocalNode)) {
+            return;
+        }
+
+        let value = node.getValue();
+        let origType = node.getValue().getType();
+        // TODO: union type
+        if (!(origType instanceof ClassType)) {
+            return;
+        }
+
+        let findSameType = true;
+        let pts = node.getPointTo();
+        pts.forEach(pt => {
+            let ptNode = this.pag.getNode(pt) as PagNode;
+            let type = ptNode.getValue().getType();
+            if (type.toString() != origType.toString()) {
+                let diffSet = this.typeDiffMap.get(value);
+                if (!diffSet) {
+                    diffSet = new Set();
+                    this.typeDiffMap.set(value, diffSet);
+                }
+                diffSet.add(type);
+            } else {
+                findSameType = true;
+            }
+        })
+
+        // If find pts to original type, 
+        // need add original type back since it is a correct type
+        let diffSet = this.typeDiffMap.get(value);
+        if (diffSet && findSameType) {
+            diffSet.add(origType);
+        }
+    }
+
+    public getTypeDiffMap(): Map<Value, Set<Type>> {
+        return this.typeDiffMap;
     }
 }
 
