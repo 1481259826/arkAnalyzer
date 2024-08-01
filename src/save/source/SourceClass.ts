@@ -20,7 +20,7 @@ import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
-import { SourceUtils } from './SourceUtils';
+import { Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
 
 /**
  * @category save
@@ -42,11 +42,11 @@ export class SourceClass extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.cls.getOriginType() == 'Object') {
+        if (this.cls.getOriginType() == Origin_Object) {
             return this.dumpObject();
         }
 
-        if (this.cls.getOriginType() == 'TypeLiteral') {
+        if (this.cls.getOriginType() == Origin_TypeLiteral) {
             return this.dumpTypeLiteral();
         }
 

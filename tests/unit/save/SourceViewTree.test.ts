@@ -196,6 +196,47 @@ struct BuilderParamTest {
 }
 `;
 
+const CASE7_EXPECT = `namespace Case2 {
+  @Component
+  struct Child {
+    label: string = 'Child';
+    @Builder
+    customBuilder() {
+    }
+    @Builder
+    customChangeThisBuilder() {
+    }
+    @BuilderParam
+    customBuilderParam: () => void  = this.customBuilder;
+    @BuilderParam
+    customChangeThisBuilderParam: () => void  = this.customChangeThisBuilder;
+    build() {
+      Column() {
+        this.customBuilderParam();
+        this.customChangeThisBuilderParam();
+      }
+    }
+  }
+  @Entry
+  @Component
+  struct BuilderParamTest {
+    label: string = 'Parent';
+    @Builder
+    componentBuilder() {
+      Text('' + this.label + '')
+    }
+    build() {
+      Column() {
+        this.componentBuilder();
+        Child({customBuilderParam: this.componentBuilder, customChangeThisBuilderParam: (): void => {
+        this.componentBuilder();
+      }})
+      }
+    }
+  }
+}
+`;
+
 describe('SourceViewTreeTest', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../resources/viewtree'));
@@ -294,5 +335,20 @@ describe('SourceViewTreeTest', () => {
         let printer = new SourceClassPrinter(cls);
         let source = printer.dump();
         expect(source).eq(CASE6_EXPECT);
+    });
+
+    it('case7: BuilderParam ns', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('BuilderParamTest.ets');
+        });
+
+        let ns = arkfile?.getNamespaceWithName('Case2');
+        if (!ns) {
+            assert.isDefined(ns);
+            return;
+        }
+        let printer = new SourceNamespacePrinter(ns);
+        let source = printer.dump();
+        expect(source).eq(CASE7_EXPECT);
     });
 });

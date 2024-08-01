@@ -34,7 +34,7 @@ import { ArkCodeBuffer } from '../ArkStream';
 import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
-import { SourceUtils } from './SourceUtils';
+import { Origin_Component, Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
 
 const logger = Logger.getLogger();
 
@@ -209,18 +209,17 @@ export class SourceAssignStmt extends SourceStmt {
         return super.dump();
     }
 
-    private isComponentClassType(type: Type) {
+    private getClassOriginType(type: Type): string | undefined {
         if (!(type instanceof ClassType)) {
-            return false;
+            return undefined;
         }
 
         let signature = type.getClassSignature();
         let cls = this.context.getClass(signature);
         if (!cls) {
-            return false;
+            return undefined;
         }
-
-        return cls.hasComponentDecorator();
+        return SourceUtils.getOriginType(cls);
     }
 
     /**
@@ -228,6 +227,7 @@ export class SourceAssignStmt extends SourceStmt {
      * temp1.constructor(10)
      */
     private transferRightNewExpr(): void {
+        let originType = this.getClassOriginType(this.rightOp.getType());
         if (this.context.getStmtReader().hasNext()) {
             let stmt = this.context.getStmtReader().next();
             let rollback = true;
@@ -241,8 +241,11 @@ export class SourceAssignStmt extends SourceStmt {
                     instanceInvokeExpr.getArgs().forEach((v) => {
                         args.push(this.transformer.valueToString(v));
                     });
-                    if (this.isComponentClassType(this.rightOp.getType())) {
+
+                    if (originType == Origin_Component) {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(',')})`;
+                    } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
+                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
                     } else {
                         this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
                             ','
@@ -256,8 +259,10 @@ export class SourceAssignStmt extends SourceStmt {
             }
         }
 
-        if (this.isComponentClassType(this.rightOp.getType())) {
+        if (originType == Origin_Component) {
             this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}()`;
+        } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
+            this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
         } else {
             this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}()`;
         }

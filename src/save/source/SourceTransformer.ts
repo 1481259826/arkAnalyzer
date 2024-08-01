@@ -28,7 +28,6 @@ import {
     ArkTypeOfExpr,
     ArkUnopExpr,
     ArrayLiteralExpr,
-    ObjectLiteralExpr,
 } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
 import { ArkClass } from '../../core/model/ArkClass';
@@ -83,14 +82,13 @@ export class SourceTransformer {
         this.context = context;
     }
 
-    private anonymousMethodToString(method: ArkMethod): string {
-        let mtdPrinter = new SourceMethod(method, this.context.getPrinter().getIndent());
+    private anonymousMethodToString(method: ArkMethod, indent: string): string {
+        let mtdPrinter = new SourceMethod(method, indent);
         mtdPrinter.setInBuilder(this.context.isInBuilderMethod());
-        let body = mtdPrinter.dump();
-        return body.substring(this.context.getPrinter().getIndent().length);
+        return mtdPrinter.dump().trimStart();
     }
 
-    private anonymousClassToString(cls: ArkClass, indent: string = ''): string {
+    private anonymousClassToString(cls: ArkClass, indent: string): string {
         let clsPrinter = new SourceClass(cls, indent);
         return clsPrinter.dump().trimStart();
     }
@@ -116,7 +114,7 @@ export class SourceTransformer {
         let methodSignature = invokeExpr.getMethodSignature();
         let method = this.context.getMethod(methodSignature);
         if (method && SourceUtils.isAnonymousMethod(method.getName())) {
-            return this.anonymousMethodToString(method);
+            return this.anonymousMethodToString(method, this.context.getPrinter().getIndent());
         }
 
         let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
@@ -246,10 +244,6 @@ export class SourceTransformer {
             return `[${elements.join(', ')}]`;
         }
 
-        if (expr instanceof ObjectLiteralExpr) {
-            return this.anonymousClassToString(expr.getAnonymousClass());
-        }
-
         // ArkPhiExpr
         return `${expr}`;
     }
@@ -293,7 +287,7 @@ export class SourceTransformer {
                 let methodSignature = (value.getType() as CallableType).getMethodSignature();
                 let anonymousMethod = this.context.getMethod(methodSignature);
                 if (anonymousMethod) {
-                    return this.anonymousMethodToString(anonymousMethod);
+                    return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
                 }
             }
             if (SourceUtils.isAnonymousClass(value.getName())) {
@@ -348,7 +342,7 @@ export class SourceTransformer {
             if (SourceUtils.isAnonymousClass(name)) {
                 let cls = this.context.getClass(type.getClassSignature());
                 if (cls) {
-                    return this.anonymousClassToString(cls);
+                    return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
                 }
                 return 'any';
             }
