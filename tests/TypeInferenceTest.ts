@@ -36,6 +36,7 @@ export class TypeInferenceTest {
         scene.buildScene4HarmonyProject();
         // scene.buildSceneFromProjectDir(config);
         scene.collectProjectImportInfos();
+        const a = scene.getEntryMethodsFromModuleJson5()
         return scene;
     }
 
@@ -57,9 +58,6 @@ export class TypeInferenceTest {
                 logger.error('========= arkClass:', arkClass.getName(), ' =======');
                 for (const arkMethod of arkClass.getMethods()) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
-                    arkMethod.getBody().getLocals().forEach(local => {
-                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    });
                 }
             }
         }
@@ -100,10 +98,6 @@ export class TypeInferenceTest {
                     const body = arkMethod.getBody();
                     // this.printStmts(body);
 
-                    logger.error('-- locals:');
-                    arkMethod.getBody().getLocals().forEach(local => {
-                        logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-                    });
                 }
             }
         }

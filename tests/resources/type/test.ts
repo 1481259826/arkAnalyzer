@@ -12,7 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let  x=1
-do {
-  x++
-} while(x<10)
+class a{
+
+}
+
+class b extends a{
+  
+}
