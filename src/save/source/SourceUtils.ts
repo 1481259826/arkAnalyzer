@@ -25,17 +25,23 @@ import {
     SPECIAL_CONTAINER_COMPONENT,
     isEtsSystemComponent,
 } from '../../core/common/EtsConst';
+import { ArkClass } from '../../core/model/ArkClass';
+import { ANONYMOUS_CLASS_PREFIx, DEFAULT_ARK_CLASS_NAME } from '../../core/model/builder/ArkClassBuilder';
 import Logger from '../../utils/logger';
 
 const logger = Logger.getLogger();
 
+export const Origin_TypeLiteral = 'TypeLiteral';
+export const Origin_Object = 'Object';
+export const Origin_Component = 'Component';
+
 export class SourceUtils {
     public static isAnonymousClass(name: string): boolean {
-        return name.startsWith('AnonymousClass-');
+        return name.startsWith(ANONYMOUS_CLASS_PREFIx);
     }
 
     public static isDefaultClass(name: string): boolean {
-        return name == '_DEFAULT_ARK_CLASS';
+        return name == DEFAULT_ARK_CLASS_NAME;
     }
 
     public static isAnonymousMethod(name: string): boolean {
@@ -48,6 +54,13 @@ export class SourceUtils {
 
     public static isTemp(name: string): boolean {
         return name.startsWith('$temp');
+    }
+
+    public static getOriginType(cls: ArkClass): string {
+        if (cls.hasComponentDecorator()) {
+            return Origin_Component;
+        }
+        return cls.getOriginType();
     }
 
     public static flipOperator(operator: string): string {

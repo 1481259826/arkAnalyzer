@@ -13,25 +13,22 @@
  * limitations under the License.
  */
 
+@Entry
 @Component
-struct Foo {
-    flag: boolean = false;
-    flag1: boolean = false;
-
-@Builder
-    MyBuilderFunction() {
-        if (this.flag) {
-            Row()
-        } else {
-            Column()
-        }
-    }
+struct ParentComponent {
+@Prop parentData: number = 0;
 
     build() {
-        if (this.flag) {
-            this.MyBuilderFunction()
-        } else {
-            Column()
+        Column() {
+            SubComponent({ subData: this.parentData })
         }
+    }
+}
+
+@Component
+struct SubComponent {
+@State subData: number = 1;
+
+    build() {
     }
 }

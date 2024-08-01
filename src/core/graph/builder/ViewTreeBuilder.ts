@@ -20,8 +20,7 @@ import {
     AbstractInvokeExpr,
     ArkInstanceInvokeExpr,
     ArkNewExpr,
-    ArkStaticInvokeExpr,
-    ObjectLiteralExpr,
+    ArkStaticInvokeExpr
 } from '../../base/Expr';
 import { Local } from '../../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
@@ -699,10 +698,10 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         builder: ArkMethod | undefined
     ): Map<ArkField, ArkField | ArkMethod> | undefined {
         let transferMap: Map<ArkField, ArkField | ArkMethod> = new Map();
-        if (object instanceof ObjectLiteralExpr) {
-            object
-                .getAnonymousClass()
-                .getFields()
+        if (object instanceof Local && object.getType() instanceof ClassType) {
+            let anonymousSig = (object.getType() as ClassType).getClassSignature();
+            let anonymous = this.findClass(anonymousSig);
+            anonymous?.getFields()
                 .forEach((field) => {
                     let dstField = cls.getFieldWithName(field.getName());
                     if (dstField?.getStateDecorators().length == 0 && !dstField?.hasBuilderParamDecorator()) {

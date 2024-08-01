@@ -795,33 +795,3 @@ export class ArrayLiteralExpr extends AbstractExpr {
         return '[' + this.elements.join() + ']';
     }
 }
-
-export class ObjectLiteralExpr extends AbstractExpr {
-    private anonymousClass: ArkClass;
-    private type: Type;
-
-    constructor(anonymousClass: ArkClass, type: Type = ClassType) {
-        super();
-        this.anonymousClass = anonymousClass;
-        this.type = type;
-    }
-
-    public getAnonymousClass() {
-        return this.anonymousClass;
-    }
-
-    public getUses(): Value[] {
-        let uses: Value[] = [];
-        uses.push();
-        return uses;
-    }
-
-    public getType(): Type {
-        return this.type;
-    }
-
-    public toString(): string {
-        //TODO: Fixed the bug where getSignature() return undefined
-        return this.anonymousClass.getSignature()?.toString();
-    }
-}

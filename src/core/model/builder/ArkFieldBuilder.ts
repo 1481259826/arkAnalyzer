@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import ts from "ohos-typescript";
-import { ArkField } from "../ArkField";
-import Logger from "../../../utils/logger";
-import { LineColPosition } from "../../base/Position";
-import { ArkClass } from "../ArkClass";
-import { ArkMethod } from "../ArkMethod";
-import { buildModifiers, handlePropertyAccessExpression, tsNode2Type, tsNode2Value } from "./builderUtils";
+import ts from 'ohos-typescript';
+import { ArkField } from '../ArkField';
+import Logger from '../../../utils/logger';
+import { LineColPosition } from '../../base/Position';
+import { ArkClass } from '../ArkClass';
+import { ArkMethod } from '../ArkMethod';
+import { buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
 
 const logger = Logger.getLogger();
 

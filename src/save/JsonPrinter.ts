@@ -22,7 +22,7 @@ import { ArkField } from "../core/model/ArkField";
 import { AnyType, ArrayType, BooleanType, CallableType, ClassType, LiteralType, NeverType, NullType, NumberType, PrimitiveType, StringType, TupleType, Type, UnclearReferenceType, UndefinedType, UnionType, UnknownType, VoidType } from "../core/base/Type";
 import { Value } from "../core/base/Value";
 import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkNopStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, ArkThrowStmt, Stmt } from "../core/base/Stmt";
-import { ArkBinopExpr, ArkCastExpr, ArkConditionExpr, ArkDeleteExpr, ArkInstanceInvokeExpr, ArkInstanceOfExpr, ArkLengthExpr, ArkNewArrayExpr, ArkNewExpr, ArkPhiExpr, ArkStaticInvokeExpr, ArkTypeOfExpr, ArkUnopExpr, ArrayLiteralExpr, ObjectLiteralExpr } from "../core/base/Expr";
+import { ArkBinopExpr, ArkCastExpr, ArkConditionExpr, ArkDeleteExpr, ArkInstanceInvokeExpr, ArkInstanceOfExpr, ArkLengthExpr, ArkNewArrayExpr, ArkNewExpr, ArkPhiExpr, ArkStaticInvokeExpr, ArkTypeOfExpr, ArkUnopExpr, ArrayLiteralExpr } from "../core/base/Expr";
 import { Constant } from "../core/base/Constant";
 import { MethodParameter } from "../core/model/builder/ArkMethodBuilder";
 import { ImportInfo } from "../core/model/ArkImport";
@@ -384,12 +384,6 @@ export class JsonPrinter extends Printer {
             return {
                 _: 'ArrayLiteralExpr',
                 elements: value.getElements().map(arg => this.serializeValue(arg)),
-                type: this.serializeType(value.getType()),
-            };
-        } else if (value instanceof ObjectLiteralExpr) {
-            return {
-                _: 'ObjectLiteralExpr',
-                anonymousClass: this.serializeClassSignature(value.getAnonymousClass().getSignature()),
                 type: this.serializeType(value.getType()),
             };
         } else if (value instanceof ArkConditionExpr) {

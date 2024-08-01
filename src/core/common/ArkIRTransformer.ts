@@ -75,7 +75,11 @@ import Logger from '../../utils/logger';
 import { IRUtils } from './IRUtils';
 import { ArkMethod } from '../model/ArkMethod';
 import { buildArkMethodFromArkClass } from '../model/builder/ArkMethodBuilder';
-import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace } from '../model/builder/ArkClassBuilder';
+import {
+    buildNormalArkClassFromArkFile,
+    buildNormalArkClassFromArkNamespace,
+    CONSTRUCTOR,
+} from '../model/builder/ArkClassBuilder';
 import { ArkClass } from '../model/ArkClass';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import {
@@ -87,7 +91,6 @@ import {
     COMPONENT_REPEAT,
     isEtsSystemComponent,
 } from './EtsConst';
-import { tsNode2Value } from '../model/builder/builderUtils';
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 
@@ -511,16 +514,36 @@ export class ArkIRTransformer {
         return {value: resultValue, stmts: stmts};
     }
 
-    private objectLiteralExpresionToValueAndStmts(node: ts.ObjectLiteralExpression): ValueAndStmts {
-        return {
-            value: tsNode2Value(node, this.sourceFile, this.declaringMethod.getDeclaringArkClass(), this.declaringMethod),
-            stmts: [],
-        };
+    private objectLiteralExpresionToValueAndStmts(objectLiteralExpression: ts.ObjectLiteralExpression): ValueAndStmts {
+        const declaringArkClass = this.declaringMethod.getDeclaringArkClass();
+        const declaringArkNamespace = declaringArkClass.getDeclaringArkNamespace();
+        const anonymousClass = new ArkClass();
+        if (declaringArkNamespace) {
+            buildNormalArkClassFromArkNamespace(objectLiteralExpression, declaringArkNamespace, anonymousClass, this.sourceFile, this.declaringMethod);
+            declaringArkNamespace.addArkClass(anonymousClass);
+        } else {
+            const declaringArkFile = declaringArkClass.getDeclaringArkFile();
+            buildNormalArkClassFromArkFile(objectLiteralExpression, declaringArkFile, anonymousClass, this.sourceFile, this.declaringMethod);
+            declaringArkFile.addArkClass(anonymousClass);
+        }
+
+        const stmts: Stmt[] = [];
+        const anonymousClassSignature = anonymousClass.getSignature();
+        const anonymousClassType = new ClassType(anonymousClassSignature);
+        const newExpr = new ArkNewExpr(anonymousClassType);
+        const {value: newExprValue, stmts: newExprStmts} = this.generateAssignStmtForValue(newExpr);
+        stmts.push(...newExprStmts);
+
+        const constructorMethodSignature = new MethodSignature();
+        constructorMethodSignature.setDeclaringClassSignature(anonymousClassSignature);
+        constructorMethodSignature.getMethodSubSignature().setMethodName(CONSTRUCTOR);
+        stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, constructorMethodSignature, [])));
+        return {value: newExprValue, stmts: stmts};
     }
 
     private createCustomViewStmt(componentName: string, args: Value[],
-                                 componentExpression: ts.EtsComponentExpression | ts.CallExpression): ValueAndStmts {
-        const stmts: Stmt[] = [];
+                                 componentExpression: ts.EtsComponentExpression | ts.CallExpression, currStmts: Stmt[]): ValueAndStmts {
+        const stmts: Stmt[] = [...currStmts];
 
         const classSignature = new ClassSignature();
         classSignature.setClassName(componentName);
@@ -591,7 +614,7 @@ export class ArkIRTransformer {
             return {value: componentValue, stmts: stmts};
         }
 
-        return this.createCustomViewStmt(componentName, args, etsComponentExpression);
+        return this.createCustomViewStmt(componentName, args, etsComponentExpression, stmts);
     }
 
     private classExpressionToValueAndStmts(classExpression: ts.ClassExpression): ValueAndStmts {
@@ -727,7 +750,7 @@ export class ArkIRTransformer {
             // temp for component
             let cls = ModelUtils.getClass(this.declaringMethod, classSignature);
             if (cls?.hasComponentDecorator()) {
-                return this.createCustomViewStmt(callerName, args, callExpression);
+                return this.createCustomViewStmt(callerName, args, callExpression, stmts);
             }
 
             methodSignature.getMethodSubSignature().setMethodName(callerName);

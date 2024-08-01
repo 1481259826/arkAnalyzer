@@ -79,7 +79,11 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     public getMethod(signature: MethodSignature): ArkMethod | null {
-        return this.method.getDeclaringArkFile().getScene().getMethod(signature);
+        let method = this.method.getDeclaringArkFile().getScene().getMethod(signature);
+        if (method) {
+            return method;
+        }
+        return this.method.getDeclaringArkClass().getMethodWithName(signature.getMethodSubSignature().getMethodName())
     }
 
     public getClass(signature: ClassSignature): ArkClass | null {
