@@ -127,6 +127,10 @@ export class SourceBody implements StmtPrinterContext {
         return this.tempVisitor.has(temp);
     }
 
+    public setTempVisit(temp: string): void {
+        this.tempVisitor.add(temp);
+    }
+
     public getPrinter(): ArkCodeBuffer {
         return this.printer;
     }
@@ -238,6 +242,7 @@ export class SourceBody implements StmtPrinterContext {
         if (stmt.getLine() < lastLine) {
             stmt.setLine(lastLine + 0.1);
         }
+        stmt.transfer2ts();
         this.stmts.push(stmt);
     }
 
