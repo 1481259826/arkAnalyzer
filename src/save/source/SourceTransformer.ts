@@ -349,24 +349,13 @@ export class SourceTransformer {
             return name;
         }
         if (type instanceof ArrayType) {
-            let baseType = type.getBaseType();
-            if (baseType instanceof UnknownType) {
-                const strs: string[] = [];
-                strs.push('(any)');
-                for (let i = 0; i < type.getDimension(); i++) {
-                    strs.push('[]');
-                }
-                return strs.join('');
-            } else if (baseType instanceof PrimitiveType) {
-                const strs: string[] = [];
-                strs.push(`${baseType.getName()}`);
-                for (let i = 0; i < type.getDimension(); i++) {
-                    strs.push('[]');
-                }
-                return strs.join('');
-            } else {
-                return type.toString();
+            const dimensions: string[] = [];
+            for (let i = 0; i < type.getDimension(); i++) {
+                dimensions.push('[]');
             }
+
+            let baseType = type.getBaseType();
+            return `${this.typeToString(baseType)}${dimensions.join('')}`;
         }
 
         if (type instanceof CallableType) {

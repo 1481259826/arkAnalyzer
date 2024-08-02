@@ -16,7 +16,7 @@
 import { Constant } from '../../core/base/Constant';
 import { ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef } from '../../core/base/Ref';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
 import {
     ArkAssignStmt,
     ArkGotoStmt,
@@ -25,6 +25,7 @@ import {
     ArkReturnStmt,
     ArkReturnVoidStmt,
     ArkSwitchStmt,
+    ArkThrowStmt,
     Stmt,
 } from '../../core/base/Stmt';
 import { ClassType, Type } from '../../core/base/Type';
@@ -159,7 +160,10 @@ export class SourceAssignStmt extends SourceStmt {
             this.context.setTempCode((this.leftOp as Local).getName(), this.rightCode);
         }
 
-        if (this.leftOp instanceof ArkInstanceFieldRef && this.leftOp.getBase().getName() == 'this') {
+        if (
+            (this.leftOp instanceof ArkInstanceFieldRef && this.leftOp.getBase().getName() == 'this') ||
+            this.leftOp instanceof ArkStaticFieldRef
+        ) {
             this.context.setTempCode(this.leftOp.getFieldName(), this.rightCode);
         }
 
@@ -611,6 +615,16 @@ export class SourceCommonStmt extends SourceStmt {
     }
 }
 
+export class SourceThrowStmt extends SourceStmt {
+    constructor(context: StmtPrinterContext, original: ArkThrowStmt) {
+        super(context, original);
+    }
+
+    public transfer2ts(): void {
+        this.setText(`throw ${this.transformer.valueToString((this.original as ArkThrowStmt).getOp())};`);
+    }
+}
+
 export class SourceNewArrayExpr {
     expr: ArkNewArrayExpr;
     values: string[];
@@ -642,5 +656,9 @@ export function stmt2SourceStmt(context: StmtPrinterContext, stmt: Stmt): Source
     if (stmt instanceof ArkReturnStmt) {
         return new SourceReturnStmt(context, stmt);
     }
+    if (stmt instanceof ArkThrowStmt) {
+        return new SourceThrowStmt(context, stmt);
+    }
+    logger.info(`stmt2SourceStmt ${stmt} not support.`);
     return new SourceCommonStmt(context, stmt);
 }
