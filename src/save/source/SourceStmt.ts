@@ -43,6 +43,7 @@ export interface StmtPrinterContext extends TransformerContext {
     getStmtReader(): StmtReader;
     setTempCode(temp: string, code: string): void;
     hasTempVisit(temp: string): boolean;
+    setTempVisit(temp: string): void;
 
     getLocals(): Map<string, Local>;
     defineLocal(local: Local): void;
@@ -62,7 +63,6 @@ export abstract class SourceStmt implements Dump {
         this.context = context;
         this.line = original.getOriginPositionInfo().getLineNo();
         this.transformer = new SourceTransformer(context);
-        this.transfer2ts();
     }
 
     public getLine(): number {
@@ -74,6 +74,17 @@ export abstract class SourceStmt implements Dump {
     }
 
     public dump(): string {
+        this.beforeDump();
+        let code = this.dumpTs();
+        this.afterDump();
+        return code;
+    }
+
+    protected beforeDump(): void {}
+
+    protected afterDump(): void {}
+
+    protected dumpTs(): string {
         if (this.text.length > 0) {
             return `${this.printer.getIndent()}${this.text}\n`;
         }
@@ -96,7 +107,7 @@ export abstract class SourceStmt implements Dump {
         return this.context.getPrinter().getIndent();
     }
 
-    protected abstract transfer2ts(): void;
+    public abstract transfer2ts(): void;
 
     protected isLocalTempValue(value: Value): boolean {
         if (!(value instanceof Local)) {
@@ -124,7 +135,7 @@ export class SourceAssignStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.leftOp = (this.original as ArkAssignStmt).getLeftOp();
         this.rightOp = (this.original as ArkAssignStmt).getRightOp();
         logger.debug('SourceAssignStmt->transfer2ts', this.leftOp, this.rightOp);
@@ -173,16 +184,9 @@ export class SourceAssignStmt extends SourceStmt {
         }
     }
 
-    public dump(): string {
-        // omit this = this: <tests\sample\sample.ts>.<_DEFAULT_ARK_CLASS>
-        switch (this.dumpType) {
-            case AssignStmtDumpType.NORMAL:
-                return super.dump();
-
-            case AssignStmtDumpType.COMPONENT_CREATE:
-                let code = super.dump();
-                this.printer.incIndent();
-                return code;
+    protected beforeDump(): void {
+        if (this.dumpType != AssignStmtDumpType.TEMP_REPLACE) {
+            return;
         }
 
         if (this.context.hasTempVisit(this.leftCode)) {
@@ -210,7 +214,12 @@ export class SourceAssignStmt extends SourceStmt {
                 this.setText(`${this.leftCode} = ${this.rightCode};`);
             }
         }
-        return super.dump();
+    }
+
+    protected afterDump(): void {
+        if (this.dumpType == AssignStmtDumpType.COMPONENT_CREATE) {
+            this.printer.incIndent();
+        }
     }
 
     private getClassOriginType(type: Type): string | undefined {
@@ -330,39 +339,47 @@ export class SourceInvokeStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         let invokeExpr = this.original.getInvokeExpr();
+        let code = '';
+        let isAttr = false;
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
-            this.setText(`${this.transformer.staticInvokeExprToString(invokeExpr)}`);
-            return;
+            if (SourceUtils.isComponentPop(invokeExpr)) {
+                code = '}';
+                isAttr = true;
+            } else {
+                code = this.transformer.staticInvokeExprToString(invokeExpr);
+                isAttr = SourceUtils.isComponentIfElseInvoke(invokeExpr);
+            }
         } else if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-            this.setText(`${this.transformer.instanceInvokeExprToString(invokeExpr)}`);
+            code = this.transformer.instanceInvokeExprToString(invokeExpr);
+            isAttr = SourceUtils.isComponentAttributeInvoke(invokeExpr);
+        }
+
+        if (code.length > 0 && !isAttr) {
+            this.setText(`${code};`);
+        } else {
+            this.setText(`${code}`);
+        }
+    }
+
+    protected beforeDump(): void {
+        let invokeExpr = this.original.getInvokeExpr();
+        if (
+            (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentPop(invokeExpr)) ||
+            (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentIfElseInvoke(invokeExpr))
+        ) {
+            this.printer.decIndent();
             return;
         }
     }
 
-    public dump(): string {
+    protected afterDump(): void {
         let invokeExpr = this.original.getInvokeExpr();
-        if (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentPop(invokeExpr)) {
-            this.printer.decIndent();
-            return `${this.printer.getIndent()}}\n`;
-        }
-
         if (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentIfElseInvoke(invokeExpr)) {
-            this.printer.decIndent();
-            let code = `${this.printer.getIndent()}${this.text}\n`;
             this.printer.incIndent();
-            return code;
+            return;
         }
-
-        if (this.text.length > 0) {
-            if (invokeExpr instanceof ArkInstanceInvokeExpr && SourceUtils.isComponentAttributeInvoke(invokeExpr)) {
-                return `${this.printer.getIndent()}${this.text}\n`;
-            } else {
-                return `${this.printer.getIndent()}${this.text};\n`;
-            }
-        }
-        return ``;
     }
 }
 
@@ -371,7 +388,7 @@ export class SourceIfStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
         code = `if (${this.transformer.valueToString(expr.getOp1())}`;
@@ -380,10 +397,8 @@ export class SourceIfStmt extends SourceStmt {
         this.setText(code);
     }
 
-    public dump(): string {
-        let code = super.dump();
+    protected afterDump(): void {
         this.printer.incIndent();
-        return code;
     }
 }
 
@@ -392,13 +407,11 @@ export class SourceWhileStmt extends SourceStmt {
         super(context, original);
     }
 
-    public dump(): string {
-        let code = super.dump();
+    protected afterDump(): void {
         this.printer.incIndent();
-        return code;
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
         code = `while (${this.transformer.valueToString(expr.getOp1())}`;
@@ -462,7 +475,7 @@ export class SourceForStmt extends SourceWhileStmt {
         return true;
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         if (this.forOf2ts()) {
             return;
         }
@@ -472,7 +485,9 @@ export class SourceForStmt extends SourceWhileStmt {
         code += ` ${this.transferOperator()} `;
         code += `${this.transformer.valueToString(expr.getOp2())}; `;
         while (this.context.getStmtReader().hasNext()) {
-            code += stmt2SourceStmt(this.context, this.context.getStmtReader().next()).toString();
+            let sourceStmt = stmt2SourceStmt(this.context, this.context.getStmtReader().next());
+            sourceStmt.transfer2ts();
+            code += sourceStmt.toString();
             if (this.context.getStmtReader().hasNext()) {
                 code += ', ';
             }
@@ -488,15 +503,16 @@ export class SourceElseStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.setText('} else {');
     }
 
-    public dump(): string {
+    protected beforeDump(): void {
         this.printer.decIndent();
-        let code = super.dump();
+    }
+
+    protected afterDump(): void {
         this.printer.incIndent();
-        return code;
     }
 }
 
@@ -505,7 +521,7 @@ export class SourceContinueStmt extends SourceStmt {
         super(context, original);
     }
     // trans 2 break or continue
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.setText('continue;');
     }
 }
@@ -515,7 +531,7 @@ export class SourceBreakStmt extends SourceStmt {
         super(context, original);
     }
     // trans 2 break or continue
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.setText('break;');
     }
 }
@@ -525,7 +541,7 @@ export class SourceReturnStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.setText(`return ${this.transformer.valueToString((this.original as ArkReturnStmt).getOp())};`);
     }
 }
@@ -535,7 +551,7 @@ export class SourceReturnVoidStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         if (this.original.getOriginPositionInfo().getLineNo() <= 0) {
             this.setText('');
         } else {
@@ -549,14 +565,12 @@ export class SourceSwitchStmt extends SourceStmt {
         super(context, original);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.setText(`switch (${this.transformer.valueToString((this.original as ArkSwitchStmt).getKey())}) {`);
     }
 
-    public dump(): string {
-        let code = super.dump();
+    protected afterDump(): void {
         this.printer.incIndent();
-        return code;
     }
 }
 
@@ -565,7 +579,6 @@ export class SourceCaseStmt extends SourceStmt {
     constructor(context: StmtPrinterContext, original: ArkSwitchStmt, index: number) {
         super(context, original);
         this.caseIndex = index;
-        this.transfer2ts();
     }
 
     public isDefault(): boolean {
@@ -573,7 +586,7 @@ export class SourceCaseStmt extends SourceStmt {
         return this.caseIndex >= cases.length;
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         let cases = (this.original as ArkSwitchStmt).getCases();
         if (this.caseIndex < cases.length) {
             let value = (this.original as ArkSwitchStmt).getCases()[this.caseIndex];
@@ -583,10 +596,8 @@ export class SourceCaseStmt extends SourceStmt {
         }
     }
 
-    public dump(): string {
-        let code = super.dump();
+    protected afterDump(): void {
         this.printer.incIndent();
-        return code;
     }
 }
 
@@ -596,11 +607,10 @@ export class SourceCompoundEndStmt extends SourceStmt {
         this.setText(text);
     }
 
-    protected transfer2ts(): void {}
+    public transfer2ts(): void {}
 
-    public dump(): string {
+    protected beforeDump(): void {
         this.printer.decIndent();
-        return super.dump();
     }
 }
 
@@ -609,7 +619,7 @@ export class SourceCommonStmt extends SourceStmt {
         super(context, stmt);
     }
 
-    protected transfer2ts(): void {
+    public transfer2ts(): void {
         this.setText(this.original.toString());
         logger.debug('SourceCommonStmt->transfer2ts:', this.original.toString());
     }
