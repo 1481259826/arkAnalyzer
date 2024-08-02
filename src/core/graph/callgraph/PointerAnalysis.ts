@@ -28,6 +28,7 @@ import { DiffPTData, PtsSet } from "../../pta/PtsDS";
 import { ClassType, Type } from "../../base/Type";
 import { CallGraphBuilder } from "../builder/CallGraphBuilder";
 import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
+import { ArkMethod } from "../../model/ArkMethod";
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
@@ -54,12 +55,19 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     static pointerAnalysisForWholeProject(projectScene: Scene, config?: PointerAnalysisConfig): PointerAnalysis {
         let cg = new CallGraph(projectScene);
+        let cgBuilder = new CallGraphBuilder(cg, projectScene)
+        cgBuilder.buildDirectCallGraph();
         let pag = new Pag();
         if (!config) {
             config = new PointerAnalysisConfig(1, "out/", false, false)
         }
 
         let entries: FuncID[] = [];// to get from dummy main
+        let entryMethods: ArkMethod[] = projectScene.getEntryMethodsFromModuleJson5();
+        entryMethods.forEach((method) => {
+            let methodNodeID: FuncID = cg.getCallGraphNodeByMethod(method.getSignature()).getID()
+            entries.push(methodNodeID)
+        })
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
         pta.setEntries(entries);
         pta.start();
@@ -68,8 +76,6 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     private init() {
         this.ptaStat.startStat();
-        this.cgBuilder.buildDirectCallGraph();
-        // TODO: how to get entry
         this.pagBuilder.buildForEntries(this.entries);
         if (this.config.dotDump) {
             this.pag.dump(path.join(this.config.outputDirectory, 'ptaInit_pag.dot'));
