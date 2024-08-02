@@ -16,7 +16,7 @@
 import { Constant } from '../core/base/Constant';
 import { Local } from '../core/base/Local';
 import { ArkInstanceFieldRef } from '../core/base/Ref';
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, Stmt } from '../core/base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, Stmt } from '../core/base/Stmt';
 import { Value } from '../core/base/Value';
 import { BasicBlock } from '../core/graph/BasicBlock';
 import { Cfg } from '../core/graph/Cfg';
@@ -203,11 +203,11 @@ export class CfgUitls {
     }
 
     private isGotoStmtBB(block: BasicBlock): boolean {
-        for (let stmt of block.getStmts()) {
-            if (stmt instanceof ArkGotoStmt) {
-                return true;
-            }
-        }
+        // for (let stmt of block.getStmts()) {
+        //     if (stmt instanceof ArkGotoStmt) {
+        //         return true;
+        //     }
+        // }
         return false;
     }
 

@@ -287,29 +287,33 @@ export class CfgBuilder {
                 lastStatement = s;
                 break;
             } else if (ts.isBreakStatement(c)) {
-                let brstm = new StatementBuilder('breakStatement', 'break;', c, scope.id);
-                judgeLastType(brstm);
+                // let brstm = new StatementBuilder('breakStatement', 'break;', c, scope.id);
+                // judgeLastType(brstm);
                 let p: ts.Node | null = c;
                 while (p) {
                     if (ts.SyntaxKind[p.kind].includes('While') || ts.SyntaxKind[p.kind].includes('For')) {
-                        brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
-                        this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
-                        break;
+                        const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
+                        judgeLastType(lastLoopNextF);
+                        lastLoopNextF.lasts.add(lastStatement);
+                        // brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
+                        // this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
+                        return;
                     }
                     if (ts.SyntaxKind[p.kind].includes('CaseClause') || ts.SyntaxKind[p.kind].includes('DefaultClause')) {
-                        brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
-                        this.switchExitStack[this.switchExitStack.length - 1].lasts.add(brstm.next);
-                        break;
+                        const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
+                        judgeLastType(lastSwitchExit);
+                        lastSwitchExit.lasts.add(lastStatement);
+                        // brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
+                        // this.switchExitStack[this.switchExitStack.length - 1].lasts.add(brstm.next);
+                        return;
                     }
                     p = p.parent;
                 }
-                lastStatement = brstm;
             } else if (ts.isContinueStatement(c)) {
-                let constm = new StatementBuilder('continueStatement', 'continue;', c, scope.id);
-                judgeLastType(constm);
-                constm.next = this.loopStack[this.loopStack.length - 1];
-                this.loopStack[this.loopStack.length - 1].lasts.add(constm);
-                lastStatement = constm;
+                const lastLoop = this.loopStack[this.loopStack.length - 1];
+                judgeLastType(lastLoop);
+                lastLoop.lasts.add(lastStatement);
+                return;
             } else if (ts.isIfStatement(c)) {
                 let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder('ifStatement', '', c, scope.id);
                 judgeLastType(ifstm);
@@ -738,6 +742,7 @@ export class CfgBuilder {
                 lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
                 this.exit.lasts = new Set(lasts);
                 notReturnStmt.block?.nexts.push(returnBlock);
+                returnBlock.lasts.push(notReturnStmt.block!);
             }
         }
     }
