@@ -52,8 +52,8 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
-    private staticField2UniqInstanceMap: Map<ArkField, Value> = new Map();
-    private instanceField2UniqInstanceMap: Map<[ArkField, Value], Value> = new Map();
+    private staticField2UniqInstanceMap: Map<string, Value> = new Map();
+    private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
@@ -113,8 +113,13 @@ export class PagBuilder {
             //throw new Error("function ID");
             return false;
         }
+        
+        let cfg = arkMethod.getCfg()
+        if (!cfg) {
+            return false
+        }
 
-        for (let stmt of arkMethod.getCfg()!.getStmts()){
+        for (let stmt of cfg.getStmts()){
             logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
                 // Add non-call edges
@@ -318,7 +323,7 @@ export class PagBuilder {
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
-        if (!calleeMethod) {
+        if (!calleeMethod || !calleeMethod.getCfg()) {
             //throw new Error(`Failed to get ArkMethod`);
             // TODO: check if nodes need to delete
             // this.cg.removeCallGraphNode(cs.calleeFuncID)
@@ -415,33 +420,23 @@ export class PagBuilder {
         }
 
         let sig = v.getFieldSignature();
-        let cls = this.scene.getClass(sig.getDeclaringSignature() as ClassSignature);
-        if (!cls) {
-            throw new Error('Can not find ArkClass');
-        }
-        let field: ArkField | null;
+        let sigStr = sig.toString()
         let base: Value
 
-        if (sig.isStatic()) {
-            field = cls.getStaticFieldWithName(sig.getFieldName());
-        } else {
-            field = cls.getFieldWithName(sig.getFieldName());
+        if (!sig.isStatic()) {
             base = (v as ArkInstanceFieldRef).getBase()
-        }
-        if (!field) {
-            throw new Error('Can not find ArkField');
         }
         let real
         if (sig.isStatic()) {
-            real = this.staticField2UniqInstanceMap.get(field);
+            real = this.staticField2UniqInstanceMap.get(sigStr);
             if (!real) {
-                this.staticField2UniqInstanceMap.set(field, v);
+                this.staticField2UniqInstanceMap.set(sigStr, v);
                 real = v;
             }
         } else {
-            real = this.instanceField2UniqInstanceMap.get([field, base!]);
+            real = this.instanceField2UniqInstanceMap.get([sigStr, base!]);
             if (!real) {
-                this.instanceField2UniqInstanceMap.set([field, base!], v);
+                this.instanceField2UniqInstanceMap.set([sigStr, base!], v);
                 real = v;
             }
         }
