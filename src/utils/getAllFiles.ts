@@ -23,12 +23,14 @@ const logger = Logger.getLogger();
  * @param srcPath string 要提取文件的项目入口，相对或绝对路径都可
  * @param exts string[] 要提取的文件扩展名数组，每个扩展名需以点开头
  * @param filenameArr string[] 用来存放提取出的文件的原始路径的数组，可不传，默认为空数组
+ * @param visited: Set<string> 用来存放已经访问过的路径，避免递归栈溢出，可不传，默认为空数组
  * @return string[] 提取出的文件的原始路径数组
  */
 export function getAllFiles(
   srcPath: string,
   exts: string[],
-  filenameArr: string[] = []
+  filenameArr: string[] = [],
+  visited: Set<string> = new Set<string>()
 ): string[] {
   // 如果源目录不存在，直接结束程序
   if (!fs.existsSync(srcPath)) {
@@ -38,6 +40,10 @@ export function getAllFiles(
 
   // 获取src的绝对路径
   const realSrc = fs.realpathSync(srcPath);
+  if (visited.has(realSrc)) {
+    return filenameArr;
+  }
+  visited.add(realSrc);
 
   // 遍历src，判断文件类型
   fs.readdirSync(realSrc).forEach(filename => {
@@ -55,7 +61,7 @@ export function getAllFiles(
 
     // 如果是目录，递归提取
     if (fs.statSync(realFile).isDirectory()) {
-      getAllFiles(realFile, exts, filenameArr);
+      getAllFiles(realFile, exts, filenameArr, visited);
     } else {
       // 如果是文件，则判断其扩展名是否在给定的扩展名数组中
       if (exts.includes(path.extname(filename))) {

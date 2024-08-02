@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Type } from '../../base/Type';
+import { ClassType, Type } from '../../base/Type';
 import { BodyBuilder } from '../../common/BodyBuilder';
 import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
 import { ArkClass } from '../ArkClass';
@@ -27,9 +27,10 @@ import {
     handlePropertyAccessExpression,
 } from './builderUtils';
 import Logger from '../../../utils/logger';
+import { ArkThisRef } from '../../base/Ref';
 import { ArkBody } from '../ArkBody';
 import { Cfg } from '../../graph/Cfg';
-import { ArkStaticInvokeExpr } from '../../base/Expr';
+import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { MethodSignature, MethodSubSignature } from '../ArkSignature';
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
 import { BasicBlock } from '../../graph/BasicBlock';
@@ -344,6 +345,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     defaultConstructor.setIsGeneratedFlag(true);
 
     const basicBlock = new BasicBlock();
+    basicBlock.addStmt(new ArkAssignStmt(new Local('this'), new ArkThisRef(new ClassType(arkClass.getSignature()))));
     const locals: Set<Local> = new Set();
     let startingStmt: Stmt;
     if (parentConstructor != null) {
@@ -407,4 +409,40 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     arkClass.addMethod(defaultConstructor);
 
     return true;
+}
+
+export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
+    const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
+    const cThis = new Local('this');
+    const assignStmt = new ArkAssignStmt(cThis, new ArkThisRef(classType));
+    const block = new BasicBlock();
+    block.addStmt(assignStmt);
+    const locals: Set<Local> = new Set();
+    for (const stmt of stmts) {
+        block.addStmt(stmt);
+        if (stmt.getDef() && stmt.getDef() instanceof Local) {
+            locals.add(stmt.getDef() as Local);
+        }
+    }
+    block.addStmt(new ArkReturnVoidStmt());
+    const cfg = new Cfg();
+    cfg.addBlock(block);
+    cfg.setStartingStmt(assignStmt);
+    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, new Map()));
+    
+}
+
+export function addInitInConstructor(arkClass: ArkClass) {
+    for (const method of arkClass.getMethods()) {
+        if (method.getName() == 'constructor') {
+            const _this = new Local('this');
+            const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(_this, arkClass.getInstanceInitMethod().getSignature(), []));
+            const firstBlockStmts = [...method.getCfg()!.getBlocks()!][0].getStmts();
+            let index = 0;
+            if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() == 'this') {
+                index = 1;
+            }
+            firstBlockStmts.splice(index, 0, initInvokeStmt);
+        }
+    }
 }

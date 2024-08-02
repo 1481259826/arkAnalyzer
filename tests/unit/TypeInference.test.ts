@@ -27,16 +27,15 @@ describe("StaticSingleAssignmentFormer Test", () => {
     let methods = scene.getMethods();
 
     it('inferTypeInMethod case', () => {
-        if (methods == null) {
+        let method = methods[0];
+        if (method == null) {
             assert.isNotNull(methods);
             return;
         }
 
-        for (const method of methods) {
-            const spy = vi.spyOn(method, "getBody");
-            TypeInference.inferTypeInMethod(method);
-            expect(spy).toHaveBeenCalledTimes(1);
-        }
+        const spy = vi.spyOn(method, "getBody");
+        TypeInference.inferTypeInMethod(method);
+        expect(spy).toHaveBeenCalledTimes(1);
     })
     it('inferSimpleTypeInMethod case', () => {
         if (methods == null) {

@@ -20,8 +20,7 @@ import {
     AbstractInvokeExpr,
     ArkInstanceInvokeExpr,
     ArkNewExpr,
-    ArkStaticInvokeExpr,
-    ObjectLiteralExpr,
+    ArkStaticInvokeExpr
 } from '../../base/Expr';
 import { Local } from '../../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
@@ -48,7 +47,7 @@ import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
 import { Cfg } from '../Cfg';
 import Logger from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
-import { ModelUtils } from "../../common/ModelUtils";
+import { ModelUtils } from '../../common/ModelUtils';
 
 const logger = Logger.getLogger();
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
@@ -479,7 +478,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         this.buildViewStatus = true;
         this.loadClasssFieldTypes();
-        
+
         if (this.render.hasBuilderDecorator()) {
             let node = ViewTreeNodeImpl.createBuilderNode();
             node.signature = this.render.getSignature();
@@ -604,7 +603,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let builderViewTree = method.getViewTree();
         if (!builderViewTree || !builderViewTree.getRoot()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
-            // add empty node 
+            // add empty node
             let node = ViewTreeNodeImpl.createBuilderNode();
             node.signature = method.getSignature();
             node.classSignature = node.signature;
@@ -615,7 +614,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
             this.push(root);
             this.pop();
-            return root
+            return root;
         }
     }
 
@@ -699,17 +698,28 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         builder: ArkMethod | undefined
     ): Map<ArkField, ArkField | ArkMethod> | undefined {
         let transferMap: Map<ArkField, ArkField | ArkMethod> = new Map();
-        if (object instanceof ObjectLiteralExpr) {
-            object
-                .getAnonymousClass()
-                .getFields()
+        if (object instanceof Local && object.getType() instanceof ClassType) {
+            let anonymousSig = (object.getType() as ClassType).getClassSignature();
+            let anonymous = this.findClass(anonymousSig);
+            anonymous?.getFields()
                 .forEach((field) => {
                     let dstField = cls.getFieldWithName(field.getName());
                     if (dstField?.getStateDecorators().length == 0 && !dstField?.hasBuilderParamDecorator()) {
                         return;
                     }
 
-                    let value = field.getInitializer();
+                    let stmts = field.getInitializer();
+                    stmts = stmts.reverse();
+                    if (stmts.length == 0) {
+                        return;
+                    }
+
+                    let assignStmt = stmts[0];
+                    if (!(assignStmt instanceof ArkAssignStmt)) {
+                        return;
+                    }
+
+                    let value = assignStmt.getRightOp();
                     if (dstField?.hasBuilderParamDecorator()) {
                         let method: ArkMethod | undefined | null;
                         if (value instanceof ArkInstanceFieldRef) {

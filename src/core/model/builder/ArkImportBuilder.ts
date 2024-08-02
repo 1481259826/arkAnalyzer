@@ -105,14 +105,17 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
         return eInfo;
     } else if (!eInfo.getFrom()) {
         if (eInfo.getExportClauseType() === ExportType.LOCAL) {
-            findDefaultMethodSetType(eInfo);
+            findLocalSetType(eInfo);
         } else {
             let found = findClassSetType(eInfo);
+            if (!found) {
+                found = findMethodSetType(eInfo);
+            }
             if (!found) {
                 found = findNameSpaceSetType(eInfo);
             }
             if (!found) {
-                findDefaultMethodSetType(eInfo);
+                findLocalSetType(eInfo);
             }
             if (!found) {
                 findImportSetType(eInfo);
@@ -210,12 +213,22 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
     return file.getExportInfoBy(fromInfo.getOriginName());
 }
 
-function findDefaultMethodSetType(info: ExportInfo): boolean {
+function findLocalSetType(info: ExportInfo): boolean {
     let local = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals()
         .get(info.getOriginName());
     if (local) {
         info.setExportClauseType(ExportType.LOCAL);
         info.setTypeSignature(local);
+        return true;
+    }
+    return false;
+}
+
+function findMethodSetType(info: ExportInfo): boolean {
+    const method = info.getDeclaringArkFile().getDefaultClass().getMethodWithName(info.getOriginName());
+    if (method) {
+        info.setExportClauseType(ExportType.METHOD);
+        info.setTypeSignature(method.getSignature());
         return true;
     }
     return false;

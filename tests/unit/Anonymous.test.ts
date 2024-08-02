@@ -27,7 +27,7 @@ describe("Anonymous Test", () => {
         assert.equal(projectScene.getClasses().length, 2);
     })
     it('method case', () => {
-        assert.equal(projectScene.getMethods().length, 4);
+        assert.equal(projectScene.getMethods().length, 6);
     })
 
 })

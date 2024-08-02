@@ -33,6 +33,7 @@ export class TypeInferenceTest {
     public testLocalTypes() {
         let scene = this.buildScene();
         scene.inferTypes();
+        scene.getEntryMethodsFromModuleJson5()
         // scene.inferSimpleTypes();
     }
 

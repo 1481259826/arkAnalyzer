@@ -57,6 +57,9 @@ export class ArkClass implements ArkExport {
     private staticMethods: Map<string, ArkMethod> = new Map<string, ArkMethod>();
     private staticFields: Map<string, ArkField> = new Map<string, ArkField>();
 
+    private instanceInitMethod: ArkMethod = new ArkMethod();
+    private staticInitMethod: ArkMethod = new ArkMethod();
+
     private anonymousMethodNumber: number = 0;
     private indexSignatureNumber: number = 0;
 
@@ -247,8 +250,9 @@ export class ArkClass implements ArkExport {
         return false;
     }
 
-    public getMethods(): ArkMethod[] {
-        const allMethods = Array.from(this.methods.values());
+    public getMethods(generated?: boolean): ArkMethod[] {
+        const allMethods = Array.from(this.methods.values())
+            .filter(f => !generated && !f.isGenerated() || generated);
         allMethods.push(...this.staticMethods.values());
         return allMethods;
     }
@@ -360,5 +364,21 @@ export class ArkClass implements ArkExport {
 
     getExportType(): ExportType {
         return ExportType.CLASS;
+    }
+
+    public getInstanceInitMethod(): ArkMethod {
+        return this.instanceInitMethod;
+    }
+
+    public getStaticInitMethod(): ArkMethod {
+        return this.staticInitMethod;
+    }
+
+    public setInstanceInitMethod(arkMethod: ArkMethod): void {
+        this.instanceInitMethod = arkMethod;
+    }
+
+    public setStaticInitMethod(arkMethod: ArkMethod): void {
+        this.staticInitMethod = arkMethod;
     }
 }

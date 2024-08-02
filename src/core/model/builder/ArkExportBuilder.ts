@@ -26,7 +26,6 @@ function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineCol
     return new ExportInfo.Builder()
         .exportClauseName(arkInstance.getName())
         .exportClauseType(arkInstance.getExportType())
-        .nameBeforeAs(arkInstance.getName())
         .modifiers(arkInstance.getModifiers())
         .typeSignature(arkInstance.getSignature() as TypeSignature)
         .originTsPosition(line)
@@ -46,17 +45,17 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
     // just like: export {xxx as x} from './yy'
     if (node.exportClause && ts.isNamedExports(node.exportClause) && node.exportClause.elements) {
         node.exportClause.elements.forEach((element) => {
-            let nameBeforeAs = element.propertyName && ts.isIdentifier(element.propertyName)
-                ? element.propertyName.text : element.name.text
             let builder = new ExportInfo.Builder()
                 .exportClauseType(ExportType.UNKNOWN)
                 .exportClauseName(element.name.text)
-                .nameBeforeAs(nameBeforeAs)
                 .tsSourceCode(tsSourceCode)
                 .exportFrom(exportFrom)
                 .originTsPosition(originTsPosition)
                 .declaringArkFile(arkFile)
                 .modifiers(modifiers);
+            if (element.propertyName && ts.isIdentifier(element.propertyName)) {
+                builder.nameBeforeAs(element.propertyName.text);
+            }
             exportInfos.push(builder.build());
         });
         return exportInfos;
@@ -86,13 +85,12 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const tsSourceCode = node.getText(sourceFile);
     const modifiers = buildModifiers(node, sourceFile);
-    if(isKeyword(node.getChildren(sourceFile),ts.SyntaxKind.DefaultKeyword)){
+    if (isKeyword(node.getChildren(sourceFile), ts.SyntaxKind.DefaultKeyword)) {
         modifiers.add(ts.SyntaxKind[ts.SyntaxKind.DefaultKeyword]);
     }
     if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { //export default {a,b,c}
         node.expression.properties.forEach((property) => {
             if (property.name && ts.isIdentifier(property.name)) {
-                let exportClauseName = property.name.text;
                 const exportInfo = new ExportInfo.Builder()
                     .exportClauseName(property.name.text)
                     .exportClauseType(ExportType.UNKNOWN)

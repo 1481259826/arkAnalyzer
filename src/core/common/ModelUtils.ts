@@ -173,7 +173,7 @@ export class ModelUtils {
 
     public static getNamespaceInImportInfoWithName(namespaceName: string, arkFile: ArkFile): ArkNamespace | null {
         let typeSignature = this.getTypeSignatureInImportInfoWithName(namespaceName, arkFile);
-        if (typeSignature) {
+        if (typeSignature instanceof NamespaceSignature) {
             return arkFile.getScene().getNamespace(typeSignature as NamespaceSignature);
         }
         return null;

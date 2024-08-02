@@ -122,6 +122,7 @@ export default class ZipCodeValidator implements StringValidator {
     return s.length === 5 && numberRegexp.test(s);
   }
 }
+export {ZipCodeValidator};
 export {ZipCodeValidator as mainValidator};
 export class ParseIntBasedZipCodeValidator {
   isAcceptable(s: string) {
@@ -151,7 +152,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   }
   verifyName = (name: string) => {
   };
-  sync(cb: ParenthesizedType): void {
+  sync(cb: (result: string) => void ): void {
   }
   get accountID() {
     return this.id;

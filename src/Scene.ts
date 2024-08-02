@@ -15,6 +15,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import * as JSON5 from 'json5';
 
 import { SceneConfig, Sdk } from './Config';
 import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
@@ -32,14 +33,15 @@ import { ArkNamespace } from './core/model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
 import Logger from './utils/logger';
 import { Local } from './core/base/Local';
-import { buildArkFileFromFile, expandImportAll } from './core/model/builder/ArkFileBuilder';
+import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
 import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
 import { ClassType } from './core/base/Type';
-import { buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
+import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
+import { getAbilities, LifecycleMethods } from './utils/entryMethodUtils';
 
 const logger = Logger.getLogger();
 
@@ -142,7 +144,7 @@ export class Scene {
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
                 buildDefaultConstructor(cls);
-
+                addInitInConstructor(cls);
             }
         }
     }
@@ -151,19 +153,17 @@ export class Scene {
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
-                for (const method of cls.getMethods()) {
+                for (const method of cls.getMethods(true)) {
                     method.buildBody();
                 }
             }
-            generateDefaultClassField(file.getDefaultClass());
         }
         for (const namespace of this.getNamespacesMap().values()) {
             for (const cls of namespace.getClasses()) {
-                for (const method of cls.getMethods()) {
+                for (const method of cls.getMethods(true)) {
                     method.buildBody();
                 }
             }
-            generateDefaultClassField(namespace.getDefaultClass());
         }
 
         this.buildStage = SceneBuildStage.METHOD_DONE;
@@ -179,7 +179,6 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
-        expandImportAll(this.filesMap);
         this.genExtendedClasses();
         this.addDefaultConstructors();
     }
@@ -195,7 +194,6 @@ export class Scene {
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
-        expandImportAll(this.sdkArkFilesMap);
     }
 
     public buildScene4HarmonyProject() {
@@ -212,7 +210,6 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
-        expandImportAll(this.filesMap);
         this.genExtendedClasses();
         this.addDefaultConstructors();
     }
@@ -371,7 +368,7 @@ export class Scene {
     private getMethodsMap(): Map<string, ArkMethod> {
         if (this.methodsMap.size == 0) {
             for (const cls of this.getClassesMap().values()) {
-                for (const method of cls.getMethods()) {
+                for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
                 }
             }
@@ -437,6 +434,9 @@ export class Scene {
      */
     public inferTypes() {
         this.getClassesMap().forEach(arkClass => {
+            if (arkClass.isDefaultArkClass()) {
+                generateDefaultClassField(arkClass);
+            }
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
         });
         this.getMethodsMap().forEach(arkMethod => {
@@ -558,6 +558,7 @@ export class Scene {
                 const importClass = ModelUtils.getClassInImportInfoWithName(importInfo.getImportClauseName(), file);
                 if (importClass && !importClasses.includes(importClass)) {
                     importClasses.push(importClass);
+                    continue;
                 }
                 const importNameSpace = ModelUtils.getNamespaceInImportInfoWithName(importInfo.getImportClauseName(), file);
                 if (importNameSpace && !importNameSpaces.includes(importNameSpace)) {
@@ -599,7 +600,7 @@ export class Scene {
             const parentMap: Map<ArkNamespace, ArkNamespace | ArkFile> = new Map();
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
-            file.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
+            file.getDefaultClass()?.getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
                 if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
                     globalLocals.push(local);
                 }
@@ -711,6 +712,74 @@ export class Scene {
             }
         }
         return globalVariableMap;
+    }
+
+    public getEntryMethodsFromModuleJson5(): ArkMethod[] {
+        const projectDir = this.getRealProjectDir();
+        const buildProfile = path.join(projectDir, 'build-profile.json5');
+        if (!fs.existsSync(buildProfile)) {
+            logger.error(`${buildProfile} is not exists.`);
+            return [];
+        }
+        
+        const abilities: ArkClass[] = [];
+        const buildProfileConfig = fetchDependenciesFromFile(buildProfile);
+        let modules: Array<any> | undefined;
+        if (buildProfileConfig instanceof Object) {
+            Object.entries(buildProfileConfig).forEach(([k,v]) => {
+                if (k == 'modules' && Array.isArray(v)){
+                    modules = v;
+                    return;
+                }
+            })
+        }
+        if (Array.isArray(modules)){
+            for (const module of modules) {
+                try {
+                    const moduleProfile = path.join(projectDir, module.srcPath, '/src/main/module.json5');
+                    const config = fetchDependenciesFromFile(moduleProfile);
+                    const configModule = config.module;
+                    if (configModule instanceof Object) {
+                        Object.entries(configModule).forEach(([k,v]) => {
+                            if (k == 'abilities'){
+                                abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
+                            } else if (k == 'extensionAbilities') {
+                                abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
+                            }
+                        })
+                    }
+                } catch (err) {
+                    logger.error(err);
+                }
+            }
+        }
+        
+        const entryMethods: ArkMethod[] = [];
+        for (const ability of abilities) {
+            const abilityEntryMethods: ArkMethod[] = [];
+            let cls = ability;
+            // 遍历父类，加入子类中没有的method
+            while (cls) {
+                for (const method of cls.getMethods()) {
+                    for (const modifier of method.getModifiers()) {
+                        if (modifier == 'private') {
+                            continue;
+                        }
+                    }
+                    for (const mtd of abilityEntryMethods) {
+                        if (mtd.getName() == method.getName()) {
+                            continue;
+                        }
+                    }
+                    if (LifecycleMethods.includes(method.getName()) && !entryMethods.includes(method)) {
+                        abilityEntryMethods.push(method);
+                    }
+                }
+                cls = cls.getSuperClass();
+            }
+            entryMethods.push(...abilityEntryMethods);
+        }
+        return entryMethods;
     }
 
     public buildClassDone(): boolean {

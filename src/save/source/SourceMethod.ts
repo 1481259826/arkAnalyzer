@@ -84,10 +84,7 @@ export class SourceMethod extends SourceBase {
         this.printDecorator(method.getModifiers());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
-        if (
-            method.containsModifier('AbstractKeyword') ||
-            method.getDeclaringArkClass().getOriginType().toLowerCase() == 'interface'
-        ) {
+        if (!method.getBody()) {
             this.printer.writeLine(';');
             return;
         }
@@ -140,7 +137,7 @@ export class SourceMethod extends SourceBase {
         });
         code.write(`(${parameters.join(', ')})`);
         const returnType = method.getReturnType();
-        if (!(returnType instanceof UnknownType)) {
+        if (method.getName() !== 'constructor' && !(returnType instanceof UnknownType)) {
             code.write(`: ${this.transformer.typeToString(returnType)}`);
         }
         if (SourceUtils.isAnonymousMethod(method.getName())) {
