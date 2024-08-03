@@ -148,6 +148,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     }
 
     public inferType(arkClass: ArkClass): AbstractInvokeExpr {
+        this.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkClass));
         let baseType: Type | null = this.base.getType();
         if (this.base instanceof Local && baseType instanceof UnknownType) {
             baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
@@ -261,6 +262,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
     }
 
     public inferType(arkClass: ArkClass): ArkStaticInvokeExpr {
+        this.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkClass));
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         let method = ModelUtils.getStaticMethodWithName(methodName, arkClass);
         if (!method) {

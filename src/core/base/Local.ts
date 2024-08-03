@@ -16,6 +16,8 @@
 import { Stmt } from './Stmt';
 import { Type, UnknownType } from './Type';
 import { Value } from './Value';
+import { ArkClass } from "../model/ArkClass";
+import { TypeInference } from "../common/TypeInference";
 
 /**
  * @category core/base
@@ -36,6 +38,16 @@ export class Local implements Value {
         this.originalValue = null;
         this.declaringStmt = null;
         this.usedStmts = [];
+    }
+
+    public inferType(arkClass: ArkClass): Local {
+        if (TypeInference.isUnclearType(this.type)) {
+            const type = TypeInference.inferUnclearReferenceType(this.name, arkClass);
+            if (type) {
+                this.type = type;
+            }
+        }
+        return this;
     }
 
     public getName(): string {
