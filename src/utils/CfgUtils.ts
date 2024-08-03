@@ -35,7 +35,7 @@ export class CfgUitls {
     private loopPath: Map<BasicBlock, Set<BasicBlock>>;
     private blockTypes: Map<BasicBlock, BlockType>;
     private blockSize: number;
-    
+
     public constructor(cfg: Cfg) {
         this.blockSize = cfg.getBlocks().size;
         this.identifyBlocks(cfg);
@@ -44,7 +44,7 @@ export class CfgUitls {
     public static backtraceLocalInitValue(value: Local): Local | Value {
         let stmt = value.getDeclaringStmt();
         if (stmt instanceof ArkAssignStmt) {
-            let rightOp = stmt.getRightOp(); 
+            let rightOp = stmt.getRightOp();
             if (rightOp instanceof Local) {
                 return CfgUitls.backtraceLocalInitValue(rightOp);
             }
@@ -60,7 +60,7 @@ export class CfgUitls {
                 let localBindValues = CfgUitls.getLocalBindValues(v);
                 localBindValues.forEach((value) => {
                     values.add(value);
-                })
+                });
             }
         }
 
@@ -134,7 +134,7 @@ export class CfgUitls {
             }
             visitor.add(block);
             if (this.isIfStmtBB(block) && this.isLoopBB(block, visitor)) {
-                let stmts = block.getStmts()
+                let stmts = block.getStmts();
                 // IfStmt is at the end then it's a while loop
                 if (stmts[stmts.length - 1] instanceof ArkIfStmt) {
                     this.blockTypes.set(block, BlockType.WHILE);
@@ -180,12 +180,12 @@ export class CfgUitls {
         let next = block.getSuccessors()[0];
         onPath.add(next);
         dfs(next);
-        
+
         visitor.add(block);
         if (loop) {
             this.loopPath.set(block, onPath);
         }
-        
+
         return loop;
 
         function dfs(_block: BasicBlock): void {
@@ -210,7 +210,6 @@ export class CfgUitls {
         // }
         return false;
     }
-
 
     private isContinueBB(block: BasicBlock, blockTypes: Map<BasicBlock, BlockType>): boolean {
         let type = blockTypes.get(block.getSuccessors()[0]);

@@ -46,18 +46,47 @@
 //     console.log(id, n);
 // }
 
-
 // let arr2 = [{i: 1, j: 2}];
 // for (const {i, j} of arr2) {
 //     console.log(i, j);
 // }
 
-let i = 0;
-while (i < 4) {
-    if (i == 3) {
-        i += 3;
+// for (let i = 0; i < list.length; i++) {
+//     if (i == 0) {
+//         continue;
+//     }
+//     if (i == 2) {
+//         break;
+//     }
+//     logger.info(list[i]);
+// }
+
+// let list1 = [1, 2, 3];
+//
+// for (let i in list1) {
+//     logger.info(i); // "0", "1", "2",
+// }
+//
+// for (let j of list1) {
+//     logger.info(j); // "4", "5", "6"
+// }
+
+let list2 = [1, 2, 3];
+for (let i = 0; i < list2.length; i++) {
+    if (i == 0) {
+        continue;
+    }
+    if (i == 2) {
         break;
     }
-    i++;
+    logger.info(list2[i]);
 }
-i = 10;
+
+
+
+
+// let i = 0;
+// if (i == 0) {
+//     i += 1;
+// }
+// i = 2;
