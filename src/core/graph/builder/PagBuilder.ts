@@ -57,6 +57,7 @@ export class PagBuilder {
     private dynamicCallSites: Set<DynCallSite>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
+    private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map()
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -324,9 +325,40 @@ export class PagBuilder {
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
         if (!calleeMethod || !calleeMethod.getCfg()) {
-            //throw new Error(`Failed to get ArkMethod`);
             // TODO: check if nodes need to delete
             // this.cg.removeCallGraphNode(cs.calleeFuncID)
+            return srcNodes;
+        }
+        const isSdkMethod: boolean = this.scene.getSdkArkFilesMap().has(
+            calleeMethod.getDeclaringArkFile().getFileSignature().toString()
+        )
+        if (isSdkMethod) {
+            let returnType = calleeMethod.getReturnType()
+            if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
+                return srcNodes
+            }
+
+            // check fake heap object exists or not
+            let cidMap = this.sdkMethodReturnValueMap.get(calleeMethod)
+            if (!cidMap) {
+                cidMap = new Map()
+            }
+            let newExpr = cidMap.get(calleeCid)
+            if (!newExpr) {
+                newExpr = new ArkNewExpr(returnType as ClassType)
+            }
+            cidMap.set(calleeCid, newExpr)
+            this.sdkMethodReturnValueMap.set(calleeMethod, cidMap)
+
+            let srcPagNode = this.getOrNewPagNode(calleeCid, newExpr)
+            let dstPagNode = this.getOrNewPagNode(callerCid, cs.callStmt.getLeftOp(), cs.callStmt);
+
+            this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Address, cs.callStmt);
+            return srcNodes
+        }
+
+        if (!calleeMethod.getCfg()) {
+            // method have no cfg body
             return srcNodes;
         }
         this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
