@@ -16,11 +16,7 @@
 let i =0
 while(i< 4){
   if(i){
-    i += 3;
   break;
-  } else if (i==1) {
-    continue
-    i++
-  }
+  } 
   i++;
 }

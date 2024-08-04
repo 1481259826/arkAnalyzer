@@ -736,13 +736,30 @@ export class CfgBuilder {
             returnStatement.block = returnBlock;
             this.blocks.push(returnBlock);
             for (const notReturnStmt of notReturnStmts) {
-                notReturnStmt.next = returnStatement;
+                if (notReturnStmt instanceof ConditionStatementBuilder) {
+                    if (this.exit == notReturnStmt.nextT) {
+                        notReturnStmt.nextT = returnStatement;
+                        notReturnStmt.block?.nexts.splice(0, 0, returnBlock);
+                    } else if (this.exit == notReturnStmt.nextF) {
+                        notReturnStmt.nextF = returnStatement;
+                        notReturnStmt.block?.nexts.push(returnBlock);
+                    }
+                } else if (notReturnStmt instanceof SwitchStatementBuilder) {
+                    for (let i = 0; i < notReturnStmt.cases.length; i++) {
+                        if (notReturnStmt.cases[i].stmt == this.exit) {
+                            notReturnStmt.cases[i].stmt = returnStatement;
+                            notReturnStmt.block?.nexts.splice(i, 0, returnBlock);
+                        }
+                    }
+                } else {
+                    notReturnStmt.next = returnStatement;
+                    notReturnStmt.block?.nexts.push(returnBlock);
+                }
                 returnStatement.lasts.add(notReturnStmt);
                 returnStatement.next = this.exit;
                 const lasts = [...this.exit.lasts];
                 lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
                 this.exit.lasts = new Set(lasts);
-                notReturnStmt.block?.nexts.push(returnBlock);
                 returnBlock.lasts.push(notReturnStmt.block!);
             }
         }
