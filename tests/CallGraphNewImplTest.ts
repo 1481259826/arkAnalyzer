@@ -30,11 +30,11 @@ let etsSdk: Sdk = {
 }
 
 let config: SceneConfig = new SceneConfig()
-config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/resources/pta/uiTest",
-    [etsSdk], [
-        "./tests/resources/pta/uiTest/ui_test.ts"
-    ])
-// config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
+// config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/resources/pta/uiTest",
+//     [etsSdk], [
+//         "./tests/resources/pta/uiTest/ui_test.ts"
+//     ])
+config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
 // config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
@@ -46,10 +46,10 @@ config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/r
 
 function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
-    projectScene.buildSceneFromProjectDir(config);
-    // projectScene.buildBasicInfo(config);
-    // projectScene.buildScene4HarmonyProject()
-    // projectScene.collectProjectImportInfos();
+    // projectScene.buildSceneFromProjectDir(config);
+    projectScene.buildBasicInfo(config);
+    projectScene.buildScene4HarmonyProject()
+    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
     let cg = new CallGraph(projectScene);
@@ -58,7 +58,7 @@ function runScene(config: SceneConfig, output: string) {
 
     let pag = new Pag();
 
-    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'showWindow');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries([entry[0]]);
@@ -66,4 +66,4 @@ function runScene(config: SceneConfig, output: string) {
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
     console.log("fin")
 }
-runScene(config, "./out/applications_photos");
+runScene(config, "./out/applications_screenshot");
