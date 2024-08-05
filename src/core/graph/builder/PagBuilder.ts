@@ -52,6 +52,7 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
+    // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
@@ -324,7 +325,7 @@ export class PagBuilder {
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
-        if (!calleeMethod || !calleeMethod.getCfg()) {
+        if (!calleeMethod) {
             // TODO: check if nodes need to delete
             // this.cg.removeCallGraphNode(cs.calleeFuncID)
             return srcNodes;
