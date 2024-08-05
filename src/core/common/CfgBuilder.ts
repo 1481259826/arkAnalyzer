@@ -997,7 +997,6 @@ export class CfgBuilder {
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
         const blocksContainLoopCondition = new Set<Block>();
-        let blockIdx = 0;
         for (let i = 0; i < this.blocks.length; i++) {
             // build block in Cfg
             const stmtsInBlock: Stmt[] = [];
@@ -1038,6 +1037,7 @@ export class CfgBuilder {
                 }
             }
         }
+        let currBlockId = this.blocks.length;
 
         // link blocks
         for (const [blockBuilder, cfgBlock] of blockBuilderToCfgBlock) {
@@ -1054,6 +1054,7 @@ export class CfgBuilder {
         // put statements within loop in right position
         for (const blockBuilder of blocksContainLoopCondition) {
             const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
+            const blockId = block.getId();
             const stmts = block.getStmts();
             const stmtsCnt = stmts.length;
             let ifStmtIdx = -1;
@@ -1082,47 +1083,91 @@ export class CfgBuilder {
                 // put statements into block before condition
                 const lastStmtIdxBeforeCondition = iteratorNextStmtIdx != -1 ? iteratorNextStmtIdx : dummyInitializerStmtIdx;
                 const stmtsInsertBeforeCondition = stmts.slice(0, lastStmtIdxBeforeCondition);
-                const blockBuilderBeforeCondition = blockBuilder.lasts[0];
-                const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
-                if (blocksContainLoopCondition.has(blockBuilderBeforeCondition)) {
-                    // should create an extra block when previous block contains loop condition
-                    const blockBuilderInsertBeforeCondition = new Block(-1, []);
-                    blockBuilderInsertBeforeCondition.lasts.push(blockBuilderBeforeCondition);
-                    blockBuilderInsertBeforeCondition.nexts.push(blockBuilder);
-                    blockBuilder.lasts[0] = blockBuilderInsertBeforeCondition;
-                    blockBuilderBeforeCondition.nexts[1] = blockBuilderInsertBeforeCondition;
 
+                let prevBlockBuilderContainsLoop = false;
+                for (const prevBlockBuilder of blockBuilder.lasts) {
+                    if (blocksContainLoopCondition.has(prevBlockBuilder)) {
+                        prevBlockBuilderContainsLoop = true;
+                        break;
+                    }
+                }
+
+                if (prevBlockBuilderContainsLoop) {
+                    // should create an extra block when previous block contains loop condition
+                    const blockBuildersBeforeCondition: Block[] = [];
+                    const blocksBeforeCondition: BasicBlock[] = [];
+                    const blockBuildersReenterCondition: Block[] = [];
+                    const blocksReenterCondition: BasicBlock[] = [];
+                    for (const prevBlockBuilder of blockBuilder.lasts) {
+                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                        if (prevBlock.getId() < blockId) {
+                            blockBuildersBeforeCondition.push(prevBlockBuilder);
+                            blocksBeforeCondition.push(prevBlock);
+                        } else {
+                            blockBuildersReenterCondition.push(prevBlockBuilder);
+                            blocksReenterCondition.push(prevBlock);
+                        }
+                    }
+
+                    const blockBuilderInsertBeforeCondition = new Block(-1, []);
+                    blockBuilderInsertBeforeCondition.lasts.push(...blockBuildersBeforeCondition);
+                    blockBuilderInsertBeforeCondition.nexts.push(blockBuilder);
                     const blockInsertBeforeCondition = new BasicBlock();
                     blockInsertBeforeCondition.getStmts().push(...stmtsInsertBeforeCondition);
-                    blockInsertBeforeCondition.addPredecessorBlock(blockBeforeCondition);
+                    blockInsertBeforeCondition.getPredecessors().push(...blocksBeforeCondition);
                     blockInsertBeforeCondition.addSuccessorBlock(block);
-                    block.setPredecessorBlock(0, blockInsertBeforeCondition);
-                    blockBeforeCondition.setSuccessorBlock(1, blockInsertBeforeCondition);
+
+                    for (const prevBlockBuilder of blockBuildersBeforeCondition) {
+                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                        for (let j = 0; j < prevBlockBuilder.nexts.length; j++) {
+                            if (prevBlockBuilder.nexts[j] == blockBuilder) {
+                                prevBlockBuilder.nexts[j] = blockBuilderInsertBeforeCondition;
+                                prevBlock.setSuccessorBlock(j, blockInsertBeforeCondition);
+                                break;
+                            }
+                        }
+                    }
+                    blockBuilder.lasts = [blockBuilderInsertBeforeCondition, ...blockBuildersReenterCondition];
+                    const predecessorsCnt = block.getPredecessors().length;
+                    block.getPredecessors().splice(0, predecessorsCnt, blockInsertBeforeCondition, ...blocksReenterCondition);
 
                     this.blocks.push(blockBuilderInsertBeforeCondition);
-
-                    blockInsertBeforeCondition.setId(blockIdx++);
                     cfg.addBlock(blockInsertBeforeCondition);
                     blockBuilderToCfgBlock.set(blockBuilderInsertBeforeCondition, blockInsertBeforeCondition);
                 } else {
+                    const blockBuilderBeforeCondition = blockBuilder.lasts[0];
+                    const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
                     blockBeforeCondition.getStmts().push(...stmtsInsertBeforeCondition);
                 }
 
                 if (dummyInitializerStmtIdx != -1 && ifStmtIdx != stmtsCnt - 1) {
                     // put statements into block which reenters condition
-                    const stmtsInsertReenterCondition = stmts.slice(ifStmtIdx + 1);
-                    if (blockBuilder.lasts.length > 2) {
+                    const stmtsReenterCondition = stmts.slice(ifStmtIdx + 1);
+                    const blockBuildersBeforeCondition: Block[] = [];
+                    const blocksBeforeCondition: BasicBlock[] = [];
+                    const blockBuildersReenterCondition: Block[] = [];
+                    const blocksReenterCondition: BasicBlock[] = [];
+                    for (const prevBlockBuilder of blockBuilder.lasts) {
+                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                        if (prevBlock.getId() < blockId) {
+                            blockBuildersBeforeCondition.push(prevBlockBuilder);
+                            blocksBeforeCondition.push(prevBlock);
+                        } else {
+                            blockBuildersReenterCondition.push(prevBlockBuilder);
+                            blocksReenterCondition.push(prevBlock);
+                        }
+                    }
+                    if (blockBuildersReenterCondition.length > 1) {
                         // put incrementor statements into an extra block
                         const blockBuilderInsertReenterCondition = new Block(-1, []);
-                        blockBuilderInsertReenterCondition.lasts.push(...blockBuilder.lasts.slice(1));
+                        blockBuilderInsertReenterCondition.lasts.push(...blockBuildersReenterCondition);
                         blockBuilderInsertReenterCondition.nexts.push(blockBuilder);
                         const blockInsertReenterCondition = new BasicBlock();
-                        blockInsertReenterCondition.getStmts().push(...stmtsInsertReenterCondition);
+                        blockInsertReenterCondition.getStmts().push(...stmtsReenterCondition);
                         blockInsertReenterCondition.getPredecessors().push(...block.getPredecessors().slice(1));
                         blockInsertReenterCondition.addSuccessorBlock(block);
 
-                        for (let i = 1; i < blockBuilder.lasts.length; i++) {
-                            const prevBlockBuilder = blockBuilder.lasts[i];
+                        for (const prevBlockBuilder of blockBuildersReenterCondition) {
                             const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
                             for (let j = 0; j < prevBlockBuilder.nexts.length; j++) {
                                 if (prevBlockBuilder.nexts[j] == blockBuilder) {
@@ -1132,29 +1177,39 @@ export class CfgBuilder {
                                 }
                             }
                         }
-                        const lastsCnt = blockBuilder.lasts.length;
-                        blockBuilder.lasts.splice(1, lastsCnt - 1, blockBuilderInsertReenterCondition);
-                        block.getPredecessors().splice(1, lastsCnt - 1, blockInsertReenterCondition);
+                        blockBuilder.lasts = [...blockBuildersBeforeCondition, blockBuilderInsertReenterCondition];
+                        const predecessorsCnt = block.getPredecessors().length;
+                        block.getPredecessors().splice(0, predecessorsCnt, ...blocksBeforeCondition, blockInsertReenterCondition);
 
                         this.blocks.push(blockBuilderInsertReenterCondition);
-
-                        blockInsertReenterCondition.setId(blockIdx++);
                         cfg.addBlock(blockInsertReenterCondition);
                         blockBuilderToCfgBlock.set(blockBuilderInsertReenterCondition, blockInsertReenterCondition);
-                    } else if (iteratorNextStmtIdx != -1) {
-                        // put statements which get value of iterator into block after condition
-                        const blockBuilderAfterCondition = blockBuilder.nexts[0];
-                        const blockAfterCondition = blockBuilderToCfgBlock.get(blockBuilderAfterCondition) as BasicBlock;
-
-                        const stmtsAfterCondition = stmts.slice(ifStmtIdx + 1);
-                        blockAfterCondition.getStmts().splice(0, 0, ...stmtsAfterCondition);
+                    } else {
+                        const blockBuilderReenterCondition = blockBuildersReenterCondition[0];
+                        const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuilderReenterCondition) as BasicBlock;
+                        blockReenterCondition.getStmts().push(...stmtsReenterCondition);
                     }
+                } else if (iteratorNextStmtIdx != -1) {
+                    // put statements which get value of iterator into block after condition
+                    const blockBuilderAfterCondition = blockBuilder.nexts[0];
+                    const blockAfterCondition = blockBuilderToCfgBlock.get(blockBuilderAfterCondition) as BasicBlock;
+
+                    const stmtsAfterCondition = stmts.slice(ifStmtIdx + 1);
+                    blockAfterCondition.getStmts().splice(0, 0, ...stmtsAfterCondition);
                 }
 
                 // remove statements which should not in condition
                 const firstStmtIdxInCondition = iteratorNextStmtIdx != -1 ? iteratorNextStmtIdx : dummyInitializerStmtIdx + 1;
                 stmts.splice(0, firstStmtIdxInCondition);
                 stmts.splice(ifStmtIdx - firstStmtIdxInCondition + 1);
+            }
+        }
+
+        for (const blockBuilder of this.blocks) {
+            if (blockBuilder.id == -1) {
+                blockBuilder.id = currBlockId++;
+                const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
+                block.setId(blockBuilder.id);
             }
         }
 

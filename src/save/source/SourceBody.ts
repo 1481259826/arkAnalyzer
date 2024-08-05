@@ -15,17 +15,15 @@
 
 import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import { ArkBody } from '../../core/model/ArkBody';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import {
-    SourceBreakStmt,
     SourceCaseStmt,
     SourceCompoundEndStmt,
-    SourceContinueStmt,
     SourceElseStmt,
     SourceForStmt,
     SourceIfStmt,
@@ -211,16 +209,16 @@ export class SourceBody implements StmtPrinterContext {
                     caseIdx++;
                 }
                 this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
-            } else if (stmt instanceof ArkGotoStmt) {
-                if (parent instanceof ArkSwitchStmt) {
-                    this.pushStmt(new SourceCompoundEndStmt(this, stmt, '    break;'));
-                } else {
-                    if (this.cfgUtils.isConinueBlock(block)) {
-                        this.pushStmt(new SourceContinueStmt(this, stmt));
-                    } else {
-                        this.pushStmt(new SourceBreakStmt(this, stmt));
-                    }
-                }
+            // } else if (stmt instanceof ArkGotoStmt) {
+            //     if (parent instanceof ArkSwitchStmt) {
+            //         this.pushStmt(new SourceCompoundEndStmt(this, stmt, '    break;'));
+            //     } else {
+            //         if (this.cfgUtils.isConinueBlock(block)) {
+            //             this.pushStmt(new SourceContinueStmt(this, stmt));
+            //         } else {
+            //             this.pushStmt(new SourceBreakStmt(this, stmt));
+            //         }
+            //     }
             } else {
                 this.pushStmt(stmt2SourceStmt(this, stmt));
             }

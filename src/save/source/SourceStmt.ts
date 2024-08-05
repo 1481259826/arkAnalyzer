@@ -19,7 +19,6 @@ import { Local } from '../../core/base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
 import {
     ArkAssignStmt,
-    ArkGotoStmt,
     ArkIfStmt,
     ArkInvokeStmt,
     ArkReturnStmt,
@@ -516,25 +515,25 @@ export class SourceElseStmt extends SourceStmt {
     }
 }
 
-export class SourceContinueStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
-        super(context, original);
-    }
-    // trans 2 break or continue
-    public transfer2ts(): void {
-        this.setText('continue;');
-    }
-}
+// export class SourceContinueStmt extends SourceStmt {
+//     constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
+//         super(context, original);
+//     }
+//     // trans 2 break or continue
+//     public transfer2ts(): void {
+//         this.setText('continue;');
+//     }
+// }
 
-export class SourceBreakStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
-        super(context, original);
-    }
-    // trans 2 break or continue
-    public transfer2ts(): void {
-        this.setText('break;');
-    }
-}
+// export class SourceBreakStmt extends SourceStmt {
+//     constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
+//         super(context, original);
+//     }
+//     // trans 2 break or continue
+//     public transfer2ts(): void {
+//         this.setText('break;');
+//     }
+// }
 
 export class SourceReturnStmt extends SourceStmt {
     constructor(context: StmtPrinterContext, original: ArkReturnStmt) {

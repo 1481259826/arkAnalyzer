@@ -13,80 +13,52 @@
  * limitations under the License.
  */
 
-// let a: number[] = [1, 2, 3];
-// for (let i of a) {
-//     console.log(i);
-// }
-//
-// for (let i = 0; i < 3; i++) {
-//     console.log(i);
-// }
+let someArray = [1, 'string', false];
 
-// let i = 0;
-// for (let j = 0, k = 1; j < 10 && k < 11; j++) {
-//     i = j;
-//     k++;
-// }
+for (let entry of someArray) {
+    logger.info(entry); // 1, "string", false
+}
 
-// let i = 0;
-// while ((i + 1) < 10) {
-//     let a = i + 1;
-// }
+let list = [4, 5, 6];
 
-// let i = 0;
-// do {
-//     i++;
-//     for (let j = 0; j < 100; j++) {
-//         i+=3;
-//     }
-// } while ((i + 2) < 10);
+for (let i in list) {
+    logger.info(i); // "0", "1", "2",
+}
 
-// let arr1 = [1, 2];
-// for (const [id, n] of arr1.entries()) {
-//     console.log(id, n);
-// }
+for (let i of list) {
+    logger.info(i); // "4", "5", "6"
+}
 
-// let arr2 = [{i: 1, j: 2}];
-// for (const {i, j} of arr2) {
-//     console.log(i, j);
-// }
+list.forEach(i => {
+    logger.info(i);
+});
 
-// for (let i = 0; i < list.length; i++) {
-//     if (i == 0) {
-//         continue;
-//     }
-//     if (i == 2) {
-//         break;
-//     }
-//     logger.info(list[i]);
-// }
-
-// let list1 = [1, 2, 3];
-//
-// for (let i in list1) {
-//     logger.info(i); // "0", "1", "2",
-// }
-//
-// for (let j of list1) {
-//     logger.info(j); // "4", "5", "6"
-// }
-
-let list2 = [1, 2, 3];
-for (let i = 0; i < list2.length; i++) {
+for (let i = 0; i < list.length; i++) {
     if (i == 0) {
         continue;
     }
     if (i == 2) {
         break;
     }
-    logger.info(list2[i]);
+    logger.info(list[i]);
+}
+
+for (let j = 0; j < list.length; j++) {
+    if (j == 0) {
+        continue;
+    }
+    if (j == 2) {
+        break;
+    }
+    logger.info(list[j]);
 }
 
 
+let pets = new Set(['Cat', 'Dog', 'Hamster']);
+for (let pet in pets) {
+    logger.info(pet); // "species"
+}
 
-
-// let i = 0;
-// if (i == 0) {
-//     i += 1;
-// }
-// i = 2;
+for (let pet of pets) {
+    logger.info(pet); // "Cat", "Dog", "Hamster"
+}

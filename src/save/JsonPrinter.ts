@@ -13,27 +13,71 @@
  * limitations under the License.
  */
 
-import { Printer } from "./Printer";
-import { ArkFile } from "../core/model/ArkFile";
-import { ArkMethod } from "../core/model/ArkMethod";
-import { ArkNamespace } from "../core/model/ArkNamespace";
-import { ArkClass } from "../core/model/ArkClass";
-import { ArkField } from "../core/model/ArkField";
-import { AnyType, ArrayType, BooleanType, CallableType, ClassType, LiteralType, NeverType, NullType, NumberType, PrimitiveType, StringType, TupleType, Type, UnclearReferenceType, UndefinedType, UnionType, UnknownType, VoidType } from "../core/base/Type";
-import { Value } from "../core/base/Value";
-import { ArkAssignStmt, ArkGotoStmt, ArkIfStmt, ArkInvokeStmt, ArkNopStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, ArkThrowStmt, Stmt } from "../core/base/Stmt";
-import { ArkBinopExpr, ArkCastExpr, ArkConditionExpr, ArkDeleteExpr, ArkInstanceInvokeExpr, ArkInstanceOfExpr, ArkLengthExpr, ArkNewArrayExpr, ArkNewExpr, ArkPhiExpr, ArkStaticInvokeExpr, ArkTypeOfExpr, ArkUnopExpr, ArrayLiteralExpr } from "../core/base/Expr";
-import { Constant } from "../core/base/Constant";
-import { MethodParameter } from "../core/model/builder/ArkMethodBuilder";
-import { ImportInfo } from "../core/model/ArkImport";
-import { ExportInfo } from "../core/model/ArkExport";
-import { ClassSignature, FieldSignature, MethodSignature } from "../core/model/ArkSignature";
-import { LineColPosition } from "../core/base/Position";
-import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from "../core/base/Ref";
-import { Local } from "../core/base/Local";
-import { Cfg } from "../core/graph/Cfg";
-import { BasicBlock } from "../core/graph/BasicBlock";
-import { ArkBody } from "../core/model/ArkBody";
+import { Printer } from './Printer';
+import { ArkFile } from '../core/model/ArkFile';
+import { ArkMethod } from '../core/model/ArkMethod';
+import { ArkNamespace } from '../core/model/ArkNamespace';
+import { ArkClass } from '../core/model/ArkClass';
+import { ArkField } from '../core/model/ArkField';
+import {
+    AnyType,
+    ArrayType,
+    BooleanType,
+    CallableType,
+    ClassType,
+    LiteralType,
+    NeverType,
+    NullType,
+    NumberType,
+    PrimitiveType,
+    StringType,
+    TupleType,
+    Type,
+    UnclearReferenceType,
+    UndefinedType,
+    UnionType,
+    UnknownType,
+    VoidType,
+} from '../core/base/Type';
+import { Value } from '../core/base/Value';
+import {
+    ArkAssignStmt,
+    ArkIfStmt,
+    ArkInvokeStmt,
+    ArkNopStmt,
+    ArkReturnStmt,
+    ArkReturnVoidStmt,
+    ArkSwitchStmt,
+    ArkThrowStmt,
+    Stmt,
+} from '../core/base/Stmt';
+import {
+    ArkBinopExpr,
+    ArkCastExpr,
+    ArkConditionExpr,
+    ArkDeleteExpr,
+    ArkInstanceInvokeExpr,
+    ArkInstanceOfExpr,
+    ArkLengthExpr,
+    ArkNewArrayExpr,
+    ArkNewExpr,
+    ArkPhiExpr,
+    ArkStaticInvokeExpr,
+    ArkTypeOfExpr,
+    ArkUnopExpr,
+    ArrayLiteralExpr,
+} from '../core/base/Expr';
+import { Constant } from '../core/base/Constant';
+import { MethodParameter } from '../core/model/builder/ArkMethodBuilder';
+import { ImportInfo } from '../core/model/ArkImport';
+import { ExportInfo } from '../core/model/ArkExport';
+import { ClassSignature, FieldSignature, MethodSignature } from '../core/model/ArkSignature';
+import { LineColPosition } from '../core/base/Position';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../core/base/Ref';
+import { Local } from '../core/base/Local';
+import { Cfg } from '../core/graph/Cfg';
+import { BasicBlock } from '../core/graph/BasicBlock';
+import { ArkBody } from '../core/model/ArkBody';
 
 export class JsonPrinter extends Printer {
     constructor(private arkFile: ArkFile) {
@@ -481,10 +525,10 @@ export class JsonPrinter extends Printer {
                 _: 'IfStmt',
                 condition: this.serializeValue(stmt.getConditionExprExpr()),
             };
-        } else if (stmt instanceof ArkGotoStmt) {
-            return {
-                _: 'GotoStmt',
-            };
+        // } else if (stmt instanceof ArkGotoStmt) {
+        //     return {
+        //         _: 'GotoStmt',
+        //     };
         } else if (stmt instanceof ArkReturnVoidStmt) {
             return {
                 _: 'ReturnVoidStmt',
