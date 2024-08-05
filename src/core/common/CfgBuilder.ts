@@ -154,7 +154,8 @@ class Block {
     lasts: Block[] = [];
     walked: boolean = false;
 
-    constructor(stmts: StatementBuilder[]) {
+    constructor(id: number, stmts: StatementBuilder[]) {
+        this.id = id;
         this.stmts = stmts;
     }
 }
@@ -199,8 +200,6 @@ export class CfgBuilder {
     tempVariableNum: number;
     current3ACstm: StatementBuilder;
     blocks: Block[];
-    entryBlock: Block;
-    exitBlock: Block;
     currentDeclarationKeyword: string;
     variables: Variable[];
     declaringClass: ArkClass;
@@ -230,8 +229,6 @@ export class CfgBuilder {
         this.tempVariableNum = 0;
         this.current3ACstm = this.entry;
         this.blocks = [];
-        this.entryBlock = new Block([this.entry]);
-        this.exitBlock = new Block([this.entry]);
         this.currentDeclarationKeyword = '';
         this.variables = [];
         this.importFromPath = [];
@@ -592,7 +589,7 @@ export class CfgBuilder {
             if (handledStmts.has(stmt)) {
                 continue;
             }
-            const block = new Block([]);
+            const block = new Block(this.blocks.length, []);
             this.blocks.push(block);
             while (stmt && !handledStmts.has(stmt)) {
                 if (stmt.type == 'loopStatement' && block.stmts.length > 0 && !stmt.isDoWhile) {
@@ -728,7 +725,7 @@ export class CfgBuilder {
             notReturnStmt.block?.stmts.push(returnStatement);
             returnStatement.block = notReturnStmt.block;
         } else {
-            let returnBlock = new Block([returnStatement]);
+            let returnBlock = new Block(this.blocks.length, [returnStatement]);
             returnStatement.block = returnBlock;
             this.blocks.push(returnBlock);
             for (const notReturnStmt of notReturnStmts) {
@@ -991,6 +988,7 @@ export class CfgBuilder {
                 }
             }
             const blockInCfg = new BasicBlock();
+            blockInCfg.setId(this.blocks[i].id);
             for (const stmt of stmtsInBlock) {
                 if (isStartingStmtInCfgBlock) {
                     isStartingStmtInCfgBlock = false;

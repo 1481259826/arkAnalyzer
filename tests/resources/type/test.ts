@@ -12,10 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class a{
+if (x) {
+  x = 1
 
-}
-
-class b extends a{
-  
+} else {
+  x = 2
 }
