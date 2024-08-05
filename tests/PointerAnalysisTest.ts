@@ -19,7 +19,7 @@ import { CallGraph } from '../src/core/graph/CallGraph';
 import { CallGraphBuilder } from '../src/core/graph/builder/CallGraphBuilder'
 import { Pag } from '../src/core/graph/Pag'
 import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
-import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
+import { PointerAnalysisConfig } from '../src/core/pta/PointerAnalysisConfig';
 import { Sdk } from "../src/Config";
  
 // const logger = Logger.getLogger();

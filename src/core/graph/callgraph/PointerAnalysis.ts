@@ -20,7 +20,7 @@ import { ArkInstanceFieldRef } from "../../base/Ref";
 import { Value } from "../../base/Value";
 import { NodeID } from "../BaseGraph";
 import path from "path";
-import { CallGraph, FuncID } from "../CallGraph";
+import { CallGraph, CallSite, FuncID } from "../CallGraph";
 import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
 import { PagBuilder } from "../builder/PagBuilder";
 import { AbstractAnalysis } from "./AbstractAnalysis";
@@ -29,13 +29,11 @@ import { ClassType, Type } from "../../base/Type";
 import { CallGraphBuilder } from "../builder/CallGraphBuilder";
 import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
 import { ArkMethod } from "../../model/ArkMethod";
-import { ArkAssignStmt } from "../../base/Stmt";
+import { ArkAssignStmt, Stmt } from "../../base/Stmt";
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
     private pagBuilder: PagBuilder;
-    private cg: CallGraph;
-    private cgBuilder: CallGraphBuilder;
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
     private entries: FuncID[];
     private worklist: NodeID[];
@@ -75,7 +73,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         return pta;
     }
 
-    private init() {
+    protected init() {
         this.ptaStat.startStat();
         this.pagBuilder.buildForEntries(this.entries);
         if (this.config.dotDump) {
@@ -442,6 +440,10 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     public getTypeDiffMap(): Map<Value, Set<Type>> {
         return this.typeDiffMap;
+    }
+
+    protected resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[] {
+        return []
     }
 }
 

@@ -1,3 +1,4 @@
+import { CallGraphBuilder } from './../src/core/graph/builder/CallGraphBuilder';
 /*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,68 +21,36 @@ import { MethodSignature } from "../src/core/model/ArkSignature";
 import { printCallGraphDetails } from "../src/utils/callGraphUtils";
 import Logger, { LOG_LEVEL } from "../src/utils/logger";
 import { ArkFile } from '../src/core/model/ArkFile';
+import { CallGraph } from '../src/core/graph/CallGraph';
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('tests/resources/callgraph/benchMarks/test')
+config.buildFromProjectDir('tests/resources/callgraph/test1')
 // config.buildFromJson("./tests/resources/callgraph/callGraphConfigUnix.json");
 Logger.setLogLevel(LOG_LEVEL.INFO)
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config)
+    projectScene.inferTypes()
+
     let entryPoints: MethodSignature[] = []
     // for (let method of projectScene.getMethods()) {
     //     entryPoints.push(method.getSignature())
     // }
-    for (let arkFile of projectScene.getFiles()) {
-        if (arkFile.getName() === "main.ts") {
-            for (let arkClass of arkFile.getClasses()) {
-                if (arkClass.getName() === "_DEFAULT_ARK_CLASS") {
-                    for (let arkMethod of arkClass.getMethods()) {
-                        if (arkMethod.getName() === "_DEFAULT_ARK_METHOD") {
-                            entryPoints.push(arkMethod.getSignature())
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    projectScene.inferTypes()
-    // for (let arkFile of projectScene.getFiles()) {
-    //     if (arkFile.getName() === "testcase_24_import.ts") {
-    //         let locals = 0, methods = 0
-    //         for (let arkClass of arkFile.getClasses()) {
-    //             // if (arkClass.getName() === "_DEFAULT_ARK_CLASS") {
-    //                 for (let arkMethod of arkClass.getMethods()) {
-    //                     console.log("=========method========: "+arkMethod.getName())
-    //                     // if (arkMethod.getName() === "main") {
-    //                         console.log("\nLocals:")
-    //                         for (let local of arkMethod.getBody().getLocals()) {
-    //                             console.log(local.getName() + ": "+local.getType().toString())
-    //                             locals ++
-    //                         }
-    //                         console.log("\nmethod signature:")
-    //                         for (let stmt of arkMethod.getBody().getCfg().getStmts()) {
-    //                             if (stmt.containsInvokeExpr()) {
-    //                                 console.log(stmt.getInvokeExpr()?.getMethodSignature().toString())
-    //                                 methods ++
-    //                             }
-    //                         }
-    //                     // }
-    //                 }
-    //             // }
-    //         }
-    //         console.log("locals: "+locals)
-    //         console.log("methods: "+methods)
-    //     }
-    // }
-    let callGraph = projectScene.makeCallGraphCHA(entryPoints)
+    entryPoints.push(...
+        projectScene.getFiles()
+            .filter(arkFile => arkFile.getName() === "main.ts")
+            .flatMap(arkFile => arkFile.getClasses())
+            .filter(arkClass => arkClass.getName() === "_DEFAULT_ARK_CLASS")
+            .flatMap(arkClass => arkClass.getMethods())
+            .filter(arkMethod => arkMethod.getName() === "_DEFAULT_ARK_METHOD")
+            .map(arkMethod => arkMethod.getSignature())
+    );
+
+    let callGraph = new CallGraph(projectScene)
+    let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
+    callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
     // let callGraph = projectScene.makeCallGraphRTA(entryPoints)
-    // let callGraph = projectScene.makeCallGraphVPA(entryPoints)
-    let methods = callGraph.getMethods()
-    let calls = callGraph.getCalls()
-    printCallGraphDetails(methods, calls, config.getTargetProjectDirectory())
     // debugger;
 }
 runScene(config);
