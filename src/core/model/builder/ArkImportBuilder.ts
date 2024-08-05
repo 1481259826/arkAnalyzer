@@ -377,7 +377,7 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
 }
 
 function getArkFileFromOtherModule(fromInfo: FromInfo) {
-    if (fromInfo.getDeclaringArkFile().getScene().getStage() < 2) {
+    if (moduleMap === undefined) {
         moduleMap = FileUtils.generateModuleMap(fromInfo.getDeclaringArkFile().getScene().getOhPkgContentMap());
     }
     if (!moduleMap) {
