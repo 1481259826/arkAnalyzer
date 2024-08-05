@@ -15,17 +15,26 @@
 
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
-import { MethodSignature } from "../src/core/model/ArkSignature";
 import { CallGraph } from '../src/core/graph/CallGraph';
 import { CallGraphBuilder } from '../src/core/graph/builder/CallGraphBuilder'
 import { Pag } from '../src/core/graph/Pag'
 import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
 import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
+import { Sdk } from "../src/Config";
  
 // const logger = Logger.getLogger();
+let etsSdk: Sdk = {
+    name: "ohos",
+    path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
+    moduleName: ""
+}
 
 let config: SceneConfig = new SceneConfig()
-config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
+config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/resources/pta/uiTest",
+    [etsSdk], [
+        "./tests/resources/pta/uiTest/ui_test.ts"
+    ])
+// config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
 // config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
@@ -37,28 +46,24 @@ config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
 
 function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
-    // projectScene.buildSceneFromProjectDir(config);
-    projectScene.buildBasicInfo(config);
-    projectScene.buildScene4HarmonyProject()
-    projectScene.collectProjectImportInfos();
+    projectScene.buildSceneFromProjectDir(config);
+    // projectScene.buildBasicInfo(config);
+    // projectScene.buildScene4HarmonyProject()
+    // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
-    let entryPoints: MethodSignature[] = []
-    for (let method of projectScene.getMethods()) {
-        entryPoints.push(method.getSignature())
-    }
 
-    // let cg = new CallGraph(projectScene);
-    // let cgBuilder = new CallGraphBuilder(cg, projectScene);
-    // cgBuilder.buildDirectCallGraph();
+    let cg = new CallGraph(projectScene);
+    let cgBuilder = new CallGraphBuilder(cg, projectScene);
+    cgBuilder.buildDirectCallGraph();
 
-    // let pag = new Pag();
+    let pag = new Pag();
 
-    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
-    // let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    // pta.setEntries([entry[0]]);
-    // pta.start();
-    PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
+    let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
+    pta.setEntries([entry[0]]);
+    pta.start();
+    // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
     console.log("fin")
 }
 runScene(config, "./out/applications_photos");
