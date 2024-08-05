@@ -486,16 +486,16 @@ export class ArkBinopExpr extends AbstractExpr {
                     type = NumberType.getInstance();
                 }
                 break;
-            case '<':
-            case '<=':
-            case '>':
-            case '>=':
-            case '==':
             case '!=':
-            case '===':
             case '!==':
+            case '<':
+            case '>':
+            case '<=':
+            case '>=':
             case '&&':
             case '||':
+            case '==':
+            case '===':
                 type = BooleanType.getInstance();
                 break;
             case '&':
