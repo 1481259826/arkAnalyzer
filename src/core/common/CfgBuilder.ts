@@ -25,7 +25,6 @@ import { ArkIRTransformer, DUMMY_INITIALIZER_STMT } from './ArkIRTransformer';
 import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
-import { f } from '../../../tests/resources/cfg/classMap/t2';
 
 const logger = Logger.getLogger();
 

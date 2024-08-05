@@ -14,7 +14,6 @@
  */
 
 import { Stmt } from '../base/Stmt';
-import { b } from 'vitest/dist/reporters-yx5ZTtEV';
 
 /**
  * @category core/graph
