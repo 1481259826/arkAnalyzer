@@ -1,6 +1,6 @@
 {
-    "targetProjectName": "applications_photos",
-    "targetProjectDirectory": "/Users/yangyizhuo/Desktop/test/testApp/applications_photos",
+    "targetProjectName": "applications_screenshot",
+    "targetProjectDirectory": "/Users/yangyizhuo/DevEcoStudioProjects/applications_screenshot",
 
     "logPath": "./out/ArkAnalyzer.log",
     "logLevel": "INFO",

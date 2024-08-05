@@ -100,6 +100,7 @@ export class CallGraphEdge extends BaseEdge {
 
 export class CallGraphNode extends BaseNode {
     private method: Method;
+    private isSdkMethod: boolean = false
 
     constructor(id: number, m: Method, k: CallGraphNodeKind = CallGraphNodeKind.real) {
         super(id, k);
@@ -108,6 +109,14 @@ export class CallGraphNode extends BaseNode {
 
     public getMethod(): Method {
         return this.method;
+    }
+
+    public setSdkMethod(v: boolean): void {
+        this.isSdkMethod = v
+    }
+
+    public getIsSdkMethod(): boolean {
+        return this.isSdkMethod
     }
 
     public getDotAttr(): string {
@@ -153,6 +162,10 @@ export class CallGraph extends BaseGraph {
     public addCallGraphNode(method: Method, kind: CallGraphNodeKind = CallGraphNodeKind.real): CallGraphNode {
         let id: NodeID = this.nodeNum;
         let cgNode = new CallGraphNode(id, method, kind);
+        // check if sdk method
+        cgNode.setSdkMethod(this.scene.getSdkArkFilesMap().has(
+            method.getDeclaringClassSignature().getDeclaringFileSignature().toString()
+        ))
         this.addNode(cgNode);
         this.methodToCGNodeMap.set(method.toString(), cgNode.getID());
         return cgNode;

@@ -29,7 +29,6 @@ import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
-import { ArkField } from '../../model/ArkField';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -269,7 +268,7 @@ export class PagBuilder {
 
             let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
 
-            let callerNode = this.cg.getNode(cs.callerFuncID);
+            let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
             if (!callerNode) {
                 throw new Error("Can not get caller method node");
             }
@@ -280,8 +279,10 @@ export class PagBuilder {
             srcNodes.push(...staticSrcNodes);
 
             // Pass base's pts to callee's this pointer
-            let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid);
-            srcNodes.push(srcBaseNode);
+            if (!dstCGNode.getIsSdkMethod()) {
+                let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid);
+                srcNodes.push(srcBaseNode);   
+            }
         }
         return srcNodes;
     }
@@ -330,10 +331,7 @@ export class PagBuilder {
             // this.cg.removeCallGraphNode(cs.calleeFuncID)
             return srcNodes;
         }
-        const isSdkMethod: boolean = this.scene.getSdkArkFilesMap().has(
-            calleeMethod.getDeclaringArkFile().getFileSignature().toString()
-        )
-        if (isSdkMethod) {
+        if (calleeNode.getIsSdkMethod()) {
             let returnType = calleeMethod.getReturnType()
             if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
                 return srcNodes
@@ -493,6 +491,11 @@ export class PagBuilder {
         if (this.stmtIsWriteKind(stmt)) {
             return PagEdgeKind.Write
         }
+
+        // if (this.stmtIsSdkCall(stmt)) {
+        //     // TODO: check cg update
+        //     return PagEdgeKind.SdkCall
+        // }
 
         return PagEdgeKind.Unknown;
     }
