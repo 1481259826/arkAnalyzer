@@ -37,25 +37,15 @@ export class DotMethodPrinter extends Printer {
     public dump(): string {
         this.printer.clear();
         if (this.nesting) {
-            this.printer
-                .writeIndent()
-                .writeLine(
-                    `subgraph "cluster_${this.method.getSignature()}" {`
-                );
+            this.printer.writeIndent().writeLine(`subgraph "cluster_${this.method.getSignature()}" {`);
         } else {
-            this.printer
-                .writeIndent()
-                .writeLine(`digraph "${this.method.getSignature()}" {`);
+            this.printer.writeIndent().writeLine(`digraph "${this.method.getSignature()}" {`);
         }
         this.printer.incIndent();
-        this.printer
-            .writeIndent()
-            .writeLine(`label="${this.method.getSignature()}";`);
+        this.printer.writeIndent().writeLine(`label="${this.method.getSignature()}";`);
 
         let blocks = (this.method.getCfg() as Cfg)?.getBlocks();
-        let prefix = `Node${this.stringHashCode(
-            this.method.getSignature().toString()
-        )}`;
+        let prefix = `Node${this.stringHashCode(this.method.getSignature().toString())}`;
         this.printBlocks(blocks, prefix);
 
         this.printer.decIndent();
@@ -66,25 +56,15 @@ export class DotMethodPrinter extends Printer {
     public dumpOriginal(): string {
         this.printer.clear();
         if (this.nesting) {
-            this.printer
-                .writeIndent()
-                .writeLine(
-                    `subgraph "cluster_Original_${this.method.getSignature()}" {`
-                );
+            this.printer.writeIndent().writeLine(`subgraph "cluster_Original_${this.method.getSignature()}" {`);
         } else {
-            this.printer
-                .writeIndent()
-                .writeLine(`digraph "${this.method.getSignature()}" {`);
+            this.printer.writeIndent().writeLine(`digraph "${this.method.getSignature()}" {`);
         }
         this.printer.incIndent();
-        this.printer
-            .writeIndent()
-            .writeLine(`label="${this.method.getSignature()}_original";`);
+        this.printer.writeIndent().writeLine(`label="${this.method.getSignature()}_original";`);
 
         let blocks = (this.method.getOriginalCfg() as Cfg).getBlocks();
-        let prefix = `NodeOriginal${this.stringHashCode(
-            this.method.getSignature().toString()
-        )}`;
+        let prefix = `NodeOriginal${this.stringHashCode(this.method.getSignature().toString())}`;
         this.printBlocks(blocks, prefix);
 
         this.printer.decIndent();
@@ -105,10 +85,7 @@ export class DotMethodPrinter extends Printer {
         if (!blocks) {
             return;
         }
-        let blockToNode: Map<BasicBlock, string> = new Map<
-            BasicBlock,
-            string
-        >();
+        let blockToNode: Map<BasicBlock, string> = new Map<BasicBlock, string>();
         let index = 0;
         for (let block of blocks) {
             let name = prefix + index++;
@@ -116,30 +93,19 @@ export class DotMethodPrinter extends Printer {
             /** Node0 [label="entry"]; */
             this.printer
                 .writeIndent()
-                .writeLine(
-                    `${name} [label="${this.getBlockContent(
-                        block,
-                        this.printer.getIndent()
-                    )}"];`
-                );
+                .writeLine(`${name} [label="${this.getBlockContent(block, this.printer.getIndent())}"];`);
         }
 
         for (let block of blocks) {
             for (let nextBlock of block.getSuccessors()) {
                 // Node0 -> Node1;
-                this.printer
-                    .writeIndent()
-                    .writeLine(
-                        `${blockToNode.get(block)} -> ${blockToNode.get(
-                            nextBlock
-                        )};`
-                    );
+                this.printer.writeIndent().writeLine(`${blockToNode.get(block)} -> ${blockToNode.get(nextBlock)};`);
             }
         }
     }
 
     private getBlockContent(block: BasicBlock, indent: string): string {
-        let content: string[] = [];
+        let content: string[] = [`id:${block.getId()}`];
         for (let stmt of block.getStmts()) {
             content.push(stmt.toString().replace(/"/g, '\\"'));
         }

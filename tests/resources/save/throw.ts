@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
-let i =0
-while(i< 4){
-  if(i){
-  break;
-  } 
-  i++;
+class ThrowTest {
+    static readonly ERR = 'throw err';
+
+    test() {
+        throw new Error(ThrowTest.ERR);
+    }
 }
+
+/* export default new ThrowTest(); */

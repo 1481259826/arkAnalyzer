@@ -15,7 +15,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import * as JSON5 from 'json5';
 
 import { SceneConfig, Sdk } from './Config';
 import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
@@ -89,6 +88,10 @@ export class Scene {
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
 
     constructor() {
+    }
+
+    public getStage(): SceneBuildStage {
+        return this.buildStage;
     }
 
     public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
@@ -721,27 +724,27 @@ export class Scene {
             logger.error(`${buildProfile} is not exists.`);
             return [];
         }
-        
+
         const abilities: ArkClass[] = [];
         const buildProfileConfig = fetchDependenciesFromFile(buildProfile);
         let modules: Array<any> | undefined;
         if (buildProfileConfig instanceof Object) {
-            Object.entries(buildProfileConfig).forEach(([k,v]) => {
-                if (k == 'modules' && Array.isArray(v)){
+            Object.entries(buildProfileConfig).forEach(([k, v]) => {
+                if (k == 'modules' && Array.isArray(v)) {
                     modules = v;
                     return;
                 }
             })
         }
-        if (Array.isArray(modules)){
+        if (Array.isArray(modules)) {
             for (const module of modules) {
                 try {
                     const moduleProfile = path.join(projectDir, module.srcPath, '/src/main/module.json5');
                     const config = fetchDependenciesFromFile(moduleProfile);
                     const configModule = config.module;
                     if (configModule instanceof Object) {
-                        Object.entries(configModule).forEach(([k,v]) => {
-                            if (k == 'abilities'){
+                        Object.entries(configModule).forEach(([k, v]) => {
+                            if (k == 'abilities') {
                                 abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
                             } else if (k == 'extensionAbilities') {
                                 abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
@@ -753,7 +756,7 @@ export class Scene {
                 }
             }
         }
-        
+
         const entryMethods: ArkMethod[] = [];
         for (const ability of abilities) {
             const abilityEntryMethods: ArkMethod[] = [];

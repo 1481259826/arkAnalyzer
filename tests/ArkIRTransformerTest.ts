@@ -22,6 +22,7 @@ import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
 import { ArkMethod } from '../src/core/model/ArkMethod';
 import { ArkClass } from '../src/core/model/ArkClass';
+import { PrinterBuilder } from '../src';
 
 const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
@@ -56,8 +57,8 @@ class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
         logger.error('testStmtsOfSimpleProject start');
 
-        const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         // const projectDir = 'tests/resources/arkIRTransformer/expression';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
@@ -66,8 +67,8 @@ class ArkIRTransformerTest {
         scene.buildSceneFromProjectDir(sceneConfig);
         this.printScene(scene);
         scene.inferTypes();
-        logger.error('\nafter inferTypes');
-        this.printScene(scene);
+        // logger.error('\nafter inferTypes');
+        // this.printScene(scene);
 
         logger.error('testStmtsOfSimpleProject end\n');
     }
@@ -117,7 +118,7 @@ class ArkIRTransformerTest {
             logger.error('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
             for (const arkClass of arkFile.getClasses()) {
                 logger.error('========= arkClass:', arkClass.getName(), ' =======');
-                for (const arkMethod of arkClass.getMethods()) {
+                for (const arkMethod of arkClass.getMethods(true)) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
                     if (body) {
@@ -131,9 +132,23 @@ class ArkIRTransformerTest {
             }
         }
     }
+
+    public printCfg() {
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromProjectDir(projectDir);
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
+
+        const printerBuilder = new PrinterBuilder('out');
+        for (const arkFile of scene.getFiles()) {
+            printerBuilder.dumpToDot(arkFile);
+        }
+    }
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-arkIRTransformerTest.testStmtsOfSimpleProject();
+// arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
+arkIRTransformerTest.printCfg();

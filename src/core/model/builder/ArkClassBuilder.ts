@@ -414,6 +414,9 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmts:
         const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
         const assignStmt = new ArkAssignStmt(fieldRef, valueAndStmts.value);
         stmts.push(assignStmt);
+        for (const stmt of stmts) {
+            stmt.setOriginPositionInfo(field.getOriginPosition());
+        }
         field.setInitializer(stmts);
         initStmts.push(...stmts);
     }

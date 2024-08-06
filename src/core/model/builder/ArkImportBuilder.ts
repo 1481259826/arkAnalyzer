@@ -24,11 +24,11 @@ import { ExportInfo, ExportType, FromInfo } from "../ArkExport";
 import { FileSignature } from "../ArkSignature";
 import Logger from "../../../utils/logger";
 import { transfer2UnixPath } from "../../../utils/pathTransfer";
-import { FileUtils } from "../../../utils/FileUtils";
+import { FileUtils, ModulePath } from "../../../utils/FileUtils";
 import { Sdk } from "../../../Config";
 
 const logger = Logger.getLogger();
-const moduleMap: Map<string, string> = new Map<string, string>();
+let moduleMap: Map<string, ModulePath> | undefined = undefined;
 const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
 
 export function expandExportInfo(arkFile: ArkFile): void {
@@ -377,43 +377,54 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
 }
 
 function getArkFileFromOtherModule(fromInfo: FromInfo) {
-    const from = fromInfo.getFrom();
-    if (moduleMap.size === 0) {
-        generateModuleMap(fromInfo.getDeclaringArkFile());
+    if (moduleMap === undefined) {
+        moduleMap = FileUtils.generateModuleMap(fromInfo.getDeclaringArkFile().getScene().getOhPkgContentMap());
     }
+    if (!moduleMap) {
+        return;
+    }
+    const from = fromInfo.getFrom();
     let index: number;
     let file;
     let modulePath;
-    //find module path index file
+    //find file by given from like '@ohos/module/src/xxx' '@ohos/module/index'
     if ((index = from.indexOf('src')) > 0 || (index = from.indexOf('Index')) > 0 || (index = from.indexOf('index')) > 0) {
         modulePath = moduleMap.get(from.substring(0, index).replace(/\/*$/, ''));
-        if (modulePath) {
-            file = getArkFileFromScene(fromInfo, path.join(modulePath, from.substring(index)));
-        }
-    } else {
-        modulePath = moduleMap.get(from);
-        if (modulePath && FileUtils.isDirectory(modulePath)) {
-            const originPath = path.join(modulePath, FileUtils.getIndexFileName(modulePath));
-            file = getArkFileFromScene(fromInfo, originPath);
-        }
+        file = findFileInModule(fromInfo, modulePath, from.substring(index));
+    }
+    if (file) {
+        return file;
+    }
+    modulePath = modulePath ?? moduleMap.get(from);
+    if (!modulePath) {
+        return file;
+    }
+    //find file in module json main path
+    if (modulePath.main) {
+        file = getArkFileFromScene(fromInfo, modulePath.main);
+    }
+    //find file in module path Index.ts
+    if (!file && FileUtils.isDirectory(modulePath.path)) {
+        file = findFileInModule(fromInfo, modulePath, FileUtils.getIndexFileName(modulePath.path));
+    }
+    //find file in module path/src/main/ets/TsIndex.ts
+    if (!file) {
+        file = findFileInModule(fromInfo, modulePath, '/src/main/ets/TsIndex.ts');
+    }
+    return file;
+}
+
+function findFileInModule(fromInfo: FromInfo, modulePath: ModulePath | undefined, contentPath: string) {
+    if (!modulePath) {
+        return;
+    }
+    const originPath = path.join(modulePath.path, contentPath);
+    let file;
+    if (originPath !== modulePath.main) {
+        file = getArkFileFromScene(fromInfo, originPath);
     }
     if (file && findExportInfoInfile(fromInfo, file)) {
         return file;
-    } else if (modulePath) { //find module path/src/main/ets/TsIndex.ts
-        return getArkFileFromScene(fromInfo, path.join(modulePath, '/src/main/ets/TsIndex.ts'));
     }
 }
 
-function generateModuleMap(arkFile: ArkFile) {
-    arkFile.getScene().getOhPkgContentMap().forEach((content, filePath) => {
-        if (content.dependencies) {
-            Object.entries(content.dependencies).forEach(([name, value]) => {
-                let modulePath = value;
-                if (/^(file:)?\.{1,2}\//.test(value)) { //判断相对路径
-                    modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
-                }
-                moduleMap.set(name, modulePath);
-            })
-        }
-    })
-}

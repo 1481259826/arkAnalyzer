@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { CfgUitls } from '../../../utils/CfgUtils';
 import { Constant } from '../../base/Constant';
 import { Decorator } from '../../base/Decorator';
 import {
@@ -762,6 +761,18 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 }
 
+function backtraceLocalInitValue(value: Local): Local | Value {
+    let stmt = value.getDeclaringStmt();
+    if (stmt instanceof ArkAssignStmt) {
+        let rightOp = stmt.getRightOp();
+        if (rightOp instanceof Local) {
+            return backtraceLocalInitValue(rightOp);
+        }
+        return rightOp;
+    }
+    return value;
+}
+
 function viewComponentCreationParser(
     viewtree: ViewTreeImpl,
     name: string,
@@ -795,7 +806,7 @@ function viewComponentCreationParser(
         }
     }
 
-    let initValue = CfgUitls.backtraceLocalInitValue(temp);
+    let initValue = backtraceLocalInitValue(temp);
     if (!(initValue instanceof ArkNewExpr)) {
         return;
     }
@@ -971,7 +982,7 @@ function parseInstanceInvokeExpr(
 
     let name = expr.getBase().getName();
     if (name.startsWith('$temp')) {
-        let initValue = CfgUitls.backtraceLocalInitValue(expr.getBase());
+        let initValue = backtraceLocalInitValue(expr.getBase());
         if (initValue instanceof ArkThisRef) {
             name = 'this';
         }

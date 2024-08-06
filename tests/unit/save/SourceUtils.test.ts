@@ -68,7 +68,7 @@ describe('SourceUtilsTest', () => {
 
     it('ArrayType case 1', () => {
         let type = new ty.ArrayType(ty.UnknownType.getInstance(), 2);
-        assert.equal(transformer.typeToString(type), '(any)[][]');
+        assert.equal(transformer.typeToString(type), 'any[][]');
     });
     it('ArrayType case 2', () => {
         let type = new ty.ArrayType(ty.StringType.getInstance(), 1);
