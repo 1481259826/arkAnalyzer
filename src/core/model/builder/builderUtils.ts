@@ -38,6 +38,7 @@ import {
     ObjectBindingPatternParameter,
 } from './ArkMethodBuilder';
 import { buildNormalArkClassFromArkMethod } from './ArkClassBuilder';
+import { Builtin } from '../../common/Builtin';
 
 const logger = Logger.getLogger();
 export const DECLARE_KEYWORD = 'DeclareKeyword';
@@ -339,6 +340,8 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
     } else if (ts.isParenthesizedTypeNode(typeNode)) {
         return tsNode2Type(typeNode.type, sourceFile, arkInstance);
+    } else if (typeNode.kind === ts.SyntaxKind.ObjectKeyword) {
+        return new ClassType(Builtin.OBJECT_CLASS_SIGNATURE);
     } else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }
