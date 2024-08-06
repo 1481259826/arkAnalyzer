@@ -20,74 +20,38 @@ import { ArkAssignStmt, ArkIfStmt, Stmt } from '../core/base/Stmt';
 import { Value } from '../core/base/Value';
 import { BasicBlock } from '../core/graph/BasicBlock';
 import { Cfg } from '../core/graph/Cfg';
+import { DominanceFinder } from '../core/graph/DominanceFinder';
+import { DominanceTree } from '../core/graph/DominanceTree';
 
 enum BlockType {
     NORMAL,
     WHILE,
     FOR,
+    FOR_INC,
     CONTINUE,
     BREAK,
     IF,
-    IF_ELSE
+    IF_ELSE,
 }
 
+const LoopHeaderType = new Set([BlockType.WHILE, BlockType.FOR, BlockType.FOR_INC]);
+
 export class CfgUitls {
+    /** key: loop header, value: loop node dfs */
     private loopPath: Map<BasicBlock, Set<BasicBlock>>;
     private blockTypes: Map<BasicBlock, BlockType>;
+    private forIncMap: Map<BasicBlock, BasicBlock>;
     private blockSize: number;
+    private dominanceTree: DominanceTree;
+    private cfg: Cfg;
 
     public constructor(cfg: Cfg) {
+        this.cfg = cfg;
         this.blockSize = cfg.getBlocks().size;
+        this.dominanceTree = new DominanceTree(new DominanceFinder(cfg));
+        this.forIncMap = new Map();
+        this.buildLoopsPath();
         this.identifyBlocks(cfg);
-    }
-
-    public static backtraceLocalInitValue(value: Local): Local | Value {
-        let stmt = value.getDeclaringStmt();
-        if (stmt instanceof ArkAssignStmt) {
-            let rightOp = stmt.getRightOp();
-            if (rightOp instanceof Local) {
-                return CfgUitls.backtraceLocalInitValue(rightOp);
-            }
-            return rightOp;
-        }
-        return value;
-    }
-
-    public static getStmtBindValues(stmt: Stmt): Set<Local | Constant | ArkInstanceFieldRef> {
-        let values: Set<Local | Constant | ArkInstanceFieldRef> = new Set();
-        for (const v of stmt.getUses()) {
-            if (v instanceof Local) {
-                let localBindValues = CfgUitls.getLocalBindValues(v);
-                localBindValues.forEach((value) => {
-                    values.add(value);
-                });
-            }
-        }
-
-        return values;
-    }
-
-    public static getLocalBindValues(local: Local): Set<Local | Constant | ArkInstanceFieldRef> {
-        let values: Set<Local | Constant | ArkInstanceFieldRef> = new Set();
-        values.add(local);
-        const stmt = local.getDeclaringStmt();
-        if (!stmt) {
-            return values;
-        }
-
-        for (const v of stmt.getUses()) {
-            if (v instanceof Constant) {
-                values.add(v);
-            } else if (v instanceof ArkInstanceFieldRef) {
-                values.add(v);
-            } else if (v instanceof Local) {
-                CfgUitls.getLocalBindValues(v).forEach((v1) => {
-                    values.add(v1);
-                });
-            }
-        }
-
-        return values;
     }
 
     public getLoopPath(block: BasicBlock): Set<BasicBlock> | undefined {
@@ -106,6 +70,10 @@ export class CfgUitls {
         return this.blockTypes.get(block) == BlockType.WHILE;
     }
 
+    public isLoopHeader(block: BasicBlock): boolean {
+        return LoopHeaderType.has(this.blockTypes.get(block)!);
+    }
+
     public isForBlock(block: BasicBlock): boolean {
         return this.blockTypes.get(block) == BlockType.FOR;
     }
@@ -122,39 +90,45 @@ export class CfgUitls {
         return this.blockTypes.get(block) == BlockType.NORMAL;
     }
 
+    public getForIncBlock(block: BasicBlock): BasicBlock | undefined {
+        return this.forIncMap.get(block);
+    }
+
     private identifyBlocks(cfg: Cfg) {
         let blocks = cfg.getBlocks();
         let visitor = new Set<BasicBlock>();
         this.blockTypes = new Map<BasicBlock, BlockType>();
-        this.loopPath = new Map<BasicBlock, Set<BasicBlock>>;
 
         for (const block of blocks) {
             if (visitor.has(block)) {
                 continue;
             }
             visitor.add(block);
-            if (this.isIfStmtBB(block) && this.isLoopBB(block, visitor)) {
-                let stmts = block.getStmts();
-                // IfStmt is at the end then it's a while loop
-                if (stmts[stmts.length - 1] instanceof ArkIfStmt) {
-                    this.blockTypes.set(block, BlockType.WHILE);
-                } else {
-                    this.blockTypes.set(block, BlockType.FOR);
-                }
+            if (this.isIfStmtBB(block) && this.isLoopBB(block)) {
+                this.blockTypes.set(block, BlockType.WHILE);
             } else if (this.isIfStmtBB(block)) {
                 if (this.isIfElseBB(block)) {
                     this.blockTypes.set(block, BlockType.IF_ELSE);
                 } else {
                     this.blockTypes.set(block, BlockType.IF);
                 }
-            } else if (this.isGotoStmtBB(block)) {
-                if (this.isContinueBB(block, this.blockTypes)) {
-                    this.blockTypes.set(block, BlockType.CONTINUE);
-                } else {
-                    this.blockTypes.set(block, BlockType.BREAK);
-                }
+                // successorBlocks continue or break
+
+                // } else if (this.isGotoStmtBB(block)) {
+                //     if (this.isContinueBB(block, this.blockTypes)) {
+                //         this.blockTypes.set(block, BlockType.CONTINUE);
+                //     } else {
+                //         this.blockTypes.set(block, BlockType.BREAK);
+                //     }
             } else {
-                this.blockTypes.set(block, BlockType.NORMAL);
+                let successors = block.getSuccessors();
+                if (successors.length == 1 && this.blockTypes.get(successors[0]) == BlockType.WHILE && block.getPredecessors().length > 1) {
+                    this.blockTypes.set(block, BlockType.FOR_INC);
+                    this.blockTypes.set(successors[0], BlockType.FOR);
+                    this.forIncMap.set(successors[0], block);
+                } else {
+                    this.blockTypes.set(block, BlockType.NORMAL);
+                }
             }
         }
     }
@@ -168,38 +142,8 @@ export class CfgUitls {
         return false;
     }
 
-    private isLoopBB(block: BasicBlock, visitor: Set<BasicBlock>): boolean {
-        let onPath: Set<BasicBlock> = new Set<BasicBlock>();
-        let loop: boolean = false;
-        visitor.delete(block);
-
-        if (block.getSuccessors().length == 0) {
-            return loop;
-        }
-
-        let next = block.getSuccessors()[0];
-        onPath.add(next);
-        dfs(next);
-
-        visitor.add(block);
-        if (loop) {
-            this.loopPath.set(block, onPath);
-        }
-
-        return loop;
-
-        function dfs(_block: BasicBlock): void {
-            if (_block === block) {
-                loop = true;
-                return;
-            }
-            for (const sub of _block.getSuccessors()) {
-                if (!visitor.has(sub) && !onPath.has(sub) && sub != block.getSuccessors()[1]) {
-                    onPath.add(sub);
-                    dfs(sub);
-                }
-            }
-        }
+    private isLoopBB(block: BasicBlock): boolean {
+        return this.dominanceTree.isBackEdgeHeader(block);
     }
 
     private isGotoStmtBB(block: BasicBlock): boolean {
@@ -253,5 +197,51 @@ export class CfgUitls {
             }
         }
         return true;
+    }
+
+    public getInnermostLoops(block: BasicBlock): Set<BasicBlock> | undefined {
+        let innermost: Set<BasicBlock> | undefined = undefined;
+        this.loopPath.forEach((value) => {
+            if (value.has(block)) {
+                if (!innermost || (value.size < innermost.size)) {
+                    innermost = value;
+                }
+            }
+        });
+
+        return innermost;
+    }
+
+    private buildLoopsPath() {
+        this.loopPath = new Map<BasicBlock, Set<BasicBlock>>();
+        for (const edge of this.dominanceTree.getBackEdges()) {
+            this.loopPath.set(edge[1], CfgUitls.naturalLoops(edge[0], edge[1]));
+        }
+    }
+
+    public static naturalLoops(backEdgeStart: BasicBlock, backEdgeEnd: BasicBlock): Set<BasicBlock> {
+        let loop: Set<BasicBlock> = new Set();
+        let stack: BasicBlock[] = [];
+
+        loop.add(backEdgeEnd);
+        loop.add(backEdgeStart);
+
+        stack.push(backEdgeStart);
+
+        while (stack.length > 0) {
+            let m = stack.shift()!;
+            for (const pred of m.getPredecessors()) {
+                if (loop.has(pred)) {
+                    continue;
+                }
+                loop.add(pred);
+                stack.push(pred);
+            }
+        }
+        let sortedLoop = Array.from(loop);
+        sortedLoop.sort((a, b) => {
+            return a.getId() - b.getId();
+        });
+        return new Set(sortedLoop);
     }
 }

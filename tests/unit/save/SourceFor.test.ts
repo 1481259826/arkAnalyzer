@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { SceneConfig, Scene, SourceFilePrinter } from '../../../src/index';
+import { SceneConfig, Scene, SourceFilePrinter, DotFilePrinter, PrinterBuilder } from '../../../src/index';
 import { describe, expect, it } from 'vitest';
 import path from 'path';
 
@@ -65,6 +65,9 @@ describe('SourceForTest', () => {
         if (!arkfile) {
             return;
         }
+        let dot = new PrinterBuilder('output');
+        dot.dumpToDot(arkfile);
+        
         let printer = new SourceFilePrinter(arkfile);
         let source = printer.dump();
         expect(source).eq(CASE1_EXPECT);

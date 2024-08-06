@@ -525,10 +525,6 @@ export class JsonPrinter extends Printer {
                 _: 'IfStmt',
                 condition: this.serializeValue(stmt.getConditionExprExpr()),
             };
-        // } else if (stmt instanceof ArkGotoStmt) {
-        //     return {
-        //         _: 'GotoStmt',
-        //     };
         } else if (stmt instanceof ArkReturnVoidStmt) {
             return {
                 _: 'ReturnVoidStmt',
