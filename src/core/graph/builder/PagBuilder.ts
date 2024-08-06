@@ -17,7 +17,7 @@ import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite } from '../Call
 import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
-import { ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { KLimitedContextSensitive } from '../../pta/Context';
 import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../base/Ref';
 import { Value } from '../../base/Value';
@@ -28,7 +28,7 @@ import { Local } from '../../base/Local';
 import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
-import { ClassType } from '../../base/Type';
+import { ClassType, NullType } from '../../base/Type';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -255,7 +255,7 @@ export class PagBuilder {
             cls = this.scene.getClass(clsSig) as ArkClass;
 
             let callee = undefined;
-            while (!callee) {
+            while (!callee && cls) {
                 callee = cls.getMethodWithName(calleeName);
                 cls = cls.getSuperClass();
             }
@@ -380,6 +380,10 @@ export class PagBuilder {
                     if (arg instanceof Constant) {
                         continue
                     }
+                    if ( arg instanceof AbstractExpr) {
+                        // TODO: handle this
+                        continue;
+                    }
                     // Get or create new PAG node for argument and parameter
                     let srcPagNode = this.getOrNewPagNode(callerCid, arg, cs.callStmt);
                     let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
@@ -403,6 +407,8 @@ export class PagBuilder {
                     let dstPagNode = this.getOrNewPagNode(callerCid, retDst, cs.callStmt);
 
                     this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
+                } else if (retValue instanceof Constant){
+                    continue;
                 } else {
                     throw new Error ('return dst not a local')
                 }
