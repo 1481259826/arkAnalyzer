@@ -37,7 +37,7 @@ import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../bas
 import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
-import { DEFAULT_ARK_CLASS_NAME } from './ArkClassBuilder';
+import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from './ArkClassBuilder';
 
 const logger = Logger.getLogger();
 
@@ -77,7 +77,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setDeclaringArkFile();
 
     mtd.setCode(methodNode.getText(sourceFile));
-    const { line, character } = ts.getLineAndCharacterOfPosition(
+    const {line, character} = ts.getLineAndCharacterOfPosition(
         sourceFile,
         methodNode.getStart(sourceFile),
     );
@@ -318,8 +318,10 @@ export class MethodParameter {
 
 function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
     const originClassType = arkClass.getOriginType();
-    return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null && originClassType == 'Class' &&
-        arkClass.getName() != DEFAULT_ARK_CLASS_NAME && !arkClass.getModifiers().has(DECLARE_KEYWORD);
+    return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null &&
+        (originClassType == CLASS_ORIGIN_TYPE_CLASS || originClassType == CLASS_ORIGIN_TYPE_OBJECT) &&
+        arkClass.getName() != DEFAULT_ARK_CLASS_NAME &&
+        !arkClass.getModifiers().has(DECLARE_KEYWORD);
 }
 
 export function buildDefaultConstructor(arkClass: ArkClass): boolean {
@@ -433,7 +435,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {
-    for (const method of arkClass.getMethods()) {
+    for (const method of arkClass.getMethods(true)) {
         if (method.getName() == 'constructor') {
             const _this = new Local('this');
             const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(_this, arkClass.getInstanceInitMethod().getSignature(), []));
