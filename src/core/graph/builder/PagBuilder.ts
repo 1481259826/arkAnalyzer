@@ -28,7 +28,7 @@ import { Local } from '../../base/Local';
 import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
-import { ClassType, NullType } from '../../base/Type';
+import { ClassType } from '../../base/Type';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -554,6 +554,8 @@ export class PagBuilder {
     public addToDynamicCallSite(cs: DynCallSite): void {
         this.dynamicCallSites = this.dynamicCallSites ?? new Set();
         this.dynamicCallSites.add(cs);
+
+        logger.info(cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
     }
 
     public getDynamicCallSites(): Set<DynCallSite> {

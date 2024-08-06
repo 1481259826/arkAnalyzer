@@ -14,17 +14,34 @@
  */
 namespace loadTest2 {
     class A {
-        static b: B
+        b: number
+        c: number
+
+        set(b: number, c: number) {
+            this.b = b
+            this.c = c
+        }
     }
 
     class B {
+        left: number
+        right: number
+    }
 
+    class D {
+        b: number
+        c: number
+
+        constructor(b: number, c: number) {
+            this.b = b
+            this.c = c
+        }
     }
 
     function main() {
         let b = new B()
         let a = new A()
-        A.b = b
-        let c = A.b
+        a.set(b.left, b.right)
+        let c = new D(a.b, a.c)
     }
 }
