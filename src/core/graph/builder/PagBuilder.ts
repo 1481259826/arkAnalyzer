@@ -29,7 +29,6 @@ import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
 import { ClassType } from '../../base/Type';
-import { ArkField } from '../../model/ArkField';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -52,11 +51,13 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
-    private staticField2UniqInstanceMap: Map<ArkField, Value> = new Map();
-    private instanceField2UniqInstanceMap: Map<[ArkField, Value], Value> = new Map();
+    // TODO: change string to hash value
+    private staticField2UniqInstanceMap: Map<string, Value> = new Map();
+    private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
     private dynamicCallSites: Set<DynCallSite>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
+    private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map()
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -113,8 +114,13 @@ export class PagBuilder {
             //throw new Error("function ID");
             return false;
         }
+        
+        let cfg = arkMethod.getCfg()
+        if (!cfg) {
+            return false
+        }
 
-        for (let stmt of arkMethod.getCfg()!.getStmts()){
+        for (let stmt of cfg.getStmts()){
             logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
                 // Add non-call edges
@@ -262,7 +268,7 @@ export class PagBuilder {
 
             let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
 
-            let callerNode = this.cg.getNode(cs.callerFuncID);
+            let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
             if (!callerNode) {
                 throw new Error("Can not get caller method node");
             }
@@ -273,8 +279,10 @@ export class PagBuilder {
             srcNodes.push(...staticSrcNodes);
 
             // Pass base's pts to callee's this pointer
-            let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid);
-            srcNodes.push(srcBaseNode);
+            if (!dstCGNode.getIsSdkMethod()) {
+                let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid);
+                srcNodes.push(srcBaseNode);   
+            }
         }
         return srcNodes;
     }
@@ -319,9 +327,37 @@ export class PagBuilder {
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
         if (!calleeMethod) {
-            //throw new Error(`Failed to get ArkMethod`);
             // TODO: check if nodes need to delete
             // this.cg.removeCallGraphNode(cs.calleeFuncID)
+            return srcNodes;
+        }
+        if (calleeNode.getIsSdkMethod()) {
+            let returnType = calleeMethod.getReturnType()
+            if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
+                return srcNodes
+            }
+
+            // check fake heap object exists or not
+            let cidMap = this.sdkMethodReturnValueMap.get(calleeMethod)
+            if (!cidMap) {
+                cidMap = new Map()
+            }
+            let newExpr = cidMap.get(calleeCid)
+            if (!newExpr) {
+                newExpr = new ArkNewExpr(returnType as ClassType)
+            }
+            cidMap.set(calleeCid, newExpr)
+            this.sdkMethodReturnValueMap.set(calleeMethod, cidMap)
+
+            let srcPagNode = this.getOrNewPagNode(calleeCid, newExpr)
+            let dstPagNode = this.getOrNewPagNode(callerCid, cs.callStmt.getLeftOp(), cs.callStmt);
+
+            this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Address, cs.callStmt);
+            return srcNodes
+        }
+
+        if (!calleeMethod.getCfg()) {
+            // method have no cfg body
             return srcNodes;
         }
         this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
@@ -415,33 +451,23 @@ export class PagBuilder {
         }
 
         let sig = v.getFieldSignature();
-        let cls = this.scene.getClass(sig.getDeclaringSignature() as ClassSignature);
-        if (!cls) {
-            throw new Error('Can not find ArkClass');
-        }
-        let field: ArkField | null;
+        let sigStr = sig.toString()
         let base: Value
 
-        if (sig.isStatic()) {
-            field = cls.getStaticFieldWithName(sig.getFieldName());
-        } else {
-            field = cls.getFieldWithName(sig.getFieldName());
+        if (!sig.isStatic()) {
             base = (v as ArkInstanceFieldRef).getBase()
-        }
-        if (!field) {
-            throw new Error('Can not find ArkField');
         }
         let real
         if (sig.isStatic()) {
-            real = this.staticField2UniqInstanceMap.get(field);
+            real = this.staticField2UniqInstanceMap.get(sigStr);
             if (!real) {
-                this.staticField2UniqInstanceMap.set(field, v);
+                this.staticField2UniqInstanceMap.set(sigStr, v);
                 real = v;
             }
         } else {
-            real = this.instanceField2UniqInstanceMap.get([field, base!]);
+            real = this.instanceField2UniqInstanceMap.get([sigStr, base!]);
             if (!real) {
-                this.instanceField2UniqInstanceMap.set([field, base!], v);
+                this.instanceField2UniqInstanceMap.set([sigStr, base!], v);
                 real = v;
             }
         }
@@ -465,6 +491,11 @@ export class PagBuilder {
         if (this.stmtIsWriteKind(stmt)) {
             return PagEdgeKind.Write
         }
+
+        // if (this.stmtIsSdkCall(stmt)) {
+        //     // TODO: check cg update
+        //     return PagEdgeKind.SdkCall
+        // }
 
         return PagEdgeKind.Unknown;
     }

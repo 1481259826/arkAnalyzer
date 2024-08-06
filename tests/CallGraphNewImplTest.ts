@@ -13,46 +13,44 @@
  * limitations under the License.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { execSync } from 'child_process';
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
-import { MethodSignature } from "../src/core/model/ArkSignature";
 import { CallGraph } from '../src/core/graph/CallGraph';
 import { CallGraphBuilder } from '../src/core/graph/builder/CallGraphBuilder'
 import { Pag } from '../src/core/graph/Pag'
 import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
 import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
+import { Sdk } from "../src/Config";
  
 // const logger = Logger.getLogger();
+let etsSdk: Sdk = {
+    name: "ohos",
+    path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
+    moduleName: ""
+}
+
+let config: SceneConfig = new SceneConfig()
+// config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/resources/pta/uiTest",
+//     [etsSdk], [
+//         "./tests/resources/pta/uiTest/ui_test.ts"
+//     ])
+config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
+// config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
+// config.buildFromProjectDir('./tests/resources/callgraph/test2');
+// config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
+// config.buildFromProjectDir('./tests/resources/callgraph/temp');
+// config.buildFromProjectDir('./tests/resources/callgraph/calltest');
+// config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
+//config.buildFromProjectDir('./tests/resources/callgraph/swap');
+// Logger.setLogLevel(LOG_LEVEL.DEBUG)
 
 function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
-    projectScene.buildSceneFromProjectDir(config);
+    // projectScene.buildSceneFromProjectDir(config);
+    projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject()
+    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
-    let entryPoints: MethodSignature[] = []
-    for (let method of projectScene.getMethods()) {
-        entryPoints.push(method.getSignature())
-    }
-
-
-
-    // for (let arkFile of projectScene.getFiles()) {
-    //     let locals = 0, methods = 0
-    //     for (let arkClass of arkFile.getClasses()) {
-    //         // if (arkClass.getName() === "_DEFAULT_ARK_CLASS") {
-    //         for (let arkMethod of arkClass.getMethods()) {
-    //             let stmts = arkMethod.getCfg()!.getStmts();
-    //             logger.info(arkMethod.getSignature().toString())
-    //             for (let s of stmts) {
-    //                 logger.info("  " + s.toString());
-    //             }
-    //             logger.info("\n")
-    //         }
-    //     }
-    // }
 
     let cg = new CallGraph(projectScene);
     let cgBuilder = new CallGraphBuilder(cg, projectScene);
@@ -60,50 +58,12 @@ function runScene(config: SceneConfig, output: string) {
 
     let pag = new Pag();
 
-    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'showWindow');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries([entry[0]]);
     pta.start();
+    // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
     console.log("fin")
 }
-
-let config: SceneConfig = new SceneConfig()
-// config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
-// config.buildFromProjectDir('./tests/resources/callgraph/test2');
-config.buildFromProjectDir('./tests/resources/pta/CallField');
-// config.buildFromProjectDir('./tests/resources/callgraph/temp');
-// config.buildFromProjectDir('./tests/resources/callgraph/calltest');
-// config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
-//config.buildFromProjectDir('./tests/resources/callgraph/swap');
-// Logger.setLogLevel(LOG_LEVEL.DEBUG)
-runScene(config, "./out/CallField");
-
-const rootDir = './tests/resources/pta';
-const outputDir = './out';
-
-// const subdirs = fs.readdirSync(rootDir).filter(subdir => {
-//     return fs.statSync(path.join(rootDir, subdir)).isDirectory();
-// });
-
-// for (const subdir of subdirs) {
-//     try {
-//         const projectPath = path.join(rootDir, subdir);
-//         let config: SceneConfig = new SceneConfig();
-//         config.buildFromProjectDir(projectPath);
-//         runScene(config, `./out/${subdir}`);
-//     } catch (error) {
-//         console.log(error);
-//     }
-//     setTimeout(function() {
-//         console.log('wait')
-//     }, 10000)
-//     const dotFile = `out/${subdir}/ptaEnd_pag.dot`;
-//     const pngFile = `out/${subdir}/ptaEnd_pag.png`;
-//     try {
-//         execSync(`dot -Tpng ${dotFile} -o ${pngFile}`);
-//         console.log(`Generated PNG: ${pngFile}`);
-//     } catch (error) {
-//         console.error(`Error generating PNG for ${subdir}:`, error);
-//     }
-// }
+runScene(config, "./out/applications_screenshot");

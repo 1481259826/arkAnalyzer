@@ -1,0 +1,15 @@
+{
+    "targetProjectName": "applications_screenshot",
+    "targetProjectDirectory": "/Users/yangyizhuo/DevEcoStudioProjects/applications_screenshot",
+
+    "logPath": "./out/ArkAnalyzer.log",
+    "logLevel": "INFO",
+    
+    "sdks": [
+        {
+            "name": "etsSdk",
+            "path": "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
+            "moduleName": ""
+        }
+    ]
+}
