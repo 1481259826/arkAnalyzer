@@ -16,6 +16,7 @@
 import fs from "fs";
 import path from "path";
 import Logger from "./logger";
+import { transfer2UnixPath } from "./pathTransfer";
 
 const logger = Logger.getLogger();
 
@@ -43,6 +44,45 @@ export class FileUtils {
         return false;
     }
 
+    public static generateModuleMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>) {
+        const moduleMap: Map<string, ModulePath> = new Map();
+        ohPkgContentMap.forEach((content, filePath) => {
+            const moduleName = content.name as string;
+            if (moduleName.startsWith('@')) {
+                const modulePath = path.dirname(filePath);
+                moduleMap.set(moduleName, new ModulePath(modulePath, content.main ?
+                    path.resolve(modulePath, content.main as string) : ''));
+            }
+
+        })
+        ohPkgContentMap.forEach((content, filePath) => {
+            if (content.dependencies) {
+                Object.entries(content.dependencies).forEach(([name, value]) => {
+                    if (!moduleMap.get(name)) {
+                        const modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
+                        const key = path.resolve(modulePath, 'oh-package.json5');
+                        const target = ohPkgContentMap.get(key);
+                        if (target) {
+                            moduleMap.set(name, new ModulePath(modulePath, target.main ?
+                                path.resolve(modulePath, target.main as string) : ''));
+                        }
+                    }
+                })
+            }
+        })
+        return moduleMap;
+    }
+
+}
+
+export class ModulePath {
+    path: string;
+    main: string;
+
+    constructor(path: string, main: string) {
+        this.path = transfer2UnixPath(path);
+        this.main = transfer2UnixPath(main);
+    }
 }
 
 export function getFileRecursively(srcDir: string, fileName: string, visited: Set<string> = new Set<string>()): string {

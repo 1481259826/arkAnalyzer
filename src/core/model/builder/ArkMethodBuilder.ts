@@ -23,18 +23,18 @@ import {
     buildModifiers,
     buildParameters,
     buildReturnType,
-    buildTypeParameters, DECLARE_KEYWORD,
+    buildTypeParameters,
+    DECLARE_KEYWORD,
     handlePropertyAccessExpression,
 } from './builderUtils';
 import Logger from '../../../utils/logger';
-import { ArkThisRef } from '../../base/Ref';
+import { ArkParameterRef, ArkThisRef } from '../../base/Ref';
 import { ArkBody } from '../ArkBody';
 import { Cfg } from '../../graph/Cfg';
 import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { MethodSignature, MethodSubSignature } from '../ArkSignature';
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
 import { BasicBlock } from '../../graph/BasicBlock';
-import { ArkParameterRef } from '../../base/Ref';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { DEFAULT_ARK_CLASS_NAME } from './ArkClassBuilder';
@@ -77,7 +77,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setDeclaringArkFile();
 
     mtd.setCode(methodNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         methodNode.getStart(sourceFile),
     );
@@ -429,7 +429,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
     initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, new Map()));
-    
+
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {
@@ -437,7 +437,11 @@ export function addInitInConstructor(arkClass: ArkClass) {
         if (method.getName() == 'constructor') {
             const _this = new Local('this');
             const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(_this, arkClass.getInstanceInitMethod().getSignature(), []));
-            const firstBlockStmts = [...method.getCfg()!.getBlocks()!][0].getStmts();
+            const blocks = method.getCfg()?.getBlocks();
+            if (!blocks) {
+                continue;
+            }
+            const firstBlockStmts = [...blocks][0].getStmts();
             let index = 0;
             if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() == 'this') {
                 index = 1;

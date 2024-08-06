@@ -270,7 +270,7 @@ export class TypeInference {
         }
     }
 
-    private static isUnclearType(type: Type | null | undefined) {
+    public static isUnclearType(type: Type | null | undefined) {
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType) {
             return true;
         } else if (type instanceof ClassType
@@ -325,7 +325,7 @@ export class TypeInference {
         if (value instanceof ArkInstanceFieldRef || value instanceof ArkInstanceInvokeExpr) {
             this.inferValueType(value.getBase(), arkClass);
         }
-        if (value instanceof AbstractRef || value instanceof AbstractExpr) {
+        if (value instanceof AbstractRef || value instanceof AbstractExpr || value instanceof Local) {
             value.inferType(arkClass);
         }
         return value.getType();
@@ -347,6 +347,9 @@ export class TypeInference {
     }
 
     public static inferUnclearReferenceType(refName: string, arkClass: ArkClass): Type | null {
+        if (!refName) {
+            return null;
+        }
         const stdName = refName.replace(/<\w+>/, '');
         //import Reference
         const importSignature = ModelUtils.getTypeSignatureInImportInfoWithName(stdName, arkClass.getDeclaringArkFile());
@@ -409,6 +412,7 @@ export class TypeInference {
         }
         let signature: TypeSignature | undefined = ModelUtils.getClassWithName(baseName, arkClass)?.getSignature()
             ?? ModelUtils.getNamespaceWithName(baseName, arkClass)?.getSignature()
+            ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)?.getSignature()
             ?? ModelUtils.getTypeSignatureInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
         return this.parseSignature2Type(signature);
     }
