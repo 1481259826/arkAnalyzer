@@ -35,7 +35,7 @@ import {
     stmt2SourceStmt,
     StmtPrinterContext,
 } from './SourceStmt';
-import { CfgUitls } from '../../utils/CfgUtils';
+import { CfgStructualAnalysis } from '../../utils/CfgStructualAnalysis';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
@@ -49,9 +49,10 @@ export class SourceBody implements StmtPrinterContext {
     private arkBody: ArkBody;
     private stmts: SourceStmt[] = [];
     private method: ArkMethod;
-    private cfgUtils: CfgUitls;
+    private cfgUtils: CfgStructualAnalysis;
     private tempCodeMap: Map<string, string>;
     private tempVisitor: Set<string>;
+    private skipStmts: Set<Stmt>;
     private stmtReader: StmtReader;
     private definedLocals: Set<Local>;
     private inBuilder: boolean;
@@ -60,14 +61,18 @@ export class SourceBody implements StmtPrinterContext {
         this.printer = new ArkCodeBuffer(indent);
         this.method = method;
         this.arkBody = method.getBody()!;
-        this.cfgUtils = new CfgUitls(method.getCfg()!);
+        this.cfgUtils = new CfgStructualAnalysis(method.getCfg()!);
         this.tempCodeMap = new Map();
         this.tempVisitor = new Set();
         this.definedLocals = new Set();
         this.inBuilder = inBuilder;
+        this.skipStmts = new Set();
         this.buildSourceStmt();
     }
-
+    setSkipStmt(stmt: Stmt): void {
+        this.skipStmts.add(stmt);
+    }
+    
     isInBuilderMethod(): boolean {
         return this.inBuilder;
     }
@@ -158,6 +163,9 @@ export class SourceBody implements StmtPrinterContext {
         this.stmtReader = new StmtReader(originalStmts);
         while (this.stmtReader.hasNext()) {
             let stmt = this.stmtReader.next();
+            if (this.skipStmts.has(stmt)) {
+                continue;
+            }
             if (stmt instanceof ArkIfStmt) {
                 let isLoop = false;
                 if (this.cfgUtils.isForBlock(block)) {

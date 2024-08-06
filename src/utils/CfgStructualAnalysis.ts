@@ -13,11 +13,7 @@
  * limitations under the License.
  */
 
-import { Constant } from '../core/base/Constant';
-import { Local } from '../core/base/Local';
-import { ArkInstanceFieldRef } from '../core/base/Ref';
-import { ArkAssignStmt, ArkIfStmt, Stmt } from '../core/base/Stmt';
-import { Value } from '../core/base/Value';
+import { ArkIfStmt } from '../core/base/Stmt';
 import { BasicBlock } from '../core/graph/BasicBlock';
 import { Cfg } from '../core/graph/Cfg';
 import { DominanceFinder } from '../core/graph/DominanceFinder';
@@ -36,18 +32,14 @@ enum BlockType {
 
 const LoopHeaderType = new Set([BlockType.WHILE, BlockType.FOR, BlockType.FOR_INC]);
 
-export class CfgUitls {
+export class CfgStructualAnalysis {
     /** key: loop header, value: loop node dfs */
     private loopPath: Map<BasicBlock, Set<BasicBlock>>;
     private blockTypes: Map<BasicBlock, BlockType>;
     private forIncMap: Map<BasicBlock, BasicBlock>;
-    private blockSize: number;
     private dominanceTree: DominanceTree;
-    private cfg: Cfg;
 
     public constructor(cfg: Cfg) {
-        this.cfg = cfg;
-        this.blockSize = cfg.getBlocks().size;
         this.dominanceTree = new DominanceTree(new DominanceFinder(cfg));
         this.forIncMap = new Map();
         this.buildLoopsPath();
@@ -112,17 +104,13 @@ export class CfgUitls {
                 } else {
                     this.blockTypes.set(block, BlockType.IF);
                 }
-                // successorBlocks continue or break
-
-                // } else if (this.isGotoStmtBB(block)) {
-                //     if (this.isContinueBB(block, this.blockTypes)) {
-                //         this.blockTypes.set(block, BlockType.CONTINUE);
-                //     } else {
-                //         this.blockTypes.set(block, BlockType.BREAK);
-                //     }
             } else {
                 let successors = block.getSuccessors();
-                if (successors.length == 1 && this.blockTypes.get(successors[0]) == BlockType.WHILE && block.getPredecessors().length > 1) {
+                if (
+                    successors.length == 1 &&
+                    this.blockTypes.get(successors[0]) == BlockType.WHILE &&
+                    block.getPredecessors().length > 1
+                ) {
                     this.blockTypes.set(block, BlockType.FOR_INC);
                     this.blockTypes.set(successors[0], BlockType.FOR);
                     this.forIncMap.set(successors[0], block);
@@ -146,42 +134,6 @@ export class CfgUitls {
         return this.dominanceTree.isBackEdgeHeader(block);
     }
 
-    private isGotoStmtBB(block: BasicBlock): boolean {
-        // for (let stmt of block.getStmts()) {
-        //     if (stmt instanceof ArkGotoStmt) {
-        //         return true;
-        //     }
-        // }
-        return false;
-    }
-
-    private isContinueBB(block: BasicBlock, blockTypes: Map<BasicBlock, BlockType>): boolean {
-        let type = blockTypes.get(block.getSuccessors()[0]);
-        let toLoop = false;
-        if (type == BlockType.FOR || type == BlockType.WHILE) {
-            toLoop = true;
-        }
-
-        if (!toLoop) {
-            return false;
-        }
-
-        let parentLoop: BasicBlock = block;
-        let minSize: number = this.blockSize;
-        for (let [key, value] of this.loopPath) {
-            if (value.has(block) && value.size < minSize) {
-                minSize = value.size;
-                parentLoop = key;
-            }
-        }
-
-        if (parentLoop == block.getSuccessors()[0]) {
-            return true;
-        }
-
-        return false;
-    }
-
     private isIfElseBB(block: BasicBlock): boolean {
         for (const nextBlock of block.getSuccessors()) {
             for (const otherBlock of block.getSuccessors()) {
@@ -203,7 +155,7 @@ export class CfgUitls {
         let innermost: Set<BasicBlock> | undefined = undefined;
         this.loopPath.forEach((value) => {
             if (value.has(block)) {
-                if (!innermost || (value.size < innermost.size)) {
+                if (!innermost || value.size < innermost.size) {
                     innermost = value;
                 }
             }
@@ -215,11 +167,11 @@ export class CfgUitls {
     private buildLoopsPath() {
         this.loopPath = new Map<BasicBlock, Set<BasicBlock>>();
         for (const edge of this.dominanceTree.getBackEdges()) {
-            this.loopPath.set(edge[1], CfgUitls.naturalLoops(edge[0], edge[1]));
+            this.loopPath.set(edge[1], this.naturalLoops(edge[0], edge[1]));
         }
     }
 
-    public static naturalLoops(backEdgeStart: BasicBlock, backEdgeEnd: BasicBlock): Set<BasicBlock> {
+    public naturalLoops(backEdgeStart: BasicBlock, backEdgeEnd: BasicBlock): Set<BasicBlock> {
         let loop: Set<BasicBlock> = new Set();
         let stack: BasicBlock[] = [];
 

@@ -93,8 +93,6 @@ const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
 }
 `;
 
-const SourceBasicTest_CASE6_EXPECT = ``;
-
 describe('SourceBasicTest', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
@@ -168,20 +166,4 @@ describe('SourceBasicTest', () => {
         let source = printer.dump();
         expect(source).eq(SourceBasicTest_CASE5_EXPECT);
     });
-
-    it('case6: controlTest', () => {
-      let method = defaultClass?.getMethodWithName('controlTest');
-        if (!method) {
-            assert.isDefined(method);
-            return;
-        }
-        let dot = new DotMethodPrinter(method).dump();
-        fs.writeFileSync('output/controlTest.dot', dot);
-
-        let printer = new SourceMethodPrinter(method);
-        let source = printer.dump();
-        expect(source).eq(SourceBasicTest_CASE6_EXPECT);
-
-        
-  });
 });

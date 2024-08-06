@@ -44,6 +44,7 @@ export interface StmtPrinterContext extends TransformerContext {
     setTempCode(temp: string, code: string): void;
     hasTempVisit(temp: string): boolean;
     setTempVisit(temp: string): void;
+    setSkipStmt(stmt: Stmt): void;
 
     getLocals(): Map<string, Local>;
     defineLocal(local: Local): void;
@@ -501,6 +502,9 @@ export class SourceWhileStmt extends SourceStmt {
             return false;
         }
 
+        this.context.setSkipStmt(stmts[0]);
+        this.context.setSkipStmt(stmts[1]);
+
         while (this.context.getStmtReader().hasNext()) {
             this.context.getStmtReader().next();
         }
@@ -511,7 +515,6 @@ export class SourceWhileStmt extends SourceStmt {
             this.setText(`for (let ${valueName} of ${this.transformer.valueToString(iterator.getBase())}) {`);
             this.context.setTempVisit((temp1 as Local).getName());
             this.context.setTempVisit((temp3 as Local).getName());
-            this.context.setTempVisit(valueName);
             return true;
         }
 
@@ -539,7 +542,6 @@ export class SourceWhileStmt extends SourceStmt {
         }
         
         this.setText(`for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`);
-        this.context.setTempVisit(valueName);
         this.context.setTempVisit((temp3 as Local).getName());
 
         return true;
