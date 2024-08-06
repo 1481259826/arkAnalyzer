@@ -16,7 +16,7 @@
 import { Scene } from '../../Scene';
 import { ClassHierarchyAnalysisAlgorithm } from '../../callgraph/ClassHierarchyAnalysisAlgorithm';
 import { AbstractInvokeExpr } from '../base/Expr';
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
 import { ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
@@ -322,10 +322,8 @@ export abstract class DataflowSolver<D> {
 }
 
 export function factEqual<D>(fact1: D, fact2: D): boolean {
-    if (fact1 instanceof ArkInstanceFieldRef && fact2 instanceof ArkInstanceFieldRef) {
-        return fact1.getFieldSignature().getFieldName() == fact2.getFieldSignature().getFieldName() && fact1.getBase().getName() == fact2.getBase().getName();
-    } else if (fact1 instanceof ArkStaticFieldRef && fact2 instanceof ArkStaticFieldRef) {
-        return fact1.getFieldSignature() == fact2.getFieldSignature();
+    if (fact1 instanceof AbstractRef && fact2 instanceof AbstractRef) {
+        return fact1.toString() == fact2.toString();
     }
     return fact1 == fact2;
 }

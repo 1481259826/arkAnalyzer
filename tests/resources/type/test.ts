@@ -13,10 +13,4 @@
  * limitations under the License.
  */
 
-let i =0
-while(i< 4){
-  if(i){
-  break;
-  } 
-  i++;
-}
+let x = {a:1}
