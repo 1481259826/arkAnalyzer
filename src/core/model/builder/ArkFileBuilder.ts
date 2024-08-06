@@ -61,7 +61,7 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
         arkFile.getName(),
         arkFile.getCode(),
         ts.ScriptTarget.Latest,
-        undefined,
+        true,
         undefined,
         ETS_COMPILER_OPTIONS
     );

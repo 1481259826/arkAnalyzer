@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Stmt } from "../base/Stmt";
+import { Stmt } from '../base/Stmt';
 
 /**
  * @category core/graph
@@ -24,7 +24,8 @@ export class BasicBlock {
     private predecessorBlocks: BasicBlock[] = [];
     private successorBlocks: BasicBlock[] = [];
 
-    constructor() { }
+    constructor() {
+    }
 
     public getId(): number {
         return this.id;
@@ -61,16 +62,6 @@ export class BasicBlock {
         return this.successorBlocks;
     }
 
-    public setSuccessorBlock(successorIdx: number, block: BasicBlock): boolean {
-        this.updateSuccessorContainer();
-        if (successorIdx >= this.successorBlocks.length) {
-            return false;
-        }
-
-        this.successorBlocks[successorIdx] = block;
-        return true;
-    }
-
     public getPredecessors(): BasicBlock[] {
         return this.predecessorBlocks;
     }
@@ -79,14 +70,20 @@ export class BasicBlock {
         this.predecessorBlocks.push(block);
     }
 
-    public updateSuccessorContainer(): void {
-        let tail = this.getTail();
-        if (tail) {
-            let expectedSuccessorCount = tail.getExpectedSuccessorCount();
-            if (expectedSuccessorCount != this.successorBlocks.length) {
-                this.successorBlocks = new Array<BasicBlock>(expectedSuccessorCount);
-            }
+    public setPredecessorBlock(idx: number, block: BasicBlock): boolean {
+        if (idx < this.predecessorBlocks.length) {
+            this.predecessorBlocks[idx] = block;
+            return true;
         }
+        return false;
+    }
+
+    public setSuccessorBlock(idx: number, block: BasicBlock): boolean {
+        if (idx < this.successorBlocks.length) {
+            this.successorBlocks[idx] = block;
+            return true;
+        }
+        return false;
     }
 
     // Temp just for SSA

@@ -16,13 +16,15 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkGotoStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
-import { ArkIRTransformer } from './ArkIRTransformer';
+import { ArkIRTransformer, DUMMY_INITIALIZER_STMT } from './ArkIRTransformer';
 import { ModelUtils } from './ModelUtils';
+import { AbstractInvokeExpr } from '../base/Expr';
+import { Builtin } from './Builtin';
 
 const logger = Logger.getLogger();
 
@@ -285,29 +287,33 @@ export class CfgBuilder {
                 lastStatement = s;
                 break;
             } else if (ts.isBreakStatement(c)) {
-                let brstm = new StatementBuilder('breakStatement', 'break;', c, scope.id);
-                judgeLastType(brstm);
+                // let brstm = new StatementBuilder('breakStatement', 'break;', c, scope.id);
+                // judgeLastType(brstm);
                 let p: ts.Node | null = c;
                 while (p) {
                     if (ts.SyntaxKind[p.kind].includes('While') || ts.SyntaxKind[p.kind].includes('For')) {
-                        brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
-                        this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
-                        break;
+                        const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
+                        judgeLastType(lastLoopNextF);
+                        lastLoopNextF.lasts.add(lastStatement);
+                        // brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
+                        // this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
+                        return;
                     }
                     if (ts.SyntaxKind[p.kind].includes('CaseClause') || ts.SyntaxKind[p.kind].includes('DefaultClause')) {
-                        brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
-                        this.switchExitStack[this.switchExitStack.length - 1].lasts.add(brstm.next);
-                        break;
+                        const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
+                        judgeLastType(lastSwitchExit);
+                        lastSwitchExit.lasts.add(lastStatement);
+                        // brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
+                        // this.switchExitStack[this.switchExitStack.length - 1].lasts.add(brstm.next);
+                        return;
                     }
                     p = p.parent;
                 }
-                lastStatement = brstm;
             } else if (ts.isContinueStatement(c)) {
-                let constm = new StatementBuilder('continueStatement', 'continue;', c, scope.id);
-                judgeLastType(constm);
-                constm.next = this.loopStack[this.loopStack.length - 1];
-                this.loopStack[this.loopStack.length - 1].lasts.add(constm);
-                lastStatement = constm;
+                const lastLoop = this.loopStack[this.loopStack.length - 1];
+                judgeLastType(lastLoop);
+                lastLoop.lasts.add(lastStatement);
+                return;
             } else if (ts.isIfStatement(c)) {
                 let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder('ifStatement', '', c, scope.id);
                 judgeLastType(ifstm);
@@ -729,13 +735,31 @@ export class CfgBuilder {
             returnStatement.block = returnBlock;
             this.blocks.push(returnBlock);
             for (const notReturnStmt of notReturnStmts) {
-                notReturnStmt.next = returnStatement;
+                if (notReturnStmt instanceof ConditionStatementBuilder) {
+                    if (this.exit == notReturnStmt.nextT) {
+                        notReturnStmt.nextT = returnStatement;
+                        notReturnStmt.block?.nexts.splice(0, 0, returnBlock);
+                    } else if (this.exit == notReturnStmt.nextF) {
+                        notReturnStmt.nextF = returnStatement;
+                        notReturnStmt.block?.nexts.push(returnBlock);
+                    }
+                } else if (notReturnStmt instanceof SwitchStatementBuilder) {
+                    for (let i = 0; i < notReturnStmt.cases.length; i++) {
+                        if (notReturnStmt.cases[i].stmt == this.exit) {
+                            notReturnStmt.cases[i].stmt = returnStatement;
+                            notReturnStmt.block?.nexts.splice(i, 0, returnBlock);
+                        }
+                    }
+                } else {
+                    notReturnStmt.next = returnStatement;
+                    notReturnStmt.block?.nexts.push(returnBlock);
+                }
                 returnStatement.lasts.add(notReturnStmt);
                 returnStatement.next = this.exit;
                 const lasts = [...this.exit.lasts];
                 lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
                 this.exit.lasts = new Set(lasts);
-                notReturnStmt.block?.nexts.push(returnBlock);
+                returnBlock.lasts.push(notReturnStmt.block!);
             }
         }
     }
@@ -922,10 +946,10 @@ export class CfgBuilder {
             }
         } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
             stmts = [...this.astRoot.body.statements];
-        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot) 
+        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot)
             || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
-                this.emptyBody = true;
-            }
+            this.emptyBody = true;
+        }
         if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
             this.walkAST(this.entry, this.exit, stmts);
         } else {
@@ -972,6 +996,7 @@ export class CfgBuilder {
 
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
+        const blocksContainLoopCondition = new Set<Block>();
         for (let i = 0; i < this.blocks.length; i++) {
             // build block in Cfg
             const stmtsInBlock: Stmt[] = [];
@@ -979,12 +1004,13 @@ export class CfgBuilder {
                 stmtsInBlock.push(...arkIRTransformer.prebuildStmts());
             }
             for (const statementBuilder of this.blocks[i].stmts) {
+                if (statementBuilder.type == 'loopStatement') {
+                    blocksContainLoopCondition.add(this.blocks[i]);
+                }
                 if (statementBuilder.astNode && statementBuilder.code != '') {
                     stmtsInBlock.push(...arkIRTransformer.tsNodeToStmts(statementBuilder.astNode));
                 } else if (statementBuilder.code.startsWith('return')) {
                     stmtsInBlock.push(new ArkReturnVoidStmt());
-                } else if (statementBuilder.type == 'gotoStatement') {
-                    stmtsInBlock.push(new ArkGotoStmt());
                 }
             }
             const blockInCfg = new BasicBlock();
@@ -1011,13 +1037,179 @@ export class CfgBuilder {
                 }
             }
         }
+        let currBlockId = this.blocks.length;
 
         // link blocks
         for (const [blockBuilder, cfgBlock] of blockBuilderToCfgBlock) {
-            for (const successorBuilder of blockBuilder.nexts) {
-                const successorBlock = blockBuilderToCfgBlock.get(successorBuilder) as BasicBlock;
-                successorBlock.addPredecessorBlock(cfgBlock);
+            for (const successorBlockBuilder of blockBuilder.nexts) {
+                const successorBlock = blockBuilderToCfgBlock.get(successorBlockBuilder) as BasicBlock;
                 cfgBlock.addSuccessorBlock(successorBlock);
+            }
+            for (const predecessorBlockBuilder of blockBuilder.lasts) {
+                const predecessorBlock = blockBuilderToCfgBlock.get(predecessorBlockBuilder) as BasicBlock;
+                cfgBlock.addPredecessorBlock(predecessorBlock);
+            }
+        }
+
+        // put statements within loop in right position
+        for (const blockBuilder of blocksContainLoopCondition) {
+            const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
+            const blockId = block.getId();
+            const stmts = block.getStmts();
+            const stmtsCnt = stmts.length;
+            let ifStmtIdx = -1;
+            let iteratorNextStmtIdx = -1;
+            let dummyInitializerStmtIdx = -1;
+            for (let i = 0; i < stmtsCnt; i++) {
+                const stmt = stmts[i];
+                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof AbstractInvokeExpr) {
+                    const invokeExpr = stmt.getRightOp() as AbstractInvokeExpr;
+                    if (invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() == Builtin.ITERATOR_NEXT) {
+                        iteratorNextStmtIdx = i;
+                        continue;
+                    }
+                }
+                if (stmt.toString() == DUMMY_INITIALIZER_STMT) {
+                    dummyInitializerStmtIdx = i;
+                    continue;
+                }
+                if (stmt instanceof ArkIfStmt) {
+                    ifStmtIdx = i;
+                    break;
+                }
+            }
+
+            if (iteratorNextStmtIdx != -1 || dummyInitializerStmtIdx != -1) {
+                // put statements into block before condition
+                const lastStmtIdxBeforeCondition = iteratorNextStmtIdx != -1 ? iteratorNextStmtIdx : dummyInitializerStmtIdx;
+                const stmtsInsertBeforeCondition = stmts.slice(0, lastStmtIdxBeforeCondition);
+
+                let prevBlockBuilderContainsLoop = false;
+                for (const prevBlockBuilder of blockBuilder.lasts) {
+                    if (blocksContainLoopCondition.has(prevBlockBuilder)) {
+                        prevBlockBuilderContainsLoop = true;
+                        break;
+                    }
+                }
+
+                if (prevBlockBuilderContainsLoop) {
+                    // should create an extra block when previous block contains loop condition
+                    const blockBuildersBeforeCondition: Block[] = [];
+                    const blocksBeforeCondition: BasicBlock[] = [];
+                    const blockBuildersReenterCondition: Block[] = [];
+                    const blocksReenterCondition: BasicBlock[] = [];
+                    for (const prevBlockBuilder of blockBuilder.lasts) {
+                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                        if (prevBlock.getId() < blockId) {
+                            blockBuildersBeforeCondition.push(prevBlockBuilder);
+                            blocksBeforeCondition.push(prevBlock);
+                        } else {
+                            blockBuildersReenterCondition.push(prevBlockBuilder);
+                            blocksReenterCondition.push(prevBlock);
+                        }
+                    }
+
+                    const blockBuilderInsertBeforeCondition = new Block(-1, []);
+                    blockBuilderInsertBeforeCondition.lasts.push(...blockBuildersBeforeCondition);
+                    blockBuilderInsertBeforeCondition.nexts.push(blockBuilder);
+                    const blockInsertBeforeCondition = new BasicBlock();
+                    blockInsertBeforeCondition.getStmts().push(...stmtsInsertBeforeCondition);
+                    blockInsertBeforeCondition.getPredecessors().push(...blocksBeforeCondition);
+                    blockInsertBeforeCondition.addSuccessorBlock(block);
+
+                    for (const prevBlockBuilder of blockBuildersBeforeCondition) {
+                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                        for (let j = 0; j < prevBlockBuilder.nexts.length; j++) {
+                            if (prevBlockBuilder.nexts[j] == blockBuilder) {
+                                prevBlockBuilder.nexts[j] = blockBuilderInsertBeforeCondition;
+                                prevBlock.setSuccessorBlock(j, blockInsertBeforeCondition);
+                                break;
+                            }
+                        }
+                    }
+                    blockBuilder.lasts = [blockBuilderInsertBeforeCondition, ...blockBuildersReenterCondition];
+                    const predecessorsCnt = block.getPredecessors().length;
+                    block.getPredecessors().splice(0, predecessorsCnt, blockInsertBeforeCondition, ...blocksReenterCondition);
+
+                    this.blocks.push(blockBuilderInsertBeforeCondition);
+                    cfg.addBlock(blockInsertBeforeCondition);
+                    blockBuilderToCfgBlock.set(blockBuilderInsertBeforeCondition, blockInsertBeforeCondition);
+                } else {
+                    const blockBuilderBeforeCondition = blockBuilder.lasts[0];
+                    const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
+                    blockBeforeCondition.getStmts().push(...stmtsInsertBeforeCondition);
+                }
+
+                if (dummyInitializerStmtIdx != -1 && ifStmtIdx != stmtsCnt - 1) {
+                    // put statements into block which reenters condition
+                    const stmtsReenterCondition = stmts.slice(ifStmtIdx + 1);
+                    const blockBuildersBeforeCondition: Block[] = [];
+                    const blocksBeforeCondition: BasicBlock[] = [];
+                    const blockBuildersReenterCondition: Block[] = [];
+                    const blocksReenterCondition: BasicBlock[] = [];
+                    for (const prevBlockBuilder of blockBuilder.lasts) {
+                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                        if (prevBlock.getId() < blockId) {
+                            blockBuildersBeforeCondition.push(prevBlockBuilder);
+                            blocksBeforeCondition.push(prevBlock);
+                        } else {
+                            blockBuildersReenterCondition.push(prevBlockBuilder);
+                            blocksReenterCondition.push(prevBlock);
+                        }
+                    }
+                    if (blockBuildersReenterCondition.length > 1) {
+                        // put incrementor statements into an extra block
+                        const blockBuilderInsertReenterCondition = new Block(-1, []);
+                        blockBuilderInsertReenterCondition.lasts.push(...blockBuildersReenterCondition);
+                        blockBuilderInsertReenterCondition.nexts.push(blockBuilder);
+                        const blockInsertReenterCondition = new BasicBlock();
+                        blockInsertReenterCondition.getStmts().push(...stmtsReenterCondition);
+                        blockInsertReenterCondition.getPredecessors().push(...block.getPredecessors().slice(1));
+                        blockInsertReenterCondition.addSuccessorBlock(block);
+
+                        for (const prevBlockBuilder of blockBuildersReenterCondition) {
+                            const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+                            for (let j = 0; j < prevBlockBuilder.nexts.length; j++) {
+                                if (prevBlockBuilder.nexts[j] == blockBuilder) {
+                                    prevBlockBuilder.nexts[j] = blockBuilderInsertReenterCondition;
+                                    prevBlock.setSuccessorBlock(j, blockInsertReenterCondition);
+                                    break;
+                                }
+                            }
+                        }
+                        blockBuilder.lasts = [...blockBuildersBeforeCondition, blockBuilderInsertReenterCondition];
+                        const predecessorsCnt = block.getPredecessors().length;
+                        block.getPredecessors().splice(0, predecessorsCnt, ...blocksBeforeCondition, blockInsertReenterCondition);
+
+                        this.blocks.push(blockBuilderInsertReenterCondition);
+                        cfg.addBlock(blockInsertReenterCondition);
+                        blockBuilderToCfgBlock.set(blockBuilderInsertReenterCondition, blockInsertReenterCondition);
+                    } else {
+                        const blockBuilderReenterCondition = blockBuildersReenterCondition[0];
+                        const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuilderReenterCondition) as BasicBlock;
+                        blockReenterCondition.getStmts().push(...stmtsReenterCondition);
+                    }
+                } else if (iteratorNextStmtIdx != -1) {
+                    // put statements which get value of iterator into block after condition
+                    const blockBuilderAfterCondition = blockBuilder.nexts[0];
+                    const blockAfterCondition = blockBuilderToCfgBlock.get(blockBuilderAfterCondition) as BasicBlock;
+
+                    const stmtsAfterCondition = stmts.slice(ifStmtIdx + 1);
+                    blockAfterCondition.getStmts().splice(0, 0, ...stmtsAfterCondition);
+                }
+
+                // remove statements which should not in condition
+                const firstStmtIdxInCondition = iteratorNextStmtIdx != -1 ? iteratorNextStmtIdx : dummyInitializerStmtIdx + 1;
+                stmts.splice(0, firstStmtIdxInCondition);
+                stmts.splice(ifStmtIdx - firstStmtIdxInCondition + 1);
+            }
+        }
+
+        for (const blockBuilder of this.blocks) {
+            if (blockBuilder.id == -1) {
+                blockBuilder.id = currBlockId++;
+                const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
+                block.setId(blockBuilder.id);
             }
         }
 

@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-if (x) {
-  x = 1
 
-} else {
-  x = 2
+let i =0
+while(i< 4){
+  if(i){
+  break;
+  } 
+  i++;
 }

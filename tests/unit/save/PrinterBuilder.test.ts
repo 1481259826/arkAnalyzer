@@ -174,7 +174,8 @@ describe('PrinterBuilderTest', () => {
 const PrinterBuilderTest_CASE_EXPECT = `digraph "modules.ts" {
 subgraph "cluster_Original_@save/modules.ts: _DEFAULT_ARK_CLASS._DEFAULT_ARK_METHOD()" {
   label="@save/modules.ts: _DEFAULT_ARK_CLASS._DEFAULT_ARK_METHOD()_original";
-  NodeOriginal46680 [label="let myValidator1 = new ZipCodeValidator();
+  NodeOriginal46680 [label="id:-1
+      let myValidator1 = new ZipCodeValidator();
       let myValidator2 = new ZCV();
       let myValidator3 = new validator3.ZipCodeValidator();
       let myValidator4 = new validator4();"];

@@ -19,7 +19,6 @@ import { Local } from '../../core/base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
 import {
     ArkAssignStmt,
-    ArkGotoStmt,
     ArkIfStmt,
     ArkInvokeStmt,
     ArkReturnStmt,
@@ -30,6 +29,7 @@ import {
 } from '../../core/base/Stmt';
 import { ClassType, Type } from '../../core/base/Type';
 import { Value } from '../../core/base/Value';
+import { BasicBlock } from '../../core/graph/BasicBlock';
 import Logger from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import { Dump } from './SourceBase';
@@ -44,6 +44,7 @@ export interface StmtPrinterContext extends TransformerContext {
     setTempCode(temp: string, code: string): void;
     hasTempVisit(temp: string): boolean;
     setTempVisit(temp: string): void;
+    setSkipStmt(stmt: Stmt): void;
 
     getLocals(): Map<string, Local>;
     defineLocal(local: Local): void;
@@ -403,15 +404,153 @@ export class SourceIfStmt extends SourceStmt {
 }
 
 export class SourceWhileStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+    block: BasicBlock;
+    constructor(context: StmtPrinterContext, original: ArkIfStmt, block: BasicBlock) {
         super(context, original);
+        this.block = block;
     }
 
     protected afterDump(): void {
         this.printer.incIndent();
     }
 
+    /**
+     * $temp2 = $temp1.next()
+     * $temp3 = $temp2.done()
+     * if $temp3 == true
+     *  $temp4 = $temp2.value
+     *  $temp5 = <> cast
+     * @returns
+     */
+    private forOf2ts(): boolean {
+        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let temp3 = expr.getOp1();
+        let op2 = expr.getOp2();
+        let firstStmt = this.context.getStmtReader().first();
+        if (!(firstStmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        if (!(this.isLocalTempValue(temp3) && op2 instanceof Constant && (op2 as Constant).getValue() == 'true')) {
+            return false;
+        }
+
+        let stmt = (temp3 as Local).getDeclaringStmt();
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        let done = stmt.getRightOp();
+        if (!(done instanceof ArkInstanceFieldRef)) {
+            return false;
+        }
+
+        if (done.getFieldSignature().toString() != '@ES2015/BuiltinClass: IteratorResult.done') {
+            return false;
+        }
+
+        let temp2 = done.getBase();
+        if (!(temp2 instanceof Local)) {
+            return false;
+        }
+
+        stmt = temp2.getDeclaringStmt();
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        let next = stmt.getRightOp();
+        if (!(next instanceof ArkInstanceInvokeExpr)) {
+            return false;
+        }
+
+        if (next.getMethodSignature().getMethodSubSignature().getMethodName() != 'next') {
+            return false;
+        }
+
+        let temp1 = next.getBase();
+        if (!(temp1 instanceof Local)) {
+            return false;
+        }
+
+        stmt = temp1.getDeclaringStmt();
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        let iterator = stmt.getRightOp();
+        if (!(iterator instanceof ArkInstanceInvokeExpr)) {
+            return false;
+        }
+
+        if (iterator.getMethodSignature().getMethodSubSignature().getMethodName() != 'iterator') {
+            return false;
+        }
+
+        let successors = this.block.getSuccessors();
+        if (successors.length != 2) {
+            return false;
+        }
+
+        let stmts = successors[0].getStmts();
+        if (stmts.length < 2) {
+            return false;
+        }
+
+        stmt = stmts[1];
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        this.context.setSkipStmt(stmts[0]);
+        this.context.setSkipStmt(stmts[1]);
+
+        while (this.context.getStmtReader().hasNext()) {
+            this.context.getStmtReader().next();
+        }
+        
+        let v = stmt.getLeftOp() as Local;
+        let valueName = v.getName();
+        if (!this.isLocalTempValue(v)) {
+            this.setText(`for (let ${valueName} of ${this.transformer.valueToString(iterator.getBase())}) {`);
+            this.context.setTempVisit((temp1 as Local).getName());
+            this.context.setTempVisit((temp3 as Local).getName());
+            return true;
+        }
+
+        // iterate map 'for (let [key, value] of map)'
+        let stmtReader = new StmtReader(stmts);
+        stmtReader.next();
+        stmtReader.next();
+
+        let arrayValueNames = [];
+        while (stmtReader.hasNext()) {
+            stmt = stmtReader.next();
+            if (!(stmt instanceof ArkAssignStmt)) {
+                break;
+            }
+            let ref = stmt.getRightOp();
+            if (!(ref instanceof ArkArrayRef)) {
+                break;
+            }
+            if (ref.getBase().getName() != valueName) {
+                break;
+            }
+            let name = (stmt.getLeftOp() as Local).getName();
+            arrayValueNames.push(name);
+            this.context.setTempVisit(name);
+        }
+        
+        this.setText(`for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`);
+        this.context.setTempVisit((temp3 as Local).getName());
+
+        return true;
+    }
+
     public transfer2ts(): void {
+        if (this.forOf2ts()) {
+            return;
+        }
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
         code = `while (${this.transformer.valueToString(expr.getOp1())}`;
@@ -427,68 +566,25 @@ export class SourceWhileStmt extends SourceStmt {
 }
 
 export class SourceForStmt extends SourceWhileStmt {
-    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
-        super(context, original);
-    }
-
-    /**
-     * source: for (let entry of someArray)
-     * IR:
-     *   entry = undefined
-     *   $temp2 = lengthof someArray
-     *   $temp1 = 0
-     *   if $temp1 >= $temp2
-     *   entry = someArray[$temp1]
-     *   $temp1 = $temp1 + 1
-     */
-    private forOf2ts(): boolean {
-        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
-        let op1 = expr.getOp1();
-        let op2 = expr.getOp2();
-        let firstStmt = this.context.getStmtReader().first();
-        if (!(firstStmt instanceof ArkAssignStmt)) {
-            return false;
-        }
-
-        if (!(this.isLocalTempValue(op1) && this.isLocalTempValue(op2))) {
-            return false;
-        }
-
-        let op1Code = this.transformer.valueToString(op1);
-        let op2Code = this.transformer.valueToString(op2);
-
-        if (!op1Code || !op2Code) {
-            return false;
-        }
-
-        if (op1Code != '0' || !op2Code.endsWith('.length')) {
-            return false;
-        }
-
-        while (this.context.getStmtReader().hasNext()) {
-            this.context.getStmtReader().next();
-        }
-
-        let v = firstStmt.getLeftOp();
-        this.setText(`for (let ${(v as Local).getName()} of ${op2Code.replace('.length', '')}) {`);
-
-        return true;
+    incBlock: BasicBlock;
+    constructor(context: StmtPrinterContext, original: ArkIfStmt, block: BasicBlock, incBlock: BasicBlock) {
+        super(context, original, block);
+        this.incBlock = incBlock;
     }
 
     public transfer2ts(): void {
-        if (this.forOf2ts()) {
-            return;
-        }
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
         code = `for (; ${this.transformer.valueToString(expr.getOp1())}`;
         code += ` ${this.transferOperator()} `;
         code += `${this.transformer.valueToString(expr.getOp2())}; `;
-        while (this.context.getStmtReader().hasNext()) {
-            let sourceStmt = stmt2SourceStmt(this.context, this.context.getStmtReader().next());
+
+        let stmtReader = new StmtReader(this.incBlock.getStmts());
+        while (stmtReader.hasNext()) {
+            let sourceStmt = stmt2SourceStmt(this.context, stmtReader.next());
             sourceStmt.transfer2ts();
             code += sourceStmt.toString();
-            if (this.context.getStmtReader().hasNext()) {
+            if (stmtReader.hasNext()) {
                 code += ', ';
             }
         }
@@ -517,7 +613,7 @@ export class SourceElseStmt extends SourceStmt {
 }
 
 export class SourceContinueStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
+    constructor(context: StmtPrinterContext, original: Stmt) {
         super(context, original);
     }
     // trans 2 break or continue
@@ -527,7 +623,7 @@ export class SourceContinueStmt extends SourceStmt {
 }
 
 export class SourceBreakStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkGotoStmt) {
+    constructor(context: StmtPrinterContext, original: Stmt) {
         super(context, original);
     }
     // trans 2 break or continue

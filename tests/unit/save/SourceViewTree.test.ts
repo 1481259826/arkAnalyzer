@@ -101,8 +101,9 @@ struct LazyForEachTest {
   data: MyDataSource = new MyDataSource();
   aboutToAppear() {
     let i = 0;
-    for (; i <= 20; i = i + 1) {
+    while (i <= 20) {
       this.data.pushData(new StringData(new NestedString('Hello ' + i + '')));
+      i = i + 1;
     }
   }
   build() {

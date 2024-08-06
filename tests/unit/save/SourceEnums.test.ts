@@ -43,8 +43,6 @@ declare enum ViewTreeNodeType {
 let systemComponent = ViewTreeNodeType.SystemComponent;
 let nameOfsystemComponent = ViewTreeNodeType.systemComponent;
 let obj = {x: 1};
-key = [key, value][0];
-value = [key, value][1];
 for (let [key, value] of Object.entries(ViewTreeNodeType)) {
   obj.key = value;
 }

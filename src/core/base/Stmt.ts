@@ -323,23 +323,6 @@ export class ArkIfStmt extends Stmt {
     }
 }
 
-export class ArkGotoStmt extends Stmt {
-    constructor() {
-        super();
-        this.updateText();
-    }
-
-    public isBranch(): boolean {
-        return true;
-    }
-
-    public toString(): string {
-        const str = 'goto';
-        this.setText(str);
-        return str;
-    }
-}
-
 export class ArkReturnStmt extends Stmt {
     private op: Value;
 
