@@ -114,7 +114,7 @@ export class PointerAnalysis extends AbstractAnalysis{
             // process dynamic call
             reanalyzer = this.updateCallGraph();
             if (this.config.dotDump) {
-                this.pag.dump(path.join(this.config.outputDirectory, 'pta_pag.dot'));
+                this.pag.dump(path.join(this.config.outputDirectory, `pta_pag_itor#${this.ptaStat.iterTimes}.dot`));
             }
         }
     }
@@ -193,6 +193,7 @@ export class PointerAnalysis extends AbstractAnalysis{
                         throw new Error ("field node in edge is not write edge")
                     }
                     let srcNode = edge.getSrcNode() as PagNode;
+                    this.ptaStat.numProcessedWrite++;
                     for (let pt of diffPts) {
                         // filter pt
                         let dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
@@ -208,13 +209,14 @@ export class PointerAnalysis extends AbstractAnalysis{
 
                 fieldNode.getOutgoingEdges().forEach((edge) => {
                     if (edge.getKind() != PagEdgeKind.Load) {
-                        throw new Error ("field node out edge is not load edge")
+                       return;
                     }
                     let dstNode = edge.getDstNode() as PagNode;
+                    this.ptaStat.numProcessedLoad++;
                     for (let pt of diffPts) {
                         let srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                         if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
-                            this.ptaStat.numRealWrite++;
+                            this.ptaStat.numRealLoad++;
 
                             // TODO: if field is used before initialzed, newSrc node has no diff pts
                             if (this.ptd.resetElem(srcNode.getID())) {
@@ -510,6 +512,7 @@ class PTAStat implements StatTraits {
     numProcessedWrite: number = 0;
     numProcessedThis: number = 0;
     numRealWrite: number = 0;
+    numRealLoad: number = 0;
 
     numDynamicCall: number = 0;
     numDirectCall: number = 0;
@@ -550,8 +553,9 @@ class PTAStat implements StatTraits {
         output = output + `Processed copy\t\t${this.numProcessedCopy}\n`
         output = output + `Processed load\t\t${this.numProcessedLoad}\n`
         output = output + `Processed write\t\t${this.numProcessedWrite}\n`
-        output = output + `Processed write\t\t${this.numProcessedThis}\n`
-        output = output + `Real write\t\t${this.numRealWrite}\n\n`
+        output = output + `Real write\t\t${this.numRealWrite}\n`
+        output = output + `Real load\t\t${this.numRealLoad}\n`
+        output = output + `Processed This\t\t${this.numProcessedThis}\n\n`
         output = output + `Dynamic call\t\t${this.numDynamicCall}\n`
         output = output + `Direct call\t\t${this.numDirectCall}\n\n`
         output = output + `Total Time\t\t${this.TotalTime} S\n`
