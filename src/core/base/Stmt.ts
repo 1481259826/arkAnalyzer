@@ -310,7 +310,7 @@ export class ArkIfStmt extends Stmt {
     }
 
     public toString(): string {
-        const str = 'if ' + this.conditionExpr + ', goto other block';
+        const str = 'if ' + this.conditionExpr;
         this.setText(str);
         return str;
     }
@@ -442,7 +442,6 @@ export class ArkSwitchStmt extends Stmt {
         this.replaceUses(uses);
     }
 }
-
 
 export class ArkThrowStmt extends Stmt {
     private op: Value;

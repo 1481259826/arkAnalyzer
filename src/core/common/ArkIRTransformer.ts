@@ -448,7 +448,7 @@ export class ArkIRTransformer {
             const {
                 value: conditionExpr,
                 stmts: conditionStmts,
-            } = this.conditionToValueAndStmts(ifStatement.expression, false);
+            } = this.conditionToValueAndStmts(ifStatement.expression);
             stmts.push(...conditionStmts);
 
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
@@ -1339,7 +1339,7 @@ export class ArkIRTransformer {
         return null;
     }
 
-    private conditionToValueAndStmts(condition: ts.Expression, flip: boolean = true): ValueAndStmts {
+    private conditionToValueAndStmts(condition: ts.Expression): ValueAndStmts {
         const stmts: Stmt[] = [];
         let {
             value: conditionValue,
@@ -1348,8 +1348,8 @@ export class ArkIRTransformer {
         stmts.push(...conditionStmts);
         let conditionExpr: ArkConditionExpr;
         if ((conditionValue instanceof ArkBinopExpr) && this.isRelationalOperator(conditionValue.getOperator())) {
-            const operator = flip ? this.flipOperator(conditionValue.getOperator()) : conditionValue.getOperator();
-            conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), operator as BinaryOperator); // 待重构ifstatament时，不进行强制转换
+            const operator = conditionValue.getOperator();
+            conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), operator);
         } else {
             if (IRUtils.moreThanOneAddress(conditionValue)) {
                 ({
@@ -1358,8 +1358,7 @@ export class ArkIRTransformer {
                 } = this.generateAssignStmtForValue(conditionValue));
                 stmts.push(...conditionStmts);
             }
-            const operator = flip ? '==' : '!=';
-            conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), operator as BinaryOperator); // 待重构ifstatament时，不进行强制转换
+            conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), BinaryOperator.InEquality);
         }
         return {value: conditionExpr, stmts: stmts};
     }
@@ -1429,9 +1428,15 @@ export class ArkIRTransformer {
         return {value: leftOp, stmts: [new ArkAssignStmt(leftOp, value)]};
     }
 
-    private isRelationalOperator(operator: string): boolean {
-        return operator == '<' || operator == '<=' || operator == '>' || operator == '>=' ||
-            operator == '==' || operator == '===' || operator == '!=' || operator == '!==';
+    private isRelationalOperator(operator: BinaryOperator): boolean {
+        return operator == BinaryOperator.LessThan ||
+            operator == BinaryOperator.LessThanOrEqual ||
+            operator == BinaryOperator.GreaterThan ||
+            operator == BinaryOperator.GreaterThanOrEqual ||
+            operator == BinaryOperator.Equality ||
+            operator == BinaryOperator.InEquality ||
+            operator == BinaryOperator.StrictEquality ||
+            operator == BinaryOperator.StrictInequality;
     }
 
     private flipOperator(operator: string): string {

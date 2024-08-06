@@ -13,4 +13,13 @@
  * limitations under the License.
  */
 
-let x = {a: 1};
+// let flag = false;
+// if (flag) {
+//     let i = 0;
+// } else {
+//     let j = 1;
+// }
+
+for (let i = 0; i < 10; i++) {
+    console.log(i);
+}
