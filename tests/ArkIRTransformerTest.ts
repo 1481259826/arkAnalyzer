@@ -67,8 +67,8 @@ class ArkIRTransformerTest {
         scene.buildSceneFromProjectDir(sceneConfig);
         this.printScene(scene);
         scene.inferTypes();
-        // logger.error('\nafter inferTypes');
-        // this.printScene(scene);
+        logger.error('\nafter inferTypes');
+        this.printScene(scene);
 
         logger.error('testStmtsOfSimpleProject end\n');
     }
@@ -149,6 +149,6 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-// arkIRTransformerTest.testStmtsOfSimpleProject();
+arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.printCfg();
+// arkIRTransformerTest.printCfg();
