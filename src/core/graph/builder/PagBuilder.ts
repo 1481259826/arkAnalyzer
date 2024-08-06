@@ -234,7 +234,7 @@ export class PagBuilder {
         }
 
         for (let cs of funcPag.getNormalCallSites()) {
-            this.addStaticCallEdge(cs, cid);
+            this.addStaticPagCallEdge(cs, cid);
         }
 
         return true;
@@ -323,7 +323,6 @@ export class PagBuilder {
 
         let srcNodes: NodeID[] = []
         // Add reachable
-        this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
@@ -522,8 +521,13 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 
-        if (lhOp instanceof Local 
-            && (rhOp instanceof Local || rhOp instanceof ArkParameterRef || rhOp instanceof ArkThisRef)) {
+        let condition: boolean = 
+            (lhOp instanceof Local && (
+                rhOp instanceof Local || rhOp instanceof ArkParameterRef || 
+                rhOp instanceof ArkThisRef || rhOp instanceof ArkStaticFieldRef)) || 
+            (lhOp instanceof ArkStaticFieldRef && rhOp instanceof Local)
+
+        if (condition) {
             return true;
         }
         return false;
@@ -534,7 +538,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (rhOp instanceof Local && 
-            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkStaticFieldRef)) {
+            (lhOp instanceof ArkInstanceFieldRef)) {
             return true;
         }
         return false;
@@ -545,7 +549,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (lhOp instanceof Local && 
-            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkStaticFieldRef)) {
+            (rhOp instanceof ArkInstanceFieldRef)) {
             return true;
         }
         return false;
@@ -559,7 +563,9 @@ export class PagBuilder {
     }
 
     public getDynamicCallSites(): Set<DynCallSite> {
-        return this.dynamicCallSites;
+        let tempSet = new Set(this.dynamicCallSites);
+        this.clearDynamicCallSiteSet()
+        return tempSet
     }
 
     public clearDynamicCallSiteSet() {

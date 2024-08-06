@@ -85,10 +85,15 @@ export class CallGraphEdge extends BaseEdge {
     }
 
     public getDotAttr(): string {
-        switch(this.getKind()) {
-            // TODO: separate static call and dynamic call
-            default:
-                return "color=black";
+        const indirectCallNums = this.indirectCalls.size;
+        const directCallNums: number = this.directCalls.size;
+
+        if (indirectCallNums != 0 && directCallNums == 0) {
+            return "color=red";
+        } else if (indirectCallNums == 0 && directCallNums != 0) {
+            return "color=black";
+        } else {
+            return "color=yellow";
         }
     }
 }
@@ -172,17 +177,17 @@ export class CallGraph extends BaseGraph {
         let node = this.getNode(nodeID) as CallGraphNode;
         // remove node itself
         this.removeNode(nodeID);
-        this.methodToCGNodeMap.delete(node.getMethod());
+        this.methodToCGNodeMap.delete(node.getMethod().toString());
     }
 
     public getCallGraphNodeByMethod(method: Method): CallGraphNode {
-        let n = this.methodToCGNodeMap.get(method);
+        let n = this.methodToCGNodeMap.get(method.toString());
         if (n == undefined) {
             // The method can't be found
             // means the method has no implementation, or base type is unclear to find it
             // Create a virtual CG Node
             // TODO: this virtual CG Node need be remove once the base type is clear 
-            return this.addCallGraphNode(method, CallGraphNodeKind.vitual)
+            return this.addCallGraphNode(method, CallGraphNodeKind.vitual);
         }
 
         return this.getNode(n) as CallGraphNode;
@@ -241,6 +246,20 @@ export class CallGraph extends BaseGraph {
 
         let cs = new DynCallSite(callerNode.getID(), callStmt, args, calleeNode?.getID())
         this.stmtToDynCallSitemap.set(callStmt, cs);
+    }
+
+    public addDynamicCallEdge(callerID: NodeID, calleeID: NodeID, callStmt: Stmt) {
+        let callerNode = this.getNode(callerID) as CallGraphNode;
+        let calleeNode = this.getNode(calleeID) as CallGraphNode;
+        
+        let callEdge = this.getCallEdgeByPair(callerNode.getID(), calleeNode.getID());
+        if (callEdge == undefined) {
+            callEdge = new CallGraphEdge(callerNode, calleeNode);
+            callEdge.getSrcNode().addOutgoingEdge(callEdge);
+            callEdge.getDstNode().addIncomingEdge(callEdge);
+            this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
+        }
+        callEdge.addInDirectCallSite(callStmt);
     }
 
     public getDynCallsiteByStmt(stmt: Stmt): DynCallSite | undefined {

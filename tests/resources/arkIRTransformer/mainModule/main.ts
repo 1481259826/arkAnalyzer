@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-class Cat {}
-let cat = new Cat();
-let isCat = cat instanceof Cat;
-console.log(isCat); // true
+this.pendingUpdateData = new PendingTask(<PendingCondition> {
+    shouldPending: () => {
+        return this.isPendingUpdateData;
+    }
+});

@@ -143,6 +143,10 @@ export class PagNode extends BaseNode {
         return this.cid;
     }
 
+    public setCid(cid: ContextID) {
+        this.cid = cid;
+    }
+
     public setStmt(s: Stmt) {
         this.stmt = s;
     }
@@ -475,6 +479,23 @@ export class Pag extends BaseGraph {
                 this.contextValueToIdMap.set(value, ctx2NdMap);
             }
             ctx2NdMap.set(cid, id);
+
+            if (value instanceof ArkInstanceFieldRef) {
+                let ctxMap = this.contextBaseToIdMap.get(value.getBase());
+                if (ctxMap == undefined) {
+                    ctxMap = new Map();
+                    ctxMap.set(cid, [pagNode.getID()]);
+                } else {
+                    let nodes = ctxMap.get(cid);
+                    if (nodes == undefined) {
+                        nodes = [pagNode.getID()];
+                    } else {
+                        nodes.push(pagNode.getID());
+                    }
+                    ctxMap.set(cid, nodes);
+                }
+                this.contextBaseToIdMap.set(value.getBase(), ctxMap);
+            }
         }
         
         return pagNode!;
@@ -507,6 +528,14 @@ export class Pag extends BaseGraph {
 
         let thisRefNode = this.addPagThisRefNode(value)
         return thisRefNode
+    }
+
+    public getOrNewThisLocalNode(cid: ContextID, ptNode: NodeID, value: Local, s?: Stmt): PagNode {
+        if (ptNode != -1) {
+            return this.getNode(ptNode) as PagNode;
+        } else {
+            return this.getOrNewNode(cid, value, s);
+        }
     }
 
     public hasCtxNode(cid: ContextID, v: Value): NodeID | undefined {
@@ -547,6 +576,10 @@ export class Pag extends BaseGraph {
 
     public getNodesByValue(v: Value): Map<ContextID, NodeID> | undefined {
         return this.contextValueToIdMap.get(v);
+    }
+
+    public getNodesByBaseValue(v: Value): Map<ContextID, NodeID[]> | undefined{
+        return this.contextBaseToIdMap.get(v);
     }
 
     public addPagEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind, stmt?: Stmt): boolean {
