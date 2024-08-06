@@ -48,12 +48,11 @@ export class FileUtils {
         const moduleMap: Map<string, ModulePath> = new Map();
         ohPkgContentMap.forEach((content, filePath) => {
             const moduleName = content.name as string;
-            if (moduleName.startsWith('@')) {
+            if (moduleName && moduleName.startsWith('@')) {
                 const modulePath = path.dirname(filePath);
                 moduleMap.set(moduleName, new ModulePath(modulePath, content.main ?
                     path.resolve(modulePath, content.main as string) : ''));
             }
-
         })
         ohPkgContentMap.forEach((content, filePath) => {
             if (content.dependencies) {

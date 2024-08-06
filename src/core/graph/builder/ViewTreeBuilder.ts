@@ -15,12 +15,7 @@
 
 import { Constant } from '../../base/Constant';
 import { Decorator } from '../../base/Decorator';
-import {
-    AbstractInvokeExpr,
-    ArkInstanceInvokeExpr,
-    ArkNewExpr,
-    ArkStaticInvokeExpr
-} from '../../base/Expr';
+import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
 import { Local } from '../../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
@@ -107,7 +102,10 @@ class StateValuesUtils {
         if (!method) {
             return;
         }
-        let stmts = method.getCfg()!.getStmts();
+        let stmts = method.getCfg()?.getStmts();
+        if (!stmts) {
+            return;
+        }
         for (const stmt of stmts) {
             this.parseStmtUsesStateValues(stmt, uses, true, visitor);
         }
