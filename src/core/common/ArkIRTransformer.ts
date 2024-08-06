@@ -922,8 +922,12 @@ export class ArkIRTransformer {
             const argValues: Value[] = [];
             if (newExpression.arguments) {
                 for (const argument of newExpression.arguments) {
-                    const {value: argValue, stmts: argStmts} = this.tsNodeToValueAndStmts(argument);
+                    let {value: argValue, stmts: argStmts} = this.tsNodeToValueAndStmts(argument);
                     stmts.push(...argStmts);
+                    if (IRUtils.moreThanOneAddress(argValue)) {
+                        ({value: argValue, stmts: argStmts} = this.generateAssignStmtForValue(argValue));
+                        stmts.push(...argStmts);
+                    }
                     argValues.push(argValue);
                 }
             }
