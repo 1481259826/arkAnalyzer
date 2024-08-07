@@ -23,6 +23,7 @@ import { ArkBody } from '../src/core/model/ArkBody';
 import { ArkMethod } from '../src/core/model/ArkMethod';
 import { ArkClass } from '../src/core/model/ArkClass';
 import { PrinterBuilder } from '../src';
+import { ModelUtils } from '../src/core/common/ModelUtils';
 
 const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
@@ -117,8 +118,8 @@ class ArkIRTransformerTest {
     private printScene(scene: Scene): void {
         for (const arkFile of scene.getFiles()) {
             logger.error('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
-            for (const arkClass of arkFile.getClasses()) {
-                logger.error('========= arkClass:', arkClass.getName(), ' =======');
+            for (const arkClass of ModelUtils.getAllClassesInFile(arkFile)) {
+                logger.error('========= arkClass:', arkClass.getSignature().toString(), ' =======');
                 for (const arkMethod of arkClass.getMethods(true)) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();

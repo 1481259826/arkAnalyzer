@@ -13,34 +13,8 @@
  * limitations under the License.
  */
 
-// let flag = false;
-// if (flag) {
-//     let i = 0;
-// } else {
-//     let j = 1;
-// }
-//
-// let str = 's';
-// if (str) {
-//     let i = 0;
-// } else {
-//     let j = 1;
-// }
-//
-// let obj = {};
-// if (obj) {
-//     let i = 0;
-// } else {
-//     let j = 1;
-// }
-//
-// let n = 1;
-// if (n) {
-//     let i = 0;
-// } else {
-//     let j = 1;
-// }
-
-let x = 42;
-let isFortyTwo = x == 42;
-let exactlyFortyTwo = x === 42;
+namespace mainModule {
+    function foo() {
+        let a = {i: 1};
+    }
+}

@@ -145,7 +145,7 @@ export class Scene {
 
     private addDefaultConstructors(): void {
         for (const file of this.getFiles()) {
-            for (const cls of file.getClasses()) {
+            for (const cls of ModelUtils.getAllClassesInFile(file)) {
                 buildDefaultConstructor(cls);
                 addInitInConstructor(cls);
             }
@@ -604,7 +604,7 @@ export class Scene {
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
             file.getDefaultClass()?.getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
-                if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
+                if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
                     globalLocals.push(local);
                 }
             });
@@ -619,7 +619,7 @@ export class Scene {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
                 ns.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
-                    if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
+                    if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
                         nsGlobalLocals.push(local);
                     }
                 });
@@ -734,7 +734,7 @@ export class Scene {
                     modules = v;
                     return;
                 }
-            })
+            });
         }
         if (Array.isArray(modules)) {
             for (const module of modules) {
@@ -749,7 +749,7 @@ export class Scene {
                             } else if (k == 'extensionAbilities') {
                                 abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
                             }
-                        })
+                        });
                     }
                 } catch (err) {
                     logger.error(err);
