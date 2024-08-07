@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-namespace mainModule {
-    function foo() {
-        let a = {i: 1};
-    }
-}
+class Cat {}
+let cat = new Cat();
+let isCat = cat instanceof Cat;
+console.log(isCat); // true

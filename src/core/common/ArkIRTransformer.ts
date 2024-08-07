@@ -21,7 +21,7 @@ import {
     ArkCastExpr,
     ArkConditionExpr,
     ArkDeleteExpr,
-    ArkInstanceInvokeExpr,
+    ArkInstanceInvokeExpr, ArkInstanceOfExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkNormalBinopExpr,
@@ -1229,6 +1229,12 @@ export class ArkIRTransformer {
             ({value: opValue1, stmts: opStmts1} = this.generateAssignStmtForValue(opValue1));
             stmts.push(...opStmts1);
         }
+
+        if (operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword) {
+            const instanceOfExpr = new ArkInstanceOfExpr(opValue1, new UnclearReferenceType(binaryExpression.right.getText(this.sourceFile)));
+            return {value: instanceOfExpr, stmts: stmts};
+        }
+
         let {
             value: opValue2,
             stmts: opStmts2,

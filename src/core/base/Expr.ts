@@ -699,9 +699,9 @@ export class ArkTypeOfExpr extends AbstractExpr {
 
 export class ArkInstanceOfExpr extends AbstractExpr {
     private op: Value;
-    private checkType: string;
+    private checkType: Type;
 
-    constructor(op: Value, checkType: string) {
+    constructor(op: Value, checkType: Type) {
         super();
         this.op = op;
         this.checkType = checkType;
@@ -715,7 +715,7 @@ export class ArkInstanceOfExpr extends AbstractExpr {
         this.op = newOp;
     }
 
-    public getCheckType(): string {
+    public getCheckType(): Type {
         return this.checkType;
     }
 

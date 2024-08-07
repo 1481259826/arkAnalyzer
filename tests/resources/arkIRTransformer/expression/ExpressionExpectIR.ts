@@ -104,5 +104,6 @@ export const Operator_Expect_IR = {
         '$temp3 = await 10',
         'x = await 11',
         '$temp4 = yield 20',
+        'isCat = cat instanceof Cat',
     ],
 };
