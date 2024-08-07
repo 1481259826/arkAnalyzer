@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-let i =0
-while(i< 4){
-  if(i){
-  break;
-  } 
-  i++;
+namespace t {
+  let y = {a:1}
+  function f() {
+    let z = {b:2}
+  }
 }

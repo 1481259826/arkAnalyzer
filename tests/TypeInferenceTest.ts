@@ -17,6 +17,7 @@ import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { ArkBody } from "../src/core/model/ArkBody";
 import Logger, { LOG_LEVEL } from "../src/utils/logger";
+import {DummyMainCreater} from "../src/core/common/DummyMainCreater"
 
 const logger = Logger.getLogger();
 Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN);
@@ -36,7 +37,9 @@ export class TypeInferenceTest {
         scene.buildScene4HarmonyProject();
         // scene.buildSceneFromProjectDir(config);
         scene.collectProjectImportInfos();
-        const a = scene.getEntryMethodsFromModuleJson5()
+        const creater = new DummyMainCreater(scene);
+        creater.createDummyMain();
+        const dummyMain = creater.getDummyMain();
         return scene;
     }
 

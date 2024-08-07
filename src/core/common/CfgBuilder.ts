@@ -949,6 +949,8 @@ export class CfgBuilder {
         } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot)
             || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
             this.emptyBody = true;
+        } else if (ts.isModuleDeclaration(this.astRoot) && ts.isModuleBlock(this.astRoot.body!)) {
+            stmts = [...this.astRoot.body.statements];
         }
         if (!ModelUtils.isArkUIBuilderMethod(this.declaringMethod)) {
             this.walkAST(this.entry, this.exit, stmts);

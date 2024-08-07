@@ -139,7 +139,7 @@ export class ClassHierarchyAnalysisAlgorithm extends AbstractCallGraph {
             if (classCompleteType instanceof ClassType) {
                 let extendedClasses = this.scene.getExtendedClasses(classCompleteType.getClassSignature())
                 for (let extendedClass of extendedClasses) {
-                    for (let extendedMethod of extendedClass.getMethods()) {
+                    for (let extendedMethod of extendedClass.getMethods(true)) {
                         if (extendedMethod.getName() === callName) {
                             if (!isItemRegistered<ArkMethod>(
                                 extendedMethod, callMethods,
