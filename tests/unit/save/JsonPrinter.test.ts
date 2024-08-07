@@ -782,9 +782,9 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 },
                                 "right": {
                                     "_": "Constant",
-                                    "value": "0",
+                                    "value": "false",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "BooleanType"
                                     }
                                 },
                                 "type": {
@@ -2489,9 +2489,9 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                       },
                       right: {
                         _: "Constant",
-                        value: "0",
+                        value: "false",
                         type: {
-                          _: "NumberType",
+                          _: "BooleanType",
                         },
                       },
                       type: {

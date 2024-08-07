@@ -40,6 +40,7 @@ import { ArkAssignStmt } from './Stmt';
 import Logger from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
+import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 
 const logger = Logger.getLogger();
 
@@ -398,7 +399,6 @@ export class ArkDeleteExpr extends AbstractExpr {
 
 }
 
-
 export class ArkAwaitExpr extends AbstractExpr {
     private promise: Value;
 
@@ -504,11 +504,11 @@ export enum BinaryOperator {
 
 // 二元运算表达式
 export class ArkBinopExpr extends AbstractExpr {
-    private op1: Value;
-    private op2: Value;
-    private operator: BinaryOperator;
+    protected op1: Value;
+    protected op2: Value;
+    protected operator: BinaryOperator;
 
-    private type: Type;
+    protected type: Type;
 
     constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super();
@@ -557,13 +557,13 @@ export class ArkBinopExpr extends AbstractExpr {
         return this.op1 + ' ' + this.operator + ' ' + this.op2;
     }
 
-    private inferOpType(op: Value, arkClass: ArkClass) {
+    protected inferOpType(op: Value, arkClass: ArkClass) {
         if (op instanceof AbstractExpr || op instanceof AbstractRef) {
             TypeInference.inferValueType(op, arkClass);
         }
     }
 
-    private setType() {
+    protected setType() {
         let op1Type = this.op1.getType();
         let op2Type = this.op2.getType();
         if (op1Type instanceof UnionType) {
@@ -635,6 +635,24 @@ export class ArkBinopExpr extends AbstractExpr {
 export class ArkConditionExpr extends ArkBinopExpr {
     constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super(op1, op2, operator);
+    }
+
+    public inferType(arkClass: ArkClass): ArkBinopExpr {
+        this.inferOpType(this.op1, arkClass);
+        const op1Type = this.op1.getType();
+        if (this.operator == BinaryOperator.InEquality && this.op2 == ValueUtil.getOrCreateNumberConst(0)) {
+            if (op1Type instanceof StringType) {
+                this.op2 = ValueUtil.createStringConst(EMPTY_STRING);
+            } else if (op1Type instanceof BooleanType) {
+                this.op2 = ValueUtil.getBooleanConstant(false);
+            } else if (op1Type instanceof ClassType) {
+                this.op2 = ValueUtil.getUndefinedConst();
+            }
+        } else {
+            this.inferOpType(this.getOp2(), arkClass);
+        }
+        this.type = BooleanType.getInstance();
+        return this;
     }
 }
 

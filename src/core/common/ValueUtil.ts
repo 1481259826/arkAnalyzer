@@ -16,6 +16,8 @@
 import { Constant } from '../base/Constant';
 import { BooleanType, NullType, NumberType, StringType, UndefinedType } from '../base/Type';
 
+export const EMPTY_STRING = '';
+
 export class ValueUtil {
     private static readonly NumberConstantCache: Map<number, Constant> = new Map([
         [0, new Constant('0', NumberType.getInstance())],
@@ -34,6 +36,7 @@ export class ValueUtil {
     private static readonly NullConstant = new Constant('null', NullType.getInstance());
     private static readonly TrueConstant = new Constant('true', BooleanType.getInstance());
     private static readonly FalseConstant = new Constant('false', BooleanType.getInstance());
+    private static readonly EMPTY_STRING_CONSTANT = new Constant(EMPTY_STRING, StringType.getInstance());
 
     public static getOrCreateNumberConst(n: number): Constant {
         let constant = this.NumberConstantCache.get(n);
@@ -45,6 +48,9 @@ export class ValueUtil {
     }
 
     public static createStringConst(str: string): Constant {
+        if (str == EMPTY_STRING) {
+            return this.EMPTY_STRING_CONSTANT;
+        }
         return new Constant(str, StringType.getInstance());
     }
 

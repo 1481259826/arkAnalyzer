@@ -1358,7 +1358,7 @@ export class ArkIRTransformer {
                 } = this.generateAssignStmtForValue(conditionValue));
                 stmts.push(...conditionStmts);
             }
-            conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), BinaryOperator.InEquality);
+            conditionExpr = new ArkConditionExpr(conditionValue, ValueUtil.getOrCreateNumberConst(0), BinaryOperator.InEquality);
         }
         return {value: conditionExpr, stmts: stmts};
     }

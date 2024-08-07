@@ -13,13 +13,34 @@
  * limitations under the License.
  */
 
-// let flag = false;
-// if (flag) {
-//     let i = 0;
-// } else {
-//     let j = 1;
-// }
+let flag = false;
+if (flag) {
+    let i = 0;
+} else {
+    let j = 1;
+}
 
-for (let i = 0; i < 10; i++) {
-    console.log(i);
+let str = 's';
+if (str) {
+    let i = 0;
+} else {
+    let j = 1;
+}
+
+let obj = {};
+if (obj) {
+    let i = 0;
+} else {
+    let j = 1;
+}
+
+let n = 1;
+if (n) {
+    let i = 0;
+} else {
+    let j = 1;
+}
+
+if (!obj.hasOwnProperty('SystemComponent')) {
+    console.log('error');
 }
