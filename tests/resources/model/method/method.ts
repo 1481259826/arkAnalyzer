@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
-function testDotDotDotToken(arr1:number[], ...arr2:number[]) {
+function testDotDotDotToken(arr1: number[], ...arr2: number[]) {
     console.log("This is a function for testing dotDotDotToken.");
+}
+
+function testObjectTypeParam(obj: object) {
+    console.log("This is a function for testing parameter of object type.");
 }

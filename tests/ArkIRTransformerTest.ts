@@ -58,17 +58,18 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfSimpleProject start');
 
         // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        // const projectDir = 'tests/resources/arkIRTransformer/expression';
+        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const projectDir = 'tests/resources/arkIRTransformer/expression';
+        // const projectDir = 'tests/resources/arkIRTransformer/assignment';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
-        this.printScene(scene);
-        scene.inferTypes();
-        // logger.error('\nafter inferTypes');
         // this.printScene(scene);
+        scene.inferTypes();
+        logger.error('\nafter inferTypes');
+        this.printScene(scene);
 
         logger.error('testStmtsOfSimpleProject end\n');
     }
@@ -86,7 +87,7 @@ class ArkIRTransformerTest {
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
-        this.printScene(scene);
+        // this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -149,6 +150,7 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-// arkIRTransformerTest.testStmtsOfSimpleProject();
+arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.printCfg();
+// arkIRTransformerTest.printCfg();
+

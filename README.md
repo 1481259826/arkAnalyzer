@@ -93,3 +93,6 @@ npm install
 
 ## 添加自验证测试用例
 新增测试代码统一放至`tests`目录下，对应的样例代码和其他资源文件统一放至`tests\resources`,按测试场景创建不同文件夹。
+
+## ArkAnalyzer Issues
+请参考[连接](docs/HowToHandleIssues.md)提交Issues。

@@ -34,6 +34,8 @@ export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
 export const CONSTRUCTOR = 'constructor';
 export const ANONYMOUS_CLASS_PREFIx = 'AnonymousClass';
 export const ANONYMOUS_CLASS_DELIMITER = '-';
+export const CLASS_ORIGIN_TYPE_OBJECT = 'Object';
+export const CLASS_ORIGIN_TYPE_CLASS = 'Class';
 
 export const InstanceInitMethodName = '@instance_init';
 export const StaticInitMethodName = '@static_init';
@@ -303,7 +305,7 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
 
     cls.genSignature();
 
-    cls.setOriginType('Object');
+    cls.setOriginType(CLASS_ORIGIN_TYPE_OBJECT);
 
     let arkMethods: ArkMethod[] = [];
 
