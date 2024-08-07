@@ -22,7 +22,7 @@ import {
     AnnotationNamespaceType,
     ArrayType,
     BooleanType,
-    CallableType,
+    FunctionType,
     ClassType,
     NullType,
     NumberType,
@@ -167,8 +167,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         const scene = arkClass.getDeclaringArkFile().getScene();
         if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
             const arg = this.getArg(0);
-            if (arg.getType() instanceof CallableType) {
-                const argMethodSignature = (arg.getType() as CallableType).getMethodSignature();
+            if (arg.getType() instanceof FunctionType) {
+                const argMethodSignature = (arg.getType() as FunctionType).getMethodSignature();
                 const argMethod = scene.getMethod(argMethodSignature);
                 if (argMethod != null && argMethod.getBody()) {
                     const body = argMethod.getBody() as ArkBody;

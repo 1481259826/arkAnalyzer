@@ -23,7 +23,7 @@ import {
     AnyType,
     ArrayType,
     BooleanType,
-    CallableType,
+    FunctionType,
     ClassType,
     LiteralType,
     NeverType,
@@ -262,9 +262,9 @@ export class JsonPrinter extends Printer {
                 "_": "ClassType",
                 "signature": this.serializeClassSignature(type.getClassSignature()),
             };
-        } else if (type instanceof CallableType) {
+        } else if (type instanceof FunctionType) {
             return {
-                "_": "CallableType",
+                "_": "FunctionType",
                 "signature": this.serializeMethodSignature(type.getMethodSignature()),
             };
         } else if (type instanceof ArrayType) {

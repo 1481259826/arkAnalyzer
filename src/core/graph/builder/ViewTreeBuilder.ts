@@ -19,7 +19,7 @@ import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeE
 import { Local } from '../../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
-import { CallableType, ClassType, Type } from '../../base/Type';
+import { FunctionType, ClassType, Type } from '../../base/Type';
 import { Value } from '../../base/Value';
 import {
     BUILDER_DECORATOR,
@@ -76,7 +76,7 @@ class StateValuesUtils {
                 }
             } else if (v instanceof Local) {
                 let type = v.getType();
-                if (type instanceof CallableType) {
+                if (type instanceof FunctionType) {
                     this.parseMethodUsesStateValues(type.getMethodSignature(), uses, visitor);
                 } else if (!wholeMethod) {
                     let declaringStmt = v.getDeclaringStmt();
@@ -302,7 +302,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         const stmt = local.getDeclaringStmt();
         if (!stmt) {
             let type = local.getType();
-            if (type instanceof CallableType) {
+            if (type instanceof FunctionType) {
                 relationValues.push(type.getMethodSignature());
             }
             return;
@@ -792,7 +792,7 @@ function viewComponentCreationParser(
     let builderMethod: ArkMethod | undefined;
     let builder = expr.getArg(1) as Local;
     if (builder) {
-        let method = viewtree.findMethod((builder.getType() as CallableType).getMethodSignature());
+        let method = viewtree.findMethod((builder.getType() as FunctionType).getMethodSignature());
         if (!method?.hasBuilderDecorator()) {
             method?.addModifier(new Decorator(BUILDER_DECORATOR));
         }
@@ -841,7 +841,7 @@ function forEachCreationParser(
         });
     }
 
-    let type = (expr.getArg(1) as Local).getType() as CallableType;
+    let type = (expr.getArg(1) as Local).getType() as FunctionType;
     let method = viewtree.findMethod(type.getMethodSignature());
     if (method) {
         buildViewTreeFromCfg(viewtree, method.getCfg()!);
@@ -964,7 +964,7 @@ function parseInstanceInvokeExpr(
         ) {
             let arg = expr.getArg(0);
             let type = arg.getType();
-            if (type instanceof CallableType) {
+            if (type instanceof FunctionType) {
                 let method = viewTree.findMethod(type.getMethodSignature());
                 if (method) {
                     buildViewTreeFromCfg(viewTree, method.getCfg()!);

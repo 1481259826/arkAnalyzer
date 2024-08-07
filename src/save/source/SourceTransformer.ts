@@ -38,7 +38,7 @@ import { SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
     ArrayType,
-    CallableType,
+    FunctionType,
     ClassType,
     LiteralType,
     PrimitiveType,
@@ -279,7 +279,7 @@ export class SourceTransformer {
 
         if (value instanceof Local) {
             if (SourceUtils.isAnonymousMethod(value.getName())) {
-                let methodSignature = (value.getType() as CallableType).getMethodSignature();
+                let methodSignature = (value.getType() as FunctionType).getMethodSignature();
                 let anonymousMethod = this.context.getMethod(methodSignature);
                 if (anonymousMethod) {
                     return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
@@ -353,7 +353,7 @@ export class SourceTransformer {
             return `${this.typeToString(baseType)}${dimensions.join('')}`;
         }
 
-        if (type instanceof CallableType) {
+        if (type instanceof FunctionType) {
             let methodSignature = type.getMethodSignature();
             let method = this.context.getMethod(methodSignature);
             if (method && SourceUtils.isAnonymousMethod(method.getName())) {
