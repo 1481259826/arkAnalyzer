@@ -773,7 +773,7 @@ export class CfgBuilder {
     addStmtBuilderPosition() {
         for (const stmt of this.statementArray) {
             if (stmt.astNode) {
-                const {line, character} = ts.getLineAndCharacterOfPosition(
+                const { line, character } = ts.getLineAndCharacterOfPosition(
                     this.sourceFile,
                     stmt.astNode.getStart(this.sourceFile),
                 );
@@ -1186,8 +1186,10 @@ export class CfgBuilder {
                         blockBuilderToCfgBlock.set(blockBuilderInsertReenterCondition, blockInsertReenterCondition);
                     } else {
                         const blockBuilderReenterCondition = blockBuildersReenterCondition[0];
-                        const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuilderReenterCondition) as BasicBlock;
-                        blockReenterCondition.getStmts().push(...stmtsReenterCondition);
+                        const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuilderReenterCondition);
+                        if (blockReenterCondition) {
+                            blockReenterCondition.getStmts().push(...stmtsReenterCondition);
+                        }
                     }
                 } else if (iteratorNextStmtIdx != -1) {
                     // put statements which get value of iterator into block after condition

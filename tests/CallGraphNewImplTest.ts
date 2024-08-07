@@ -35,7 +35,7 @@ let config: SceneConfig = new SceneConfig()
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
 config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-// config.buildFromProjectDir('./tests/resources/callgraph/loadtest1');
+// config.buildFromProjectDir('./tests/resources/callgraph/loadtest2');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
@@ -58,12 +58,12 @@ function runScene(config: SceneConfig, output: string) {
 
     let pag = new Pag();
 
-    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'showWindow');
+    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'showWindow');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries([entry[0]]);
+    pta.setEntries(cg.getEntries());
     pta.start();
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
     console.log("fin")
 }
-runScene(config, "./out/applications_screenshot");
+runScene(config, "./out/applications_camera");

@@ -15,3 +15,4 @@ doc/
 exportRollup.config.mjs
 dist/
 *.log
+output

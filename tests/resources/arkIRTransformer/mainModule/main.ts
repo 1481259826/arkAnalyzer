@@ -13,8 +13,4 @@
  * limitations under the License.
  */
 
-this.pendingUpdateData = new PendingTask(<PendingCondition> {
-    shouldPending: () => {
-        return this.isPendingUpdateData;
-    }
-});
+let x = {a: 1};
