@@ -58,8 +58,8 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfSimpleProject start');
 
         // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        const projectDir = 'tests/resources/arkIRTransformer/expression';
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        // const projectDir = 'tests/resources/arkIRTransformer/expression';
         // const projectDir = 'tests/resources/arkIRTransformer/assignment';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);

@@ -14,21 +14,24 @@
  */
 
 import {
+    AbstractBinopExpr,
     AbstractExpr,
     AbstractInvokeExpr,
     ArkAwaitExpr,
-    ArkBinopExpr,
     ArkCastExpr,
     ArkConditionExpr,
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
+    ArkNormalBinopExpr,
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
     ArkYieldExpr,
     BinaryOperator,
+    NormalBinaryOperator,
+    RelationalBinaryOperator,
     UnaryOperator,
 } from '../base/Expr';
 import {
@@ -348,7 +351,7 @@ export class ArkIRTransformer {
         } = this.generateAssignStmtForValue(new ArkInstanceFieldRef(iteratorResult as Local, doneFieldSignature));
         stmts.push(...doneFlagStmts);
         (doneFlag as Local).setType(BooleanType.getInstance());
-        const conditionExpr = new ArkConditionExpr(doneFlag, ValueUtil.getBooleanConstant(true), BinaryOperator.Equality);
+        const conditionExpr = new ArkConditionExpr(doneFlag, ValueUtil.getBooleanConstant(true), RelationalBinaryOperator.Equality);
         stmts.push(new ArkIfStmt(conditionExpr));
 
         const valueFieldSignature = new FieldSignature();
@@ -448,7 +451,7 @@ export class ArkIRTransformer {
             const {
                 value: conditionExpr,
                 stmts: conditionStmts,
-            } = this.conditionToValueAndStmts(ifStatement.expression, false);
+            } = this.conditionToValueAndStmts(ifStatement.expression);
             stmts.push(...conditionStmts);
 
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_CREATE_FUNCTION);
@@ -739,13 +742,13 @@ export class ArkIRTransformer {
         let {
             value: combinationValue,
             stmts: combinatioStmts,
-        } = this.generateAssignStmtForValue(new ArkBinopExpr(values[0], values[1], BinaryOperator.Addition));
+        } = this.generateAssignStmtForValue(new ArkNormalBinopExpr(values[0], values[1], NormalBinaryOperator.Addition));
         stmts.push(...combinatioStmts);
         for (let i = 2; i < values.length; i++) { // next iteration start from index 2
             ({
                 value: combinationValue,
                 stmts: combinatioStmts,
-            } = this.generateAssignStmtForValue(new ArkBinopExpr(combinationValue, values[i], BinaryOperator.Addition)));
+            } = this.generateAssignStmtForValue(new ArkNormalBinopExpr(combinationValue, values[i], NormalBinaryOperator.Addition)));
             stmts.push(...combinatioStmts);
         }
         return {value: combinationValue, stmts: stmts};
@@ -994,11 +997,11 @@ export class ArkIRTransformer {
 
         const operatorToken = prefixUnaryExpression.operator;
         if (operatorToken === ts.SyntaxKind.PlusPlusToken) {
-            const binopExpr = new ArkBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), BinaryOperator.Addition);
+            const binopExpr = new ArkNormalBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), NormalBinaryOperator.Addition);
             stmts.push(new ArkAssignStmt(operandValue, binopExpr));
             return {value: operandValue, stmts: stmts};
         } else if (operatorToken === ts.SyntaxKind.MinusMinusToken) {
-            const binopExpr = new ArkBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), BinaryOperator.Subtraction);
+            const binopExpr = new ArkNormalBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), NormalBinaryOperator.Subtraction);
             stmts.push(new ArkAssignStmt(operandValue, binopExpr));
             return {value: operandValue, stmts: stmts};
         } else if (operatorToken === ts.SyntaxKind.PlusToken) {
@@ -1030,11 +1033,11 @@ export class ArkIRTransformer {
         let value: Value;
         const operatorToken = postfixUnaryExpression.operator;
         if (operatorToken === ts.SyntaxKind.PlusPlusToken) {
-            const binopExpr = new ArkBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), BinaryOperator.Addition);
+            const binopExpr = new ArkNormalBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), NormalBinaryOperator.Addition);
             stmts.push(new ArkAssignStmt(operandValue, binopExpr));
             value = operandValue;
         } else if (operatorToken === ts.SyntaxKind.MinusMinusToken) {
-            const binopExpr = new ArkBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), BinaryOperator.Subtraction);
+            const binopExpr = new ArkNormalBinopExpr(operandValue, ValueUtil.getOrCreateNumberConst(1), NormalBinaryOperator.Subtraction);
             stmts.push(new ArkAssignStmt(operandValue, binopExpr));
             value = operandValue;
         } else {
@@ -1242,7 +1245,11 @@ export class ArkIRTransformer {
         } else {
             const operator = ArkIRTransformer.tokenToBinaryOperator(operatorToken.kind);
             if (operator) {
-                exprValue = new ArkBinopExpr(opValue1, opValue2, operator);
+                if (this.isRelationalOperator(operator)) {
+                    exprValue = new ArkConditionExpr(opValue1, opValue2, operator as RelationalBinaryOperator);
+                } else {
+                    exprValue = new ArkNormalBinopExpr(opValue1, opValue2, operator as NormalBinaryOperator);
+                }
             } else {
                 exprValue = ValueUtil.getUndefinedConst();
             }
@@ -1294,7 +1301,7 @@ export class ArkIRTransformer {
         let value: Value;
         const operator = this.compoundAssignmentTokenToBinaryOperator(binaryExpression.operatorToken.kind);
         if (operator) {
-            const exprValue = new ArkBinopExpr(leftValue, rightValue, operator);
+            const exprValue = new ArkNormalBinopExpr(leftValue, rightValue, operator);
             stmts.push(new ArkAssignStmt(leftValue, exprValue));
             value = leftValue;
         } else {
@@ -1303,43 +1310,43 @@ export class ArkIRTransformer {
         return {value: value, stmts: stmts};
     }
 
-    private compoundAssignmentTokenToBinaryOperator(token: ts.SyntaxKind): BinaryOperator | null {
+    private compoundAssignmentTokenToBinaryOperator(token: ts.SyntaxKind): NormalBinaryOperator | null {
         switch (token) {
             case ts.SyntaxKind.QuestionQuestionEqualsToken:
-                return BinaryOperator.NullishCoalescing;
+                return NormalBinaryOperator.NullishCoalescing;
             case ts.SyntaxKind.AsteriskAsteriskEqualsToken:
-                return BinaryOperator.Exponentiation;
+                return NormalBinaryOperator.Exponentiation;
             case ts.SyntaxKind.SlashEqualsToken:
-                return BinaryOperator.Division;
+                return NormalBinaryOperator.Division;
             case ts.SyntaxKind.PlusEqualsToken:
-                return BinaryOperator.Addition;
+                return NormalBinaryOperator.Addition;
             case ts.SyntaxKind.MinusEqualsToken:
-                return BinaryOperator.Subtraction;
+                return NormalBinaryOperator.Subtraction;
             case ts.SyntaxKind.AsteriskEqualsToken:
-                return BinaryOperator.Multiplication;
+                return NormalBinaryOperator.Multiplication;
             case ts.SyntaxKind.PercentEqualsToken:
-                return BinaryOperator.Remainder;
+                return NormalBinaryOperator.Remainder;
             case ts.SyntaxKind.LessThanLessThanEqualsToken:
-                return BinaryOperator.LeftShift;
+                return NormalBinaryOperator.LeftShift;
             case ts.SyntaxKind.GreaterThanGreaterThanEqualsToken:
-                return BinaryOperator.RightShift;
+                return NormalBinaryOperator.RightShift;
             case ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken:
-                return BinaryOperator.UnsignedRightShift;
+                return NormalBinaryOperator.UnsignedRightShift;
             case ts.SyntaxKind.AmpersandEqualsToken:
-                return BinaryOperator.BitwiseAnd;
+                return NormalBinaryOperator.BitwiseAnd;
             case ts.SyntaxKind.BarEqualsToken:
-                return BinaryOperator.BitwiseOr;
+                return NormalBinaryOperator.BitwiseOr;
             case ts.SyntaxKind.CaretEqualsToken:
-                return BinaryOperator.BitwiseXor;
+                return NormalBinaryOperator.BitwiseXor;
             case ts.SyntaxKind.AmpersandAmpersandEqualsToken:
-                return BinaryOperator.LogicalAnd;
+                return NormalBinaryOperator.LogicalAnd;
             case ts.SyntaxKind.BarBarEqualsToken:
-                return BinaryOperator.LogicalOr;
+                return NormalBinaryOperator.LogicalOr;
         }
         return null;
     }
 
-    private conditionToValueAndStmts(condition: ts.Expression, flip: boolean = true): ValueAndStmts {
+    private conditionToValueAndStmts(condition: ts.Expression): ValueAndStmts {
         const stmts: Stmt[] = [];
         let {
             value: conditionValue,
@@ -1347,9 +1354,9 @@ export class ArkIRTransformer {
         } = this.tsNodeToValueAndStmts(condition);
         stmts.push(...conditionStmts);
         let conditionExpr: ArkConditionExpr;
-        if ((conditionValue instanceof ArkBinopExpr) && this.isRelationalOperator(conditionValue.getOperator())) {
-            const operator = flip ? this.flipOperator(conditionValue.getOperator()) : conditionValue.getOperator();
-            conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), operator as BinaryOperator); // 待重构ifstatament时，不进行强制转换
+        if ((conditionValue instanceof AbstractBinopExpr) && this.isRelationalOperator(conditionValue.getOperator())) {
+            const operator = conditionValue.getOperator() as RelationalBinaryOperator;
+            conditionExpr = new ArkConditionExpr(conditionValue.getOp1(), conditionValue.getOp2(), operator);
         } else {
             if (IRUtils.moreThanOneAddress(conditionValue)) {
                 ({
@@ -1358,8 +1365,7 @@ export class ArkIRTransformer {
                 } = this.generateAssignStmtForValue(conditionValue));
                 stmts.push(...conditionStmts);
             }
-            const operator = flip ? '==' : '!=';
-            conditionExpr = new ArkConditionExpr(conditionValue, new Constant('0', NumberType.getInstance()), operator as BinaryOperator); // 待重构ifstatament时，不进行强制转换
+            conditionExpr = new ArkConditionExpr(conditionValue, ValueUtil.getOrCreateNumberConst(0), RelationalBinaryOperator.InEquality);
         }
         return {value: conditionExpr, stmts: stmts};
     }
@@ -1429,42 +1435,15 @@ export class ArkIRTransformer {
         return {value: leftOp, stmts: [new ArkAssignStmt(leftOp, value)]};
     }
 
-    private isRelationalOperator(operator: string): boolean {
-        return operator == '<' || operator == '<=' || operator == '>' || operator == '>=' ||
-            operator == '==' || operator == '===' || operator == '!=' || operator == '!==';
-    }
-
-    private flipOperator(operator: string): string {
-        let newOperater = '';
-        switch (operator) {
-            case '<':
-                newOperater = '>=';
-                break;
-            case '<=':
-                newOperater = '>';
-                break;
-            case '>':
-                newOperater = '<=';
-                break;
-            case '>=':
-                newOperater = '<';
-                break;
-            case '==':
-                newOperater = '!=';
-                break;
-            case '===':
-                newOperater = '!==';
-                break;
-            case '!=':
-                newOperater = '==';
-                break;
-            case '!==':
-                newOperater = '===';
-                break;
-            default:
-                logger.warn(`unsupported operator ${operator} to flip`);
-        }
-        return newOperater;
+    private isRelationalOperator(operator: BinaryOperator): boolean {
+        return operator == RelationalBinaryOperator.LessThan ||
+            operator == RelationalBinaryOperator.LessThanOrEqual ||
+            operator == RelationalBinaryOperator.GreaterThan ||
+            operator == RelationalBinaryOperator.GreaterThanOrEqual ||
+            operator == RelationalBinaryOperator.Equality ||
+            operator == RelationalBinaryOperator.InEquality ||
+            operator == RelationalBinaryOperator.StrictEquality ||
+            operator == RelationalBinaryOperator.StrictInequality;
     }
 
     private resolveTypeNode(type: ts.TypeNode): Type {
@@ -1584,51 +1563,51 @@ export class ArkIRTransformer {
     public static tokenToBinaryOperator(token: ts.SyntaxKind): BinaryOperator | null {
         switch (token) {
             case ts.SyntaxKind.QuestionQuestionToken:
-                return BinaryOperator.NullishCoalescing;
+                return NormalBinaryOperator.NullishCoalescing;
             case ts.SyntaxKind.AsteriskAsteriskToken:
-                return BinaryOperator.Exponentiation;
+                return NormalBinaryOperator.Exponentiation;
             case ts.SyntaxKind.SlashToken:
-                return BinaryOperator.Division;
+                return NormalBinaryOperator.Division;
             case ts.SyntaxKind.PlusToken:
-                return BinaryOperator.Addition;
+                return NormalBinaryOperator.Addition;
             case ts.SyntaxKind.MinusToken:
-                return BinaryOperator.Subtraction;
+                return NormalBinaryOperator.Subtraction;
             case ts.SyntaxKind.AsteriskToken:
-                return BinaryOperator.Multiplication;
+                return NormalBinaryOperator.Multiplication;
             case ts.SyntaxKind.PercentToken:
-                return BinaryOperator.Remainder;
+                return NormalBinaryOperator.Remainder;
             case ts.SyntaxKind.LessThanLessThanToken:
-                return BinaryOperator.LeftShift;
+                return NormalBinaryOperator.LeftShift;
             case ts.SyntaxKind.GreaterThanGreaterThanToken:
-                return BinaryOperator.RightShift;
+                return NormalBinaryOperator.RightShift;
             case ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken:
-                return BinaryOperator.UnsignedRightShift;
+                return NormalBinaryOperator.UnsignedRightShift;
             case ts.SyntaxKind.AmpersandToken:
-                return BinaryOperator.BitwiseAnd;
+                return NormalBinaryOperator.BitwiseAnd;
             case ts.SyntaxKind.BarToken:
-                return BinaryOperator.BitwiseOr;
+                return NormalBinaryOperator.BitwiseOr;
             case ts.SyntaxKind.CaretToken:
-                return BinaryOperator.BitwiseXor;
-            case ts.SyntaxKind.LessThanToken:
-                return BinaryOperator.LessThan;
-            case ts.SyntaxKind.LessThanEqualsToken:
-                return BinaryOperator.LessThanOrEqual;
-            case ts.SyntaxKind.GreaterThanToken:
-                return BinaryOperator.GreaterThan;
-            case ts.SyntaxKind.GreaterThanEqualsToken:
-                return BinaryOperator.GreaterThanOrEqual;
-            case ts.SyntaxKind.EqualsEqualsToken:
-                return BinaryOperator.Equality;
-            case ts.SyntaxKind.ExclamationEqualsToken:
-                return BinaryOperator.InEquality;
-            case ts.SyntaxKind.EqualsEqualsEqualsToken:
-                return BinaryOperator.StrictEquality;
-            case ts.SyntaxKind.ExclamationEqualsEqualsToken:
-                return BinaryOperator.StrictInequality;
+                return NormalBinaryOperator.BitwiseXor;
             case ts.SyntaxKind.AmpersandAmpersandToken:
-                return BinaryOperator.LogicalAnd;
+                return NormalBinaryOperator.LogicalAnd;
             case ts.SyntaxKind.BarBarToken:
-                return BinaryOperator.LogicalOr;
+                return NormalBinaryOperator.LogicalOr;
+            case ts.SyntaxKind.LessThanToken:
+                return RelationalBinaryOperator.LessThan;
+            case ts.SyntaxKind.LessThanEqualsToken:
+                return RelationalBinaryOperator.LessThanOrEqual;
+            case ts.SyntaxKind.GreaterThanToken:
+                return RelationalBinaryOperator.GreaterThan;
+            case ts.SyntaxKind.GreaterThanEqualsToken:
+                return RelationalBinaryOperator.GreaterThanOrEqual;
+            case ts.SyntaxKind.EqualsEqualsToken:
+                return RelationalBinaryOperator.Equality;
+            case ts.SyntaxKind.ExclamationEqualsToken:
+                return RelationalBinaryOperator.InEquality;
+            case ts.SyntaxKind.EqualsEqualsEqualsToken:
+                return RelationalBinaryOperator.StrictEquality;
+            case ts.SyntaxKind.ExclamationEqualsEqualsToken:
+                return RelationalBinaryOperator.StrictInequality;
         }
         return null;
     }
