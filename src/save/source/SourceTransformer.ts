@@ -15,8 +15,8 @@
 
 import { Constant } from '../../core/base/Constant';
 import {
+    AbstractBinopExpr,
     AbstractExpr,
-    ArkBinopExpr,
     ArkCastExpr,
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
@@ -207,7 +207,7 @@ export class SourceTransformer {
             return `delete ${this.valueToString(expr.getField())}`;
         }
 
-        if (expr instanceof ArkBinopExpr) {
+        if (expr instanceof AbstractBinopExpr) {
             let op1: Value = expr.getOp1();
             let op2: Value = expr.getOp2();
             let operator: string = expr.getOperator();

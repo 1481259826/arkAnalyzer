@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { AbstractExpr, AbstractInvokeExpr, ArkBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkInstanceOfExpr, ArkLengthExpr, ArkNewArrayExpr, ArkTypeOfExpr } from "../base/Expr";
+import { AbstractExpr, AbstractInvokeExpr, AbstractBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkInstanceOfExpr, ArkLengthExpr, ArkNewArrayExpr, ArkTypeOfExpr } from "../base/Expr";
 import { Local } from "../base/Local";
 import { Value } from "../base/Value";
 
@@ -31,7 +31,7 @@ export class ExprUseReplacer {
 
     // TODO:是否将该逻辑移Expr具体类中，利用多态实现
     public caseExpr(expr: AbstractExpr): void {
-        if (expr instanceof ArkBinopExpr) {
+        if (expr instanceof AbstractBinopExpr) {
             this.caseBinopExpr(expr);
         } else if (expr instanceof AbstractInvokeExpr) {
             this.caseInvokeExpr(expr);
@@ -48,7 +48,7 @@ export class ExprUseReplacer {
         }
     }
 
-    private caseBinopExpr(expr: ArkBinopExpr): void {
+    private caseBinopExpr(expr: AbstractBinopExpr): void {
         if (expr.getOp1() == this.oldUse) {
             expr.setOp1(this.newUse);
         }

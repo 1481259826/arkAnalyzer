@@ -52,7 +52,7 @@ import {
     Stmt,
 } from '../core/base/Stmt';
 import {
-    ArkBinopExpr,
+    AbstractBinopExpr,
     ArkCastExpr,
     ArkConditionExpr,
     ArkDeleteExpr,
@@ -438,7 +438,7 @@ export class JsonPrinter extends Printer {
                 right: this.serializeValue(value.getOp2()),
                 type: this.serializeType(value.getType()),
             };
-        } else if (value instanceof ArkBinopExpr) {
+        } else if (value instanceof AbstractBinopExpr) {
             return {
                 _: 'BinopExpr',
                 op: value.getOperator(),

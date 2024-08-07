@@ -465,7 +465,7 @@ export class ArkYieldExpr extends AbstractExpr {
     }
 }
 
-export enum BinaryOperator {
+export enum NormalBinaryOperator {
     // TODO: unfold it
     NullishCoalescing = '??',
 
@@ -487,7 +487,12 @@ export enum BinaryOperator {
     BitwiseOr = '|',
     BitwiseXor = '^',
 
-    // relational
+    // Logical
+    LogicalAnd = '&&',
+    LogicalOr = '||',
+}
+
+export enum RelationalBinaryOperator {
     LessThan = '<',
     LessThanOrEqual = '<=',
     GreaterThan = '>',
@@ -496,14 +501,12 @@ export enum BinaryOperator {
     InEquality = '!=',
     StrictEquality = '===',
     StrictInequality = '!==',
-
-    // Logical
-    LogicalAnd = '&&',
-    LogicalOr = '||',
 }
 
+export type BinaryOperator = NormalBinaryOperator | RelationalBinaryOperator;
+
 // 二元运算表达式
-export class ArkBinopExpr extends AbstractExpr {
+export abstract class AbstractBinopExpr extends AbstractExpr {
     protected op1: Value;
     protected op2: Value;
     protected operator: BinaryOperator;
@@ -624,7 +627,7 @@ export class ArkBinopExpr extends AbstractExpr {
         this.type = type;
     }
 
-    public inferType(arkClass: ArkClass): ArkBinopExpr {
+    public inferType(arkClass: ArkClass): AbstractBinopExpr {
         this.inferOpType(this.op1, arkClass);
         this.inferOpType(this.op2, arkClass);
         this.setType();
@@ -632,15 +635,15 @@ export class ArkBinopExpr extends AbstractExpr {
     }
 }
 
-export class ArkConditionExpr extends ArkBinopExpr {
-    constructor(op1: Value, op2: Value, operator: BinaryOperator) {
+export class ArkConditionExpr extends AbstractBinopExpr {
+    constructor(op1: Value, op2: Value, operator: RelationalBinaryOperator) {
         super(op1, op2, operator);
     }
 
-    public inferType(arkClass: ArkClass): ArkBinopExpr {
+    public inferType(arkClass: ArkClass): ArkConditionExpr {
         this.inferOpType(this.op1, arkClass);
         const op1Type = this.op1.getType();
-        if (this.operator == BinaryOperator.InEquality && this.op2 == ValueUtil.getOrCreateNumberConst(0)) {
+        if (this.operator == RelationalBinaryOperator.InEquality && this.op2 == ValueUtil.getOrCreateNumberConst(0)) {
             if (op1Type instanceof StringType) {
                 this.op2 = ValueUtil.createStringConst(EMPTY_STRING);
             } else if (op1Type instanceof BooleanType) {
@@ -653,6 +656,12 @@ export class ArkConditionExpr extends ArkBinopExpr {
         }
         this.type = BooleanType.getInstance();
         return this;
+    }
+}
+
+export class ArkNormalBinopExpr extends AbstractBinopExpr {
+    constructor(op1: Value, op2: Value, operator: NormalBinaryOperator) {
+        super(op1, op2, operator);
     }
 }
 
