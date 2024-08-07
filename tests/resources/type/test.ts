@@ -13,4 +13,9 @@
  * limitations under the License.
  */
 
-let x = {a:1}
+namespace t {
+  let y = {a:1}
+  function f() {
+    let z = {b:2}
+  }
+}

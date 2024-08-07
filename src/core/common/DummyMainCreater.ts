@@ -15,7 +15,7 @@
 
 import { Scene } from "../../Scene";
 import { Constant } from "../base/Constant";
-import { AbstractInvokeExpr, ArkConditionExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
+import { AbstractInvokeExpr, ArkConditionExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr, RelationalBinaryOperator } from "../base/Expr";
 import { Local } from "../base/Local";
 import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from "../base/Stmt";
 import { BooleanType, ClassType, NumberType } from "../base/Type";
@@ -102,17 +102,23 @@ export class DummyMainCreater {
         // const rightThis = new ArkThisRef(new ClassType(this.dummyMainClass.getSignature()));
         // const start = new ArkAssignStmt(leftThis, rightThis);
 
+        const firstBlock = new BasicBlock();
+        dummyCfg.addBlock(firstBlock);
+
+        for (const method of this.scene.getStaticInitMethods()) {
+            const staticInvokeExpr = new ArkStaticInvokeExpr(method.getSignature(), []);
+            const invokeStmt = new ArkInvokeStmt(staticInvokeExpr);
+            firstBlock.addStmt(invokeStmt);
+        }
+
         const countLocal = new Local('count', NumberType.getInstance());
         const zero = new Constant('0', NumberType.getInstance());
         const countAssignStmt = new ArkAssignStmt(countLocal, zero);
 
 
         const truE = new Constant('true', BooleanType.getInstance());
-        const conditionTrue = new ArkConditionExpr(truE, zero, '==');
+        const conditionTrue = new ArkConditionExpr(truE, zero, RelationalBinaryOperator.Equality);
         const whileStmt = new ArkIfStmt(conditionTrue);
-        const firstBlock = new BasicBlock();
-        dummyCfg.addBlock(firstBlock);
-        // firstBlock.addStmt(start);
         firstBlock.addStmt(countAssignStmt);
         const whileBlock = new BasicBlock();
         dummyCfg.addBlock(whileBlock);
@@ -124,7 +130,7 @@ export class DummyMainCreater {
         let count = 0;
         for (const method of this.entryMethods) {
             count++;
-            const condition = new ArkConditionExpr(countLocal, new Constant(count.toString(), NumberType.getInstance()), '==');
+            const condition = new ArkConditionExpr(countLocal, new Constant(count.toString(), NumberType.getInstance()), RelationalBinaryOperator.Equality);
             const ifStmt = new ArkIfStmt(condition);
             const ifBlock = new BasicBlock();
             dummyCfg.addBlock(ifBlock);
