@@ -58,7 +58,6 @@ import {
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
     ArkInstanceOfExpr,
-    ArkLengthExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkPhiExpr,
@@ -403,11 +402,6 @@ export class JsonPrinter extends Printer {
                 _: 'InstanceOfExpr',
                 arg: this.serializeValue(value.getOp()),
                 checkType: value.getCheckType(),
-            };
-        } else if (value instanceof ArkLengthExpr) {
-            return {
-                _: 'LengthExpr',
-                arg: this.serializeValue(value.getOp()),
             };
         } else if (value instanceof ArkCastExpr) {
             return {

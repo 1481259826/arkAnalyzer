@@ -13,9 +13,18 @@
  * limitations under the License.
  */
 
-import { AbstractExpr, AbstractInvokeExpr, AbstractBinopExpr, ArkCastExpr, ArkInstanceInvokeExpr, ArkInstanceOfExpr, ArkLengthExpr, ArkNewArrayExpr, ArkTypeOfExpr } from "../base/Expr";
-import { Local } from "../base/Local";
-import { Value } from "../base/Value";
+import {
+    AbstractBinopExpr,
+    AbstractExpr,
+    AbstractInvokeExpr,
+    ArkCastExpr,
+    ArkInstanceInvokeExpr,
+    ArkInstanceOfExpr,
+    ArkNewArrayExpr,
+    ArkTypeOfExpr,
+} from '../base/Expr';
+import { Local } from '../base/Local';
+import { Value } from '../base/Value';
 
 /**
  * Replace old use of a Expr inplace
@@ -41,8 +50,6 @@ export class ExprUseReplacer {
             this.caseTypeOfExpr(expr);
         } else if (expr instanceof ArkInstanceOfExpr) {
             this.caseInstanceOfExpr(expr);
-        } else if (expr instanceof ArkLengthExpr) {
-            this.caseLengthExpr(expr);
         } else if (expr instanceof ArkCastExpr) {
             this.caseCastExpr(expr);
         }
@@ -83,12 +90,6 @@ export class ExprUseReplacer {
     }
 
     private caseInstanceOfExpr(expr: ArkInstanceOfExpr): void {
-        if (expr.getOp() == this.oldUse) {
-            expr.setOp(this.newUse);
-        }
-    }
-
-    private caseLengthExpr(expr: ArkLengthExpr): void {
         if (expr.getOp() == this.oldUse) {
             expr.setOp(this.newUse);
         }

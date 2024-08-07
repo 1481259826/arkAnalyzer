@@ -21,7 +21,6 @@ import {
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
     ArkInstanceOfExpr,
-    ArkLengthExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkStaticInvokeExpr,
@@ -221,10 +220,6 @@ export class SourceTransformer {
 
         if (expr instanceof ArkInstanceOfExpr) {
             return `${this.valueToString(expr.getOp())} instanceof ${this.typeToString(expr.getType())}`;
-        }
-
-        if (expr instanceof ArkLengthExpr) {
-            return `${this.valueToString(expr.getOp())}.length`;
         }
 
         if (expr instanceof ArkCastExpr) {
