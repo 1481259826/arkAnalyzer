@@ -19,3 +19,31 @@ let b = 0;
 let c = (a + b) / (a - b);
 let d = a & b;
 let e = (a || b) && a;
+
+let f = a ** b;
+f = a / b;
+f = a + b;
+f = a - b;
+f = a * b;
+f = a % b;
+
+f = a << b;
+f = a >> b;
+f = a >>> b;
+
+f = a & b;
+f = a | b;
+f = a ^ b;
+
+let g = a < b;
+g = a <= b;
+g = a > b;
+g = a >= b;
+g = a == b;
+g = a != b;
+g = a === b;
+g = a !== b;
+
+let h = true;
+h = g && h;
+h = g || h;

@@ -13,5 +13,19 @@
  * limitations under the License.
  */
 
+// delete operator
 let p = new Point();
 delete p.y;
+
+// void operator
+let a = 0;
+void a;
+let b = 1;
+void (a + b);
+
+// await operator
+await 10;
+const x = await 11;
+
+// yield operator
+yield 20;
