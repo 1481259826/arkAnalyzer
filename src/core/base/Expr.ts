@@ -735,37 +735,6 @@ export class ArkInstanceOfExpr extends AbstractExpr {
     }
 }
 
-export class ArkLengthExpr extends AbstractExpr {
-    private op: Value;
-
-    constructor(op: Value) {
-        super();
-        this.op = op;
-    }
-
-    public getOp(): Value {
-        return this.op;
-    }
-
-    public setOp(newOp: Value): void {
-        this.op = newOp;
-    }
-
-    public getType(): Type {
-        return NumberType.getInstance();
-    }
-
-    public getUses(): Value[] {
-        let uses: Value[] = [];
-        uses.push(this.op);
-        uses.push(...this.op.getUses());
-        return uses;
-    }
-
-    public toString(): string {
-        return 'lengthof ' + this.op;
-    }
-}
 
 // 类型转换
 export class ArkCastExpr extends AbstractExpr {
