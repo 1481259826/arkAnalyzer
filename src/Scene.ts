@@ -206,7 +206,8 @@ export class Scene {
                 const moduleOhPkgContent = fetchDependenciesFromFile(moduleOhPkgFilePath);
                 this.ohPkgContentMap.set(moduleOhPkgFilePath, moduleOhPkgContent);
             }
-
+        });
+        this.modulePath2NameMap.forEach((value, key) => {
             let moduleScene = new ModuleScene();
             moduleScene.ModuleScenBuilder(value, key, this);
             this.moduleScenesMap.set(value, moduleScene);
@@ -341,7 +342,7 @@ export class Scene {
     }
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
-        if (refresh || this.buildStage >= SceneBuildStage.CLASS_DONE) {
+        if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -369,7 +370,7 @@ export class Scene {
     }
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
-        if (refresh || this.buildStage >= SceneBuildStage.CLASS_DONE) {
+        if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -433,7 +434,7 @@ export class Scene {
 
     /**
      * inference type for each non-default method
-     * because default method was finished
+     * because default and generated method was finished
      */
     public inferTypes() {
         this.getClassesMap().forEach(arkClass => {
@@ -443,7 +444,7 @@ export class Scene {
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
         });
         this.getMethodsMap().forEach(arkMethod => {
-            if (!arkMethod.isDefaultArkMethod()) {
+            if (!arkMethod.isDefaultArkMethod() && !arkMethod.isGenerated()) {
                 TypeInference.inferTypeInMethod(arkMethod);
             }
         });
