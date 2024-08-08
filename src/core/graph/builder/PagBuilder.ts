@@ -54,10 +54,11 @@ export class PagBuilder {
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
-    private dynamicCallSites: Set<DynCallSite>;
+    private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
-    private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map()
+    private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
+    private funcHandledThisRound: Set<FuncID> = new Set();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -82,11 +83,13 @@ export class PagBuilder {
         if (this.worklist.length == 0) {
             return false;
         }
+        this.funcHandledThisRound.clear();
 
         while (this.worklist.length > 0) {
             let csFunc = this.worklist.shift() as CSFuncID;
             this.buildFunPag(csFunc.funcID);
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
+            this.funcHandledThisRound.add(csFunc.funcID);
         }
 
         return true;
@@ -143,7 +146,7 @@ export class PagBuilder {
                 } else if (inkExpr instanceof ArkInstanceInvokeExpr) {
                     let ptcs = this.cg.getDynCallsiteByStmt(stmt);
                     if (ptcs) {
-                        this.addToDynamicCallSite(ptcs);
+                        this.addToDynamicCallSite(funcID, ptcs);
                     }
                 }
             } else if (stmt instanceof ArkInvokeStmt) {
@@ -158,7 +161,7 @@ export class PagBuilder {
 
                 let dycs = this.cg.getDynCallsiteByStmt(stmt);
                 if (dycs) {
-                    this.addToDynamicCallSite(dycs);
+                    this.addToDynamicCallSite(funcID, dycs);
                 } else {
                     throw new Error('Can not find callsite by stmt');
                 }
@@ -409,8 +412,11 @@ export class PagBuilder {
                     this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
                 } else if (retValue instanceof Constant){
                     continue;
+                } else if (retValue instanceof AbstractExpr){
+                    console.log(retValue)
+                    continue;
                 } else {
-                    throw new Error ('return dst not a local')
+                    throw new Error ('return dst not a local or constant, but: ' + retValue.getType().toString())
                 }
             }
         }
@@ -555,22 +561,37 @@ export class PagBuilder {
         return false;
     }
     
-    public addToDynamicCallSite(cs: DynCallSite): void {
-        this.dynamicCallSites = this.dynamicCallSites ?? new Set();
-        this.dynamicCallSites.add(cs);
+    public addToDynamicCallSite(funcId: FuncID, cs: DynCallSite): void {
+        this.dynamicCallSitesMap = this.dynamicCallSitesMap ?? new Map();
+        let csSet: Set<DynCallSite>;
+        if (this.dynamicCallSitesMap.has(funcId)) {
+            csSet = this.dynamicCallSitesMap.get(funcId)!;
+        } else {
+            csSet = new Set();
+            this.dynamicCallSitesMap.set(funcId, csSet);
+        }
+        csSet.add(cs);
 
         logger.info(cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
     }
 
     public getDynamicCallSites(): Set<DynCallSite> {
-        let tempSet = new Set(this.dynamicCallSites);
-        this.clearDynamicCallSiteSet()
+        let tempSet = new Set<DynCallSite>();
+        for(let funcId of this.funcHandledThisRound) {
+            this.dynamicCallSitesMap.get(funcId)?.forEach(s => {
+                if(tempSet.has(s)) {
+                    return;
+                }
+                tempSet.add(s);
+            });
+        }
+
         return tempSet
     }
 
     public clearDynamicCallSiteSet() {
-        if (this.dynamicCallSites) {
-            this.dynamicCallSites.clear();
+        if (this.dynamicCallSitesMap) {
+            this.dynamicCallSitesMap.clear();
         }
     }
 
