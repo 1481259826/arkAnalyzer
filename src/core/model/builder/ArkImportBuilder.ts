@@ -380,7 +380,7 @@ function getArkFileFromOtherModule(fromInfo: FromInfo) {
     if (moduleMap === undefined) {
         moduleMap = FileUtils.generateModuleMap(fromInfo.getDeclaringArkFile().getScene().getOhPkgContentMap());
     }
-    if (!moduleMap) {
+    if (!moduleMap || moduleMap.size === 0) {
         return;
     }
     const from = fromInfo.getFrom();
