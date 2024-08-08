@@ -744,10 +744,13 @@ export class Scene {
                     const configModule = config.module;
                     if (configModule instanceof Object) {
                         Object.entries(configModule).forEach(([k, v]) => {
-                            if (k == 'abilities') {
-                                abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
-                            } else if (k == 'extensionAbilities') {
-                                abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
+                            if (k == 'abilities' || k == 'extensionAbilities') {
+                                const moduleAbilities = getAbilities(v, path.join(projectDir, module.srcPath), this);
+                                for (const ability of moduleAbilities) {
+                                    if (!abilities.includes(ability)) {
+                                        abilities.push(ability);
+                                    }
+                                }
                             }
                         });
                     }

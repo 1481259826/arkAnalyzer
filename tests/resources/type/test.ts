@@ -13,9 +13,14 @@
  * limitations under the License.
  */
 
-namespace t {
-  let y = {a:1}
-  function f() {
-    let z = {b:2}
-  }
+let arrNum = [1.1, 2, 3];
+let aaa = new Array(1.1, 2 , 3);
+let aar: Array<number> = [1.23, 234];
+let arrUnion: (number | string)[] = [1, 'hello'];
+
+class hello {
+    arrNum = [1.1, 2, 3];
+    aaa = new Array(1.1, 2 , 3);
+    aar: Array<number> = [1.23, 234];
+    arrUnion: (number | string)[] = [1, 'hello'];
 }

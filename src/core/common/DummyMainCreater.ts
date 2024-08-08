@@ -28,6 +28,8 @@ import { ArkMethod } from "../model/ArkMethod";
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：
+@static_init()
+...
 count = 0
 while (true) {
     if (count == 1) {
@@ -35,6 +37,10 @@ while (true) {
     }
     if (count == 2) {
         onDestroy()
+    }
+    ...
+    if (count == *) {
+        callbackMethod1()
     }
     ...
 }
