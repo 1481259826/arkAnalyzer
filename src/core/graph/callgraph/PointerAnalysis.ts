@@ -402,7 +402,7 @@ export class PointerAnalysis extends AbstractAnalysis{
             return;
         }
 
-        let findSameType = true;
+        let findSameType = false;
         let pts = node.getPointTo();
         pts.forEach(pt => {
             let ptNode = this.pag.getNode(pt) as PagNode;
