@@ -41,14 +41,21 @@ const logger = Logger.getLogger();
 
 export interface StmtPrinterContext extends TransformerContext {
     getStmtReader(): StmtReader;
+
     setTempCode(temp: string, code: string): void;
+
     hasTempVisit(temp: string): boolean;
+
     setTempVisit(temp: string): void;
+
     setSkipStmt(stmt: Stmt): void;
 
     getLocals(): Map<string, Local>;
+
     defineLocal(local: Local): void;
+
     isLocalDefined(local: Local): boolean;
+
     isInDefaultMethod(): boolean;
 }
 
@@ -81,9 +88,11 @@ export abstract class SourceStmt implements Dump {
         return code;
     }
 
-    protected beforeDump(): void {}
+    protected beforeDump(): void {
+    }
 
-    protected afterDump(): void {}
+    protected afterDump(): void {
+    }
 
     protected dumpTs(): string {
         if (this.text.length > 0) {
@@ -262,7 +271,7 @@ export class SourceAssignStmt extends SourceStmt {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
                     } else {
                         this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
-                            ','
+                            ',',
                         )})`;
                     }
                     return;
@@ -393,7 +402,7 @@ export class SourceIfStmt extends SourceStmt {
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
         code = `if (${this.transformer.valueToString(expr.getOp1())}`;
-        code += ` ${SourceUtils.flipOperator(expr.getOperator())} `;
+        code += ` ${expr.getOperator()} `;
         code += `${this.transformer.valueToString(expr.getOp2())}) {`;
         this.setText(code);
     }
@@ -405,6 +414,7 @@ export class SourceIfStmt extends SourceStmt {
 
 export class SourceWhileStmt extends SourceStmt {
     block: BasicBlock;
+
     constructor(context: StmtPrinterContext, original: ArkIfStmt, block: BasicBlock) {
         super(context, original);
         this.block = block;
@@ -508,7 +518,7 @@ export class SourceWhileStmt extends SourceStmt {
         while (this.context.getStmtReader().hasNext()) {
             this.context.getStmtReader().next();
         }
-        
+
         let v = stmt.getLeftOp() as Local;
         let valueName = v.getName();
         if (!this.isLocalTempValue(v)) {
@@ -540,7 +550,7 @@ export class SourceWhileStmt extends SourceStmt {
             arrayValueNames.push(name);
             this.context.setTempVisit(name);
         }
-        
+
         this.setText(`for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`);
         this.context.setTempVisit((temp3 as Local).getName());
 
@@ -561,12 +571,13 @@ export class SourceWhileStmt extends SourceStmt {
 
     protected transferOperator(): string {
         let operator = (this.original as ArkIfStmt).getConditionExprExpr().getOperator().trim();
-        return SourceUtils.flipOperator(operator);
+        return operator;
     }
 }
 
 export class SourceForStmt extends SourceWhileStmt {
     incBlock: BasicBlock;
+
     constructor(context: StmtPrinterContext, original: ArkIfStmt, block: BasicBlock, incBlock: BasicBlock) {
         super(context, original, block);
         this.incBlock = incBlock;
@@ -616,6 +627,7 @@ export class SourceContinueStmt extends SourceStmt {
     constructor(context: StmtPrinterContext, original: Stmt) {
         super(context, original);
     }
+
     // trans 2 break or continue
     public transfer2ts(): void {
         this.setText('continue;');
@@ -626,6 +638,7 @@ export class SourceBreakStmt extends SourceStmt {
     constructor(context: StmtPrinterContext, original: Stmt) {
         super(context, original);
     }
+
     // trans 2 break or continue
     public transfer2ts(): void {
         this.setText('break;');
@@ -672,6 +685,7 @@ export class SourceSwitchStmt extends SourceStmt {
 
 export class SourceCaseStmt extends SourceStmt {
     caseIndex: number;
+
     constructor(context: StmtPrinterContext, original: ArkSwitchStmt, index: number) {
         super(context, original);
         this.caseIndex = index;
@@ -703,7 +717,8 @@ export class SourceCompoundEndStmt extends SourceStmt {
         this.setText(text);
     }
 
-    public transfer2ts(): void {}
+    public transfer2ts(): void {
+    }
 
     protected beforeDump(): void {
         this.printer.decIndent();

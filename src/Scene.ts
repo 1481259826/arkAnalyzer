@@ -37,10 +37,10 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
-import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
+import { generateDefaultClassField, StaticInitMethodName } from './core/model/builder/ArkClassBuilder';
 import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
-import { getAbilities, LifecycleMethods } from './utils/entryMethodUtils';
+import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 
 const logger = Logger.getLogger();
 
@@ -145,7 +145,7 @@ export class Scene {
 
     private addDefaultConstructors(): void {
         for (const file of this.getFiles()) {
-            for (const cls of file.getClasses()) {
+            for (const cls of ModelUtils.getAllClassesInFile(file)) {
                 buildDefaultConstructor(cls);
                 addInitInConstructor(cls);
             }
@@ -604,7 +604,7 @@ export class Scene {
             const finalNamespaces: ArkNamespace[] = [];
             const globalLocals: Local[] = [];
             file.getDefaultClass()?.getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
-                if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
+                if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
                     globalLocals.push(local);
                 }
             });
@@ -619,7 +619,7 @@ export class Scene {
                 const ns = namespaceStack.shift()!;
                 const nsGlobalLocals: Local[] = [];
                 ns.getDefaultClass().getDefaultArkMethod()!.getBody()?.getLocals().forEach(local => {
-                    if (local.getDeclaringStmt() && local.getName() != "this" && local.getName()[0] != "$") {
+                    if (local.getDeclaringStmt() && local.getName() != 'this' && local.getName()[0] != '$') {
                         nsGlobalLocals.push(local);
                     }
                 });
@@ -734,7 +734,7 @@ export class Scene {
                     modules = v;
                     return;
                 }
-            })
+            });
         }
         if (Array.isArray(modules)) {
             for (const module of modules) {
@@ -749,7 +749,7 @@ export class Scene {
                             } else if (k == 'extensionAbilities') {
                                 abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
                             }
-                        })
+                        });
                     }
                 } catch (err) {
                     logger.error(err);
@@ -774,7 +774,7 @@ export class Scene {
                             continue;
                         }
                     }
-                    if (LifecycleMethods.includes(method.getName()) && !entryMethods.includes(method)) {
+                    if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
                         abilityEntryMethods.push(method);
                     }
                 }
@@ -783,6 +783,34 @@ export class Scene {
             entryMethods.push(...abilityEntryMethods);
         }
         return entryMethods;
+    }
+
+    getCallbackMethods(): ArkMethod[] {
+        const callbackMethods: ArkMethod[] = [];
+        this.getMethods().forEach(method => {
+            if (!method.getCfg()) {
+                return;
+            }
+            method.getCfg()!.getBlocks().forEach(block => {
+                block.getStmts().forEach(stmt => {
+                    const cbMethod = getCallbackMethodFromStmt(stmt, this);
+                    if (cbMethod && !callbackMethods.includes(cbMethod)) {
+                        callbackMethods.push(cbMethod);
+                    }
+                });
+            });
+        });
+        return callbackMethods;
+    }
+
+    public getStaticInitMethods(): ArkMethod[] {
+        const staticInitMethods: ArkMethod[] = []
+        for (const method of Array.from(this.getMethodsMap(true).values())) {
+            if (method.getName() == StaticInitMethodName) {
+                staticInitMethods.push(method);
+            }
+        }
+        return staticInitMethods;
     }
 
     public buildClassDone(): boolean {

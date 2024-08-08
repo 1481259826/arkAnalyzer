@@ -29,3 +29,6 @@ const x = await 11;
 
 // yield operator
 yield 20;
+
+// instanceof operator
+let isCat = cat instanceof Cat;

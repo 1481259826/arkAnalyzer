@@ -22,7 +22,7 @@ import {
     AnnotationNamespaceType,
     ArrayType,
     BooleanType,
-    CallableType,
+    FunctionType,
     ClassType,
     NullType,
     NumberType,
@@ -40,6 +40,7 @@ import { ArkAssignStmt } from './Stmt';
 import Logger from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
+import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 
 const logger = Logger.getLogger();
 
@@ -166,8 +167,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         const scene = arkClass.getDeclaringArkFile().getScene();
         if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
             const arg = this.getArg(0);
-            if (arg.getType() instanceof CallableType) {
-                const argMethodSignature = (arg.getType() as CallableType).getMethodSignature();
+            if (arg.getType() instanceof FunctionType) {
+                const argMethodSignature = (arg.getType() as FunctionType).getMethodSignature();
                 const argMethod = scene.getMethod(argMethodSignature);
                 if (argMethod != null && argMethod.getBody()) {
                     const body = argMethod.getBody() as ArkBody;
@@ -398,7 +399,6 @@ export class ArkDeleteExpr extends AbstractExpr {
 
 }
 
-
 export class ArkAwaitExpr extends AbstractExpr {
     private promise: Value;
 
@@ -465,7 +465,7 @@ export class ArkYieldExpr extends AbstractExpr {
     }
 }
 
-export enum BinaryOperator {
+export enum NormalBinaryOperator {
     // TODO: unfold it
     NullishCoalescing = '??',
 
@@ -487,7 +487,12 @@ export enum BinaryOperator {
     BitwiseOr = '|',
     BitwiseXor = '^',
 
-    // relational
+    // Logical
+    LogicalAnd = '&&',
+    LogicalOr = '||',
+}
+
+export enum RelationalBinaryOperator {
     LessThan = '<',
     LessThanOrEqual = '<=',
     GreaterThan = '>',
@@ -496,19 +501,17 @@ export enum BinaryOperator {
     InEquality = '!=',
     StrictEquality = '===',
     StrictInequality = '!==',
-
-    // Logical
-    LogicalAnd = '&&',
-    LogicalOr = '||',
 }
 
-// 二元运算表达式
-export class ArkBinopExpr extends AbstractExpr {
-    private op1: Value;
-    private op2: Value;
-    private operator: BinaryOperator;
+export type BinaryOperator = NormalBinaryOperator | RelationalBinaryOperator;
 
-    private type: Type;
+// 二元运算表达式
+export abstract class AbstractBinopExpr extends AbstractExpr {
+    protected op1: Value;
+    protected op2: Value;
+    protected operator: BinaryOperator;
+
+    protected type: Type;
 
     constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super();
@@ -557,13 +560,13 @@ export class ArkBinopExpr extends AbstractExpr {
         return this.op1 + ' ' + this.operator + ' ' + this.op2;
     }
 
-    private inferOpType(op: Value, arkClass: ArkClass) {
+    protected inferOpType(op: Value, arkClass: ArkClass) {
         if (op instanceof AbstractExpr || op instanceof AbstractRef) {
             TypeInference.inferValueType(op, arkClass);
         }
     }
 
-    private setType() {
+    protected setType() {
         let op1Type = this.op1.getType();
         let op2Type = this.op2.getType();
         if (op1Type instanceof UnionType) {
@@ -624,7 +627,7 @@ export class ArkBinopExpr extends AbstractExpr {
         this.type = type;
     }
 
-    public inferType(arkClass: ArkClass): ArkBinopExpr {
+    public inferType(arkClass: ArkClass): AbstractBinopExpr {
         this.inferOpType(this.op1, arkClass);
         this.inferOpType(this.op2, arkClass);
         this.setType();
@@ -632,8 +635,32 @@ export class ArkBinopExpr extends AbstractExpr {
     }
 }
 
-export class ArkConditionExpr extends ArkBinopExpr {
-    constructor(op1: Value, op2: Value, operator: BinaryOperator) {
+export class ArkConditionExpr extends AbstractBinopExpr {
+    constructor(op1: Value, op2: Value, operator: RelationalBinaryOperator) {
+        super(op1, op2, operator);
+    }
+
+    public inferType(arkClass: ArkClass): ArkConditionExpr {
+        this.inferOpType(this.op1, arkClass);
+        const op1Type = this.op1.getType();
+        if (this.operator == RelationalBinaryOperator.InEquality && this.op2 == ValueUtil.getOrCreateNumberConst(0)) {
+            if (op1Type instanceof StringType) {
+                this.op2 = ValueUtil.createStringConst(EMPTY_STRING);
+            } else if (op1Type instanceof BooleanType) {
+                this.op2 = ValueUtil.getBooleanConstant(false);
+            } else if (op1Type instanceof ClassType) {
+                this.op2 = ValueUtil.getUndefinedConst();
+            }
+        } else {
+            this.inferOpType(this.getOp2(), arkClass);
+        }
+        this.type = BooleanType.getInstance();
+        return this;
+    }
+}
+
+export class ArkNormalBinopExpr extends AbstractBinopExpr {
+    constructor(op1: Value, op2: Value, operator: NormalBinaryOperator) {
         super(op1, op2, operator);
     }
 }
@@ -672,9 +699,9 @@ export class ArkTypeOfExpr extends AbstractExpr {
 
 export class ArkInstanceOfExpr extends AbstractExpr {
     private op: Value;
-    private checkType: string;
+    private checkType: Type;
 
-    constructor(op: Value, checkType: string) {
+    constructor(op: Value, checkType: Type) {
         super();
         this.op = op;
         this.checkType = checkType;
@@ -688,7 +715,7 @@ export class ArkInstanceOfExpr extends AbstractExpr {
         this.op = newOp;
     }
 
-    public getCheckType(): string {
+    public getCheckType(): Type {
         return this.checkType;
     }
 
@@ -708,37 +735,6 @@ export class ArkInstanceOfExpr extends AbstractExpr {
     }
 }
 
-export class ArkLengthExpr extends AbstractExpr {
-    private op: Value;
-
-    constructor(op: Value) {
-        super();
-        this.op = op;
-    }
-
-    public getOp(): Value {
-        return this.op;
-    }
-
-    public setOp(newOp: Value): void {
-        this.op = newOp;
-    }
-
-    public getType(): Type {
-        return NumberType.getInstance();
-    }
-
-    public getUses(): Value[] {
-        let uses: Value[] = [];
-        uses.push(this.op);
-        uses.push(...this.op.getUses());
-        return uses;
-    }
-
-    public toString(): string {
-        return 'lengthof ' + this.op;
-    }
-}
 
 // 类型转换
 export class ArkCastExpr extends AbstractExpr {

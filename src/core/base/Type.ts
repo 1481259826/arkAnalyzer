@@ -303,10 +303,10 @@ export class NeverType extends Type {
 }
 
 /**
- * callable type
+ * function type
  * @category core/base/type
  */
-export class CallableType extends Type {
+export class FunctionType extends Type {
     private methodSignature: MethodSignature;
 
     constructor(methodSignature: MethodSignature) {

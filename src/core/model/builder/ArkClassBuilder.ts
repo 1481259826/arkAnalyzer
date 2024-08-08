@@ -363,6 +363,24 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     }
     const instanceInitStmts: Stmt[] = [];
     const staticInitStmts: Stmt[] = [];
+    // 先构建所有method，再构建field
+    clsNode.members.forEach((member) => {
+        if (
+            ts.isMethodDeclaration(member) ||
+            ts.isConstructorDeclaration(member) ||
+            ts.isMethodSignature(member) ||
+            ts.isConstructSignatureDeclaration(member) ||
+            ts.isAccessor(member) ||
+            ts.isCallSignatureDeclaration(member)
+        ) {
+            let mthd: ArkMethod = new ArkMethod();
+            buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
+            cls.addMethod(mthd);
+            if (ts.isGetAccessor(member)) {
+                buildGetAccessor2ArkField(member, mthd, sourceFile);
+            }
+        }
+    })
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
@@ -380,20 +398,6 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
             getInitStmts(staticIRTransformer, arkField, staticInitStmts, member.initializer);
         } else if (ts.isIndexSignatureDeclaration(member)) {
             buildIndexSignature2ArkField(member, sourceFile, cls);
-        } else if (
-            ts.isMethodDeclaration(member) ||
-            ts.isConstructorDeclaration(member) ||
-            ts.isMethodSignature(member) ||
-            ts.isConstructSignatureDeclaration(member) ||
-            ts.isAccessor(member) ||
-            ts.isCallSignatureDeclaration(member)
-        ) {
-            let mthd: ArkMethod = new ArkMethod();
-            buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
-            cls.addMethod(mthd);
-            if (ts.isGetAccessor(member)) {
-                buildGetAccessor2ArkField(member, mthd, sourceFile);
-            }
         } else if (ts.isSemicolonClassElement(member)) {
             logger.debug('Skip these members.');
         } else {

@@ -23,6 +23,7 @@ import { ArkBody } from '../src/core/model/ArkBody';
 import { ArkMethod } from '../src/core/model/ArkMethod';
 import { ArkClass } from '../src/core/model/ArkClass';
 import { PrinterBuilder } from '../src';
+import { ModelUtils } from '../src/core/common/ModelUtils';
 
 const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
@@ -58,15 +59,15 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfSimpleProject start');
 
         // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
-        // const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        const projectDir = 'tests/resources/arkIRTransformer/expression';
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        // const projectDir = 'tests/resources/arkIRTransformer/expression';
         // const projectDir = 'tests/resources/arkIRTransformer/assignment';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
-        // this.printScene(scene);
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -117,8 +118,8 @@ class ArkIRTransformerTest {
     private printScene(scene: Scene): void {
         for (const arkFile of scene.getFiles()) {
             logger.error('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
-            for (const arkClass of arkFile.getClasses()) {
-                logger.error('========= arkClass:', arkClass.getName(), ' =======');
+            for (const arkClass of ModelUtils.getAllClassesInFile(arkFile)) {
+                logger.error('========= arkClass:', arkClass.getSignature().toString(), ' =======');
                 for (const arkMethod of arkClass.getMethods(true)) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
@@ -153,4 +154,3 @@ const arkIRTransformerTest = new ArkIRTransformerTest();
 arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
 // arkIRTransformerTest.printCfg();
-

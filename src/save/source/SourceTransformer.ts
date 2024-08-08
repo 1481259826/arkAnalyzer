@@ -15,13 +15,12 @@
 
 import { Constant } from '../../core/base/Constant';
 import {
+    AbstractBinopExpr,
     AbstractExpr,
-    ArkBinopExpr,
     ArkCastExpr,
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
     ArkInstanceOfExpr,
-    ArkLengthExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkStaticInvokeExpr,
@@ -39,7 +38,7 @@ import { SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
     ArrayType,
-    CallableType,
+    FunctionType,
     ClassType,
     LiteralType,
     PrimitiveType,
@@ -207,7 +206,7 @@ export class SourceTransformer {
             return `delete ${this.valueToString(expr.getField())}`;
         }
 
-        if (expr instanceof ArkBinopExpr) {
+        if (expr instanceof AbstractBinopExpr) {
             let op1: Value = expr.getOp1();
             let op2: Value = expr.getOp2();
             let operator: string = expr.getOperator();
@@ -221,10 +220,6 @@ export class SourceTransformer {
 
         if (expr instanceof ArkInstanceOfExpr) {
             return `${this.valueToString(expr.getOp())} instanceof ${this.typeToString(expr.getType())}`;
-        }
-
-        if (expr instanceof ArkLengthExpr) {
-            return `${this.valueToString(expr.getOp())}.length`;
         }
 
         if (expr instanceof ArkCastExpr) {
@@ -284,7 +279,7 @@ export class SourceTransformer {
 
         if (value instanceof Local) {
             if (SourceUtils.isAnonymousMethod(value.getName())) {
-                let methodSignature = (value.getType() as CallableType).getMethodSignature();
+                let methodSignature = (value.getType() as FunctionType).getMethodSignature();
                 let anonymousMethod = this.context.getMethod(methodSignature);
                 if (anonymousMethod) {
                     return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
@@ -358,7 +353,7 @@ export class SourceTransformer {
             return `${this.typeToString(baseType)}${dimensions.join('')}`;
         }
 
-        if (type instanceof CallableType) {
+        if (type instanceof FunctionType) {
             let methodSignature = type.getMethodSignature();
             let method = this.context.getMethod(methodSignature);
             if (method && SourceUtils.isAnonymousMethod(method.getName())) {

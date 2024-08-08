@@ -45,6 +45,8 @@ const CASE1_EXPECT = `namespace Validation {
   }
   function test(): void {
   }
+  let lettersRegexp = /^[A-Za-z]+$/;
+  let numberRegexp = /^[0-9]+$/;
 }
 namespace Shapes {
   export namespace Polygons {

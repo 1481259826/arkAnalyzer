@@ -349,7 +349,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                             "_": "IfStmt",
                             "condition": {
                                 "_": "ConditionExpr",
-                                "op": "<=",
+                                "op": ">",
                                 "left": {
                                     "_": "Local",
                                     "name": "sum",
@@ -386,7 +386,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                             "_": "IfStmt",
                             "condition": {
                                 "_": "ConditionExpr",
-                                "op": ">=",
+                                "op": "<",
                                 "left": {
                                     "_": "Local",
                                     "name": "difference",
@@ -772,7 +772,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "IfStmt",
                             "condition": {
                                 "_": "ConditionExpr",
-                                "op": "==",
+                                "op": "!=",
                                 "left": {
                                     "_": "Local",
                                     "name": "flag",
@@ -782,9 +782,9 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 },
                                 "right": {
                                     "_": "Constant",
-                                    "value": "0",
+                                    "value": "false",
                                     "type": {
-                                        "_": "NumberType"
+                                        "_": "BooleanType"
                                     }
                                 },
                                 "type": {
@@ -904,7 +904,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "IfStmt",
                             "condition": {
                                 "_": "ConditionExpr",
-                                "op": "<=",
+                                "op": ">",
                                 "left": {
                                     "_": "Local",
                                     "name": "result",
@@ -940,7 +940,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "IfStmt",
                             "condition": {
                                 "_": "ConditionExpr",
-                                "op": ">=",
+                                "op": "<",
                                 "left": {
                                     "_": "Local",
                                     "name": "result",
@@ -1628,7 +1628,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: ">",
+                      op: "<=",
                       left: {
                         _: "Local",
                         name: "i",
@@ -2053,7 +2053,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: "<=",
+                      op: ">",
                       left: {
                         _: "Local",
                         name: "sum",
@@ -2090,7 +2090,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: ">=",
+                      op: "<",
                       left: {
                         _: "Local",
                         name: "difference",
@@ -2479,7 +2479,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: "==",
+                      op: "!=",
                       left: {
                         _: "Local",
                         name: "flag",
@@ -2489,9 +2489,9 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                       },
                       right: {
                         _: "Constant",
-                        value: "0",
+                        value: "false",
                         type: {
-                          _: "NumberType",
+                          _: "BooleanType",
                         },
                       },
                       type: {
@@ -2611,7 +2611,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: "<=",
+                      op: ">",
                       left: {
                         _: "Local",
                         name: "result",
@@ -2647,7 +2647,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: ">=",
+                      op: "<",
                       left: {
                         _: "Local",
                         name: "result",
@@ -2997,7 +2997,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: "!==",
+                      op: "===",
                       left: {
                         _: "TypeOfExpr",
                         arg: {
@@ -3044,7 +3044,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "IfStmt",
                     condition: {
                       _: "ConditionExpr",
-                      op: "!==",
+                      op: "===",
                       left: {
                         _: "TypeOfExpr",
                         arg: {

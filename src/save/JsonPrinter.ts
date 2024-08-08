@@ -23,7 +23,7 @@ import {
     AnyType,
     ArrayType,
     BooleanType,
-    CallableType,
+    FunctionType,
     ClassType,
     LiteralType,
     NeverType,
@@ -52,13 +52,12 @@ import {
     Stmt,
 } from '../core/base/Stmt';
 import {
-    ArkBinopExpr,
+    AbstractBinopExpr,
     ArkCastExpr,
     ArkConditionExpr,
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
     ArkInstanceOfExpr,
-    ArkLengthExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkPhiExpr,
@@ -263,9 +262,9 @@ export class JsonPrinter extends Printer {
                 "_": "ClassType",
                 "signature": this.serializeClassSignature(type.getClassSignature()),
             };
-        } else if (type instanceof CallableType) {
+        } else if (type instanceof FunctionType) {
             return {
-                "_": "CallableType",
+                "_": "FunctionType",
                 "signature": this.serializeMethodSignature(type.getMethodSignature()),
             };
         } else if (type instanceof ArrayType) {
@@ -404,11 +403,6 @@ export class JsonPrinter extends Printer {
                 arg: this.serializeValue(value.getOp()),
                 checkType: value.getCheckType(),
             };
-        } else if (value instanceof ArkLengthExpr) {
-            return {
-                _: 'LengthExpr',
-                arg: this.serializeValue(value.getOp()),
-            };
         } else if (value instanceof ArkCastExpr) {
             return {
                 _: 'CastExpr',
@@ -438,7 +432,7 @@ export class JsonPrinter extends Printer {
                 right: this.serializeValue(value.getOp2()),
                 type: this.serializeType(value.getType()),
             };
-        } else if (value instanceof ArkBinopExpr) {
+        } else if (value instanceof AbstractBinopExpr) {
             return {
                 _: 'BinopExpr',
                 op: value.getOperator(),

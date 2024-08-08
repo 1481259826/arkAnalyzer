@@ -16,7 +16,7 @@
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
 import {
     ArrayType,
-    CallableType,
+    FunctionType,
     ClassType,
     TupleType,
     Type,
@@ -325,7 +325,7 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
             cls = arkInstance.getDeclaringClass();
         }
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
-        return new CallableType(mtd.getSignature());
+        return new FunctionType(mtd.getSignature());
     } else if (ts.isTypeParameterDeclaration(typeNode)) {
         const typeParameterName = typeNode.name.text;
         return new TypeParameterType(typeParameterName);

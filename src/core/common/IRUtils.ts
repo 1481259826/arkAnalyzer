@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import { AbstractInvokeExpr, ArkBinopExpr, ArkCastExpr, ArkUnopExpr } from '../base/Expr';
-import { AbstractFieldRef, ArkArrayRef, ArkInstanceFieldRef } from '../base/Ref';
+import { AbstractBinopExpr, AbstractInvokeExpr, ArkCastExpr, ArkUnopExpr } from '../base/Expr';
+import { AbstractFieldRef, ArkArrayRef } from '../base/Ref';
 import { Value } from '../base/Value';
 
 export class IRUtils {
     static moreThanOneAddress(value: Value): boolean {
-        if (value instanceof ArkBinopExpr || value instanceof AbstractInvokeExpr || value instanceof AbstractFieldRef ||
+        if (value instanceof AbstractBinopExpr || value instanceof AbstractInvokeExpr || value instanceof AbstractFieldRef ||
             value instanceof ArkArrayRef || value instanceof ArkCastExpr || value instanceof ArkUnopExpr) {
             return true;
         }
