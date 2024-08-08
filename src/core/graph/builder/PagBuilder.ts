@@ -412,8 +412,11 @@ export class PagBuilder {
                     this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
                 } else if (retValue instanceof Constant){
                     continue;
+                } else if (retValue instanceof AbstractExpr){
+                    console.log(retValue)
+                    continue;
                 } else {
-                    throw new Error ('return dst not a local')
+                    throw new Error ('return dst not a local or constant, but: ' + retValue.getType().toString())
                 }
             }
         }
@@ -575,7 +578,12 @@ export class PagBuilder {
     public getDynamicCallSites(): Set<DynCallSite> {
         let tempSet = new Set<DynCallSite>();
         for(let funcId of this.funcHandledThisRound) {
-            this.dynamicCallSitesMap.get(funcId)?.forEach(s => tempSet.add(s));
+            this.dynamicCallSitesMap.get(funcId)?.forEach(s => {
+                if(tempSet.has(s)) {
+                    return;
+                }
+                tempSet.add(s);
+            });
         }
 
         return tempSet
