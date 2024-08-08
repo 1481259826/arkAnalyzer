@@ -18,7 +18,7 @@ import { Scene } from '../Scene';
 import { ArkClass } from '../core/model/ArkClass';
 import { ArkMethod } from '../core/model/ArkMethod';
 import { Stmt } from '../core/base/Stmt';
-import { CallableType } from '../core/base/Type';
+import { FunctionType } from '../core/base/Type';
 
 export const LIFECYCLE_METHOD_NAME: string[] = [
     'onCreate', // 组件实例创建
@@ -78,7 +78,7 @@ export function getCallbackMethodFromStmt(stmt: Stmt, scene: Scene): ArkMethod |
     if (invokeExpr && invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName() == '' && CALLBACK_METHOD_NAME.includes(invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName())) {
         for (const arg of invokeExpr.getArgs()) {
             const argType = arg.getType();
-            if (argType instanceof CallableType) {
+            if (argType instanceof FunctionType) {
                 const cbMethod = scene.getMethod(argType.getMethodSignature());
                 if (cbMethod) {
                     return cbMethod;

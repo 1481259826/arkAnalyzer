@@ -23,7 +23,7 @@ import {
     AnyType,
     ArrayType,
     BooleanType,
-    CallableType,
+    FunctionType,
     ClassType,
     NeverType,
     NullType,
@@ -224,7 +224,7 @@ export class TypeInference {
             namespaceType.setNamespaceSignature(signature);
             return namespaceType;
         } else if (signature instanceof MethodSignature) {
-            return new CallableType(signature);
+            return new FunctionType(signature);
         } else {
             if (signature.getType() instanceof UnknownType || signature.getType() instanceof UnclearReferenceType) {
                 return null;

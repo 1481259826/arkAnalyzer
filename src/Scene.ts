@@ -38,9 +38,9 @@ import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
 import { generateDefaultClassField, StaticInitMethodName } from './core/model/builder/ArkClassBuilder';
-import { CallableType, ClassType } from './core/base/Type';
+import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
-import { CALLBACK_METHOD_NAME, getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
+import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 
 const logger = Logger.getLogger();
 

@@ -60,7 +60,7 @@ import {
     ArrayObjectType,
     ArrayType,
     BooleanType,
-    CallableType,
+    FunctionType,
     ClassType,
     NeverType,
     NullType,
@@ -865,7 +865,7 @@ export class ArkIRTransformer {
         buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile, this.declaringMethod);
         declaringClass.addMethod(arrowArkMethod);
 
-        const callableType = new CallableType(arrowArkMethod.getSignature());
+        const callableType = new FunctionType(arrowArkMethod.getSignature());
         const callableValue = this.getOrCreatLocal(arrowArkMethod.getName(), callableType);
         return {value: callableValue, stmts: []};
     }
