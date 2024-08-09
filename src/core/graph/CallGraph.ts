@@ -29,7 +29,7 @@ export type CallSiteID = number;
 export type FuncID = number;
 type StmtSet = Set<Stmt>;
 export enum CallGraphNodeKind {
-    real, vitual
+    real, vitual, intrinsic, constructor
 }
 export class CallSite {
     public callStmt: Stmt;
@@ -100,7 +100,8 @@ export class CallGraphEdge extends BaseEdge {
 
 export class CallGraphNode extends BaseNode {
     private method: Method;
-    private isSdkMethod: boolean = false
+    private isSdkMethod: boolean = false;
+    private isBlank: boolean = false;
 
     constructor(id: number, m: Method, k: CallGraphNodeKind = CallGraphNodeKind.real) {
         super(id, k);
@@ -117,6 +118,14 @@ export class CallGraphNode extends BaseNode {
 
     public getIsSdkMethod(): boolean {
         return this.isSdkMethod
+    }
+
+    public get isBlankMethod(): boolean {
+        return this.isBlank;
+    }
+
+    public set isBlankMethod(is: boolean) {
+        this.isBlank = is;
     }
 
     public getDotAttr(): string {
@@ -166,6 +175,12 @@ export class CallGraph extends BaseGraph {
         cgNode.setSdkMethod(this.scene.getSdkArkFilesMap().has(
             method.getDeclaringClassSignature().getDeclaringFileSignature().toString()
         ))
+
+        let arkMethod = this.scene.getMethod(method);
+        if ( !arkMethod || !arkMethod.getCfg()) {
+            cgNode.isBlankMethod = true;;
+        }
+
         this.addNode(cgNode);
         this.methodToCGNodeMap.set(method.toString(), cgNode.getID());
         return cgNode;
