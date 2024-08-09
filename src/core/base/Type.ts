@@ -90,7 +90,6 @@ export class TypeParameterType extends Type {
     }
 }
 
-
 /**
  * unclear type
  * @category core/base/type
@@ -216,19 +215,19 @@ export class UndefinedType extends PrimitiveType {
  * @category core/base/type
  */
 export class LiteralType extends PrimitiveType {
-    private literalName: string | number;
+    private literalName: string | number | boolean;
 
-    constructor(literalName: string | number) {
+    constructor(literalName: string | number | boolean) {
         super('literal');
         this.literalName = literalName;
     }
 
-    public getliteralName(): string | number {
+    public getLiteralName(): string | number | boolean {
         return this.literalName;
     }
 
     public toString(): string {
-        return this.getName() + ': ' + this.literalName;
+        return this.literalName.toString();
     }
 }
 

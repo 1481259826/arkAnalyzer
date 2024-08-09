@@ -22,9 +22,10 @@ import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
 import { ArkMethod } from '../src/core/model/ArkMethod';
 import { ArkClass } from '../src/core/model/ArkClass';
-import { ArkInstanceFieldRef, ArkInstanceInvokeExpr, PrinterBuilder } from '../src';
+import { ArkFile, ArkInstanceFieldRef, PrinterBuilder } from '../src';
 import { ModelUtils } from '../src/core/common/ModelUtils';
 import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
+import { ETS_COMPILER_OPTIONS } from '../src/core/common/EtsConst';
 
 const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
@@ -35,16 +36,23 @@ class ArkIRTransformerTest {
         logger.info('testSimpleStmt start');
         const tsFilePath = 'tests/resources/arkIRTransformer/mainModule/main.ts';
         const tsSourceCode = fs.readFileSync(tsFilePath).toString();
-        const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest);
+        const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest, true, undefined, ETS_COMPILER_OPTIONS);
 
-        const dumpClass = new ArkClass();
-        dumpClass.setName('dumpClass');
-        const dumpMethod = new ArkMethod();
-        dumpMethod.setName('dumpMethod');
-        dumpClass.addMethod(dumpMethod);
-        dumpMethod.setDeclaringArkClass(dumpClass);
+        const dumpArkFile = new ArkFile();
+        dumpArkFile.setName('dumpArkFile');
+        dumpArkFile.setProjectName('dumpProject');
+        dumpArkFile.genFileSignature();
+        const dumpArkClass = new ArkClass();
+        dumpArkClass.setName('dumpArkClass');
+        dumpArkFile.addArkClass(dumpArkClass);
+        dumpArkClass.setDeclaringArkFile(dumpArkFile);
+        dumpArkClass.genSignature();
+        const dumpArkMethod = new ArkMethod();
+        dumpArkMethod.setName('dumpArkMethod');
+        dumpArkClass.addMethod(dumpArkMethod);
+        dumpArkMethod.setDeclaringArkClass(dumpArkClass);
 
-        const arkIRTransformer = new ArkIRTransformer(sourceFile, dumpMethod);
+        const arkIRTransformer = new ArkIRTransformer(sourceFile, dumpArkMethod);
         for (const statement of sourceFile.statements) {
             const stmts = arkIRTransformer.tsNodeToStmts(statement);
             logger.info(`ts node text: ${statement.getText(sourceFile)}`);
@@ -53,6 +61,11 @@ class ArkIRTransformerTest {
                 logger.info(`-- ${stmt.toString()}`);
             }
         }
+        logger.info('locals:');
+        arkIRTransformer.getLocals().forEach(local => {
+            logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+        });
+
         logger.info('testSimpleStmt end\n');
     }
 
@@ -89,7 +102,7 @@ class ArkIRTransformerTest {
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
-        // this.printScene(scene);
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -166,7 +179,7 @@ class ArkIRTransformerTest {
             if (thisLocal1) {
                 logger.log(`thisLocal1 equal to thisLocal2: ${thisLocal1 === thisLocal2}`);
             }
-        }else {
+        } else {
             logger.log(`cfg is undefined`);
         }
 

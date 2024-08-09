@@ -73,7 +73,7 @@ import {
     UndefinedType,
     UnionType,
     UnknownType,
-    VoidType,
+    VoidType, LiteralType,
 } from '../base/Type';
 import { Constant } from '../base/Constant';
 import { ValueUtil } from './ValueUtil';
@@ -118,6 +118,7 @@ export class ArkIRTransformer {
 
     private inBuildMethod = false;
     private stmtToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
+    private typeMap: Map<string, Type> = new Map();
 
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
@@ -157,6 +158,8 @@ export class ArkIRTransformer {
         let stmts: Stmt[] = [];
         if (ts.isExpressionStatement(node)) {
             stmts = this.expressionStatementToStmts(node);
+        } else if (ts.isTypeAliasDeclaration(node)) {
+            stmts = this.typeAliasDeclarationToStmts(node);
         } else if (ts.isBlock(node)) {
             stmts = this.blockToStmts(node);
         } else if (ts.isSwitchStatement(node)) {
@@ -252,6 +255,13 @@ export class ArkIRTransformer {
             stmts.push(...exprStmts);
         }
         return stmts;
+    }
+
+    private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {
+        const aliasName = typeAliasDeclaration.name.text;
+        const originalType = this.resolveTypeNode(typeAliasDeclaration.type);
+        this.typeMap.set(aliasName, originalType);
+        return [];
     }
 
     private switchStatementToStmts(switchStatement: ts.SwitchStatement): Stmt[] {
@@ -754,8 +764,13 @@ export class ArkIRTransformer {
 
     private identifierToValueAndStmts(identifier: ts.Identifier): ValueAndStmts {
         // TODO: handle global variable
-        const local = this.getOrCreatLocal(identifier.text);
-        return {value: local, stmts: []};
+        let value: Value;
+        if (identifier.text == UndefinedType.getInstance().getName()) {
+            value = ValueUtil.getUndefinedConst();
+        } else {
+            value = this.getOrCreatLocal(identifier.text);
+        }
+        return {value: value, stmts: []};
     }
 
     private propertyAccessExpressionToValue(propertyAccessExpression: ts.PropertyAccessExpression): ValueAndStmts {
@@ -1461,8 +1476,6 @@ export class ArkIRTransformer {
                 return StringType.getInstance();
             case ts.SyntaxKind.UndefinedKeyword:
                 return UndefinedType.getInstance();
-            case ts.SyntaxKind.NullKeyword:
-                return NullType.getInstance();
             case ts.SyntaxKind.AnyKeyword:
                 return AnyType.getInstance();
             case ts.SyntaxKind.VoidKeyword:
@@ -1470,7 +1483,7 @@ export class ArkIRTransformer {
             case ts.SyntaxKind.NeverKeyword:
                 return NeverType.getInstance();
             case ts.SyntaxKind.TypeReference:
-                return new UnclearReferenceType(type.getText(this.sourceFile));
+                return this.resolveTypeReferenceNode(type as ts.TypeReferenceNode);
             case ts.SyntaxKind.ArrayType:
                 return new ArrayType(this.resolveTypeNode((type as ts.ArrayTypeNode).elementType), 1);
             case ts.SyntaxKind.UnionType:
@@ -1484,8 +1497,109 @@ export class ArkIRTransformer {
                     types.push(this.resolveTypeNode(element));
                 });
                 return new TupleType(types);
+            case ts.SyntaxKind.NamedTupleMember:
+                return this.resolveTypeNode((type as ts.NamedTupleMember).type);
+            case ts.SyntaxKind.LiteralType:
+                return this.resolveLiteralTypeNode(type as ts.LiteralTypeNode);
+            case ts.SyntaxKind.TemplateLiteralType:
+                return this.resolveTemplateLiteralTypeNode(type as ts.TemplateLiteralTypeNode);
+            case ts.SyntaxKind.TypeLiteral:
+                return this.resolveTypeLiteralNode(type as ts.TypeLiteralNode);
+            case ts.SyntaxKind.FunctionType:
+                return this.resolveFunctionTypeNode(type as ts.FunctionTypeNode);
         }
         return UnknownType.getInstance();
+    }
+
+    private resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode): Type {
+        const literal = literalTypeNode.literal;
+        const kind = literal.kind;
+        switch (kind) {
+            case ts.SyntaxKind.NullKeyword:
+                return NullType.getInstance();
+            case ts.SyntaxKind.TrueKeyword:
+                return new LiteralType(true);
+            case ts.SyntaxKind.FalseKeyword:
+                return new LiteralType(true);
+            case ts.SyntaxKind.NumericLiteral:
+                return new LiteralType(parseFloat((literal as ts.NumericLiteral).text));
+        }
+        return new LiteralType(literal.getText(this.sourceFile));
+    }
+
+    private resolveTemplateLiteralTypeNode(templateLiteralTypeNode: ts.TemplateLiteralTypeNode): Type {
+        let stringLiterals: string[] = [''];
+        const headString = templateLiteralTypeNode.head.rawText || '';
+        let newStringLiterals: string[] = [];
+        for (const stringLiteral of stringLiterals) {
+            newStringLiterals.push(stringLiteral + headString);
+        }
+        stringLiterals = newStringLiterals;
+        newStringLiterals = [];
+
+        for (const templateSpan of templateLiteralTypeNode.templateSpans) {
+            const templateType = this.resolveTypeNode(templateSpan.type);
+            const templateSpanString = templateSpan.literal.rawText || '';
+            for (const stringLiteral of stringLiterals) {
+                if (templateType instanceof UnionType) {
+                    for (const type of templateType.getTypes()) {
+                        newStringLiterals.push(stringLiteral + type.toString() + templateSpanString);
+                    }
+                } else {
+                    newStringLiterals.push(stringLiteral + templateType.toString() + templateSpanString);
+                }
+            }
+            stringLiterals = newStringLiterals;
+            newStringLiterals = [];
+        }
+
+        const templateTypes: Type[] = [];
+        for (const stringLiteral of stringLiterals) {
+            templateTypes.push(new LiteralType(stringLiteral));
+        }
+        if (templateTypes.length > 0) {
+            return new UnionType(templateTypes);
+        }
+        return templateTypes[0];
+    }
+
+    private resolveTypeReferenceNode(typeReferenceNode: ts.TypeReferenceNode): Type {
+        const typeReferenceFullName = typeReferenceNode.getText(this.sourceFile);
+        let type = this.typeMap.get(typeReferenceFullName);
+        if (!type) {
+            const genericTypes: Type[] = [];
+            if (typeReferenceNode.typeArguments) {
+                for (const typeArgument of typeReferenceNode.typeArguments) {
+                    genericTypes.push(this.resolveTypeNode(typeArgument));
+                }
+            }
+
+            // TODO:handle ts.QualifiedName
+            const typeNameNode = typeReferenceNode.typeName;
+            const typeName = typeNameNode.getText(this.sourceFile);
+            type = new UnclearReferenceType(typeName, genericTypes);
+            this.typeMap.set(typeName, type);
+        }
+        return type as Type;
+    }
+
+    private resolveTypeLiteralNode(typeLiteralNode: ts.TypeLiteralNode): Type {
+        const anonymousClass = new ArkClass();
+        const declaringClass = this.declaringMethod.getDeclaringArkClass();
+        const declaringNamespace = declaringClass.getDeclaringArkNamespace();
+        if (declaringNamespace) {
+            buildNormalArkClassFromArkNamespace(typeLiteralNode, declaringNamespace, anonymousClass, this.sourceFile);
+        } else {
+            buildNormalArkClassFromArkFile(typeLiteralNode, declaringClass.getDeclaringArkFile(), anonymousClass, this.sourceFile);
+        }
+        return new ClassType(anonymousClass.getSignature());
+    }
+
+    private resolveFunctionTypeNode(functionTypeNode: ts.FunctionTypeNode): Type {
+        const anonymousMethod = new ArkMethod();
+        const declaringClass = this.declaringMethod.getDeclaringArkClass();
+        buildArkMethodFromArkClass(functionTypeNode, declaringClass, anonymousMethod, this.sourceFile);
+        return new FunctionType(anonymousMethod.getSignature());
     }
 
     private isLiteralNode(node: ts.Node): boolean {
@@ -1496,7 +1610,8 @@ export class ArkIRTransformer {
             ts.isNoSubstitutionTemplateLiteral(node) ||
             node.kind === ts.SyntaxKind.NullKeyword ||
             node.kind === ts.SyntaxKind.TrueKeyword ||
-            node.kind === ts.SyntaxKind.FalseKeyword) {
+            node.kind === ts.SyntaxKind.FalseKeyword ||
+            node.kind === ts.SyntaxKind.UndefinedKeyword) {
             return true;
         }
         return false;
