@@ -430,8 +430,8 @@ export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
     const cfg = new Cfg();
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
+    cfg.buildDefUseStmt();
     initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, new Map()));
-
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {
