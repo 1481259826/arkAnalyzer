@@ -413,14 +413,14 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     return true;
 }
 
-export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
+export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>): void {
     const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
     const cThis = new Local('this');
     const assignStmt = new ArkAssignStmt(cThis, new ArkThisRef(classType));
     const block = new BasicBlock();
     block.addStmt(assignStmt);
     const locals: Set<Local> = new Set();
-    for (const stmt of stmts) {
+    for (const stmt of stmtMap.keys()) {
         block.addStmt(stmt);
         if (stmt.getDef() && stmt.getDef() instanceof Local) {
             locals.add(stmt.getDef() as Local);
@@ -431,7 +431,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
     cfg.buildDefUseStmt();
-    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, new Map()));
+    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, stmtMap));
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {
