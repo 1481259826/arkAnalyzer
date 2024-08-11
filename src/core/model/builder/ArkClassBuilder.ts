@@ -27,18 +27,14 @@ import { TypeInference } from '../../common/TypeInference';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 import { ArkAssignStmt, Stmt } from '../../base/Stmt';
 import { ArkInstanceFieldRef } from '../../base/Ref';
+import {
+    ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX,
+    CLASS_ORIGIN_TYPE_OBJECT,
+    INSTANCE_INIT_METHOD_NAME,
+    STATIC_INIT_METHOD_NAME,
+} from '../../common/Const';
 
 const logger = Logger.getLogger();
-
-export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
-export const CONSTRUCTOR = 'constructor';
-export const ANONYMOUS_CLASS_PREFIx = 'AnonymousClass';
-export const ANONYMOUS_CLASS_DELIMITER = '-';
-export const CLASS_ORIGIN_TYPE_OBJECT = 'Object';
-export const CLASS_ORIGIN_TYPE_CLASS = 'Class';
-
-export const InstanceInitMethodName = '@instance_init';
-export const StaticInitMethodName = '@static_init';
 
 export type ClassLikeNode =
     ts.ClassDeclaration |
@@ -143,7 +139,7 @@ export function buildNormalArkClass(clsNode: ClassLikeNode, cls: ArkClass, sourc
 
 function init4InstanceInitMethod(cls: ArkClass) {
     const instanceInit = new ArkMethod();
-    instanceInit.setName(InstanceInitMethodName);
+    instanceInit.setName(INSTANCE_INIT_METHOD_NAME);
     instanceInit.setDeclaringArkClass(cls);
     instanceInit.setDeclaringArkFile();
     instanceInit.setIsGeneratedFlag(true);
@@ -153,7 +149,7 @@ function init4InstanceInitMethod(cls: ArkClass) {
 
 function init4StaticInitMethod(cls: ArkClass) {
     const staticInit = new ArkMethod();
-    staticInit.setName(StaticInitMethodName);
+    staticInit.setName(STATIC_INIT_METHOD_NAME);
     staticInit.setDeclaringArkClass(cls);
     staticInit.setDeclaringArkFile();
     staticInit.setIsGeneratedFlag(true);
@@ -341,9 +337,9 @@ function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass, declaringM
         declaringMethodName = declaringMethod.getDeclaringArkClass().getName() + ANONYMOUS_CLASS_DELIMITER + declaringMethod.getName() + ANONYMOUS_CLASS_DELIMITER;
     }
     if (declaringArkNamespace) {
-        anonymousClassName = ANONYMOUS_CLASS_PREFIx + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkNamespace.getAnonymousClassNumber();
+        anonymousClassName = ANONYMOUS_CLASS_PREFIX + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkNamespace.getAnonymousClassNumber();
     } else {
-        anonymousClassName = ANONYMOUS_CLASS_PREFIx + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkFile.getAnonymousClassNumber();
+        anonymousClassName = ANONYMOUS_CLASS_PREFIX + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkFile.getAnonymousClassNumber();
     }
     cls.setName(anonymousClassName);
 }
