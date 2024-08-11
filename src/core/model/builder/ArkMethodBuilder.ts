@@ -24,7 +24,6 @@ import {
     buildParameters,
     buildReturnType,
     buildTypeParameters,
-    DECLARE_KEYWORD,
     handlePropertyAccessExpression,
 } from './builderUtils';
 import Logger from '../../../utils/logger';
@@ -37,14 +36,10 @@ import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../bas
 import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
-import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from './ArkClassBuilder';
+import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
+import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from '../../common/Const';
 
 const logger = Logger.getLogger();
-
-export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
-    'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
-const CONSTRUCTOR_NAME = 'constructor';
-const SUPER_NAME = 'super';
 
 export type MethodLikeNode =
     ts.FunctionDeclaration |
@@ -347,7 +342,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     defaultConstructor.setIsGeneratedFlag(true);
 
     const basicBlock = new BasicBlock();
-    basicBlock.addStmt(new ArkAssignStmt(new Local('this'), new ArkThisRef(new ClassType(arkClass.getSignature()))));
+    basicBlock.addStmt(new ArkAssignStmt(new Local(THIS_NAME), new ArkThisRef(new ClassType(arkClass.getSignature()))));
     const locals: Set<Local> = new Set();
     let startingStmt: Stmt;
     if (parentConstructor != null) {
@@ -415,7 +410,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
 
 export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>): void {
     const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
-    const cThis = new Local('this');
+    const cThis = new Local(THIS_NAME);
     const assignStmt = new ArkAssignStmt(cThis, new ArkThisRef(classType));
     const block = new BasicBlock();
     block.addStmt(assignStmt);
@@ -436,16 +431,19 @@ export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>)
 
 export function addInitInConstructor(arkClass: ArkClass) {
     for (const method of arkClass.getMethods(true)) {
-        if (method.getName() == 'constructor') {
-            const _this = new Local('this');
-            const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(_this, arkClass.getInstanceInitMethod().getSignature(), []));
+        if (method.getName() == CONSTRUCTOR_NAME) {
+            const thisLocal = method.getBody()?.getLocals().get(THIS_NAME);
+            if (!thisLocal) {
+                continue;
+            }
+            const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(thisLocal, arkClass.getInstanceInitMethod().getSignature(), []));
             const blocks = method.getCfg()?.getBlocks();
             if (!blocks) {
                 continue;
             }
             const firstBlockStmts = [...blocks][0].getStmts();
             let index = 0;
-            if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() == 'this') {
+            if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() == THIS_NAME) {
                 index = 1;
             }
             firstBlockStmts.splice(index, 0, initInvokeStmt);

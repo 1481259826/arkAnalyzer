@@ -37,10 +37,11 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
-import { generateDefaultClassField, StaticInitMethodName } from './core/model/builder/ArkClassBuilder';
+import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
 import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
+import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
 
 const logger = Logger.getLogger();
 
@@ -808,9 +809,9 @@ export class Scene {
     }
 
     public getStaticInitMethods(): ArkMethod[] {
-        const staticInitMethods: ArkMethod[] = []
+        const staticInitMethods: ArkMethod[] = [];
         for (const method of Array.from(this.getMethodsMap(true).values())) {
-            if (method.getName() == StaticInitMethodName) {
+            if (method.getName() == STATIC_INIT_METHOD_NAME) {
                 staticInitMethods.push(method);
             }
         }
