@@ -57,6 +57,7 @@ export class ArkMethod implements ArkExport {
     private bodyBuilder?: BodyBuilder;
 
     private isGeneratedFlag: boolean = false;
+    private asteriskToken: boolean = false;
 
     constructor() {
     }
@@ -320,5 +321,13 @@ export class ArkMethod implements ArkExport {
 
     public setIsGeneratedFlag(isGeneratedFlag: boolean) {
         this.isGeneratedFlag = isGeneratedFlag;
+    }
+
+    public getAsteriskToken(): boolean {
+        return this.asteriskToken;
+    }
+
+    public setAsteriskToken(asteriskToken: boolean) {
+        this.asteriskToken = asteriskToken;
     }
 }
