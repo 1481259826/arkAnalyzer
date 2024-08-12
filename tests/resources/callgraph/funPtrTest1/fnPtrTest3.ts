@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 namespace FnPtrTest3 {
     interface Trait {
         f(): void;
@@ -37,7 +52,7 @@ namespace FnPtrTest3 {
         let fp4: (instance: MyStruct) => void = MyStruct.prototype.bar;
         fp4.call(m);
 
-        let fp5: (instance: MyStruct, t: number) => number = MyStruct.prototype.gen;
+        let fp5: (t: number) => number = MyStruct.prototype.gen;
         fp5.call(m, 2);
 
         let fp6: (instance: MyStruct) => void = m.f;
