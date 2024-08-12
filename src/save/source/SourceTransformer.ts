@@ -17,6 +17,7 @@ import { Constant } from '../../core/base/Constant';
 import {
     AbstractBinopExpr,
     AbstractExpr,
+    ArkAwaitExpr,
     ArkCastExpr,
     ArkDeleteExpr,
     ArkInstanceInvokeExpr,
@@ -26,6 +27,7 @@ import {
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
+    ArkYieldExpr,
     ArrayLiteralExpr,
 } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
@@ -237,6 +239,14 @@ export class SourceTransformer {
                 elements.push(this.valueToString(element));
             });
             return `[${elements.join(', ')}]`;
+        }
+
+        if (expr instanceof ArkAwaitExpr) {
+            return `await ${this.valueToString(expr.getPromise())}`;
+        }
+
+        if (expr instanceof ArkYieldExpr) {
+            return `yield ${this.valueToString(expr.getYieldValue())}`;
         }
 
         // ArkPhiExpr

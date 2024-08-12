@@ -76,6 +76,10 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setDeclaringArkClass(declaringClass);
     mtd.setDeclaringArkFile();
 
+    if (ts.isFunctionDeclaration(methodNode)) {
+        mtd.setAsteriskToken(methodNode.asteriskToken != undefined);
+    }
+
     mtd.setCode(methodNode.getText(sourceFile));
     const {line, character} = ts.getLineAndCharacterOfPosition(
         sourceFile,
