@@ -35,11 +35,13 @@ export class CallSite {
     public callStmt: Stmt;
     public args: Value[] | undefined;
     public calleeFuncID: FuncID;
+    public callerFuncID: FuncID;
 
-    constructor(s: Stmt, a: Value[] | undefined, c: FuncID) {
+    constructor(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
         this.callStmt = s;
         this.args = a;
-        this.calleeFuncID = c;
+        this.calleeFuncID = ce;
+        this.callerFuncID = cr;
     }
 }
 
@@ -61,13 +63,14 @@ export class CSCallSite extends CallSite {
     public cid: ContextID;
 
     constructor(id: ContextID, cs: CallSite) {
-        super(cs.callStmt, cs.args, cs.calleeFuncID);
+        super(cs.callStmt, cs.args, cs.calleeFuncID, cs.callerFuncID);
         this.cid = id;
     }
 }
 
 export class CallGraphEdge extends BaseEdge {
     private directCalls: StmtSet = new Set();
+    private specialCalls: StmtSet = new Set();
     private indirectCalls: StmtSet = new Set();
     private callSiteID: CallSiteID;
 
@@ -80,20 +83,27 @@ export class CallGraphEdge extends BaseEdge {
         this.directCalls.add(stmt);
     }
 
+    public addSpecialCallSite(stmt: Stmt) {
+        this.specialCalls.add(stmt);
+    }
+
     public addInDirectCallSite(stmt: Stmt) {
         this.indirectCalls.add(stmt);
     }
 
     public getDotAttr(): string {
-        const indirectCallNums = this.indirectCalls.size;
+        const indirectCallNums:number = this.indirectCalls.size;
         const directCallNums: number = this.directCalls.size;
+        const specialCallNums: number = this.specialCalls.size;
 
         if (indirectCallNums != 0 && directCallNums == 0) {
             return "color=red";
+        } else if (specialCallNums!= 0) {
+            return "color=yellow";
         } else if (indirectCallNums == 0 && directCallNums != 0) {
             return "color=black";
         } else {
-            return "color=yellow";
+            return "color=black";
         }
     }
 }
@@ -196,6 +206,9 @@ export class CallGraph extends BaseGraph {
     }
 
     public getCallGraphNodeByMethod(method: Method): CallGraphNode {
+        if (!method) {
+            throw new Error()
+        }
         let n = this.methodToCGNodeMap.get(method.toString());
         if (n == undefined) {
             // The method can't be found
@@ -208,13 +221,12 @@ export class CallGraph extends BaseGraph {
         return this.getNode(n) as CallGraphNode;
     } 
 
-    public addDirectCallEdge(caller: Method, callee: Method, callStmt: Stmt): void {
+    public addDirectOrSpecialCallEdge(caller: Method, callee: Method, callStmt: Stmt, isDirectCall:boolean = true): void {
         let callerNode = this.getCallGraphNodeByMethod(caller) as CallGraphNode;
         let calleeNode = this.getCallGraphNodeByMethod(callee) as CallGraphNode;
         let args = callStmt.getInvokeExpr()?.getArgs();
-        //this.getMethodByFuncID
 
-        let cs: CallSite = new CallSite(callStmt, args, calleeNode.getID());
+        let cs: CallSite = new CallSite(callStmt, args, calleeNode.getID(), callerNode.getID());
         let csID: CallSiteID;
         if (!this.callSiteToIdMap.has(cs)) {
             csID = this.callSiteNum++;
@@ -236,7 +248,11 @@ export class CallGraph extends BaseGraph {
             callEdge.getDstNode().addIncomingEdge(callEdge);
             this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
         }
-        callEdge.addDirectCallSite(callStmt);
+        if (isDirectCall) {
+            callEdge.addDirectCallSite(callStmt);
+        } else {
+            callEdge.addSpecialCallSite(callStmt);
+        }
     }
 
     public removeCallGraphEdge(nodeID: NodeID) {
@@ -320,8 +336,11 @@ export class CallGraph extends BaseGraph {
         this.entries = n;
     }
 
-    public dump(name: string): void {
+    public dump(name: string, entry?: FuncID): void {
         let printer = new GraphPrinter<this>(this);
+        if (entry) {
+            printer.setStartID(entry);
+        }
         PrinterBuilder.dump(printer, name);
     }
 }

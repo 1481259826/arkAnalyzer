@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite } from '../CallGraph';
+import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../CallGraph';
 import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
@@ -57,6 +57,7 @@ export class PagBuilder {
     private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>>;
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
+    private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     private funcHandledThisRound: Set<FuncID> = new Set();
 
@@ -165,26 +166,6 @@ export class PagBuilder {
                 } else {
                     throw new Error('Can not find callsite by stmt');
                 }
-
-                // DUPILICATE code!!
-                /*
-                let inkExpr = stmt.getInvokeExpr();
-                if (inkExpr instanceof ArkStaticInvokeExpr) {
-                    let cs = this.cg.getCallSiteByStmt(stmt);
-                    if (cs) {
-                        // direct call is already existing in CG
-                        fpag.addNormalCallSite(cs);
-                    } else {
-                        throw new Error('Can not find callsite by stmt');
-                    }
-                } else if (inkExpr instanceof ArkInstanceInvokeExpr) {
-                    let ptcs = this.cg.getDynCallsiteByStmt(stmt);
-                    if (ptcs) {
-                        this.pag.addToDynamicCallSite(ptcs);
-                    }
-                }
-                    */
-
             } else {
                 // TODO: need handle other type of stmt?
             }
@@ -237,7 +218,27 @@ export class PagBuilder {
         }
 
         for (let cs of funcPag.getNormalCallSites()) {
-            this.addStaticPagCallEdge(cs, cid);
+            let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID);
+            this.addStaticPagCallEdge(cs, cid, calleeCid);
+
+            // Add edge to thisRef for special calls
+            let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+            let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr
+            if(calleeCGNode.getKind() == CallGraphNodeKind.constructor ||
+                calleeCGNode.getKind() == CallGraphNodeKind.intrinsic) { 
+                let callee = this.scene.getMethod(this.cg.getMethodByFuncID(cs.calleeFuncID)!)!
+                let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
+                let baseNodeID = baseNode.getID();
+                // baseNode.getIncomingEdge().forEach(e => {
+                //     if(e.getKind() == PagEdgeKind.Address)
+                //         baseNodeID = e.getSrcNode().getID()
+                // })
+                // if (!baseNodeID) {
+                //     throw new Error()
+                // }
+                
+                let srcBaseNode = this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+            }
         }
 
         return true;
@@ -247,6 +248,9 @@ export class PagBuilder {
         let srcNodes: NodeID[] = [];
         let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
         let calleeName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        //console.log(calleeName)
+        if(calleeName.includes('forEach'))
+            debugger
 
         let ptNode = this.pag.getNode(baseClassPTNode);
         let value = (ptNode as PagNode).getValue();
@@ -264,6 +268,10 @@ export class PagBuilder {
             }
 
             if (!callee) {
+                callee = this.scene.getMethod(ivkExpr.getMethodSignature());
+            }
+
+            if (!callee) {
                 // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
                 // return empty node when {o_2} come in
                 return []
@@ -276,14 +284,16 @@ export class PagBuilder {
                 throw new Error("Can not get caller method node");
             }
             let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
-            let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID());
+            let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID(), cs.callerFuncID);
             let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
+            // update call graph
+            // TODO: movo to cgbuilder
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             srcNodes.push(...staticSrcNodes);
 
             // Pass base's pts to callee's this pointer
             if (!dstCGNode.getIsSdkMethod()) {
-                let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid);
+                let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
                 srcNodes.push(srcBaseNode);   
             }
         }
@@ -291,8 +301,9 @@ export class PagBuilder {
     }
 
     private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
-        ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID): NodeID {
+        ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID, callerFunID: FuncID): NodeID {
         //let thisPtr = callee.getThisInstance();
+
         let thisAssignStmt = callee.getCfg()?.getStmts().filter(s =>
             s instanceof ArkAssignStmt && s.getRightOp() instanceof ArkThisRef);
         let thisPtr = (thisAssignStmt?.at(0) as ArkAssignStmt).getRightOp() as ArkThisRef;
@@ -305,6 +316,7 @@ export class PagBuilder {
         let thisRefNode = this.getOrNewThisRefNode(calleeCid, thisPtr) as PagThisRefNode;
         thisRefNode.addPTNode(baseClassPTNode);
         let srcBaseLocal = ivkExpr.getBase();
+        srcBaseLocal = this.getRealThisLocal(srcBaseLocal, callerFunID);
         let srcNodeId = this.pag.hasCtxNode(cid, srcBaseLocal);
         if (!srcNodeId) {
             throw new Error('Can not get base node');
@@ -427,6 +439,13 @@ export class PagBuilder {
     public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
         if (v instanceof ArkThisRef) {
             return this.getOrNewThisRefNode(cid, v as ArkThisRef);
+        } 
+
+        // this local is also not uniq!!!
+        // remove below block once this issue fixed
+        if (v instanceof Local && v.getName() === 'this') {
+            return this.getOrNewThisLoalNode(cid, v as Local, s);
+
         }
         v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
@@ -445,6 +464,22 @@ export class PagBuilder {
         let thisRefNode = this.pag.getOrNewThisRefNode(thisRefNodeID, v)
         this.cid2ThisRefMap.set(cid, thisRefNode.getID())
         return thisRefNode
+    }
+
+    // TODO: remove it once this local not uniq issue is fixed
+    public getOrNewThisLoalNode(cid: ContextID, v: Local, s?: Stmt): PagNode {
+        let thisLocalNodeID = this.cid2ThisLocalMap.get(cid)
+        if (thisLocalNodeID) {
+            return this.pag.getNode(thisLocalNodeID) as PagNode;
+        }
+
+        let thisNode = this.pag.getOrNewNode(cid, v, s);
+        this.cid2ThisLocalMap.set(cid, thisNode.getID());
+        return thisNode;
+    }
+
+    public getUniqThisLocalNode(cid: ContextID): NodeID | undefined{
+        return this.cid2ThisLocalMap.get(cid);
     }
 
     /*
@@ -603,4 +638,20 @@ export class PagBuilder {
         (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
     }
 
+    public getRealThisLocal(input: Local, funcId: FuncID): Local {
+        if (input.getName() != 'this')
+            return input;
+        let real = input;
+
+        let f = this.cg.getArkMethodByFuncID(funcId);
+        f?.getCfg()?.getStmts().forEach(s => {
+            if (s instanceof ArkAssignStmt && s.getLeftOp() instanceof Local) {
+                if ((s.getLeftOp() as Local).getName() === 'this') {
+                    real = s.getLeftOp() as Local;
+                    return;
+                }
+            }
+        })
+        return real;
+    }
 }

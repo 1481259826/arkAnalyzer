@@ -32,7 +32,7 @@ export class CallGraphBuilder {
         for (const method of methods) {
             let m = method.getSignature();
             let kind  = CallGraphNodeKind.real;
-            if (method.isGenerated() || method.getName() === '_DEFAULT_ARK_METHOD') {
+            if (method.isGenerated()) {// || method.getName() === '_DEFAULT_ARK_METHOD') {
                 kind = CallGraphNodeKind.intrinsic;
             }
             if (method.getName() === 'constructor') {
@@ -57,10 +57,11 @@ export class CallGraphBuilder {
 
                 let callee: Method | undefined = this.getDCCallee(invokeExpr);
                 // abstract method will also be added into direct cg
-                if (callee != undefined &&
-                    (invokeExpr instanceof ArkStaticInvokeExpr
-                        || (invokeExpr instanceof ArkInstanceInvokeExpr && this.isConstructor(callee)))) {
-                    this.cg.addDirectCallEdge(method.getSignature(), callee, stmt);
+                if (callee && invokeExpr instanceof ArkStaticInvokeExpr) {
+                    this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt);
+                } else if (callee && (invokeExpr instanceof ArkInstanceInvokeExpr && (
+                    this.isConstructor(callee) || this.scene.getMethod(callee)?.isGenerated()))) {
+                        this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt, false);
                 } else {
                     this.cg.addDynamicCallInfo(stmt, method.getSignature(), callee);
                 }
@@ -73,16 +74,17 @@ export class CallGraphBuilder {
 
     /// Get direct call callee
     private getDCCallee(invokeExpr: AbstractInvokeExpr): Method | undefined {
-        if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-            let baseType = invokeExpr.getBase().getType();
-            if (baseType instanceof ClassType) {
-                return invokeExpr.getMethodSignature();
-            }
-        } else if (invokeExpr instanceof ArkStaticInvokeExpr) {
-            return invokeExpr.getMethodSignature();
-        }
+        return invokeExpr.getMethodSignature();
+        // if (invokeExpr instanceof ArkInstanceInvokeExpr) {
+        //     let baseType = invokeExpr.getBase().getType();
+        //     if (baseType instanceof ClassType) {
+        //         return invokeExpr.getMethodSignature();
+        //     }
+        // } else if (invokeExpr instanceof ArkStaticInvokeExpr) {
+        //     return invokeExpr.getMethodSignature();
+        // }
 
-        return undefined;
+        // return undefined;
     }
 
     private isConstructor(m: Method): boolean {

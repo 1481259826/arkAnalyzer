@@ -29,6 +29,7 @@ import { ClassType, Type } from "../../base/Type";
 import { CallGraphBuilder } from "../builder/CallGraphBuilder";
 import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
 import { ArkMethod } from "../../model/ArkMethod";
+import { ArkAssignStmt } from "../../base/Stmt";
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
@@ -109,6 +110,7 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         while (reanalyzer) {
             this.ptaStat.iterTimes++;
+            console.log(`round ${this.ptaStat.iterTimes}` )
 
             this.solveWorklist();
             // process dynamic call
@@ -141,6 +143,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private processNode(nodeId: NodeID): boolean {
+        console.log(nodeId);
         this.handleThis(nodeId)
         this.handleLoadWrite(nodeId);
         this.handleCopy(nodeId);
@@ -231,13 +234,14 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingThisEdges()?.forEach(thisEdge => {
-            const dst = thisEdge.getDstID();
-            let thisRefNode = thisEdge.getDstNode() as PagThisRefNode;
-            thisRefNode.getThisPTNode().forEach((basePT) => {
-                this.ptd.addPts(dst, basePT);
-            })
+            this.propagate(thisEdge);
+            // const dst = thisEdge.getDstID();
+            // let thisRefNode = thisEdge.getDstNode() as PagThisRefNode;
+            // thisRefNode.getThisPTNode().forEach((basePT) => {
+            //     this.ptd.addPts(dst, basePT);
+            // })
 
-            this.processNode(dst);
+            // this.processNode(dst);
         });
 
         return true
@@ -309,8 +313,17 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         dynCallsites?.forEach(cs => {
             let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+            {
+                //debug
+                let name = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName()
+                console.log(name)
+                if(name === 'forEach')
+                    debugger
+            }
             // Get local of base class
             let base = ivkExpr.getBase();
+            // TODO: remove this after multiple this local fixed
+            base = this.pagBuilder.getRealThisLocal(base, cs.callerFuncID)
             // Get PAG nodes for this base's local
             let ctx2NdMap = this.pag.getNodesByValue(base);
             if (ctx2NdMap) {

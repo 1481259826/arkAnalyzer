@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { BaseEdge, BaseNode, GraphTraits } from "../core/graph/BaseGraph";
+import { BaseEdge, BaseNode, GraphTraits, NodeID } from "../core/graph/BaseGraph";
 import { Printer } from "./Printer";
 
 function escapeStr(input: string): string {
@@ -62,6 +62,7 @@ function escapeStr(input: string): string {
 export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
     graph: GraphType;
     title: string;
+    startID: NodeID | undefined = undefined;
 
     constructor(g: GraphType, t?: string) {
         super();
@@ -69,6 +70,10 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
         if (t) {
             this.title = t;
         }
+    }
+
+    public setStartID(n: NodeID) {
+        this.startID = n;
     }
 
     public dump(): string {
@@ -88,7 +93,24 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
     }
 
     public writeNodes(): void {
-        for(let node of this.graph.nodesItor()) {
+        let itor: IterableIterator<BaseNode> = this.graph.nodesItor();
+        if (this.startID) {
+            // from start id
+            let nodes = new Set<BaseNode>();
+            let startNode = this.graph.getNode(this.startID)!;
+            let worklist = [startNode];
+            while (worklist.length > 0) {
+                let n = worklist.shift()!;
+                if (nodes.has(n)) {
+                    continue;
+                }
+                nodes.add(n);
+                n.getOutgoingEdges()?.forEach(e => worklist.push(e.getDstNode()));
+            }
+            itor = nodes.values();
+        }
+
+        for(let node of itor) {
             let nodeAttr = node.getDotAttr();
             let nodeLabel = escapeStr(node.getDotLabel());
 
@@ -98,6 +120,8 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
                 this.writeEdge(edge);
             }
         }
+
+
     }
 
     public writeEdge(edge: BaseEdge): void {

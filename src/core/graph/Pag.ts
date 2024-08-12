@@ -313,8 +313,13 @@ export class PagNode extends BaseNode {
         }
 
         if (this.stmt) {
-            label = label + `\n${this.stmt.toString()} ln:`;
-            label = label + this.stmt.getOriginPositionInfo().getLineNo();
+            label = label + `\n${this.stmt.toString()}`;
+            let method = this.stmt.getCfg()?.getDeclaringMethod().getSubSignature().toString();
+            if(method) {
+                label = label + '\n' + method;
+            }
+            label = label + ' ln: ' + this.stmt.getOriginPositionInfo().getLineNo();
+
         }
 
         return label;
@@ -481,7 +486,18 @@ export class Pag extends BaseGraph {
             ctx2NdMap.set(cid, id);
 
             if (value instanceof ArkInstanceFieldRef) {
-                let ctxMap = this.contextBaseToIdMap.get(value.getBase());
+                let base = value.getBase();
+                //TODO: remove below once this Local is not uniq in @instance_init is fix
+                if (base instanceof Local && base.getName() === 'this')
+                    stmt?.getCfg()?.getStmts().forEach(s => {
+                        if (s instanceof ArkAssignStmt && s.getLeftOp() instanceof Local) {
+                            if ((s.getLeftOp() as Local).getName() === 'this') {
+                                base = s.getLeftOp() as Local;
+                                return;
+                            }
+                        }
+                    })
+                let ctxMap = this.contextBaseToIdMap.get(base);
                 if (ctxMap == undefined) {
                     ctxMap = new Map();
                     ctxMap.set(cid, [pagNode.getID()]);
@@ -494,7 +510,7 @@ export class Pag extends BaseGraph {
                     }
                     ctxMap.set(cid, nodes);
                 }
-                this.contextBaseToIdMap.set(value.getBase(), ctxMap);
+                this.contextBaseToIdMap.set(base, ctxMap);
             }
         }
         
