@@ -75,16 +75,6 @@ export class CallGraphBuilder {
     /// Get direct call callee
     private getDCCallee(invokeExpr: AbstractInvokeExpr): Method | undefined {
         return invokeExpr.getMethodSignature();
-        // if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-        //     let baseType = invokeExpr.getBase().getType();
-        //     if (baseType instanceof ClassType) {
-        //         return invokeExpr.getMethodSignature();
-        //     }
-        // } else if (invokeExpr instanceof ArkStaticInvokeExpr) {
-        //     return invokeExpr.getMethodSignature();
-        // }
-
-        // return undefined;
     }
 
     private isConstructor(m: Method): boolean {

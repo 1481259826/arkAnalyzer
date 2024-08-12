@@ -21,8 +21,11 @@ import { Pag } from '../src/core/graph/Pag'
 import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
 import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
 import { Sdk } from "../src/Config";
+import Logger, {LOG_LEVEL} from "../src/utils/logger"
  
-// const logger = Logger.getLogger();
+const logger = Logger.getLogger();
+Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.INFO)
+
 let etsSdk: Sdk = {
     name: "ohos",
     path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",

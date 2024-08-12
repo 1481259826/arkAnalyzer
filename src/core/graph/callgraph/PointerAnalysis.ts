@@ -30,6 +30,10 @@ import { CallGraphBuilder } from "../builder/CallGraphBuilder";
 import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
 import { ArkMethod } from "../../model/ArkMethod";
 import { ArkAssignStmt } from "../../base/Stmt";
+import Logger from "../../../utils/logger"
+import { DummyMainCreater } from "../../common/DummyMainCreater";
+
+const logger = Logger.getLogger()
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
@@ -64,10 +68,14 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
 
         let entries: FuncID[] = [];// to get from dummy main
-        let entryMethods: ArkMethod[] = projectScene.getEntryMethodsFromModuleJson5();
-        entryMethods.forEach((method) => {
-            let methodNodeID: FuncID = cg.getCallGraphNodeByMethod(method.getSignature()).getID()
-            entries.push(methodNodeID)
+        const dummyMainCreator = new DummyMainCreater(projectScene)
+        dummyMainCreator.createDummyMain()
+        const dummyMainMethod = dummyMainCreator.getDummyMain()
+        dummyMainMethod.getBody()?.getCfg().getStmts().forEach((stmt) => {
+            let invokeExpr = stmt.getInvokeExpr()
+            if (invokeExpr) {
+                entries.push(cg.getCallGraphNodeByMethod(invokeExpr.getMethodSignature()).getID())
+            }
         })
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
         pta.setEntries(entries);
@@ -76,6 +84,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private init() {
+        logger.warn(`========== Init Pointer Analysis ==========`)
         this.ptaStat.startStat();
         this.pagBuilder.buildForEntries(this.entries);
         if (this.config.dotDump) {
@@ -105,12 +114,13 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     private solveConstraint() {
         this.worklist = []
+        logger.warn(`========== Pointer Analysis Start ==========`)
         this.initWorklist();
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
             this.ptaStat.iterTimes++;
-            console.log(`round ${this.ptaStat.iterTimes}` )
+            logger.warn(`========== Pointer Analysis Round ${this.ptaStat.iterTimes} ==========`)
 
             this.solveWorklist();
             // process dynamic call
@@ -247,43 +257,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         return true
     }
 
-    /*
-     * a.f
-     * Get a's pts
-     * only process instance field ref
-     */
-    // TODO: Deprecated?
-    private getBasePts(inNode: PagNode) {
-        let ret: Set<NodeID> = new Set();
-        let value = inNode.getValue();
-        if (!(value instanceof ArkInstanceFieldRef)) {
-            throw new Error ('Not a Ref field');
-        }
-        let base: Local = value.getBase();
-        let ctx2NdMap = this.pag.getNodesByValue(base);
-        if (!ctx2NdMap) {
-            throw new Error ('Cannot find pag node for a local');
-        }
-
-        for (let [cid, nodeId] of ctx2NdMap.entries()) {
-            if (cid != inNode.getCid()) {
-                continue;
-            }
-            let pts = this.ptd.getPropaPts(nodeId);
-            if (!pts) {
-                throw new Error (`Can't find pts for Node${nodeId}}`);
-            }
-
-            for(let pt of pts) {
-                if (!ret.has(pt)) {
-                    ret.add(pt);
-                }
-            }
-        }
-
-        return ret;
-    }
-
     private propagate(edge: PagEdge): boolean {
         let changed: boolean = false;
         let { src, dst } = edge.getEndPoints();
@@ -293,9 +266,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
         let realDiffPts = this.ptd.calculateDiff(src, dst);
 
-        // changed = this.ptd.unionDiffPts(dst, src);
-
-        // which one is better?
         for (let pt of realDiffPts) {
            changed = this.ptd.addPts(dst, pt) || changed;
         }

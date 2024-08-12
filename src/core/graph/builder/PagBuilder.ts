@@ -124,8 +124,9 @@ export class PagBuilder {
             return false
         }
 
+        logger.trace(`[build FuncPag] ${arkMethod.getSignature().toString()}`)
+
         for (let stmt of cfg.getStmts()){
-            logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
@@ -607,7 +608,7 @@ export class PagBuilder {
         }
         csSet.add(cs);
 
-        logger.info(cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
+        logger.trace("[add dynamic callsite] "+cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
     }
 
     public getDynamicCallSites(): Set<DynCallSite> {
