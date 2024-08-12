@@ -14,6 +14,8 @@
  */
 
 class Main {
+    private i: number = 0;
+
     constructor() {
     }
 }

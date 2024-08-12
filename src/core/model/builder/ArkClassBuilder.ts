@@ -321,7 +321,7 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
             buildArkMethodFromArkClass(property, cls, arkMethod, sourceFile);
         }
     });
-    buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap);
+    buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap, instanceIRTransformer.getThisLocal());
     cls.getInstanceInitMethod().genSignature();
     arkMethods.forEach((mtd) => {
         cls.addMethod(mtd);
@@ -376,7 +376,7 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
                 buildGetAccessor2ArkField(member, mthd, sourceFile);
             }
         }
-    })
+    });
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
@@ -401,11 +401,11 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
         }
     });
     if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
-        buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap);
-        buildInitMethod(cls.getStaticInitMethod(), staticInitStmtMap);
+        buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap, instanceIRTransformer!.getThisLocal());
+        buildInitMethod(cls.getStaticInitMethod(), staticInitStmtMap, staticIRTransformer!.getThisLocal());
     }
     if (ts.isEnumDeclaration(clsNode)) {
-        buildInitMethod(cls.getStaticInitMethod(), staticInitStmtMap);
+        buildInitMethod(cls.getStaticInitMethod(), staticInitStmtMap, staticIRTransformer!.getThisLocal());
     }
 }
 

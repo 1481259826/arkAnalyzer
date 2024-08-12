@@ -38,6 +38,7 @@ import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from '../../common/Const';
+import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 
 const logger = Logger.getLogger();
 
@@ -408,10 +409,9 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     return true;
 }
 
-export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>): void {
+export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>, thisLocal: Local): void {
     const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
-    const cThis = new Local(THIS_NAME);
-    const assignStmt = new ArkAssignStmt(cThis, new ArkThisRef(classType));
+    const assignStmt = new ArkAssignStmt(thisLocal, new ArkThisRef(classType));
     const block = new BasicBlock();
     block.addStmt(assignStmt);
     const locals: Set<Local> = new Set();
