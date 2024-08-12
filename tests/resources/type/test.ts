@@ -13,23 +13,7 @@
  * limitations under the License.
  */
 
-
-function main() {
-    let i = 1;
-    switch (i) {
-        case 1:
-            console.log(1);
-            break;
-        case 2:
-        case 3:
-            break;
-        case 4:
-            console.log(3);
-            break;
-        case 5:
-            return;
-        default:
-            return;
-    }
-    console.log(i);
+let func1 = (i: number) => i++;
+function f() {
+  type a = number
 }
