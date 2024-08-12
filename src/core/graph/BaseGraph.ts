@@ -19,6 +19,7 @@ export type Kind = number;
 export interface GraphTraits {
     nodesItor(): IterableIterator<BaseNode>;
     getGraphName(): string;
+    getNode(id: NodeID): BaseNode | undefined;
 }
 export abstract class BaseEdge {
     private src: BaseNode;

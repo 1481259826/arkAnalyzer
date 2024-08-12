@@ -405,6 +405,8 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     const cfg = new Cfg();
     cfg.addBlock(basicBlock);
     cfg.setStartingStmt(startingStmt);
+    cfg.setDeclaringMethod(defaultConstructor);
+    cfg.getStmts().forEach(s => s.setCfg(cfg));
     const originalCfg = new Cfg();
 
     defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map()));
@@ -430,6 +432,8 @@ export function buildInitMethod(initMethod: ArkMethod, stmts: Stmt[]): void {
     const cfg = new Cfg();
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
+    cfg.setDeclaringMethod(initMethod);
+    cfg.getStmts().forEach(s => s.setCfg(cfg));
     initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, new Map()));
 
 }
@@ -439,6 +443,7 @@ export function addInitInConstructor(arkClass: ArkClass) {
         if (method.getName() == 'constructor') {
             const _this = new Local('this');
             const initInvokeStmt = new ArkInvokeStmt(new ArkInstanceInvokeExpr(_this, arkClass.getInstanceInitMethod().getSignature(), []));
+            initInvokeStmt.setCfg(method.getCfg()!);
             const blocks = method.getCfg()?.getBlocks();
             if (!blocks) {
                 continue;

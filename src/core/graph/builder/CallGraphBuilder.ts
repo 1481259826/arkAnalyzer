@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { CallGraph, Method } from '../CallGraph'
+import { CallGraph, CallGraphNode, CallGraphNodeKind, Method } from '../CallGraph'
 import { Scene } from '../../../Scene'
 import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../../core/base/Expr";
 import { ClassType } from "../../../core/base/Type"
@@ -31,7 +31,15 @@ export class CallGraphBuilder {
         const methods = this.scene.getMethods();
         for (const method of methods) {
             let m = method.getSignature();
-            this.cg.addCallGraphNode(m);
+            let kind  = CallGraphNodeKind.real;
+            if (method.isGenerated()) {// || method.getName() === '_DEFAULT_ARK_METHOD') {
+                kind = CallGraphNodeKind.intrinsic;
+            }
+            if (method.getName() === 'constructor') {
+                kind = CallGraphNodeKind.constructor;
+            }
+
+            this.cg.addCallGraphNode(m, kind);
         }
 
         for (const method of methods) {
@@ -49,10 +57,11 @@ export class CallGraphBuilder {
 
                 let callee: Method | undefined = this.getDCCallee(invokeExpr);
                 // abstract method will also be added into direct cg
-                if (callee != undefined &&
-                    (invokeExpr instanceof ArkStaticInvokeExpr
-                        || (invokeExpr instanceof ArkInstanceInvokeExpr && this.isConstructor(callee)))) {
-                    this.cg.addDirectCallEdge(method.getSignature(), callee, stmt);
+                if (callee && invokeExpr instanceof ArkStaticInvokeExpr) {
+                    this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt);
+                } else if (callee && (invokeExpr instanceof ArkInstanceInvokeExpr && (
+                    this.isConstructor(callee) || this.scene.getMethod(callee)?.isGenerated()))) {
+                        this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt, false);
                 } else {
                     this.cg.addDynamicCallInfo(stmt, method.getSignature(), callee);
                 }
@@ -65,16 +74,17 @@ export class CallGraphBuilder {
 
     /// Get direct call callee
     private getDCCallee(invokeExpr: AbstractInvokeExpr): Method | undefined {
-        if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-            let baseType = invokeExpr.getBase().getType();
-            if (baseType instanceof ClassType) {
-                return invokeExpr.getMethodSignature();
-            }
-        } else if (invokeExpr instanceof ArkStaticInvokeExpr) {
-            return invokeExpr.getMethodSignature();
-        }
+        return invokeExpr.getMethodSignature();
+        // if (invokeExpr instanceof ArkInstanceInvokeExpr) {
+        //     let baseType = invokeExpr.getBase().getType();
+        //     if (baseType instanceof ClassType) {
+        //         return invokeExpr.getMethodSignature();
+        //     }
+        // } else if (invokeExpr instanceof ArkStaticInvokeExpr) {
+        //     return invokeExpr.getMethodSignature();
+        // }
 
-        return undefined;
+        // return undefined;
     }
 
     private isConstructor(m: Method): boolean {
@@ -83,7 +93,10 @@ export class CallGraphBuilder {
     
     public setEntries(): void {
         let nodesIter = this.cg.getNodesIter();
-        let entries = Array.from(nodesIter).filter(node => node.hasIncomingEdges() == false).map(node => node.getID());
+        let entries = Array.from(nodesIter)
+            .filter(node => !node.hasIncomingEdges() && node.getKind() == CallGraphNodeKind.real
+                && !(node as CallGraphNode).isBlankMethod)
+            .map(node => node.getID());
         this.cg.setEntries(entries);
     }
 }
