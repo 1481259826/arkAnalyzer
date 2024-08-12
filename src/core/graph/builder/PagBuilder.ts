@@ -14,7 +14,7 @@
  */
 
 import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../CallGraph';
-import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode } from '../Pag'
+import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode, PagLocalNode, PagArrowFuncNode } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
 import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
@@ -54,7 +54,7 @@ export class PagBuilder {
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
-    private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>>;
+    private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>> = new Map();
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
@@ -201,6 +201,10 @@ export class PagBuilder {
         for (let e of inEdges) {
             let srcPagNode = this.getOrNewPagNode(cid, e.src, e.stmt);
             let dstPagNode = this.getOrNewPagNode(cid, e.dst, e.stmt);
+            
+            if (srcPagNode instanceof PagArrowFuncNode && dstPagNode instanceof PagLocalNode) {
+                e.kind = PagEdgeKind.Address
+            }
             this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind, e.stmt);
 
             // Take place of the real stmt for return

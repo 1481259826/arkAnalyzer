@@ -37,8 +37,8 @@ let config: SceneConfig = new SceneConfig()
 //     [etsSdk], [
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
-config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-// config.buildFromProjectDir('./tests/resources/callgraph/loadtest2');
+// config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
+config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
@@ -49,10 +49,10 @@ config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
 
 function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
-    // projectScene.buildSceneFromProjectDir(config);
-    projectScene.buildBasicInfo(config);
-    projectScene.buildScene4HarmonyProject()
-    projectScene.collectProjectImportInfos();
+    projectScene.buildSceneFromProjectDir(config);
+    // projectScene.buildBasicInfo(config);
+    // projectScene.buildScene4HarmonyProject()
+    // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
     let cg = new CallGraph(projectScene);
@@ -61,10 +61,10 @@ function runScene(config: SceneConfig, output: string) {
 
     let pag = new Pag();
 
-    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'showWindow');
+    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries(cg.getEntries());
+    pta.setEntries(entry);
     pta.start();
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
     console.log("fin")
