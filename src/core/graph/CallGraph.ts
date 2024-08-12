@@ -28,9 +28,11 @@ export type Method = MethodSignature;
 export type CallSiteID = number;
 export type FuncID = number;
 type StmtSet = Set<Stmt>;
+
 export enum CallGraphNodeKind {
     real, vitual, intrinsic, constructor
 }
+
 export class CallSite {
     public callStmt: Stmt;
     public args: Value[] | undefined;

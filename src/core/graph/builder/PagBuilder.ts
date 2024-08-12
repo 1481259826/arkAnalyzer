@@ -14,7 +14,7 @@
  */
 
 import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../CallGraph';
-import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode, PagLocalNode, PagArrowFuncNode } from '../Pag'
+import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode, PagLocalNode, PagFuncNode } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
 import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
@@ -202,7 +202,7 @@ export class PagBuilder {
             let srcPagNode = this.getOrNewPagNode(cid, e.src, e.stmt);
             let dstPagNode = this.getOrNewPagNode(cid, e.dst, e.stmt);
             
-            if (srcPagNode instanceof PagArrowFuncNode && dstPagNode instanceof PagLocalNode) {
+            if (srcPagNode instanceof PagFuncNode && dstPagNode instanceof PagLocalNode) {
                 e.kind = PagEdgeKind.Address
             }
             this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind, e.stmt);

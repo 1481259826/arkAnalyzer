@@ -318,6 +318,15 @@ export class PointerAnalysis extends AbstractAnalysis{
         return changed;
     }
 
+    // private temp() {
+    //     let funcPtrID: NodeID = 0
+    //     let funcPtrNode = this.pag.getNode(funcPtrID) as PagFuncNode
+
+    //     let methodSig = funcPtrNode.getMethod()
+    //     // TODO: maybe a new kind of callsite? and check static and instance
+    //     this.pagBuilder.addStaticPagCallEdge()
+    // }
+
     private addToReanalyze(startNodes: NodeID[]): boolean {
         let flag = false
         for (let node of startNodes) {

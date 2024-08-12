@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {CSCallSite, FuncID} from '../graph/CallGraph'
+import {FuncID} from '../graph/CallGraph'
 
 export type ContextID = number
 

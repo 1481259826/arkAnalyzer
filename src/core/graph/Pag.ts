@@ -25,6 +25,7 @@ import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { Constant } from '../base/Constant';
 import { FunctionType } from '../base/Type';
+import { MethodSignature } from '../model/ArkSignature';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -97,7 +98,7 @@ export class ThisPagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, ArrowFunc }
+export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, Function }
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -288,7 +289,7 @@ export class PagNode extends BaseNode {
                 return 'shape=component';
             case PagNodeKind.Param:
                 return 'shape=box';
-            case PagNodeKind.ArrowFunc:
+            case PagNodeKind.Function:
                 return 'shape=box3d';
             default:
                 return 'shape=box';
@@ -403,9 +404,19 @@ export class PagParamNode extends PagNode {
     }
 }
 
-export class PagArrowFuncNode extends PagNode {
+export class PagFuncNode extends PagNode {
+    private methodSignature: MethodSignature
+
     constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
-        super(id, cid, r, PagNodeKind.ArrowFunc, stmt)
+        super(id, cid, r, PagNodeKind.Function, stmt)
+    }
+
+    public setMethod(method: MethodSignature) {
+        this.methodSignature = method
+    }
+
+    public getMethod(): MethodSignature {
+        return this.methodSignature
     }
 }
 
@@ -474,7 +485,10 @@ export class Pag extends BaseGraph {
             if (valueType instanceof FunctionType && 
                 (value.getDeclaringStmt() === null)) {
                 // init function pointer
-                pagNode = new PagArrowFuncNode(id, cid, value, stmt)
+                pagNode = new PagFuncNode(id, cid, value, stmt)
+                if (pagNode instanceof PagFuncNode) {
+                    pagNode.setMethod(valueType.getMethodSignature())
+                }
             } else {
                 pagNode = new PagLocalNode(id, cid, value, stmt);
             }
