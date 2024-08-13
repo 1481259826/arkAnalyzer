@@ -16,18 +16,21 @@
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
 import { Stmt } from '../base/Stmt';
+import { Type } from '../base/Type';
 
 export class ArkBody {
     private locals: Map<string, Local>;
     private originalCfg: Cfg;
     private cfg: Cfg;
     private stmtToOriginalStmt: Map<Stmt, Stmt>;
+    private typeMap: Map<string, Type> = new Map();
 
-    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>) {
+    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, typeMap: Map<string, Type>) {
         this.setLocals(locals);
         this.originalCfg = originalCfg;
         this.cfg = cfg;
         this.stmtToOriginalStmt = stmtToOriginalStmt;
+        this.typeMap = typeMap;
     }
 
     public getLocals(): Map<string, Local> {
@@ -59,5 +62,9 @@ export class ArkBody {
 
     public getStmtToOriginalStmt(): Map<Stmt, Stmt> {
         return this.stmtToOriginalStmt;
+    }
+
+    public getTypeMap(): Map<string, Type> {
+        return this.typeMap;
     }
 }

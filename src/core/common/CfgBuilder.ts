@@ -25,6 +25,7 @@ import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
+import { Type } from '../base/Type';
 
 
 class StatementBuilder {
@@ -1056,7 +1057,8 @@ export class CfgBuilder {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        typeMap: Map<string, Type>
     } {
         const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
@@ -1238,6 +1240,7 @@ export class CfgBuilder {
             originalCfg: originalCfg,
             stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
+            typeMap: arkIRTransformer.getTypeMap(),
         };
     }
 

@@ -140,6 +140,10 @@ export class ArkIRTransformer {
         return this.stmtToOriginalStmt;
     }
 
+    public getTypeMap(): Map<string, Type> {
+        return this.typeMap;
+    }
+
     public prebuildStmts(): Stmt[] {
         const stmts: Stmt[] = [];
         let index = 0;
