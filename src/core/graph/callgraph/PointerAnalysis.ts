@@ -153,7 +153,6 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private processNode(nodeId: NodeID): boolean {
-        console.log(nodeId);
         this.handleThis(nodeId)
         this.handleLoadWrite(nodeId);
         this.handleCopy(nodeId);
@@ -286,7 +285,6 @@ export class PointerAnalysis extends AbstractAnalysis{
             {
                 //debug
                 let name = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-                console.log(name)
                 if(name === 'forEach')
                     debugger
             }

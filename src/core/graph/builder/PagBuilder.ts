@@ -28,7 +28,7 @@ import { Local } from '../../base/Local';
 import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
-import { ClassType } from '../../base/Type';
+import { ClassType, FunctionType } from '../../base/Type';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -202,9 +202,6 @@ export class PagBuilder {
             let srcPagNode = this.getOrNewPagNode(cid, e.src, e.stmt);
             let dstPagNode = this.getOrNewPagNode(cid, e.dst, e.stmt);
             
-            if (srcPagNode instanceof PagFuncNode && dstPagNode instanceof PagLocalNode) {
-                e.kind = PagEdgeKind.Address
-            }
             this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind, e.stmt);
 
             // Take place of the real stmt for return
@@ -274,6 +271,15 @@ export class PagBuilder {
 
             if (!callee) {
                 callee = this.scene.getMethod(ivkExpr.getMethodSignature());
+            }
+
+            if (!callee) {
+                // try to change callee to param anonymous method
+                // TODO: anonymous method param and return value pointer pass
+                let args = cs.args
+                if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
+                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
+                }
             }
 
             if (!callee) {
@@ -553,8 +559,11 @@ export class PagBuilder {
     }
 
     private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
+        let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
-        if (rhOp instanceof ArkNewExpr) {
+        if ((rhOp instanceof ArkNewExpr) || (
+            lhOp instanceof Local && rhOp instanceof Local && rhOp.getType() instanceof FunctionType
+        )) {
             return true;
         }
 
