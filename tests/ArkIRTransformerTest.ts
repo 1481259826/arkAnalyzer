@@ -178,6 +178,6 @@ const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
 // arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
-// arkIRTransformerTest.printCfg();
-arkIRTransformerTest.simpleTest();
+arkIRTransformerTest.printCfg();
+// arkIRTransformerTest.simpleTest();
 
