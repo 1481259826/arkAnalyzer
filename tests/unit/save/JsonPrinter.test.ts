@@ -175,7 +175,6 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                         1,
                         4
                     ],
-                    "predecessors": [],
                     "stmts": [
                         {
                             "_": "AssignStmt",
@@ -377,10 +376,6 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                         2,
                         3
                     ],
-                    "predecessors": [
-                        0,
-                        4
-                    ],
                     "stmts": [
                         {
                             "_": "IfStmt",
@@ -411,10 +406,6 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                 {
                     "id": 2,
                     "successors": [],
-                    "predecessors": [
-                        1,
-                        3
-                    ],
                     "stmts": [
                         {
                             "_": "AssignStmt",
@@ -517,9 +508,6 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                     "successors": [
                         2
                     ],
-                    "predecessors": [
-                        1
-                    ],
                     "stmts": [
                         {
                             "_": "AssignStmt",
@@ -544,9 +532,6 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                     "id": 4,
                     "successors": [
                         1
-                    ],
-                    "predecessors": [
-                        0
                     ],
                     "stmts": [
                         {
@@ -676,7 +661,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                         1,
                         7
                     ],
-                    "predecessors": [],
                     "stmts": [
                         {
                             "_": "AssignStmt",
@@ -799,9 +783,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                     "successors": [
                         2
                     ],
-                    "predecessors": [
-                        0
-                    ],
                     "stmts": [
                         {
                             "_": "AssignStmt",
@@ -895,10 +876,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                         3,
                         6
                     ],
-                    "predecessors": [
-                        1,
-                        7
-                    ],
                     "stmts": [
                         {
                             "_": "IfStmt",
@@ -932,9 +909,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                         4,
                         5
                     ],
-                    "predecessors": [
-                        2
-                    ],
                     "stmts": [
                         {
                             "_": "IfStmt",
@@ -965,11 +939,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                 {
                     "id": 4,
                     "successors": [],
-                    "predecessors": [
-                        3,
-                        5,
-                        6
-                    ],
                     "stmts": [
                         {
                             "_": "ReturnStmt",
@@ -987,9 +956,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                     "id": 5,
                     "successors": [
                         4
-                    ],
-                    "predecessors": [
-                        3
                     ],
                     "stmts": [
                         {
@@ -1016,9 +982,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                     "successors": [
                         4
                     ],
-                    "predecessors": [
-                        2
-                    ],
                     "stmts": [
                         {
                             "_": "AssignStmt",
@@ -1043,9 +1006,6 @@ const JsonPrinter_complexFunction_EXPECTED = {
                     "id": 7,
                     "successors": [
                         2
-                    ],
-                    "predecessors": [
-                        0
                     ],
                     "stmts": [
                         {
@@ -1156,6 +1116,110 @@ const JsonPrinter_Shape_EXPECTED = {
                 "enclosingClass": {
                     "name": "Shape"
                 },
+                "name": "@instance_init",
+                "parameters": [],
+                "returnType": {
+                    "_": "UnknownType"
+                }
+            },
+            "modifiers": [],
+            "typeParameters": [],
+            "body": {
+                "locals": [],
+                "cfg": {
+                    "blocks": [
+                        {
+                            "id": 0,
+                            "successors": [],
+                            "stmts": [
+                                {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "this",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "ThisRef",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "ReturnVoidStmt"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "signature": {
+                "enclosingClass": {
+                    "name": "Shape"
+                },
+                "name": "@static_init",
+                "parameters": [],
+                "returnType": {
+                    "_": "UnknownType"
+                }
+            },
+            "modifiers": [],
+            "typeParameters": [],
+            "body": {
+                "locals": [],
+                "cfg": {
+                    "blocks": [
+                        {
+                            "id": 0,
+                            "successors": [],
+                            "stmts": [
+                                {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "this",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "ThisRef",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "ReturnVoidStmt"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "signature": {
+                "enclosingClass": {
+                    "name": "Shape"
+                },
                 "name": "area",
                 "parameters": [],
                 "returnType": {
@@ -1239,7 +1303,6 @@ const JsonPrinter_Shape_EXPECTED = {
                         {
                             "id": 0,
                             "successors": [],
-                            "predecessors": [],
                             "stmts": [
                                 {
                                     "_": "AssignStmt",
@@ -1424,13 +1487,62 @@ const JsonPrinter_Shape_EXPECTED = {
                     ]
                 }
             }
+        },
+        {
+            "signature": {
+                "enclosingClass": {
+                    "name": "Shape"
+                },
+                "name": "constructor",
+                "parameters": [],
+                "returnType": {
+                    "_": "UnknownType"
+                }
+            },
+            "modifiers": [],
+            "typeParameters": [],
+            "body": {
+                "locals": [],
+                "cfg": {
+                    "blocks": [
+                        {
+                            "id": 0,
+                            "successors": [],
+                            "stmts": [
+                                {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "this",
+                                        "type": {
+                                            "_": "UnknownType"
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "ThisRef",
+                                        "type": {
+                                            "_": "ClassType",
+                                            "signature": {
+                                                "name": "Shape"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "ReturnVoidStmt"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
         }
     ]
 };
 
 const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
     signature: {
-      name: "_DEFAULT_ARK_CLASS",
+        name: "_DEFAULT_ARK_CLASS",
     },
     modifiers: [
     ],
@@ -1440,1838 +1552,1768 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
     implementedInterfaceNames: [
     ],
     fields: [
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "sum",
-          type: {
-            _: "NumberType",
-          },
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
+                },
+                name: "sum",
+                type: {
+                    _: "NumberType",
+                },
+            },
+            modifiers: [
+            ],
+            typeParameters: [
+            ],
+            questionToken: false,
+            exclamationToken: false,
         },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        questionToken: false,
-        exclamationToken: false,
-      },
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "i",
-          type: {
-            _: "NumberType",
-          },
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
+                },
+                name: "i",
+                type: {
+                    _: "NumberType",
+                },
+            },
+            modifiers: [
+            ],
+            typeParameters: [
+            ],
+            questionToken: false,
+            exclamationToken: false,
         },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        questionToken: false,
-        exclamationToken: false,
-      },
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "fileContent",
-          type: {
-            _: "StringType",
-          },
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
+                },
+                name: "fileContent",
+                type: {
+                    _: "StringType",
+                },
+            },
+            modifiers: [
+            ],
+            typeParameters: [
+            ],
+            questionToken: false,
+            exclamationToken: false,
         },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        questionToken: false,
-        exclamationToken: false,
-      },
     ],
     methods: [
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "_DEFAULT_ARK_METHOD",
-          parameters: [
-          ],
-          returnType: {
-            _: "UnknownType",
-          },
-        },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        body: {
-          locals: [
-            {
-              name: "this",
-              type: {
-                _: "ClassType",
-                signature: {
-                  name: "_DEFAULT_ARK_CLASS",
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
                 },
-              },
+                name: "_DEFAULT_ARK_METHOD",
+                parameters: [
+                ],
+                returnType: {
+                    _: "UnknownType",
+                },
             },
-            {
-              name: "sum",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "i",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "fileContent",
-              type: {
-                _: "StringType",
-              },
-            },
-            {
-              name: "readFileSync",
-              type: {
-                _: "UnknownType",
-              },
-            },
-          ],
-          cfg: {
-            blocks: [
-              {
-                id: 0,
-                successors: [
-                  1,
-                ],
-                predecessors: [
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "this",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
-                        },
-                      },
-                    },
-                    right: {
-                      _: "ThisRef",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "sum",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "0",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "i",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "1",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 1,
-                successors: [
-                  2,
-                  3,
-                ],
-                predecessors: [
-                  0,
-                  3,
-                ],
-                stmts: [
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: "<=",
-                      left: {
-                        _: "Local",
-                        name: "i",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "10",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 2,
-                successors: [
-                ],
-                predecessors: [
-                  1,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "fileContent",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                    right: {
-                      _: "StaticCallExpr",
-                      method: {
-                        enclosingClass: {
-                          name: "",
-                        },
-                        name: "readFileSync",
-                        parameters: [
-                        ],
-                        returnType: {
-                          _: "UnknownType",
-                        },
-                      },
-                      args: [
-                        {
-                          _: "Constant",
-                          value: "dummy.txt",
-                          type: {
-                            _: "StringType",
-                          },
-                        },
-                        {
-                          _: "Constant",
-                          value: "utf8",
-                          type: {
-                            _: "StringType",
-                          },
-                        },
-                      ],
-                    },
-                  },
-                  {
-                    _: "ReturnVoidStmt",
-                  },
-                ],
-              },
-              {
-                id: 3,
-                successors: [
-                  1,
-                ],
-                predecessors: [
-                  1,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "sum",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
-                        name: "sum",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "i",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "i",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
-                        name: "i",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "1",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
+            modifiers: [
             ],
-          },
-        },
-      },
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "simpleFunction",
-          parameters: [
-            {
-              name: "x",
-              type: {
-                _: "NumberType",
-              },
-              isOptional: false,
-            },
-            {
-              name: "y",
-              type: {
-                _: "NumberType",
-              },
-              isOptional: false,
-            },
-          ],
-          returnType: {
-            _: "NumberType",
-          },
-        },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        body: {
-          locals: [
-            {
-              name: "this",
-              type: {
-                _: "ClassType",
-                signature: {
-                  name: "_DEFAULT_ARK_CLASS",
+            typeParameters: [
+            ],
+            body: {
+                locals: [
+                    {
+                        name: "this",
+                        type: {
+                            _: "ClassType",
+                            signature: {
+                                name: "_DEFAULT_ARK_CLASS",
+                            },
+                        },
+                    },
+                    {
+                        name: "sum",
+                        type: {
+                            _: "NumberType",
+                        },
+                    },
+                    {
+                        name: "i",
+                        type: {
+                            _: "NumberType",
+                        },
+                    },
+                    {
+                        name: "fileContent",
+                        type: {
+                            _: "StringType",
+                        },
+                    },
+                    {
+                        name: "readFileSync",
+                        type: {
+                            _: "UnknownType",
+                        },
+                    },
+                ],
+                cfg: {
+                    blocks: [
+                        {
+                            id: 0,
+                            successors: [
+                                1,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "this",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                    right: {
+                                        _: "ThisRef",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "sum",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "0",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "i",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "1",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 1,
+                            successors: [
+                                2,
+                                3,
+                            ],
+                            stmts: [
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: "<=",
+                                        left: {
+                                            _: "Local",
+                                            name: "i",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "10",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 2,
+                            successors: [
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "fileContent",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "StaticCallExpr",
+                                        method: {
+                                            enclosingClass: {
+                                                name: "",
+                                            },
+                                            name: "readFileSync",
+                                            parameters: [
+                                            ],
+                                            returnType: {
+                                                _: "UnknownType",
+                                            },
+                                        },
+                                        args: [
+                                            {
+                                                _: "Constant",
+                                                value: "dummy.txt",
+                                                type: {
+                                                    _: "StringType",
+                                                },
+                                            },
+                                            {
+                                                _: "Constant",
+                                                value: "utf8",
+                                                type: {
+                                                    _: "StringType",
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    _: "ReturnVoidStmt",
+                                },
+                            ],
+                        },
+                        {
+                            id: 3,
+                            successors: [
+                                1,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "sum",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "sum",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "i",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "i",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "i",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "1",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
                 },
-              },
             },
-            {
-              name: "x",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "y",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "sum",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "difference",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "product",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "quotient",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "result",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "$temp0",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "$temp1",
-              type: {
-                _: "NumberType",
-              },
-            },
-          ],
-          cfg: {
-            blocks: [
-              {
-                id: 0,
-                successors: [
-                  1,
-                  4,
+        },
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
+                },
+                name: "simpleFunction",
+                parameters: [
+                    {
+                        name: "x",
+                        type: {
+                            _: "NumberType",
+                        },
+                        isOptional: false,
+                    },
+                    {
+                        name: "y",
+                        type: {
+                            _: "NumberType",
+                        },
+                        isOptional: false,
+                    },
                 ],
-                predecessors: [
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "x",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "ParameterRef",
-                      index: 0,
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "y",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "ParameterRef",
-                      index: 1,
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "this",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
+                returnType: {
+                    _: "NumberType",
+                },
+            },
+            modifiers: [
+            ],
+            typeParameters: [
+            ],
+            body: {
+                locals: [
+                    {
+                        name: "this",
+                        type: {
+                            _: "ClassType",
+                            signature: {
+                                name: "_DEFAULT_ARK_CLASS",
+                            },
                         },
-                      },
                     },
-                    right: {
-                      _: "ThisRef",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "sum",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
+                    {
                         name: "x",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
-                      right: {
-                        _: "Local",
+                    },
+                    {
                         name: "y",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
                     },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "difference",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "-",
-                      left: {
-                        _: "Local",
-                        name: "x",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "y",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "product",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "*",
-                      left: {
-                        _: "Local",
-                        name: "x",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "y",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "quotient",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "/",
-                      left: {
-                        _: "Local",
-                        name: "x",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "y",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: ">",
-                      left: {
-                        _: "Local",
+                    {
                         name: "sum",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "100",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
                     },
-                  },
-                ],
-              },
-              {
-                id: 1,
-                successors: [
-                  2,
-                  3,
-                ],
-                predecessors: [
-                  0,
-                  4,
-                ],
-                stmts: [
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: "<",
-                      left: {
-                        _: "Local",
+                    {
                         name: "difference",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "0",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
                     },
-                  },
-                ],
-              },
-              {
-                id: 2,
-                successors: [
-                ],
-                predecessors: [
-                  1,
-                  3,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp0",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
-                        name: "sum",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "difference",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp1",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
-                        name: "$temp0",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
+                    {
                         name: "product",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
                     },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "-",
-                      left: {
-                        _: "Local",
-                        name: "$temp1",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
+                    {
                         name: "quotient",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
                     },
-                  },
-                  {
-                    _: "ReturnStmt",
-                    arg: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 3,
-                successors: [
-                  2,
-                ],
-                predecessors: [
-                  1,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "difference",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "0",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 4,
-                successors: [
-                  1,
-                ],
-                predecessors: [
-                  0,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "sum",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "100",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
-          },
-        },
-      },
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "complexFunction",
-          parameters: [
-            {
-              name: "a",
-              type: {
-                _: "NumberType",
-              },
-              isOptional: false,
-            },
-            {
-              name: "b",
-              type: {
-                _: "NumberType",
-              },
-              isOptional: false,
-            },
-            {
-              name: "flag",
-              type: {
-                _: "BooleanType",
-              },
-              isOptional: false,
-            },
-          ],
-          returnType: {
-            _: "NumberType",
-          },
-        },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        body: {
-          locals: [
-            {
-              name: "this",
-              type: {
-                _: "ClassType",
-                signature: {
-                  name: "_DEFAULT_ARK_CLASS",
-                },
-              },
-            },
-            {
-              name: "a",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "b",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "flag",
-              type: {
-                _: "BooleanType",
-              },
-            },
-            {
-              name: "result",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "$temp0",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "$temp1",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "$temp2",
-              type: {
-                _: "NumberType",
-              },
-            },
-            {
-              name: "$temp3",
-              type: {
-                _: "NumberType",
-              },
-            },
-          ],
-          cfg: {
-            blocks: [
-              {
-                id: 0,
-                successors: [
-                  1,
-                  7,
-                ],
-                predecessors: [
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "a",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "ParameterRef",
-                      index: 0,
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "b",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "ParameterRef",
-                      index: 1,
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "flag",
-                      type: {
-                        _: "BooleanType",
-                      },
-                    },
-                    right: {
-                      _: "ParameterRef",
-                      index: 2,
-                      type: {
-                        _: "BooleanType",
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "this",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
-                        },
-                      },
-                    },
-                    right: {
-                      _: "ThisRef",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "undefined",
-                      type: {
-                        _: "UndefinedType",
-                      },
-                    },
-                  },
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: "!=",
-                      left: {
-                        _: "Local",
-                        name: "flag",
-                        type: {
-                          _: "BooleanType",
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "false",
-                        type: {
-                          _: "BooleanType",
-                        },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 1,
-                successors: [
-                  2,
-                ],
-                predecessors: [
-                  0,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp2",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "/",
-                      left: {
-                        _: "Local",
-                        name: "a",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "b",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp3",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
-                        name: "a",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "b",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "-",
-                      left: {
-                        _: "Local",
-                        name: "$temp2",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "$temp3",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 2,
-                successors: [
-                  3,
-                  6,
-                ],
-                predecessors: [
-                  1,
-                  7,
-                ],
-                stmts: [
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: ">",
-                      left: {
-                        _: "Local",
+                    {
                         name: "result",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "100",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
                     },
-                  },
-                ],
-              },
-              {
-                id: 3,
-                successors: [
-                  4,
-                  5,
-                ],
-                predecessors: [
-                  2,
-                ],
-                stmts: [
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: "<",
-                      left: {
-                        _: "Local",
-                        name: "result",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "0",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 4,
-                successors: [
-                ],
-                predecessors: [
-                  3,
-                  5,
-                  6,
-                ],
-                stmts: [
-                  {
-                    _: "ReturnStmt",
-                    arg: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 5,
-                successors: [
-                  4,
-                ],
-                predecessors: [
-                  3,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "0",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 6,
-                successors: [
-                  4,
-                ],
-                predecessors: [
-                  2,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "Constant",
-                      value: "100",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 7,
-                successors: [
-                  2,
-                ],
-                predecessors: [
-                  0,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp0",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "*",
-                      left: {
-                        _: "Local",
-                        name: "a",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "b",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp1",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "-",
-                      left: {
-                        _: "Local",
-                        name: "a",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "b",
-                        type: {
-                          _: "NumberType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "result",
-                      type: {
-                        _: "NumberType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
+                    {
                         name: "$temp0",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
-                      right: {
-                        _: "Local",
+                    },
+                    {
                         name: "$temp1",
                         type: {
-                          _: "NumberType",
+                            _: "NumberType",
                         },
-                      },
                     },
-                  },
                 ],
-              },
-            ],
-          },
-        },
-      },
-      {
-        signature: {
-          enclosingClass: {
-            name: "_DEFAULT_ARK_CLASS",
-          },
-          name: "processInput",
-          parameters: [
-            {
-              name: "input",
-              type: {
-                _: "UnionType",
-                types: [
-                  {
-                    _: "StringType",
-                  },
-                  {
-                    _: "NumberType",
-                  },
-                ],
-              },
-              isOptional: false,
-            },
-          ],
-          returnType: {
-            _: "StringType",
-          },
-        },
-        modifiers: [
-        ],
-        typeParameters: [
-        ],
-        body: {
-          locals: [
-            {
-              name: "this",
-              type: {
-                _: "ClassType",
-                signature: {
-                  name: "_DEFAULT_ARK_CLASS",
+                cfg: {
+                    blocks: [
+                        {
+                            id: 0,
+                            successors: [
+                                1,
+                                4,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "x",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "ParameterRef",
+                                        index: 0,
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "y",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "ParameterRef",
+                                        index: 1,
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "this",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                    right: {
+                                        _: "ThisRef",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "sum",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "x",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "y",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "difference",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "-",
+                                        left: {
+                                            _: "Local",
+                                            name: "x",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "y",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "product",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "*",
+                                        left: {
+                                            _: "Local",
+                                            name: "x",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "y",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "quotient",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "/",
+                                        left: {
+                                            _: "Local",
+                                            name: "x",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "y",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: ">",
+                                        left: {
+                                            _: "Local",
+                                            name: "sum",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "100",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 1,
+                            successors: [
+                                2,
+                                3,
+                            ],
+                            stmts: [
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: "<",
+                                        left: {
+                                            _: "Local",
+                                            name: "difference",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "0",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 2,
+                            successors: [
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp0",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "sum",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "difference",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp1",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "$temp0",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "product",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "-",
+                                        left: {
+                                            _: "Local",
+                                            name: "$temp1",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "quotient",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "ReturnStmt",
+                                    arg: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 3,
+                            successors: [
+                                2,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "difference",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "0",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 4,
+                            successors: [
+                                1,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "sum",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "100",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
                 },
-              },
             },
-            {
-              name: "input",
-              type: {
-                _: "UnionType",
-                types: [
-                  {
-                    _: "StringType",
-                  },
-                  {
+        },
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
+                },
+                name: "complexFunction",
+                parameters: [
+                    {
+                        name: "a",
+                        type: {
+                            _: "NumberType",
+                        },
+                        isOptional: false,
+                    },
+                    {
+                        name: "b",
+                        type: {
+                            _: "NumberType",
+                        },
+                        isOptional: false,
+                    },
+                    {
+                        name: "flag",
+                        type: {
+                            _: "BooleanType",
+                        },
+                        isOptional: false,
+                    },
+                ],
+                returnType: {
                     _: "NumberType",
-                  },
-                ],
-              },
+                },
             },
-            {
-              name: "$temp0",
-              type: {
-                _: "StringType",
-              },
-            },
-            {
-              name: "$temp1",
-              type: {
-                _: "StringType",
-              },
-            },
-            {
-              name: "$temp2",
-              type: {
-                _: "StringType",
-              },
-            },
-            {
-              name: "$temp3",
-              type: {
-                _: "StringType",
-              },
-            },
-          ],
-          cfg: {
-            blocks: [
-              {
-                id: 0,
-                successors: [
-                  1,
-                  4,
-                ],
-                predecessors: [
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "input",
-                      type: {
-                        _: "UnionType",
-                        types: [
-                          {
-                            _: "StringType",
-                          },
-                          {
+            modifiers: [
+            ],
+            typeParameters: [
+            ],
+            body: {
+                locals: [
+                    {
+                        name: "this",
+                        type: {
+                            _: "ClassType",
+                            signature: {
+                                name: "_DEFAULT_ARK_CLASS",
+                            },
+                        },
+                    },
+                    {
+                        name: "a",
+                        type: {
                             _: "NumberType",
-                          },
-                        ],
-                      },
+                        },
                     },
-                    right: {
-                      _: "ParameterRef",
-                      index: 0,
-                      type: {
-                        _: "UnionType",
-                        types: [
-                          {
-                            _: "StringType",
-                          },
-                          {
+                    {
+                        name: "b",
+                        type: {
                             _: "NumberType",
-                          },
-                        ],
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "this",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
                         },
-                      },
                     },
-                    right: {
-                      _: "ThisRef",
-                      type: {
-                        _: "ClassType",
-                        signature: {
-                          name: "_DEFAULT_ARK_CLASS",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: "===",
-                      left: {
-                        _: "TypeOfExpr",
-                        arg: {
-                          _: "Local",
-                          name: "input",
-                          type: {
-                            _: "UnionType",
-                            types: [
-                              {
-                                _: "StringType",
-                              },
-                              {
-                                _: "NumberType",
-                              },
-                            ],
-                          },
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "string",
+                    {
+                        name: "flag",
                         type: {
-                          _: "StringType",
+                            _: "BooleanType",
                         },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
                     },
-                  },
-                ],
-              },
-              {
-                id: 1,
-                successors: [
-                  2,
-                  3,
-                ],
-                predecessors: [
-                  0,
-                ],
-                stmts: [
-                  {
-                    _: "IfStmt",
-                    condition: {
-                      _: "ConditionExpr",
-                      op: "===",
-                      left: {
-                        _: "TypeOfExpr",
-                        arg: {
-                          _: "Local",
-                          name: "input",
-                          type: {
-                            _: "UnionType",
-                            types: [
-                              {
-                                _: "StringType",
-                              },
-                              {
-                                _: "NumberType",
-                              },
-                            ],
-                          },
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "number",
+                    {
+                        name: "result",
                         type: {
-                          _: "StringType",
+                            _: "NumberType",
                         },
-                      },
-                      type: {
-                        _: "BooleanType",
-                      },
                     },
-                  },
-                ],
-              },
-              {
-                id: 2,
-                successors: [
-                ],
-                predecessors: [
-                  1,
-                  3,
-                  4,
-                ],
-                stmts: [
-                  {
-                    _: "ReturnStmt",
-                    arg: {
-                      _: "Constant",
-                      value: "Unknown input",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 3,
-                successors: [
-                  2,
-                ],
-                predecessors: [
-                  1,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp2",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Constant",
-                        value: "Number input: ",
-                        type: {
-                          _: "StringType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "input",
-                        type: {
-                          _: "UnionType",
-                          types: [
-                            {
-                              _: "StringType",
-                            },
-                            {
-                              _: "NumberType",
-                            },
-                          ],
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp3",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
-                        name: "$temp2",
-                        type: {
-                          _: "StringType",
-                        },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "",
-                        type: {
-                          _: "StringType",
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "ReturnStmt",
-                    arg: {
-                      _: "Local",
-                      name: "$temp3",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                  },
-                ],
-              },
-              {
-                id: 4,
-                successors: [
-                  2,
-                ],
-                predecessors: [
-                  0,
-                ],
-                stmts: [
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp0",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Constant",
-                        value: "String input: ",
-                        type: {
-                          _: "StringType",
-                        },
-                      },
-                      right: {
-                        _: "Local",
-                        name: "input",
-                        type: {
-                          _: "UnionType",
-                          types: [
-                            {
-                              _: "StringType",
-                            },
-                            {
-                              _: "NumberType",
-                            },
-                          ],
-                        },
-                      },
-                    },
-                  },
-                  {
-                    _: "AssignStmt",
-                    left: {
-                      _: "Local",
-                      name: "$temp1",
-                      type: {
-                        _: "StringType",
-                      },
-                    },
-                    right: {
-                      _: "BinopExpr",
-                      op: "+",
-                      left: {
-                        _: "Local",
+                    {
                         name: "$temp0",
                         type: {
-                          _: "StringType",
+                            _: "NumberType",
                         },
-                      },
-                      right: {
-                        _: "Constant",
-                        value: "",
+                    },
+                    {
+                        name: "$temp1",
                         type: {
-                          _: "StringType",
+                            _: "NumberType",
                         },
-                      },
                     },
-                  },
-                  {
-                    _: "ReturnStmt",
-                    arg: {
-                      _: "Local",
-                      name: "$temp1",
-                      type: {
-                        _: "StringType",
-                      },
+                    {
+                        name: "$temp2",
+                        type: {
+                            _: "NumberType",
+                        },
                     },
-                  },
+                    {
+                        name: "$temp3",
+                        type: {
+                            _: "NumberType",
+                        },
+                    },
                 ],
-              },
-            ],
-          },
+                cfg: {
+                    blocks: [
+                        {
+                            id: 0,
+                            successors: [
+                                1,
+                                7,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "a",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "ParameterRef",
+                                        index: 0,
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "b",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "ParameterRef",
+                                        index: 1,
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "flag",
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "ParameterRef",
+                                        index: 2,
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "this",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                    right: {
+                                        _: "ThisRef",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "undefined",
+                                        type: {
+                                            _: "UndefinedType",
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: "!=",
+                                        left: {
+                                            _: "Local",
+                                            name: "flag",
+                                            type: {
+                                                _: "BooleanType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "false",
+                                            type: {
+                                                _: "BooleanType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 1,
+                            successors: [
+                                2,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp2",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "/",
+                                        left: {
+                                            _: "Local",
+                                            name: "a",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "b",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp3",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "a",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "b",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "-",
+                                        left: {
+                                            _: "Local",
+                                            name: "$temp2",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "$temp3",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 2,
+                            successors: [
+                                3,
+                                6,
+                            ],
+                            stmts: [
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: ">",
+                                        left: {
+                                            _: "Local",
+                                            name: "result",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "100",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 3,
+                            successors: [
+                                4,
+                                5,
+                            ],
+                            stmts: [
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: "<",
+                                        left: {
+                                            _: "Local",
+                                            name: "result",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "0",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 4,
+                            successors: [
+                            ],
+                            stmts: [
+                                {
+                                    _: "ReturnStmt",
+                                    arg: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 5,
+                            successors: [
+                                4,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "0",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 6,
+                            successors: [
+                                4,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "Constant",
+                                        value: "100",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 7,
+                            successors: [
+                                2,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp0",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "*",
+                                        left: {
+                                            _: "Local",
+                                            name: "a",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "b",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp1",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "-",
+                                        left: {
+                                            _: "Local",
+                                            name: "a",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "b",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "result",
+                                        type: {
+                                            _: "NumberType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "$temp0",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "$temp1",
+                                            type: {
+                                                _: "NumberType",
+                                            },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
         },
-      },
+        {
+            signature: {
+                enclosingClass: {
+                    name: "_DEFAULT_ARK_CLASS",
+                },
+                name: "processInput",
+                parameters: [
+                    {
+                        name: "input",
+                        type: {
+                            _: "UnionType",
+                            types: [
+                                {
+                                    _: "StringType",
+                                },
+                                {
+                                    _: "NumberType",
+                                },
+                            ],
+                        },
+                        isOptional: false,
+                    },
+                ],
+                returnType: {
+                    _: "StringType",
+                },
+            },
+            modifiers: [
+            ],
+            typeParameters: [
+            ],
+            body: {
+                locals: [
+                    {
+                        name: "this",
+                        type: {
+                            _: "ClassType",
+                            signature: {
+                                name: "_DEFAULT_ARK_CLASS",
+                            },
+                        },
+                    },
+                    {
+                        name: "input",
+                        type: {
+                            _: "UnionType",
+                            types: [
+                                {
+                                    _: "StringType",
+                                },
+                                {
+                                    _: "NumberType",
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        name: "$temp0",
+                        type: {
+                            _: "StringType",
+                        },
+                    },
+                    {
+                        name: "$temp1",
+                        type: {
+                            _: "StringType",
+                        },
+                    },
+                    {
+                        name: "$temp2",
+                        type: {
+                            _: "StringType",
+                        },
+                    },
+                    {
+                        name: "$temp3",
+                        type: {
+                            _: "StringType",
+                        },
+                    },
+                ],
+                cfg: {
+                    blocks: [
+                        {
+                            id: 0,
+                            successors: [
+                                1,
+                                4,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "input",
+                                        type: {
+                                            _: "UnionType",
+                                            types: [
+                                                {
+                                                    _: "StringType",
+                                                },
+                                                {
+                                                    _: "NumberType",
+                                                },
+                                            ],
+                                        },
+                                    },
+                                    right: {
+                                        _: "ParameterRef",
+                                        index: 0,
+                                        type: {
+                                            _: "UnionType",
+                                            types: [
+                                                {
+                                                    _: "StringType",
+                                                },
+                                                {
+                                                    _: "NumberType",
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "this",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                    right: {
+                                        _: "ThisRef",
+                                        type: {
+                                            _: "ClassType",
+                                            signature: {
+                                                name: "_DEFAULT_ARK_CLASS",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: "===",
+                                        left: {
+                                            _: "TypeOfExpr",
+                                            arg: {
+                                                _: "Local",
+                                                name: "input",
+                                                type: {
+                                                    _: "UnionType",
+                                                    types: [
+                                                        {
+                                                            _: "StringType",
+                                                        },
+                                                        {
+                                                            _: "NumberType",
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "string",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 1,
+                            successors: [
+                                2,
+                                3,
+                            ],
+                            stmts: [
+                                {
+                                    _: "IfStmt",
+                                    condition: {
+                                        _: "ConditionExpr",
+                                        op: "===",
+                                        left: {
+                                            _: "TypeOfExpr",
+                                            arg: {
+                                                _: "Local",
+                                                name: "input",
+                                                type: {
+                                                    _: "UnionType",
+                                                    types: [
+                                                        {
+                                                            _: "StringType",
+                                                        },
+                                                        {
+                                                            _: "NumberType",
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "number",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                        type: {
+                                            _: "BooleanType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 2,
+                            successors: [
+                            ],
+                            stmts: [
+                                {
+                                    _: "ReturnStmt",
+                                    arg: {
+                                        _: "Constant",
+                                        value: "Unknown input",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 3,
+                            successors: [
+                                2,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp2",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Constant",
+                                            value: "Number input: ",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "input",
+                                            type: {
+                                                _: "UnionType",
+                                                types: [
+                                                    {
+                                                        _: "StringType",
+                                                    },
+                                                    {
+                                                        _: "NumberType",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp3",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "$temp2",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "ReturnStmt",
+                                    arg: {
+                                        _: "Local",
+                                        name: "$temp3",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            id: 4,
+                            successors: [
+                                2,
+                            ],
+                            stmts: [
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp0",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Constant",
+                                            value: "String input: ",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Local",
+                                            name: "input",
+                                            type: {
+                                                _: "UnionType",
+                                                types: [
+                                                    {
+                                                        _: "StringType",
+                                                    },
+                                                    {
+                                                        _: "NumberType",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "AssignStmt",
+                                    left: {
+                                        _: "Local",
+                                        name: "$temp1",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                    right: {
+                                        _: "BinopExpr",
+                                        op: "+",
+                                        left: {
+                                            _: "Local",
+                                            name: "$temp0",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                        right: {
+                                            _: "Constant",
+                                            value: "",
+                                            type: {
+                                                _: "StringType",
+                                            },
+                                        },
+                                    },
+                                },
+                                {
+                                    _: "ReturnStmt",
+                                    arg: {
+                                        _: "Local",
+                                        name: "$temp1",
+                                        type: {
+                                            _: "StringType",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+        },
     ],
-  };
+};
