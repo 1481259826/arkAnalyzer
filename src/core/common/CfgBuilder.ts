@@ -291,7 +291,7 @@ export class CfgBuilder {
                 // judgeLastType(brstm);
                 let p: ts.Node | null = c;
                 while (p) {
-                    if (ts.SyntaxKind[p.kind].includes('While') || ts.SyntaxKind[p.kind].includes('For')) {
+                    if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
                         const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
                         judgeLastType(lastLoopNextF);
                         lastLoopNextF.lasts.add(lastStatement);
@@ -299,7 +299,7 @@ export class CfgBuilder {
                         // this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
                         return;
                     }
-                    if (ts.SyntaxKind[p.kind].includes('CaseClause') || ts.SyntaxKind[p.kind].includes('DefaultClause')) {
+                    if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
                         const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
                         judgeLastType(lastSwitchExit);
                         lastSwitchExit.lasts.add(lastStatement);
