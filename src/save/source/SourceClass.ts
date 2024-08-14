@@ -14,13 +14,13 @@
  */
 
 import { ArkClass } from '../../core/model/ArkClass';
-import { InstanceInitMethodName, StaticInitMethodName } from '../../core/model/builder/ArkClassBuilder';
 import { Dump, SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
 import { Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../../core/common/Const';
 
 /**
  * @category save
@@ -100,7 +100,7 @@ export class SourceClass extends SourceBase {
 
         this.cls.getFields().forEach((field, index, array) => {
             this.printer.write(field.getName());
-            let instanceInitializer = this.parseFieldInitMethod(InstanceInitMethodName);
+            let instanceInitializer = this.parseFieldInitMethod(INSTANCE_INIT_METHOD_NAME);
             if (instanceInitializer.has(field.getName())) {
                 this.printer.write(`: ${instanceInitializer.get(field.getName())}`);
             }
@@ -143,8 +143,8 @@ export class SourceClass extends SourceBase {
     }
 
     private printFields(): Dump[] {
-        let instanceInitializer = this.parseFieldInitMethod(InstanceInitMethodName);
-        let staticInitializer = this.parseFieldInitMethod(StaticInitMethodName);
+        let instanceInitializer = this.parseFieldInitMethod(INSTANCE_INIT_METHOD_NAME);
+        let staticInitializer = this.parseFieldInitMethod(STATIC_INIT_METHOD_NAME);
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
             if (field.getFieldType() == 'GetAccessor') {

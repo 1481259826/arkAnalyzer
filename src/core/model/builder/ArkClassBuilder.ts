@@ -27,18 +27,14 @@ import { TypeInference } from '../../common/TypeInference';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 import { ArkAssignStmt, Stmt } from '../../base/Stmt';
 import { ArkInstanceFieldRef } from '../../base/Ref';
+import {
+    ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX,
+    CLASS_ORIGIN_TYPE_OBJECT,
+    INSTANCE_INIT_METHOD_NAME,
+    STATIC_INIT_METHOD_NAME,
+} from '../../common/Const';
 
 const logger = Logger.getLogger();
-
-export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
-export const CONSTRUCTOR = 'constructor';
-export const ANONYMOUS_CLASS_PREFIx = 'AnonymousClass';
-export const ANONYMOUS_CLASS_DELIMITER = '-';
-export const CLASS_ORIGIN_TYPE_OBJECT = 'Object';
-export const CLASS_ORIGIN_TYPE_CLASS = 'Class';
-
-export const InstanceInitMethodName = '@instance_init';
-export const StaticInitMethodName = '@static_init';
 
 export type ClassLikeNode =
     ts.ClassDeclaration |
@@ -143,7 +139,7 @@ export function buildNormalArkClass(clsNode: ClassLikeNode, cls: ArkClass, sourc
 
 function init4InstanceInitMethod(cls: ArkClass) {
     const instanceInit = new ArkMethod();
-    instanceInit.setName(InstanceInitMethodName);
+    instanceInit.setName(INSTANCE_INIT_METHOD_NAME);
     instanceInit.setDeclaringArkClass(cls);
     instanceInit.setDeclaringArkFile();
     instanceInit.setIsGeneratedFlag(true);
@@ -153,7 +149,7 @@ function init4InstanceInitMethod(cls: ArkClass) {
 
 function init4StaticInitMethod(cls: ArkClass) {
     const staticInit = new ArkMethod();
-    staticInit.setName(StaticInitMethodName);
+    staticInit.setName(STATIC_INIT_METHOD_NAME);
     staticInit.setDeclaringArkClass(cls);
     staticInit.setDeclaringArkFile();
     staticInit.setIsGeneratedFlag(true);
@@ -310,13 +306,13 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
     let arkMethods: ArkMethod[] = [];
 
     init4InstanceInitMethod(cls);
-    const instanceInitStmts: Stmt[] = [];
+    const instanceInitStmtMap: Map<Stmt, Stmt> = new Map();
     const instanceIRTransformer = new ArkIRTransformer(sourceFile, cls.getInstanceInitMethod());
     clsNode.properties.forEach((property) => {
         if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property) || ts.isSpreadAssignment(property)) {
             const arkField = buildProperty2ArkField(property, sourceFile, cls);
             if (ts.isPropertyAssignment(property)) {
-                getInitStmts(instanceIRTransformer, arkField, instanceInitStmts, property.initializer);
+                getInitStmts(instanceIRTransformer, arkField, instanceInitStmtMap, property.initializer);
             }
         } else {
             let arkMethod = new ArkMethod();
@@ -325,7 +321,7 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
             buildArkMethodFromArkClass(property, cls, arkMethod, sourceFile);
         }
     });
-    buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmts);
+    buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap, instanceIRTransformer.getThisLocal());
     cls.getInstanceInitMethod().genSignature();
     arkMethods.forEach((mtd) => {
         cls.addMethod(mtd);
@@ -341,9 +337,9 @@ function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass, declaringM
         declaringMethodName = declaringMethod.getDeclaringArkClass().getName() + ANONYMOUS_CLASS_DELIMITER + declaringMethod.getName() + ANONYMOUS_CLASS_DELIMITER;
     }
     if (declaringArkNamespace) {
-        anonymousClassName = ANONYMOUS_CLASS_PREFIx + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkNamespace.getAnonymousClassNumber();
+        anonymousClassName = ANONYMOUS_CLASS_PREFIX + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkNamespace.getAnonymousClassNumber();
     } else {
-        anonymousClassName = ANONYMOUS_CLASS_PREFIx + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkFile.getAnonymousClassNumber();
+        anonymousClassName = ANONYMOUS_CLASS_PREFIX + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkFile.getAnonymousClassNumber();
     }
     cls.setName(anonymousClassName);
 }
@@ -361,8 +357,8 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     if (ts.isEnumDeclaration(clsNode)) {
         staticIRTransformer = new ArkIRTransformer(sourceFile, cls.getStaticInitMethod());
     }
-    const instanceInitStmts: Stmt[] = [];
-    const staticInitStmts: Stmt[] = [];
+    const instanceInitStmtMap: Map<Stmt, Stmt> = new Map();
+    const staticInitStmtMap: Map<Stmt, Stmt> = new Map();
     // 先构建所有method，再构建field
     clsNode.members.forEach((member) => {
         if (
@@ -380,22 +376,22 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
                 buildGetAccessor2ArkField(member, mthd, sourceFile);
             }
         }
-    })
+    });
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
             if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
                 if (arkField.isStatic()) {
-                    getInitStmts(staticIRTransformer, arkField, staticInitStmts, member.initializer);
+                    getInitStmts(staticIRTransformer, arkField, staticInitStmtMap, member.initializer);
                 } else {
                     if (!instanceIRTransformer)
                         console.log(clsNode.getText(sourceFile));
-                    getInitStmts(instanceIRTransformer, arkField, instanceInitStmts, member.initializer);
+                    getInitStmts(instanceIRTransformer, arkField, instanceInitStmtMap, member.initializer);
                 }
             }
         } else if (ts.isEnumMember(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
-            getInitStmts(staticIRTransformer, arkField, staticInitStmts, member.initializer);
+            getInitStmts(staticIRTransformer, arkField, staticInitStmtMap, member.initializer);
         } else if (ts.isIndexSignatureDeclaration(member)) {
             buildIndexSignature2ArkField(member, sourceFile, cls);
         } else if (ts.isSemicolonClassElement(member)) {
@@ -405,15 +401,15 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
         }
     });
     if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
-        buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmts);
-        buildInitMethod(cls.getStaticInitMethod(), staticInitStmts);
+        buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap, instanceIRTransformer!.getThisLocal());
+        buildInitMethod(cls.getStaticInitMethod(), staticInitStmtMap, staticIRTransformer!.getThisLocal());
     }
     if (ts.isEnumDeclaration(clsNode)) {
-        buildInitMethod(cls.getStaticInitMethod(), staticInitStmts);
+        buildInitMethod(cls.getStaticInitMethod(), staticInitStmtMap, staticIRTransformer!.getThisLocal());
     }
 }
 
-function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmts: Stmt[], initNode?: ts.Node) {
+function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmtMap: Map<Stmt, Stmt>, initNode?: ts.Node) {
     if (initNode) {
         const valueAndStmts = transformer.tsNodeToValueAndStmts(initNode);
         const stmts = valueAndStmts.stmts;
@@ -422,9 +418,12 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmts:
         stmts.push(assignStmt);
         for (const stmt of stmts) {
             stmt.setOriginPositionInfo(field.getOriginPosition());
+            const originStmt = new Stmt();
+            originStmt.setText(field.getCode());
+            originStmt.setOriginPositionInfo(field.getOriginPosition());
+            initStmtMap.set(stmt, originStmt);
         }
         field.setInitializer(stmts);
-        initStmts.push(...stmts);
     }
 }
 

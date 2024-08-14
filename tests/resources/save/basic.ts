@@ -29,8 +29,8 @@ configure({
             appenders: ['console'],
             level: 'info',
             enableCallStack: false,
-        }
-    }
+        },
+    },
 });
 const logger = getLogger();
 
@@ -65,7 +65,7 @@ function controlTest() {
                 logger.info(`${sampleData[i]} 除以 3 余 2`);
                 break;
             default:
-                logger.info("无法判断");
+                logger.info('无法判断');
         }
 
         // 使用 while 循环
@@ -97,19 +97,17 @@ function controlTest() {
 class Person {
     x: number = 0;
 
-    constructor(public age: number) {
-
-    }
+    constructor(public age: number) {}
     growOld = () => {
         this.age++;
-    }
+    };
 
     public getAge() {
-        return this.age
+        return this.age;
     }
 
     static wooooof() {
-        logger.info("not a person sound")
+        logger.info('not a person sound');
     }
 }
 
@@ -118,9 +116,9 @@ export function classMethodTest() {
     let x = new Map();
     let z = new Error();
     let y = controlTest();
-    let a = notPerson.age
-    notPerson.growOld()
-    Person.wooooof()
+    let a = notPerson.age;
+    notPerson.growOld();
+    Person.wooooof();
 }
 
 interface Alarm {
@@ -131,8 +129,7 @@ interface Alarm2 {
     alert2(): void;
 }
 
-class Door {
-}
+class Door {}
 
 export function foo(x: number): number {
     var y: number = 0;
@@ -143,11 +140,11 @@ export function foo(x: number): number {
 }
 
 class Adder {
-    constructor(public a: number) { }
+    constructor(public a: number) {}
     // This function is now safe to pass around
     add = (b: string): string => {
         return this.a + b;
-    }
+    };
 }
 
 class ExtendedAdder extends Adder {
@@ -156,11 +153,11 @@ class ExtendedAdder extends Adder {
     // Now create our override
     add = (b: string): string => {
         return this.superAdd(b);
-    }
+    };
 }
 
-export function listParameters(u: number, v: number, w: string): { x: number, y: number, z: string } {
-    return { x: u, y: v, z: w }
+export function listParameters(u: number, v: number, w: string): { x: number; y: number; z: string } {
+    return { x: u, y: v, z: w };
 }
 
 export class SecurityDoor extends Door implements Alarm, Alarm2 {
@@ -168,32 +165,30 @@ export class SecurityDoor extends Door implements Alarm, Alarm2 {
     y: string = '';
     z: Person = new Person(10);
     alert(): void {
-        logger.info("SecurityDoor alert");
+        logger.info('SecurityDoor alert');
     }
     alert2(): void {
-        logger.info("SecurityDoor alert2");
+        logger.info('SecurityDoor alert2');
     }
-    public Members = class {
-
-    }
+    public Members = class {};
     public fooo() {
-        logger.info("This is fooo!");
+        logger.info('This is fooo!');
     }
     constructor(x: number, y: string) {
         super();
         this.x = x;
         this.y = y;
-        logger.info("This is a constrctor!");
+        logger.info('This is a constrctor!');
     }
 }
 
-const someClass = class <Type> {
+const someClass = class<Type> {
     content: Type;
     constructor(value: Type) {
         this.content = value;
     }
 };
-const m = new someClass("Hello, world");
+const m = new someClass('Hello, world');
 
 abstract class Animal {
     public name;
@@ -204,13 +199,21 @@ abstract class Animal {
 }
 
 function deleteTest() {
-    let x: { a?: number, b: number[] } = { a: 42, b: [5, 100] };
+    let x: { a?: number; b: number[] } = { a: 42, b: [5, 100] };
     let bbb: number[] = x.b;
     delete x.a;
     delete bbb[0];
     logger.info(x); // { b: [ undefined, 100 ] }
     delete x;
 }
+
+async function* yieldTest() {
+    yield 1;
+    yield 2;
+    yield 3;
+}
+
+const iterator = await yieldTest();
 
 export default 123;
 export let x: number = 1;

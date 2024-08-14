@@ -22,8 +22,9 @@ import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
 import { ArkMethod } from '../src/core/model/ArkMethod';
 import { ArkClass } from '../src/core/model/ArkClass';
-import { PrinterBuilder } from '../src';
+import { ArkInstanceFieldRef, ArkInstanceInvokeExpr, PrinterBuilder } from '../src';
 import { ModelUtils } from '../src/core/common/ModelUtils';
+import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
 
 const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger();
@@ -147,10 +148,36 @@ class ArkIRTransformerTest {
             printerBuilder.dumpToDot(arkFile);
         }
     }
+
+    public simpleTest() {
+        logger.error('simpleTest start');
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromProjectDir(projectDir);
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
+
+        const cfg = scene.getFiles().find((file) => file.getName().endsWith(`main.ts`))
+            ?.getClassWithName('Main')
+            ?.getMethodWithName(INSTANCE_INIT_METHOD_NAME)?.getBody()?.getCfg();
+        if (cfg) {
+            const thisLocal1 = cfg.getStmts()[0].getDef();
+            const thisLocal2 = (cfg.getStmts()[1].getDef() as ArkInstanceFieldRef).getBase();
+            if (thisLocal1) {
+                logger.log(`thisLocal1 equal to thisLocal2: ${thisLocal1 === thisLocal2}`);
+            }
+        }else {
+            logger.log(`cfg is undefined`);
+        }
+
+        logger.error('simpleTest end');
+    }
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-arkIRTransformerTest.testStmtsOfSimpleProject();
+// arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
 // arkIRTransformerTest.printCfg();
+arkIRTransformerTest.simpleTest();
+
