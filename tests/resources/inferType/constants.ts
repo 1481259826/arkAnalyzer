@@ -22,3 +22,7 @@ export class Constants {
         return '';
     }
 }
+
+export function globalFunction() {
+    return '';
+}
