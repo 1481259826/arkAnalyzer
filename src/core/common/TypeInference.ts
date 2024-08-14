@@ -207,8 +207,8 @@ export class TypeInference {
         const stmtDef = stmt.getDef();
         if (stmtDef && stmtDef instanceof AbstractRef) {
             const fieldRef = stmtDef.inferType(arkClass);
-            if (fieldRef instanceof ArkStaticFieldRef) {
-                stmt.setDef(fieldRef);
+            if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
+                stmt.setLeftOp(fieldRef);
             }
         }
     }
