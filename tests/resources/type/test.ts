@@ -13,10 +13,4 @@
  * limitations under the License.
  */
 
-let i:number = 0;
-do {
-if(i == 2){
-    break;
-    }
-    i++;
-} while(i< 10);
+let func1 = (i: number) => i++;

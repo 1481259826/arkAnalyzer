@@ -209,6 +209,7 @@ export class CfgBuilder {
     catches: Catch[];
     exits: StatementBuilder[] = [];
     emptyBody: boolean = false;
+    arrowFunctionWithoutBlock: boolean = false;
 
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
@@ -236,6 +237,7 @@ export class CfgBuilder {
         this.importFromPath = [];
         this.catches = [];
         this.sourceFile = sourceFile;
+        this.arrowFunctionWithoutBlock = true;
     }
 
     walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
@@ -933,6 +935,14 @@ export class CfgBuilder {
         }
     }
 
+    buildStatementBuilder4ArrowFunction(stmt: ts.Node) {
+        let s = new StatementBuilder('statement', stmt.getText(this.sourceFile), stmt, 0);
+        this.entry.next = s;
+        s.lasts = new Set([this.entry]);
+        s.next = this.exit;
+        this.exit.lasts = new Set([s]);
+    }
+
     buildCfgBuilder() {
         let stmts: ts.Node[] = [];
         if (ts.isSourceFile(this.astRoot)) {
@@ -944,8 +954,10 @@ export class CfgBuilder {
             } else {
                 this.emptyBody = true;
             }
-        } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
-            stmts = [...this.astRoot.body.statements];
+        } else if (ts.isArrowFunction(this.astRoot)) {
+            if (ts.isBlock(this.astRoot.body)) {
+                stmts = [...this.astRoot.body.statements];
+            }
         } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot)
             || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
             this.emptyBody = true;
@@ -957,7 +969,9 @@ export class CfgBuilder {
         } else {
             this.handleBuilder(stmts);
         }
-
+        if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
+            this.buildStatementBuilder4ArrowFunction(this.astRoot.body);
+        }
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
