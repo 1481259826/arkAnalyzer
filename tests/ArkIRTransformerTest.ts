@@ -176,8 +176,8 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 // arkIRTransformerTest.testSimpleStmt();
-// arkIRTransformerTest.testStmtsOfSimpleProject();
+arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.printCfg();
+// arkIRTransformerTest.printCfg();
 // arkIRTransformerTest.simpleTest();
 
