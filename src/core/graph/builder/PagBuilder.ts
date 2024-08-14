@@ -550,11 +550,6 @@ export class PagBuilder {
             return PagEdgeKind.Write
         }
 
-        // if (this.stmtIsSdkCall(stmt)) {
-        //     // TODO: check cg update
-        //     return PagEdgeKind.SdkCall
-        // }
-
         return PagEdgeKind.Unknown;
     }
 
@@ -562,8 +557,10 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
         if ((rhOp instanceof ArkNewExpr) || (
-            lhOp instanceof Local && rhOp instanceof Local && rhOp.getType() instanceof FunctionType
-        )) {
+                lhOp instanceof Local && rhOp instanceof Local && 
+                rhOp.getType() instanceof FunctionType && 
+                rhOp.getDeclaringStmt() === null)
+        ) {
             return true;
         }
 
