@@ -78,6 +78,7 @@ let someClass = class <Type> {
   }
 };
 let m = new someClass('Hello, world');
+let iterator = await yieldTest();
 export let x = 1;
 export let soo = 123;
 forLoopTest();
@@ -90,6 +91,13 @@ const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
   add = (b: string): string => {
     return this.superAdd(b);
   };
+}
+`;
+
+const SourceBasicTest_CASE6_EXPECT = `async function * yieldTest() {
+  yield 1;
+  yield 2;
+  yield 3;
 }
 `;
 
@@ -166,4 +174,17 @@ describe('SourceBasicTest', () => {
         let source = printer.dump();
         expect(source).eq(SourceBasicTest_CASE5_EXPECT);
     });
+
+    it('case6: yield test', () => {
+      let method = defaultClass?.getMethodWithName('yieldTest');
+      if (!method) {
+          assert.isDefined(method);
+          return;
+      }
+
+      let printer = new SourceMethodPrinter(method);
+      let source = printer.dump();
+      expect(source).eq(SourceBasicTest_CASE6_EXPECT);
+  });
+
 });

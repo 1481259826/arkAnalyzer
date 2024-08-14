@@ -52,16 +52,23 @@ export const CALLBACK_METHOD_NAME: string[] = [
 export interface AbilityMessage {
     srcEntry: string;
     name: string;
+    srcEntrance: string;
 }
 
 export function getAbilities(abilities: AbilityMessage[], modulePath: string, scene: Scene): ArkClass[] {
     const abilitiyClasses: ArkClass[] = [];
-    for (const ablility of abilities) {
-        const filePath = path.join(modulePath, 'src', 'main', ablility.srcEntry);
+    for (const ability of abilities) {
+        let entry = '';
+        if (ability.srcEntry) {
+            entry = ability.srcEntry;
+        } else if (ability.srcEntrance) {
+            entry = ability.srcEntrance;
+        }
+        const filePath = path.join(modulePath, 'src', 'main', entry);
         for (const file of scene.getFiles()) {
             if (file.getFilePath() == filePath) {
                 for (const arkClass of file.getClasses()) {
-                    if (arkClass.getName() == ablility.name && arkClass.isExported()) {
+                    if (ability.name.includes(arkClass.getName()) && arkClass.isExported()) {
                         abilitiyClasses.push(arkClass);
                         break;
                     }

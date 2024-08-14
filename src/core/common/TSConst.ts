@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-class Main {
-    private i: number = 0;
+export const CONSTRUCTOR_NAME = 'constructor';
+export const SUPER_NAME = 'super';
+export const THIS_NAME = 'this';
 
-    constructor() {
-    }
-}
+// ast const
+export const DECLARE_KEYWORD = 'DeclareKeyword';

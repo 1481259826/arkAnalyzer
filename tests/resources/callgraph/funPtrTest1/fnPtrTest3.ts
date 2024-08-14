@@ -58,5 +58,7 @@ namespace FnPtrTest3 {
         let fp6: (instance: MyStruct) => void = m.f;
         fp6.call(m);
 
+        let fp7: (t: number) => number = (t: number) => m.gen(t)
+        let a = fp7(3)
     }
 }

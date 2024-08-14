@@ -14,7 +14,7 @@
  */
 
 import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../CallGraph';
-import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode } from '../Pag'
+import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode, PagLocalNode, PagFuncNode } from '../Pag'
 import { Scene } from '../../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
 import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
@@ -28,7 +28,7 @@ import { Local } from '../../base/Local';
 import { NodeID } from '../BaseGraph';
 import { ClassSignature } from '../../model/ArkSignature';
 import { ArkClass } from '../../model/ArkClass';
-import { ClassType } from '../../base/Type';
+import { ClassType, FunctionType } from '../../base/Type';
 import { Constant } from '../../base/Constant';
 import { PtsSet } from '../../pta/PtsDS';
 
@@ -54,7 +54,7 @@ export class PagBuilder {
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
-    private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>>;
+    private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>> = new Map();
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
@@ -124,8 +124,9 @@ export class PagBuilder {
             return false
         }
 
+        logger.trace(`[build FuncPag] ${arkMethod.getSignature().toString()}`)
+
         for (let stmt of cfg.getStmts()){
-            logger.debug('building FunPAG - handle stmt: ' + stmt.toString());
             if (stmt instanceof ArkAssignStmt) {
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
@@ -200,6 +201,7 @@ export class PagBuilder {
         for (let e of inEdges) {
             let srcPagNode = this.getOrNewPagNode(cid, e.src, e.stmt);
             let dstPagNode = this.getOrNewPagNode(cid, e.dst, e.stmt);
+            
             this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind, e.stmt);
 
             // Take place of the real stmt for return
@@ -269,6 +271,15 @@ export class PagBuilder {
 
             if (!callee) {
                 callee = this.scene.getMethod(ivkExpr.getMethodSignature());
+            }
+
+            if (!callee) {
+                // try to change callee to param anonymous method
+                // TODO: anonymous method param and return value pointer pass
+                let args = cs.args
+                if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
+                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
+                }
             }
 
             if (!callee) {
@@ -548,8 +559,11 @@ export class PagBuilder {
     }
 
     private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
+        let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
-        if (rhOp instanceof ArkNewExpr) {
+        if ((rhOp instanceof ArkNewExpr) || (
+            lhOp instanceof Local && rhOp instanceof Local && rhOp.getType() instanceof FunctionType
+        )) {
             return true;
         }
 
@@ -607,7 +621,7 @@ export class PagBuilder {
         }
         csSet.add(cs);
 
-        logger.info(cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
+        logger.trace("[add dynamic callsite] "+cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
     }
 
     public getDynamicCallSites(): Set<DynCallSite> {

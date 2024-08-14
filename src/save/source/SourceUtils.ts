@@ -26,8 +26,8 @@ import {
     isEtsSystemComponent,
 } from '../../core/common/EtsConst';
 import { ArkClass } from '../../core/model/ArkClass';
-import { ANONYMOUS_CLASS_PREFIx, DEFAULT_ARK_CLASS_NAME } from '../../core/model/builder/ArkClassBuilder';
 import Logger from '../../utils/logger';
+import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
 
 const logger = Logger.getLogger();
 
@@ -37,7 +37,7 @@ export const Origin_Component = 'Component';
 
 export class SourceUtils {
     public static isAnonymousClass(name: string): boolean {
-        return name.startsWith(ANONYMOUS_CLASS_PREFIx);
+        return name.startsWith(ANONYMOUS_CLASS_PREFIX);
     }
 
     public static isDefaultClass(name: string): boolean {
