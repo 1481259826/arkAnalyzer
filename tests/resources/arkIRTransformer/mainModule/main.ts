@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
-class Main1 {
-    private i: number = 0;
-
+namespace outerNamespace {
+    export namespace innerNamespace {
+        export class Foo {
+            public static i = 1;
+        }
+    }
 }
 
-class Main2 extends Main1 {
-}
+outerNamespace.innerNamespace.Foo.i = 1;
