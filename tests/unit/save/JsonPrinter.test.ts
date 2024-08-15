@@ -1582,59 +1582,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
     superClassName: "",
     implementedInterfaceNames: [
     ],
-    fields: [
-        {
-            signature: {
-                enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
-                },
-                name: "sum",
-                type: {
-                    _: "NumberType",
-                },
-            },
-            modifiers: [
-            ],
-            typeParameters: [
-            ],
-            questionToken: false,
-            exclamationToken: false,
-        },
-        {
-            signature: {
-                enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
-                },
-                name: "i",
-                type: {
-                    _: "NumberType",
-                },
-            },
-            modifiers: [
-            ],
-            typeParameters: [
-            ],
-            questionToken: false,
-            exclamationToken: false,
-        },
-        {
-            signature: {
-                enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
-                },
-                name: "fileContent",
-                type: {
-                    _: "StringType",
-                },
-            },
-            modifiers: [
-            ],
-            typeParameters: [
-            ],
-            questionToken: false,
-            exclamationToken: false,
-        },
-    ],
+    fields: [],
     methods: [
         {
             signature: {

@@ -18,11 +18,14 @@ import { Type, UnknownType } from './Type';
 import { Value } from './Value';
 import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
+import { ArkExport, ExportType } from '../model/ArkExport';
+import { Decorator } from './Decorator';
+import { LocalSignature } from '../model/ArkSignature';
 
 /**
  * @category core/base
  */
-export class Local implements Value {
+export class Local implements Value, ArkExport {
     private name: string;
     private type: Type;
 
@@ -30,6 +33,7 @@ export class Local implements Value {
 
     private declaringStmt: Stmt | null;
     private usedStmts: Stmt[];
+    private signature: LocalSignature;
 
     constructor(name: string, type: Type = UnknownType.getInstance()) {
         this.name = name;
@@ -97,4 +101,17 @@ export class Local implements Value {
     public toString(): string {
         return this.getName();
     }
+
+    public getExportType(): ExportType {
+        return ExportType.LOCAL;
+    }
+
+    public getModifiers(): Set<string | Decorator> {
+        return new Set();
+    }
+
+    public getSignature(): LocalSignature {
+        return this.signature;
+    }
+
 }

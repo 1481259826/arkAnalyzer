@@ -1522,11 +1522,13 @@ export class ArkIRTransformer {
             case ts.SyntaxKind.NullKeyword:
                 return NullType.getInstance();
             case ts.SyntaxKind.TrueKeyword:
-                return new LiteralType(true);
+                return LiteralType.TRUE;
             case ts.SyntaxKind.FalseKeyword:
-                return new LiteralType(true);
+                return LiteralType.FALSE;
             case ts.SyntaxKind.NumericLiteral:
                 return new LiteralType(parseFloat((literal as ts.NumericLiteral).text));
+            case ts.SyntaxKind.PrefixUnaryExpression:
+                return new LiteralType(parseFloat(literal.getText(this.sourceFile)));
         }
         return new LiteralType(literal.getText(this.sourceFile));
     }

@@ -23,7 +23,6 @@ import { ArkClass } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod } from './ArkMethodBuilder';
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
-import { TypeInference } from '../../common/TypeInference';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 import { ArkAssignStmt, Stmt } from '../../base/Stmt';
 import { ArkInstanceFieldRef } from '../../base/Ref';
@@ -432,29 +431,5 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmtMa
             initStmtMap.set(stmt, originStmt);
         }
         field.setInitializer(stmts);
-    }
-}
-
-/**
- * convert variable which declare in file or namespace to defaultClass field
- * @param defaultClass
- */
-export function generateDefaultClassField(defaultClass: ArkClass) {
-    const defaultArkMethod = defaultClass?.getDefaultArkMethod();
-    if (defaultArkMethod) {
-        TypeInference.inferTypeInMethod(defaultArkMethod);
-        defaultClass.getDefaultArkMethod()?.getBody()?.getLocals().forEach(local => {
-            if (local.getName().startsWith('$temp') || defaultClass.getDeclaringArkFile().getImportInfoBy(local.getName())
-                || local.getName() === 'this') {
-            } else {
-                const arkField = new ArkField();
-                arkField.setFieldType(ArkField.DEFAULT_ARK_Field);
-                arkField.setDeclaringClass(defaultClass);
-                arkField.setType(local.getType());
-                arkField.setName(local.getName());
-                arkField.genSignature();
-                defaultClass.addField(arkField);
-            }
-        });
     }
 }

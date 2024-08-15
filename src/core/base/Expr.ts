@@ -41,6 +41,7 @@ import Logger from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
+import { ArkMethod } from '../model/ArkMethod';
 
 const logger = Logger.getLogger();
 
@@ -226,9 +227,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             const namespace = scene.getNamespace(baseType.getNamespaceSignature());
             let foundMethod = namespace?.getDefaultClass()?.getMethodWithName(methodName);
             if (!foundMethod) {
-                const signature = namespace?.getExportInfoBy(methodName)?.getTypeSignature();
-                if (signature && signature instanceof MethodSignature) {
-                    foundMethod = scene.getMethod(signature);
+                const arkExport = namespace?.getExportInfoBy(methodName)?.getArkExport();
+                if (arkExport instanceof ArkMethod) {
+                    foundMethod = arkExport;
                 }
             }
             if (foundMethod) {
@@ -268,11 +269,11 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         let method = ModelUtils.getStaticMethodWithName(methodName, arkClass);
         if (!method) {
             let arkFile = arkClass.getDeclaringArkFile();
-            const type = ModelUtils.getTypeSignatureInImportInfoWithName(methodName, arkFile);
-            if (type && type instanceof MethodSignature) {
-                method = arkFile.getScene().getMethod(type);
-            } else if (type && type instanceof ClassSignature) {
-                method = arkFile.getScene().getClass(type)?.getMethodWithName('constructor') || null;
+            const arkExport = ModelUtils.getArkExportInImportInfoWithName(methodName, arkFile);
+            if (arkExport && arkExport instanceof ArkMethod) {
+                method = arkExport;
+            } else if (arkExport && arkExport instanceof ArkClass) {
+                method = arkExport.getMethodWithName('constructor') || null;
             }
         }
         if (method) {

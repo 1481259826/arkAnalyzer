@@ -16,21 +16,22 @@
 import { LineColPosition } from '../base/Position';
 import { Decorator } from '../base/Decorator';
 import { ArkFile } from './ArkFile';
-import { ArkSignature, ClassSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
+import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
 import { Local } from '../base/Local';
+import { Type } from '../base/Type';
 
-export type TypeSignature = NamespaceSignature | ClassSignature | MethodSignature | Local;
+export type exportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
 
 export enum ExportType {
     NAME_SPACE = 0,
     CLASS = 1,
     METHOD = 2,
     LOCAL = 3,
-    UNKNOWN = 4
+    TYPE = 4,
+    UNKNOWN = 9
 }
 
 export interface ArkExport extends ArkSignature {
-    isExported(): boolean;
 
     getModifiers(): Set<string | Decorator>;
 
@@ -61,7 +62,7 @@ export class ExportInfo implements FromInfo {
     private exportClauseName: string;
 
     private exportClauseType: ExportType;
-    private typeSignature: TypeSignature;
+    private arkExport: ArkExport;
     private exportFrom: string;
 
     private originTsPosition: LineColPosition;
@@ -101,16 +102,16 @@ export class ExportInfo implements FromInfo {
         }
     }
 
-    public setTypeSignature(value: TypeSignature) {
-        this.typeSignature = value;
+    public setArkExport(value: ArkExport) {
+        this.arkExport = value;
     }
 
     public getExportFrom(): string {
         return this.exportFrom;
     }
 
-    public getTypeSignature(): TypeSignature {
-        return this.typeSignature;
+    public getArkExport(): ArkExport {
+        return this.arkExport;
     }
 
     public isDefault(): boolean {
@@ -118,7 +119,7 @@ export class ExportInfo implements FromInfo {
             return this.nameBeforeAs === 'default';
         }
         if (this._default === undefined) {
-            this._default = this.modifiers?.has('DefaultKeyword')
+            this._default = this.modifiers?.has('DefaultKeyword');
         }
         return this._default;
     }
@@ -187,8 +188,8 @@ export class ExportInfo implements FromInfo {
             return this;
         }
 
-        public typeSignature(value: TypeSignature): ArkExportBuilder {
-            this.exportInfo.setTypeSignature(value);
+        public arkExport(value: ArkExport): ArkExportBuilder {
+            this.exportInfo.setArkExport(value);
             return this;
         }
 
@@ -202,6 +203,6 @@ export class ExportInfo implements FromInfo {
         public build(): ExportInfo {
             return this.exportInfo;
         }
-    }
+    };
 
 }

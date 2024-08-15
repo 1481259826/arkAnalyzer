@@ -993,7 +993,8 @@ export class CfgBuilder {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        typeMap: Map<string, Type>
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1006,7 +1007,8 @@ export class CfgBuilder {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        typeMap: Map<string, Type>
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1050,6 +1052,7 @@ export class CfgBuilder {
             originalCfg: originalCfg,
             stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
+            typeMap: arkIRTransformer.getTypeMap()
         };
     }
 

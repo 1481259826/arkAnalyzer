@@ -14,7 +14,10 @@
  */
 
 import { ArkField } from '../model/ArkField';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ArkExport, ExportType } from '../model/ArkExport';
+import { Decorator } from './Decorator';
+import { type } from 'typedoc/dist/lib/output/themes/default/partials/type';
 
 /**
  * @category core/base/type
@@ -215,6 +218,9 @@ export class UndefinedType extends PrimitiveType {
  * @category core/base/type
  */
 export class LiteralType extends PrimitiveType {
+    public static readonly TRUE = new LiteralType(true);
+    public static readonly FALSE = new LiteralType(false);
+
     private literalName: string | number | boolean;
 
     constructor(literalName: string | number | boolean) {
@@ -513,4 +519,37 @@ export class AnnotationTypeQueryType extends AnnotationType {
     constructor(originType: string) {
         super(originType);
     }
+}
+
+export class TypeAlias implements ArkExport {
+    private readonly name: string;
+    private type: Type;
+    private signature: LocalSignature;
+
+    constructor(name: string, type: Type, methodSignature: MethodSignature) {
+        this.name = name;
+        this.type = type;
+        this.signature = new LocalSignature(name, methodSignature);
+    }
+
+    public getExportType(): ExportType {
+        return ExportType.TYPE;
+    }
+
+    public getModifiers(): Set<string | Decorator> {
+        return new Set();
+    }
+
+    public getName(): string {
+        return this.name;
+    }
+
+    public getSignature(): LocalSignature {
+        return this.signature;
+    }
+
+    public getType() {
+        return this.type;
+    }
+
 }

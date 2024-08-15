@@ -29,7 +29,7 @@ import {
     NullType,
     NumberType,
     StringType,
-    Type,
+    Type, TypeAlias,
     UnclearReferenceType,
     UndefinedType,
     UnionType,
@@ -39,11 +39,13 @@ import {
 import { ArkMethod } from '../model/ArkMethod';
 import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ModelUtils } from './ModelUtils';
-import { TypeSignature } from '../model/ArkExport';
+import { ArkExport, exportSignature } from '../model/ArkExport';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
+import { b } from '../../../tests/resources/exports/exportSample';
+import { ArkNamespace } from '../model/ArkNamespace';
 
 const logger = Logger.getLogger();
 
@@ -130,8 +132,15 @@ export class TypeInference {
             logger.warn('empty body');
             return;
         }
-        const cfg = body.getCfg();
+
         const arkClass = arkMethod.getDeclaringArkClass();
+        body.getTypeMap()?.forEach((value, key) => {
+            const newType = this.inferUnclearedType(value, arkClass);
+            if (newType) {
+                body.getTypeMap().set(key, newType);
+            }
+        });
+        const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
                 this.resolveExprsInStmt(stmt, arkClass);
@@ -215,23 +224,27 @@ export class TypeInference {
         }
     }
 
-    public static parseSignature2Type(signature: TypeSignature | undefined): Type | null {
-        if (!signature) {
+    public static parseArkExport2Type(arkExport: ArkExport | undefined): Type | null {
+        if (!arkExport) {
             return null;
         }
-        if (signature instanceof ClassSignature) {
-            return new ClassType(signature);
-        } else if (signature instanceof NamespaceSignature) {
-            let namespaceType = new AnnotationNamespaceType(signature.getNamespaceName());
-            namespaceType.setNamespaceSignature(signature);
+        if (arkExport instanceof ArkClass) {
+            return new ClassType(arkExport.getSignature());
+        } else if (arkExport instanceof ArkNamespace) {
+            let namespaceType = new AnnotationNamespaceType(arkExport.getName());
+            namespaceType.setNamespaceSignature(arkExport.getSignature());
             return namespaceType;
-        } else if (signature instanceof MethodSignature) {
-            return new FunctionType(signature);
-        } else {
-            if (signature.getType() instanceof UnknownType || signature.getType() instanceof UnclearReferenceType) {
+        } else if (arkExport instanceof ArkMethod) {
+            return new FunctionType(arkExport.getSignature());
+        } else if (arkExport instanceof Local) {
+            if (arkExport.getType() instanceof UnknownType || arkExport.getType() instanceof UnclearReferenceType) {
                 return null;
             }
-            return signature.getType();
+            return arkExport.getType();
+        } else if (arkExport instanceof TypeAlias) {
+            return arkExport.getType();
+        } else {
+            return null;
         }
     }
 
@@ -359,8 +372,8 @@ export class TypeInference {
         }
         const stdName = refName.replace(/<\w+>/, '');
         //import Reference
-        const importSignature = ModelUtils.getTypeSignatureInImportInfoWithName(stdName, arkClass.getDeclaringArkFile());
-        const importType = this.parseSignature2Type(importSignature);
+        const importSignature = ModelUtils.getArkExportInImportInfoWithName(stdName, arkClass.getDeclaringArkFile());
+        const importType = this.parseArkExport2Type(importSignature);
         if (importType) {
             return importType;
         }
@@ -387,7 +400,7 @@ export class TypeInference {
             if (arkField) {
                 type = arkField.getType();
             } else {
-                type = this.parseSignature2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getTypeSignature());
+                type = this.parseArkExport2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getArkExport());
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
             const namespace = declareClass.getDeclaringArkFile().getScene().getNamespace(baseType.getNamespaceSignature());
@@ -410,17 +423,15 @@ export class TypeInference {
     }
 
     public static inferBaseType(baseName: string, arkClass: ArkClass): Type | null {
-        const field = arkClass.getDeclaringArkFile().getDefaultClass().getFieldWithName(baseName);
-        if (field) {
-            if (field.getType() instanceof UnknownType || field.getType() instanceof UnclearReferenceType) {
-                return null;
-            }
+        const field = arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
+            ?.getBody()?.getLocals()?.get(baseName);
+        if (field && !this.isUnclearType(field.getType())) {
             return field.getType();
         }
-        let signature: TypeSignature | undefined = ModelUtils.getClassWithName(baseName, arkClass)?.getSignature()
-            ?? ModelUtils.getNamespaceWithName(baseName, arkClass)?.getSignature()
-            ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)?.getSignature()
-            ?? ModelUtils.getTypeSignatureInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
-        return this.parseSignature2Type(signature);
+        let arkExport: ArkExport | undefined = ModelUtils.getClassWithName(baseName, arkClass)
+            ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
+            ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)
+            ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
+        return this.parseArkExport2Type(arkExport);
     }
 }

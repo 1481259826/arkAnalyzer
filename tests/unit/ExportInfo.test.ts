@@ -15,7 +15,7 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { FileSignature, Scene, SceneConfig } from "../../src";
+import { ArkClass, FileSignature, Scene, SceneConfig } from '../../src';
 
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
@@ -24,7 +24,6 @@ describe("export Test", () => {
     config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
-    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     it('debug case', () => {
         const fileId = new FileSignature();
@@ -88,8 +87,9 @@ describe("export Test", () => {
         const fileId = new FileSignature();
         fileId.setFileName("Lottie_Report.ets");
         fileId.setProjectName(projectScene.getProjectName());
-        const signature = projectScene.getFile(fileId)?.getImportInfoBy('lottie')?.getLazyExportInfo()?.getTypeSignature().toString();
-        assert.equal(signature, '@lottie/@ohos/lottie.d.ts: LottiePlayer')
+        const arkExport = projectScene.getFile(fileId)?.getImportInfoBy('lottie')
+            ?.getLazyExportInfo()?.getArkExport();
+        assert.isTrue(arkExport instanceof ArkClass);
     })
 
     it('all case', () => {
@@ -105,10 +105,19 @@ describe("export Test", () => {
 })
 
 describe("function Test", () => {
-    it('debug case', () => {
-
-        assert.isTrue(/^index/i.test('Index.ets'));
-        assert.isTrue(/^index/i.test('index.ets'));
-        assert.isTrue(/^index/i.test('INdex.ts'));
+    it('thirdModule index case', () => {
+        let config: SceneConfig = new SceneConfig();
+        config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
+        config.getSdksObj().push({ moduleName: "", name: "lottie", path: path.join(__dirname, "../resources/lottieModule") });
+        config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
+        let scene: Scene = new Scene();
+        scene.buildSceneFromProjectDir(config);
+        scene.inferTypes();
+        const fileId = new FileSignature();
+        fileId.setFileName("Lottie_Report.ets");
+        fileId.setProjectName(scene.getProjectName());
+        const signature = scene.getFile(fileId)?.getImportInfoBy('lottie')?.getLazyExportInfo()
+            ?.getArkExport()?.toString();
+        assert.equal(signature, 'Lottie')
     })
 })
