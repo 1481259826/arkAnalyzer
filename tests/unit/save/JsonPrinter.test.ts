@@ -1545,7 +1545,14 @@ const JsonPrinter_Shape_EXPECTED = {
             "modifiers": [],
             "typeParameters": [],
             "body": {
-                "locals": [],
+                "locals": [
+                    {
+                        "name": "this",
+                        "type": {
+                            "_": "UnknownType"
+                        }
+                    }
+                ],
                 "cfg": {
                     "blocks": [
                         {
@@ -1570,6 +1577,30 @@ const JsonPrinter_Shape_EXPECTED = {
                                                 "name": "Shape"
                                             }
                                         }
+                                    }
+                                },
+                                {
+                                    "_": "CallStmt",
+                                    "expr": {
+                                        "_": "InstanceCallExpr",
+                                        "instance": {
+                                            "_": "Local",
+                                            "name": "this",
+                                            "type": {
+                                                "_": "UnknownType"
+                                            }
+                                        },
+                                        "method": {
+                                            "enclosingClass": {
+                                                "name": "Shape"
+                                            },
+                                            "name": "@instance_init",
+                                            "parameters": [],
+                                            "returnType": {
+                                                "_": "UnknownType"
+                                            }
+                                        },
+                                        "args": []
                                     }
                                 },
                                 {
