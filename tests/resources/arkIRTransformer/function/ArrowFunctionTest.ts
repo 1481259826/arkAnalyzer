@@ -20,4 +20,3 @@ let func2 = () => {
 };
 let func3 = () => func2();
 let func4 = (i: number) => i++;
-

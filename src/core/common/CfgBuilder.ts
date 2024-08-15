@@ -16,7 +16,7 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkAssignStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
@@ -25,6 +25,7 @@ import { ArkIRTransformer, DUMMY_INITIALIZER_STMT } from './ArkIRTransformer';
 import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
+import { IRUtils } from './IRUtils';
 
 const logger = Logger.getLogger();
 
@@ -999,6 +1000,70 @@ export class CfgBuilder {
     }
 
     public buildCfgAndOriginalCfg(): {
+        cfg: Cfg,
+        originalCfg: Cfg,
+        stmtToOriginalStmt: Map<Stmt, Stmt>,
+        locals: Set<Local>
+    } {
+        if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
+            return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
+        }
+
+        return this.buildNormalCfgAndOriginalCfg();
+    }
+
+    public buildCfgAndOriginalCfgForSimpleArrowFunction(): {
+        cfg: Cfg,
+        originalCfg: Cfg,
+        stmtToOriginalStmt: Map<Stmt, Stmt>,
+        locals: Set<Local>
+    } {
+        const stmts: Stmt[] = [];
+        const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
+        stmts.push(...arkIRTransformer.prebuildStmts());
+
+        const expressionBodyNode = (this.astRoot as ts.ArrowFunction).body as ts.Expression;
+        const expressionBodyStmts: Stmt[] = [];
+        let {
+            value: expressionBodyValue,
+            stmts: tempStmts,
+        } = arkIRTransformer.tsNodeToValueAndStmts(expressionBodyNode);
+        expressionBodyStmts.push(...tempStmts);
+        if (IRUtils.moreThanOneAddress(expressionBodyValue)) {
+            ({
+                value: expressionBodyValue,
+                stmts: tempStmts,
+            } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue));
+            expressionBodyStmts.push(...tempStmts);
+        }
+        expressionBodyStmts.push(new ArkReturnStmt(expressionBodyValue));
+        arkIRTransformer.mapStmtsToTsStmt(expressionBodyStmts, expressionBodyNode);
+        stmts.push(...expressionBodyStmts);
+        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
+
+        const cfg = new Cfg();
+        const blockInCfg = new BasicBlock();
+        blockInCfg.setId(0);
+        stmts.forEach(stmt => {
+            blockInCfg.addStmt(stmt);
+        });
+        cfg.addBlock(blockInCfg);
+        cfg.setStartingStmt(stmts[0]);
+
+        const originalCfg = new Cfg();
+        const blockInOriginalCfg = new BasicBlock();
+        blockInOriginalCfg.setId(0);
+        originalCfg.addBlock(blockInOriginalCfg);
+        originalCfg.setStartingStmt(stmtToOriginalStmt.get(stmts[0]) as Stmt);
+        return {
+            cfg: cfg,
+            originalCfg: originalCfg,
+            stmtToOriginalStmt: stmtToOriginalStmt,
+            locals: arkIRTransformer.getLocals(),
+        };
+    }
+
+    public buildNormalCfgAndOriginalCfg(): {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
