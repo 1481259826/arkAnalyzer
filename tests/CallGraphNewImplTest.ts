@@ -38,9 +38,9 @@ let config: SceneConfig = new SceneConfig()
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
 // config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
+// config.buildFromProjectDir('./tests/resources/callgraph/anoTest');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
-// config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
+config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
 // config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
@@ -64,9 +64,10 @@ function runScene(config: SceneConfig, output: string) {
     let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries([entry[1]]);
+    pta.setEntries([entry[0]]);
     pta.start();
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
+    cg.dump(output+"/subcg.dot", entry[0])
     console.log("fin")
 }
 runScene(config, "./out/applications_camera");

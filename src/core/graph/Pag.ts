@@ -18,7 +18,7 @@ import { CallGraph, CallSite } from './CallGraph';
 import { ContextID } from '../pta/Context';
 import { Value } from '../base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ArkNewExpr, ArkNormalBinopExpr } from '../base/Expr';
+import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr, ArkNormalBinopExpr } from '../base/Expr';
 import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../base/Ref';
 import { Local } from '../base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
@@ -368,7 +368,7 @@ export class PagThisRefNode extends PagNode {
 
 export class PagNewExprNode extends PagNode {
     fieldNodes: Map<string, NodeID>
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: AbstractExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
     }
 
@@ -496,7 +496,7 @@ export class Pag extends BaseGraph {
             pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
             pagNode = new PagStaticFieldNode(id, cid, value, stmt);
-        } else if (value instanceof ArkNewExpr) {
+        } else if (value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr) {
             pagNode = new PagNewExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);

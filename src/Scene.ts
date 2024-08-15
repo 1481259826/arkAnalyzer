@@ -911,3 +911,14 @@ export class ModuleScene {
         });
     }
 }
+
+function main() {
+    let config: SceneConfig = new SceneConfig()
+    config.buildFromProjectDir('./src')
+
+    let projectScene: Scene = new Scene()
+    projectScene.buildBasicInfo(config)
+    projectScene.buildScene4HarmonyProject()
+    projectScene.collectProjectImportInfos()
+    projectScene.inferTypes()
+}
