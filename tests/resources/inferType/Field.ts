@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Constants } from "./constants";
+import { Constants, globalFunction } from "./constants";
 
 class C1 {
 
@@ -46,5 +46,21 @@ class C2 {
 class FieldType {
     arrUnionHa: (number | string)[] = [1, 'hello'];
     public field1 = Constants.staticFunc();
+
+}
+
+function time2(value: number): number {
+    return 2 * value;
+}
+
+class importClassTest {
+
+    private test = Constants;
+    private f1: (value: number) => number = time2;
+
+    public importAssign() {
+        let a = globalFunction;
+        let abc = Constants;
+    }
 
 }

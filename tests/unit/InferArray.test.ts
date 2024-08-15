@@ -187,6 +187,18 @@ describe("Infer Array Test", () => {
             })
         })
     })
+
+    it('methodsMap refresh', () => {
+        let flag = false;
+        projectScene.getMethods().forEach(m => {
+            if (m.getSignature().toString().includes('SCBTransitionManager.registerUnlockTransitionController(@inferType/test1.ets: SCBUnlockTransitionController')) {
+                if (projectScene.getMethod(m.getSignature()) !== null) {
+                    flag = true
+                }
+            }
+        })
+        assert.isTrue(flag)
+    })
 })
 
 function equals(actual: any, expect: string) {

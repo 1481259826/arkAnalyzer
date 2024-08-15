@@ -60,5 +60,13 @@ export class d extends dfs {
 
 let l = 2.1;
 
-export default l;
+class ThrowTest {
+    static readonly ERR = 'throw err';
+
+    throws() {
+        throw new Error(ThrowTest.ERR);
+    }
+}
+
+export default new ThrowTest();
 

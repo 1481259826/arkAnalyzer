@@ -23,8 +23,8 @@ import {
     AnyType,
     ArrayType,
     BooleanType,
-    FunctionType,
     ClassType,
+    FunctionType,
     NeverType,
     NullType,
     NumberType,
@@ -207,8 +207,8 @@ export class TypeInference {
         const stmtDef = stmt.getDef();
         if (stmtDef && stmtDef instanceof AbstractRef) {
             const fieldRef = stmtDef.inferType(arkClass);
-            if (fieldRef instanceof ArkStaticFieldRef) {
-                stmt.setDef(fieldRef);
+            if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
+                stmt.setLeftOp(fieldRef);
             }
         }
     }
@@ -243,7 +243,12 @@ export class TypeInference {
             return;
         }
         const rightOp = stmt.getRightOp();
-        if (rightOp.getType() instanceof UnclearReferenceType) {
+        if (rightOp instanceof Local && rightOp.getType() instanceof UnknownType) {
+            const type = this.inferUnclearReferenceType(rightOp.getName(), arkClass);
+            if (type) {
+                rightOp.setType(type);
+            }
+        } else if (rightOp.getType() instanceof UnclearReferenceType) {
             const type = this.inferUnclearReferenceType((rightOp.getType() as UnclearReferenceType).getName(), arkClass);
             if (type && rightOp instanceof ArkParameterRef) {
                 rightOp.setType(type);

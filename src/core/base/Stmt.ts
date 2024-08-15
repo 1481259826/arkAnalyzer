@@ -215,7 +215,6 @@ export class ArkAssignStmt extends Stmt {
         this.rightOp = rightOp;
         this.setDef(leftOp);
         this.updateUses();
-        this.updateText();
     }
 
     public getLeftOp(): Value {
@@ -225,7 +224,7 @@ export class ArkAssignStmt extends Stmt {
     public setLeftOp(newLeftOp: Value): void {
         this.leftOp = newLeftOp;
         this.setDef(newLeftOp);
-        this.updateText();
+        this.updateUses();
     }
 
     public getRightOp(): Value {
@@ -235,7 +234,6 @@ export class ArkAssignStmt extends Stmt {
     public setRightOp(rightOp: Value): void {
         this.rightOp = rightOp;
         this.updateUses();
-        this.updateText();
     }
 
     public toString(): string {
@@ -260,13 +258,11 @@ export class ArkInvokeStmt extends Stmt {
         super();
         this.invokeExpr = invokeExpr;
         this.updateUses();
-        this.updateText();
     }
 
     public replaceInvokeExpr(newExpr: AbstractInvokeExpr) {
         this.invokeExpr = newExpr;
         this.updateUses();
-        this.updateText();
     }
 
     public getInvokeExpr() {
@@ -294,7 +290,6 @@ export class ArkIfStmt extends Stmt {
         super();
         this.conditionExpr = conditionExpr;
         this.updateUses();
-        this.updateText();
     }
 
     public getConditionExprExpr() {
@@ -330,7 +325,6 @@ export class ArkReturnStmt extends Stmt {
         super();
         this.op = op;
         this.updateUses();
-        this.updateText();
     }
 
     public getExpectedSuccessorCount(): number {
@@ -344,7 +338,6 @@ export class ArkReturnStmt extends Stmt {
     public setReturnValue(returnValue: Value): void {
         this.op = returnValue;
         this.updateUses();
-        this.updateText();
     }
 
     public toString(): string {
@@ -364,7 +357,6 @@ export class ArkReturnStmt extends Stmt {
 export class ArkReturnVoidStmt extends Stmt {
     constructor() {
         super();
-        this.updateText();
     }
 
     public getExpectedSuccessorCount(): number {
@@ -381,7 +373,6 @@ export class ArkReturnVoidStmt extends Stmt {
 export class ArkNopStmt extends Stmt {
     constructor() {
         super();
-        this.updateText();
     }
 
     public toString(): string {
@@ -400,7 +391,6 @@ export class ArkSwitchStmt extends Stmt {
         this.key = key;
         this.cases = cases;
         this.updateUses();
-        this.updateText();
     }
 
     public getKey(): Value {
@@ -450,7 +440,6 @@ export class ArkThrowStmt extends Stmt {
         super();
         this.op = op;
         this.updateUses();
-        this.updateText();
     }
 
     public getOp(): Value {

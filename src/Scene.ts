@@ -344,6 +344,7 @@ export class Scene {
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
         if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
+            this.classesMap.clear()
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -372,6 +373,7 @@ export class Scene {
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
         if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
+            this.methodsMap.clear()
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -449,6 +451,9 @@ export class Scene {
                 TypeInference.inferTypeInMethod(arkMethod);
             }
         });
+
+        this.getClassesMap(true)
+        this.getMethodsMap(true)
     }
 
     /**

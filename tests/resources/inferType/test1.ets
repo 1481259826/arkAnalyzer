@@ -12,17 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export class Constants {
-    public static readonly ARRAY_SIZE: number = 9999;
-    public static readonly INDEX_SIZE: number = 9999;
-    public static readonly INFO: number[] = [1, 2, 3, 4, 5, 6, 7];
-
-    static staticFunc(): string {
-        return '';
-    }
+export interface SCBUnlockTransitionController {
+  name: string;
+  onLock: () => void;
+  onUnlock: () => void;
 }
 
-export function globalFunction() {
-    return '';
+export class SCBTransitionManager {
+  static getInstance(): SCBTransitionManager {
+    if (globalThis.SCBTransitionManagerInstance == null) {
+      globalThis.SCBTransitionManagerInstance = new SCBTransitionManager();
+    }
+    return globalThis.SCBTransitionManagerInstance;
+  }
+
+  registerUnlockTransitionController(
+    controller: SCBUnlockTransitionController | undefined,
+    isHomeState: boolean
+  ): boolean {
+    return isHomeState;
+  }
 }
