@@ -33,6 +33,7 @@ import {
     INSTANCE_INIT_METHOD_NAME,
     STATIC_INIT_METHOD_NAME,
 } from '../../common/Const';
+import { IRUtils } from '../../common/IRUtils';
 
 const logger = Logger.getLogger();
 
@@ -414,7 +415,13 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmtMa
         const valueAndStmts = transformer.tsNodeToValueAndStmts(initNode);
         const stmts = valueAndStmts.stmts;
         const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
-        const assignStmt = new ArkAssignStmt(fieldRef, valueAndStmts.value);
+        let rightOp = valueAndStmts.value;
+        if (IRUtils.moreThanOneAddress(rightOp)) {
+            const rightOpValueAndStmts = transformer.generateAssignStmtForValue(rightOp);
+            rightOp = rightOpValueAndStmts.value;
+            stmts.push(...rightOpValueAndStmts.stmts);
+        }
+        const assignStmt = new ArkAssignStmt(fieldRef, rightOp);
         stmts.push(assignStmt);
         for (const stmt of stmts) {
             stmt.setOriginPositionInfo(field.getOriginPosition());
