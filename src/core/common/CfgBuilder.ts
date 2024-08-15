@@ -1044,10 +1044,16 @@ export class CfgBuilder {
         // link blocks
         for (const [blockBuilder, cfgBlock] of blockBuilderToCfgBlock) {
             for (const successorBlockBuilder of blockBuilder.nexts) {
+                if (!blockBuilderToCfgBlock.get(successorBlockBuilder)) {
+                    continue;
+                }
                 const successorBlock = blockBuilderToCfgBlock.get(successorBlockBuilder) as BasicBlock;
                 cfgBlock.addSuccessorBlock(successorBlock);
             }
             for (const predecessorBlockBuilder of blockBuilder.lasts) {
+                if (!blockBuilderToCfgBlock.get(predecessorBlockBuilder)) {
+                    continue;
+                }
                 const predecessorBlock = blockBuilderToCfgBlock.get(predecessorBlockBuilder) as BasicBlock;
                 cfgBlock.addPredecessorBlock(predecessorBlock);
             }
@@ -1055,6 +1061,9 @@ export class CfgBuilder {
 
         // put statements within loop in right position
         for (const blockBuilder of blocksContainLoopCondition) {
+            if (!blockBuilderToCfgBlock.get(blockBuilder)) {
+                continue;
+            }
             const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
             const blockId = block.getId();
             const stmts = block.getStmts();
@@ -1100,7 +1109,7 @@ export class CfgBuilder {
                 } else {
                     const blockBuilderBeforeCondition = blockBuilder.lasts[0];
                     const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
-                    blockBeforeCondition.getStmts().push(...stmtsInsertBeforeCondition);
+                    blockBeforeCondition?.getStmts().push(...stmtsInsertBeforeCondition);
                 }
 
                 if (dummyInitializerStmtIdx != -1 && ifStmtIdx != stmtsCnt - 1) {
@@ -1120,7 +1129,7 @@ export class CfgBuilder {
                     } else {
                         // put incrementor statements into prev reenter block
                         const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuildersReenterCondition[0]) as BasicBlock;
-                        blockReenterCondition.getStmts().push(...stmtsReenterCondition);
+                        blockReenterCondition?.getStmts().push(...stmtsReenterCondition);
                     }
                 } else if (iteratorNextStmtIdx != -1) {
                     // put statements which get value of iterator into block after condition
@@ -1128,7 +1137,7 @@ export class CfgBuilder {
                     const blockAfterCondition = blockBuilderToCfgBlock.get(blockBuilderAfterCondition) as BasicBlock;
 
                     const stmtsAfterCondition = stmts.slice(ifStmtIdx + 1);
-                    blockAfterCondition.getStmts().splice(0, 0, ...stmtsAfterCondition);
+                    blockAfterCondition?.getStmts().splice(0, 0, ...stmtsAfterCondition);
                 }
 
                 // remove statements which should not in condition

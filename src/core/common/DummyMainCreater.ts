@@ -176,7 +176,10 @@ export class DummyMainCreater {
     }
 
     private addCfg2Stmt() {
-        const cfg = this.dummyMain.getCfg()!
+        const cfg = this.dummyMain.getCfg();
+        if (!cfg) {
+            return;
+        }
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
                 stmt.setCfg(cfg);
