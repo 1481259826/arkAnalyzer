@@ -184,9 +184,12 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                 } else if (expr instanceof ArkStaticInvokeExpr) {
                     continue;
                 }
-                let sourceMethod: ArkMethod = stmt.getCfg()?.getDeclaringMethod()!;
+                let sourceMethod: ArkMethod | undefined = stmt.getCfg()?.getDeclaringMethod();
+                if (!sourceMethod) {
+                    continue;
+                }
                 let targetMethod: ArkMethod | null = this.getSpecificCallTarget(expr, pointer);
-                if (targetMethod == null) {
+                if (!targetMethod) {
                     continue;
                 }
                 let specificCallTarget = targetMethod.getSignature();

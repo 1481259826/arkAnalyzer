@@ -483,7 +483,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             this.push(node);
         }
 
-        buildViewTreeFromCfg(this, this.render.getCfg()!);
+        if (this.render.getCfg()) {
+            buildViewTreeFromCfg(this, this.render.getCfg() as Cfg);
+        }
     }
 
     /**
@@ -676,7 +678,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private findMethodInvokeBuilderMethod(method: ArkMethod): ArkMethod | undefined {
-        for (const stmt of method.getCfg()!.getStmts()) {
+        let stmts = method.getCfg()?.getStmts();
+        if (!stmts) {
+            return;
+        }
+        for (const stmt of stmts) {
             if (!(stmt instanceof ArkInvokeStmt)) {
                 continue;
             }
@@ -844,7 +850,9 @@ function forEachCreationParser(
     let type = (expr.getArg(1) as Local).getType() as FunctionType;
     let method = viewtree.findMethod(type.getMethodSignature());
     if (method) {
-        buildViewTreeFromCfg(viewtree, method.getCfg()!);
+        if (method.getCfg()) {
+            buildViewTreeFromCfg(viewtree, method.getCfg() as Cfg);
+        }
     }
     return node;
 }
@@ -967,7 +975,9 @@ function parseInstanceInvokeExpr(
             if (type instanceof FunctionType) {
                 let method = viewTree.findMethod(type.getMethodSignature());
                 if (method) {
-                    buildViewTreeFromCfg(viewTree, method.getCfg()!);
+                    if (method.getCfg()) {
+                        buildViewTreeFromCfg(viewTree, method.getCfg() as Cfg);
+                    }
                 }
             }
             viewTree.pop();
