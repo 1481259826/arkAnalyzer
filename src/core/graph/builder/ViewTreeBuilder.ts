@@ -723,6 +723,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     }
 
                     let value = assignStmt.getRightOp();
+                    if (value instanceof Local) {
+                        value = backtraceLocalInitValue(value);
+                    }
                     if (dstField?.hasBuilderParamDecorator()) {
                         let method: ArkMethod | undefined | null;
                         if (value instanceof ArkInstanceFieldRef) {
