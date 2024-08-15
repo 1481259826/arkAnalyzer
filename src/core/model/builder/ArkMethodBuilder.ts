@@ -346,10 +346,11 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     defaultConstructor.setCode('');
     defaultConstructor.setIsGeneratedFlag(true);
 
+    const thisLocal = new Local(THIS_NAME);
+    const locals: Set<Local> = new Set([thisLocal]);
     const basicBlock = new BasicBlock();
-    basicBlock.addStmt(new ArkAssignStmt(new Local(THIS_NAME), new ArkThisRef(new ClassType(arkClass.getSignature()))));
-    const locals: Set<Local> = new Set();
-    let startingStmt: Stmt;
+    let startingStmt: Stmt = new ArkAssignStmt(thisLocal, new ArkThisRef(new ClassType(arkClass.getSignature())));
+    basicBlock.addStmt(startingStmt);
     if (parentConstructor != null) {
         parentConstructor.getParameters().forEach(parameter => {
             defaultConstructor.addParameter(parameter);
@@ -380,7 +381,6 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, parameterLocals);
         const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
         basicBlock.addStmt(superInvokeStmt);
-        startingStmt = superInvokeStmt;
         const returnVoidStmt = new ArkReturnVoidStmt();
         basicBlock.addStmt(returnVoidStmt);
     } else {
@@ -392,13 +392,11 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
             const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, []);
             const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
             basicBlock.addStmt(superInvokeStmt);
-            startingStmt = superInvokeStmt;
             const returnVoidStmt = new ArkReturnVoidStmt();
             basicBlock.addStmt(returnVoidStmt);
         } else {
             const returnVoidStmt = new ArkReturnVoidStmt();
             basicBlock.addStmt(returnVoidStmt);
-            startingStmt = returnVoidStmt;
         }
 
     }

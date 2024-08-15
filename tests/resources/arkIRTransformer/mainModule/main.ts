@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
-class Main {
-    private i: number = 0;
-
-    constructor() {
+namespace outerNamespace {
+    export namespace innerNamespace {
+        export class Foo {
+            public static i = 1;
+        }
     }
 }
+
+outerNamespace.innerNamespace.Foo.i = 1;
