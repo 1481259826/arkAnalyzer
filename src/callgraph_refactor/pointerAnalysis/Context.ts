@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {FuncID} from '../../callgraph/model/CallGraph'
+import {FuncID} from '../model/CallGraph'
 
 export type ContextID = number
 

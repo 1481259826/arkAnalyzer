@@ -1,4 +1,3 @@
-import { CallGraphBuilder } from './../src/core/graph/builder/CallGraphBuilder';
 /*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +20,8 @@ import { MethodSignature } from "../src/core/model/ArkSignature";
 import { printCallGraphDetails } from "../src/utils/callGraphUtils";
 import Logger, { LOG_LEVEL } from "../src/utils/logger";
 import { ArkFile } from '../src/core/model/ArkFile';
-import { CallGraph } from '../src/core/graph/CallGraph';
+import { CallGraph } from '../src/callgraph_refactor/model/CallGraph';
+import { CallGraphBuilder } from '../src/callgraph_refactor/model/builder/CallGraphBuilder';
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
@@ -39,17 +39,18 @@ function runScene(config: SceneConfig) {
     // }
     entryPoints.push(...
         projectScene.getFiles()
-            .filter(arkFile => arkFile.getName() === "main.ts")
+            .filter(arkFile => arkFile.getName() === "case.ts")
             .flatMap(arkFile => arkFile.getClasses())
             .filter(arkClass => arkClass.getName() === "_DEFAULT_ARK_CLASS")
             .flatMap(arkClass => arkClass.getMethods())
-            .filter(arkMethod => arkMethod.getName() === "_DEFAULT_ARK_METHOD")
+            .filter(arkMethod => arkMethod.getName() === "foo")
             .map(arkMethod => arkMethod.getSignature())
     );
 
     let callGraph = new CallGraph(projectScene)
     let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
     callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+    callGraph.dump("out/cg/cg.dot")
     // let callGraph = projectScene.makeCallGraphRTA(entryPoints)
     // debugger;
 }

@@ -15,8 +15,13 @@
 
 import { Scene } from "../../Scene";
 import { AbstractInvokeExpr } from "../../core/base/Expr";
+import { Stmt } from "../../core/base/Stmt";
 import { ModelUtils } from "../../core/common/ModelUtils";
+import { ArkClass } from "../../core/model/ArkClass";
 import { ArkMethod } from "../../core/model/ArkMethod";
+import { NodeID } from "../model/BaseGraph";
+import { CallGraph, FuncID, CallSite, CallGraphNode } from "../model/CallGraph";
+import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
 
 export abstract class AbstractAnalysis {
     protected scene: Scene
@@ -56,9 +61,11 @@ export abstract class AbstractAnalysis {
     }
 
     public getClassHierarchy(arkClass: ArkClass): ArkClass[] {
+        // TODO: remove abstract class
         let classWorkList: ArkClass[] = [arkClass]
         // TODO: check class with no super Class
-        let classHierarchy: ArkClass[] = [arkClass.getSuperClass()]
+        // let classHierarchy: ArkClass[] = [arkClass.getSuperClass()]
+        let classHierarchy:ArkClass[] = []
 
         while(classWorkList.length > 0) {
             // TODO: no dumplicated check, TS doesn't allow multi extend

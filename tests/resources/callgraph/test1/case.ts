@@ -84,3 +84,5 @@ function foo() {
     alias1.run();//cat
     alias2.run();//base
 }
+
+foo()

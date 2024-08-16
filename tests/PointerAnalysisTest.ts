@@ -15,11 +15,11 @@
 
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
-import { CallGraph } from '../src/callgraph/model/CallGraph';
-import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder'
-import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
-import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
-import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
+import { CallGraph } from '../src/callgraph_refactor/model/CallGraph';
+import { CallGraphBuilder } from '../src/callgraph_refactor/model/builder/CallGraphBuilder'
+import { Pag } from '../src/callgraph_refactor/pointerAnalysis/Pag'
+import { PointerAnalysis } from '../src/callgraph_refactor/pointerAnalysis/PointerAnalysis'
+import { PointerAnalysisConfig } from '../src/callgraph_refactor/pointerAnalysis/PointerAnalysisConfig';
 import { Sdk } from "../src/Config";
 import Logger, {LOG_LEVEL} from "../src/utils/logger"
  

@@ -1,3 +1,4 @@
+import { Scene } from '../../Scene';
 /*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +14,22 @@
  * limitations under the License.
  */
 
-import { ArkStaticInvokeExpr } from "../../base/Expr";
-import { Stmt } from "../../base/Stmt";
-import { ArkClass } from "../../model/ArkClass";
-import { MethodSignature } from "../../model/ArkSignature";
-import { NodeID } from "../BaseGraph";
-import { CallSite, FuncID } from "../CallGraph";
+import { ArkStaticInvokeExpr } from "../../core/base/Expr";
+import { Stmt } from "../../core/base/Stmt";
+import { ArkClass } from "../../core/model/ArkClass";
+import { MethodSignature } from "../../core/model/ArkSignature";
+import { NodeID } from "../model/BaseGraph";
+import { CallGraph, CallSite } from "../model/CallGraph";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 type Method = MethodSignature
 
 export class ClassHierarchyAnalysis extends AbstractAnalysis {
+
+    constructor(scene: Scene, cg: CallGraph) {
+        super(scene)
+        this.cg = cg
+    }
+
     public resolveCall(callerMethod: NodeID, invokeStmt: Stmt): CallSite[] {
         let invokeExpr = invokeStmt.getInvokeExpr()
         let resolveResult: CallSite[] = []
@@ -42,21 +49,20 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
                 callerMethod))
         } else {
             let declareClass = calleeMethod.getDeclaringArkClass()
+            // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                resolveResult.push(
-                    ...arkClass.getMethods()
-                        .filter(arkMethod => 
-                            arkMethod.getSignature().getMethodSubSignature().toString() === 
-                            calleeMethod.getSubSignature().toString()
+                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod.getName())
+                if (possibleCalleeMethod) {
+                    resolveResult.push(
+                        new CallSite(invokeStmt, undefined, 
+                            this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
+                            callerMethod
                         )
-                        .map(arkMethod => new CallSite(
-                            invokeStmt, undefined, 
-                            this.cg.getCallGraphNodeByMethod(arkMethod.getSignature()).getID(), callerMethod))
-                );
+                    )
+                }
             })
         }
 
         return resolveResult
     }
-    
 }

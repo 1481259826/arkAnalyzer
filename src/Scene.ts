@@ -38,6 +38,8 @@ import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
+import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
+import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
 
 const logger = Logger.getLogger();
 
@@ -409,11 +411,11 @@ export class Scene {
         return this.ohPkgFilePath;
     }
 
-    public makeCallGraphCHA(entryPoints: MethodSignature[]) {
-        // let callGraphCHA: AbstractCallGraph;
-        // callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        // callGraphCHA.loadCallGraph(entryPoints);
-        // return callGraphCHA;
+    public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
+        let callGraphCHA: AbstractCallGraph;
+        callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
+        callGraphCHA.loadCallGraph(entryPoints);
+        return callGraphCHA;
     }
 
     /**

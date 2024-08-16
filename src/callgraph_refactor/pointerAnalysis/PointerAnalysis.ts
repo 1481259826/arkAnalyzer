@@ -15,19 +15,16 @@
 
 import { Scene } from "../../Scene";
 import { ArkInstanceInvokeExpr } from "../../core/base/Expr";
-import { Local } from "../../core/base/Local";
-import { ArkInstanceFieldRef } from "../../core/base/Ref";
 import { Value } from "../../core/base/Value";
 import { NodeID } from "../model/BaseGraph";
 import path from "path";
-import { CallGraph, FuncID } from "../model/CallGraph";
+import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
 import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
 import { DiffPTData, PtsSet } from "./PtsDS";
 import { ClassType, Type } from "../../core/base/Type";
 import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
 import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
-import { ArkMethod } from "../../core/model/ArkMethod";
-import { ArkAssignStmt } from "../../core/base/Stmt";
+import { Stmt } from "../../core/base/Stmt";
 import Logger from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode } from "./Pag";
