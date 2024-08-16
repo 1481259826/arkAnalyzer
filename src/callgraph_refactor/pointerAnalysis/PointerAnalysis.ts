@@ -13,33 +13,28 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../../Scene";
-import { ArkInstanceInvokeExpr } from "../../base/Expr";
-import { Local } from "../../base/Local";
-import { ArkInstanceFieldRef } from "../../base/Ref";
-import { Value } from "../../base/Value";
-import { NodeID } from "../BaseGraph";
+import { Scene } from "../../Scene";
+import { ArkInstanceInvokeExpr } from "../../core/base/Expr";
+import { Value } from "../../core/base/Value";
+import { NodeID } from "../model/BaseGraph";
 import path from "path";
-import { CallGraph, FuncID } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
-import { PagBuilder } from "../builder/PagBuilder";
-import { AbstractAnalysis } from "./AbstractAnalysis";
-import { DiffPTData, PtsSet } from "../../pta/PtsDS";
-import { ClassType, Type } from "../../base/Type";
-import { CallGraphBuilder } from "../builder/CallGraphBuilder";
-import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
-import { ArkMethod } from "../../model/ArkMethod";
-import { ArkAssignStmt } from "../../base/Stmt";
-import Logger from "../../../utils/logger"
-import { DummyMainCreater } from "../../common/DummyMainCreater";
+import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
+import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
+import { DiffPTData, PtsSet } from "./PtsDS";
+import { ClassType, Type } from "../../core/base/Type";
+import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
+import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
+import { Stmt } from "../../core/base/Stmt";
+import Logger from "../../utils/logger"
+import { DummyMainCreater } from "../../core/common/DummyMainCreater";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode } from "./Pag";
+import { PagBuilder } from "./PagBuilder";
 
 const logger = Logger.getLogger()
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
     private pagBuilder: PagBuilder;
-    private cg: CallGraph;
-    private cgBuilder: CallGraphBuilder;
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
     private entries: FuncID[];
     private worklist: NodeID[];
@@ -83,7 +78,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         return pta;
     }
 
-    private init() {
+    protected init() {
         logger.warn(`========== Init Pointer Analysis ==========`)
         this.ptaStat.startStat();
         this.pagBuilder.buildForEntries(this.entries);
@@ -419,6 +414,10 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     public getTypeDiffMap(): Map<Value, Set<Type>> {
         return this.typeDiffMap;
+    }
+
+    protected resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[] {
+        return []
     }
 }
 
