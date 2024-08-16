@@ -1131,7 +1131,6 @@ const JsonPrinter_Shape_EXPECTED = {
                         {
                             "id": 0,
                             "successors": [],
-                            "predecessors": [],
                             "stmts": [
                                 {
                                     "_": "AssignStmt",
@@ -1184,7 +1183,6 @@ const JsonPrinter_Shape_EXPECTED = {
                         {
                             "id": 0,
                             "successors": [],
-                            "predecessors": [],
                             "stmts": [
                                 {
                                     "_": "AssignStmt",
@@ -1517,7 +1515,6 @@ const JsonPrinter_Shape_EXPECTED = {
                         {
                             "id": 0,
                             "successors": [],
-                            "predecessors": [],
                             "stmts": [
                                 {
                                     "_": "AssignStmt",
@@ -1698,8 +1695,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             successors: [
                                 1,
                             ],
-                            predecessors: [
-                            ],
                             stmts: [
                                 {
                                     _: "AssignStmt",
@@ -1765,10 +1760,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 2,
                                 3,
                             ],
-                            predecessors: [
-                                0,
-                                3,
-                            ],
                             stmts: [
                                 {
                                     _: "IfStmt",
@@ -1799,9 +1790,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         {
                             id: 2,
                             successors: [
-                            ],
-                            predecessors: [
-                                1,
                             ],
                             stmts: [
                                 {
@@ -1852,9 +1840,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         {
                             id: 3,
                             successors: [
-                                1,
-                            ],
-                            predecessors: [
                                 1,
                             ],
                             stmts: [
@@ -2023,8 +2008,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             successors: [
                                 1,
                                 4,
-                            ],
-                            predecessors: [
                             ],
                             stmts: [
                                 {
@@ -2227,10 +2210,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 2,
                                 3,
                             ],
-                            predecessors: [
-                                0,
-                                4,
-                            ],
                             stmts: [
                                 {
                                     _: "IfStmt",
@@ -2261,10 +2240,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         {
                             id: 2,
                             successors: [
-                            ],
-                            predecessors: [
-                                1,
-                                3,
                             ],
                             stmts: [
                                 {
@@ -2368,9 +2343,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             successors: [
                                 2,
                             ],
-                            predecessors: [
-                                1,
-                            ],
                             stmts: [
                                 {
                                     _: "AssignStmt",
@@ -2395,9 +2367,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 4,
                             successors: [
                                 1,
-                            ],
-                            predecessors: [
-                                0,
                             ],
                             stmts: [
                                 {
@@ -2528,8 +2497,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 1,
                                 7,
                             ],
-                            predecessors: [
-                            ],
                             stmts: [
                                 {
                                     _: "AssignStmt",
@@ -2652,9 +2619,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             successors: [
                                 2,
                             ],
-                            predecessors: [
-                                0,
-                            ],
                             stmts: [
                                 {
                                     _: "AssignStmt",
@@ -2748,10 +2712,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 3,
                                 6,
                             ],
-                            predecessors: [
-                                1,
-                                7,
-                            ],
                             stmts: [
                                 {
                                     _: "IfStmt",
@@ -2785,9 +2745,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 4,
                                 5,
                             ],
-                            predecessors: [
-                                2,
-                            ],
                             stmts: [
                                 {
                                     _: "IfStmt",
@@ -2819,11 +2776,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 4,
                             successors: [
                             ],
-                            predecessors: [
-                                3,
-                                5,
-                                6,
-                            ],
                             stmts: [
                                 {
                                     _: "ReturnStmt",
@@ -2841,9 +2793,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 5,
                             successors: [
                                 4,
-                            ],
-                            predecessors: [
-                                3,
                             ],
                             stmts: [
                                 {
@@ -2870,9 +2819,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             successors: [
                                 4,
                             ],
-                            predecessors: [
-                                2,
-                            ],
                             stmts: [
                                 {
                                     _: "AssignStmt",
@@ -2897,9 +2843,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 7,
                             successors: [
                                 2,
-                            ],
-                            predecessors: [
-                                0,
                             ],
                             stmts: [
                                 {
@@ -3081,8 +3024,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 1,
                                 4,
                             ],
-                            predecessors: [
-                            ],
                             stmts: [
                                 {
                                     _: "AssignStmt",
@@ -3182,9 +3123,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                 2,
                                 3,
                             ],
-                            predecessors: [
-                                0,
-                            ],
                             stmts: [
                                 {
                                     _: "IfStmt",
@@ -3227,11 +3165,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 2,
                             successors: [
                             ],
-                            predecessors: [
-                                1,
-                                3,
-                                4,
-                            ],
                             stmts: [
                                 {
                                     _: "ReturnStmt",
@@ -3249,9 +3182,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 3,
                             successors: [
                                 2,
-                            ],
-                            predecessors: [
-                                1,
                             ],
                             stmts: [
                                 {
@@ -3334,9 +3264,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             id: 4,
                             successors: [
                                 2,
-                            ],
-                            predecessors: [
-                                0,
                             ],
                             stmts: [
                                 {
