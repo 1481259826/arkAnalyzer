@@ -125,7 +125,7 @@ export class JsonPrinter extends Printer {
             superClassName: cls.getSuperClassName(),
             implementedInterfaceNames: cls.getImplementedInterfaceNames(),
             fields: cls.getFields().map((field) => this.serializeField(field)),
-            methods: cls.getMethods().map((method) => this.serializeMethod(method)),
+            methods: cls.getMethods(true).map((method) => this.serializeMethod(method)),
         };
     }
 

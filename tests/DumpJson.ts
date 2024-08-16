@@ -25,6 +25,7 @@ let config = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "resources/save"));
 let scene = new Scene();
 scene.buildSceneFromProjectDir(config);
+scene.inferTypes();
 
 let printer = new PrinterBuilder();
 for (let f of scene.getFiles()) {
