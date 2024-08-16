@@ -13,24 +13,25 @@
  * limitations under the License.
  */
 
-import { NodeID, Kind, BaseEdge, BaseGraph, BaseNode } from './BaseGraph';
-import { MethodSignature } from '../model/ArkSignature'
-import { Stmt, ArkInvokeStmt } from '../base/Stmt'
-import { Value } from '../base/Value'
+import { MethodSignature } from '../../core/model/ArkSignature'
+import { Stmt, ArkInvokeStmt } from '../../core/base/Stmt'
+import { Value } from '../../core/base/Value'
 import { Scene } from '../../Scene';
-import { ArkMethod } from '../model/ArkMethod';
-import { ContextID } from '../pta/Context';
+import { ArkMethod } from '../../core/model/ArkMethod';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
-//import { } from '../pta/Context'
+import { ContextID } from '../pointerAnalysis/Context';
+import { BaseEdge, BaseNode, BaseGraph, NodeID } from './BaseGraph';
 
 export type Method = MethodSignature;
 export type CallSiteID = number;
 export type FuncID = number;
 type StmtSet = Set<Stmt>;
+
 export enum CallGraphNodeKind {
     real, vitual, intrinsic, constructor
 }
+
 export class CallSite {
     public callStmt: Stmt;
     public args: Value[] | undefined;

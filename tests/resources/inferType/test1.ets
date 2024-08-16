@@ -12,10 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export interface SCBUnlockTransitionController {
+  name: string;
+  onLock: () => void;
+  onUnlock: () => void;
+}
 
-class Main1 {
-    private i: number = 0;
-
-    constructor() {
+export class SCBTransitionManager {
+  static getInstance(): SCBTransitionManager {
+    if (globalThis.SCBTransitionManagerInstance == null) {
+      globalThis.SCBTransitionManagerInstance = new SCBTransitionManager();
     }
+    return globalThis.SCBTransitionManagerInstance;
+  }
+
+  registerUnlockTransitionController(
+    controller: SCBUnlockTransitionController | undefined,
+    isHomeState: boolean
+  ): boolean {
+    return isHomeState;
+  }
 }

@@ -13,17 +13,19 @@
  * limitations under the License.
  */
 
-import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from './BaseGraph';
-import { CallGraph, CallSite } from './CallGraph';
-import { ContextID } from '../pta/Context';
-import { Value } from '../base/Value';
-import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ArkNewExpr } from '../base/Expr';
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../base/Ref';
-import { Local } from '../base/Local';
+import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from '../model/BaseGraph';
+import { CallGraph, CallSite } from '../model/CallGraph';
+import { Value } from '../../core/base/Value';
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt';
+import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr, ArkNormalBinopExpr } from '../../core/base/Expr';
+import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
-import { Constant } from '../base/Constant';
+import { Constant } from '../../core/base/Constant';
+import { FunctionType } from '../../core/base/Type';
+import { MethodSignature } from '../../core/model/ArkSignature';
+import { ContextID } from './Context';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -96,7 +98,7 @@ export class ThisPagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef }
+export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, Function }
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -286,7 +288,9 @@ export class PagNode extends BaseNode {
             case PagNodeKind.RefVar:
                 return 'shape=component';
             case PagNodeKind.Param:
-                return 'shape=box'
+                return 'shape=box';
+            case PagNodeKind.Function:
+                return 'shape=box3d';
             default:
                 return 'shape=box';
         }
@@ -364,7 +368,7 @@ export class PagThisRefNode extends PagNode {
 
 export class PagNewExprNode extends PagNode {
     fieldNodes: Map<string, NodeID>
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewExpr, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: AbstractExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
     }
 
@@ -397,6 +401,22 @@ export class PagNewExprNode extends PagNode {
 export class PagParamNode extends PagNode {
     constructor(id: NodeID, cid: ContextID|undefined = undefined, r: ArkParameterRef, stmt?: Stmt) {
         super(id, cid, r, PagNodeKind.Param, stmt)
+    }
+}
+
+export class PagFuncNode extends PagNode {
+    private methodSignature: MethodSignature
+
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
+        super(id, cid, r, PagNodeKind.Function, stmt)
+    }
+
+    public setMethod(method: MethodSignature) {
+        this.methodSignature = method
+    }
+
+    public getMethod(): MethodSignature {
+        return this.methodSignature
     }
 }
 
@@ -461,12 +481,22 @@ export class Pag extends BaseGraph {
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
-            pagNode = new PagLocalNode(id, cid, value, stmt);
+            const valueType = value.getType()
+            if (valueType instanceof FunctionType && 
+                (value.getDeclaringStmt() === null)) {
+                // init function pointer
+                pagNode = new PagFuncNode(id, cid, value, stmt)
+                if (pagNode instanceof PagFuncNode) {
+                    pagNode.setMethod(valueType.getMethodSignature())
+                }
+            } else {
+                pagNode = new PagLocalNode(id, cid, value, stmt);
+            }
         } else if (value instanceof ArkInstanceFieldRef) {
             pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
             pagNode = new PagStaticFieldNode(id, cid, value, stmt);
-        } else if (value instanceof ArkNewExpr) {
+        } else if (value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr) {
             pagNode = new PagNewExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);

@@ -17,10 +17,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
-import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
-import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
-import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
@@ -37,10 +33,11 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
-import { generateDefaultClassField, StaticInitMethodName } from './core/model/builder/ArkClassBuilder';
+import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
 import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
+import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
 
 const logger = Logger.getLogger();
 
@@ -343,6 +340,7 @@ export class Scene {
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
         if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
+            this.classesMap.clear()
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -371,6 +369,7 @@ export class Scene {
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
         if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
+            this.methodsMap.clear()
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -410,26 +409,11 @@ export class Scene {
         return this.ohPkgFilePath;
     }
 
-    public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph;
-        callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints);
-        return callGraphCHA;
-    }
-
-    public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph;
-        callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints);
-        return callGraphRTA;
-    }
-
-    public makeCallGraphVPA(entryPoints: MethodSignature[]) {
-        // WIP context-insensitive 上下文不敏感
-        // let callGraphVPA: AbstractCallGraph
-        // callGraphVPA = new VariablePointerAnalysisAlogorithm(this);
-        // callGraphVPA.loadCallGraph(entryPoints)
-        // return callGraphVPA
+    public makeCallGraphCHA(entryPoints: MethodSignature[]) {
+        // let callGraphCHA: AbstractCallGraph;
+        // callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
+        // callGraphCHA.loadCallGraph(entryPoints);
+        // return callGraphCHA;
     }
 
     /**
@@ -448,6 +432,9 @@ export class Scene {
                 TypeInference.inferTypeInMethod(arkMethod);
             }
         });
+
+        this.getClassesMap(true)
+        this.getMethodsMap(true)
     }
 
     /**
@@ -745,10 +732,13 @@ export class Scene {
                     const configModule = config.module;
                     if (configModule instanceof Object) {
                         Object.entries(configModule).forEach(([k, v]) => {
-                            if (k == 'abilities') {
-                                abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
-                            } else if (k == 'extensionAbilities') {
-                                abilities.push(...getAbilities(v, path.join(projectDir, module.srcPath), this));
+                            if (k == 'abilities' || k == 'extensionAbilities') {
+                                const moduleAbilities = getAbilities(v, path.join(projectDir, module.srcPath), this);
+                                for (const ability of moduleAbilities) {
+                                    if (!abilities.includes(ability)) {
+                                        abilities.push(ability);
+                                    }
+                                }
                             }
                         });
                     }
@@ -805,9 +795,9 @@ export class Scene {
     }
 
     public getStaticInitMethods(): ArkMethod[] {
-        const staticInitMethods: ArkMethod[] = []
+        const staticInitMethods: ArkMethod[] = [];
         for (const method of Array.from(this.getMethodsMap(true).values())) {
-            if (method.getName() == StaticInitMethodName) {
+            if (method.getName() == STATIC_INIT_METHOD_NAME) {
                 staticInitMethods.push(method);
             }
         }

@@ -21,7 +21,8 @@ import {
     ArkCastExpr,
     ArkConditionExpr,
     ArkDeleteExpr,
-    ArkInstanceInvokeExpr, ArkInstanceOfExpr,
+    ArkInstanceInvokeExpr,
+    ArkInstanceOfExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkNormalBinopExpr,
@@ -60,8 +61,8 @@ import {
     ArrayObjectType,
     ArrayType,
     BooleanType,
-    FunctionType,
     ClassType,
+    FunctionType,
     NeverType,
     NullType,
     NumberType,
@@ -81,11 +82,7 @@ import Logger from '../../utils/logger';
 import { IRUtils } from './IRUtils';
 import { ArkMethod } from '../model/ArkMethod';
 import { buildArkMethodFromArkClass } from '../model/builder/ArkMethodBuilder';
-import {
-    buildNormalArkClassFromArkFile,
-    buildNormalArkClassFromArkNamespace,
-    CONSTRUCTOR,
-} from '../model/builder/ArkClassBuilder';
+import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace } from '../model/builder/ArkClassBuilder';
 import { ArkClass } from '../model/ArkClass';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import {
@@ -100,6 +97,7 @@ import {
 import { LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
+import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
 
 const logger = Logger.getLogger();
 
@@ -124,7 +122,7 @@ export class ArkIRTransformer {
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
         this.declaringMethod = declaringMethod;
-        this.thisLocal = new Local('this', declaringMethod.getDeclaringArkClass().getSignature().getType());
+        this.thisLocal = new Local(THIS_NAME, declaringMethod.getDeclaringArkClass().getSignature().getType());
         this.locals.set(this.thisLocal.getName(), this.thisLocal);
         this.inBuildMethod = ModelUtils.isArkUIBuilderMethod(declaringMethod);
     }
@@ -630,7 +628,7 @@ export class ArkIRTransformer {
 
         const constructorMethodSignature = new MethodSignature();
         constructorMethodSignature.setDeclaringClassSignature(anonymousClassSignature);
-        constructorMethodSignature.getMethodSubSignature().setMethodName(CONSTRUCTOR);
+        constructorMethodSignature.getMethodSubSignature().setMethodName(CONSTRUCTOR_NAME);
         stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, constructorMethodSignature, [])));
         return {value: newExprValue, stmts: stmts};
     }

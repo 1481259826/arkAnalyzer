@@ -13,23 +13,27 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../../Scene";
-import { ArkInstanceInvokeExpr } from "../../base/Expr";
-import { Local } from "../../base/Local";
-import { ArkInstanceFieldRef } from "../../base/Ref";
-import { Value } from "../../base/Value";
-import { NodeID } from "../BaseGraph";
+import { Scene } from "../../Scene";
+import { ArkInstanceInvokeExpr } from "../../core/base/Expr";
+import { Local } from "../../core/base/Local";
+import { ArkInstanceFieldRef } from "../../core/base/Ref";
+import { Value } from "../../core/base/Value";
+import { NodeID } from "../model/BaseGraph";
 import path from "path";
-import { CallGraph, CallSite, FuncID } from "../CallGraph";
-import { Pag, PagEdge, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode } from "../Pag";
-import { PagBuilder } from "../builder/PagBuilder";
-import { AbstractAnalysis } from "./AbstractAnalysis";
-import { DiffPTData, PtsSet } from "../../pta/PtsDS";
-import { ClassType, Type } from "../../base/Type";
-import { CallGraphBuilder } from "../builder/CallGraphBuilder";
-import { PointerAnalysisConfig } from "../../pta/PointerAnalysisConfig";
-import { ArkMethod } from "../../model/ArkMethod";
-import { ArkAssignStmt, Stmt } from "../../base/Stmt";
+import { CallGraph, FuncID } from "../model/CallGraph";
+import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
+import { DiffPTData, PtsSet } from "./PtsDS";
+import { ClassType, Type } from "../../core/base/Type";
+import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
+import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
+import { ArkMethod } from "../../core/model/ArkMethod";
+import { ArkAssignStmt } from "../../core/base/Stmt";
+import Logger from "../../utils/logger"
+import { DummyMainCreater } from "../../core/common/DummyMainCreater";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode } from "./Pag";
+import { PagBuilder } from "./PagBuilder";
+
+const logger = Logger.getLogger()
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;
@@ -62,10 +66,14 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
 
         let entries: FuncID[] = [];// to get from dummy main
-        let entryMethods: ArkMethod[] = projectScene.getEntryMethodsFromModuleJson5();
-        entryMethods.forEach((method) => {
-            let methodNodeID: FuncID = cg.getCallGraphNodeByMethod(method.getSignature()).getID()
-            entries.push(methodNodeID)
+        const dummyMainCreator = new DummyMainCreater(projectScene)
+        dummyMainCreator.createDummyMain()
+        const dummyMainMethod = dummyMainCreator.getDummyMain()
+        dummyMainMethod.getBody()?.getCfg().getStmts().forEach((stmt) => {
+            let invokeExpr = stmt.getInvokeExpr()
+            if (invokeExpr) {
+                entries.push(cg.getCallGraphNodeByMethod(invokeExpr.getMethodSignature()).getID())
+            }
         })
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
         pta.setEntries(entries);
@@ -74,6 +82,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     protected init() {
+        logger.warn(`========== Init Pointer Analysis ==========`)
         this.ptaStat.startStat();
         this.pagBuilder.buildForEntries(this.entries);
         if (this.config.dotDump) {
@@ -103,12 +112,13 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     private solveConstraint() {
         this.worklist = []
+        logger.warn(`========== Pointer Analysis Start ==========`)
         this.initWorklist();
         let reanalyzer: boolean = true;
 
         while (reanalyzer) {
             this.ptaStat.iterTimes++;
-            console.log(`round ${this.ptaStat.iterTimes}` )
+            logger.warn(`========== Pointer Analysis Round ${this.ptaStat.iterTimes} ==========`)
 
             this.solveWorklist();
             // process dynamic call
@@ -141,7 +151,6 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private processNode(nodeId: NodeID): boolean {
-        console.log(nodeId);
         this.handleThis(nodeId)
         this.handleLoadWrite(nodeId);
         this.handleCopy(nodeId);
@@ -245,43 +254,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         return true
     }
 
-    /*
-     * a.f
-     * Get a's pts
-     * only process instance field ref
-     */
-    // TODO: Deprecated?
-    private getBasePts(inNode: PagNode) {
-        let ret: Set<NodeID> = new Set();
-        let value = inNode.getValue();
-        if (!(value instanceof ArkInstanceFieldRef)) {
-            throw new Error ('Not a Ref field');
-        }
-        let base: Local = value.getBase();
-        let ctx2NdMap = this.pag.getNodesByValue(base);
-        if (!ctx2NdMap) {
-            throw new Error ('Cannot find pag node for a local');
-        }
-
-        for (let [cid, nodeId] of ctx2NdMap.entries()) {
-            if (cid != inNode.getCid()) {
-                continue;
-            }
-            let pts = this.ptd.getPropaPts(nodeId);
-            if (!pts) {
-                throw new Error (`Can't find pts for Node${nodeId}}`);
-            }
-
-            for(let pt of pts) {
-                if (!ret.has(pt)) {
-                    ret.add(pt);
-                }
-            }
-        }
-
-        return ret;
-    }
-
     private propagate(edge: PagEdge): boolean {
         let changed: boolean = false;
         let { src, dst } = edge.getEndPoints();
@@ -291,9 +263,6 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
         let realDiffPts = this.ptd.calculateDiff(src, dst);
 
-        // changed = this.ptd.unionDiffPts(dst, src);
-
-        // which one is better?
         for (let pt of realDiffPts) {
            changed = this.ptd.addPts(dst, pt) || changed;
         }
@@ -314,7 +283,6 @@ export class PointerAnalysis extends AbstractAnalysis{
             {
                 //debug
                 let name = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-                console.log(name)
                 if(name === 'forEach')
                     debugger
             }
@@ -345,6 +313,15 @@ export class PointerAnalysis extends AbstractAnalysis{
         // TODO: on The Fly UpdateCG
         return changed;
     }
+
+    // private temp() {
+    //     let funcPtrID: NodeID = 0
+    //     let funcPtrNode = this.pag.getNode(funcPtrID) as PagFuncNode
+
+    //     let methodSig = funcPtrNode.getMethod()
+    //     // TODO: maybe a new kind of callsite? and check static and instance
+    //     this.pagBuilder.addStaticPagCallEdge()
+    // }
 
     private addToReanalyze(startNodes: NodeID[]): boolean {
         let flag = false

@@ -13,15 +13,10 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../../Scene";
-import { AbstractInvokeExpr } from "../../base/Expr";
-import { Stmt } from "../../base/Stmt";
-import { ModelUtils } from "../../common/ModelUtils";
-import { ArkClass } from "../../model/ArkClass";
-import { ArkMethod } from "../../model/ArkMethod";
-import { NodeID } from "../BaseGraph";
-import { CallGraphBuilder } from "../builder/CallGraphBuilder";
-import { CallGraph, CallGraphNode, CallSite, FuncID, Method } from "../CallGraph";
+import { Scene } from "../../Scene";
+import { AbstractInvokeExpr } from "../../core/base/Expr";
+import { ModelUtils } from "../../core/common/ModelUtils";
+import { ArkMethod } from "../../core/model/ArkMethod";
 
 export abstract class AbstractAnalysis {
     protected scene: Scene

@@ -114,6 +114,9 @@ export class SourceMethod extends SourceBase {
             if (method.getDeclaringArkClass()?.isDefaultArkClass()) {
                 code.writeSpace('function');
             }
+            if (method.getAsteriskToken()) {
+                code.writeSpace('*');
+            }
             code.write(this.resolveMethodName(method.getName()));
         }
         if (method.getTypeParameter().length > 0) {

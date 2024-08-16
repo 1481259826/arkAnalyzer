@@ -38,7 +38,7 @@ namespace FnPtrTest3 {
         return t;
     }
 
-    function main() {
+    export function main() {
         let fp1: (value: number) => number = times2;
         fp1(2);
 
@@ -49,14 +49,24 @@ namespace FnPtrTest3 {
         fp3();
 
         let m = new MyStruct();
-        let fp4: (instance: MyStruct) => void = MyStruct.prototype.bar;
+        let fp4: (this: MyStruct) => void = MyStruct.prototype.bar;
         fp4.call(m);
+
+        let fp4_2: () => void = MyStruct.prototype.bar;
+        fp4_2.call(m);
 
         let fp5: (t: number) => number = MyStruct.prototype.gen;
         fp5.call(m, 2);
 
-        let fp6: (instance: MyStruct) => void = m.f;
+        let fp6: (this: MyStruct) => void = m.f;
         fp6.call(m);
 
+        let fp6_2: () => void = m.f;
+        fp6.call(m);
+
+        let fp7: (t: number) => number = (t: number) => m.gen(t)
+        let a = fp7(3)
     }
 }
+
+FnPtrTest3.main()
