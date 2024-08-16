@@ -19,17 +19,17 @@ import path from 'path';
 
 const CASE1_EXPECT = `let someArray = [1, 'string', false];
 for (let entry of someArray) {
-  logger.info(entry);
+  console.info(entry);
 }
 let list = [4, 5, 6];
 for (let i of list) {
-  logger.info(i);
+  console.info(i);
 }
 for (let i of list) {
-  logger.info(i);
+  console.info(i);
 }
 list.forEach((i: any) => {
-  logger.info(i);
+  console.info(i);
 });
 let i = 0;
 for (; i < list.length; i = i + 1) {
@@ -39,16 +39,52 @@ for (; i < list.length; i = i + 1) {
     if (i == 2) {
       break;
     } else {
-      logger.info(list[i]);
+      console.info(list[i]);
     }
   }
 }
 let pets = new Set(['Cat', 'Dog', 'Hamster']);
 for (let pet of pets) {
-  logger.info(pet);
+  console.info(pet);
 }
 for (let pet of pets) {
-  logger.info(pet);
+  console.info(pet);
+}
+i = 0;
+do {
+  if (i == 0) {
+    continue;
+  } else {
+    if (i == 2) {
+      break;
+    } else {
+      console.info(list[i]);
+    }
+  }
+} while (i++ < list.length)
+i = list.length;
+while (i-- < list.length) {
+  if (i == 0) {
+    continue;
+  } else {
+    if (i == 2) {
+      break;
+    } else {
+      console.info(list[i]);
+    }
+  }
+}
+i = list.length;
+while (i-- < list.length) {
+  if (i == 0) {
+    continue;
+  } else {
+    if (i == 2) {
+      break;
+    } else {
+      console.info(list[i]);
+    }
+  }
 }
 `;
 

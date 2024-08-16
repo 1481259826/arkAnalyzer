@@ -14,7 +14,13 @@
  */
 
 import { Constant } from '../../core/base/Constant';
-import { ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import {
+    ArkInstanceInvokeExpr,
+    ArkNewArrayExpr,
+    ArkNewExpr,
+    ArkStaticInvokeExpr,
+    NormalBinaryOperator,
+} from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
 import {
@@ -88,11 +94,9 @@ export abstract class SourceStmt implements Dump {
         return code;
     }
 
-    protected beforeDump(): void {
-    }
+    protected beforeDump(): void {}
 
-    protected afterDump(): void {
-    }
+    protected afterDump(): void {}
 
     protected dumpTs(): string {
         if (this.text.length > 0) {
@@ -148,7 +152,6 @@ export class SourceAssignStmt extends SourceStmt {
     public transfer2ts(): void {
         this.leftOp = (this.original as ArkAssignStmt).getLeftOp();
         this.rightOp = (this.original as ArkAssignStmt).getRightOp();
-        logger.debug('SourceAssignStmt->transfer2ts', this.leftOp, this.rightOp);
 
         if (
             (this.leftOp instanceof Local && this.leftOp.getName() == 'this') ||
@@ -271,7 +274,7 @@ export class SourceAssignStmt extends SourceStmt {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
                     } else {
                         this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
-                            ',',
+                            ','
                         )})`;
                     }
                     return;
@@ -551,7 +554,9 @@ export class SourceWhileStmt extends SourceStmt {
             this.context.setTempVisit(name);
         }
 
-        this.setText(`for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`);
+        this.setText(
+            `for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`
+        );
         this.context.setTempVisit((temp3 as Local).getName());
 
         return true;
@@ -563,15 +568,39 @@ export class SourceWhileStmt extends SourceStmt {
         }
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
-        code = `while (${this.transformer.valueToString(expr.getOp1())}`;
-        code += ` ${this.transferOperator()} `;
-        code += `${this.transformer.valueToString(expr.getOp2())}) {`;
+        code = `while (${this.valueToString(expr.getOp1())}`;
+        code += ` ${expr.getOperator().trim()} `;
+        code += `${this.valueToString(expr.getOp2())}) {`;
         this.setText(code);
     }
 
-    protected transferOperator(): string {
-        let operator = (this.original as ArkIfStmt).getConditionExprExpr().getOperator().trim();
-        return operator;
+    protected valueToString(value: Value): string {
+        if (!(value instanceof Local)) {
+            return this.transformer.valueToString(value);
+        }
+
+        for (const stmt of this.block.getStmts()) {
+            if (!(stmt instanceof ArkAssignStmt)) {
+                continue;
+            }
+            if (
+                SourceUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Addition) &&
+                (stmt.getLeftOp() as Local).getName() == value.getName()
+            ) {
+                this.context.setSkipStmt(stmt);
+                return `${value.getName()}++`;
+            }
+
+            if (
+                SourceUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Subtraction) &&
+                (stmt.getLeftOp() as Local).getName() == value.getName()
+            ) {
+                this.context.setSkipStmt(stmt);
+                return `${value.getName()}--`;
+            }
+        }
+
+        return this.transformer.valueToString(value);
     }
 }
 
@@ -587,7 +616,7 @@ export class SourceForStmt extends SourceWhileStmt {
         let code: string;
         let expr = (this.original as ArkIfStmt).getConditionExprExpr();
         code = `for (; ${this.transformer.valueToString(expr.getOp1())}`;
-        code += ` ${this.transferOperator()} `;
+        code += ` ${expr.getOperator().trim()} `;
         code += `${this.transformer.valueToString(expr.getOp2())}; `;
 
         let stmtReader = new StmtReader(this.incBlock.getStmts());
@@ -601,8 +630,42 @@ export class SourceForStmt extends SourceWhileStmt {
         }
         code += `) {`;
         this.setText(code);
-        logger.debug('SourceForStmt->transfer2ts:', expr);
     }
+}
+
+export class SourceDoStmt extends SourceStmt {
+    constructor(context: StmtPrinterContext, stmt: Stmt) {
+        super(context, stmt);
+    }
+
+    public transfer2ts(): void {
+        this.setText('do {');
+    }
+
+    protected afterDump(): void {
+        this.printer.incIndent();
+    }
+}
+
+export class SourceDoWhileStmt extends SourceWhileStmt {
+    constructor(context: StmtPrinterContext, stmt: ArkIfStmt, block: BasicBlock) {
+        super(context, stmt, block);
+    }
+
+    public transfer2ts(): void {
+        let code: string;
+        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        code = `} while (${this.valueToString(expr.getOp1())}`;
+        code += ` ${expr.getOperator().trim()} `;
+        code += `${this.valueToString(expr.getOp2())})`;
+        this.setText(code);
+    }
+
+    protected beforeDump(): void {
+        this.printer.decIndent();
+    }
+
+    protected afterDump(): void {}
 }
 
 export class SourceElseStmt extends SourceStmt {
@@ -717,8 +780,7 @@ export class SourceCompoundEndStmt extends SourceStmt {
         this.setText(text);
     }
 
-    public transfer2ts(): void {
-    }
+    public transfer2ts(): void {}
 
     protected beforeDump(): void {
         this.printer.decIndent();
@@ -732,7 +794,6 @@ export class SourceCommonStmt extends SourceStmt {
 
     public transfer2ts(): void {
         this.setText(this.original.toString());
-        logger.debug('SourceCommonStmt->transfer2ts:', this.original.toString());
     }
 }
 
@@ -780,6 +841,6 @@ export function stmt2SourceStmt(context: StmtPrinterContext, stmt: Stmt): Source
     if (stmt instanceof ArkThrowStmt) {
         return new SourceThrowStmt(context, stmt);
     }
-    logger.info(`stmt2SourceStmt ${stmt} not support.`);
+    logger.info(`stmt2SourceStmt ${stmt.constructor} not support.`);
     return new SourceCommonStmt(context, stmt);
 }
