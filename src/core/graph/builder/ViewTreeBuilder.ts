@@ -596,9 +596,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     public findBuilderMethod(value: Value): ArkMethod | undefined | null {
-        if (value instanceof Local) {
-            value = backtraceLocalInitValue(value);
-        }
         let method: ArkMethod | undefined | null;
         if (value instanceof ArkInstanceFieldRef) {
             method = this.findMethodWithName(value.getFieldName());
@@ -753,6 +750,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
 
                 let value = assignStmt.getRightOp();
+                if (value instanceof Local) {
+                    value = backtraceLocalInitValue(value);
+                }
                 if (dstField?.hasBuilderParamDecorator()) {
                     let method = this.findBuilderMethod(value);
                     if (method) {
