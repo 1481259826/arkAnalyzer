@@ -51,6 +51,7 @@ import {
     Case2_BuilderTest_Expect_ViewTree,
     Case3_BuilderTest_Expect_ViewTree,
     Case_moreRootBuilderTest_Expect_ViewTree,
+    WaterFlowTest_Expect_ViewTree,
 } from '../resources/viewtree/builder/ExpectView';
 import {
     BuilderParamTest_Expect_ViewTree,
@@ -214,6 +215,17 @@ describe('builder Test', () => {
 
     it('test builder case3', async () => {
         testNamespaceClassViewTree(scene, 'Case3', 'BuilderTest', Case3_BuilderTest_Expect_ViewTree);
+    });
+
+    it('test WaterFlowTest', async () => {
+        let arkFile = scene.getFiles().find((file) => file.getName().endsWith(`BuilderTest.ets`));
+        let arkClass = arkFile?.getClassWithName('WaterFlowTest');
+        let vt = arkClass?.getViewTree();
+        if (!vt) {
+            assert.isDefined(vt);
+            return;
+        }
+        expectViewTree(vt.getRoot(), WaterFlowTest_Expect_ViewTree);
     });
 
     it('test @Builder-function-Decorator', async () => {

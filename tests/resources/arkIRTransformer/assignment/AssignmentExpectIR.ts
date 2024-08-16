@@ -15,6 +15,7 @@
 
 export const Declaration_Expect_IR = {
     stmts: [
+        'this = this: @assignment/DeclarationTest.ts: _DEFAULT_ARK_CLASS',
         'a = 1',
         'b = 2',
         'c = 3',
@@ -22,11 +23,13 @@ export const Declaration_Expect_IR = {
         'e = 4',
         'f = 5',
         'g = 6',
+        'return',
     ],
 };
 
 export const CompoundAssignment_Expect_IR = {
     stmts: [
+        'this = this: @assignment/CompoundAssignmentTest.ts: _DEFAULT_ARK_CLASS',
         'a = 1',
         'a = a + 2',
         'a = a - 3',
@@ -46,5 +49,6 @@ export const CompoundAssignment_Expect_IR = {
         'c = c + 1',
         'c = c - 1',
         'c = c - 1',
+        'return',
     ],
 };

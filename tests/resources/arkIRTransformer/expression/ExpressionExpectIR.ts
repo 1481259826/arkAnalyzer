@@ -15,6 +15,7 @@
 
 export const BinaryExpression_Expect_IR = {
     stmts: [
+        'this = this: @expression/BinaryExpressionTest.ts: _DEFAULT_ARK_CLASS',
         'a = 0',
         'b = 0',
         '$temp0 = a + b',
@@ -46,20 +47,24 @@ export const BinaryExpression_Expect_IR = {
         'h = true',
         'h = g && h',
         'h = g || h',
+        'return',
     ],
 };
 
 export const UnaryExpression_Expect_IR = {
     stmts: [
+        'this = this: @expression/UnaryExpressionTest.ts: _DEFAULT_ARK_CLASS',
         'a = 1',
         'b = -a',
         'c = ~a',
         'd = !a',
+        'return',
     ],
 };
 
 export const NewExpression_Expect_IR = {
     stmts: [
+        'this = this: @expression/NewExpressionTest.ts: _DEFAULT_ARK_CLASS',
         'sz1 = 1',
         '$temp0 = newarray (any)[sz1]',
         'arr1 = $temp0',
@@ -72,11 +77,13 @@ export const NewExpression_Expect_IR = {
         'arr3 = $temp2',
         '$temp3 = newarray (any)[0]',
         'arr4 = $temp3',
+        'return',
     ],
 };
 
 export const LiteralExpression_Expect_IR = {
     stmts: [
+        'this = this: @expression/LiteralExpressionTest.ts: _DEFAULT_ARK_CLASS',
         '$temp0 = newarray (number)[3]',
         '$temp0[0] = 1',
         '$temp0[1] = 2',
@@ -89,15 +96,17 @@ export const LiteralExpression_Expect_IR = {
         '$temp2[1] = 2',
         '$temp2[2] = \'3\'',
         'arr3 = $temp2',
+        'return',
     ],
 };
 
 export const Operator_Expect_IR = {
     stmts: [
+        'this = this: @expression/OperatorTest.ts: _DEFAULT_ARK_CLASS',
         '$temp0 = new @_UnknownProjectName/_UnknownFileName: Point',
         'instanceinvoke $temp0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
         'p = $temp0',
-        '$temp1 = delete p.<@_UnknownProjectName/_UnknownFileName: .y>',
+        '$temp1 = delete p.<@_UnknownProjectName/_UnknownFileName: Point.y>',
         'a = 0',
         'b = 1',
         '$temp2 = a + b',
@@ -105,5 +114,6 @@ export const Operator_Expect_IR = {
         'x = await 11',
         '$temp4 = yield 20',
         'isCat = cat instanceof Cat',
+        'return',
     ],
 };

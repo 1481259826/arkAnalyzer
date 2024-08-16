@@ -14,9 +14,14 @@
  */
 
 import { Constant } from '../../core/base/Constant';
-import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import {
+    ArkInstanceInvokeExpr,
+    ArkNormalBinopExpr,
+    ArkStaticInvokeExpr,
+    NormalBinaryOperator,
+} from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkAssignStmt } from '../../core/base/Stmt';
+import { ArkAssignStmt, Stmt } from '../../core/base/Stmt';
 import {
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
@@ -28,6 +33,7 @@ import {
 import { ArkClass } from '../../core/model/ArkClass';
 import Logger from '../../utils/logger';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
+import { NumberType, PrimitiveType } from '../../core/base/Type';
 
 const logger = Logger.getLogger();
 
@@ -50,6 +56,27 @@ export class SourceUtils {
 
     public static isConstructorMethod(name: string): boolean {
         return name == 'constructor';
+    }
+
+    public static isDeIncrementStmt(stmt: Stmt | null, op: NormalBinaryOperator): boolean {
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return false;
+        }
+
+        let leftOp = stmt.getLeftOp();
+        let rightOp = stmt.getRightOp();
+        if (!(leftOp instanceof Local) || !(rightOp instanceof ArkNormalBinopExpr)) {
+            return false;
+        }
+
+        let op1 = rightOp.getOp1();
+        let op2 = rightOp.getOp2();
+        let operator = rightOp.getOperator();
+        if (!(op1 instanceof Local) || !(op2 instanceof Constant)) {
+            return false;
+        }
+
+        return leftOp.getName() == op1.getName() && operator == op && op2.getValue() == '1';
     }
 
     public static isTemp(name: string): boolean {
@@ -124,7 +151,10 @@ export class SourceUtils {
         return false;
     }
 
-    public static isComponentAttributeInvoke(invokeExpr: ArkInstanceInvokeExpr, visitor: Set<ArkInstanceInvokeExpr> = new Set()): boolean {
+    public static isComponentAttributeInvoke(
+        invokeExpr: ArkInstanceInvokeExpr,
+        visitor: Set<ArkInstanceInvokeExpr> = new Set()
+    ): boolean {
         if (visitor.has(invokeExpr)) {
             return false;
         }
