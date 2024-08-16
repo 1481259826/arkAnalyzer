@@ -13,24 +13,23 @@
  * limitations under the License.
  */
 
-import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../CallGraph';
-import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode, PagLocalNode, PagFuncNode } from '../Pag'
-import { Scene } from '../../../Scene'
-import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
-import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
-import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../base/Ref';
-import { Value } from '../../base/Value';
-import { ContextID } from '../../pta/Context';
-import { ArkMethod } from '../../model/ArkMethod';
-import Logger from "../../../utils/logger";
-import { Local } from '../../base/Local';
-import { NodeID } from '../BaseGraph';
-import { ClassSignature } from '../../model/ArkSignature';
-import { ArkClass } from '../../model/ArkClass';
-import { ArrayType, ClassType, FunctionType } from '../../base/Type';
-import { Constant } from '../../base/Constant';
-import { PtsSet } from '../../pta/PtsDS';
+import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../model/CallGraph';
+import { Scene } from '../../Scene'
+import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
+import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { Value } from '../../core/base/Value';
+import { ArkMethod } from '../../core/model/ArkMethod';
+import Logger from "../../utils/logger";
+import { Local } from '../../core/base/Local';
+import { NodeID } from '../model/BaseGraph';
+import { ClassSignature } from '../../core/model/ArkSignature';
+import { ArkClass } from '../../core/model/ArkClass';
+import { ArrayType, ClassType, FunctionType } from '../../core/base/Type';
+import { Constant } from '../../core/base/Constant';
+import { PtsSet } from './PtsDS';
+import { ContextID, KLimitedContextSensitive } from './Context';
+import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode } from './Pag';
 
 const logger = Logger.getLogger();
 

@@ -15,11 +15,11 @@
 
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
-import { CallGraph } from '../src/core/graph/CallGraph';
-import { CallGraphBuilder } from '../src/core/graph/builder/CallGraphBuilder'
-import { Pag } from '../src/core/graph/Pag'
-import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
-import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
+import { CallGraph } from '../src/callgraph/model/CallGraph';
+import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder'
+import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
+import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
+import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
 import { Sdk } from "../src/Config";
 import Logger, {LOG_LEVEL} from "../src/utils/logger"
  
@@ -38,9 +38,9 @@ let config: SceneConfig = new SceneConfig()
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
 // config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-// config.buildFromProjectDir('./tests/resources/callgraph/anoTest');
+config.buildFromProjectDir('./tests/resources/callgraph/anoTest');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
-config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
+// config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
 // config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');

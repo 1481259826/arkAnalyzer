@@ -17,10 +17,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
-import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
-import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
-import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
@@ -413,26 +409,11 @@ export class Scene {
         return this.ohPkgFilePath;
     }
 
-    public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph;
-        callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints);
-        return callGraphCHA;
-    }
-
-    public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph;
-        callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints);
-        return callGraphRTA;
-    }
-
-    public makeCallGraphVPA(entryPoints: MethodSignature[]) {
-        // WIP context-insensitive 上下文不敏感
-        // let callGraphVPA: AbstractCallGraph
-        // callGraphVPA = new VariablePointerAnalysisAlogorithm(this);
-        // callGraphVPA.loadCallGraph(entryPoints)
-        // return callGraphVPA
+    public makeCallGraphCHA(entryPoints: MethodSignature[]) {
+        // let callGraphCHA: AbstractCallGraph;
+        // callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
+        // callGraphCHA.loadCallGraph(entryPoints);
+        // return callGraphCHA;
     }
 
     /**

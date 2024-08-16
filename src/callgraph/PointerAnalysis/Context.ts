@@ -13,170 +13,135 @@
  * limitations under the License.
  */
 
-import { Local } from "../../core/base/Local"
-import { Value } from "../../core/base/Value"
-import { FieldSignature, MethodSignature } from "../../core/model/ArkSignature"
+import {FuncID} from '../../callgraph/model/CallGraph'
 
+export type ContextID = number
 
-export let CONTEXT_SENSITIVE_DEPTH = 1
+class Context {
+    private contextElems: number[];
 
-export function ModifyCallSiteDepth(depth: number) {
-    CONTEXT_SENSITIVE_DEPTH = depth
-}
-
-export abstract class Context {
-    private location: string
-
-    constructor(localtion: string) {
-        this.location = localtion
+    constructor(contextElems: number[] = []) {
+        this.contextElems = contextElems;
     }
 
-    public getLocation() {
-        return this.location
+    static newEmpty(): Context {
+        return new Context();
     }
 
-    abstract equal(targetContext: Context): boolean
-    abstract toString(): string
-}
-
-export class InsensitiveContext extends Context {
-    constructor(sourceMethod: MethodSignature, position: number) {
-        super(sourceMethod.toString()+":"+position)
+    static new(contextElems: number[]): Context {
+        return new Context(contextElems);
     }
 
-    toString(): string {
-        return this.getLocation()
-    }
-
-    equal(targetContext: Context): boolean {
-        if (targetContext instanceof InsensitiveContext) {
-            return this.getLocation() === targetContext.getLocation()
-        }
-        return false
-    }
-}
-
-export class CallSiteSensitiveContext extends Context {
-    private callSiteChain: CallSite[]
-
-    constructor(sourceContext: CallSiteSensitiveContext | undefined, sourceMethod: MethodSignature, position: number) {
-        super(sourceMethod.toString()+":"+position)
-        let newCallSite = new CallSite(sourceMethod,position)
-        this.callSiteChain = sourceContext ? [...sourceContext.getCallSiteChain(), newCallSite] : [newCallSite]
-    }
-
-    public getCallSiteChain() {
-        return this.callSiteChain
-    }
-
-    equal(targetContext: Context): boolean {
-        if (targetContext instanceof CallSiteSensitiveContext) {
-            const firstChain = this.getCallSiteChain();
-            const secondChain = targetContext.getCallSiteChain();
-            const firstChainLength = firstChain.length
-            const secondChainLength = secondChain.length
-            
-            if ((firstChainLength < CONTEXT_SENSITIVE_DEPTH && secondChainLength >= CONTEXT_SENSITIVE_DEPTH) 
-                || (firstChainLength >= CONTEXT_SENSITIVE_DEPTH && secondChainLength < CONTEXT_SENSITIVE_DEPTH)) {
-                // contexts that has different part length
-                return false
-            } else if (firstChainLength < CONTEXT_SENSITIVE_DEPTH && secondChainLength < CONTEXT_SENSITIVE_DEPTH) {
-                // contexts that has both shorter length than setting
-                return firstChainLength == secondChainLength && firstChain.every((value, index) => value.equals(secondChain[index]))
+    // use old context and a new element to create a new k-limited Context 
+    static newKLimitedContext(oldCtx: Context, elem: number, k: number): Context {
+        let elems: number[] = [];
+        if (k > 0) {
+            elems.push(elem);
+            if (oldCtx.contextElems.length < k) {
+                elems = elems.concat(oldCtx.contextElems);
             } else {
-                // contexts that has both longer length than setting
-                for (let i = 1; i <= CONTEXT_SENSITIVE_DEPTH; i++) {
-                    if (!firstChain[firstChain.length - i].equals(secondChain[secondChain.length - i])) {
-                        return false;
-                    }
-                }
-                return true;
+                elems = elems.concat(oldCtx.contextElems.slice(0, k - 1));
             }
         }
-        return false
+        return new Context(elems);
     }
 
-    toString(): string {// WIP
-        return this.getLocation()
-    }
-}
-
-class CallSite {
-    private methodSignature: MethodSignature
-    private position: number
-
-    constructor(method: MethodSignature, position: number) {
-        this.methodSignature = method
-        this.position = position
-    }
-
-    public getMethod(): MethodSignature {
-        return this.methodSignature
-    }
-
-    public getPosition(): number {
-        return this.position
-    }
-
-    public equals(newCallSite: CallSite): Boolean {
-        if (this.methodSignature.toString() == newCallSite.getMethod().toString()
-             && this.position == newCallSite.getPosition()) {
-            return true
+    static kLimitedContext(ctx: Context, k:number): Context {
+        if (ctx.length() <= k) {
+            return new Context(ctx.contextElems);
+        } else {
+            const elems = ctx.contextElems.slice(0, k);
+            return new Context(elems);
         }
-        return false
+    }
+
+    public length(): number {
+        return this.contextElems.length;
+    }
+
+    public get(index: number): number {
+        if (index < 0 || index >= this.contextElems.length) {
+            throw new Error('Index out of bounds');
+        }
+        return this.contextElems[index];
+    }
+
+    public toString(): String {
+        return this.contextElems.join('-')
     }
 }
 
-export class ValueWithContext {
-    private value: Value
-    private context: Context
+class ContextCache {
+    private contextList: Context[] = [];
+    private contextToIndexMap: Map<String, number> = new Map();
 
-    constructor(value: Value, context: Context) {
-        this.value = value
-        this.context = context
+    constructor() {
+        this.contextList = [];
+        this.contextToIndexMap = new Map();
     }
 
-    public getValue(): Value {
-        return this.value
+    public getContextID(context: Context): number {
+        let cStr = context.toString();
+        if (this.contextToIndexMap.has(cStr)) {
+            return this.contextToIndexMap.get(cStr) as number;
+        } else {
+            const id = this.contextList.length;
+            this.contextList.push(context);
+            this.contextToIndexMap.set(cStr, id);
+            return id;
+        }
     }
 
-    public getContext(): Context {
-        return this.context
-    }
-}
-
-export class MethodWithContext {
-    private methodSignature: MethodSignature
-    private context: Context
-
-    constructor(method: MethodSignature, context: Context) {
-        this.methodSignature = method
-        this.context = context
+    public getContext(id: number): Context | undefined {
+        //if (id === 0 || id > this.contextList.length) {
+        if (id > this.contextList.length) {
+            return undefined;
+        }
+        return this.contextList[id];
     }
 
-    public getMethodSignature(): MethodSignature {
-        return this.methodSignature
-    }
-
-    public getContext(): Context {
-        return this.context
+    public getContextList(): Context[] {
+        return this.contextList;
     }
 }
 
-export class FieldWithContext {
-    private fieldSignature: FieldSignature
-    private context: Context
+export class KLimitedContextSensitive {
+    k: number;
+    ctxCache: ContextCache;
 
-    constructor(field: FieldSignature, context: Context) {
-        this.fieldSignature = field
-        this.context = context
+    constructor(k: number) {
+        this.k = k;
+        this.ctxCache = new ContextCache();
     }
 
-    public getFieldSignature(): FieldSignature {
-        return this.fieldSignature
+    public emptyContext(): Context {
+        return new Context([]);
     }
 
-    public getContext(): Context {
-        return this.context
+    public getEmptyContextID(): ContextID{
+        return this.getContextID(Context.newEmpty());
+    }
+
+    public getContextID(context: Context): ContextID{
+        return this.ctxCache.getContextID(context);
+    }
+
+    public getContextByID(context_id: number): Context | undefined {
+        return this.ctxCache.getContext(context_id);
+    }
+
+    public getNewContextID(callerFuncId: FuncID): ContextID {
+         return this.ctxCache.getContextID(Context.new([callerFuncId]));
+    }
+
+    public getOrNewContext(callerCid: ContextID, calleeFuncId: FuncID): ContextID {
+        const callerCtx = this.ctxCache.getContext(callerCid);
+        if (!callerCtx) {
+            throw new Error(`Context with id ${callerCid} not found.`);
+        }
+
+        const calleeCtx = Context.newKLimitedContext(callerCtx, calleeFuncId, this.k);
+        const calleeCid = this.ctxCache.getContextID(calleeCtx);
+        return calleeCid;
     }
 }

@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from './BaseGraph';
-import { CallGraph, CallSite } from './CallGraph';
-import { ContextID } from '../pta/Context';
-import { Value } from '../base/Value';
-import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr, ArkNormalBinopExpr } from '../base/Expr';
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../base/Ref';
-import { Local } from '../base/Local';
+import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from '../model/BaseGraph';
+import { CallGraph, CallSite } from '../model/CallGraph';
+import { Value } from '../../core/base/Value';
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt';
+import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr, ArkNormalBinopExpr } from '../../core/base/Expr';
+import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
-import { Constant } from '../base/Constant';
-import { FunctionType } from '../base/Type';
-import { MethodSignature } from '../model/ArkSignature';
+import { Constant } from '../../core/base/Constant';
+import { FunctionType } from '../../core/base/Type';
+import { MethodSignature } from '../../core/model/ArkSignature';
+import { ContextID } from './Context';
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis

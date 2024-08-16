@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../../Scene";
-import { AbstractInvokeExpr } from "../../base/Expr";
-import { ModelUtils } from "../../common/ModelUtils";
-import { ArkMethod } from "../../model/ArkMethod";
+import { Scene } from "../../Scene";
+import { AbstractInvokeExpr } from "../../core/base/Expr";
+import { ModelUtils } from "../../core/common/ModelUtils";
+import { ArkMethod } from "../../core/model/ArkMethod";
 
 export abstract class AbstractAnalysis {
     private scene: Scene
