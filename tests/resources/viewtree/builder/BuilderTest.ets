@@ -197,3 +197,17 @@ function moreRootBuilderTest() {
   Column()
   Column()
 }
+
+@Component
+struct WaterFlowTest {
+  build() {
+    Column() {
+      WaterFlow({footer: (): void => this.itemFoot()})
+    }
+  }
+
+  @Builder
+  itemFoot() {
+    Text('Foot Text')
+  }
+}

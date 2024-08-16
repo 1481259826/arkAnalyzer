@@ -237,3 +237,22 @@ export const Case_moreRootBuilderTest_Expect_ViewTree = {
         }
     ]
 }
+export const WaterFlowTest_Expect_ViewTree = {
+    name: 'Column',
+    children: [
+        {
+            name: 'WaterFlow',
+            children: [
+                {
+                    name: 'Builder',
+                    children: [
+                        {
+                            name: 'Text',
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+};
