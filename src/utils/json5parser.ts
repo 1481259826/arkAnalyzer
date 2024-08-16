@@ -15,8 +15,8 @@
 
 import * as ts from 'ohos-typescript';
 import * as fs from 'fs';
-import path from 'path';
 import Logger from './logger';
+
 const logger = Logger.getLogger();
 
 export function fetchDependenciesFromFile(filePath: string): { [k: string]: unknown } {

@@ -17,7 +17,7 @@ import path from 'path';
 import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ClassType, Type, UnknownType } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
-import Logger from "../../utils/logger";
+import Logger from '../../utils/logger';
 
 export type Signature = FileSignature | NamespaceSignature | ClassSignature | MethodSignature | FieldSignature;
 

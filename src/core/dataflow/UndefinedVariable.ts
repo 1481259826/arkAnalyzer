@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../Scene";
-import { ArkBody } from "../model/ArkBody";
-import { DataflowProblem, FlowFunction } from "./DataflowProblem"
-import { Local } from "../base/Local"
-import { Value } from "../base/Value"
-import { ClassType, UndefinedType } from "../base/Type"
-import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from "../base/Stmt"
-import { ArkMethod } from "../model/ArkMethod";
-import { Constant } from "../base/Constant"
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
-import { DataflowSolver } from "./DataflowSolver"
-import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
-import { factEqual } from "../dataflow/DataflowSolver";
-import { FileSignature, NamespaceSignature } from "../model/ArkSignature";
-import { ArkClass } from "../model/ArkClass";
-import Logger from "../../utils/logger";
+import { Scene } from '../../Scene';
+import { ArkBody } from '../model/ArkBody';
+import { DataflowProblem, FlowFunction } from './DataflowProblem';
+import { Local } from '../base/Local';
+import { Value } from '../base/Value';
+import { ClassType, UndefinedType } from '../base/Type';
+import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
+import { ArkMethod } from '../model/ArkMethod';
+import { Constant } from '../base/Constant';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { DataflowSolver } from './DataflowSolver';
+import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
+import { factEqual } from '../dataflow/DataflowSolver';
+import { FileSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ArkClass } from '../model/ArkClass';
+import Logger from '../../utils/logger';
 import { Cfg } from '../graph/Cfg';
 
 const logger = Logger.getLogger();

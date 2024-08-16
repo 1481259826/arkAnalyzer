@@ -16,8 +16,8 @@
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
 import {
     ArrayType,
-    FunctionType,
     ClassType,
+    FunctionType,
     TupleType,
     Type,
     TypeParameterType,

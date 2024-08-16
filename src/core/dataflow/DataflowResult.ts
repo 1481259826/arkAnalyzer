@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-import { Stmt } from "../base/Stmt";
-import { Fact } from "./Fact";
-
+import { Stmt } from '../base/Stmt';
+import { Fact } from './Fact';
 
 export class DataflowResult {
     stmt2InFacts!: Map<Stmt, Fact>;

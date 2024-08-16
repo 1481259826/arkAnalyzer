@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Stmt } from "../base/Stmt";
+import { Stmt } from '../base/Stmt';
 
 export class Edge {
     kind: number;

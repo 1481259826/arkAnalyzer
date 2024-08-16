@@ -14,7 +14,7 @@
  */
 
 import { SceneConfig } from '../../src/Config';
-import { assert, describe, it, expect } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../src/Scene';
 import path from 'path';
 import { Decorator } from '../../src/core/base/Decorator';
@@ -23,7 +23,6 @@ import {
     CommonTest_Expect_ViewTree,
     ControlCenterComplexToggleLayout_Expect_ViewTree,
     ControlCenterComponent_Expect_ViewTree,
-    NotificationItem_Expect_ViewTree,
     ParentComponent_Expect_ViewTree,
     SelfDepends_Expect_ViewTree,
 } from '../resources/viewtree/normal/ExpectView';

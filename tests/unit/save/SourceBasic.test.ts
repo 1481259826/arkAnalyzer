@@ -13,16 +13,9 @@
  * limitations under the License.
  */
 
-import {
-    SceneConfig,
-    Scene,
-    SourceClassPrinter,
-    SourceMethodPrinter,
-    DotMethodPrinter,
-} from '../../../src/index';
+import { Scene, SceneConfig, SourceClassPrinter, SourceMethodPrinter } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
-import fs from 'fs';
 
 const SourceBasicTest_CASE1_EXPECT = `class Person {
   x: number = 0;

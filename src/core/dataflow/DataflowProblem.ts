@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-import { Stmt } from "../base/Stmt";
-import { ArkMethod } from "../model/ArkMethod";
-import { Edge } from "./Edge";
-
+import { Stmt } from '../base/Stmt';
+import { ArkMethod } from '../model/ArkMethod';
+import { Edge } from './Edge';
 
 export abstract class DataflowProblem<D> {
 

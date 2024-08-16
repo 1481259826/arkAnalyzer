@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-import Logger from "../../utils/logger";
-import { FieldSignature } from "../model/ArkSignature";
-import { Local } from "./Local";
-import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from "./Type";
-import { Value } from "./Value";
-import { ArkClass } from "../model/ArkClass";
-import { TypeInference } from "../common/TypeInference";
-import { ValueUtil } from "../common/ValueUtil";
+import Logger from '../../utils/logger';
+import { FieldSignature } from '../model/ArkSignature';
+import { Local } from './Local';
+import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from './Type';
+import { Value } from './Value';
+import { ArkClass } from '../model/ArkClass';
+import { TypeInference } from '../common/TypeInference';
+import { ValueUtil } from '../common/ValueUtil';
 
 const logger = Logger.getLogger();
 

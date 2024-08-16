@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { BasicBlock } from "./BasicBlock";
-import { Cfg } from "./Cfg";
+import { BasicBlock } from './BasicBlock';
+import { Cfg } from './Cfg';
 
 export class DominanceFinder {
     private blocks: BasicBlock[] = [];

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import fs from "fs";
-import path from "path";
-import Logger from "./logger";
-import { transfer2UnixPath } from "./pathTransfer";
+import fs from 'fs';
+import path from 'path';
+import Logger from './logger';
+import { transfer2UnixPath } from './pathTransfer';
 
 const logger = Logger.getLogger();
 

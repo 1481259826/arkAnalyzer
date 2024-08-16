@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { Local } from "../base/Local";
-import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef } from "../base/Ref";
-import { Value } from "../base/Value";
+import { Local } from '../base/Local';
+import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef } from '../base/Ref';
+import { Value } from '../base/Value';
 
 /**
  * Replace old use of a Ref inplace

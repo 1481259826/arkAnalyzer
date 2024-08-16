@@ -19,7 +19,7 @@ import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeE
 import { Local } from '../../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
-import { FunctionType, ClassType, Type } from '../../base/Type';
+import { ClassType, FunctionType, Type } from '../../base/Type';
 import { Value } from '../../base/Value';
 import {
     BUILDER_DECORATOR,

@@ -38,7 +38,6 @@ import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from '../../common/Const';
-import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 
 const logger = Logger.getLogger();
 

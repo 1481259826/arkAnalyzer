@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-import ts from "ohos-typescript";
+import ts from 'ohos-typescript';
 import path from 'path';
-import { ArkFile } from "../ArkFile";
-import { LineColPosition } from "../../base/Position";
-import { ImportInfo } from "../ArkImport";
-import { buildModifiers } from "./builderUtils";
-import { Decorator } from "../../base/Decorator";
-import { ExportInfo, ExportType, FromInfo } from "../ArkExport";
-import { FileSignature } from "../ArkSignature";
-import Logger from "../../../utils/logger";
-import { transfer2UnixPath } from "../../../utils/pathTransfer";
-import { FileUtils, ModulePath } from "../../../utils/FileUtils";
-import { Sdk } from "../../../Config";
+import { ArkFile } from '../ArkFile';
+import { LineColPosition } from '../../base/Position';
+import { ImportInfo } from '../ArkImport';
+import { buildModifiers } from './builderUtils';
+import { Decorator } from '../../base/Decorator';
+import { ExportInfo, ExportType, FromInfo } from '../ArkExport';
+import { FileSignature } from '../ArkSignature';
+import Logger from '../../../utils/logger';
+import { transfer2UnixPath } from '../../../utils/pathTransfer';
+import { FileUtils, ModulePath } from '../../../utils/FileUtils';
+import { Sdk } from '../../../Config';
 
 const logger = Logger.getLogger();
 let moduleMap: Map<string, ModulePath> | undefined = undefined;

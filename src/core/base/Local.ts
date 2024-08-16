@@ -16,8 +16,8 @@
 import { Stmt } from './Stmt';
 import { Type, UnknownType } from './Type';
 import { Value } from './Value';
-import { ArkClass } from "../model/ArkClass";
-import { TypeInference } from "../common/TypeInference";
+import { ArkClass } from '../model/ArkClass';
+import { TypeInference } from '../common/TypeInference';
 
 /**
  * @category core/base

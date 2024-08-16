@@ -40,8 +40,8 @@ import { SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
     ArrayType,
-    FunctionType,
     ClassType,
+    FunctionType,
     LiteralType,
     PrimitiveType,
     Type,

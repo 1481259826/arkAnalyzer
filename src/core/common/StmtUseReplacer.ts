@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import { AbstractExpr } from "../base/Expr";
-import { Local } from "../base/Local";
-import { AbstractRef } from "../base/Ref";
-import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from "../base/Stmt";
-import { Value } from "../base/Value";
-import { ExprUseReplacer } from "./ExprUseReplacer";
-import { RefUseReplacer } from "./RefUseReplacer";
+import { AbstractExpr } from '../base/Expr';
+import { Local } from '../base/Local';
+import { AbstractRef } from '../base/Ref';
+import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
+import { Value } from '../base/Value';
+import { ExprUseReplacer } from './ExprUseReplacer';
+import { RefUseReplacer } from './RefUseReplacer';
 
 /**
  * Replace old use(Value) of a Stmt inplace

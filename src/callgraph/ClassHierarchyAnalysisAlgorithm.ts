@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../core/base/Expr";
-import { Stmt } from "../core/base/Stmt";
-import { ClassType } from "../core/base/Type";
-import { ArkClass } from "../core/model/ArkClass";
-import { ArkMethod } from "../core/model/ArkMethod";
-import { MethodSignature } from "../core/model/ArkSignature";
-import { isItemRegistered } from "../utils/callGraphUtils";
-import { AbstractCallGraph } from "./AbstractCallGraphAlgorithm";
+import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../core/base/Expr';
+import { Stmt } from '../core/base/Stmt';
+import { ClassType } from '../core/base/Type';
+import { ArkClass } from '../core/model/ArkClass';
+import { ArkMethod } from '../core/model/ArkMethod';
+import { MethodSignature } from '../core/model/ArkSignature';
+import { isItemRegistered } from '../utils/callGraphUtils';
+import { AbstractCallGraph } from './AbstractCallGraphAlgorithm';
 
 export class ClassHierarchyAnalysisAlgorithm extends AbstractCallGraph {
     public resolveCall(sourceMethodSignature: MethodSignature, invokeStmt: Stmt): MethodSignature[] {

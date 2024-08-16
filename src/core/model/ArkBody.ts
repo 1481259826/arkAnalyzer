@@ -15,7 +15,6 @@
 
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
-import { MethodSignature } from './ArkSignature';
 import { Stmt } from '../base/Stmt';
 
 export class ArkBody {

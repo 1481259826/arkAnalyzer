@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { Value } from "./Value"
-import { Stmt } from "./Stmt"
+import { Value } from './Value';
+import { Stmt } from './Stmt';
 
 export class DefUseChain{
     value:Value;

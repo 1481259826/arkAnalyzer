@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { ArkFile } from "./ArkFile";
-import { LineColPosition } from "../base/Position";
-import { findExportInfo } from "./builder/ArkImportBuilder";
-import { Decorator } from "../base/Decorator";
-import { ExportInfo, FromInfo } from "./ArkExport";
+import { ArkFile } from './ArkFile';
+import { LineColPosition } from '../base/Position';
+import { findExportInfo } from './builder/ArkImportBuilder';
+import { Decorator } from '../base/Decorator';
+import { ExportInfo, FromInfo } from './ArkExport';
 
 /**
  * @category core/model

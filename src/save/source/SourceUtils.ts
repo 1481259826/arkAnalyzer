@@ -27,13 +27,12 @@ import {
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_IF,
     COMPONENT_POP_FUNCTION,
-    SPECIAL_CONTAINER_COMPONENT,
     isEtsSystemComponent,
+    SPECIAL_CONTAINER_COMPONENT,
 } from '../../core/common/EtsConst';
 import { ArkClass } from '../../core/model/ArkClass';
 import Logger from '../../utils/logger';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
-import { NumberType, PrimitiveType } from '../../core/base/Type';
 
 const logger = Logger.getLogger();
 

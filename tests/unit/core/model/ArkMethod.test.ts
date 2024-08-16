@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from "vitest"
-import { Scene } from "../../../../src/Scene";
-import { SceneConfig } from "../../../../src/Config";
+import { describe, expect, it } from 'vitest';
+import { Scene } from '../../../../src/Scene';
+import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
-import { Builtin } from "../../../../src/core/common/Builtin";
+import { Builtin } from '../../../../src/core/common/Builtin';
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../../../resources/model/method"))

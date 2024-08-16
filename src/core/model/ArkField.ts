@@ -13,15 +13,14 @@
  * limitations under the License.
  */
 
-import { Decorator } from "../base/Decorator";
-import { LineColPosition } from "../base/Position";
-import { Stmt } from "../base/Stmt";
-import { Type } from "../base/Type";
-import { Value } from "../base/Value";
-import { BUILDER_PARAM_DECORATOR } from "../common/EtsConst";
-import { ArkClass } from "./ArkClass";
-import { FieldSignature, MethodSignature } from "./ArkSignature";
-import { MethodParameter } from "./builder/ArkMethodBuilder";
+import { Decorator } from '../base/Decorator';
+import { LineColPosition } from '../base/Position';
+import { Stmt } from '../base/Stmt';
+import { Type } from '../base/Type';
+import { BUILDER_PARAM_DECORATOR } from '../common/EtsConst';
+import { ArkClass } from './ArkClass';
+import { FieldSignature, MethodSignature } from './ArkSignature';
+import { MethodParameter } from './builder/ArkMethodBuilder';
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',

@@ -25,12 +25,12 @@ import { isItemRegistered } from '../utils/callGraphUtils';
 import { AbstractCallGraph } from './AbstractCallGraphAlgorithm';
 import { ClassHierarchyAnalysisAlgorithm } from './ClassHierarchyAnalysisAlgorithm';
 import {
-    LocalPointer,
-    PointerTargetPair,
-    PointerTarget,
     InstanceFieldPointer,
-    StaticFieldPointer,
+    LocalPointer,
     Pointer,
+    PointerTarget,
+    PointerTargetPair,
+    StaticFieldPointer,
 } from './PointerAnalysis/Pointer';
 import { PointerFlowGraph } from './PointerAnalysis/PointerFlowGraph';
 import Logger from '../utils/logger';

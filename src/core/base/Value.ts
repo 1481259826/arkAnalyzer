@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Type } from "./Type";
+import { Type } from './Type';
 
 /**
  * @category core/base

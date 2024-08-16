@@ -14,7 +14,6 @@
  */
 
 import { ClassSignature, FileSignature } from '../model/ArkSignature';
-import { s } from 'vitest/dist/reporters-yx5ZTtEV';
 
 export class Builtin {
     // built-in classes
