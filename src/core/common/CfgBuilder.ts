@@ -16,7 +16,7 @@
 import * as ts from 'ohos-typescript';
 import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
-import { ArkAssignStmt, ArkIfStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
@@ -25,6 +25,7 @@ import { ArkIRTransformer, DUMMY_INITIALIZER_STMT } from './ArkIRTransformer';
 import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
+import { IRUtils } from './IRUtils';
 
 const logger = Logger.getLogger();
 
@@ -209,6 +210,7 @@ export class CfgBuilder {
     catches: Catch[];
     exits: StatementBuilder[] = [];
     emptyBody: boolean = false;
+    arrowFunctionWithoutBlock: boolean = false;
 
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
@@ -236,6 +238,7 @@ export class CfgBuilder {
         this.importFromPath = [];
         this.catches = [];
         this.sourceFile = sourceFile;
+        this.arrowFunctionWithoutBlock = true;
     }
 
     walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
@@ -291,7 +294,7 @@ export class CfgBuilder {
                 // judgeLastType(brstm);
                 let p: ts.Node | null = c;
                 while (p) {
-                    if (ts.SyntaxKind[p.kind].includes('While') || ts.SyntaxKind[p.kind].includes('For')) {
+                    if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
                         const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
                         judgeLastType(lastLoopNextF);
                         lastLoopNextF.lasts.add(lastStatement);
@@ -299,7 +302,7 @@ export class CfgBuilder {
                         // this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
                         return;
                     }
-                    if (ts.SyntaxKind[p.kind].includes('CaseClause') || ts.SyntaxKind[p.kind].includes('DefaultClause')) {
+                    if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
                         const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
                         judgeLastType(lastSwitchExit);
                         lastSwitchExit.lasts.add(lastStatement);
@@ -933,6 +936,14 @@ export class CfgBuilder {
         }
     }
 
+    buildStatementBuilder4ArrowFunction(stmt: ts.Node) {
+        let s = new StatementBuilder('statement', stmt.getText(this.sourceFile), stmt, 0);
+        this.entry.next = s;
+        s.lasts = new Set([this.entry]);
+        s.next = this.exit;
+        this.exit.lasts = new Set([s]);
+    }
+
     buildCfgBuilder() {
         let stmts: ts.Node[] = [];
         if (ts.isSourceFile(this.astRoot)) {
@@ -944,8 +955,10 @@ export class CfgBuilder {
             } else {
                 this.emptyBody = true;
             }
-        } else if (ts.isArrowFunction(this.astRoot) && ts.isBlock(this.astRoot.body)) {
-            stmts = [...this.astRoot.body.statements];
+        } else if (ts.isArrowFunction(this.astRoot)) {
+            if (ts.isBlock(this.astRoot.body)) {
+                stmts = [...this.astRoot.body.statements];
+            }
         } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot)
             || ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
             this.emptyBody = true;
@@ -957,7 +970,9 @@ export class CfgBuilder {
         } else {
             this.handleBuilder(stmts);
         }
-
+        if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
+            this.buildStatementBuilder4ArrowFunction(this.astRoot.body);
+        }
         this.addReturnInEmptyMethod();
         this.deleteExit();
         this.CfgBuilder2Array(this.entry);
@@ -985,6 +1000,70 @@ export class CfgBuilder {
     }
 
     public buildCfgAndOriginalCfg(): {
+        cfg: Cfg,
+        originalCfg: Cfg,
+        stmtToOriginalStmt: Map<Stmt, Stmt>,
+        locals: Set<Local>
+    } {
+        if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
+            return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
+        }
+
+        return this.buildNormalCfgAndOriginalCfg();
+    }
+
+    public buildCfgAndOriginalCfgForSimpleArrowFunction(): {
+        cfg: Cfg,
+        originalCfg: Cfg,
+        stmtToOriginalStmt: Map<Stmt, Stmt>,
+        locals: Set<Local>
+    } {
+        const stmts: Stmt[] = [];
+        const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
+        stmts.push(...arkIRTransformer.prebuildStmts());
+
+        const expressionBodyNode = (this.astRoot as ts.ArrowFunction).body as ts.Expression;
+        const expressionBodyStmts: Stmt[] = [];
+        let {
+            value: expressionBodyValue,
+            stmts: tempStmts,
+        } = arkIRTransformer.tsNodeToValueAndStmts(expressionBodyNode);
+        expressionBodyStmts.push(...tempStmts);
+        if (IRUtils.moreThanOneAddress(expressionBodyValue)) {
+            ({
+                value: expressionBodyValue,
+                stmts: tempStmts,
+            } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue));
+            expressionBodyStmts.push(...tempStmts);
+        }
+        expressionBodyStmts.push(new ArkReturnStmt(expressionBodyValue));
+        arkIRTransformer.mapStmtsToTsStmt(expressionBodyStmts, expressionBodyNode);
+        stmts.push(...expressionBodyStmts);
+        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
+
+        const cfg = new Cfg();
+        const blockInCfg = new BasicBlock();
+        blockInCfg.setId(0);
+        stmts.forEach(stmt => {
+            blockInCfg.addStmt(stmt);
+        });
+        cfg.addBlock(blockInCfg);
+        cfg.setStartingStmt(stmts[0]);
+
+        const originalCfg = new Cfg();
+        const blockInOriginalCfg = new BasicBlock();
+        blockInOriginalCfg.setId(0);
+        originalCfg.addBlock(blockInOriginalCfg);
+        originalCfg.setStartingStmt(stmtToOriginalStmt.get(stmts[0]) as Stmt);
+        return {
+            cfg: cfg,
+            originalCfg: originalCfg,
+            stmtToOriginalStmt: stmtToOriginalStmt,
+            locals: arkIRTransformer.getLocals(),
+        };
+    }
+
+    public buildNormalCfgAndOriginalCfg(): {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,

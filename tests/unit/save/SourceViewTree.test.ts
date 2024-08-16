@@ -116,6 +116,7 @@ struct LazyForEachTest {
         item.message = new NestedString(item.message.message + '0');
       })
     }, (item: StringData, index: number) => {
+      return JSON.stringify(item) + index.toString();
     })
     }
     .cachedCount(5)

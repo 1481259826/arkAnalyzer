@@ -13,101 +13,121 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
-import { ArkClass, ArkFile, ArkMethod, Stmt } from '../../src';
+import { assert, describe, expect, it } from 'vitest';
+import { Scene, SceneConfig, Stmt } from '../../src';
 import path from 'path';
-import ts from 'ohos-typescript';
-import { ETS_COMPILER_OPTIONS } from '../../src/core/common/EtsConst';
-import fs from 'fs';
-import { ArkIRTransformer } from '../../src/core/common/ArkIRTransformer';
 import {
     BinaryExpression_Expect_IR,
     LiteralExpression_Expect_IR,
-    NewExpression_Expect_IR, Operator_Expect_IR,
+    NewExpression_Expect_IR,
+    Operator_Expect_IR,
     UnaryExpression_Expect_IR,
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
     CompoundAssignment_Expect_IR,
     Declaration_Expect_IR,
 } from '../resources/arkIRTransformer/assignment/AssignmentExpectIR';
+import { ModelUtils } from '../../src/core/common/ModelUtils';
+import { DEFAULT_ARK_METHOD_NAME } from '../../src/core/common/Const';
+import { ArrowFunction_Expect_IR } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 
-const baseDir = path.join(__dirname, '../../tests/resources/arkIRTransformer');
+const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
-function getDumpMethod(): ArkMethod {
-    const dumpArkFile = new ArkFile();
-    dumpArkFile.setName('dumpArkFile');
-    dumpArkFile.setProjectName('dumpProject');
-    dumpArkFile.genFileSignature();
-    const dumpArkClass = new ArkClass();
-    dumpArkClass.setName('dumpArkClass');
-    dumpArkFile.addArkClass(dumpArkClass);
-    dumpArkClass.setDeclaringArkFile(dumpArkFile);
-    dumpArkClass.genSignature();
-    const dumpArkMethod = new ArkMethod();
-    dumpArkMethod.setName('dumpArkMethod');
-    dumpArkClass.addMethod(dumpArkMethod);
-    dumpArkMethod.setDeclaringArkClass(dumpArkClass);
-    return dumpArkMethod;
-}
-
-function transformTsToArkIR(filePath: string): Stmt[] {
-    const sourceCode = fs.readFileSync(filePath, 'utf8');
-    const sourceFile = ts.createSourceFile(
-        filePath,
-        sourceCode,
-        ts.ScriptTarget.Latest,
-        undefined,
-        undefined,
-        ETS_COMPILER_OPTIONS,
-    );
-    const stmts: Stmt[] = [];
-    const arkIRTransformer = new ArkIRTransformer(sourceFile, getDumpMethod());
-    for (const statement of sourceFile.statements) {
-        stmts.push(...arkIRTransformer.tsNodeToStmts(statement));
+function testMethodStmts(scene: Scene, filePath: string, expectStmts: string[]): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === DEFAULT_ARK_METHOD_NAME));
+    const stmts = arkMethod?.getCfg()?.getStmts();
+    if (!stmts) {
+        assert.isDefined(stmts);
+        return;
     }
-    return stmts;
+
+    // console.log(`==method: ${arkMethod!.getName()}`);
+    // stmts.forEach(stmt => {
+    //     console.log(stmt.toString());
+    // });
+    assertStmtsEqual(stmts, expectStmts);
 }
 
-function testStmts(filePath: string, expectStmts: string[]): void {
-    const stmts: Stmt[] = transformTsToArkIR(filePath);
+function testFileStmts(scene: Scene, filePath: string, expectFileStmts: any): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    if (!arkFile) {
+        assert.isDefined(arkFile);
+        return;
+    }
+    const methods = ModelUtils.getAllMethodsInFile(arkFile);
+    for (const expectMethod of expectFileStmts.methods) {
+        const expectMethodName = expectMethod.name;
+        const method = methods.find((method) => method.getName() === expectMethodName);
+        if (!method) {
+            assert.isDefined(method);
+            continue;
+        }
+        const stmts = method.getCfg()?.getStmts();
+        if (!stmts) {
+            assert.isDefined(stmts);
+            continue;
+        }
+        assertStmtsEqual(stmts, expectMethod.stmts);
+    }
+}
+
+function assertStmtsEqual(stmts: Stmt[], expectStmts: string[]): void {
     expect(stmts.length).eq(expectStmts.length);
     for (let i = 0; i < stmts.length; i++) {
         expect(stmts[i].toString()).eq(expectStmts[i]);
     }
 }
 
+function buildScene(folderName: string) {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(BASE_DIR, folderName));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+    return scene;
+}
+
 describe('expression Test', () => {
-    const expressionTestDir = path.join(baseDir, 'expression');
+    const scene = buildScene('expression');
 
     it('test binary expression', async () => {
-        testStmts(path.join(expressionTestDir, 'BinaryExpressionTest.ts'), BinaryExpression_Expect_IR.stmts);
+        testMethodStmts(scene, 'BinaryExpressionTest.ts', BinaryExpression_Expect_IR.stmts);
     });
 
     it('test unary expression', async () => {
-        testStmts(path.join(expressionTestDir, 'UnaryExpressionTest.ts'), UnaryExpression_Expect_IR.stmts);
+        testMethodStmts(scene, 'UnaryExpressionTest.ts', UnaryExpression_Expect_IR.stmts);
     });
 
     it('test new expression', async () => {
-        testStmts(path.join(expressionTestDir, 'NewExpressionTest.ts'), NewExpression_Expect_IR.stmts);
+        testMethodStmts(scene, 'NewExpressionTest.ts', NewExpression_Expect_IR.stmts);
     });
 
     it('test literal expression', async () => {
-        testStmts(path.join(expressionTestDir, 'LiteralExpressionTest.ts'), LiteralExpression_Expect_IR.stmts);
+        testMethodStmts(scene, 'LiteralExpressionTest.ts', LiteralExpression_Expect_IR.stmts);
     });
 
     it('test operator', async () => {
-        testStmts(path.join(expressionTestDir, 'OperatorTest.ts'), Operator_Expect_IR.stmts);
+        testMethodStmts(scene, 'OperatorTest.ts', Operator_Expect_IR.stmts);
     });
 });
 
 describe('assignment Test', () => {
-    const assignmentTestDir = path.join(baseDir, 'assignment');
+    const scene = buildScene('assignment');
 
     it('test declaration', async () => {
-        testStmts(path.join(assignmentTestDir, 'DeclarationTest.ts'), Declaration_Expect_IR.stmts);
+        testMethodStmts(scene, 'DeclarationTest.ts', Declaration_Expect_IR.stmts);
     });
 
     it('test compound assignment', async () => {
-        testStmts(path.join(assignmentTestDir, 'CompoundAssignmentTest.ts'), CompoundAssignment_Expect_IR.stmts);
+        testMethodStmts(scene, 'CompoundAssignmentTest.ts', CompoundAssignment_Expect_IR.stmts);
+    });
+});
+
+describe('function Test', () => {
+    const scene = buildScene('function');
+
+    it('test arrow function', async () => {
+        testFileStmts(scene, 'ArrowFunctionTest.ts', ArrowFunction_Expect_IR);
     });
 });

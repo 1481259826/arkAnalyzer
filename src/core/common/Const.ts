@@ -15,6 +15,7 @@
 
 // ArkClass const
 export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
+export const DEFAULT_ARK_METHOD_NAME = '_DEFAULT_ARK_METHOD';
 export const ANONYMOUS_CLASS_PREFIX = 'AnonymousClass';
 export const ANONYMOUS_CLASS_DELIMITER = '-';
 export const CLASS_ORIGIN_TYPE_OBJECT = 'Object';

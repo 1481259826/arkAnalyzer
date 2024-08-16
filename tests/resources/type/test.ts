@@ -13,13 +13,4 @@
  * limitations under the License.
  */
 
-let arrNum = [1.1, 2, 3];
-let aaa = new Array(1.1, 2 , 3);
-let aar: Array<number> = [1.23, 234];
-let arrUnion: (number | string)[] = [1, 'hello'];
-
-let hello = {
-    arrNum : [1.1, 2, 3],
-    aaa:new Array(1.1, 2 , 3),
-    arrUnion:  [1, 'hello'],
-}
+let func1 = (i: number) => i++;

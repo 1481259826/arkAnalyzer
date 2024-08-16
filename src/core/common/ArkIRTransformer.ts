@@ -1537,7 +1537,7 @@ export class ArkIRTransformer {
         return false;
     }
 
-    private mapStmtsToTsStmt(stmts: Stmt[], node: ts.Node): void {
+    public mapStmtsToTsStmt(stmts: Stmt[], node: ts.Node): void {
         const originalStmt = new Stmt();
         originalStmt.setText(node.getText(this.sourceFile));
         const positionInfo = LineColPosition.buildFromNode(node, this.sourceFile);
