@@ -249,6 +249,7 @@ export class SourceTransformer {
             return `yield ${this.valueToString(expr.getYieldValue())}`;
         }
 
+        logger.info(`exprToString ${expr.constructor} not support.`);
         // ArkPhiExpr
         return `${expr}`;
     }
@@ -271,6 +272,7 @@ export class SourceTransformer {
         }
 
         // ArkCaughtExceptionRef
+        logger.info(`refToString ${value.constructor} not support.`);
         return `${value}`;
     }
 
@@ -306,6 +308,7 @@ export class SourceTransformer {
             return this.context.transTemp2Code(value);
         }
 
+        logger.info(`valueToString ${value.constructor} not support.`);
         return `${value}`;
     }
 
@@ -375,6 +378,7 @@ export class SourceTransformer {
             return 'any';
         }
 
+        logger.info(`valueToString ${type.constructor} not support.`);
         return type.toString();
     }
 }

@@ -26,6 +26,8 @@ import {
     SourceCaseStmt,
     SourceCompoundEndStmt,
     SourceContinueStmt,
+    SourceDoStmt,
+    SourceDoWhileStmt,
     SourceElseStmt,
     SourceForStmt,
     SourceIfStmt,
@@ -72,7 +74,7 @@ export class SourceBody implements StmtPrinterContext {
     setSkipStmt(stmt: Stmt): void {
         this.skipStmts.add(stmt);
     }
-    
+
     isInBuilderMethod(): boolean {
         return this.inBuilder;
     }
@@ -154,7 +156,23 @@ export class SourceBody implements StmtPrinterContext {
                 continue;
             }
             visitor.add(block);
-            this.buildBasicBlock(block, visitor, null);
+            if (this.cfgUtils.isDoBlock(block)) {
+                this.pushStmt(new SourceDoStmt(this, block.getStmts()[0]));
+                let whileBlock = this.cfgUtils.getDoWhileBlock(block)!;
+                visitor.add(whileBlock);
+
+                this.buildBasicBlock(block, visitor, null);
+                for (const sub of this.cfgUtils.getLoopPath(block) as Set<BasicBlock>) {
+                    if (visitor.has(sub)) {
+                        continue;
+                    }
+                    visitor.add(sub);
+                    this.buildBasicBlock(sub, visitor, null);
+                }
+                this.buildBasicBlock(whileBlock, visitor, null);
+            } else {
+                this.buildBasicBlock(block, visitor, null);
+            }
         }
     }
 
@@ -167,25 +185,12 @@ export class SourceBody implements StmtPrinterContext {
                 continue;
             }
             if (stmt instanceof ArkIfStmt) {
-                let isLoop = false;
-                if (this.cfgUtils.isForBlock(block)) {
-                    let inc = this.cfgUtils.getForIncBlock(block)!;
-                    this.pushStmt(new SourceForStmt(this, stmt, block, inc));
-                    visitor.add(inc);
-                    isLoop = true;
-                } else if (this.cfgUtils.isWhileBlock(block)) {
-                    this.pushStmt(new SourceWhileStmt(this, stmt, block));
-                    isLoop = true;
-                }
-                if (isLoop) {
-                    for (const sub of this.cfgUtils.getLoopPath(block) as Set<BasicBlock>) {
-                        if (visitor.has(sub)) {
-                            continue;
-                        }
-                        visitor.add(sub);
-                        this.buildBasicBlock(sub, visitor, parent);
-                    }
-                    this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
+                if (
+                    this.cfgUtils.isForBlock(block) ||
+                    this.cfgUtils.isWhileBlock(block) ||
+                    this.cfgUtils.isDoWhileBlock(block)
+                ) {
+                    this.buildLoopBasicBlock(stmt, block, visitor, parent);
                 } else {
                     this.buildIfBasicBlock(stmt, block, visitor, parent);
                 }
@@ -211,6 +216,35 @@ export class SourceBody implements StmtPrinterContext {
         }
     }
 
+    private buildLoopBasicBlock(
+        stmt: ArkIfStmt,
+        block: BasicBlock,
+        visitor: Set<BasicBlock>,
+        parent: Stmt | null
+    ): void {
+        if (this.cfgUtils.isDoWhileBlock(block)) {
+            this.pushStmt(new SourceDoWhileStmt(this, stmt, block));
+            return;
+        }
+
+        if (this.cfgUtils.isForBlock(block)) {
+            let inc = this.cfgUtils.getForIncBlock(block)!;
+            this.pushStmt(new SourceForStmt(this, stmt, block, inc));
+            visitor.add(inc);
+        } else if (this.cfgUtils.isWhileBlock(block)) {
+            this.pushStmt(new SourceWhileStmt(this, stmt, block));
+        }
+
+        for (const sub of this.cfgUtils.getLoopPath(block) as Set<BasicBlock>) {
+            if (visitor.has(sub)) {
+                continue;
+            }
+            visitor.add(sub);
+            this.buildBasicBlock(sub, visitor, parent);
+        }
+        this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
+    }
+
     private buildIfBasicBlock(stmt: ArkIfStmt, block: BasicBlock, visitor: Set<BasicBlock>, parent: Stmt | null): void {
         this.pushStmt(new SourceIfStmt(this, stmt));
         let successorBlocks = block.getSuccessors();
@@ -219,7 +253,7 @@ export class SourceBody implements StmtPrinterContext {
         if (successorBlocks.length > 0) {
             if (loops && !loops.has(successorBlocks[0])) {
                 this.pushStmt(new SourceBreakStmt(this, stmt));
-            } else if (loops && this.cfgUtils.isLoopHeader(successorBlocks[0])) {
+            } else if (loops && this.cfgUtils.isLoopControlBlock(successorBlocks[0])) {
                 this.pushStmt(new SourceContinueStmt(this, stmt));
             } else {
                 if (!visitor.has(successorBlocks[0])) {
@@ -232,7 +266,7 @@ export class SourceBody implements StmtPrinterContext {
         if (successorBlocks.length > 1 && this.cfgUtils.isIfElseBlock(block)) {
             if (loops && !loops.has(successorBlocks[1])) {
                 this.pushStmt(new SourceBreakStmt(this, stmt));
-            } else if (loops && this.cfgUtils.isLoopHeader(successorBlocks[1])) {
+            } else if (loops && this.cfgUtils.isLoopControlBlock(successorBlocks[1])) {
                 this.pushStmt(new SourceContinueStmt(this, stmt));
             } else {
                 if (!visitor.has(successorBlocks[1])) {
@@ -248,12 +282,19 @@ export class SourceBody implements StmtPrinterContext {
 
     private printStmts(): void {
         for (let stmt of this.stmts) {
+            if (this.skipStmts.has(stmt.original)) {
+                continue;
+            }
             this.printer.write(stmt.dump());
         }
     }
 
     public getStmts(): SourceStmt[] {
-        return this.stmts;
+        return this.stmts.filter((value) => {
+            if (!this.skipStmts.has(value.original)) {
+                return value;
+            }
+        });
     }
 
     public pushStmt(stmt: SourceStmt): void {

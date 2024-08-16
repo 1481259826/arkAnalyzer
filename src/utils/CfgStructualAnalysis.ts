@@ -20,23 +20,24 @@ import { DominanceFinder } from '../core/graph/DominanceFinder';
 import { DominanceTree } from '../core/graph/DominanceTree';
 
 enum BlockType {
-    NORMAL,
-    WHILE,
-    FOR,
-    FOR_INC,
-    CONTINUE,
-    BREAK,
-    IF,
-    IF_ELSE,
+    NORMAL = 1,
+    WHILE = 2,
+    DO_WHILE_START = 4,
+    DO_WHILE = 8,
+    FOR = 16,
+    FOR_INC = 32,
+    IF = 64,
+    IF_ELSE = 128,
 }
 
-const LoopHeaderType = new Set([BlockType.WHILE, BlockType.FOR, BlockType.FOR_INC]);
+const LOOP_CONTROL_TYPE = new Set([BlockType.WHILE, BlockType.FOR, BlockType.FOR_INC, BlockType.DO_WHILE]);
 
 export class CfgStructualAnalysis {
     /** key: loop header, value: loop node dfs */
     private loopPath: Map<BasicBlock, Set<BasicBlock>>;
     private blockTypes: Map<BasicBlock, BlockType>;
     private forIncMap: Map<BasicBlock, BasicBlock>;
+    private doWhilePair: Map<BasicBlock, BasicBlock>;
     private dominanceTree: DominanceTree;
 
     public constructor(cfg: Cfg) {
@@ -51,72 +52,95 @@ export class CfgStructualAnalysis {
     }
 
     public isIfBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.IF;
+        return (this.blockTypes.get(block)! & BlockType.IF) == BlockType.IF;
     }
 
     public isIfElseBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.IF_ELSE;
+        return (this.blockTypes.get(block)! & BlockType.IF_ELSE) == BlockType.IF_ELSE;
     }
 
     public isWhileBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.WHILE;
+        return (this.blockTypes.get(block)! & BlockType.WHILE) == BlockType.WHILE;
     }
 
-    public isLoopHeader(block: BasicBlock): boolean {
-        return LoopHeaderType.has(this.blockTypes.get(block)!);
+    public isDoBlock(block: BasicBlock): boolean {
+        return (this.blockTypes.get(block)! & BlockType.DO_WHILE_START) == BlockType.DO_WHILE_START;
+    }
+
+    public isDoWhileBlock(block: BasicBlock): boolean {
+        return (this.blockTypes.get(block)! & BlockType.DO_WHILE) == BlockType.DO_WHILE;
+    }
+
+    public isLoopControlBlock(block: BasicBlock): boolean {
+        return LOOP_CONTROL_TYPE.has(this.blockTypes.get(block)!);
     }
 
     public isForBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.FOR;
-    }
-
-    public isConinueBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.CONTINUE;
-    }
-
-    public isBreakBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.BREAK;
+        return (this.blockTypes.get(block)! & BlockType.FOR) == BlockType.FOR;
     }
 
     public isNormalBlock(block: BasicBlock): boolean {
-        return this.blockTypes.get(block) == BlockType.NORMAL;
+        return (this.blockTypes.get(block)! & BlockType.NORMAL) == BlockType.NORMAL;
     }
 
     public getForIncBlock(block: BasicBlock): BasicBlock | undefined {
         return this.forIncMap.get(block);
     }
 
+    public getDoWhileBlock(block: BasicBlock): BasicBlock | undefined {
+        return this.doWhilePair.get(block);
+    }
+
     private identifyBlocks(cfg: Cfg) {
         let blocks = cfg.getBlocks();
         let visitor = new Set<BasicBlock>();
         this.blockTypes = new Map<BasicBlock, BlockType>();
+        this.doWhilePair = new Map();
 
         for (const block of blocks) {
             if (visitor.has(block)) {
                 continue;
             }
             visitor.add(block);
-            if (this.isIfStmtBB(block) && this.isLoopBB(block)) {
-                this.blockTypes.set(block, BlockType.WHILE);
-            } else if (this.isIfStmtBB(block)) {
+            this.blockTypes.set(block, BlockType.NORMAL);
+
+            if (this.isLoopHeaderBB(block)) {
+                if (this.isLoopControlBB(block, block)) {
+                    this.blockTypes.set(block, BlockType.WHILE);
+                    continue;
+                }
+
+                for (const edge of this.dominanceTree.getBackEdges()) {
+                    if (edge[1] == block) {
+                        if (this.isLoopControlBB(block, edge[0])) {
+                            this.blockTypes.set(block, BlockType.DO_WHILE_START);
+                            this.blockTypes.set(edge[0], BlockType.DO_WHILE);
+                            this.doWhilePair.set(block, edge[0]);
+                            visitor.add(edge[0]);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (this.isIfStmtBB(block)) {
                 if (this.isIfElseBB(block)) {
-                    this.blockTypes.set(block, BlockType.IF_ELSE);
+                    this.blockTypes.set(block, this.blockTypes.get(block)! | BlockType.IF_ELSE);
                 } else {
-                    this.blockTypes.set(block, BlockType.IF);
+                    this.blockTypes.set(block, this.blockTypes.get(block)! | BlockType.IF);
                 }
-            } else {
-                let successors = block.getSuccessors();
-                if (
-                    successors.length == 1 &&
-                    this.blockTypes.get(successors[0]) == BlockType.WHILE &&
-                    block.getPredecessors().length > 1
-                ) {
-                    this.blockTypes.set(block, BlockType.FOR_INC);
-                    this.blockTypes.set(successors[0], BlockType.FOR);
-                    this.forIncMap.set(successors[0], block);
-                } else {
-                    this.blockTypes.set(block, BlockType.NORMAL);
-                }
+                continue;
+            }
+
+            let successors = block.getSuccessors();
+            if (
+                successors.length == 1 &&
+                this.blockTypes.get(successors[0]) == BlockType.WHILE &&
+                block.getPredecessors().length > 1
+            ) {
+                this.blockTypes.set(block, BlockType.FOR_INC);
+                this.blockTypes.set(successors[0], BlockType.FOR);
+                this.forIncMap.set(successors[0], block);
             }
         }
     }
@@ -130,8 +154,18 @@ export class CfgStructualAnalysis {
         return false;
     }
 
-    private isLoopBB(block: BasicBlock): boolean {
+    private isLoopHeaderBB(block: BasicBlock): boolean {
         return this.dominanceTree.isBackEdgeHeader(block);
+    }
+
+    private isLoopControlBB(header: BasicBlock, block: BasicBlock): boolean {
+        let loopBlocks = this.loopPath.get(header);
+        let succ = block.getSuccessors();
+        if (succ.length < 2) {
+            return false;
+        }
+
+        return !loopBlocks?.has(succ[1]) && this.isIfStmtBB(block);
     }
 
     private isIfElseBB(block: BasicBlock): boolean {
