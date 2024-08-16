@@ -16,10 +16,10 @@
 import { ModuleScene, Scene } from '../../Scene';
 import { ExportInfo } from './ArkExport';
 import { ImportInfo } from './ArkImport';
-import { ArkClass } from "./ArkClass";
-import { ArkNamespace } from "./ArkNamespace";
-import { ClassSignature, FileSignature, NamespaceSignature } from "./ArkSignature";
-import { setTypeForExportInfo } from "./builder/ArkImportBuilder";
+import { ArkClass } from './ArkClass';
+import { ArkNamespace } from './ArkNamespace';
+import { ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
+import { setTypeForExportInfo } from './builder/ArkImportBuilder';
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',

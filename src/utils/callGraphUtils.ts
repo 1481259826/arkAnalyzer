@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import { Scene } from "../Scene";
-import { ArkClass } from "../core/model/ArkClass";
-import { ArkMethod } from "../core/model/ArkMethod";
-import { ClassSignature, MethodSignature } from "../core/model/ArkSignature";
-import Logger from "./logger";
-import { ModelUtils } from "../core/common/ModelUtils";
+import { Scene } from '../Scene';
+import { ArkClass } from '../core/model/ArkClass';
+import { ArkMethod } from '../core/model/ArkMethod';
+import { ClassSignature, MethodSignature } from '../core/model/ArkSignature';
+import Logger from './logger';
+import { ModelUtils } from '../core/common/ModelUtils';
 
 const logger = Logger.getLogger();
 

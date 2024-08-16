@@ -16,7 +16,7 @@
 import { Scene } from '../../Scene';
 import { ClassHierarchyAnalysisAlgorithm } from '../../callgraph/ClassHierarchyAnalysisAlgorithm';
 import { AbstractInvokeExpr } from '../base/Expr';
-import { AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { AbstractRef } from '../base/Ref';
 import { ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';

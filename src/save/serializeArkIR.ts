@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import path from "path";
-import fs from "fs";
-import { Command } from "commander";
-import { PrinterBuilder } from "./PrinterBuilder";
-import { SceneConfig } from "../Config";
-import { Scene } from "../Scene";
+import path from 'path';
+import fs from 'fs';
+import { Command } from 'commander';
+import { PrinterBuilder } from './PrinterBuilder';
+import { SceneConfig } from '../Config';
+import { Scene } from '../Scene';
 
 function serializeTsFile(input: string, output: string, verbose: boolean = false) {
     if (verbose) console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);

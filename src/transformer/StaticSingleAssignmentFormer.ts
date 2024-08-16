@@ -13,15 +13,14 @@
  * limitations under the License.
  */
 
-import { ArkPhiExpr } from "../core/base/Expr";
-import { Local } from "../core/base/Local";
-import { ArkAssignStmt, Stmt } from "../core/base/Stmt";
-import { BasicBlock } from "../core/graph/BasicBlock";
-import { Cfg } from "../core/graph/Cfg";
-import { DominanceFinder } from "../core/graph/DominanceFinder";
-import { DominanceTree } from "../core/graph/DominanceTree";
-import { ArkBody } from "../core/model/ArkBody";
-
+import { ArkPhiExpr } from '../core/base/Expr';
+import { Local } from '../core/base/Local';
+import { ArkAssignStmt, Stmt } from '../core/base/Stmt';
+import { BasicBlock } from '../core/graph/BasicBlock';
+import { Cfg } from '../core/graph/Cfg';
+import { DominanceFinder } from '../core/graph/DominanceFinder';
+import { DominanceTree } from '../core/graph/DominanceTree';
+import { ArkBody } from '../core/model/ArkBody';
 
 export class StaticSingleAssignmentFormer {
     public transformBody(body: ArkBody) {

@@ -22,7 +22,6 @@ import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 
-
 /**
  * @category core/graph
  */

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { Stmt } from "../../core/base/Stmt";
-import { Type } from "../../core/base/Type";
-import { Value } from "../../core/base/Value";
-import { FieldSignature, MethodSignature } from "../../core/model/ArkSignature";
+import { Stmt } from '../../core/base/Stmt';
+import { Type } from '../../core/base/Type';
+import { Value } from '../../core/base/Value';
+import { FieldSignature, MethodSignature } from '../../core/model/ArkSignature';
 
 // TODO: 对指向目标进行细分，后续PointerTarget将作为抽象类
 export class PointerTarget {

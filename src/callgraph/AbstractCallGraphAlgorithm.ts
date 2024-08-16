@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { MethodSignature } from "../core/model/ArkSignature";
-import { Scene } from "../Scene";
-import { isItemRegistered, MethodSignatureManager, SceneManager } from "../utils/callGraphUtils";
-import { Cfg } from "../core/graph/Cfg";
-import { Stmt } from "../core/base/Stmt";
+import { MethodSignature } from '../core/model/ArkSignature';
+import { Scene } from '../Scene';
+import { isItemRegistered, MethodSignatureManager, SceneManager } from '../utils/callGraphUtils';
+import { Cfg } from '../core/graph/Cfg';
+import { Stmt } from '../core/base/Stmt';
 
 export abstract class AbstractCallGraph {
     private methods: Set<MethodSignature>;

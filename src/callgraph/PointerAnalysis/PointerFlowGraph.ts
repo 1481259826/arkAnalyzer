@@ -13,10 +13,17 @@
  * limitations under the License.
  */
 
-import { Value } from "../../core/base/Value";
-import { LocalPointer, PointerTargetPair, PointerTarget, InstanceFieldPointer, Pointer, StaticFieldPointer } from "./Pointer";
-import Logger from "../../utils/logger";
-import { FieldSignature } from "../../core/model/ArkSignature";
+import { Value } from '../../core/base/Value';
+import {
+    InstanceFieldPointer,
+    LocalPointer,
+    Pointer,
+    PointerTarget,
+    PointerTargetPair,
+    StaticFieldPointer,
+} from './Pointer';
+import Logger from '../../utils/logger';
+import { FieldSignature } from '../../core/model/ArkSignature';
 
 const logger = Logger.getLogger();
 

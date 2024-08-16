@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import ts from "ohos-typescript";
-import { LineColPosition } from "../../base/Position";
-import { ArkExport, ExportInfo, ExportType, TypeSignature } from "../ArkExport";
-import { Decorator } from "../../base/Decorator";
-import { buildModifiers } from "./builderUtils";
-import { ArkFile } from "../ArkFile";
+import ts from 'ohos-typescript';
+import { LineColPosition } from '../../base/Position';
+import { ArkExport, ExportInfo, ExportType, TypeSignature } from '../ArkExport';
+import { Decorator } from '../../base/Decorator';
+import { buildModifiers } from './builderUtils';
+import { ArkFile } from '../ArkFile';
 
 export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 

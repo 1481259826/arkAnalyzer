@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import { Decorator } from "../base/Decorator";
-import { ArkExport, ExportInfo, ExportType } from "./ArkExport";
-import { ArkClass } from "./ArkClass";
-import { ArkFile } from "./ArkFile";
-import { ArkMethod } from "./ArkMethod";
-import { ClassSignature, NamespaceSignature } from "./ArkSignature";
-import { setTypeForExportInfo } from "./builder/ArkImportBuilder";
+import { Decorator } from '../base/Decorator';
+import { ArkExport, ExportInfo, ExportType } from './ArkExport';
+import { ArkClass } from './ArkClass';
+import { ArkFile } from './ArkFile';
+import { ArkMethod } from './ArkMethod';
+import { ClassSignature, NamespaceSignature } from './ArkSignature';
+import { setTypeForExportInfo } from './builder/ArkImportBuilder';
 
 /**
  * @category core/model

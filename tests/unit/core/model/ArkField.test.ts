@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from "vitest"
-import { ArkField } from "../../../../src/core/model/ArkField";
-import { Decorator } from "../../../../src/core/base/Decorator";
+import { describe, expect, it } from 'vitest';
+import { ArkField } from '../../../../src/core/model/ArkField';
+import { Decorator } from '../../../../src/core/base/Decorator';
 
 describe("ArkField Test", () => {
     it('test getDecorators', async () => {

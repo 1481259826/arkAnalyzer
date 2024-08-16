@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArkFile, Scene, SceneConfig, } from '../../../src/index';
+import { ArkFile, Scene, SceneConfig } from '../../../src/index';
 import { JsonPrinter } from '../../../src/save/JsonPrinter';
 import { describe, expect, it } from 'vitest';
 import path from 'path';

@@ -28,7 +28,8 @@ import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 import { ArkAssignStmt, Stmt } from '../../base/Stmt';
 import { ArkInstanceFieldRef } from '../../base/Ref';
 import {
-    ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX,
+    ANONYMOUS_CLASS_DELIMITER,
+    ANONYMOUS_CLASS_PREFIX,
     CLASS_ORIGIN_TYPE_OBJECT,
     INSTANCE_INIT_METHOD_NAME,
     STATIC_INIT_METHOD_NAME,

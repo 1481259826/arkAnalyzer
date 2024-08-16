@@ -13,16 +13,13 @@
  * limitations under the License.
  */
 
-import { Constant } from "../base/Constant";
-import { DefUseChain } from "../base/DefUseChain";
-import { Local } from "../base/Local";
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
-import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../base/Stmt";
-import { UndefinedType } from "../base/Type";
-import { ArkClass } from "../model/ArkClass";
-import { ArkMethod } from "../model/ArkMethod";
-import { BasicBlock } from "./BasicBlock";
-import Logger from "../../utils/logger";
+import { DefUseChain } from '../base/DefUseChain';
+import { Local } from '../base/Local';
+import { Stmt } from '../base/Stmt';
+import { ArkClass } from '../model/ArkClass';
+import { ArkMethod } from '../model/ArkMethod';
+import { BasicBlock } from './BasicBlock';
+import Logger from '../../utils/logger';
 
 const logger = Logger.getLogger();
 

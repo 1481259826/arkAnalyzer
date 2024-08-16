@@ -13,18 +13,24 @@
  * limitations under the License.
  */
 
-import { Scene } from "../../Scene";
-import { Constant } from "../base/Constant";
-import { AbstractInvokeExpr, ArkConditionExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr, RelationalBinaryOperator } from "../base/Expr";
-import { Local } from "../base/Local";
-import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from "../base/Stmt";
-import { BooleanType, ClassType, NumberType } from "../base/Type";
-import { BasicBlock } from "../graph/BasicBlock";
-import { Cfg } from "../graph/Cfg";
-import { ArkBody } from "../model/ArkBody";
-import { ArkClass } from "../model/ArkClass";
-import { ArkFile } from "../model/ArkFile";
-import { ArkMethod } from "../model/ArkMethod";
+import { Scene } from '../../Scene';
+import { Constant } from '../base/Constant';
+import {
+    AbstractInvokeExpr,
+    ArkConditionExpr,
+    ArkInstanceInvokeExpr,
+    ArkStaticInvokeExpr,
+    RelationalBinaryOperator,
+} from '../base/Expr';
+import { Local } from '../base/Local';
+import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt } from '../base/Stmt';
+import { BooleanType, ClassType, NumberType } from '../base/Type';
+import { BasicBlock } from '../graph/BasicBlock';
+import { Cfg } from '../graph/Cfg';
+import { ArkBody } from '../model/ArkBody';
+import { ArkClass } from '../model/ArkClass';
+import { ArkFile } from '../model/ArkFile';
+import { ArkMethod } from '../model/ArkMethod';
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：

@@ -18,7 +18,7 @@ import path from 'path';
 import ts from 'ohos-typescript';
 import { ArkFile } from '../ArkFile';
 import { ArkNamespace } from '../ArkNamespace';
-import Logger from "../../../utils/logger";
+import Logger from '../../../utils/logger';
 import { buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile } from './ArkClassBuilder';
 import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
 import { buildImportInfo, expandExportInfo, getArkFile } from './ArkImportBuilder';
@@ -28,14 +28,14 @@ import {
     buildExportInfo,
     buildExportTypeAliasDeclaration,
     buildExportVariableStatement,
-    isExported
+    isExported,
 } from './ArkExportBuilder';
 import { buildArkNamespace } from './ArkNamespaceBuilder';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
-import { ImportInfo } from "../ArkImport";
+import { ImportInfo } from '../ArkImport';
 
 const logger = Logger.getLogger();
 

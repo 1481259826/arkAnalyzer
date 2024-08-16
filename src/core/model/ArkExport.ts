@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { LineColPosition } from "../base/Position";
-import { Decorator } from "../base/Decorator";
-import { ArkFile } from "./ArkFile";
-import { ArkSignature, ClassSignature, MethodSignature, NamespaceSignature } from "./ArkSignature";
-import { Local } from "../base/Local";
+import { LineColPosition } from '../base/Position';
+import { Decorator } from '../base/Decorator';
+import { ArkFile } from './ArkFile';
+import { ArkSignature, ClassSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
+import { Local } from '../base/Local';
 
 export type TypeSignature = NamespaceSignature | ClassSignature | MethodSignature | Local;
 

@@ -13,12 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    SceneConfig,
-    Scene,
-    SourceFilePrinter,
-    SourceNamespacePrinter,
-} from '../../../src/index';
+import { Scene, SceneConfig, SourceFilePrinter, SourceNamespacePrinter } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 

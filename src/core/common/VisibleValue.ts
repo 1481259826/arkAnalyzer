@@ -13,17 +13,17 @@
  * limitations under the License.
  */
 
-import Logger from "../../utils/logger";
-import { Local } from "../base/Local";
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from "../base/Ref";
-import { ArkAssignStmt } from "../base/Stmt";
-import { ClassType } from "../base/Type";
-import { Value } from "../base/Value";
-import { BasicBlock } from "../graph/BasicBlock";
-import { ArkClass } from "../model/ArkClass";
-import { ArkFile } from "../model/ArkFile";
-import { ArkMethod } from "../model/ArkMethod";
-import { ArkNamespace } from "../model/ArkNamespace";
+import Logger from '../../utils/logger';
+import { Local } from '../base/Local';
+import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { ArkAssignStmt } from '../base/Stmt';
+import { ClassType } from '../base/Type';
+import { Value } from '../base/Value';
+import { BasicBlock } from '../graph/BasicBlock';
+import { ArkClass } from '../model/ArkClass';
+import { ArkFile } from '../model/ArkFile';
+import { ArkMethod } from '../model/ArkMethod';
+import { ArkNamespace } from '../model/ArkNamespace';
 
 const logger = Logger.getLogger();
 

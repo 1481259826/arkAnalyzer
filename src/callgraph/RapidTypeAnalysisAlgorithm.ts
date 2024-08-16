@@ -13,15 +13,14 @@
  * limitations under the License.
  */
 
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../core/base/Expr";
-import { Stmt } from "../core/base/Stmt";
-import { ClassType } from "../core/base/Type";
-import { Cfg } from "../core/graph/Cfg";
-import { ArkClass } from "../core/model/ArkClass";
-import { ArkMethod } from "../core/model/ArkMethod";
-import { ClassSignature, MethodSignature } from "../core/model/ArkSignature";
-import { isItemRegistered } from "../utils/callGraphUtils";
-import { AbstractCallGraph } from "./AbstractCallGraphAlgorithm";
+import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../core/base/Expr';
+import { Stmt } from '../core/base/Stmt';
+import { ClassType } from '../core/base/Type';
+import { ArkClass } from '../core/model/ArkClass';
+import { ArkMethod } from '../core/model/ArkMethod';
+import { ClassSignature, MethodSignature } from '../core/model/ArkSignature';
+import { isItemRegistered } from '../utils/callGraphUtils';
+import { AbstractCallGraph } from './AbstractCallGraphAlgorithm';
 
 type Tuple = [MethodSignature, MethodSignature];
 export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {

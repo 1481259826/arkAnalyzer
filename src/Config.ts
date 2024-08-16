@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import fs from "fs";
-import path from "path";
-import Logger, { LOG_LEVEL } from "./utils/logger";
-import { getAllFiles } from "./utils/getAllFiles";
+import fs from 'fs';
+import path from 'path';
+import Logger from './utils/logger';
+import { getAllFiles } from './utils/getAllFiles';
 
 const logger = Logger.getLogger();
 
