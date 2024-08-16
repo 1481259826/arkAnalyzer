@@ -698,7 +698,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return node;
     }
 
-    public findMethodInvokeBuilderMethod(method: ArkMethod): ArkMethod | undefined {
+    private findMethodInvokeBuilderMethod(method: ArkMethod): ArkMethod | undefined {
         let stmts = method.getCfg()?.getStmts();
         if (!stmts) {
             return;
