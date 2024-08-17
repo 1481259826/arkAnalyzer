@@ -449,7 +449,7 @@ export class CfgBuilder {
                     const clause = c.caseBlock.clauses[i];
                     let casestm: StatementBuilder;
                     if (ts.isCaseClause(clause)) {
-                        casestm = new StatementBuilder('statement', 'case ' + clause.expression + ':', clause, scope.id);
+                        casestm = new StatementBuilder('statement', 'case ' + clause.expression.getText(this.sourceFile) + ':', clause, scope.id);
                     } else {
                         casestm = new StatementBuilder('statement', 'default:', clause, scope.id);
                     }
@@ -464,7 +464,6 @@ export class CfgBuilder {
                         switchstm.cases.push(cas);
                     } else {
                         switchstm.default = casestm.next;
-                        casestm.next?.lasts.add(switchstm);
                     }
 
                     if (lastCaseExit) {
@@ -536,7 +535,7 @@ export class CfgBuilder {
 
         }
         this.scopeLevel--;
-        if (lastStatement.type != 'breakStatement' && lastStatement.type != 'continueStatement') {
+        if (lastStatement.type != 'breakStatement' && lastStatement.type != 'continueStatement' && lastStatement.type != 'returnStatement') {
             lastStatement.next = nextStatement;
             nextStatement.lasts.add(lastStatement);
         }
@@ -585,6 +584,12 @@ export class CfgBuilder {
                 }
             }
         }
+        // 部分语句例如return后面的exit语句的next无法在上面清除
+        for (const exit of this.exits) {
+            if (exit.next && exit.next.lasts.has(exit)) {
+                exit.next.lasts.delete(exit);
+            }
+        }
     }
 
     buildBlocks(): void {
@@ -620,11 +625,8 @@ export class CfgBuilder {
                     }
                     break;
                 } else if (stmt instanceof SwitchStatementBuilder) {
-                    for (const cas of stmt.cases) {
-                        stmtQueue.push(cas.stmt);
-                    }
-                    if (stmt.default) {
-                        stmtQueue.push(stmt.default);
+                    for (let i = stmt.nexts.length - 1; i >= 0; i--) {
+                        stmtQueue.push(stmt.nexts[i]);
                     }
                     break;
                 } else if (stmt instanceof TryStatementBuilder) {
@@ -649,7 +651,8 @@ export class CfgBuilder {
                         }
                         stmt.next.passTmies++;
                         if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == 'loopStatement') || stmt.next.isDoWhile) {
-                            if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)) {
+                            if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)
+                              && !(ts.isCaseClause(stmt.astNode!) || ts.isDefaultClause(stmt.astNode!))) {
                                 stmtQueue.push(stmt.next);
                                 break;
                             }
@@ -677,18 +680,11 @@ export class CfgBuilder {
                         nextF.lasts.push(block);
                     }
                 } else if (originStatement instanceof SwitchStatementBuilder) {
-                    for (const cas of originStatement.cases) {
-                        const next = cas.stmt.block;
-                        if (next && (lastStatement || next != block) && !cas.stmt.type.includes(' exit')) {
-                            block.nexts.push(next);
-                            next.lasts.push(block);
-                        }
-                    }
-                    if (originStatement.default) {
-                        const next = originStatement.default.block;
-                        if (next && (lastStatement || next != block) && !originStatement.default.type.includes(' exit')) {
-                            block.nexts.push(next);
-                            next.lasts.push(block);
+                    for (const next of originStatement.nexts) {
+                        const nextBlock = next.block;
+                        if (nextBlock && (lastStatement || nextBlock != block)) {
+                            block.nexts.push(nextBlock);
+                            nextBlock.lasts.push(block);
                         }
                     }
                 } else {
@@ -745,13 +741,6 @@ export class CfgBuilder {
                     } else if (this.exit == notReturnStmt.nextF) {
                         notReturnStmt.nextF = returnStatement;
                         notReturnStmt.block?.nexts.push(returnBlock);
-                    }
-                } else if (notReturnStmt instanceof SwitchStatementBuilder) {
-                    for (let i = 0; i < notReturnStmt.cases.length; i++) {
-                        if (notReturnStmt.cases[i].stmt == this.exit) {
-                            notReturnStmt.cases[i].stmt = returnStatement;
-                            notReturnStmt.block?.nexts.splice(i, 0, returnBlock);
-                        }
                     }
                 } else {
                     notReturnStmt.next = returnStatement;
