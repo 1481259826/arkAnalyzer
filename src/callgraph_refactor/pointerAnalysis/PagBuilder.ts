@@ -13,24 +13,23 @@
  * limitations under the License.
  */
 
-import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../CallGraph';
-import { Pag, FuncPag, PagNode, PagEdgeKind, PagThisRefNode, PagLocalNode, PagFuncNode } from '../Pag'
-import { Scene } from '../../../Scene'
-import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../base/Stmt'
-import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
-import { KLimitedContextSensitive } from '../../pta/Context';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../base/Ref';
-import { Value } from '../../base/Value';
-import { ContextID } from '../../pta/Context';
-import { ArkMethod } from '../../model/ArkMethod';
-import Logger from "../../../utils/logger";
-import { Local } from '../../base/Local';
-import { NodeID } from '../BaseGraph';
-import { ClassSignature } from '../../model/ArkSignature';
-import { ArkClass } from '../../model/ArkClass';
-import { ClassType, FunctionType } from '../../base/Type';
-import { Constant } from '../../base/Constant';
-import { PtsSet } from '../../pta/PtsDS';
+import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../model/CallGraph';
+import { Scene } from '../../Scene'
+import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
+import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { Value } from '../../core/base/Value';
+import { ArkMethod } from '../../core/model/ArkMethod';
+import Logger from "../../utils/logger";
+import { Local } from '../../core/base/Local';
+import { NodeID } from '../model/BaseGraph';
+import { ClassSignature } from '../../core/model/ArkSignature';
+import { ArkClass } from '../../core/model/ArkClass';
+import { ArrayType, ClassType, FunctionType } from '../../core/base/Type';
+import { Constant } from '../../core/base/Constant';
+import { PtsSet } from './PtsDS';
+import { ContextID, KLimitedContextSensitive } from './Context';
+import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode } from './Pag';
 
 const logger = Logger.getLogger();
 
@@ -307,6 +306,23 @@ export class PagBuilder {
                 let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
                 srcNodes.push(srcBaseNode);   
             }
+        } else if (value instanceof ArkNewArrayExpr) {
+            let args = cs.args
+            let callee = undefined;
+
+            if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
+                callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
+            }
+
+            if (!callee) {
+                return []
+            }
+
+            this.cg.addDynamicCallEdge(
+                cs.callerFuncID, 
+                this.cg.getCallGraphNodeByMethod(callee.getSignature()).getID(), 
+                cs.callStmt
+            )
         }
         return srcNodes;
     }
@@ -359,6 +375,7 @@ export class PagBuilder {
         }
         if (calleeNode.getIsSdkMethod()) {
             let returnType = calleeMethod.getReturnType()
+            // TODO: add new array type
             if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
                 return srcNodes
             }
@@ -370,12 +387,18 @@ export class PagBuilder {
             }
             let newExpr = cidMap.get(calleeCid)
             if (!newExpr) {
-                newExpr = new ArkNewExpr(returnType as ClassType)
+                if (returnType instanceof ClassType) {
+                    newExpr = new ArkNewExpr(returnType)
+                }
+                // } else if (returnType instanceof ArrayType) {
+                    // TODO: check how to transform array type 2 newArrayExpr
+                    // newExpr = new ArkNewArrayExpr(returnType.getBaseType(), )
+                // }
             }
-            cidMap.set(calleeCid, newExpr)
+            cidMap.set(calleeCid, newExpr!)
             this.sdkMethodReturnValueMap.set(calleeMethod, cidMap)
 
-            let srcPagNode = this.getOrNewPagNode(calleeCid, newExpr)
+            let srcPagNode = this.getOrNewPagNode(calleeCid, newExpr!)
             let dstPagNode = this.getOrNewPagNode(callerCid, cs.callStmt.getLeftOp(), cs.callStmt);
 
             this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Address, cs.callStmt);
@@ -550,20 +573,17 @@ export class PagBuilder {
             return PagEdgeKind.Write
         }
 
-        // if (this.stmtIsSdkCall(stmt)) {
-        //     // TODO: check cg update
-        //     return PagEdgeKind.SdkCall
-        // }
-
         return PagEdgeKind.Unknown;
     }
 
     private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
-        if ((rhOp instanceof ArkNewExpr) || (
-            lhOp instanceof Local && rhOp instanceof Local && rhOp.getType() instanceof FunctionType
-        )) {
+        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || (
+                lhOp instanceof Local && rhOp instanceof Local && 
+                rhOp.getType() instanceof FunctionType && 
+                rhOp.getDeclaringStmt() === null)
+        ) {
             return true;
         }
 

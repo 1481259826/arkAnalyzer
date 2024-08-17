@@ -17,10 +17,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
-import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
-import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
-import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
@@ -42,6 +38,8 @@ import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
+import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
+import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
 
 const logger = Logger.getLogger();
 
@@ -344,6 +342,7 @@ export class Scene {
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
         if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
+            this.classesMap.clear()
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -372,6 +371,7 @@ export class Scene {
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
         if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
+            this.methodsMap.clear()
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -418,21 +418,6 @@ export class Scene {
         return callGraphCHA;
     }
 
-    public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph;
-        callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints);
-        return callGraphRTA;
-    }
-
-    public makeCallGraphVPA(entryPoints: MethodSignature[]) {
-        // WIP context-insensitive 上下文不敏感
-        // let callGraphVPA: AbstractCallGraph
-        // callGraphVPA = new VariablePointerAnalysisAlogorithm(this);
-        // callGraphVPA.loadCallGraph(entryPoints)
-        // return callGraphVPA
-    }
-
     /**
      * inference type for each non-default method
      * because default and generated method was finished
@@ -449,6 +434,9 @@ export class Scene {
                 TypeInference.inferTypeInMethod(arkMethod);
             }
         });
+
+        this.getClassesMap(true)
+        this.getMethodsMap(true)
     }
 
     /**

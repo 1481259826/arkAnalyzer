@@ -17,6 +17,8 @@ import { CallGraph, CallGraphNode, CallGraphNodeKind, Method } from '../CallGrap
 import { Scene } from '../../../Scene'
 import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from "../../../core/base/Expr";
 import { ClassType } from "../../../core/base/Type"
+import { NodeID } from '../BaseGraph';
+import { ClassHierarchyAnalysis } from '../../algorithm/ClassHierarchyAnalysis';
 
 export class CallGraphBuilder {
     private cg: CallGraph;
@@ -70,6 +72,17 @@ export class CallGraphBuilder {
 
         // set entries at end
         this.setEntries();
+    }
+
+    public buildClassHierarchyCallGraph(entries: Method[]): void {
+        let cgEntries: NodeID[] = []
+        entries.forEach((entry: Method) => {
+            cgEntries.push(this.cg.getCallGraphNodeByMethod(entry).getID())
+        })
+        this.cg.setEntries(cgEntries)
+
+        let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg)
+        classHierarchyAnalysis.start()
     }
 
     /// Get direct call callee

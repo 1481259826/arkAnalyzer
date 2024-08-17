@@ -15,11 +15,11 @@
 
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
-import { CallGraph } from '../src/core/graph/CallGraph';
-import { CallGraphBuilder } from '../src/core/graph/builder/CallGraphBuilder'
-import { Pag } from '../src/core/graph/Pag'
-import { PointerAnalysis } from '../src/core/graph/callgraph/PointerAnalysis'
-import { PointerAnalysisConfig } from './../src/core/pta/PointerAnalysisConfig';
+import { CallGraph } from '../src/callgraph_refactor/model/CallGraph';
+import { CallGraphBuilder } from '../src/callgraph_refactor/model/builder/CallGraphBuilder'
+import { Pag } from '../src/callgraph_refactor/pointerAnalysis/Pag'
+import { PointerAnalysis } from '../src/callgraph_refactor/pointerAnalysis/PointerAnalysis'
+import { PointerAnalysisConfig } from '../src/callgraph_refactor/pointerAnalysis/PointerAnalysisConfig';
 import { Sdk } from "../src/Config";
 import Logger, {LOG_LEVEL} from "../src/utils/logger"
  
@@ -40,7 +40,7 @@ let config: SceneConfig = new SceneConfig()
 // config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
 config.buildFromProjectDir('./tests/resources/callgraph/anoTest');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
-// config.buildFromProjectDir('/Users/yangyizhuo/Desktop/test/testApp/applications_photos');
+// config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
 // config.buildFromProjectDir('./tests/resources/callgraph/calltest');
 // config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
@@ -67,6 +67,7 @@ function runScene(config: SceneConfig, output: string) {
     pta.setEntries([entry[0]]);
     pta.start();
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
+    cg.dump(output+"/subcg.dot", entry[0])
     console.log("fin")
 }
 runScene(config, "./out/applications_camera");

@@ -17,7 +17,6 @@ import { Value } from "../../core/base/Value";
 import { LocalPointer, PointerTargetPair, PointerTarget, InstanceFieldPointer, Pointer, StaticFieldPointer } from "./Pointer";
 import Logger from "../../utils/logger";
 import { FieldSignature } from "../../core/model/ArkSignature";
-import { ValueWithContext } from "./Context";
 
 const logger = Logger.getLogger();
 
@@ -51,7 +50,7 @@ export class PointerFlowGraph {
     }
 
     public getPointerSetElement(
-        identifier: ValueWithContext | null, 
+        identifier: Value | null, 
         pointerTarget: PointerTarget | null, 
         fieldSignature: FieldSignature | null): Pointer {
         const pointerSet = this.getPointerSet()
@@ -59,17 +58,16 @@ export class PointerFlowGraph {
             if (fieldSignature != null) {
                 if (pointerTarget != null && set instanceof InstanceFieldPointer) {
                     if (set.getBasePointerTarget() === pointerTarget && 
-                    set.getFieldWithContext().getFieldSignature().toString() === fieldSignature.toString() 
-                    ) {
+                        set.getFieldSignature().toString() === fieldSignature.toString()) {
                         return set
                     }
                 } else if (set instanceof StaticFieldPointer) {
-                    if (set.getFieldWithContext().toString() === fieldSignature.toString()) {
+                    if (set.getFieldSignature().toString() === fieldSignature.toString()) {
                         return set
                     }
                 }
             } else if (identifier != null && set instanceof LocalPointer) {
-                if (set.getValueWithContext() === identifier) {
+                if (set.getIdentifier() === identifier) {
                     return set
                 }
             }
@@ -77,15 +75,15 @@ export class PointerFlowGraph {
         let newPointer: Pointer | null = null
         if (fieldSignature != null) {
             if (pointerTarget == null) {
-                // newPointer = new StaticFieldPointer(fieldSignature)
+                newPointer = new StaticFieldPointer(fieldSignature)
             } else {
-                // newPointer = new InstanceFieldPointer(pointerTarget, fieldSignature)
+                newPointer = new InstanceFieldPointer(pointerTarget, fieldSignature)
             }
         } else {
-            newPointer = new LocalPointer(identifier!.getValue(), identifier!.getContext())
+            newPointer = new LocalPointer(identifier!)
         }
-        this.pointerSet.add(newPointer!)
-        return newPointer!
+        this.pointerSet.add(newPointer)
+        return newPointer
     }
 
     public addPointerSetElement(pointerSet: Pointer, pointer: PointerTarget) {
