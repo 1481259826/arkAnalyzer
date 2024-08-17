@@ -32,9 +32,15 @@ function serializeTsFile(input: string, output: string, verbose: boolean = false
     config.getProjectFiles().push(filepath);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    let files = scene.getFiles();
+    if (verbose) {
+        console.log(`Scene contains ${files.length} files:`);
+        for (let f of files) {
+            console.log(`- '${f.getName()}'`);
+        }
+    }
 
     if (verbose) console.log("Extracting single ArkFile...");
-    let files = scene.getFiles();
     if (files.length === 0) {
         console.error(`ERROR: No files found in the project directory '${projectDir}'.`);
         process.exit(1);
@@ -76,10 +82,17 @@ function serializeMultipleTsFiles(inputDir: string, outDir: string, verbose: boo
     config.buildFromProjectDir(inputDir);
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    let files = scene.getFiles();
+    if (verbose) {
+        console.log(`Scene contains ${files.length} files:`);
+        for (let f of files) {
+            console.log(`- '${f.getName()}'`);
+        }
+    }
 
     if (verbose) console.log("Serializing...");
     let printer = new PrinterBuilder();
-    for (let f of scene.getFiles()) {
+    for (let f of files) {
         let filepath = f.getName();
         let outPath = path.join(outDir, filepath + '.json');
         console.log(`Serializing ArkIR for '${filepath}' to '${outPath}'...`);

@@ -53,6 +53,7 @@ import {
 } from '../core/base/Stmt';
 import {
     AbstractBinopExpr,
+    ArkAwaitExpr,
     ArkCastExpr,
     ArkConditionExpr,
     ArkDeleteExpr,
@@ -64,6 +65,7 @@ import {
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
+    ArkYieldExpr,
     ArrayLiteralExpr,
 } from '../core/base/Expr';
 import { Constant } from '../core/base/Constant';
@@ -339,12 +341,12 @@ export class JsonPrinter extends Printer {
     private serializeBasicBlock(block: BasicBlock): any {
         const successors = block.getSuccessors().map(successor => successor.getId());
         successors.sort((a, b) => a - b);
-        const predecessors = block.getPredecessors().map(predecessor => predecessor.getId());
-        predecessors.sort((a, b) => a - b);
+        // const predecessors = block.getPredecessors().map(predecessor => predecessor.getId());
+        // predecessors.sort((a, b) => a - b);
         return {
             id: block.getId(),
             successors,
-            predecessors,
+            // predecessors,
             stmts: block.getStmts().map(stmt => this.serializeStmt(stmt)),
         };
     }
@@ -392,6 +394,16 @@ export class JsonPrinter extends Printer {
                 _: 'DeleteExpr',
                 arg: this.serializeValue(value.getField()),
             }
+        } else if (value instanceof ArkAwaitExpr) {
+            return {
+                _: "AwaitExpr",
+                arg: this.serializeValue(value.getPromise()),
+            }
+        } else if (value instanceof ArkYieldExpr) {
+            return {
+                _: "YieldExpr",
+                arg: this.serializeValue(value.getYieldValue()),
+            }
         } else if (value instanceof ArkTypeOfExpr) {
             return {
                 _: 'TypeOfExpr',
@@ -401,7 +413,7 @@ export class JsonPrinter extends Printer {
             return {
                 _: 'InstanceOfExpr',
                 arg: this.serializeValue(value.getOp()),
-                checkType: value.getCheckType(),
+                checkType: this.serializeType(value.getCheckType()),
             };
         } else if (value instanceof ArkCastExpr) {
             return {
@@ -494,6 +506,7 @@ export class JsonPrinter extends Printer {
                 //       currently not possible due to circular structure
                 //       which cannot be serialized via `JSON.stringify`
                 // value,
+                value: value.toString(),
             };
         }
     }
@@ -542,7 +555,7 @@ export class JsonPrinter extends Printer {
         } else {
             return {
                 _: 'UNKNOWN_STMT',
-                stmt,
+                stmt: stmt.toString(),
             };
         }
     }
