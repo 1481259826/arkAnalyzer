@@ -29,7 +29,8 @@ import {
     NullType,
     NumberType,
     StringType,
-    Type, TypeAlias,
+    Type,
+    TypeAlias,
     UnclearReferenceType,
     UndefinedType,
     UnionType,
@@ -37,14 +38,13 @@ import {
     VoidType,
 } from '../base/Type';
 import { ArkMethod } from '../model/ArkMethod';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ClassSignature } from '../model/ArkSignature';
 import { ModelUtils } from './ModelUtils';
-import { ArkExport, exportSignature } from '../model/ArkExport';
+import { ArkExport } from '../model/ArkExport';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
-import { b } from '../../../tests/resources/exports/exportSample';
 import { ArkNamespace } from '../model/ArkNamespace';
 
 const logger = Logger.getLogger();

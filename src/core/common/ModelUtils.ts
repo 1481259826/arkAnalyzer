@@ -18,8 +18,8 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
-import { ArkExport, exportSignature } from '../model/ArkExport';
+import { ClassSignature, MethodSignature } from '../model/ArkSignature';
+import { ArkExport } from '../model/ArkExport';
 import { findExportInfo } from '../model/builder/ArkImportBuilder';
 
 export class ModelUtils {

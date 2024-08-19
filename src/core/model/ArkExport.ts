@@ -17,10 +17,8 @@ import { LineColPosition } from '../base/Position';
 import { Decorator } from '../base/Decorator';
 import { ArkFile } from './ArkFile';
 import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
-import { Local } from '../base/Local';
-import { Type } from '../base/Type';
 
-export type exportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
+export type ExportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
 
 export enum ExportType {
     NAME_SPACE = 0,
