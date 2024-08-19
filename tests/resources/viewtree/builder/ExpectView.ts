@@ -256,3 +256,30 @@ export const WaterFlowTest_Expect_ViewTree = {
         },
     ],
 };
+
+export const Case_ComplexStateValueTest_Expect_ViewTree = {
+    name: 'Column',
+    children: [
+        {
+            name: 'View',
+            children: [
+                {
+                    name: 'Column',
+                    children: [
+                        {
+                            name: 'Text',
+                            children: [],
+                            stateValues: ['data']
+                        },
+                        {
+                            name: 'Text',
+                            children: [],
+                            stateValues: ['index']
+                        }
+                    ]
+                }
+            ],
+            stateValues: ['arrayData', 'viewData']
+        }
+    ]
+}

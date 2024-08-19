@@ -67,7 +67,12 @@ class StateValuesUtils {
             return uses;
         }
         visitor.add(stmt);
-        for (const v of stmt.getUses()) {
+        let values = stmt.getUses();
+        if (stmt instanceof ArkAssignStmt) {
+            values.push(stmt.getLeftOp());
+        }
+
+        for (const v of values) {
             if (v instanceof ArkInstanceFieldRef) {
                 let field = this.declaringArkClass.getField(v.getFieldSignature());
                 let decorators = field?.getStateDecorators();
@@ -647,6 +652,16 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         node.signature = cls.getSignature();
         node.classSignature = node.signature;
         node.stateValuesTransfer = this.parseObjectLiteralExpr(cls, arg, builder);
+        if (node.stateValuesTransfer) {
+            for (let [_, value] of node.stateValuesTransfer) {
+                if (value instanceof ArkField) {
+                    if (value.getStateDecorators().length > 0) {
+                        node.stateValues.add(value);
+                        this.addStateValue(value, node);
+                    }
+                }
+            }
+        }
         this.push(node);
         let componentViewTree = cls.getViewTree();
         if (!componentViewTree || !componentViewTree.getRoot()) {
@@ -791,7 +806,9 @@ function backtraceLocalInitValue(value: Local): Local | Value {
         let rightOp = stmt.getRightOp();
         if (rightOp instanceof Local) {
             return backtraceLocalInitValue(rightOp);
-        }
+        } else if (rightOp instanceof ArkInstanceFieldRef && rightOp.getBase().getName().startsWith('$temp')) {
+            return backtraceLocalInitValue(rightOp.getBase());
+        } 
         return rightOp;
     }
     return value;

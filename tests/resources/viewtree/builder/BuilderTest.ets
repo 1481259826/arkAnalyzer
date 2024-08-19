@@ -211,3 +211,40 @@ struct WaterFlowTest {
     Text('Foot Text')
   }
 }
+
+class ViewData {
+  index: number
+
+  constructor() {
+    this.index = 0;
+  }
+}
+
+@Component
+struct ComplexStateValueTest {
+  @State
+  arrayData: string[] = [];
+  @State
+  viewData: ViewData = new ViewData();
+
+  build() {
+    Column() {
+      ComplexView({data: this.arrayData[0], index: this.viewData.index});
+    }
+  }
+}
+
+@Component 
+struct ComplexView {
+  @State
+  data: string = '';
+  @State
+  index: number = 0;
+
+  build() {
+    Column() {
+      Text(`${this.data}`)
+      Text(`${this.index}`)
+    }
+  }
+}

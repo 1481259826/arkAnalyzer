@@ -32,7 +32,8 @@ export const CustomContainer_Builder_Expect_ViewTree = {
             name: 'Builder',
             children: [ SpecificParam_Expect_ViewTree ]
         }
-    ]
+    ],
+    stateValues: ['text']
 }
 
 export const CustomContainer_Expect_ViewTree = {
