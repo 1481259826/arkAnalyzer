@@ -192,7 +192,8 @@ export class PointerAnalysis extends AbstractAnalysis{
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
                 fieldNode?.getIncomingEdge().forEach((edge) => {
                     if (edge.getKind() != PagEdgeKind.Write) {
-                        throw new Error ("field node in edge is not write edge")
+                        return
+                        //throw new Error ("field node in edge is not write edge")
                     }
                     let srcNode = edge.getSrcNode() as PagNode;
                     this.ptaStat.numProcessedWrite++;
@@ -280,8 +281,15 @@ export class PointerAnalysis extends AbstractAnalysis{
             {
                 //debug
                 let name = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-                if(name === 'forEach')
-                    debugger
+                if(name === 'forEach') {
+                    // console.log(ivkExpr.toString());
+                    // debugger
+                }
+
+                let caller = this.cg.getMethodByFuncID(cs.callerFuncID)?.getMethodSubSignature().getMethodName();
+                if (caller == 'genArkFiles') {
+                    // debugger;
+                }
             }
             // Get local of base class
             let base = ivkExpr.getBase();
@@ -298,6 +306,8 @@ export class PointerAnalysis extends AbstractAnalysis{
                             let srcNodes = this.pagBuilder.addDynamicCallEdge(cs, pt, cid);
                             changed = this.addToReanalyze(srcNodes) || changed;
                         }
+                    } else {
+                        this.pagBuilder.handleUnkownDynamicCall(cs, cid);
                     }
                 }
             }

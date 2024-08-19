@@ -344,4 +344,30 @@ export class CallGraph extends BaseGraph {
         }
         PrinterBuilder.dump(printer, name);
     }
+
+    public detectCycle(id: FuncID): boolean {
+        let dWorklist: FuncID[] = [];
+        let travserdFuncs = new Set();
+
+        dWorklist.push(id);
+
+        while (dWorklist.length > 0) {
+            let nodeID = dWorklist.shift()!;
+            if (travserdFuncs.has(nodeID)) {
+                continue;
+            }
+            travserdFuncs.add(nodeID);
+
+            let node = this.getNode(nodeID)!;
+            for (let e of node.getOutgoingEdges()) {
+                let dst = e.getDstID();
+                if (dst === id) {
+                    return true;
+                }
+                dWorklist.push(dst);
+            }
+        }
+
+        return false;
+    }
 }
