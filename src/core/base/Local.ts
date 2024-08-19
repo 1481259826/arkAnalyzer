@@ -114,4 +114,8 @@ export class Local implements Value, ArkExport {
         return this.signature;
     }
 
+    public setSignature(signature: LocalSignature): void {
+        this.signature = signature;
+    }
+
 }

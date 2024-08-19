@@ -21,7 +21,7 @@ import { ImportInfo } from '../ArkImport';
 import { buildModifiers } from './builderUtils';
 import { Decorator } from '../../base/Decorator';
 import { ExportInfo, ExportType, FromInfo } from '../ArkExport';
-import { FileSignature } from '../ArkSignature';
+import { FileSignature, LocalSignature } from '../ArkSignature';
 import Logger from '../../../utils/logger';
 import { transfer2UnixPath } from '../../../utils/pathTransfer';
 import { FileUtils, ModulePath } from '../../../utils/FileUtils';
@@ -190,9 +190,11 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
 }
 
 function findLocalSetType(info: ExportInfo): boolean {
-    let local = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals()
+    let defaultArkMethod = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod();
+    let local = defaultArkMethod?.getBody()?.getLocals()
         .get(info.getOriginName());
-    if (local) {
+    if (defaultArkMethod && local) {
+        local.setSignature(new LocalSignature(local.getName(), defaultArkMethod.getSignature()));
         info.setExportClauseType(ExportType.LOCAL);
         info.setArkExport(local);
         return true;

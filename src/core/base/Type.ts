@@ -17,7 +17,6 @@ import { ArkField } from '../model/ArkField';
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';
-import { type } from 'typedoc/dist/lib/output/themes/default/partials/type';
 
 /**
  * @category core/base/type

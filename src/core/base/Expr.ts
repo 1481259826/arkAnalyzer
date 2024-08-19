@@ -16,7 +16,7 @@
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
 import { ArkClass } from '../model/ArkClass';
-import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
+import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AnnotationNamespaceType,
