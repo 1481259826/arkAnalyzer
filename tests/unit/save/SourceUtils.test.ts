@@ -41,11 +41,6 @@ describe('SourceUtilsTest', () => {
         assert.equal(transformer.typeToString(type), '{name:undefined}');
     });
 
-    it('Array case', () => {
-        let type = [1, 2];
-        assert.equal(transformer.typeToString(type), '1 | 2');
-    });
-
     it('LiteralType case', () => {
         let type = new ty.LiteralType('BooleanKeyword');
         assert.equal(transformer.typeToString(type), 'boolean');

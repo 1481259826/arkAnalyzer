@@ -47,6 +47,10 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     } else if (member.name && ts.isIdentifier(member.name)) {
         let propertyName = member.name.text;
         field.setName(propertyName);
+    } else if (member.name && ts.isPrivateIdentifier(member.name)) {
+        let propertyName = member.name.text;
+        field.setName(propertyName.substring(1));
+        field.addModifier(ts.ScriptElementKindModifier.privateMemberModifier);
     } else {
         logger.warn("Other type of property name found!");
     }

@@ -46,7 +46,11 @@ import {
     PrimitiveType,
     Type,
     TypeLiteralType,
+    TypeParameterType,
+    UnclearReferenceType,
+    UnionType,
     UnknownType,
+    VoidType,
 } from '../../core/base/Type';
 import { SourceClass } from './SourceClass';
 import { Value } from '../../core/base/Value';
@@ -327,12 +331,12 @@ export class SourceTransformer {
             for (const member of type.getMembers()) {
                 typesStr.push(member.getName() + ':' + member.getType());
             }
-            return `{${typesStr.join(',')}}`;
+            return `{${typesStr.join(', ')}}`;
         }
 
-        if (type instanceof Array) {
+        if (type instanceof UnionType) {
             let typesStr: string[] = [];
-            for (const member of type) {
+            for (const member of type.getTypes()) {
                 typesStr.push(this.typeToString(member));
             }
             return typesStr.join(' | ');
@@ -340,6 +344,10 @@ export class SourceTransformer {
 
         if (type instanceof UnknownType) {
             return 'any';
+        }
+
+        if (type instanceof VoidType) {
+            return 'void';
         }
 
         if (type instanceof ClassType) {
@@ -372,6 +380,18 @@ export class SourceTransformer {
             if (method && SourceUtils.isAnonymousMethod(method.getName())) {
                 return new SourceMethod(method).toArrowFunctionTypeString();
             }
+        }
+
+        if (type instanceof UnclearReferenceType) {
+            let genericTypes = type.getGenericTypes();
+            if (genericTypes.length > 0) {
+                return `${type.getName()}<${genericTypes.join(', ')}>`
+            }
+            return type.getName();
+        }
+
+        if (type instanceof TypeParameterType) {
+            return type.getName();
         }
 
         if (!type) {

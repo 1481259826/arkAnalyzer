@@ -101,7 +101,7 @@ export abstract class SourceBase
             types.push(keyword);
         }
 
-        return types.join('|');
+        return types.join(' | ');
     }
 
     protected resolveMethodName(name: string): string {

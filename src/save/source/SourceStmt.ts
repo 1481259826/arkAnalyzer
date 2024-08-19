@@ -269,12 +269,12 @@ export class SourceAssignStmt extends SourceStmt {
                     });
 
                     if (originType == Origin_Component) {
-                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(',')})`;
+                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
                     } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
                     } else {
                         this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
-                            ','
+                            ', '
                         )})`;
                     }
                     return;

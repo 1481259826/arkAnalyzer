@@ -18,20 +18,20 @@ import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
 const SourceClassesTest_CASE1_EXPECT = `class Animal {
-  protected _name: string|undefined;
+  protected _name: string | undefined;
   public constructor(theName: string) {
     this._name = theName;
   }
   public move(distanceInMeters: number) {
     logger.info('' + this._name + ' moved ' + distanceInMeters + 'm.');
   }
-  get name(): string|undefined {
+  get name(): string | undefined {
     return this._name;
   }
-  set name(newName: string|undefined) {
+  set name(newName: string | undefined) {
     this._name = newName;
   }
-  public print(a: Animal[]): number|null {
+  public print(a: Animal[]): number | null {
     return 0;
   }
   public testArrayReturn(): string[] {
@@ -140,7 +140,7 @@ const SourceClassesTest_CASE2_EXPECT = `class ObjectLiteralTest {
 const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Updatable, Serializable {
   displayName?: boolean;
   name!: string;
-  : Map<any,any>;
+  private attributes: Map<any, any>;
   roles = ['user'];
   readonly createdAt = new Date();
   constructor(id: string, name: string) {
@@ -164,7 +164,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   }
   protected handleRequest() {
   }
-  static  = 0;
+  private static userCount = 0;
   static registerUser(user: User) {
   }
 }
