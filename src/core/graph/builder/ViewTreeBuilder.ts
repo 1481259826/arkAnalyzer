@@ -754,12 +754,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
 
                 let stmts = field.getInitializer();
-                stmts = stmts.reverse();
                 if (stmts.length == 0) {
                     return;
                 }
 
-                let assignStmt = stmts[0];
+                let assignStmt = stmts[stmts.length - 1];
                 if (!(assignStmt instanceof ArkAssignStmt)) {
                     return;
                 }
@@ -881,8 +880,7 @@ function waterFlowCreationParser(
             return node;
         }
         let stmts = footer.getInitializer();
-        stmts = stmts.reverse();
-        let assignStmt = stmts[0];
+        let assignStmt = stmts[stmts.length - 1];
         if (!(assignStmt instanceof ArkAssignStmt)) {
             return node;
         }
