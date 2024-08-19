@@ -49,6 +49,7 @@ import {
     Case1_BuilderTest_Expect_ViewTree,
     Case2_BuilderTest_Expect_ViewTree,
     Case3_BuilderTest_Expect_ViewTree,
+    Case_ComplexStateValueTest_Expect_ViewTree,
     Case_moreRootBuilderTest_Expect_ViewTree,
     WaterFlowTest_Expect_ViewTree,
 } from '../resources/viewtree/builder/ExpectView';
@@ -73,7 +74,9 @@ function expectViewTree(root: ViewTreeNode, expectTree: any) {
             expect(set.has(key)).eq(true);
         });
     }
-    if (root.stateValues.size > 0) {
+    if (root.stateValues?.size > 0 || expectTree.stateValues?.length > 0) {
+        assert.isDefined(root.stateValues);
+        assert.isDefined(expectTree.stateValues);
         expect(root.stateValues.size).eq(expectTree.stateValues.length);
         const set = new Set(expectTree.stateValues);
         root.stateValues.forEach((value) => {
@@ -255,6 +258,20 @@ describe('builder Test', () => {
         let root = vt.getRoot();
         expectViewTree(root, Case_moreRootBuilderTest_Expect_ViewTree);
     });
+
+    it('test ComplexStateValueTest ', async () => {
+        let arkFile = scene.getFiles().find((file) => file.getName() == 'BuilderTest.ets');
+        let arkClass = arkFile?.getClassWithName('ComplexStateValueTest');
+        let vt = arkClass?.getViewTree();
+        if (!vt) {
+            assert.isDefined(vt);
+            return;
+        }
+        let root = vt.getRoot();
+        expectViewTree(root, Case_ComplexStateValueTest_Expect_ViewTree);
+    });
+
+    
 });
 
 describe('builderParam Test', () => {

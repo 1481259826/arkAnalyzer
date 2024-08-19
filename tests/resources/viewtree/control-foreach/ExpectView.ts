@@ -146,8 +146,7 @@ export const ForEachSort_Expect_ViewTree = {
                 }
             ]
         }
-    ],
-    stateValues: ['arr']
+    ]
 }
 
 export const ChildItem_Expect_ViewTree = {

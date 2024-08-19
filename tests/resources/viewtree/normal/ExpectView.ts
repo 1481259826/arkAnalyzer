@@ -168,7 +168,8 @@ export const ControlCenterComponent_Expect_ViewTree = {
                                                     children: [
                                                         {
                                                             name: 'View',
-                                                            children: [ControlCenterSimpleToggleLayout_Expect_ViewTree]
+                                                            children: [ControlCenterSimpleToggleLayout_Expect_ViewTree],
+                                                            stateValues: ['mSimpleToggleColumnCount']
                                                         },
                                                         {
                                                             name: 'Column',
