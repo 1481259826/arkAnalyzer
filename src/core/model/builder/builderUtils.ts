@@ -150,7 +150,7 @@ export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDe
     return typeParams;
 }
 
-export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkMethod: ArkMethod, sourceFile: ts.SourceFile) {
+export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkInstance: ArkMethod | ArkField, sourceFile: ts.SourceFile) {
     let parameters: MethodParameter[] = [];
     params.forEach((parameter) => {
         let methodParameter = new MethodParameter();
@@ -235,7 +235,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkM
 
         // type
         if (parameter.type) {
-            methodParameter.setType(tsNode2Type(parameter.type, sourceFile, arkMethod));
+            methodParameter.setType(tsNode2Type(parameter.type, sourceFile, arkInstance));
         } else {
             methodParameter.setType(UnknownType.getInstance());
         }

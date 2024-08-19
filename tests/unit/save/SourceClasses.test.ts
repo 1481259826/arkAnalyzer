@@ -140,7 +140,7 @@ const SourceClassesTest_CASE2_EXPECT = `class ObjectLiteralTest {
 const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Updatable, Serializable {
   displayName?: boolean;
   name!: string;
-  : Map;
+  : Map<any,any>;
   roles = ['user'];
   readonly createdAt = new Date();
   constructor(id: string, name: string) {
@@ -222,17 +222,17 @@ describe('SourceClassesTest', () => {
         expect(source).eq(SourceClassesTest_CASE3_EXPECT);
     });
 
-    // it('case4: index field test', () => {
-    //   let arkfile2 = scene.getFiles().find((value) => {
-    //     return value.getName() == 'cheat_sheet_classes.ts';
-    //   });
-    //   let cls = arkfile2?.getClassWithName('Updatable');
-    //   if (!cls) {
-    //     assert.isDefined(cls);
-    //     return;
-    //   }
-    //   let printer = new SourceClassPrinter(cls);
-    //   let source = printer.dump();
-    //   expect(source).eq(SourceClassesTest_CASE4_EXPECT);
-    // })
+    it('case4: index field test', () => {
+      let arkfile2 = scene.getFiles().find((value) => {
+        return value.getName() == 'cheat_sheet_classes.ts';
+      });
+      let cls = arkfile2?.getClassWithName('Updatable');
+      if (!cls) {
+        assert.isDefined(cls);
+        return;
+      }
+      let printer = new SourceClassPrinter(cls);
+      let source = printer.dump();
+      expect(source).eq(SourceClassesTest_CASE4_EXPECT);
+    })
 });

@@ -14,7 +14,6 @@
  */
 
 import { Scene } from '../../Scene';
-import { ArkBody } from '../model/ArkBody';
 import { DataflowProblem, FlowFunction } from './DataflowProblem';
 import { Local } from '../base/Local';
 import { Value } from '../base/Value';
@@ -28,10 +27,7 @@ import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { factEqual } from '../dataflow/DataflowSolver';
 import { FileSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkClass } from '../model/ArkClass';
-import Logger from '../../utils/logger';
 import { Cfg } from '../graph/Cfg';
-
-const logger = Logger.getLogger();
 
 export class UndefinedVariableChecker extends DataflowProblem<Value> {
     zeroValue: Constant = new Constant('undefined', UndefinedType.getInstance());
@@ -74,7 +70,6 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                 let ret: Set<Value> = new Set();
                 if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
-                    let body: ArkBody = entryMethod.getBody() as ArkBody;
                     const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0;i < parameters.length;i++) {
                         const para  = parameters[i].getDef();

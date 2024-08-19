@@ -63,13 +63,10 @@ export class Scene {
     private moduleScenesMap: Map<string, ModuleScene> = new Map();
     private modulePath2NameMap: Map<string, string> = new Map<string, string>();
 
-    private extendedClasses: Map<string, ArkClass[]> = new Map();
     private globalImportInfos: ImportInfo[] = [];
 
     private moduleSdkMap: Map<string, Sdk[]> = new Map();
     private projectSdkMap: Map<string, Sdk> = new Map();
-
-    private sdkFilesProjectMap: Map<string[], string> = new Map<string[], string>();
 
     // values that are visible in curr scope
     private visibleValue: VisibleValue = new VisibleValue();
@@ -510,7 +507,6 @@ export class Scene {
             }
 
             classMap.set(file.getFileSignature(), fileClass);
-            const stack = [...namespaceStack];
             // 第一轮遍历，加上每个namespace自己的class
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
@@ -620,7 +616,6 @@ export class Scene {
                 namespaceStack.push(ns);
                 parentMap.set(ns, file);
             }
-            const stack = [...namespaceStack];
             // 第一轮遍历，加上每个namespace自己的local
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
@@ -842,16 +837,9 @@ export class ModuleScene {
     private modulePath: string = '';
 
     private moduleOhPkgFilePath: string = '';
-
-    private otherSdkMap: Map<string, string> = new Map();
     private ohPkgContent: { [k: string]: unknown } = {};
-
-    private moduleImportInfos: ImportInfo[] = [];
-
     private filesMap: Map<string, ArkFile> = new Map();
-    private namespacesMap: Map<string, ArkNamespace> = new Map();
-    private classesMap: Map<string, ArkClass> = new Map();
-    private methodsMap: Map<string, ArkMethod> = new Map();
+
 
     constructor() {
     }

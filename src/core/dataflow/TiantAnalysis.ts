@@ -14,7 +14,6 @@
  */
 
 import { Scene } from '../../Scene';
-import { ArkBody } from '../model/ArkBody';
 import { DataflowProblem, FlowFunction } from './DataflowProblem';
 import { Local } from '../base/Local';
 import { Value } from '../base/Value';
@@ -27,12 +26,9 @@ import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '
 import { UndefinedType } from '../base/Type';
 import { FileSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkClass } from '../model/ArkClass';
-import Logger from '../../utils/logger';
 import { ArkNamespace } from '../model/ArkNamespace';
 import * as fs from 'fs';
 import { Cfg } from '../graph/Cfg';
-
-const logger = Logger.getLogger();
 
 export class TiantAnalysisChecker extends DataflowProblem<Value> {
     zeroValue: Constant = new Constant('zeroValue', UndefinedType.getInstance());
@@ -86,7 +82,6 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                 let ret: Set<Value> = new Set();
                 if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
-                    let body: ArkBody = entryMethod.getBody() as ArkBody;
                     const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0; i < parameters.length;i++) {
                         const para  = parameters[i].getDef();

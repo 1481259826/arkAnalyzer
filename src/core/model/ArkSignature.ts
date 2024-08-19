@@ -13,15 +13,11 @@
  * limitations under the License.
  */
 
-import path from 'path';
 import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ClassType, Type, UnknownType } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
-import Logger from '../../utils/logger';
 
 export type Signature = FileSignature | NamespaceSignature | ClassSignature | MethodSignature | FieldSignature;
-
-const logger = Logger.getLogger();
 
 export interface ArkSignature {
     getSignature(): Signature;
@@ -304,7 +300,6 @@ export class MethodSignature {
 export class InterfaceSignature {
     private arkFile: string = '';
     private interfaceName: string = '';
-    private arkFileWithoutExt: string = '';
 
     public getArkFile() {
         return this.arkFile;
@@ -328,7 +323,6 @@ export class InterfaceSignature {
     public build(arkFile: string, interfaceName: string) {
         this.setArkFile(arkFile);
         this.setInterfaceName(interfaceName);
-        this.arkFileWithoutExt = path.dirname(arkFile) + '/' + path.basename(arkFile, path.extname(arkFile));
     }
 
     public toString(): string {
@@ -392,12 +386,6 @@ function setCompare(leftSet: Set<Type>, rightSet: Set<Type>) {
     const arr1 = Array.from(leftSet);
     const arr2 = Array.from(rightSet);
     return arrayCompare(arr1, arr2);
-}
-
-function undateFilePath(filePath: string) {
-    let reg = /\//g;
-    let unixArkFilePath = path.posix.join(...filePath.split(/\\/));
-    return unixArkFilePath.replace(reg, '.');
 }
 
 export function genSignature4ImportClause(arkFileName: string, importClauseName: string): string {

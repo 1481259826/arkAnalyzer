@@ -200,8 +200,3 @@ describe("Infer Array Test", () => {
         assert.isTrue(flag)
     })
 })
-
-function equals(actual: any, expect: string) {
-    assert.isDefined(actual);
-    assert.equal(actual, expect);
-}

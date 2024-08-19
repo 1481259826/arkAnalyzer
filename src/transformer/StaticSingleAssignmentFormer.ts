@@ -62,7 +62,7 @@ export class StaticSingleAssignmentFormer {
         let blockToPhiLocals = new Map<BasicBlock, Set<Local>>();
         let localToPhiBlock = new Map<Local, Set<BasicBlock>>();
 
-        for (const [name, local] of body.getLocals()) {
+        for (const [_, local] of body.getLocals()) {
             localToPhiBlock.set(local, new Set());
             let phiBlocks = localToPhiBlock.get(local) as Set<BasicBlock>;
             let blocks = Array.from(localToBlocks.get(local) as Set<BasicBlock>);

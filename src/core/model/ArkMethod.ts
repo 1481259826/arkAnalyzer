@@ -244,7 +244,6 @@ export class ArkMethod implements ArkExport {
             const cfg = this.getCfg() as Cfg;
             stmts.push(...cfg.getStmts());
         }
-        let results: Value[] = [];
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt) {
                 if (stmt.getRightOp() instanceof ArkThisRef) {

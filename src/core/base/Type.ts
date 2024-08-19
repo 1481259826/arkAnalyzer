@@ -114,11 +114,11 @@ export class UnclearReferenceType extends Type {
     }
 
     public toString() {
-        const str = this.name;
+        let str = this.name;
         if (this.genericTypes.length > 0) {
-            const typeStr = '<' + this.genericTypes.join(',') + '>';
+            str += '<' + this.genericTypes.join(',') + '>';
         }
-        return this.name;
+        return str;
     }
 }
 

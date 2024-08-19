@@ -19,7 +19,7 @@ import Logger from '../../../utils/logger';
 import { LineColPosition } from '../../base/Position';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
-import { buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
+import { buildModifiers, buildParameters, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
 
 const logger = Logger.getLogger();
 
@@ -99,7 +99,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     }
 
     //TODO: parameters
-    //field.setParameters(buildParameters(member.parameters, sourceFile));
+    field.setParameters(buildParameters(member.parameters, field, sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
     //modifiers

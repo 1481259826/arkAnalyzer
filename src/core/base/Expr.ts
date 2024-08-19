@@ -773,7 +773,6 @@ export class ArkCastExpr extends AbstractExpr {
 
 export class ArkPhiExpr extends AbstractExpr {
     private args: Local[];
-    private blockToArg: Map<BasicBlock, Local>;
     private argToBlock: Map<Local, BasicBlock>;
 
     // private type:Type;
@@ -781,7 +780,6 @@ export class ArkPhiExpr extends AbstractExpr {
     constructor() {
         super();
         this.args = [];
-        this.blockToArg = new Map();
         this.argToBlock = new Map();
     }
 

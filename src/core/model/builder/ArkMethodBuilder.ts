@@ -122,7 +122,6 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
 
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod): string {
     let name: string = '';
-    let getAccessorName: string | undefined = undefined;
     if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) {
         if (node.name) {
             name = node.name.text;
@@ -161,7 +160,6 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
         name = 'call-signature';
     } else if (ts.isGetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Get-' + node.name.text;
-        getAccessorName = node.name.text;
     } else if (ts.isSetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Set-' + node.name.text;
     } else if (ts.isArrowFunction(node)) {
@@ -183,7 +181,6 @@ export class ObjectBindingPatternParameter {
     private propertyName: string = '';
     private name: string = '';
     private optional: boolean = false;
-    private initializer: string = '';
 
     constructor() {
     }
@@ -217,7 +214,6 @@ export class ArrayBindingPatternParameter {
     private propertyName: string = '';
     private name: string = '';
     private optional: boolean = false;
-    private initializer: string = '';
 
     constructor() {
     }

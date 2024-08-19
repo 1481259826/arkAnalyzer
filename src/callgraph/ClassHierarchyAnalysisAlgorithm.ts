@@ -25,7 +25,6 @@ import { AbstractCallGraph } from './AbstractCallGraphAlgorithm';
 export class ClassHierarchyAnalysisAlgorithm extends AbstractCallGraph {
     public resolveCall(sourceMethodSignature: MethodSignature, invokeStmt: Stmt): MethodSignature[] {
         let concreteMethodSignature: MethodSignature|null = null;
-        let concreteMethod: ArkMethod;
         let callTargetMethods: MethodSignature[] = [];
         let invokeExpressionExpr = invokeStmt.getInvokeExpr()
         if (invokeExpressionExpr === undefined) {
@@ -47,7 +46,6 @@ export class ClassHierarchyAnalysisAlgorithm extends AbstractCallGraph {
         }
         for (let methodFromInvoke of methodsFromInvoke) {
             concreteMethodSignature = methodFromInvoke.getSignature()
-            concreteMethod = methodFromInvoke
 
             if (concreteMethodSignature == null) {
                 // If the invoked function is static or a constructor, then return the signature.
@@ -129,8 +127,6 @@ export class ClassHierarchyAnalysisAlgorithm extends AbstractCallGraph {
         arkFileName: string,
         sourceMethodSignature: MethodSignature) {
         let callName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-        let methodName: string = callName
-        let classAndArkFileNames: Set<[string, string]> = new Set<[string, string]>()
         let callMethods: ArkMethod[] = []
 
         // TODO: ts库、常用库未扫描，导致console.log等调用无法识别
