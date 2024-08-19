@@ -14,7 +14,6 @@
  */
 
 import * as ts from 'ohos-typescript';
-import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
 import { ArkAssignStmt, ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
@@ -27,7 +26,6 @@ import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
 
-const logger = Logger.getLogger();
 
 class StatementBuilder {
     type: string;
@@ -871,7 +869,7 @@ export class CfgBuilder {
         throw new textError(mes);
     }
 
-    printBlocks() {
+    printBlocks(): string {
         let text = '';
         if (this.declaringClass?.getDeclaringArkFile()) {
             text += this.declaringClass.getDeclaringArkFile().getName() + '\n';
@@ -887,11 +885,11 @@ export class CfgBuilder {
                     let cstm = stmt as ConditionStatementBuilder;
                     if (cstm.nextT == null || cstm.nextF == null) {
                         this.errorTest(cstm);
-                        return;
+                        return text;
                     }
                     if (!cstm.nextF.block || !cstm.nextT.block) {
                         this.errorTest(cstm);
-                        return;
+                        return text;
                     }
                     stmt.code = 'if !(' + cstm.condition + ') goto label' + cstm.nextF.block.id;
                     if (i == length - 1 && bi + 1 < this.blocks.length && this.blocks[bi + 1].id != cstm.nextT.block.id) {
@@ -902,7 +900,7 @@ export class CfgBuilder {
                 } else if (stmt.type == 'breakStatement' || stmt.type == 'continueStatement') {
                     if (!stmt.next?.block) {
                         this.errorTest(stmt);
-                        return;
+                        return text;
                     }
                     stmt.code = 'goto label' + stmt.next?.block.id;
                 } else {
@@ -934,6 +932,8 @@ export class CfgBuilder {
         for (let cat of this.catches) {
             text += 'catch ' + cat.errorName + ' from label ' + cat.from + ' to label ' + cat.to + ' with label' + cat.withLabel + '\n';
         }
+
+        return text;
     }
 
     buildStatementBuilder4ArrowFunction(stmt: ts.Node) {

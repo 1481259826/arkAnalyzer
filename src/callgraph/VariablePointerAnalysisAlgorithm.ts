@@ -23,7 +23,6 @@ import { ArkMethod } from '../core/model/ArkMethod';
 import { MethodSignature } from '../core/model/ArkSignature';
 import { isItemRegistered } from '../utils/callGraphUtils';
 import { AbstractCallGraph } from './AbstractCallGraphAlgorithm';
-import { ClassHierarchyAnalysisAlgorithm } from './ClassHierarchyAnalysisAlgorithm';
 import {
     InstanceFieldPointer,
     LocalPointer,
@@ -43,7 +42,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     private reachableStmts: Stmt[];
     private workList: PointerTargetPair[];
     private reachableMethods: MethodSignature[];
-    private CHAtool: ClassHierarchyAnalysisAlgorithm;
 
     constructor(scene: Scene) {
         super(scene);
@@ -51,7 +49,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
         this.reachableStmts = [];
         this.reachableMethods = [];
         this.pointerFlowGraph = new PointerFlowGraph();
-        this.CHAtool = this.scene.scene.makeCallGraphCHA([]) as ClassHierarchyAnalysisAlgorithm;
     }
 
     public loadCallGraph(entryPoints: MethodSignature[]) {
@@ -192,7 +189,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                 if (!targetMethod) {
                     continue;
                 }
-                let specificCallTarget = targetMethod.getSignature();
                 // logger.info("\t[processInvokeStmt] get specific call target: "+specificCallTarget.toString()+", from stmt: "+stmt.toString())
 
                 let targetMethodThisInstance: Value | null = targetMethod.getThisInstance();

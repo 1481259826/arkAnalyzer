@@ -20,13 +20,10 @@ import { ArkFile } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
 import { ArkNamespace } from './ArkNamespace';
 import { ClassSignature, FieldSignature, FileSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
-import Logger from '../../utils/logger';
 import { Local } from '../base/Local';
 import { Decorator } from '../base/Decorator';
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from '../common/EtsConst';
 import { ArkExport, ExportType } from './ArkExport';
-
-const logger = Logger.getLogger();
 
 /**
  * @category core/model
@@ -323,7 +320,6 @@ export class ArkClass implements ArkExport {
     }
 
     public getGlobalVariable(globalMap: Map<FileSignature | NamespaceSignature, Local[]>): Local[] {
-        let locals: Local[] = [];
         if (this.declaringArkNamespace) {
             return globalMap.get(this.declaringArkNamespace.getNamespaceSignature())!;
         }

@@ -456,7 +456,7 @@ export class ArkIRTransformer {
             const {value: conditionValue, stmts: assignConditionStmts} = this.generateAssignStmtForValue(conditionExpr);
             stmts.push(...assignConditionStmts);
             const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, [conditionValue]);
-            const {value: createValue, stmts: createStmts} = this.generateAssignStmtForValue(createInvokeExpr);
+            const {value: _, stmts: createStmts} = this.generateAssignStmtForValue(createInvokeExpr);
             stmts.push(...createStmts);
             const branchMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_IF, COMPONENT_BRANCH_FUNCTION);
             const branchInvokeExpr = new ArkStaticInvokeExpr(branchMethodSignature, [ValueUtil.getOrCreateNumberConst(0)]);
@@ -731,7 +731,7 @@ export class ArkIRTransformer {
         const values: Value[] = [ValueUtil.createStringConst(head.rawText ? head.rawText : '')];
         for (const templateSpan of templateExpression.templateSpans) {
             const {value: exprValue, stmts: exprStmts} = this.tsNodeToValueAndStmts(templateSpan.expression);
-            stmts.push(...stmts);
+            stmts.push(...exprStmts);
             const literalRawText = templateSpan.literal.rawText;
             const literalStr = literalRawText ? literalRawText : '';
             values.push(exprValue);
@@ -1486,41 +1486,6 @@ export class ArkIRTransformer {
                 return new TupleType(types);
         }
         return UnknownType.getInstance();
-    }
-
-    private getTypeOfLiteralNode(literalNode: ts.Node): Type {
-        const syntaxKind = literalNode.kind;
-        let type: Type;
-        switch (syntaxKind) {
-            case ts.SyntaxKind.NumericLiteral:
-                type = NumberType.getInstance();
-                break;
-            case ts.SyntaxKind.BigIntLiteral:
-                type = NumberType.getInstance();
-                break;
-            case ts.SyntaxKind.StringLiteral:
-                type = StringType.getInstance();
-                break;
-            case ts.SyntaxKind.RegularExpressionLiteral:
-                type = StringType.getInstance();
-                break;
-            case ts.SyntaxKind.NullKeyword:
-                type = NullType.getInstance();
-                break;
-            case ts.SyntaxKind.UndefinedKeyword:
-                type = UndefinedType.getInstance();
-                break;
-            case ts.SyntaxKind.TrueKeyword:
-                type = BooleanType.getInstance();
-                break;
-            case ts.SyntaxKind.FalseKeyword:
-                type = BooleanType.getInstance();
-                break;
-            default:
-                logger.warn(`ast node's syntaxKind is ${ts.SyntaxKind[literalNode.kind]}, not literalNode`);
-                type = UnknownType.getInstance();
-        }
-        return type;
     }
 
     private isLiteralNode(node: ts.Node): boolean {

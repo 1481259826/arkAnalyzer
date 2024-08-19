@@ -42,7 +42,17 @@ export class SourceField extends SourceBase {
         if (this.field.getFieldType() !== 'EnumMember') {
             this.printer.writeSpace(this.modifiersToString(this.field.getModifiers()));
         }
-        this.printer.write(this.field.getName());
+
+        if (this.field.getFieldType() == 'IndexSignature') {
+            let index: string[] = [];
+            for (const parameter of this.field.getParameters()) {
+                index.push(`${parameter.getName()}: ${this.transformer.typeToString(parameter.getType())}`);
+            }
+            this.printer.write(`[${index.join(',')}]`);
+        } else {
+            this.printer.write(this.field.getName());
+        }
+        
         if (this.field.getQuestionToken()) {
             this.printer.write('?');
         }

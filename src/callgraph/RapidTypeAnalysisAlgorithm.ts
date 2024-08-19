@@ -28,7 +28,6 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
     private ignoredCalls: Map<ClassSignature, Tuple[]> = new Map<ClassSignature, Tuple[]>()
     protected resolveCall(sourceMethodSignature: MethodSignature, invokeStmt: Stmt): MethodSignature[] {
         let concreteMethodSignature: MethodSignature;
-        let concreteMethod: ArkMethod;
         let callTargetMethods: MethodSignature[] = [];
         let invokeExpressionExpr = invokeStmt.getInvokeExpr()
         if (invokeExpressionExpr === undefined) {
@@ -45,8 +44,6 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
 
         for (let methodFromInvoke of methodsFromInvoke) {
             concreteMethodSignature = methodFromInvoke.getSignature()
-            concreteMethod = methodFromInvoke
-
             if (concreteMethodSignature == null) {
                 // If the invoked function is static or a constructor, then return the signature.
                 return callTargetMethods
@@ -178,7 +175,6 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
         arkFileName: string,
         sourceMethodSignature: MethodSignature) {
         let callName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-        let methodName: string = callName
         let classAndArkFileNames: Set<[string, string]> = new Set<[string, string]>()
         let callMethods: ArkMethod[] = []
 
@@ -213,7 +209,6 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
                     currentClass!.getDeclaringArkFile().getName()])
                 } else {
                     classAndArkFileNames.add([className, arkFileName])
-                    methodName = callName.substring(lastDotIndex + 1)
                 }
             } else {
                 // 函数调用

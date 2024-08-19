@@ -27,7 +27,6 @@ describe('SourceUtilsTest', () => {
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     let arkClass = scene.getClasses().find((cls) => cls.getName() == 'Animal');
-    let arkFile = scene.getFiles()[0];
     let clsPrinter = new SourceClassPrinter(arkClass!);
     let transformer = new SourceTransformer(clsPrinter);
 

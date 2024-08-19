@@ -19,9 +19,6 @@ import { Stmt } from '../base/Stmt';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
 import { BasicBlock } from './BasicBlock';
-import Logger from '../../utils/logger';
-
-const logger = Logger.getLogger();
 
 /**
  * @category core/graph
