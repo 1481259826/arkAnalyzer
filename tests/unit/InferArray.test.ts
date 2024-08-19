@@ -26,7 +26,8 @@ import {
     ArrayType,
     ClassType,
     NumberType,
-    StringType
+    StringType,
+    UnionType
 } from "../../src";
 import Logger, { LOG_LEVEL } from '../../src/utils/logger';
 
@@ -198,6 +199,36 @@ describe("Infer Array Test", () => {
             }
         })
         assert.isTrue(flag)
+    })
+
+    it('union array case', () => {
+        let flag = false;
+        projectScene.getMethods().forEach(m => {
+            if (m.getSignature().toString().includes('ISceneEvent[]|ISceneEvent')) {
+                if (projectScene.getMethod(m.getSignature()) !== null) {
+                    flag = true
+                }
+            }
+        })
+        assert.isTrue(flag)
+    })
+
+    it('union currType case', () => {
+        let count = 0;
+        projectScene.getMethods().forEach(m => {
+            if (m.getSignature().toString().includes('testCurrType')) {
+                m.getCfg()?.getStmts().forEach(stmt => {
+                    if (stmt instanceof ArkAssignStmt) {
+                        const leftOp = stmt.getLeftOp();
+                        if (leftOp.getType() instanceof UnionType &&
+                            (leftOp.getType() as UnionType).getCurrType().toString() === 'string') {
+                            count++;
+                        }
+                    }
+                })
+            }
+        })
+        assert.equal(count, 3)
     })
 })
 

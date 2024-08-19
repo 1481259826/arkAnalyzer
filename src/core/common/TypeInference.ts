@@ -101,11 +101,13 @@ export class TypeInference {
                     newType = TypeInference.inferUnclearReferenceType(optionType.getClassSignature().getClassName(), declaringArkClass);
                 } else if (optionType instanceof UnclearReferenceType) {
                     newType = TypeInference.inferUnclearReferenceType(optionType.getName(), declaringArkClass);
+                } else {
+                    newType = optionType;
                 }
-                if (newType) {
+                if (newType && newType != optionType) {
                     types[i] = newType;
                 }
-                if (rightType && typeof newType === typeof rightType) {
+                if (rightType && newType && newType === rightType) {
                     leftOpType.setCurrType(rightType);
                     type = leftOpType;
                 }
