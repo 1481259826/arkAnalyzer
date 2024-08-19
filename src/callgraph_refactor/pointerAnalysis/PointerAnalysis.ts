@@ -278,19 +278,6 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         dynCallsites?.forEach(cs => {
             let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
-            {
-                //debug
-                let name = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-                if(name === 'forEach') {
-                    // console.log(ivkExpr.toString());
-                    // debugger
-                }
-
-                let caller = this.cg.getMethodByFuncID(cs.callerFuncID)?.getMethodSubSignature().getMethodName();
-                if (caller == 'genArkFiles') {
-                    // debugger;
-                }
-            }
             // Get local of base class
             let base = ivkExpr.getBase();
             // TODO: remove this after multiple this local fixed

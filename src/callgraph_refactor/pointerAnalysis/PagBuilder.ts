@@ -265,9 +265,6 @@ export class PagBuilder {
         let srcNodes: NodeID[] = [];
         let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
         let calleeName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-        //console.log(calleeName)
-        // if(calleeName.includes('forEach'))
-        //     debugger
 
         let ptNode = this.pag.getNode(baseClassPTNode);
         let value = (ptNode as PagNode).getValue();
@@ -381,7 +378,6 @@ export class PagBuilder {
         //let thisPtr = callee.getThisInstance();
 
         if(!callee || !callee.getCfg()) {
-            debugger
             console.log("callee is null")
             return -1;
         }
