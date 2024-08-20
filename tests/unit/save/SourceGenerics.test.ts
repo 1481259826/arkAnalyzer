@@ -26,7 +26,7 @@ class GenericNumber<T> {
   zeroValue: T;
   add: (x: T, y: T) => T ;
   private methods: Set<string>;
-  private calls: Map<string,string[]>;
+  private calls: Map<string, string[]>;
 }
 interface Lengthwise {
   length: number;
@@ -61,7 +61,7 @@ const CASE2_EXPECT = `class GenericNumber<T> {
   zeroValue: T;
   add: (x: T, y: T) => T ;
   private methods: Set<string>;
-  private calls: Map<string,string[]>;
+  private calls: Map<string, string[]>;
 }
 `;
 

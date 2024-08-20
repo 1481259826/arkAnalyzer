@@ -48,7 +48,7 @@ export class SourceField extends SourceBase {
             for (const parameter of this.field.getParameters()) {
                 index.push(`${parameter.getName()}: ${this.transformer.typeToString(parameter.getType())}`);
             }
-            this.printer.write(`[${index.join(',')}]`);
+            this.printer.write(`[${index.join(', ')}]`);
         } else {
             this.printer.write(this.field.getName());
         }
