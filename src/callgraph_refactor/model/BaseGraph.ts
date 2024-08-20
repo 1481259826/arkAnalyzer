@@ -143,6 +143,11 @@ export class BaseGraph implements GraphTraits{
         this.idToNodeMap = new Map();
         this.edgeMarkSet = new Set();
     }
+
+    public getNodeNum(): number {
+        return this.nodeNum;
+    }
+
     public nodesItor(): IterableIterator<BaseNode> {
         return this.idToNodeMap.values();
     }

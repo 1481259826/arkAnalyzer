@@ -423,7 +423,6 @@ export class PagFuncNode extends PagNode {
 export class Pag extends BaseGraph {
 
     private cg: CallGraph;
-    //private contextValueToIdMap: Map<[ContextID, Value], NodeID> = new Map();
     private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
     // contextBaseToIdMap will only be used in instance field
     // Value: instance field base value, NodeID: abstract nodes
