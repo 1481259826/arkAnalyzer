@@ -3181,7 +3181,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         {
                             id: 3,
                             successors: [
-                                2,
                             ],
                             stmts: [
                                 {
@@ -3263,7 +3262,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         {
                             id: 4,
                             successors: [
-                                2,
                             ],
                             stmts: [
                                 {
