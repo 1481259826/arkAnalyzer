@@ -192,7 +192,8 @@ export class PointerAnalysis extends AbstractAnalysis{
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
                 fieldNode?.getIncomingEdge().forEach((edge) => {
                     if (edge.getKind() != PagEdgeKind.Write) {
-                        throw new Error ("field node in edge is not write edge")
+                        return
+                        //throw new Error ("field node in edge is not write edge")
                     }
                     let srcNode = edge.getSrcNode() as PagNode;
                     this.ptaStat.numProcessedWrite++;
@@ -277,12 +278,6 @@ export class PointerAnalysis extends AbstractAnalysis{
 
         dynCallsites?.forEach(cs => {
             let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
-            {
-                //debug
-                let name = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName()
-                if(name === 'forEach')
-                    debugger
-            }
             // Get local of base class
             let base = ivkExpr.getBase();
             // TODO: remove this after multiple this local fixed
@@ -298,6 +293,8 @@ export class PointerAnalysis extends AbstractAnalysis{
                             let srcNodes = this.pagBuilder.addDynamicCallEdge(cs, pt, cid);
                             changed = this.addToReanalyze(srcNodes) || changed;
                         }
+                    } else {
+                        this.pagBuilder.handleUnkownDynamicCall(cs, cid);
                     }
                 }
             }

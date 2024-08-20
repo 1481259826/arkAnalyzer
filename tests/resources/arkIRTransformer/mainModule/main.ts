@@ -16,6 +16,7 @@
 class Main1 {
     private i: number = 0;
 
-    constructor() {
-    }
+}
+
+class Main2 extends Main1 {
 }

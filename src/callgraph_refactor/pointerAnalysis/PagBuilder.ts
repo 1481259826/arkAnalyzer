@@ -16,7 +16,7 @@
 import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../model/CallGraph';
 import { Scene } from '../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
-import { AbstractExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
@@ -68,12 +68,28 @@ export class PagBuilder {
         this.scene = s;
     }
 
+    private addToWorklist(id: CSFuncID) {
+        if (this.worklist.includes(id)) {
+            return;
+        }
+
+        this.worklist.push(id);
+    }
+
+    private addToFuncHandledListThisRound(id: FuncID) {
+        if (this.funcHandledThisRound.has(id)) {
+            return;
+        }
+
+        this.funcHandledThisRound.add(id)
+    }
+
     public buildForEntries(funcIDs: FuncID[]): void {
         this.worklist = [];
         funcIDs.forEach(funcID => {
             let cid = this.ctx.getNewContextID(funcID);
             let csFuncID = new CSFuncID(cid, funcID);
-            this.worklist.push(csFuncID)
+            this.addToWorklist(csFuncID)
         });
 
         this.handleReachable();
@@ -89,7 +105,7 @@ export class PagBuilder {
             let csFunc = this.worklist.shift() as CSFuncID;
             this.buildFunPag(csFunc.funcID);
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
-            this.funcHandledThisRound.add(csFunc.funcID);
+            this.addToFuncHandledListThisRound(csFunc.funcID);
         }
 
         return true;
@@ -99,7 +115,7 @@ export class PagBuilder {
         for (let funcID of this.cg.getEntries()) {
             let cid = this.ctx.getNewContextID(funcID);
             let csFuncID =new CSFuncID(cid, funcID);
-            this.worklist.push(csFuncID);
+            this.addToWorklist(csFuncID);
 
             this.handleReachable();
         }
@@ -238,7 +254,7 @@ export class PagBuilder {
                 //     throw new Error()
                 // }
                 
-                let srcBaseNode = this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+                this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
             }
         }
 
@@ -249,12 +265,14 @@ export class PagBuilder {
         let srcNodes: NodeID[] = [];
         let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
         let calleeName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-        //console.log(calleeName)
-        if(calleeName.includes('forEach'))
-            debugger
 
         let ptNode = this.pag.getNode(baseClassPTNode);
         let value = (ptNode as PagNode).getValue();
+        if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
+            return srcNodes;
+        }
+
+        let callee: ArkMethod | null = null;
         if (value instanceof ArkNewExpr) {
             // get class signature
             let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
@@ -262,7 +280,6 @@ export class PagBuilder {
 
             cls = this.scene.getClass(clsSig) as ArkClass;
 
-            let callee = undefined;
             while (!callee && cls) {
                 callee = cls.getMethodWithName(calleeName);
                 cls = cls.getSuperClass();
@@ -271,59 +288,88 @@ export class PagBuilder {
             if (!callee) {
                 callee = this.scene.getMethod(ivkExpr.getMethodSignature());
             }
+        }
 
-            if (!callee) {
-                // try to change callee to param anonymous method
-                // TODO: anonymous method param and return value pointer pass
-                let args = cs.args
-                if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
-                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
-                }
+        // anonymous method
+        if (!callee) {
+            // try to change callee to param anonymous method
+            // TODO: anonymous method param and return value pointer pass
+            let args = cs.args
+            if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
+                callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
             }
+        }
 
-            if (!callee) {
-                // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
-                // return empty node when {o_2} come in
-                return []
-            }
+        if (!callee) {
+            // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
+            // return empty node when {o_2} come in
+            return []
+        }
 
-            let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
-
-            let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
-            if (!callerNode) {
-                throw new Error("Can not get caller method node");
-            }
+        let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
+        let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
+        if (!callerNode) {
+            throw new Error("Can not get caller method node");
+        }
+        // update call graph
+        // TODO: movo to cgbuilder
+        this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
+        if (!this.cg.detectCycle(dstCGNode.getID())) {
             let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
-            let staticCS = new CallSite(cs.callStmt,cs.args, dstCGNode.getID(), cs.callerFuncID);
+            let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
             let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
-            // update call graph
-            // TODO: movo to cgbuilder
-            this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             srcNodes.push(...staticSrcNodes);
 
             // Pass base's pts to callee's this pointer
             if (!dstCGNode.getIsSdkMethod()) {
                 let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
-                srcNodes.push(srcBaseNode);   
+                srcNodes.push(srcBaseNode);
             }
-        } else if (value instanceof ArkNewArrayExpr) {
-            let args = cs.args
-            let callee = undefined;
-
-            if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
-                callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
-            }
-
-            if (!callee) {
-                return []
-            }
-
-            this.cg.addDynamicCallEdge(
-                cs.callerFuncID, 
-                this.cg.getCallGraphNodeByMethod(callee.getSignature()).getID(), 
-                cs.callStmt
-            )
         }
+
+        return srcNodes;
+    }
+
+    public handleUnkownDynamicCall(cs: DynCallSite, cid: ContextID): NodeID[] {
+        let srcNodes: NodeID[] = [];
+        let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
+        let ivkExpr = cs.callStmt.getInvokeExpr() as AbstractInvokeExpr;
+        logger.warn( "Handling unknown dyn call : \n  " + callerNode.getMethod().toString() 
+            + '\n  --> ' + ivkExpr.toString() + '\n  CID: ' + cid );
+
+        let callees: ArkMethod[] = []
+        let callee: ArkMethod | null = null;
+        callee = this.scene.getMethod(ivkExpr.getMethodSignature());
+        if (!callee) {
+            cs.args?.forEach(arg => {
+                if (arg.getType() instanceof FunctionType) {
+                    callee = this.scene.getMethod((arg.getType() as FunctionType).getMethodSignature())
+                    if (callee) {
+                        callees.push(callee);
+                    }
+                }
+            })
+        } else {
+            callees.push(callee);
+        }
+
+        if (callees.length == 0) {
+            return srcNodes;
+        }
+
+        callees.forEach(callee => {
+            let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
+            if (!callerNode) {
+                throw new Error("Can not get caller method node");
+            }
+            this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
+            if (!this.cg.detectCycle(dstCGNode.getID())) {
+                let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
+                let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
+                let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
+                srcNodes.push(...staticSrcNodes);
+            }
+        })
         return srcNodes;
     }
 
@@ -331,6 +377,10 @@ export class PagBuilder {
         ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID, callerFunID: FuncID): NodeID {
         //let thisPtr = callee.getThisInstance();
 
+        if(!callee || !callee.getCfg()) {
+            console.log("callee is null")
+            return -1;
+        }
         let thisAssignStmt = callee.getCfg()?.getStmts().filter(s =>
             s instanceof ArkAssignStmt && s.getRightOp() instanceof ArkThisRef);
         let thisPtr = (thisAssignStmt?.at(0) as ArkAssignStmt).getRightOp() as ArkThisRef;
@@ -409,7 +459,7 @@ export class PagBuilder {
             // method have no cfg body
             return srcNodes;
         }
-        this.worklist.push(new CSFuncID(calleeCid, cs.calleeFuncID));
+        this.addToWorklist(new CSFuncID(calleeCid, cs.calleeFuncID));
 
         // TODO: getParameterInstances's performance is not good. Need to refactor 
         //let params = calleeMethod.getParameterInstances();
