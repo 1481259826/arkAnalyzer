@@ -22,6 +22,7 @@ import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { ContextID } from '../pointerAnalysis/Context';
 import { BaseEdge, BaseNode, BaseGraph, NodeID } from './BaseGraph';
+import { CGStat } from '../common/Statistics';
 
 export type Method = MethodSignature;
 export type CallSiteID = number;
@@ -164,10 +165,12 @@ export class CallGraph extends BaseGraph {
     private directCallEdgeNum: number;
     private inDirectCallEdgeNum: number;
     private entries: NodeID[];
+    private cgStat: CGStat;
 
     constructor(s: Scene) {
         super();
         this.scene = s;
+        this.cgStat = new CGStat();
     }
 
     private getCallPairString(srcID: NodeID, dstID: NodeID): string {
@@ -194,6 +197,7 @@ export class CallGraph extends BaseGraph {
 
         this.addNode(cgNode);
         this.methodToCGNodeMap.set(method.toString(), cgNode.getID());
+        this.cgStat.addNodeStat(kind);
         return cgNode;
     }
 
@@ -345,11 +349,11 @@ export class CallGraph extends BaseGraph {
         PrinterBuilder.dump(printer, name);
     }
 
-    public detectCycle(id: FuncID): boolean {
+    public detectReachable(fromID: FuncID, dstID: FuncID): boolean {
         let dWorklist: FuncID[] = [];
         let travserdFuncs = new Set();
 
-        dWorklist.push(id);
+        dWorklist.push(fromID);
 
         while (dWorklist.length > 0) {
             let nodeID = dWorklist.shift()!;
@@ -361,7 +365,7 @@ export class CallGraph extends BaseGraph {
             let node = this.getNode(nodeID)!;
             for (let e of node.getOutgoingEdges()) {
                 let dst = e.getDstID();
-                if (dst === id) {
+                if (dst === dstID) {
                     return true;
                 }
                 dWorklist.push(dst);
@@ -369,5 +373,9 @@ export class CallGraph extends BaseGraph {
         }
 
         return false;
+    }
+
+    public printStat(): void {
+        this.cgStat.printStat();
     }
 }

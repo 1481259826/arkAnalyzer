@@ -29,6 +29,7 @@ import Logger from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
+import { PTAStat } from "../common/Statistics";
 
 const logger = Logger.getLogger()
 
@@ -96,6 +97,9 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     private postProcess() {
         this.ptaStat.endStat();
+        this.pagBuilder.doStat();
+        this.cg.printStat();
+        this.pagBuilder.printStat();
         this.ptaStat.printStat();
         if (this.config.dotDump) {
             this.pag.dump(path.join(this.config.outputDirectory, 'ptaEnd_pag.dot'));
@@ -119,7 +123,7 @@ export class PointerAnalysis extends AbstractAnalysis{
 
             this.solveWorklist();
             // process dynamic call
-            reanalyzer = this.updateCallGraph();
+            reanalyzer = this.onTheFlyDynamicCallSolve();
             if (this.config.dotDump) {
                 this.pag.dump(path.join(this.config.outputDirectory, `pta_pag_itor#${this.ptaStat.iterTimes}.dot`));
             }
@@ -159,11 +163,10 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private handleCopy(nodeID: NodeID): boolean {
-        this.ptaStat.numProcessedCopy++;
-
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingCopyEdges()?.forEach(copyEdge => {
             this.propagate(copyEdge);
+            this.ptaStat.numProcessedCopy++;
         });
 
         return true;
@@ -235,18 +238,10 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     private handleThis(nodeID: NodeID): boolean {
-        this.ptaStat.numProcessedThis++;
-
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingThisEdges()?.forEach(thisEdge => {
             this.propagate(thisEdge);
-            // const dst = thisEdge.getDstID();
-            // let thisRefNode = thisEdge.getDstNode() as PagThisRefNode;
-            // thisRefNode.getThisPTNode().forEach((basePT) => {
-            //     this.ptd.addPts(dst, basePT);
-            // })
-
-            // this.processNode(dst);
+            this.ptaStat.numProcessedThis++;
         });
 
         return true
@@ -272,7 +267,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         return changed;
     }
 
-    private updateCallGraph(): boolean {
+    private onTheFlyDynamicCallSolve(): boolean {
         let changed = false;
         let dynCallsites = this.pagBuilder.getDynamicCallSites();
 
@@ -301,10 +296,7 @@ export class PointerAnalysis extends AbstractAnalysis{
         })
         
         changed = this.pagBuilder.handleReachable() || changed;
-
         this.initWorklist();
-
-        // TODO: on The Fly UpdateCG
         return changed;
     }
 
@@ -415,73 +407,5 @@ export class PointerAnalysis extends AbstractAnalysis{
 
     protected resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[] {
         return []
-    }
-}
-
-//TODO: to be defined and move to seperated source file
-interface StatTraits {}
-class PTAStat implements StatTraits {
-    numProcessedAddr: number = 0;
-    numProcessedCopy: number = 0;
-    numProcessedLoad: number = 0;
-    numProcessedWrite: number = 0;
-    numProcessedThis: number = 0;
-    numRealWrite: number = 0;
-    numRealLoad: number = 0;
-
-    numDynamicCall: number = 0;
-    numDirectCall: number = 0;
-
-    iterTimes: number = 0;
-    TotalTime: number;
-
-    startTime: number;
-    endTime: number;
-
-    startMemUsage: any;
-    endMemUsage: any;
-    rssUsed: number;
-    heapUsed: number;
-
-    public startStat(): void {
-        this.startTime = this.getNow();
-        this.startMemUsage = process.memoryUsage();
-    }
-
-    public endStat(): void {
-        this.endTime = this.getNow();
-        this.endMemUsage = process.memoryUsage();
-        this.TotalTime = (this.endTime - this.startTime) / 1000;
-        this.rssUsed = Number(this.endMemUsage.rss - this.startMemUsage.rss) / Number(1024 * 1024);
-        this.heapUsed = Number(this.endMemUsage.heapTotal - this.startMemUsage.heapTotal) / Number(1024 * 1024);
-    }
-
-    public getNow(): number {
-        return new Date().getTime();
-    }
-
-    public getStat(): string {
-        // TODO: get PAG stat and CG stat
-        let output: string;
-        output = '==== Pointer analysis Statictics: ====\n'
-        output = output + `Processed address\t${this.numProcessedAddr}\n`
-        output = output + `Processed copy\t\t${this.numProcessedCopy}\n`
-        output = output + `Processed load\t\t${this.numProcessedLoad}\n`
-        output = output + `Processed write\t\t${this.numProcessedWrite}\n`
-        output = output + `Real write\t\t${this.numRealWrite}\n`
-        output = output + `Real load\t\t${this.numRealLoad}\n`
-        output = output + `Processed This\t\t${this.numProcessedThis}\n\n`
-        output = output + `Dynamic call\t\t${this.numDynamicCall}\n`
-        output = output + `Direct call\t\t${this.numDirectCall}\n\n`
-        output = output + `Total Time\t\t${this.TotalTime} S\n`
-        output = output + `Total iterator Times\t${this.iterTimes}\n`
-        output = output + `RSS used\t\t${this.rssUsed.toFixed(3)} Mb\n`
-        output = output + `Heap used\t\t${this.heapUsed.toFixed(3)} Mb\n`
-        return output;
-
-    }
-
-    public printStat(): void {
-        console.log(this.getStat());
     }
 }

@@ -30,6 +30,7 @@ import { Constant } from '../../core/base/Constant';
 import { PtsSet } from './PtsDS';
 import { ContextID, KLimitedContextSensitive } from './Context';
 import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode } from './Pag';
+import { PAGStat } from '../common/Statistics';
 
 const logger = Logger.getLogger();
 
@@ -50,6 +51,7 @@ export class PagBuilder {
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
+    private pagStat: PAGStat;
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
@@ -66,6 +68,7 @@ export class PagBuilder {
         this.funcPags = new Map<FuncID, FuncPag>;
         this.ctx = new KLimitedContextSensitive(kLimit);
         this.scene = s;
+        this.pagStat = new PAGStat();
     }
 
     private addToWorklist(id: CSFuncID) {
@@ -188,6 +191,7 @@ export class PagBuilder {
         }
 
         this.funcPags.set(funcID, fpag);
+        this.pagStat.numTotalFunction++;
         return true;
     }
 
@@ -314,7 +318,7 @@ export class PagBuilder {
         // update call graph
         // TODO: movo to cgbuilder
         this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
-        if (!this.cg.detectCycle(dstCGNode.getID())) {
+        if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
             let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
             let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
             let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
@@ -363,7 +367,7 @@ export class PagBuilder {
                 throw new Error("Can not get caller method node");
             }
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
-            if (!this.cg.detectCycle(dstCGNode.getID())) {
+            if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
                 let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
                 let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
@@ -690,6 +694,7 @@ export class PagBuilder {
             this.dynamicCallSitesMap.set(funcId, csSet);
         }
         csSet.add(cs);
+        this.pagStat.numDynamicCall++;
 
         logger.trace("[add dynamic callsite] "+cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
     }
@@ -737,5 +742,13 @@ export class PagBuilder {
             }
         })
         return real;
+    }
+
+    public doStat(): void {
+        this.pagStat.numTotalNode = this.pag.getNodeNum();
+    }
+
+    public printStat(): void {
+        this.pagStat.printStat();
     }
 }
