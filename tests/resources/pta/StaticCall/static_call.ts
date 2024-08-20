@@ -16,7 +16,7 @@
 namespace static_call {
     class StaticCall {
         static foo(n: number, o: Object): Object {
-            if (n < 0) {
+            if (n > 0) {
                 return StaticCall.bar(n, o);
             }
             return o;
@@ -31,3 +31,6 @@ namespace static_call {
         const o = StaticCall.foo(100, new Object());
     }
 }
+
+
+

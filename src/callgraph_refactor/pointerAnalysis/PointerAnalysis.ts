@@ -27,7 +27,7 @@ import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { Stmt } from "../../core/base/Stmt";
 import Logger from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
-import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode } from "./Pag";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
 import { PTAStat } from "../common/Statistics";
 
@@ -355,6 +355,26 @@ export class PointerAnalysis extends AbstractAnalysis{
         
         // no alias
         return true;
+    }
+
+    public mayAlias(leftValue: Value, rightValue: Value) {
+
+    }
+
+    public getRelatedNodes(value: Value): Map<NodeID, Set<NodeID>> {
+        let valueNodes = this.pag.getNodesByValue(value)?.values()!
+        let relatedAllNodes: Map<NodeID, Set<NodeID>> = new Map()
+
+        for (const nodeID of valueNodes) {
+            let relatedNodes: Set<NodeID> = new Set()
+            for (let pt of this.ptd.getPropaPts(nodeID)!) {
+                let baseNode = this.pag.getNode(pt)! as PagNewExprNode
+                baseNode.getRelatedNodes().forEach(item => relatedNodes.add(item))
+            }
+            relatedAllNodes.set(nodeID, relatedNodes)
+        }
+
+        return relatedAllNodes
     }
 
     private detectTypeDiff(nodeId: NodeID): void {

@@ -368,8 +368,11 @@ export class PagThisRefNode extends PagNode {
 
 export class PagNewExprNode extends PagNode {
     fieldNodes: Map<string, NodeID>
+    relatedNodes: Set<NodeID>
+
     constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: AbstractExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
+        this.relatedNodes = new Set()
     }
 
     public addFieldNode(fieldSignature: AbstractFieldRef, nodeID: NodeID): boolean {
@@ -396,6 +399,14 @@ export class PagNewExprNode extends PagNode {
         }
         return this.fieldNodes
     }
+
+    public getRelatedNodes(): Set<NodeID> {
+        return this.relatedNodes
+    }
+
+    public addRelatedNodes(nodeID: NodeID): void {
+        this.relatedNodes.add(nodeID)
+    }
 }
 
 export class PagParamNode extends PagNode {
@@ -406,6 +417,7 @@ export class PagParamNode extends PagNode {
 
 export class PagFuncNode extends PagNode {
     private methodSignature: MethodSignature
+    // TODO: may add obj interface
 
     constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
         super(id, cid, r, PagNodeKind.Function, stmt)

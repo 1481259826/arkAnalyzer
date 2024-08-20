@@ -29,7 +29,7 @@ import { ArrayType, ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PtsSet } from './PtsDS';
 import { ContextID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode, PagNewExprNode } from './Pag';
 import { PAGStat } from '../common/Statistics';
 
 const logger = Logger.getLogger();
@@ -722,6 +722,11 @@ export class PagBuilder {
     public setPtForNode(node: NodeID, pts: PtsSet<NodeID> | undefined): void {
         if (!pts) {
             return;
+        }
+
+        for (let pt of pts) {
+            let heapObjNode = this.pag.getNode(pt) as PagNewExprNode;
+            heapObjNode.addRelatedNodes(node);
         }
 
         (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
