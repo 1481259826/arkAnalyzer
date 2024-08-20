@@ -12,10 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import {A, Dog as Cat, Main, Cat as NotCat} from './lib/a'
-import {B as C, C as Class, invokeParam} from "./lib/b";
-import { MacDonlad, fxxkkkkk } from './lib/c';
 // import {func1} from "./temp/a";
 // import taskpool from '@ohos.taskpool';
 // // namespace temp_temp {

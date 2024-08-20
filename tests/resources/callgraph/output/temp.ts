@@ -13,9 +13,7 @@
  * limitations under the License.
  */
 
-import {Type} from 'class-transformer';
-import {plainToclass} from 'class-transformer';
-
+import { plainToclass } from 'class-transformer';
 
 export class Car{
   data:string;

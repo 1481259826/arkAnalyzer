@@ -57,12 +57,14 @@ import {
     Stmt,
 } from '../base/Stmt';
 import {
+    AliasType,
     AnyType,
     ArrayObjectType,
     ArrayType,
     BooleanType,
     ClassType,
     FunctionType,
+    LiteralType,
     NeverType,
     NullType,
     NumberType,
@@ -73,7 +75,7 @@ import {
     UndefinedType,
     UnionType,
     UnknownType,
-    VoidType, LiteralType,
+    VoidType,
 } from '../base/Type';
 import { Constant } from '../base/Constant';
 import { ValueUtil } from './ValueUtil';
@@ -118,7 +120,7 @@ export class ArkIRTransformer {
 
     private inBuildMethod = false;
     private stmtToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
-    private typeMap: Map<string, Type> = new Map();
+    private aliasTypeMap: Map<string, Type> = new Map();
 
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
@@ -140,8 +142,8 @@ export class ArkIRTransformer {
         return this.stmtToOriginalStmt;
     }
 
-    public getTypeMap(): Map<string, Type> {
-        return this.typeMap;
+    public getAliasTypeMap(): Map<string, Type> {
+        return this.aliasTypeMap;
     }
 
     public prebuildStmts(): Stmt[] {
@@ -264,7 +266,7 @@ export class ArkIRTransformer {
     private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {
         const aliasName = typeAliasDeclaration.name.text;
         const originalType = this.resolveTypeNode(typeAliasDeclaration.type);
-        this.typeMap.set(aliasName, originalType);
+        this.aliasTypeMap.set(aliasName, originalType);
         return [];
     }
 
@@ -1545,14 +1547,21 @@ export class ArkIRTransformer {
 
         for (const templateSpan of templateLiteralTypeNode.templateSpans) {
             const templateType = this.resolveTypeNode(templateSpan.type);
+            const unfoldTemplateTypes: Type[] = [];
+            if (templateType instanceof UnionType) {
+                unfoldTemplateTypes.push(...templateType.getTypes());
+            } else {
+                unfoldTemplateTypes.push(templateType);
+            }
+            const unfoldTemplateTypeStrs: string[] = [];
+            for (const unfoldTemplateType of unfoldTemplateTypes) {
+                unfoldTemplateTypeStrs.push(unfoldTemplateType instanceof AliasType ? unfoldTemplateType.getOriginalType().toString() : unfoldTemplateType.toString());
+            }
+
             const templateSpanString = templateSpan.literal.rawText || '';
             for (const stringLiteral of stringLiterals) {
-                if (templateType instanceof UnionType) {
-                    for (const type of templateType.getTypes()) {
-                        newStringLiterals.push(stringLiteral + type.toString() + templateSpanString);
-                    }
-                } else {
-                    newStringLiterals.push(stringLiteral + templateType.toString() + templateSpanString);
+                for (const unfoldTemplateTypeStr of unfoldTemplateTypeStrs) {
+                    newStringLiterals.push(stringLiteral + unfoldTemplateTypeStr + templateSpanString);
                 }
             }
             stringLiterals = newStringLiterals;
@@ -1571,8 +1580,8 @@ export class ArkIRTransformer {
 
     private resolveTypeReferenceNode(typeReferenceNode: ts.TypeReferenceNode): Type {
         const typeReferenceFullName = typeReferenceNode.getText(this.sourceFile);
-        let type = this.typeMap.get(typeReferenceFullName);
-        if (!type) {
+        const originalType = this.aliasTypeMap.get(typeReferenceFullName);
+        if (!originalType) {
             const genericTypes: Type[] = [];
             if (typeReferenceNode.typeArguments) {
                 for (const typeArgument of typeReferenceNode.typeArguments) {
@@ -1583,10 +1592,10 @@ export class ArkIRTransformer {
             // TODO:handle ts.QualifiedName
             const typeNameNode = typeReferenceNode.typeName;
             const typeName = typeNameNode.getText(this.sourceFile);
-            type = new UnclearReferenceType(typeName, genericTypes);
-            this.typeMap.set(typeName, type);
+            return new UnclearReferenceType(typeName, genericTypes);
+        } else {
+            return new AliasType(typeReferenceFullName, originalType);
         }
-        return type as Type;
     }
 
     private resolveTypeLiteralNode(typeLiteralNode: ts.TypeLiteralNode): Type {

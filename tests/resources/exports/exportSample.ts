@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { cc } from "./test";
-import dfs, { something } from "./else";
-import { Constants } from "./api";
+import { cc } from './test';
+import dfs, { something } from './else';
+import { Constants } from './api';
 
 export * as z from './test'; //kind 278
 

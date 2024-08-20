@@ -27,7 +27,6 @@ import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
 import { Type } from '../base/Type';
 
-
 class StatementBuilder {
     type: string;
     //节点对应源代码    
@@ -994,7 +993,7 @@ export class CfgBuilder {
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
-        typeMap: Map<string, Type>
+        aliasTypeMap: Map<string, Type>
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1008,7 +1007,7 @@ export class CfgBuilder {
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
-        typeMap: Map<string, Type>
+        aliasTypeMap: Map<string, Type>
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1052,7 +1051,7 @@ export class CfgBuilder {
             originalCfg: originalCfg,
             stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
-            typeMap: arkIRTransformer.getTypeMap()
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap()
         };
     }
 
@@ -1061,7 +1060,7 @@ export class CfgBuilder {
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
-        typeMap: Map<string, Type>
+        aliasTypeMap: Map<string, Type>
     } {
         const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
@@ -1243,7 +1242,7 @@ export class CfgBuilder {
             originalCfg: originalCfg,
             stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
-            typeMap: arkIRTransformer.getTypeMap(),
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
         };
     }
 

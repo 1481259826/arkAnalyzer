@@ -13,11 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    Cfg,
-    BasicBlock,
-    Stmt,
-} from '../../src/index';
+import { BasicBlock, Cfg, Stmt } from '../../src/index';
 import { describe, expect, it } from 'vitest';
 import { DominanceFinder } from '../../src/core/graph/DominanceFinder';
 import { DominanceTree } from '../../src/core/graph/DominanceTree';

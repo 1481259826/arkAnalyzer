@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Logger } from "./log"
+import { Logger } from './log';
 
 abstract class Animal { sound(): void { } }
 class Dog extends Animal { sound(): void { Logger.warn("dog sound") } }

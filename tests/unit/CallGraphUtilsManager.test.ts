@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../../src/Config";
-import { ClassSignature, FileSignature, MethodSignature } from "../../src/core/model/ArkSignature";
-import { MethodSignatureManager, SceneManager, printCallGraphDetails } from "../../src/utils/callGraphUtils";
-import { assert, describe, expect, it, vi } from "vitest";
-import { Scene } from "../../src/Scene";
-import path from "path";
+import { SceneConfig } from '../../src/Config';
+import { ClassSignature, FileSignature, MethodSignature } from '../../src/core/model/ArkSignature';
+import { MethodSignatureManager, printCallGraphDetails, SceneManager } from '../../src/utils/callGraphUtils';
+import { assert, describe, expect, it, vi } from 'vitest';
+import { Scene } from '../../src/Scene';
+import path from 'path';
 
 describe("MethodSignatureManager Test", () => {
 

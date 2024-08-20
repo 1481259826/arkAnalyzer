@@ -13,13 +13,11 @@
  * limitations under the License.
  */
 
-import { PrinterBuilder } from './../src/save/PrinterBuilder';
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { MethodSignature } from "../src/core/model/ArkSignature";
-import { printCallGraphDetails } from "../src/utils/callGraphUtils";
-import Logger, { LOG_LEVEL } from "../src/utils/logger";
-import { ArkFile } from '../src/core/model/ArkFile';
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { MethodSignature } from '../src/core/model/ArkSignature';
+import { printCallGraphDetails } from '../src/utils/callGraphUtils';
+import Logger, { LOG_LEVEL } from '../src/utils/logger';
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()

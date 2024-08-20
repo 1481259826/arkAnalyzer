@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Constants } from "./constants";
+import { Constants } from './constants';
 
 class Sample {
 

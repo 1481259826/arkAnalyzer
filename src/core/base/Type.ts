@@ -417,10 +417,16 @@ export class TupleType extends Type {
 
 export class AliasType extends Type {
     private originalType: Type;
+    private name: string;
 
-    constructor(originalType: Type) {
+    constructor(name: string, originalType: Type) {
         super();
+        this.name = name;
         this.originalType = originalType;
+    }
+
+    public getName(): string {
+        return this.name;
     }
 
     public getOriginalType(): Type {
@@ -428,17 +434,7 @@ export class AliasType extends Type {
     }
 
     public toString(): string {
-        return 'alias: ' + this.originalType;
-    }
-}
-
-/**
- * type of the type alias for the class
- * @category core/base/type
- */
-export class ClassAliasType extends AliasType {
-    constructor(classType: ClassType) {
-        super(classType);
+        return this.name + '#' + this.originalType;
     }
 }
 

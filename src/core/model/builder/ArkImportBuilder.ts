@@ -214,7 +214,7 @@ function findMethodSetType(info: ExportInfo): boolean {
 
 function findTypeSetType(info: ExportInfo): boolean {
     const defaultArkMethod = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod();
-    const type = defaultArkMethod?.getBody()?.getTypeMap().get(info.getOriginName());
+    const type = defaultArkMethod?.getBody()?.getAliasTypeMap().get(info.getOriginName());
     if (defaultArkMethod && type) {
         info.setExportClauseType(ExportType.TYPE);
         info.setArkExport(new TypeAlias(info.getOriginName(), type, defaultArkMethod.getSignature()));

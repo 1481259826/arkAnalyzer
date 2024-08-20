@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-import { im } from "./test2";
+import { im } from './test2';
+
 export class property{
     pp=1;
 }

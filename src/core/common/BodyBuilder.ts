@@ -29,10 +29,10 @@ export class BodyBuilder {
     public build(): ArkBody | null {
         this.cfgBuilder.buildCfgBuilder();
         if (!this.cfgBuilder.isBodyEmpty()) {
-            const {cfg, originalCfg, stmtToOriginalStmt, locals, typeMap} = this.cfgBuilder.buildCfgAndOriginalCfg();
+            const {cfg, originalCfg, stmtToOriginalStmt, locals, aliasTypeMap} = this.cfgBuilder.buildCfgAndOriginalCfg();
             cfg.buildDefUseStmt();
 
-            return new ArkBody(locals, originalCfg, cfg, stmtToOriginalStmt, typeMap);
+            return new ArkBody(locals, originalCfg, cfg, stmtToOriginalStmt, aliasTypeMap);
         }
         return null;
     }

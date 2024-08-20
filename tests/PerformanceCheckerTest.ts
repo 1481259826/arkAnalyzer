@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-import { Config } from "./Config";
-import { Scene } from "../src/Scene";
-import { PerformanceChecker } from "./checker/PerformanceChecker";
-import * as utils from "../src/utils/getAllFiles";
+import { Config } from './Config';
+import { Scene } from '../src/Scene';
+import { PerformanceChecker } from './checker/PerformanceChecker';
+import * as utils from '../src/utils/getAllFiles';
 
-import ts from "ohos-typescript";
 const fs = require('fs');
 
 export class PerformanceCheckerTest {

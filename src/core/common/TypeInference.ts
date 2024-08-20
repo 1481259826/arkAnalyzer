@@ -134,10 +134,10 @@ export class TypeInference {
         }
 
         const arkClass = arkMethod.getDeclaringArkClass();
-        body.getTypeMap()?.forEach((value, key) => {
+        body.getAliasTypeMap()?.forEach((value, key) => {
             const newType = this.inferUnclearedType(value, arkClass);
             if (newType) {
-                body.getTypeMap().set(key, newType);
+                body.getAliasTypeMap().set(key, newType);
             }
         });
         const cfg = body.getCfg();

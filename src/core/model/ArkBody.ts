@@ -23,14 +23,14 @@ export class ArkBody {
     private originalCfg: Cfg;
     private cfg: Cfg;
     private stmtToOriginalStmt: Map<Stmt, Stmt>;
-    private typeMap: Map<string, Type> = new Map();
+    private aliasTypeMap: Map<string, Type> = new Map();
 
-    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, typeMap: Map<string, Type>) {
+    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, aliasTypeMap: Map<string, Type>) {
         this.setLocals(locals);
         this.originalCfg = originalCfg;
         this.cfg = cfg;
         this.stmtToOriginalStmt = stmtToOriginalStmt;
-        this.typeMap = typeMap;
+        this.aliasTypeMap = aliasTypeMap;
     }
 
     public getLocals(): Map<string, Local> {
@@ -64,7 +64,7 @@ export class ArkBody {
         return this.stmtToOriginalStmt;
     }
 
-    public getTypeMap(): Map<string, Type> {
-        return this.typeMap;
+    public getAliasTypeMap(): Map<string, Type> {
+        return this.aliasTypeMap;
     }
 }

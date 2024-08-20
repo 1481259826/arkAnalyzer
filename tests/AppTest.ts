@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
 
 let config: SceneConfig = new SceneConfig();
 

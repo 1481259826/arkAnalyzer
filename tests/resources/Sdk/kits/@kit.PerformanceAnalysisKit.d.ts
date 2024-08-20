@@ -24,4 +24,5 @@ import hidebug from '@ohos.hidebug';
 import hilog from '@ohos.hilog';
 import hiTraceChain from '@ohos.hiTraceChain';
 import hiTraceMeter from '@ohos.hiTraceMeter';
+
 export { FaultLogger, bytrace, hiAppEvent, hiTraceChain, hiTraceMeter, hichecker, hidebug, hilog };

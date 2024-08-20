@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import {SceneConfig} from "../../src/Config";
-import {VariablePointerAnalysisAlogorithm as vaa} from "../../src/callgraph/VariablePointerAnalysisAlgorithm";
-import {describe, it} from "vitest";
-import path from "path";
-import {Scene} from "../../src/Scene";
+import { SceneConfig } from '../../src/Config';
+import { VariablePointerAnalysisAlogorithm as vaa } from '../../src/callgraph/VariablePointerAnalysisAlgorithm';
+import { describe, it } from 'vitest';
+import path from 'path';
+import { Scene } from '../../src/Scene';
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../resources/save"));

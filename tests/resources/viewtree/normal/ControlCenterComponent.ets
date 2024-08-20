@@ -17,8 +17,11 @@ import UpTitle from './UpTitle';
 import MyBrightness from '../../../../../../../brightnesscomponent/src/main/ets/default/pages/brightnessComponent';
 import Log from '../../../../../../../../common/src/main/ets/default/Log';
 import Constants, { ControlCenterConfig } from '../common/Constants';
-import StyleConfiguration, { ControlCenterComponentStyle, ControlCenterComplexToggleLayoutStyle,
-  ControlCenterSimpleToggleLayoutStyle } from '../common/StyleConfiguration';
+import StyleConfiguration, {
+    ControlCenterComplexToggleLayoutStyle,
+    ControlCenterComponentStyle,
+    ControlCenterSimpleToggleLayoutStyle,
+} from '../common/StyleConfiguration';
 import ViewModel from '../viewmodel/ControlCenterVM';
 import ComplexToggleLoadComponent from './ComplexToggleLoadComponent';
 import SimpleToggleLoadComponent from './SimpleToggleLoadComponent';

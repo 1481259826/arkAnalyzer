@@ -13,22 +13,19 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { ArkBody } from "../src/core/model/ArkBody";
-import {DataflowProblem, FlowFunction} from "../src/core/dataflow/DataflowProblem"
-import {Local} from "../src/core/base/Local"
-import {Value} from "../src/core/base/Value"
-import {NumberType, Type} from "../src/core/base/Type"
-import {ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt} from "../src/core/base/Stmt"
-import { ArkMethod } from "../src/core/model/ArkMethod";
-import { LiteralType } from "../src/core/base/Type";
-import {ValueUtil} from "../src/core/common/ValueUtil"
-import {Constant} from "../src/core/base/Constant"
-import { ArkParameterRef } from "../src/core/base/Ref";
-import { ModelUtils } from "../src/core/common/ModelUtils";
-import { DataflowSolver } from "../src/core/dataflow/DataflowSolver"
-import { ArkBinopExpr } from "../src/core/base/Expr";
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { ArkBody } from '../src/core/model/ArkBody';
+import { DataflowProblem, FlowFunction } from '../src/core/dataflow/DataflowProblem';
+import { Local } from '../src/core/base/Local';
+import { Value } from '../src/core/base/Value';
+import { NumberType } from '../src/core/base/Type';
+import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../src/core/base/Stmt';
+import { ArkMethod } from '../src/core/model/ArkMethod';
+import { Constant } from '../src/core/base/Constant';
+import { ModelUtils } from '../src/core/common/ModelUtils';
+import { DataflowSolver } from '../src/core/dataflow/DataflowSolver';
+import { ArkBinopExpr } from '../src/core/base/Expr';
 
 /*
 the only statement form in this test case is a = b or a = literal

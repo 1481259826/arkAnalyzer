@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { ArkBody } from "../src/core/model/ArkBody";
-import Logger, { LOG_LEVEL } from "../src/utils/logger";
-import {DummyMainCreater} from "../src/core/common/DummyMainCreater"
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { ArkBody } from '../src/core/model/ArkBody';
+import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import { DummyMainCreater } from '../src/core/common/DummyMainCreater';
 
 const logger = Logger.getLogger();
 Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN);
