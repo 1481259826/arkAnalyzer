@@ -415,14 +415,19 @@ export class TupleType extends Type {
     }
 }
 
-export class AliasType extends Type {
+export class AliasType extends Type implements ArkExport {
     private originalType: Type;
     private name: string;
+    private signature: LocalSignature;
 
     constructor(name: string, originalType: Type) {
         super();
         this.name = name;
         this.originalType = originalType;
+    }
+
+    public setSignature(signature: LocalSignature): void {
+        this.signature = signature;
     }
 
     public getName(): string {
@@ -435,6 +440,18 @@ export class AliasType extends Type {
 
     public toString(): string {
         return this.name + '#' + this.originalType;
+    }
+
+    public getExportType(): ExportType {
+        return ExportType.TYPE;
+    }
+
+    public getModifiers(): Set<string | Decorator> {
+        return new Set();
+    }
+
+    public getSignature(): LocalSignature {
+        return this.signature;
     }
 }
 
@@ -516,35 +533,3 @@ export class AnnotationTypeQueryType extends AnnotationType {
     }
 }
 
-export class TypeAlias implements ArkExport {
-    private readonly name: string;
-    private type: Type;
-    private signature: LocalSignature;
-
-    constructor(name: string, type: Type, methodSignature: MethodSignature) {
-        this.name = name;
-        this.type = type;
-        this.signature = new LocalSignature(name, methodSignature);
-    }
-
-    public getExportType(): ExportType {
-        return ExportType.TYPE;
-    }
-
-    public getModifiers(): Set<string | Decorator> {
-        return new Set();
-    }
-
-    public getName(): string {
-        return this.name;
-    }
-
-    public getSignature(): LocalSignature {
-        return this.signature;
-    }
-
-    public getType() {
-        return this.type;
-    }
-
-}

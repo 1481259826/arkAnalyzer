@@ -26,7 +26,7 @@ import Logger from '../../../utils/logger';
 import { transfer2UnixPath } from '../../../utils/pathTransfer';
 import { FileUtils, ModulePath } from '../../../utils/FileUtils';
 import { Sdk } from '../../../Config';
-import { TypeAlias } from '../../base/Type';
+import { AliasType } from '../../base/Type';
 
 const logger = Logger.getLogger();
 let moduleMap: Map<string, ModulePath> | undefined = undefined;
@@ -217,7 +217,9 @@ function findTypeSetType(info: ExportInfo): boolean {
     const type = defaultArkMethod?.getBody()?.getAliasTypeMap().get(info.getOriginName());
     if (defaultArkMethod && type) {
         info.setExportClauseType(ExportType.TYPE);
-        info.setArkExport(new TypeAlias(info.getOriginName(), type, defaultArkMethod.getSignature()));
+        const aliasType = new AliasType(info.getOriginName(), type);
+        aliasType.setSignature(new LocalSignature(aliasType.getName(), defaultArkMethod.getSignature()));
+        info.setArkExport(aliasType);
         return true;
     }
     return false;

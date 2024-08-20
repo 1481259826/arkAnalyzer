@@ -19,6 +19,7 @@ import { Local } from '../base/Local';
 import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import {
+    AliasType,
     AnnotationNamespaceType,
     AnyType,
     ArrayType,
@@ -30,7 +31,6 @@ import {
     NumberType,
     StringType,
     Type,
-    TypeAlias,
     UnclearReferenceType,
     UndefinedType,
     UnionType,
@@ -241,8 +241,8 @@ export class TypeInference {
                 return null;
             }
             return arkExport.getType();
-        } else if (arkExport instanceof TypeAlias) {
-            return arkExport.getType();
+        } else if (arkExport instanceof AliasType) {
+            return arkExport;
         } else {
             return null;
         }
