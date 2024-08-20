@@ -399,7 +399,14 @@ export class TypeInference {
             let arkField = arkClass?.getFieldWithName(fieldName) ?? arkClass?.getStaticFieldWithName(fieldName);
             if (arkField) {
                 type = arkField.getType();
-            } else {
+            }
+            if (!type) {
+                const method = arkClass?.getMethodWithName(fieldName) ?? arkClass?.getStaticMethodWithName(fieldName);
+                if (method) {
+                    type = new FunctionType(method.getSignature());
+                }
+            }
+            if (!type) {
                 type = this.parseArkExport2Type(arkClass?.getDeclaringArkFile().getExportInfoBy(fieldName)?.getArkExport());
             }
         } else if (baseType instanceof AnnotationNamespaceType) {

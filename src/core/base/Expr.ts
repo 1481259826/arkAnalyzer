@@ -19,6 +19,7 @@ import { ArkClass } from '../model/ArkClass';
 import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
+    AliasType,
     AnnotationNamespaceType,
     ArrayType,
     BooleanType,
@@ -185,6 +186,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             }
         }
         let result;
+        if (baseType instanceof AliasType) {
+            baseType = baseType.getOriginalType();
+        }
         if (baseType instanceof UnionType) {
             for (const type of baseType.getTypes()) {
                 result = this.inferMethod(type, methodName, scene);
