@@ -18,8 +18,9 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
-import { TypeSignature } from '../model/ArkExport';
+import { ClassSignature, MethodSignature } from '../model/ArkSignature';
+import { ArkExport } from '../model/ArkExport';
+import { findExportInfo } from '../model/builder/ArkImportBuilder';
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -81,7 +82,7 @@ export class ModelUtils {
         }
         let classSearched = thisClass.getDeclaringArkNamespace()?.getClassWithName(className);
         if (!classSearched) {
-            classSearched = thisClass.getDeclaringArkFile().getClassWithName(className)
+            classSearched = thisClass.getDeclaringArkFile().getClassWithName(className);
         }
         return classSearched;
     }
@@ -96,16 +97,16 @@ export class ModelUtils {
     }
 
     public static getClassInImportInfoWithName(className: string, arkFile: ArkFile): ArkClass | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(className, arkFile);
-        if (typeSignature instanceof ClassSignature) {
-            return arkFile.getScene().getClass(typeSignature);
+        let arkExport = this.getArkExportInImportInfoWithName(className, arkFile);
+        if (arkExport instanceof ArkClass) {
+            return arkExport;
         }
         return null;
     }
 
     /** search type within the given file import infos */
-    public static getTypeSignatureInImportInfoWithName(name: string, arkFile: ArkFile): TypeSignature | undefined {
-        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getTypeSignature();
+    public static getArkExportInImportInfoWithName(name: string, arkFile: ArkFile): ArkExport | undefined {
+        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getArkExport();
     }
 
     /** search method within the file that contain the given method */
@@ -172,9 +173,9 @@ export class ModelUtils {
     }
 
     public static getNamespaceInImportInfoWithName(namespaceName: string, arkFile: ArkFile): ArkNamespace | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(namespaceName, arkFile);
-        if (typeSignature instanceof NamespaceSignature) {
-            return arkFile.getScene().getNamespace(typeSignature as NamespaceSignature);
+        let arkExport = this.getArkExportInImportInfoWithName(namespaceName, arkFile);
+        if (arkExport instanceof ArkNamespace) {
+            return arkExport;
         }
         return null;
     }
@@ -206,17 +207,17 @@ export class ModelUtils {
     }
 
     public static getStaticMethodInImportInfoWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(methodName, arkFile);
-        if (typeSignature) {
-            return arkFile.getScene().getMethod(typeSignature as MethodSignature);
+        let arkExport = this.getArkExportInImportInfoWithName(methodName, arkFile);
+        if (arkExport instanceof ArkMethod) {
+            return arkExport;
         }
         return null;
     }
 
     public static getLocalInImportInfoWithName(localName: string, arkFile: ArkFile): Local | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(localName, arkFile);
-        if (typeSignature) {
-            return typeSignature as Local;
+        let arkExport = this.getArkExportInImportInfoWithName(localName, arkFile);
+        if (arkExport instanceof Local) {
+            return arkExport;
         }
         return null;
     }
@@ -272,14 +273,11 @@ export class ModelUtils {
         if (cls) {
             return cls;
         }
-
-        let exportInfo = method.getDeclaringArkFile().getImportInfoBy(signature.getClassName())?.getLazyExportInfo();
-        let typeSignature = exportInfo?.getTypeSignature();
-        if (typeSignature instanceof ClassSignature) {
-            let cls = method.getDeclaringArkFile().getScene().getClass(typeSignature);
-            if (cls) {
-                return cls;
-            }
+        let importInfo = method.getDeclaringArkFile().getImportInfoBy(signature.getClassName());
+        let exportInfo = importInfo ? findExportInfo(importInfo) : null;
+        let arkExport = exportInfo?.getArkExport();
+        if (arkExport instanceof ArkClass) {
+            return arkExport;
         }
 
         cls = method.getDeclaringArkClass().getDeclaringArkNamespace()?.getClassWithName(signature.getClassName());

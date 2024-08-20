@@ -21,42 +21,16 @@ import { ImportInfo } from '../ArkImport';
 import { buildModifiers } from './builderUtils';
 import { Decorator } from '../../base/Decorator';
 import { ExportInfo, ExportType, FromInfo } from '../ArkExport';
-import { FileSignature } from '../ArkSignature';
+import { FileSignature, LocalSignature } from '../ArkSignature';
 import Logger from '../../../utils/logger';
 import { transfer2UnixPath } from '../../../utils/pathTransfer';
 import { FileUtils, ModulePath } from '../../../utils/FileUtils';
 import { Sdk } from '../../../Config';
+import { AliasType } from '../../base/Type';
 
 const logger = Logger.getLogger();
 let moduleMap: Map<string, ModulePath> | undefined = undefined;
 const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
-
-export function expandExportInfo(arkFile: ArkFile): void {
-    let exportInfos = arkFile.getExportInfos();
-    exportInfos.forEach(exportInfo => {
-        if (exportInfo.getNameBeforeAs() === '*') {
-            let formFile = getArkFile(exportInfo);
-            if (formFile && formFile !== arkFile) {
-                exportInfo.clearNameBeforeAs();
-                expandExportInfo(formFile);
-                let prefix = exportInfo.getExportClauseName() === '*' ? '' : exportInfo.getExportClauseName() + '.';
-                formFile.getExportInfos().forEach(eInfo => {
-                    let e = setTypeForExportInfo(eInfo);
-                    let newInfo = new ExportInfo.Builder()
-                        .exportClauseName(prefix + e.getExportClauseName())
-                        .nameBeforeAs(e.getExportClauseName())
-                        .exportClauseType(e.getExportClauseType())
-                        .modifiers(exportInfo.getModifiers())
-                        .typeSignature(e.getTypeSignature())
-                        .originTsPosition(e.getOriginTsPosition())
-                        .declaringArkFile(e.getDeclaringArkFile())
-                        .build();
-                    arkFile.addExportInfo(newInfo);
-                })
-            }
-        }
-    })
-}
 
 export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     const from = im.getFrom();
@@ -101,11 +75,13 @@ export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
 }
 
 export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
-    if (eInfo.getTypeSignature()) {
+    if (eInfo.getArkExport()) {
         return eInfo;
     } else if (!eInfo.getFrom()) {
         if (eInfo.getExportClauseType() === ExportType.LOCAL) {
             findLocalSetType(eInfo);
+        } else if (eInfo.getExportClauseType() === ExportType.TYPE) {
+            findTypeSetType(eInfo);
         } else {
             let found = findClassSetType(eInfo);
             if (!found) {
@@ -126,10 +102,10 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
         const result = findExportInfo(eInfo);
         if (result) {
             eInfo.setExportClauseType(result.getExportClauseType());
-            eInfo.setTypeSignature(result.getTypeSignature());
+            eInfo.setArkExport(result.getArkExport());
         }
     }
-    if (!eInfo.getTypeSignature()) {
+    if (!eInfo.getArkExport()) {
         logger.warn(eInfo.getExportClauseName() + ' get type signature fail from ' + eInfo.getFrom() + ' at '
             + eInfo.getDeclaringArkFile().getFileSignature().toString());
     }
@@ -139,7 +115,7 @@ export function setTypeForExportInfo(eInfo: ExportInfo): ExportInfo {
 function processSdkPath(sdk: Sdk, formPath: string): string {
     const sdkName = sdk.name;
     let dir;
-    if (formPath.startsWith('@ohos.') || formPath.startsWith('@system.')) {
+    if (formPath.startsWith('@ohos.') || formPath.startsWith('@hms.') || formPath.startsWith('@system.')) {
         dir = 'api';
     } else if (formPath.startsWith('@kit.')) {
         dir = 'kits';
@@ -192,7 +168,7 @@ function buildDefaultClassExportInfo(im: FromInfo, file: ArkFile) {
         .exportClauseType(ExportType.CLASS)
         .exportClauseName(im.getOriginName())
         .declaringArkFile(file)
-        .typeSignature(file.getDefaultClass().getSignature())
+        .arkExport(file.getDefaultClass())
         .build();
 }
 
@@ -214,11 +190,13 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
 }
 
 function findLocalSetType(info: ExportInfo): boolean {
-    let local = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals()
+    let defaultArkMethod = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod();
+    let local = defaultArkMethod?.getBody()?.getLocals()
         .get(info.getOriginName());
-    if (local) {
+    if (defaultArkMethod && local) {
+        local.setSignature(new LocalSignature(local.getName(), defaultArkMethod.getSignature()));
         info.setExportClauseType(ExportType.LOCAL);
-        info.setTypeSignature(local);
+        info.setArkExport(local);
         return true;
     }
     return false;
@@ -228,7 +206,20 @@ function findMethodSetType(info: ExportInfo): boolean {
     const method = info.getDeclaringArkFile().getDefaultClass().getMethodWithName(info.getOriginName());
     if (method) {
         info.setExportClauseType(ExportType.METHOD);
-        info.setTypeSignature(method.getSignature());
+        info.setArkExport(method);
+        return true;
+    }
+    return false;
+}
+
+function findTypeSetType(info: ExportInfo): boolean {
+    const defaultArkMethod = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod();
+    const type = defaultArkMethod?.getBody()?.getAliasTypeMap().get(info.getOriginName());
+    if (defaultArkMethod && type) {
+        info.setExportClauseType(ExportType.TYPE);
+        const aliasType = new AliasType(info.getOriginName(), type);
+        aliasType.setSignature(new LocalSignature(aliasType.getName(), defaultArkMethod.getSignature()));
+        info.setArkExport(aliasType);
         return true;
     }
     return false;
@@ -238,7 +229,7 @@ function findClassSetType(info: ExportInfo): boolean {
     const clazz = info.getDeclaringArkFile().getClassWithName(info.getOriginName());
     if (clazz) {
         info.setExportClauseType(ExportType.CLASS);
-        info.setTypeSignature(clazz.getSignature());
+        info.setArkExport(clazz);
         return true;
     }
     return false;
@@ -250,7 +241,7 @@ function findImportSetType(info: ExportInfo): boolean {
         const result = findExportInfo(importInfo);
         if (result) {
             info.setExportClauseType(result.getExportClauseType());
-            info.setTypeSignature(result.getTypeSignature());
+            info.setArkExport(result.getArkExport());
             return true;
         }
     }
@@ -261,7 +252,7 @@ function findNameSpaceSetType(info: ExportInfo): boolean {
     const space = info.getDeclaringArkFile().getNamespaceWithName(info.getOriginName());
     if (space) {
         info.setExportClauseType(ExportType.NAME_SPACE);
-        info.setTypeSignature(space.getSignature());
+        info.setArkExport(space);
         return true;
     }
     return false;
@@ -286,7 +277,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
         importFrom = node.moduleSpecifier.text;
     }
 
-    const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
+    const modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     if (node.modifiers) {
         buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
@@ -306,7 +297,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
     //just like: import fs from 'fs'
     if (node.importClause && node.importClause.name && ts.isIdentifier(node.importClause.name)) {
         let importClauseName = node.importClause.name.text;
-        let importType = "Identifier";
+        let importType = 'Identifier';
         let importInfo = new ImportInfo();
         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers);
         importInfo.setTsSourceCode(tsSourceCode);
@@ -315,7 +306,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
 
     // just like: import {xxx} from './yyy'
     if (node.importClause && node.importClause.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
-        let importType = "NamedImports";
+        let importType = 'NamedImports';
         if (node.importClause.namedBindings.elements) {
             node.importClause.namedBindings.elements.forEach((element) => {
                 if (element.name && ts.isIdentifier(element.name)) {
@@ -338,7 +329,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
 
     // just like: import * as ts from 'ohos-typescript'
     if (node.importClause && node.importClause.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings)) {
-        let importType = "NamespaceImport";
+        let importType = 'NamespaceImport';
         if (node.importClause.namedBindings.name && ts.isIdentifier(node.importClause.namedBindings.name)) {
             let importClauseName = node.importClause.namedBindings.name.text;
             let importInfo = new ImportInfo();
@@ -357,8 +348,8 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
     const tsSourceCode = node.getText(sourceFile);
 
     let importInfos: ImportInfo[] = [];
-    let importType = "EqualsImport";
-    const modifiers: Set<string | Decorator> = new Set<string | Decorator>()
+    let importType = 'EqualsImport';
+    const modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     if (node.modifiers) {
         buildModifiers(node, sourceFile).forEach((modifier) => {
             modifiers.add(modifier);
@@ -368,7 +359,7 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
         node.moduleReference.expression && ts.isStringLiteral(node.moduleReference.expression)) {
         let importFrom = node.moduleReference.expression.text;
         let importClauseName = node.name.text;
-        let importInfo = new ImportInfo()
+        let importInfo = new ImportInfo();
         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers);
         importInfo.setTsSourceCode(tsSourceCode);
         importInfos.push(importInfo);

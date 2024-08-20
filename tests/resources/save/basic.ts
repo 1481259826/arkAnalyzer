@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-import { getLogger, configure } from 'log4js';
+import { configure, getLogger } from 'log4js';
+
 configure({
     appenders: {
         console: {

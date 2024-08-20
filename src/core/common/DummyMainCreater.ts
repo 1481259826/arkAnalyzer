@@ -101,7 +101,7 @@ export class DummyMainCreater {
             }
         }
         const localSet = new Set(Array.from(this.classLocalMap.values()).filter((value): value is Local => value !== null));
-        const dummyBody = new ArkBody(localSet, new Cfg(), this.createDummyMainCfg(), new Map());
+        const dummyBody = new ArkBody(localSet, new Cfg(), this.createDummyMainCfg(), new Map(), new Map());
         this.dummyMain.setBody(dummyBody)
         this.addCfg2Stmt()
     }

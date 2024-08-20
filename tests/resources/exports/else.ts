@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import webview from "@ohos.web.webview";
-import i18n from "@ohos.i18n";
-import {hilog} from '@kit.PerformanceAnalysisKit';
+import webview from '@ohos.web.webview';
+import i18n from '@ohos.i18n';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
 export function something() {
     webview.WebviewController.setWebDebuggingAccess(false);

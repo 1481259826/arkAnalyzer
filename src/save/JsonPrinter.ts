@@ -255,7 +255,7 @@ export class JsonPrinter extends Printer {
         } else if (type instanceof LiteralType) {
             return {
                 "_": "LiteralType",
-                "literal": type.getliteralName(),
+                "literal": type.getLiteralName(),
             };
         } else if (type instanceof PrimitiveType) {
             throw new Error("Unhandled PrimitiveType: " + type.toString());

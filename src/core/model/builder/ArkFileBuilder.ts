@@ -21,7 +21,7 @@ import { ArkNamespace } from '../ArkNamespace';
 import Logger from '../../../utils/logger';
 import { buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile } from './ArkClassBuilder';
 import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
-import { buildImportInfo, expandExportInfo, getArkFile } from './ArkImportBuilder';
+import { buildImportInfo } from './ArkImportBuilder';
 import {
     buildExportAssignment,
     buildExportDeclaration,
@@ -35,7 +35,6 @@ import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
-import { ImportInfo } from '../ArkImport';
 
 const logger = Logger.getLogger();
 
@@ -163,35 +162,5 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
     arkFile.addArkClass(defaultClass);
 }
 
-/**
- *
- * 展开 import * 和 export *
- * @param map
- */
-export function expandImportAll(map: Map<string, ArkFile>) {
-    for (const arkFile of map.values()) {
-        const importInfos = arkFile.getImportInfos();
-        importInfos.forEach((item) => {
-            if (item.getNameBeforeAs() === '*') {
-                let formFile = getArkFile(item);
-                if (formFile) {
-                    expandExportInfo(formFile);
-                    let prefix = item.getImportClauseName() === '*' ? '' : item.getImportClauseName() + '.';
-                    formFile.getExportInfos().forEach(e => {
-                        let newInfo = new ImportInfo();
-                        newInfo.build(prefix + e.getExportClauseName(), item.getImportType(),
-                            item.getImportFrom(), item.getOriginTsPosition(), item.getModifiers(), e.getExportClauseName());
-                        newInfo.setDeclaringArkFile(item.getDeclaringArkFile());
-                        newInfo.setTsSourceCode(item.getTsSourceCode());
-                        arkFile.addImportInfo(newInfo);
-                    })
-                } else {
-                    logger.warn("from file not found:" + item.getTsSourceCode())
-                }
-            }
-        })
-
-    }
-}
 
 

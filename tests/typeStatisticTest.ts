@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { Scene } from "../src/Scene";
-import * as utils from "../src/utils/getAllFiles";
-import { Config } from "./Config";
+import { Scene } from '../src/Scene';
+import * as utils from '../src/utils/getAllFiles';
+import { Config } from './Config';
 
 function run(config: Config) {
     const projectName: string = config.projectName;

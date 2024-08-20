@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { isItemRegistered, splitStringWithRegex, extractLastBracketContent } from "../../src/utils/callGraphUtils";
-import { assert, describe, expect, it } from "vitest";
+import { extractLastBracketContent, isItemRegistered, splitStringWithRegex } from '../../src/utils/callGraphUtils';
+import { assert, describe, expect, it } from 'vitest';
 
 describe("isItemRegistered Test", () => {
     let arr = [1, 2, 3];

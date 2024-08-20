@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 /// <reference path="../component/units.d.ts" />
-import { AsyncCallback, Callback } from "./basic";
+import { AsyncCallback, Callback } from './basic';
 import { Resource } from 'GlobalResource';
-import image from "./@ohos.multimedia.image";
+import image from './@ohos.multimedia.image';
 
 /**
  * This module provides the capability to manage web modules.

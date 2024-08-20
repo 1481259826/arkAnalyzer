@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Constants, globalFunction } from "./constants";
+import { Constants, globalFunction } from './constants';
 
 class C1 {
 

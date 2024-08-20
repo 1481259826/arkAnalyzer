@@ -15,7 +15,7 @@
 
 import ts from 'ohos-typescript';
 import { LineColPosition } from '../../base/Position';
-import { ArkExport, ExportInfo, ExportType, TypeSignature } from '../ArkExport';
+import { ArkExport, ExportInfo, ExportType } from '../ArkExport';
 import { Decorator } from '../../base/Decorator';
 import { buildModifiers } from './builderUtils';
 import { ArkFile } from '../ArkFile';
@@ -27,7 +27,7 @@ function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineCol
         .exportClauseName(arkInstance.getName())
         .exportClauseType(arkInstance.getExportType())
         .modifiers(arkInstance.getModifiers())
-        .typeSignature(arkInstance.getSignature() as TypeSignature)
+        .arkExport(arkInstance)
         .originTsPosition(line)
         .declaringArkFile(arkFile)
         .build();
@@ -159,7 +159,7 @@ export function buildExportTypeAliasDeclaration(node: ts.TypeAliasDeclaration, s
     const tsSourceCode = node.getText(sourceFile);
     const exportInfo = new ExportInfo.Builder()
         .exportClauseName(node.name.text)
-        .exportClauseType(ExportType.LOCAL)
+        .exportClauseType(ExportType.TYPE)
         .tsSourceCode(tsSourceCode)
         .modifiers(modifiers)
         .originTsPosition(originTsPosition)

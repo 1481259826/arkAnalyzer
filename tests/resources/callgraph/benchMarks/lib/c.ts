@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Cat, Dog } from "./a";
+import { Dog } from './a';
 
 export namespace fxxkkkkk {
     export let c = new Dog()

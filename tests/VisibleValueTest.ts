@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { Value } from "../src/core/base/Value";
-import Logger, { LOG_LEVEL } from "../src/utils/logger";
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { Value } from '../src/core/base/Value';
+import Logger, { LOG_LEVEL } from '../src/utils/logger';
 
 const logger = Logger.getLogger();
 

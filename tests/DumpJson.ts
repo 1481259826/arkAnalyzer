@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { PrinterBuilder } from "../src/save/PrinterBuilder";
-import { Scene } from "../src/Scene";
-import path from "path";
+import { SceneConfig } from '../src/Config';
+import { PrinterBuilder } from '../src/save/PrinterBuilder';
+import { Scene } from '../src/Scene';
+import path from 'path';
 
 const log4js = require("log4js");
 const logger = log4js.getLogger("ark");

@@ -37,7 +37,6 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
-import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
 import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
@@ -192,6 +191,7 @@ export class Scene {
             arkFile.setScene(this);
             arkFile.setProjectName(sdkName);
             buildArkFileFromFile(file, path.normalize(sdkPath), arkFile);
+            ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
@@ -341,7 +341,7 @@ export class Scene {
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
         if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
-            this.classesMap.clear()
+            this.classesMap.clear();
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -370,7 +370,7 @@ export class Scene {
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
         if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
-            this.methodsMap.clear()
+            this.methodsMap.clear();
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -437,20 +437,16 @@ export class Scene {
      * because default and generated method was finished
      */
     public inferTypes() {
-        this.getClassesMap().forEach(arkClass => {
-            if (arkClass.isDefaultArkClass()) {
-                generateDefaultClassField(arkClass);
-            }
-            arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+        this.filesMap.forEach(file => {
+            ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
+                arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+                const defaultArkMethod = arkClass.getDefaultArkMethod();
+                if (defaultArkMethod) {
+                    TypeInference.inferTypeInMethod(defaultArkMethod);
+                }
+                arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
+            });
         });
-        this.getMethodsMap().forEach(arkMethod => {
-            if (!arkMethod.isDefaultArkMethod() && !arkMethod.isGenerated()) {
-                TypeInference.inferTypeInMethod(arkMethod);
-            }
-        });
-
-        this.getClassesMap(true)
-        this.getMethodsMap(true)
     }
 
     /**
@@ -640,8 +636,8 @@ export class Scene {
                 const finalNS = finalNamespaces.shift()!;
                 const exportLocal = [];
                 for (const exportInfo of finalNS.getExportInfos()) {
-                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getTypeSignature()) {
-                        exportLocal.push(exportInfo.getTypeSignature() as Local);
+                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getArkExport()) {
+                        exportLocal.push(exportInfo.getArkExport() as Local);
                     }
                 }
                 const parent = parentMap.get(finalNS)!;

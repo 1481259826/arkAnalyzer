@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-import { C2,f } from "./t2";
-
 class C {
     public d: number;
     constructor(d: number) {

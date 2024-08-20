@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-import { B } from "./b";
-import Logger from "../../../../../src/utils/logger";
+import { B } from './b';
+import Logger from '../../../../../src/utils/logger';
+
 let logger = Logger.getLogger()
 
 export function A(){

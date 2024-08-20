@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-import { ZipCodeValidator } from "./classes";
-import { ZipCodeValidator as ZCV } from "./classes";
-import * as validator3 from "./classes";
-import validator4 from "./classes";
+import * as validator3 from './classes';
+import validator4, { ZipCodeValidator, ZipCodeValidator as ZCV } from './classes';
+
 let myValidator1 = new ZipCodeValidator();
 let myValidator2 = new ZCV();
 let myValidator3 = new validator3.ZipCodeValidator();

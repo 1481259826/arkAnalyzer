@@ -14,7 +14,7 @@
  */
 
 import taskpool from '@ohos.taskpool';
-import {a} from "vitest/dist/suite-ynYMzeLu";
+import { a } from 'vitest/dist/suite-ynYMzeLu';
 
 let task: taskpool.Task = new taskpool.Task("10",a, 100);
 taskpool.cancel(task);

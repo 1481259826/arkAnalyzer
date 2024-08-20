@@ -14,6 +14,7 @@
  */
 
 import * as ts from 'ohos-typescript';
+
 let text = `
 for (let x of a) {
     x++

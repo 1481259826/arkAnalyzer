@@ -14,7 +14,9 @@
  */
 
 import { ArkField } from '../model/ArkField';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ArkExport, ExportType } from '../model/ArkExport';
+import { Decorator } from './Decorator';
 
 /**
  * @category core/base/type
@@ -89,7 +91,6 @@ export class TypeParameterType extends Type {
         return this.name;
     }
 }
-
 
 /**
  * unclear type
@@ -216,19 +217,22 @@ export class UndefinedType extends PrimitiveType {
  * @category core/base/type
  */
 export class LiteralType extends PrimitiveType {
-    private literalName: string | number;
+    public static readonly TRUE = new LiteralType(true);
+    public static readonly FALSE = new LiteralType(false);
 
-    constructor(literalName: string | number) {
+    private literalName: string | number | boolean;
+
+    constructor(literalName: string | number | boolean) {
         super('literal');
         this.literalName = literalName;
     }
 
-    public getliteralName(): string | number {
+    public getLiteralName(): string | number | boolean {
         return this.literalName;
     }
 
     public toString(): string {
-        return this.getName() + ': ' + this.literalName;
+        return this.literalName.toString();
     }
 }
 
@@ -411,12 +415,23 @@ export class TupleType extends Type {
     }
 }
 
-export class AliasType extends Type {
+export class AliasType extends Type implements ArkExport {
     private originalType: Type;
+    private name: string;
+    private signature: LocalSignature;
 
-    constructor(originalType: Type) {
+    constructor(name: string, originalType: Type) {
         super();
+        this.name = name;
         this.originalType = originalType;
+    }
+
+    public setSignature(signature: LocalSignature): void {
+        this.signature = signature;
+    }
+
+    public getName(): string {
+        return this.name;
     }
 
     public getOriginalType(): Type {
@@ -424,17 +439,19 @@ export class AliasType extends Type {
     }
 
     public toString(): string {
-        return 'alias: ' + this.originalType;
+        return this.name + '#' + this.originalType;
     }
-}
 
-/**
- * type of the type alias for the class
- * @category core/base/type
- */
-export class ClassAliasType extends AliasType {
-    constructor(classType: ClassType) {
-        super(classType);
+    public getExportType(): ExportType {
+        return ExportType.TYPE;
+    }
+
+    public getModifiers(): Set<string | Decorator> {
+        return new Set();
+    }
+
+    public getSignature(): LocalSignature {
+        return this.signature;
     }
 }
 
@@ -515,3 +532,4 @@ export class AnnotationTypeQueryType extends AnnotationType {
         super(originType);
     }
 }
+

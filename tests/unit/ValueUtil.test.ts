@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { NullType, NumberType, StringType, UndefinedType } from "../../src/core/base/Type";
-import { ValueUtil } from "../../src/core/common/ValueUtil";
-import { describe, expect, it } from "vitest";
+import { NullType, NumberType, StringType, UndefinedType } from '../../src/core/base/Type';
+import { ValueUtil } from '../../src/core/common/ValueUtil';
+import { describe, expect, it } from 'vitest';
 
 describe("ValueUtil Test", () => {
     it('string case', () => {

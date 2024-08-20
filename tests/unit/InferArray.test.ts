@@ -15,9 +15,9 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from "../../src/Config";
-import { Scene } from "../../src/Scene";
-import { FileSignature } from "../../src/core/model/ArkSignature";
+import { SceneConfig } from '../../src/Config';
+import { Scene } from '../../src/Scene';
+import { FileSignature } from '../../src/core/model/ArkSignature';
 import {
     ArkAssignStmt,
     ArkInstanceFieldRef,
@@ -27,8 +27,8 @@ import {
     ClassType,
     NumberType,
     StringType,
-    UnionType
-} from "../../src";
+    UnionType,
+} from '../../src';
 import Logger, { LOG_LEVEL } from '../../src/utils/logger';
 
 const logPath = 'out/ArkAnalyzer.log';

@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../../src/Config";
-import { TypeInference } from "../../src/core/common/TypeInference"
-import { assert, describe, expect, it, vi } from "vitest";
-import { Scene } from "../../src/Scene";
-import path from "path";
+import { SceneConfig } from '../../src/Config';
+import { TypeInference } from '../../src/core/common/TypeInference';
+import { assert, describe, expect, it, vi } from 'vitest';
+import { Scene } from '../../src/Scene';
+import path from 'path';
 
 describe("StaticSingleAssignmentFormer Test", () => {
     let config: SceneConfig = new SceneConfig();
@@ -35,7 +35,7 @@ describe("StaticSingleAssignmentFormer Test", () => {
 
         const spy = vi.spyOn(method, "getBody");
         TypeInference.inferTypeInMethod(method);
-        expect(spy).toHaveBeenCalledTimes(1);
+        expect(spy).toHaveBeenCalledTimes(5);
     })
     it('inferSimpleTypeInMethod case', () => {
         if (methods == null) {

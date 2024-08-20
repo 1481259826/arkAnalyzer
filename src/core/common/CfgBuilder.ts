@@ -25,7 +25,7 @@ import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
-
+import { Type } from '../base/Type';
 
 class StatementBuilder {
     type: string;
@@ -277,7 +277,7 @@ export class CfgBuilder {
 
         for (let i = 0; i < nodes.length; i++) {
             let c = nodes[i];
-            if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c)) {
+            if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c) || ts.isTypeAliasDeclaration(c)) {
                 let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
                 lastStatement = s;
@@ -992,7 +992,8 @@ export class CfgBuilder {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        aliasTypeMap: Map<string, Type>
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1005,7 +1006,8 @@ export class CfgBuilder {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        aliasTypeMap: Map<string, Type>
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1049,6 +1051,7 @@ export class CfgBuilder {
             originalCfg: originalCfg,
             stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap()
         };
     }
 
@@ -1056,7 +1059,8 @@ export class CfgBuilder {
         cfg: Cfg,
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        aliasTypeMap: Map<string, Type>
     } {
         const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
@@ -1238,6 +1242,7 @@ export class CfgBuilder {
             originalCfg: originalCfg,
             stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
         };
     }
 

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { nativeNode } from 'libNativeNode.so' 
-import { NodeContent } from '@ohos.arkui.node'
+import { nativeNode } from 'libNativeNode.so';
+import { NodeContent } from '@ohos.arkui.node';
 
 @Component
 struct ContentSlotTest {

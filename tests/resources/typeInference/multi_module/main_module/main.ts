@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {foo} from "./Foo";
+import { foo } from './Foo';
 
 function main() {
     foo();

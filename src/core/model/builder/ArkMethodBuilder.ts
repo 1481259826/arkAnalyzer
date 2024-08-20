@@ -400,7 +400,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     cfg.setStartingStmt(startingStmt);
     const originalCfg = new Cfg();
 
-    defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map()));
+    defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map(), new Map()));
     arkClass.addMethod(defaultConstructor);
 
     return true;
@@ -423,7 +423,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>,
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
     cfg.buildDefUseStmt();
-    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, stmtMap));
+    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, stmtMap, new Map()));
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {

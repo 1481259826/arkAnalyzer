@@ -16,7 +16,15 @@
 import Logger from '../../utils/logger';
 import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
-import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from './Type';
+import {
+    AliasType,
+    AnnotationNamespaceType,
+    ArrayType,
+    ClassType,
+    Type,
+    UnclearReferenceType,
+    UnknownType,
+} from './Type';
 import { Value } from './Value';
 import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
@@ -150,15 +158,15 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
             logger.warn('infer field ref base type fail: ' + this.toString());
             return this;
         }
-
-        if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
-            return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
-        }
-
         if (this.base instanceof Local) {
             this.base.setType(baseType);
         }
-
+        if (baseType instanceof AliasType) {
+            baseType = baseType.getOriginalType();
+        }
+        if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
+            return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
+        }
         const fieldType = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
         if (fieldType) {
             this.getFieldSignature().setType(fieldType);
