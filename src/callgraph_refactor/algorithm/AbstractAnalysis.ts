@@ -37,6 +37,10 @@ export abstract class AbstractAnalysis {
         return this.scene
     }
 
+    public getCallGraph(): CallGraph {
+        return this.cg
+    }
+    
     protected abstract resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[]
 
     public resolveInvokeExpr(invokeExpr: AbstractInvokeExpr): ArkMethod | undefined {

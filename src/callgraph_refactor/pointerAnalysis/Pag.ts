@@ -14,7 +14,7 @@
  */
 
 import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from '../model/BaseGraph';
-import { CallGraph, CallSite } from '../model/CallGraph';
+import { CallGraph, CallSite, DynCallSite } from '../model/CallGraph';
 import { Value } from '../../core/base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt';
 import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr, ArkNormalBinopExpr } from '../../core/base/Expr';
@@ -331,8 +331,20 @@ export class PagNode extends BaseNode {
 }
 
 export class PagLocalNode extends PagNode {
+    private relatedDynamicCallSite: Set<DynCallSite>
+
     constructor(id: NodeID, cid: ContextID|undefined = undefined, value: Local, stmt?: Stmt) {
         super(id, cid, value, PagNodeKind.LocalVar, stmt)
+    }
+
+    public addRelatedDynCallSite(cs: DynCallSite) {
+        this.relatedDynamicCallSite = this.relatedDynamicCallSite ?? new Set()
+
+        this.relatedDynamicCallSite.add(cs)
+    }
+
+    public getRelatedDynCallSites(): Set<DynCallSite> {
+        return this.relatedDynamicCallSite
     }
 }
 
@@ -700,6 +712,7 @@ export class FuncPag {
     private funcID: number;
     private internalEdges: Set<InternalEdge>;
     private normalCallSites: Set<CallSite>;
+    private dynamicCallSites: Set<DynCallSite>;
     private funPtrCallSite: Set<CallSite>;
 
     public getInternalEdges(): Set<InternalEdge> | undefined {
@@ -712,7 +725,18 @@ export class FuncPag {
     }
 
     public getNormalCallSites(): Set<CallSite> {
+        this.normalCallSites = this.normalCallSites ?? new Set();
         return this.normalCallSites;
+    }
+
+    public addDynamicCallSite(cs: DynCallSite): void {
+        this.dynamicCallSites = this.dynamicCallSites ?? new Set();
+        this.dynamicCallSites.add(cs);
+    }
+
+    public getDynamicCallSites(): Set<DynCallSite> {
+        this.dynamicCallSites = this.dynamicCallSites ?? new Set();
+        return this.dynamicCallSites;
     }
 
     public addInternalEdge(stmt: ArkAssignStmt, k: PagEdgeKind): boolean {
