@@ -289,7 +289,7 @@ export class PointerAnalysis extends AbstractAnalysis{
                             changed = this.addToReanalyze(srcNodes) || changed;
                         }
                     } else {
-                        this.pagBuilder.handleUnkownDynamicCall(cs, cid);
+                        // this.pagBuilder.handleUnkownDynamicCall(cs, cid);
                     }
                 }
             }
