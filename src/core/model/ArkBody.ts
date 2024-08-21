@@ -16,16 +16,16 @@
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
 import { Stmt } from '../base/Stmt';
-import { Type } from '../base/Type';
+import { AliasType } from '../base/Type';
 
 export class ArkBody {
     private locals: Map<string, Local>;
     private originalCfg: Cfg;
     private cfg: Cfg;
     private stmtToOriginalStmt: Map<Stmt, Stmt>;
-    private aliasTypeMap: Map<string, Type> = new Map();
+    private aliasTypeMap: Map<string, AliasType> = new Map();
 
-    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, aliasTypeMap: Map<string, Type>) {
+    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, aliasTypeMap: Map<string, AliasType>) {
         this.setLocals(locals);
         this.originalCfg = originalCfg;
         this.cfg = cfg;
@@ -64,7 +64,7 @@ export class ArkBody {
         return this.stmtToOriginalStmt;
     }
 
-    public getAliasTypeMap(): Map<string, Type> {
+    public getAliasTypeMap(): Map<string, AliasType> {
         return this.aliasTypeMap;
     }
 }

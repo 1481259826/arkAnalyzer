@@ -410,13 +410,10 @@ export class AliasType extends Type implements ArkExport {
     private name: string;
     private signature: LocalSignature;
 
-    constructor(name: string, originalType: Type) {
+    constructor(name: string, originalType: Type, signature: LocalSignature) {
         super();
         this.name = name;
         this.originalType = originalType;
-    }
-
-    public setSignature(signature: LocalSignature): void {
         this.signature = signature;
     }
 
@@ -424,12 +421,16 @@ export class AliasType extends Type implements ArkExport {
         return this.name;
     }
 
+    public setOriginalType(type: Type): void {
+        this.originalType = type;
+    }
+
     public getOriginalType(): Type {
         return this.originalType;
     }
 
     public toString(): string {
-        return this.name + '#' + this.originalType;
+        return this.name;
     }
 
     public getExportType(): ExportType {

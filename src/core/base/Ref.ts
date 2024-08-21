@@ -16,15 +16,7 @@
 import Logger from '../../utils/logger';
 import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
-import {
-    AliasType,
-    AnnotationNamespaceType,
-    ArrayType,
-    ClassType,
-    Type,
-    UnclearReferenceType,
-    UnknownType,
-} from './Type';
+import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType, } from './Type';
 import { Value } from './Value';
 import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
@@ -161,9 +153,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         if (this.base instanceof Local) {
             this.base.setType(baseType);
         }
-        if (baseType instanceof AliasType) {
-            baseType = baseType.getOriginalType();
-        }
+
         if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
             return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
         }
