@@ -34,6 +34,7 @@ export class Local implements Value, ArkExport {
     private declaringStmt: Stmt | null;
     private usedStmts: Stmt[];
     private signature: LocalSignature;
+    private constFlag: boolean = false;
 
     constructor(name: string, type: Type = UnknownType.getInstance()) {
         this.name = name;
@@ -118,4 +119,11 @@ export class Local implements Value, ArkExport {
         this.signature = signature;
     }
 
+    public getConstFlag(): boolean {
+        return this.constFlag;
+    }
+
+    public setConstFlag(newConstFlag: boolean): void {
+        this.constFlag = newConstFlag;
+    }
 }
