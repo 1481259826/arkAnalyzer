@@ -209,8 +209,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     private inferMethod(baseType: Type, methodName: string, scene: Scene): AbstractInvokeExpr | null {
         if (baseType instanceof ClassType) {
             const arkClass = scene.getClass(baseType.getClassSignature());
-            let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
-            if (method) {
+            const method = arkClass ? ModelUtils.findPropertyInClass(methodName, arkClass) : null;
+            if (method instanceof ArkMethod) {
                 TypeInference.inferMethodReturnType(method);
                 this.setMethodSignature(method.getSignature());
                 if (method.isStatic()) {
@@ -229,18 +229,15 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
             const namespace = scene.getNamespace(baseType.getNamespaceSignature());
-            let foundMethod = namespace?.getDefaultClass()?.getMethodWithName(methodName);
-            if (!foundMethod) {
-                const arkExport = namespace?.getExportInfoBy(methodName)?.getArkExport();
-                if (arkExport instanceof ArkMethod) {
-                    foundMethod = arkExport;
+            if (namespace) {
+                const foundMethod = ModelUtils.findPropertyInNamespace(methodName, namespace);
+                if (foundMethod instanceof ArkMethod) {
+                    TypeInference.inferMethodReturnType(foundMethod);
+                    this.setMethodSignature(foundMethod.getSignature());
+                    return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
                 }
             }
-            if (foundMethod) {
-                TypeInference.inferMethodReturnType(foundMethod);
-                this.setMethodSignature(foundMethod.getSignature());
-                return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
-            }
+
         }
         return null;
     }
@@ -270,15 +267,13 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
     public inferType(arkClass: ArkClass): ArkStaticInvokeExpr {
         this.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkClass));
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
-        let method = ModelUtils.getStaticMethodWithName(methodName, arkClass);
-        if (!method) {
-            let arkFile = arkClass.getDeclaringArkFile();
-            const arkExport = ModelUtils.getArkExportInImportInfoWithName(methodName, arkFile);
-            if (arkExport && arkExport instanceof ArkMethod) {
-                method = arkExport;
-            } else if (arkExport && arkExport instanceof ArkClass) {
-                method = arkExport.getMethodWithName('constructor') || null;
-            }
+        let method;
+        const arkExport = ModelUtils.getStaticMethodWithName(methodName, arkClass)
+            ?? ModelUtils.getArkExportInImportInfoWithName(methodName, arkClass.getDeclaringArkFile());
+        if (arkExport instanceof ArkMethod) {
+            method = arkExport;
+        } else if (arkExport instanceof ArkClass) {
+            method = arkExport.getMethodWithName('constructor');
         }
         if (method) {
             this.setMethodSignature(method.getSignature());

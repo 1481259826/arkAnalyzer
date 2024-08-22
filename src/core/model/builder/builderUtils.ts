@@ -45,9 +45,9 @@ const logger = Logger.getLogger();
 export function handleQualifiedName(node: ts.QualifiedName): string {
     let right = (node.right as ts.Identifier).text;
     let left: string = '';
-    if (ts.SyntaxKind[node.left.kind] == 'Identifier') {
+    if (node.left.kind === ts.SyntaxKind.Identifier) {
         left = (node.left as ts.Identifier).text;
-    } else if (ts.SyntaxKind[node.left.kind] == 'QualifiedName') {
+    } else if (node.left.kind === ts.SyntaxKind.QualifiedName) {
         left = handleQualifiedName(node.left as ts.QualifiedName);
     }
     let qualifiedName = left + '.' + right;

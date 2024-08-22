@@ -21,6 +21,7 @@ import { ArkNamespace } from '../model/ArkNamespace';
 import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkExport } from '../model/ArkExport';
 import { findExportInfo } from '../model/builder/ArkImportBuilder';
+import { ArkField } from "../model/ArkField";
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -293,6 +294,29 @@ export class ModelUtils {
         }
 
         return method.getDeclaringArkFile().getClassWithName(signature.getClassName());
+    }
+
+    public static findPropertyInNamespace(name: string, namespace: ArkNamespace): ArkExport | undefined {
+        return namespace.getDefaultClass()?.getMethodWithName(name)
+            ?? namespace.getExportInfoBy(name)?.getArkExport()
+            ?? namespace.getClassWithName(name)
+            ?? namespace.getNamespaceWithName(name)
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(name)
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get(name);
+    }
+
+    public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | undefined {
+        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name);
+        if (arkMethod) {
+            return arkMethod;
+        }
+        const arkField = arkClass.getFieldWithName(name) ?? arkClass.getStaticFieldWithName(name);
+        if (arkField) {
+            return arkField;
+        }
+        if (arkClass.isDefaultArkClass()) {
+            return arkClass.getDeclaringArkFile().getExportInfoBy(name)?.getArkExport();
+        }
     }
 
 }

@@ -213,12 +213,10 @@ function findMethodSetType(info: ExportInfo): boolean {
 }
 
 function findTypeSetType(info: ExportInfo): boolean {
-    const defaultArkMethod = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod();
-    const type = defaultArkMethod?.getBody()?.getAliasTypeMap().get(info.getOriginName());
-    if (defaultArkMethod && type) {
+    const aliasType = info.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()
+        ?.getAliasTypeMap().get(info.getOriginName());
+    if (aliasType instanceof AliasType) {
         info.setExportClauseType(ExportType.TYPE);
-        const aliasType = new AliasType(info.getOriginName(), type);
-        aliasType.setSignature(new LocalSignature(aliasType.getName(), defaultArkMethod.getSignature()));
         info.setArkExport(aliasType);
         return true;
     }
