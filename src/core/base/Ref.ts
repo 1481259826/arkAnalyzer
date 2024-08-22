@@ -163,8 +163,8 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         }
         if (baseType instanceof ClassType) {
             this.getFieldSignature().setDeclaringSignature(baseType.getClassSignature());
-            if (arkClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature())
-                ?.getStaticFieldWithName(this.getFieldName())) {
+            const cls = arkClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
+            if (cls?.getStaticFieldWithName(this.getFieldName()) || cls?.getStaticMethodWithName(this.getFieldName())) {
                 return new ArkStaticFieldRef(this.getFieldSignature());
             }
             return this;
