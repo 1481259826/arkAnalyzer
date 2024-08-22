@@ -13,17 +13,18 @@
  * limitations under the License.
  */
 
-import { StringType, Type, UnknownType } from './Type';
+import { BooleanType, NullType, NumberType, StringType, Type, UndefinedType } from './Type';
 import { Value } from './Value';
+import { NULL_KEYWORD, UNDEFINED_KEYWORD } from '../common/TSConst';
 
 /**
  * @category core/base
  */
 export class Constant implements Value {
-    private value: string;
-    private type: Type;
+    private readonly value: string;
+    private readonly type: Type;
 
-    constructor(value: string, type: Type = UnknownType.getInstance()) {
+    constructor(value: string, type: Type) {
         this.value = value;
         this.type = type;
     }
@@ -34,10 +35,6 @@ export class Constant implements Value {
      */
     public getValue(): string {
         return this.value;
-    }
-
-    public setValue(newValue: string): void {
-        this.value = newValue;
     }
 
     public getUses(): Value[] {
@@ -52,10 +49,6 @@ export class Constant implements Value {
         return this.type;
     }
 
-    public setType(newType: Type): void {
-        this.type = newType;
-    }
-
     /**
      * Get a string of constant value in Constant.
      * @returns The string of constant value.
@@ -68,5 +61,54 @@ export class Constant implements Value {
             str = this.value;
         }
         return str;
+    }
+}
+
+export class BooleanConstant extends Constant {
+    private static readonly FALSE = new BooleanConstant(false);
+    private static readonly TRUE = new BooleanConstant(true);
+
+    constructor(value: boolean) {
+        super(value.toString(), BooleanType.getInstance());
+    }
+
+    public static getInstance(value: boolean): NullConstant {
+        return value ? this.TRUE : this.FALSE;
+    }
+}
+
+export class NumberConstant extends Constant {
+    constructor(value: number) {
+        super(value.toString(), NumberType.getInstance());
+    }
+}
+
+export class StringConstant extends Constant {
+    constructor(value: string) {
+        super(value.toString(), StringType.getInstance());
+    }
+}
+
+export class NullConstant extends Constant {
+    private static readonly INSTANCE = new NullConstant();
+
+    constructor() {
+        super(NULL_KEYWORD, NullType.getInstance());
+    }
+
+    public static getInstance(): NullConstant {
+        return this.INSTANCE;
+    }
+}
+
+export class UndefinedConstant extends Constant {
+    private static readonly INSTANCE = new UndefinedConstant();
+
+    constructor() {
+        super(UNDEFINED_KEYWORD, UndefinedType.getInstance());
+    }
+
+    public static getInstance(): UndefinedConstant {
+        return this.INSTANCE;
     }
 }
