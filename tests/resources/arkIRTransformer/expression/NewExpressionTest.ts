@@ -18,3 +18,5 @@ const arr1 = new Array(sz1);
 const arr2 = new Array(10);
 const arr3 = new Array(1, 2, 3);
 const arr4 = new Array();
+
+const arrFromLiteral = [4, 5];
