@@ -77,6 +77,10 @@ export const NewExpression_Expect_IR = {
         'arr3 = $temp2',
         '$temp3 = newarray (any)[0]',
         'arr4 = $temp3',
+        '$temp4 = newarray (number)[2]',
+        '$temp4[0] = 4',
+        '$temp4[1] = 5',
+        'arrFromLiteral = $temp4',
         'return',
     ],
 };

@@ -326,10 +326,13 @@ export class ArkNewArrayExpr extends AbstractExpr {
     private baseType: Type;
     private size: Value;
 
-    constructor(baseType: Type, size: Value) {
+    private fromLiteral: boolean;
+
+    constructor(baseType: Type, size: Value, fromLiteral: boolean = false) {
         super();
         this.baseType = baseType;
         this.size = size;
+        this.fromLiteral = fromLiteral;
     }
 
     public getSize(): Value {
@@ -350,6 +353,10 @@ export class ArkNewArrayExpr extends AbstractExpr {
 
     public setBaseType(newType: Type): void {
         this.baseType = newType;
+    }
+
+    public isFromLiteral(): boolean {
+        return this.fromLiteral;
     }
 
     public inferType(arkClass: ArkClass): ArkNewArrayExpr {
@@ -739,7 +746,6 @@ export class ArkInstanceOfExpr extends AbstractExpr {
         return this.op + ' instanceof ' + this.checkType;
     }
 }
-
 
 // 类型转换
 export class ArkCastExpr extends AbstractExpr {

@@ -59,7 +59,6 @@ import {
 import {
     AliasType,
     AnyType,
-    ArrayObjectType,
     ArrayType,
     BooleanType,
     ClassType,
@@ -928,7 +927,6 @@ export class ArkIRTransformer {
                 stmts: arrayStmts,
             } = this.generateAssignStmtForValue(new ArkNewArrayExpr(baseType, arrayLengthValue));
             stmts.push(...arrayStmts);
-            (arrayExprValue as Local).setType(new ArrayObjectType(baseType, 1));
 
             if (arrayLength > 1) {
                 for (let i = 0; i < arrayLength; i++) {
@@ -991,7 +989,7 @@ export class ArkIRTransformer {
         } else if (elementTypes.size > 1) {
             baseType = new UnionType(Array.from(elementTypes));
         }
-        const newArrayExpr = new ArkNewArrayExpr(baseType, ValueUtil.getOrCreateNumberConst(arrayLength));
+        const newArrayExpr = new ArkNewArrayExpr(baseType, ValueUtil.getOrCreateNumberConst(arrayLength), true);
         const {value: newArrayValue, stmts: elementStmts} = this.generateAssignStmtForValue(newArrayExpr);
         stmts.push(...elementStmts);
 
