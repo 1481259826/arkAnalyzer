@@ -379,7 +379,9 @@ export class ArkIRTransformer {
         // TODO: Support generics and then fill in the exact type
         const castExpr = new ArkCastExpr(yieldValue, UnknownType.getInstance());
         if (ts.isVariableDeclarationList(forOfStatement.initializer)) {
-            const variableDeclaration = forOfStatement.initializer.declarations[0];
+            const variableDeclarationList = forOfStatement.initializer as ts.VariableDeclarationList;
+            const isConst = variableDeclarationList.flags == ts.NodeFlags.Const;
+            const variableDeclaration = variableDeclarationList.declarations[0];
             if (ts.isArrayBindingPattern(variableDeclaration.name)) {
                 const {
                     value: arrayItem,
@@ -393,6 +395,7 @@ export class ArkIRTransformer {
                 for (const element of elements) {
                     let arrayRef = new ArkArrayRef(arrayItem as Local, new Constant(index.toString(), NumberType.getInstance()));
                     let item = new Local(element.getText(this.sourceFile));
+                    item.setConstFlag(isConst);
                     stmts.push(new ArkAssignStmt(item, arrayRef));
                     index++;
                 }
@@ -410,10 +413,12 @@ export class ArkIRTransformer {
                     fieldSignature.setFieldName(fieldName);
                     const fieldRef = new ArkInstanceFieldRef(objectItem as Local, fieldSignature);
                     const fieldLocal = this.getOrCreatLocal(element.name.getText(this.sourceFile));
+                    fieldLocal.setConstFlag(isConst);
                     stmts.push(new ArkAssignStmt(fieldLocal, fieldRef));
                 }
             } else {
                 const item = this.getOrCreatLocal(variableDeclaration.name.getText(this.sourceFile));
+                item.setConstFlag(isConst);
                 stmts.push(new ArkAssignStmt(item, castExpr));
             }
         } else {
@@ -1131,14 +1136,14 @@ export class ArkIRTransformer {
             const {
                 value: newDeclaredValue,
                 stmts: declaredStmts,
-            } = this.variableDeclarationToValueAndStmts(declaration);
+            } = this.variableDeclarationToValueAndStmts(declaration, variableDeclarationList.flags);
             stmts.push(...declaredStmts);
             declaredValue = newDeclaredValue;
         }
         return {value: declaredValue, stmts: stmts};
     }
 
-    private variableDeclarationToValueAndStmts(variableDeclaration: ts.VariableDeclaration): ValueAndStmts {
+    private variableDeclarationToValueAndStmts(variableDeclaration: ts.VariableDeclaration, nodeFlag: ts.NodeFlags): ValueAndStmts {
         const leftOpNode = variableDeclaration.name;
         let rightOpNode: ts.Node | null = null;
         if (variableDeclaration.initializer) {
@@ -1166,6 +1171,7 @@ export class ArkIRTransformer {
         }
 
         if (leftValue instanceof Local) {
+            leftValue.setConstFlag(nodeFlag == ts.NodeFlags.Const);
             if (variableDeclaration.type) {
                 leftValue.setType(this.resolveTypeNode(variableDeclaration.type));
             }
