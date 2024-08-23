@@ -176,6 +176,12 @@ struct HelloGrandsonComponent {
         .fontWeight(FontWeight.Bold)
     }
   }
+
+  static build(a: number) {
+    if (a) {
+      return 1;
+    }
+  }
 }
 
 @Entry

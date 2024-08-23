@@ -259,7 +259,12 @@ export class ModelUtils {
     public static isArkUIBuilderMethod(arkMethod: ArkMethod): boolean {
         let isArkUIBuilderMethod = arkMethod.hasBuilderDecorator();
 
-        if (!isArkUIBuilderMethod && arkMethod.getName() == 'build') {
+        if (
+            !isArkUIBuilderMethod &&
+            arkMethod.getName() == 'build' &&
+            arkMethod.getDeclaringArkClass().hasComponentDecorator() &&
+            !arkMethod.containsModifier('StaticKeyword')
+        ) {
             const fileName = arkMethod.getDeclaringArkClass().getDeclaringArkFile().getName();
             if (fileName.endsWith('.ets')) {
                 isArkUIBuilderMethod = true;
