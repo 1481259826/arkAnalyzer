@@ -38,7 +38,7 @@ Logger.configure(logPath, LOG_LEVEL.DEBUG);
 describe("Infer Array Test", () => {
 
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"))
+    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
@@ -144,7 +144,7 @@ describe("Infer Array Test", () => {
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
-        assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance())
+        assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance());
     })
 
     it('field type case', () => {
@@ -156,7 +156,7 @@ describe("Infer Array Test", () => {
         if (fields) {
             const arkField = fields[0];
             assert.equal(arkField.getType(), '(number|string)[]');
-            assert.equal(fields[1].getType(), StringType.getInstance())
+            assert.equal(fields[1].getType(), StringType.getInstance());
         }
     })
 
@@ -194,11 +194,11 @@ describe("Infer Array Test", () => {
         projectScene.getMethods().forEach(m => {
             if (m.getSignature().toString().includes('SCBTransitionManager.registerUnlockTransitionController(@inferType/test1.ets: SCBUnlockTransitionController')) {
                 if (projectScene.getMethod(m.getSignature()) !== null) {
-                    flag = true
+                    flag = true;
                 }
             }
         })
-        assert.isTrue(flag)
+        assert.isTrue(flag);
     })
 
     it('union array case', () => {
@@ -206,11 +206,11 @@ describe("Infer Array Test", () => {
         projectScene.getMethods().forEach(m => {
             if (m.getSignature().toString().includes('ISceneEvent[]|ISceneEvent')) {
                 if (projectScene.getMethod(m.getSignature()) !== null) {
-                    flag = true
+                    flag = true;
                 }
             }
         })
-        assert.isTrue(flag)
+        assert.isTrue(flag);
     })
 
     it('union currType case', () => {
@@ -228,6 +228,6 @@ describe("Infer Array Test", () => {
                 })
             }
         })
-        assert.equal(count, 3)
+        assert.equal(count, 3);
     })
 })
