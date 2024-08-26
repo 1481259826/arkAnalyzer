@@ -326,9 +326,9 @@ export class Scene {
         return Array.from(this.getNamespacesMap().values());
     }
 
-    public getClass(classSignature: ClassSignature): ArkClass | null {
+    public getClass(classSignature: ClassSignature, refresh?: boolean): ArkClass | null {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
-            return this.getClassesMap().get(classSignature.toString()) || null;
+            return this.getClassesMap(refresh).get(classSignature.toString()) || null;
         } else {
             const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
             const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
@@ -356,13 +356,13 @@ export class Scene {
         return this.classesMap;
     }
 
-    public getClasses(): ArkClass[] {
-        return Array.from(this.getClassesMap().values());
+    public getClasses(refresh?: boolean): ArkClass[] {
+        return Array.from(this.getClassesMap(refresh).values());
     }
 
-    public getMethod(methodSignature: MethodSignature): ArkMethod | null {
+    public getMethod(methodSignature: MethodSignature, refresh?: boolean): ArkMethod | null {
         if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
-            return this.getMethodsMap().get(methodSignature.toString()) || null;
+            return this.getMethodsMap(refresh).get(methodSignature.toString()) || null;
         } else {
             return this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature) || null;
         }
@@ -380,8 +380,8 @@ export class Scene {
         return this.methodsMap;
     }
 
-    public getMethods(): ArkMethod[] {
-        return Array.from(this.getMethodsMap().values());
+    public getMethods(refresh?: boolean): ArkMethod[] {
+        return Array.from(this.getMethodsMap(refresh).values());
     }
 
     public hasMainMethod(): boolean {
@@ -836,7 +836,6 @@ export class ModuleScene {
     private moduleOhPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
     private filesMap: Map<string, ArkFile> = new Map();
-
 
     constructor() {
     }
