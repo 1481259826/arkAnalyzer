@@ -59,7 +59,7 @@ export class TypeInference {
         if (stmts) {
             for (const stmt of stmts) {
                 this.resolveExprsInStmt(stmt, arkClass);
-                this.resolveFieldRefsInStmt(stmt, arkClass);
+                this.resolveFieldRefsInStmt(stmt, arkClass, arkClass.getMethodWithName('@instance_init'));
                 this.resolveArkAssignStmt(stmt, arkClass);
                 stmt.updateText();
             }
@@ -192,7 +192,7 @@ export class TypeInference {
     /**
      * infer type for fieldRefs in stmt.
      */
-    private static resolveFieldRefsInStmt(stmt: Stmt, arkClass: ArkClass, arkMethod?: ArkMethod): void {
+    private static resolveFieldRefsInStmt(stmt: Stmt, arkClass: ArkClass, arkMethod: ArkMethod | null): void {
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
                 const fieldRef = use.inferType(arkClass);

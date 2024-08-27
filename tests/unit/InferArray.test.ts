@@ -230,4 +230,16 @@ describe("Infer Array Test", () => {
         })
         assert.equal(count, 3);
     })
+
+    it('field to ArrayRef case', () => {
+        const fileId = new FileSignature();
+        fileId.setFileName("Field.ts");
+        fileId.setProjectName(projectScene.getProjectName());
+        const file = projectScene.getFile(fileId);
+        const stmts = file?.getClassWithName('User')?.getFieldWithName('role')?.getInitializer();
+        assert.isDefined(stmts);
+        if (stmts) {
+            assert.equal(stmts[2].toString(), '$temp3 = $temp1[$temp2]');
+        }
+    })
 })
