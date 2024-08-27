@@ -17,7 +17,13 @@ import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ClassType, Type, UnknownType } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 
-export type Signature = FileSignature | NamespaceSignature | ClassSignature | MethodSignature | FieldSignature | LocalSignature;
+export type Signature =
+    FileSignature
+    | NamespaceSignature
+    | ClassSignature
+    | MethodSignature
+    | FieldSignature
+    | LocalSignature;
 
 export interface ArkSignature {
     getSignature(): Signature;
@@ -304,6 +310,10 @@ export class LocalSignature {
     constructor(name: string, declaringMethodSignature: MethodSignature) {
         this.name = name;
         this.declaringMethodSignature = declaringMethodSignature;
+    }
+
+    public getName(): string {
+        return this.name;
     }
 
     public getDeclaringMethodSubSignature() {

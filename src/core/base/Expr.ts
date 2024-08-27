@@ -772,6 +772,14 @@ export class ArkCastExpr extends AbstractExpr {
         return this.type;
     }
 
+    public inferType(arkClass: ArkClass): AbstractExpr {
+        const type = TypeInference.inferUnclearedType(this.type, arkClass);
+        if (type) {
+            this.type = type;
+        }
+        return this;
+    }
+
     public toString(): string {
         return '<' + this.type + '>' + this.op;
     }
