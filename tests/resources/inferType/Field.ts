@@ -64,3 +64,9 @@ class importClassTest {
     }
 
 }
+
+class User {
+    roles = ['user'];
+    selectIndex: number = 0;
+    role: string = this.roles[this.selectIndex];
+}
