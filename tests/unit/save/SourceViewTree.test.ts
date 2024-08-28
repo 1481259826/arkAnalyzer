@@ -106,7 +106,7 @@ struct LazyForEachTest {
   @State
   data: MyDataSource = new MyDataSource();
   aboutToAppear() {
-    let i = 0;
+    let i: number = 0;
     while (i <= 20) {
       this.data.pushData(new StringData(new NestedString('Hello ' + i + '')));
       i = i + 1;

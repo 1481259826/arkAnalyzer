@@ -56,8 +56,8 @@ class Horse extends Animal {
     super.move(distanceInMeters);
   }
 }
-let sam = new Snake('Sammy the Python');
-let tom = new Horse('Tommy the Palomino');
+let sam: Snake = new Snake('Sammy the Python');
+let tom: Animal = new Horse('Tommy the Palomino');
 sam.move();
 tom.move(34);
 class Octopus {
@@ -67,8 +67,8 @@ class Octopus {
     this.name = theName;
   }
 }
-let dad = new Octopus('Man with the 8 strong legs');
-let passcode = 'secret passcode';
+let dad: Octopus = new Octopus('Man with the 8 strong legs');
+let passcode: string = 'secret passcode';
 class Grid {
   static origin = {x: 0, y: 0};
   calculateDistanceFromOrigin(point: {x: number, y: number}) {
@@ -79,8 +79,8 @@ class Grid {
   constructor(scale: number) {
   }
 }
-let grid1 = new Grid(1);
-let grid2 = new Grid(5);
+let grid1: Grid = new Grid(1);
+let grid2: Grid = new Grid(5);
 logger.info(grid1.calculateDistanceFromOrigin({x: 10, y: 10}));
 logger.info(grid2.calculateDistanceFromOrigin({x: 10, y: 10}));
 abstract class Department {
@@ -102,7 +102,7 @@ class AccountingDepartment extends Department {
     logger.info('Generating accounting reports...');
   }
 }
-let department = new AccountingDepartment();
+let department: Department = new AccountingDepartment();
 department.printName();
 department.printMeeting();
 class Point {
@@ -112,11 +112,11 @@ class Point {
 interface Point3d extends Point {
   z: number;
 }
-let point3d = {x: 1, y: 2, z: 3};
+let point3d: Point3d = {x: 1, y: 2, z: 3};
 export interface StringValidator {
   isAcceptable(s?: string): boolean;
 }
-export let numberRegexp = /^[0-9]+$/;
+export const numberRegexp = /^[0-9]+$/;
 export default class ZipCodeValidator implements StringValidator {
   isAcceptable(s?: string) {
     return s.length === 5 && numberRegexp.test(s);

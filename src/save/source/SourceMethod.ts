@@ -130,6 +130,9 @@ export class SourceMethod extends SourceBase {
         let parameters: string[] = [];
         method.getParameters().forEach((parameter) => {
             let str: string = parameter.getName();
+            if (parameter.hasDotDotDotToken()) {
+                str = `...${parameter.getName()}`;
+            }
             if (parameter.isOptional()) {
                 str += '?';
             }
