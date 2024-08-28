@@ -120,18 +120,6 @@ department = new AccountingDepartment(); // 允许对一个抽象子类进行实
 department.printName();
 department.printMeeting();
 
-class Point {
-    x: number;
-    y: number;
-}
-
-interface Point3d extends Point {
-    z: number;
-}
-
-let point3d: Point3d = {x: 1, y: 2, z: 3};
-
-
 export interface StringValidator {
     isAcceptable(s?: string): boolean;
 }
