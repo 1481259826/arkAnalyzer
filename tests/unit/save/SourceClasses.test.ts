@@ -56,55 +56,6 @@ class Horse extends Animal {
     super.move(distanceInMeters);
   }
 }
-let sam: Snake = new Snake('Sammy the Python');
-let tom: Animal = new Horse('Tommy the Palomino');
-sam.move();
-tom.move(34);
-class Octopus {
-  readonly name: string;
-  readonly numberOfLegs: number = 8;
-  constructor(theName: string) {
-    this.name = theName;
-  }
-}
-let dad: Octopus = new Octopus('Man with the 8 strong legs');
-let passcode: string = 'secret passcode';
-class Grid {
-  static origin = {x: 0, y: 0};
-  calculateDistanceFromOrigin(point: {x: number, y: number}) {
-    let xDist = point.x - Grid.origin.x;
-    let yDist = point.y - Grid.origin.y;
-    return Math.sqrt(xDist * xDist + yDist * yDist) / this.scale;
-  }
-  constructor(scale: number) {
-  }
-}
-let grid1: Grid = new Grid(1);
-let grid2: Grid = new Grid(5);
-logger.info(grid1.calculateDistanceFromOrigin({x: 10, y: 10}));
-logger.info(grid2.calculateDistanceFromOrigin({x: 10, y: 10}));
-abstract class Department {
-  constructor(name: string) {
-  }
-  printName(): void {
-    logger.info('Department name: ' + this.name);
-  }
-  abstract printMeeting(): void;
-}
-class AccountingDepartment extends Department {
-  constructor() {
-    super('Accounting and Auditing');
-  }
-  printMeeting(): void {
-    logger.info('The Accounting Department meets each Monday at 10am.');
-  }
-  generateReports(): void {
-    logger.info('Generating accounting reports...');
-  }
-}
-let department: Department = new AccountingDepartment();
-department.printName();
-department.printMeeting();
 export interface StringValidator {
   isAcceptable(s?: string): boolean;
 }
