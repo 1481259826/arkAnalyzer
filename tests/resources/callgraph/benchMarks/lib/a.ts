@@ -34,7 +34,6 @@ export class Dog extends Animal {
     public static num = 1
     public sound() {
         console.log("Dog.sound(){")
-        // logger.info("woof")
         let cat = new Cat()
         cat.sound()
         this.sleep()
@@ -74,7 +73,6 @@ export class Cat extends Animal {
 
     public testWithParams(a: Dog): void {
         console.log("Cat.testWithParams(){")
-        // logger.info(a)
         this.sound()
         a.sleep()
         console.log("}")

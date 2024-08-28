@@ -19,7 +19,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 export function something() {
     webview.WebviewController.setWebDebuggingAccess(false);
     const controller: webview.WebviewController = new webview.WebviewController();
-    controller.loadUrl('https://www.example.com/cn');
+    controller.loadUrl('');
     hilog.info(0x0000, 'func', '%{public}', 'Ability onCreate');
 }
 

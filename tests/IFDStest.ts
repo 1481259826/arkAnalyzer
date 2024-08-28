@@ -210,7 +210,6 @@ class instanceSolver extends DataflowSolver<Local> {
 }
 
 
-// const config_path = "tests\\resources\\ifds\\project\\ifdsProjectConfig.json";
 const config_path = "tests\\resources\\ifds\\project\\ETS2TS.json";
 let config: SceneConfig = new SceneConfig();
 config.buildFromJson(config_path);
@@ -221,5 +220,4 @@ if(method){
     const problem = new PossibleDivZeroChecker([...method.getCfg().getBlocks()][0].getStmts()[method.getParameters().length],method);
     const solver = new instanceSolver(problem, scene);
     solver.solve();
-    debugger
 }

@@ -25,6 +25,5 @@ function runScene(config: SceneConfig) {
     projectScene.inferTypes()
     
     classTransformer.genClasses(projectScene.getClasses())
-    debugger;
 }
 runScene(config);

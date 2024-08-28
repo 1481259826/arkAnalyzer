@@ -44,7 +44,6 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         this.entryPoint = stmt;
         this.entryMethod = method;
         this.scene = method.getDeclaringArkFile().getScene();
-        // this.classMap = this.scene.getClassMap();
         this.globalVariableMap = this.scene.getGlobalVariableMap();
     }
 
@@ -117,10 +116,6 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     } else if (factEqual(rightOp, dataFact) || rightOp.getType() instanceof UndefinedType) {
                         ret.add(assigned);
                         if (assigned instanceof ArkInstanceFieldRef) {
-                            // 往前找到assigned的base的最后一次赋值
-                            // const base = assigned.getBase();
-                            // const aliasObjects = findAliasObjects(base, stmt);
-
                         }
                     } else if (dataFact instanceof ArkInstanceFieldRef && rightOp == dataFact.getBase()) {
                         const field = new ArkInstanceFieldRef(srcStmt.getLeftOp() as Local, dataFact.getFieldSignature());

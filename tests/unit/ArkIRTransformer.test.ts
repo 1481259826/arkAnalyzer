@@ -41,11 +41,6 @@ function testMethodStmts(scene: Scene, filePath: string, expectStmts: string[]):
         assert.isDefined(stmts);
         return;
     }
-
-    // console.log(`==method: ${arkMethod!.getName()}`);
-    // stmts.forEach(stmt => {
-    //     console.log(stmt.toString());
-    // });
     assertStmtsEqual(stmts, expectStmts);
 }
 

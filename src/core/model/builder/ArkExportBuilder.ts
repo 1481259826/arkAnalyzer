@@ -88,7 +88,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
     if (isKeyword(node.getChildren(sourceFile), ts.SyntaxKind.DefaultKeyword)) {
         modifiers.add(ts.SyntaxKind[ts.SyntaxKind.DefaultKeyword]);
     }
-    if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { //export default {a,b,c}
+    if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { // just like: export default {a,b,c}
         node.expression.properties.forEach((property) => {
             if (property.name && ts.isIdentifier(property.name)) {
                 const exportInfo = new ExportInfo.Builder()
@@ -111,9 +111,9 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
             .originTsPosition(originTsPosition)
             .declaringArkFile(arkFile)
             .exportClauseName('default')
-        if (ts.isIdentifier(node.expression)) { //export default xx
+        if (ts.isIdentifier(node.expression)) { // just like: export default xx
             exportInfo.nameBeforeAs(node.expression.text);
-        } else if (ts.isAsExpression(node.expression)) { //export default xx as YY
+        } else if (ts.isAsExpression(node.expression)) { // just like: export default xx as YY
             exportInfo.nameBeforeAs(node.expression.expression.getText(sourceFile))
         }
         exportInfos.push(exportInfo.build());

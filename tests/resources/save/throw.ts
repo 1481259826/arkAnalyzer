@@ -20,5 +20,3 @@ class ThrowTest {
         throw new Error(ThrowTest.ERR);
     }
 }
-
-/* export default new ThrowTest(); */

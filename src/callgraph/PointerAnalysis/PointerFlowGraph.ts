@@ -107,8 +107,6 @@ export class PointerFlowGraph {
             const targets = this.pointerFlowEdges.get(sourcePointer) || [];
             targets.push(targetPointer);
             this.pointerFlowEdges.set(sourcePointer, targets);
-            // this.pointerSet.add(sourcePointer);
-            // this.pointerSet.add(targetPointer);
 
             let pointers = sourcePointer.getAllPointerTargets()
             for (let point of pointers) {

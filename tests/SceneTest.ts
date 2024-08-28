@@ -74,7 +74,7 @@ class SceneTest {
         logger.error('testSimpleProject start');
 
         // build config
-        // const projectDir = 'tests/resources/scene/mainModule';
+        // 'tests/resources/scene/mainModule';
         const projectDir = 'tests/resources/scene/mainModuleEts';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
@@ -114,6 +114,6 @@ class SceneTest {
 }
 
 let sceneTest = new SceneTest();
-// sceneTest.testETsWholePipline();
+sceneTest.testETsWholePipline();
 sceneTest.testSimpleProject();
-// sceneTest.testEtsProject();
+sceneTest.testEtsProject();

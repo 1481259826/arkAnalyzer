@@ -24,7 +24,6 @@ class t{
     constructor(){
     }
     static sm(){
-        // this.s = new property()
         console.log(this.s.pp)
         console.log(t.s.pp)
     }
@@ -39,13 +38,11 @@ class t{
 
 function U2(){
     let t1 = new t();
-    // t1.p = new property() 
     t1.print();
 }
 
 function U3(){
     let t1 = new t();
-    // t1.p = new property() 
     print(t1)
 }
 
@@ -54,7 +51,6 @@ function print(tp:t){
 }
 
 function U4(){
-    // t.s = new property()
     console.log(t.s.pp)
 }
 
@@ -85,15 +81,3 @@ namespace n2{
     n.y=4;
 }
 console.log(n.y);
-// function U(){
-//     let t1: t;
-//     if (true){
-//         t1 = new t();
-//         console.log(t1.a);
-//     }
-//     console.log(t1.s);
-// }
-
-// function f(this: { t: string }) {
-//     console.log(this.t);
-// }
