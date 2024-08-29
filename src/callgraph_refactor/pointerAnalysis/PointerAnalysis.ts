@@ -18,7 +18,7 @@ import { ArkInstanceInvokeExpr } from "../../core/base/Expr";
 import { Value } from "../../core/base/Value";
 import { NodeID } from "../model/BaseGraph";
 import path from "path";
-import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
+import { CallGraph, CallSite, DynCallSite, FuncID } from "../model/CallGraph";
 import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
 import { DiffPTData, PtsSet } from "./PtsDS";
 import { ClassType, Type } from "../../core/base/Type";
@@ -285,6 +285,7 @@ export class PointerAnalysis extends AbstractAnalysis{
      */
     private onTheFlyDynamicCallSolve(): boolean {
         let changed = false;
+        let processedCallSites: Set<DynCallSite> = new Set()
         this.pagBuilder.getUpdatedNodes().forEach((pts, nodeID) => {
             let node = this.pag.getNode(nodeID) as PagNode
 
@@ -300,14 +301,17 @@ export class PointerAnalysis extends AbstractAnalysis{
                 return
             }
 
+            logger.info(`[process dynamic callsite] node ${nodeID}`)
             dynCallSites.forEach((dynCallsite) => {
                 for(let pt of pts) {
                     let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
                     changed = this.addToReanalyze(srcNodes) || changed;
                 }
+                processedCallSites.add(dynCallsite)
             })
         })
         this.pagBuilder.resetUpdatedNodes()
+        this.pagBuilder.printUnprocessedCallSites(processedCallSites)
         
         changed = this.pagBuilder.handleReachable() || changed;
         this.initWorklist();

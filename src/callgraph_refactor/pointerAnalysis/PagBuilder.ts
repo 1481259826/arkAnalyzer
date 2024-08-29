@@ -264,7 +264,7 @@ export class PagBuilder {
             // TODO: check base under different cid
             let baseNodeIDs = this.pag.getNodesByValue(base)
             if (!baseNodeIDs) {
-                logger.error(`[ build dynamic call site] can not handle call site with base ${base.toString()}`)
+                logger.error(`[build dynamic call site] can not handle call site with base ${base.toString()}`)
                 continue
             }
             for (let nodeID of baseNodeIDs!.values()) {
@@ -406,6 +406,29 @@ export class PagBuilder {
             }
         })
         return srcNodes;
+    }
+
+    public printUnprocessedCallSites(processedCallSites: Set<DynCallSite>) {
+        for (let funcID of this.funcHandledThisRound) {
+            let funcPag = this.funcPags.get(funcID)!
+            let callSites = funcPag.getDynamicCallSites()
+
+            const diffCallSites = new Set(Array.from(callSites).filter(item => !processedCallSites.has(item)))
+            diffCallSites.forEach((cs) => {
+                let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+                // Get local of base class
+                let base = ivkExpr.getBase();
+                // TODO: remove this after multiple this local fixed
+                base = this.getRealThisLocal(base, cs.callerFuncID)
+                // Get PAG nodes for this base's local
+                let ctx2NdMap = this.pag.getNodesByValue(base);
+                if (ctx2NdMap) {
+                    for (let [cid, nodeId] of ctx2NdMap.entries()) {
+                        this.handleUnkownDynamicCall(cs, cid);
+                    }
+                }
+            })
+        }
     }
 
     private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
