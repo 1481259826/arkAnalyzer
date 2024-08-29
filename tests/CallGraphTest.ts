@@ -25,9 +25,10 @@ import { CallGraphBuilder } from '../src/callgraph_refactor/model/builder/CallGr
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('tests/resources/callgraph/test1')
+// config.buildFromProjectDir('tests/resources/callgraph/test1')
+config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test')
 // config.buildFromJson("./tests/resources/callgraph/callGraphConfigUnix.json");
-Logger.setLogLevel(LOG_LEVEL.INFO)
+Logger.setLogLevel(LOG_LEVEL.ERROR)
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config)
@@ -39,17 +40,18 @@ function runScene(config: SceneConfig) {
     // }
     entryPoints.push(...
         projectScene.getFiles()
-            .filter(arkFile => arkFile.getName() === "case.ts")
+            .filter(arkFile => arkFile.getName() === "main.ts")
             .flatMap(arkFile => arkFile.getClasses())
             .filter(arkClass => arkClass.getName() === "_DEFAULT_ARK_CLASS")
             .flatMap(arkClass => arkClass.getMethods())
-            .filter(arkMethod => arkMethod.getName() === "foo")
+            .filter(arkMethod => arkMethod.getName() === "main")
             .map(arkMethod => arkMethod.getSignature())
     );
 
     let callGraph = new CallGraph(projectScene)
     let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
-    callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+    // callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+    callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
     callGraph.dump("out/cg/cg.dot")
     // let callGraph = projectScene.makeCallGraphRTA(entryPoints)
     // debugger;

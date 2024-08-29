@@ -40,28 +40,15 @@ export abstract class AbstractAnalysis {
     public getCallGraph(): CallGraph {
         return this.cg
     }
-    
+
     protected abstract resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[]
+    protected abstract preProcessMethod(funcID: FuncID): CallSite[]
 
     public resolveInvokeExpr(invokeExpr: AbstractInvokeExpr): ArkMethod | undefined {
         const method = this.scene.getMethod(invokeExpr.getMethodSignature())
         if (method != null) {
             return method
         }
-
-        // const methodSignature = invokeExpr.getMethodSignature()
-        // const sdkFiles = this.scene.getSdkArkFilesMap().values()
-        // for (let sdkFile of sdkFiles) {
-        //     if (methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().toString() == 
-        //     sdkFile.getFileSignature().toString()) {
-        //         const methods = ModelUtils.getAllMethodsInFile(sdkFile);
-        //         for (let methodUnderFile of methods) {
-        //             if (methodSignature.toString() == methodUnderFile.getSignature().toString()) {
-        //                 return methodUnderFile;
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     public getClassHierarchy(arkClass: ArkClass): ArkClass[] {
@@ -85,6 +72,12 @@ export abstract class AbstractAnalysis {
         this.init()
         while (this.workList.length != 0) {
             const method = this.workList.shift() as FuncID
+
+            // pre process for RTA only
+            this.preProcessMethod(method).forEach((cs: CallSite) => {
+                this.workList.push(cs.calleeFuncID)
+            })
+
             this.processMethod(method).forEach((cs: CallSite) => {
                 this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt)
                 this.workList.push(cs.calleeFuncID)
