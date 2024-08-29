@@ -18,7 +18,7 @@ import { ArkInstanceInvokeExpr } from "../../core/base/Expr";
 import { Value } from "../../core/base/Value";
 import { NodeID } from "../model/BaseGraph";
 import path from "path";
-import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
+import { CallGraph, CallSite, DynCallSite, FuncID } from "../model/CallGraph";
 import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
 import { DiffPTData, PtsSet } from "./PtsDS";
 import { ClassType, Type } from "../../core/base/Type";
@@ -27,7 +27,7 @@ import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { Stmt } from "../../core/base/Stmt";
 import Logger from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
-import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode } from "./Pag";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
 import { PTAStat } from "../common/Statistics";
 
@@ -39,6 +39,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
     private entries: FuncID[];
     private worklist: NodeID[];
+    // record all updated nodes
     private ptaStat: PTAStat;
     private typeDiffMap: Map<Value, Set<Type>>;
     private config: PointerAnalysisConfig
@@ -155,9 +156,8 @@ export class PointerAnalysis extends AbstractAnalysis{
         this.handleThis(nodeId)
         this.handleLoadWrite(nodeId);
         this.handleCopy(nodeId);
+        this.handlePt(nodeId);
 
-        this.ptd.flush(nodeId);
-        this.pagBuilder.setPtForNode(nodeId, this.ptd.getPropaPts(nodeId));
         this.detectTypeDiff(nodeId);
         return true;
     }
@@ -247,6 +247,17 @@ export class PointerAnalysis extends AbstractAnalysis{
         return true
     }
 
+    private handlePt(nodeID: NodeID) {
+        let realDiff = this.ptd.calculateDiff(nodeID, nodeID)
+
+        if (realDiff.count() != 0) {
+            // record the updated nodes
+            this.pagBuilder.addUpdatedNode(nodeID, realDiff)
+        }
+        this.ptd.flush(nodeID);
+        this.pagBuilder.setPtForNode(nodeID, this.ptd.getPropaPts(nodeID));
+    }
+
     private propagate(edge: PagEdge): boolean {
         let changed: boolean = false;
         let { src, dst } = edge.getEndPoints();
@@ -267,47 +278,45 @@ export class PointerAnalysis extends AbstractAnalysis{
         return changed;
     }
 
+    /**
+     * 1. 记录被更新的节点(记录cid, nodeid)
+     * 2. ( PAGLocalNode记录callsite(cid, value唯一))，通过1种的nodeID查询Node,拿到Callsite
+     * 3. 在addDynamicCall里对传入指针过滤（已处理指针和未处理指针）
+     */
     private onTheFlyDynamicCallSolve(): boolean {
         let changed = false;
-        let dynCallsites = this.pagBuilder.getDynamicCallSites();
+        let processedCallSites: Set<DynCallSite> = new Set()
+        this.pagBuilder.getUpdatedNodes().forEach((pts, nodeID) => {
+            let node = this.pag.getNode(nodeID) as PagNode
 
-        dynCallsites?.forEach(cs => {
-            let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
-            // Get local of base class
-            let base = ivkExpr.getBase();
-            // TODO: remove this after multiple this local fixed
-            base = this.pagBuilder.getRealThisLocal(base, cs.callerFuncID)
-            // Get PAG nodes for this base's local
-            let ctx2NdMap = this.pag.getNodesByValue(base);
-            if (ctx2NdMap) {
-                for (let [cid, nodeId] of ctx2NdMap.entries()) {
-
-                    let pts = this.ptd.getPropaPts(nodeId);
-                    if (pts) {
-                        for(let pt of pts) {
-                            let srcNodes = this.pagBuilder.addDynamicCallEdge(cs, pt, cid);
-                            changed = this.addToReanalyze(srcNodes) || changed;
-                        }
-                    } else {
-                        this.pagBuilder.handleUnkownDynamicCall(cs, cid);
-                    }
-                }
+            if (!(node instanceof PagLocalNode)) {
+                logger.warn(`node ${nodeID} is not local node, value: ${node.getValue()}`)
+                return
             }
+
+            let dynCallSites = node.getRelatedDynCallSites()
+
+            if (!dynCallSites) {
+                logger.warn(`node ${nodeID} has no related dynamic call site`)
+                return
+            }
+
+            logger.info(`[process dynamic callsite] node ${nodeID}`)
+            dynCallSites.forEach((dynCallsite) => {
+                for(let pt of pts) {
+                    let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
+                    changed = this.addToReanalyze(srcNodes) || changed;
+                }
+                processedCallSites.add(dynCallsite)
+            })
         })
+        this.pagBuilder.resetUpdatedNodes()
+        this.pagBuilder.printUnprocessedCallSites(processedCallSites)
         
         changed = this.pagBuilder.handleReachable() || changed;
         this.initWorklist();
         return changed;
     }
-
-    // private temp() {
-    //     let funcPtrID: NodeID = 0
-    //     let funcPtrNode = this.pag.getNode(funcPtrID) as PagFuncNode
-
-    //     let methodSig = funcPtrNode.getMethod()
-    //     // TODO: maybe a new kind of callsite? and check static and instance
-    //     this.pagBuilder.addStaticPagCallEdge()
-    // }
 
     private addToReanalyze(startNodes: NodeID[]): boolean {
         let flag = false
@@ -323,7 +332,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     /**
      * compare interface
      */
-    public noAlias(leftValue: Value, rightValue: Value) {
+    public noAlias(leftValue: Value, rightValue: Value): boolean {
         let leftValueNodes = this.pag.getNodesByValue(leftValue)?.values()!
         let rightValueNodes = this.pag.getNodesByValue(rightValue)?.values()!
 
@@ -357,7 +366,29 @@ export class PointerAnalysis extends AbstractAnalysis{
         return true;
     }
 
+    public mayAlias(leftValue: Value, rightValue: Value): boolean {
+        // TODO: finish mayAlias
+        return false
+    }
+
+    public getRelatedNodes(value: Value): Set<Value> {
+        let valueNodes = this.pag.getNodesByValue(value)?.values()!
+        let relatedAllNodes: Set<Value> = new Set()
+
+        for (const nodeID of valueNodes) {
+            for (let pt of this.ptd.getPropaPts(nodeID)!) {
+                let baseNode = this.pag.getNode(pt)! as PagNewExprNode
+                baseNode.getRelatedNodes().forEach((item) => {
+                    relatedAllNodes.add((this.pag.getNode(item)! as PagNode).getValue())
+                })
+            }
+        }
+
+        return relatedAllNodes
+    }
+
     private detectTypeDiff(nodeId: NodeID): void {
+        // TODO: 存在一个key下的value重复的情况
         if (this.config.detectTypeDiff == false) {
             return;
         }
