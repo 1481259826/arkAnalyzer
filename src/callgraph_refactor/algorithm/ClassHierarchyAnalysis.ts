@@ -1,4 +1,3 @@
-import { Scene } from '../../Scene';
 /*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +14,7 @@ import { Scene } from '../../Scene';
  */
 
 import { ArkStaticInvokeExpr } from "../../core/base/Expr";
+import { Scene } from '../../Scene';
 import { Stmt } from "../../core/base/Stmt";
 import { ArkClass } from "../../core/model/ArkClass";
 import { MethodSignature } from "../../core/model/ArkSignature";
@@ -64,5 +64,10 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         }
 
         return resolveResult
+    }
+
+    protected preProcessMethod(): CallSite[] {
+        // do nothing
+        return []
     }
 }

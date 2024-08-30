@@ -108,6 +108,11 @@ export class PointerAnalysis extends AbstractAnalysis{
         }
     }
 
+    protected preProcessMethod(funcID: FuncID): CallSite[] {
+        // do nothing
+        return []
+    }
+
     public setEntries(fIds: FuncID[]) {
         this.entries = fIds;
     }

@@ -19,6 +19,7 @@ import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeE
 import { ClassType } from "../../../core/base/Type"
 import { NodeID } from '../BaseGraph';
 import { ClassHierarchyAnalysis } from '../../algorithm/ClassHierarchyAnalysis';
+import { RapidTypeAnalysis } from '../../algorithm/RapidTypeAnalysis';
 
 export class CallGraphBuilder {
     private cg: CallGraph;
@@ -83,6 +84,17 @@ export class CallGraphBuilder {
 
         let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg)
         classHierarchyAnalysis.start()
+    }
+
+    public buildRapidTypeCallGraph(entries: Method[]): void {
+        let cgEntries: NodeID[] = []
+        entries.forEach((entry: Method) => {
+            cgEntries.push(this.cg.getCallGraphNodeByMethod(entry).getID())
+        })
+        this.cg.setEntries(cgEntries)
+
+        let rapidTypeAnalysis: RapidTypeAnalysis = new RapidTypeAnalysis(this.scene, this.cg)
+        rapidTypeAnalysis.start()
     }
 
     /// Get direct call callee
