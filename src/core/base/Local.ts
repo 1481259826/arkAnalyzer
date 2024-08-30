@@ -20,7 +20,7 @@ import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';
-import { LocalSignature } from '../model/ArkSignature';
+import { LocalSignature, MethodSignature } from '../model/ArkSignature';
 
 /**
  * @category core/base
@@ -33,7 +33,7 @@ export class Local implements Value, ArkExport {
 
     private declaringStmt: Stmt | null;
     private usedStmts: Stmt[];
-    private signature: LocalSignature;
+    private signature?: LocalSignature;
     private constFlag: boolean = false;
 
     constructor(name: string, type: Type = UnknownType.getInstance()) {
@@ -112,7 +112,7 @@ export class Local implements Value, ArkExport {
     }
 
     public getSignature(): LocalSignature {
-        return this.signature;
+        return this.signature ?? new LocalSignature(this.name, new MethodSignature());
     }
 
     public setSignature(signature: LocalSignature): void {
