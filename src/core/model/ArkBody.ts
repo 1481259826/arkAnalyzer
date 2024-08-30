@@ -26,11 +26,12 @@ export class ArkBody {
     private aliasTypeMap: Map<string, AliasType> = new Map();
 
     constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, aliasTypeMap: Map<string, AliasType>) {
-        this.setLocals(locals);
         this.originalCfg = originalCfg;
         this.cfg = cfg;
         this.stmtToOriginalStmt = stmtToOriginalStmt;
         this.aliasTypeMap = aliasTypeMap;
+        this.locals = new Map<string, Local>();
+        locals.forEach(local => this.locals.set(local.getName(), local));
     }
 
     public getLocals(): Map<string, Local> {

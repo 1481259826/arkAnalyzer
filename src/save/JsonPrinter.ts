@@ -172,7 +172,7 @@ export class JsonPrinter extends Printer {
         return {
             importClauseName: importInfo.getImportClauseName(),
             importType: importInfo.getImportType(),
-            importFrom: importInfo.getImportFrom(),
+            importFrom: importInfo.getFrom(),
             nameBeforeAs: importInfo.getNameBeforeAs(),
             modifiers: Array.from(importInfo.getModifiers()),
             originTsPosition: this.serializeLineColPosition(importInfo.getOriginTsPosition()),
@@ -183,7 +183,7 @@ export class JsonPrinter extends Printer {
         return {
             exportClauseName: exportInfo.getExportClauseName(),
             exportClauseType: exportInfo.getExportClauseType(),
-            exportFrom: exportInfo.getExportFrom(),
+            exportFrom: exportInfo.getFrom(),
             nameBeforeAs: exportInfo.getNameBeforeAs(),
             isDefault: exportInfo.isDefault(),
             modifiers: Array.from(exportInfo.getModifiers()),

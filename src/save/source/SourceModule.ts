@@ -64,9 +64,9 @@ export class SourceExportInfo extends SourceBase {
                 );
             }
         }
-        if (this.info.getExportFrom()) {
+        if (this.info.getFrom()) {
             this.printer.write(
-                ` from '${this.info.getExportFrom() as string}'`
+                ` from '${this.info.getFrom() as string}'`
             );
         }
         this.printer.writeLine(';');
@@ -97,7 +97,7 @@ export class SourceImportInfo extends SourceBase {
                 .writeIndent()
                 .writeLine(
                     `import ${this.info.getImportClauseName()} from '${
-                        this.info.getImportFrom() as string
+                        this.info.getFrom() as string
                     }';`
                 );
         } else if (this.info.getImportType() === 'NamedImports') {
@@ -107,7 +107,7 @@ export class SourceImportInfo extends SourceBase {
                     .writeIndent()
                     .writeLine(
                         `import {${this.info.getNameBeforeAs()} as ${this.info.getImportClauseName()}} from '${
-                            this.info.getImportFrom() as string
+                            this.info.getFrom() as string
                         }';`
                     );
             } else {
@@ -115,7 +115,7 @@ export class SourceImportInfo extends SourceBase {
                     .writeIndent()
                     .writeLine(
                         `import {${this.info.getImportClauseName()}} from '${
-                            this.info.getImportFrom() as string
+                            this.info.getFrom() as string
                         }';`
                     );
             }
@@ -125,7 +125,7 @@ export class SourceImportInfo extends SourceBase {
                 .writeIndent()
                 .writeLine(
                     `import * as ${this.info.getImportClauseName()} from '${
-                        this.info.getImportFrom() as string
+                        this.info.getFrom() as string
                     }';`
                 );
         } else if (this.info.getImportType() == 'EqualsImport') {
@@ -134,14 +134,14 @@ export class SourceImportInfo extends SourceBase {
                 .writeIndent()
                 .writeLine(
                     `import ${this.info.getImportClauseName()} =  require('${
-                        this.info.getImportFrom() as string
+                        this.info.getFrom() as string
                     }');`
                 );
         } else {
             // sample: import '../xxx'
             this.printer
                 .writeIndent()
-                .writeLine(`import '${this.info.getImportFrom() as string}';`);
+                .writeLine(`import '${this.info.getFrom() as string}';`);
         }
         return this.printer.toString();
     }

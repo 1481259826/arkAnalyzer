@@ -25,27 +25,27 @@ import { setTypeForExportInfo } from './builder/ArkImportBuilder';
  * @category core/model
  */
 export class ArkNamespace implements ArkExport {
-    private name: string;
-    private code: string
+    private name: string = '';
+    private code: string = ''
     private line: number = -1;
     private column: number = -1;
 
-    private declaringArkFile: ArkFile;
+    private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | null = null;
 
-    private declaringInstance: ArkFile | ArkNamespace;
-    private declaringType: string;
+    private declaringInstance!: ArkFile | ArkNamespace;
+    private declaringType: string = '';
 
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private exportInfos: Map<string, ExportInfo> = new Map<string, ExportInfo>();
 
-    private defaultClass: ArkClass;
+    private defaultClass!: ArkClass;
 
     // name to model
     private namespaces: Map<string, ArkNamespace> = new Map<string, ArkNamespace>(); // don't contain nested namespace
     private classes: Map<string, ArkClass> = new Map<string, ArkClass>();
 
-    private namespaceSignature: NamespaceSignature;
+    private namespaceSignature!: NamespaceSignature;
 
     private anonymousClassNumber: number = 0;
 

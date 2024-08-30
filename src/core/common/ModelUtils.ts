@@ -106,8 +106,8 @@ export class ModelUtils {
     }
 
     /** search type within the given file import infos */
-    public static getArkExportInImportInfoWithName(name: string, arkFile: ArkFile): ArkExport | undefined {
-        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getArkExport();
+    public static getArkExportInImportInfoWithName(name: string, arkFile: ArkFile): ArkExport | null {
+        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getArkExport() ?? null;
     }
 
     /** search method within the file that contain the given method */
@@ -310,7 +310,7 @@ export class ModelUtils {
             ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get(name);
     }
 
-    public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | undefined {
+    public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
         let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name);
         if (arkMethod) {
             return arkMethod;
@@ -320,8 +320,9 @@ export class ModelUtils {
             return arkField;
         }
         if (arkClass.isDefaultArkClass()) {
-            return arkClass.getDeclaringArkFile().getExportInfoBy(name)?.getArkExport();
+            return arkClass.getDeclaringArkFile().getExportInfoBy(name)?.getArkExport() ?? null;
         }
+        return null;
     }
 
 }

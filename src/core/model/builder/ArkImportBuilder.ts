@@ -372,7 +372,7 @@ function getArkFileFromOtherModule(fromInfo: FromInfo) {
     if (!moduleMap || moduleMap.size === 0) {
         return;
     }
-    const from = fromInfo.getFrom();
+    const from = fromInfo.getFrom()!;
     let index: number;
     let file;
     let modulePath;
