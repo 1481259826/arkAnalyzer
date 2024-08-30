@@ -76,7 +76,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     }
 
     mtd.setCode(methodNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         methodNode.getStart(sourceFile),
     );
@@ -244,7 +244,7 @@ export class ArrayBindingPatternParameter {
 
 export class MethodParameter {
     private name: string = '';
-    private type: Type;
+    private type!: Type;
     private optional: boolean = false;
     private dotDotDotToken: boolean = false;
     private objElements: ObjectBindingPatternParameter[] = [];

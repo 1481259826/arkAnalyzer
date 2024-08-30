@@ -20,23 +20,6 @@ import { getAllFiles } from './utils/getAllFiles';
 
 const logger = Logger.getLogger();
 
-/**
- * This class is used to manage all the configurations set up for the analyzer.
- */
-export class Config {
-    project_dir: string;
-    projectName: string;
-    sdkName?: string;
-    sdk_dir?: string;
-
-    constructor(projectName: string, project_dir: string, sdkName?: string, sdk_dir?: string) {
-        this.projectName = projectName;
-        this.project_dir = project_dir;
-        this.sdkName = sdkName;
-        this.sdk_dir = sdk_dir;
-    }
-}
-
 export interface Sdk {
     name: string;
     path: string;

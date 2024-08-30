@@ -69,6 +69,7 @@ export class SourceBody implements StmtPrinterContext {
         this.definedLocals = new Set();
         this.inBuilder = inBuilder;
         this.skipStmts = new Set();
+        this.stmtReader = new StmtReader([]);
         this.buildSourceStmt();
     }
     setSkipStmt(stmt: Stmt): void {

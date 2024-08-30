@@ -44,7 +44,7 @@ export interface FromInfo {
 
     getOriginName(): string;
 
-    getFrom(): string;
+    getFrom(): string | undefined;
 
     getDeclaringArkFile(): ArkFile;
 }
@@ -55,22 +55,22 @@ export interface FromInfo {
 export class ExportInfo implements FromInfo {
 
     private modifiers: Set<string | Decorator> = new Set();
-    private _default: boolean;
-    private nameBeforeAs: string | undefined;
-    private exportClauseName: string;
+    private _default?: boolean;
+    private nameBeforeAs?: string;
+    private exportClauseName: string = '';
 
-    private exportClauseType: ExportType;
-    private arkExport: ArkExport;
-    private exportFrom: string;
+    private exportClauseType: ExportType = ExportType.UNKNOWN;
+    private arkExport?: ArkExport;
+    private exportFrom?: string;
 
-    private originTsPosition: LineColPosition;
-    private tsSourceCode: string;
-    private declaringArkFile: ArkFile;
+    private originTsPosition?: LineColPosition;
+    private tsSourceCode?: string;
+    private declaringArkFile!: ArkFile;
 
     private constructor() {
     }
 
-    public getFrom(): string {
+    public getFrom(): string | undefined {
         return this.exportFrom;
     }
 
@@ -94,22 +94,14 @@ export class ExportInfo implements FromInfo {
         return this.nameBeforeAs;
     }
 
-    public clearNameBeforeAs() {
-        if (this.nameBeforeAs === '*') {
-            this.nameBeforeAs = undefined;
+    public setArkExport(value: ArkExport | null) {
+        if (value) {
+            this.arkExport = value;
         }
     }
 
-    public setArkExport(value: ArkExport) {
-        this.arkExport = value;
-    }
-
-    public getExportFrom(): string {
-        return this.exportFrom;
-    }
-
-    public getArkExport(): ArkExport {
-        return this.arkExport;
+    public getArkExport(): ArkExport | null {
+        return this.arkExport ?? null;
     }
 
     public isDefault(): boolean {
@@ -127,11 +119,11 @@ export class ExportInfo implements FromInfo {
     }
 
     public getOriginTsPosition(): LineColPosition {
-        return this.originTsPosition;
+        return this.originTsPosition ?? LineColPosition.DEFAULT;
     }
 
     public getTsSourceCode(): string {
-        return this.tsSourceCode;
+        return this.tsSourceCode ?? '';
     }
 
     public getDeclaringArkFile(): ArkFile {

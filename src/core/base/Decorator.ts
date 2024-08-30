@@ -18,8 +18,8 @@
  */
 export class Decorator {
     kind: string;
-    content: string;
-    param: string;
+    content: string = '';
+    param: string = '';
     constructor(name: string) {
         this.kind = name;
     }

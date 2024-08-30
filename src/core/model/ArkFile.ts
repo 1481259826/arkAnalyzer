@@ -30,13 +30,13 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
  */
 export class ArkFile {
 
-    private name: string; //name also means the relative path
-    private absoluteFilePath: string;
-    private projectDir: string;
-    private projectName: string = "";
-    private code: string;
+    private name: string = ''; //name also means the relative path
+    private absoluteFilePath: string = '';
+    private projectDir: string = '';
+    private projectName: string = '';
+    private code: string = '';
 
-    private defaultClass: ArkClass;
+    private defaultClass!: ArkClass;
 
     // name to model
     private namespaces: Map<string, ArkNamespace> = new Map<string, ArkNamespace>(); // don't contain nested namespaces
@@ -45,10 +45,10 @@ export class ArkFile {
     private importInfoMap: Map<string, ImportInfo> = new Map<string, ImportInfo>();
     private exportInfoMap: Map<string, ExportInfo> = new Map<string, ExportInfo>();
 
-    private scene: Scene;
-    private moduleScene: ModuleScene;
+    private scene!: Scene;
+    private moduleScene?: ModuleScene;
 
-    private fileSignature: FileSignature;
+    private fileSignature: FileSignature = new FileSignature();
 
     private ohPackageJson5Path: string[] = [];
 
@@ -184,7 +184,7 @@ export class ArkFile {
     }
 
     public getModuleName() {
-        return this.moduleScene.getModuleName();
+        return this.moduleScene?.getModuleName();
     }
 
     public setOhPackageJson5Path(ohPackageJson5Path: string[]) {

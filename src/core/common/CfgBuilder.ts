@@ -40,7 +40,7 @@ class StatementBuilder {
     column: number; // 列  
     astNode: ts.Node | null;//ast节点对象
     scopeID: number;
-    addressCode3: string[];
+    addressCode3: string[] = [];
     block: Block | null;
     ifExitPass: boolean;
     passTmies: number = 0;

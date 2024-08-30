@@ -23,17 +23,17 @@ import { ExportInfo, FromInfo } from './ArkExport';
  * @category core/model
  */
 export class ImportInfo implements FromInfo {
-    private importClauseName: string;
-    private importType: string;
-    private importFrom: string;
-    private nameBeforeAs: string | undefined;
+    private importClauseName: string = '';
+    private importType: string = '';
+    private importFrom?: string;
+    private nameBeforeAs?: string;
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
 
-    private declaringArkFile: ArkFile;
+    private declaringArkFile!: ArkFile;
 
-    private originTsPosition: LineColPosition;
-    private tsSourceCode: string;
-    private lazyExportInfo: ExportInfo | null;
+    private originTsPosition?: LineColPosition;
+    private tsSourceCode?: string;
+    private lazyExportInfo?: ExportInfo | null;
 
     constructor() {
     }
@@ -88,10 +88,6 @@ export class ImportInfo implements FromInfo {
         this.importType = importType;
     }
 
-    public getImportFrom(): string {
-        return this.importFrom;
-    }
-
     public setImportFrom(importFrom: string): void {
         this.importFrom = importFrom;
     }
@@ -117,7 +113,7 @@ export class ImportInfo implements FromInfo {
     }
 
     public getOriginTsPosition(): LineColPosition {
-        return this.originTsPosition;
+        return this.originTsPosition ?? LineColPosition.DEFAULT;
     }
 
     public setTsSourceCode(tsSourceCode: string): void {
@@ -125,23 +121,14 @@ export class ImportInfo implements FromInfo {
     }
 
     public getTsSourceCode(): string {
-        return this.tsSourceCode;
+        return this.tsSourceCode ?? '';
     }
 
-    public getFrom(): string {
+    public getFrom(): string | undefined {
         return this.importFrom;
     }
 
     public isDefault(): boolean {
-        if (this.nameBeforeAs === 'default') {
-            return true;
-        }
-        let index = this.tsSourceCode.indexOf(this.importClauseName);
-        if (index === -1) {
-            return false;
-        }
-        let start = this.tsSourceCode.indexOf('{');
-        let end = this.tsSourceCode.indexOf('}');
-        return !(index > start && index < end);
+        return this.importType === 'Identifier';
     }
 }

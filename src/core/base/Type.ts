@@ -493,7 +493,7 @@ export abstract class AnnotationType extends Type {
 }
 
 export class AnnotationNamespaceType extends AnnotationType {
-    private namespaceSignature: NamespaceSignature;
+    private namespaceSignature: NamespaceSignature = new NamespaceSignature();
 
     public static getInstance(signature: NamespaceSignature): AnnotationNamespaceType {
         const type = new AnnotationNamespaceType(signature.getNamespaceName());

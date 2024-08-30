@@ -218,8 +218,9 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         this.type = ViewTreeNodeType.Builder;
         this.signature = builder.getSignature();
         this.classSignature = this.signature;
-        if (builder.getViewTree().getRoot()) {
-            for (let child of builder.getViewTree().getRoot().children) {
+        const root = builder.getViewTree()?.getRoot();
+        if (root) {
+            for (let child of root.children) {
                 this.children.push(child as ViewTreeNodeImpl);
             }
         } else {
@@ -335,7 +336,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
 }
 
 class TreeNodeStack {
-    protected root: ViewTreeNodeImpl;
+    protected root: ViewTreeNodeImpl | null = null;
     protected stack: ViewTreeNodeImpl[];
 
     constructor() {
@@ -443,7 +444,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * ViewTree root node.
      * @returns root node
      */
-    public getRoot(): ViewTreeNode {
+    public getRoot(): ViewTreeNode | null {
         this.buildViewTree();
         return this.root;
     }

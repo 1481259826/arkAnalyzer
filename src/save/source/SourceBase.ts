@@ -33,7 +33,7 @@ export abstract class SourceBase
     implements Dump, TransformerContext
 {
     protected arkFile: ArkFile;
-    protected inBuilder: boolean;
+    protected inBuilder: boolean = false;
 
     public constructor(arkFile: ArkFile, indent: string = '') {
         super(indent);

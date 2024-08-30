@@ -39,7 +39,7 @@ export { ExportInfo } from './core/model/ArkExport';
 export { ImportInfo } from './core/model/ArkImport';
 export { FileSignature, MethodSignature } from './core/model/ArkSignature';
 
-export { Config, SceneConfig } from './Config';
+export { SceneConfig } from './Config';
 export { Scene } from './Scene';
 
 // save

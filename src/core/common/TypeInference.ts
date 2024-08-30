@@ -225,7 +225,7 @@ export class TypeInference {
         }
     }
 
-    public static parseArkExport2Type(arkExport: ArkExport | undefined): Type | null {
+    public static parseArkExport2Type(arkExport: ArkExport | undefined | null): Type | null {
         if (!arkExport) {
             return null;
         }
@@ -426,7 +426,7 @@ export class TypeInference {
         if (field && !this.isUnclearType(field.getType())) {
             return field.getType();
         }
-        let arkExport: ArkExport | undefined = ModelUtils.getClassWithName(baseName, arkClass)
+        let arkExport: ArkExport | null = ModelUtils.getClassWithName(baseName, arkClass)
             ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()

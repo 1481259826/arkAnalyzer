@@ -24,8 +24,8 @@ import { MethodParameter } from './builder/ArkMethodBuilder';
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
-    'Provide', 'Consume', 'ObjectLink', 
-    'LocalStorageLink', 'LocalStorageProp', 
+    'Provide', 'Consume', 'ObjectLink',
+    'LocalStorageLink', 'LocalStorageProp',
     'Local', 'Param', 'Event', 'Provider', 'Consumer'
 ])
 
@@ -38,23 +38,24 @@ export class ArkField {
     private code: string = "";
     private fieldType: string = "";
 
-    private declaringClass: ArkClass;
+    private declaringClass!: ArkClass;
 
-    private type: Type;
+    private type!: Type;
     private parameters: MethodParameter[] = [];
     private typeParameters: Type[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private questionToken: boolean = false;
     private exclamationToken: boolean = false;
 
-    private fieldSignature: FieldSignature;
-    private originPosition: LineColPosition;
+    private fieldSignature!: FieldSignature;
+    private originPosition?: LineColPosition;
 
-    private arkMethodSignature: MethodSignature;
+    private arkMethodSignature?: MethodSignature;
 
     private initializer: Stmt[] = [];
 
-    constructor() { }
+    constructor() {
+    }
 
     public getDeclaringClass() {
         return this.declaringClass;
@@ -211,7 +212,7 @@ export class ArkField {
     }
 
     public getOriginPosition(): LineColPosition {
-        return this.originPosition;
+        return this.originPosition ?? LineColPosition.DEFAULT;
     }
 
     public setArkMethodSignature(methodSignature: MethodSignature) {

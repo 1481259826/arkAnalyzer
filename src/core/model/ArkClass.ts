@@ -31,16 +31,16 @@ import { ArkExport, ExportType } from './ArkExport';
 export class ArkClass implements ArkExport {
     private name: string = '';
     private originType: string = "Class";
-    private code: string;
+    private code?: string;
     private line: number = -1;
     private column: number = -1;
 
-    private declaringArkFile: ArkFile;
+    private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | undefined;
-    private classSignature: ClassSignature;
+    private classSignature!: ClassSignature;
 
     private superClassName: string = '';
-    private superClass: ArkClass;
+    private superClass?: ArkClass;
     private implementedInterfaceNames: string[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private typeParameters: Type[] = [];
@@ -60,7 +60,7 @@ export class ArkClass implements ArkExport {
     private anonymousMethodNumber: number = 0;
     private indexSignatureNumber: number = 0;
 
-    private viewTree: ViewTree;
+    private viewTree?: ViewTree;
 
     constructor() {
     }
@@ -155,8 +155,8 @@ export class ArkClass implements ArkExport {
         this.superClassName = superClassName;
     }
 
-    public getSuperClass(): ArkClass {
-        return this.superClass;
+    public getSuperClass(): ArkClass | null {
+        return this.superClass ?? null;
     }
 
     public setSuperClass(superClass: ArkClass) {
@@ -293,7 +293,7 @@ export class ArkClass implements ArkExport {
         this.viewTree = viewTree;
     }
 
-    public getViewTree(): ViewTree {
+    public getViewTree(): ViewTree | undefined {
         return this.viewTree;
     }
 

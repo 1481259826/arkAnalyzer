@@ -35,24 +35,24 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
  * @category core/model
  */
 export class ArkMethod implements ArkExport {
-    private name: string;
-    private code: string;
+    private name: string = '';
+    private code: string = '';
     private line: number = -1;
     private column: number = -1;
 
-    private declaringArkFile: ArkFile;
-    private declaringArkClass: ArkClass;
+    private declaringArkFile!: ArkFile;
+    private declaringArkClass!: ArkClass;
 
     private returnType: Type = UnknownType.getInstance();
     private parameters: MethodParameter[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private typeParameters: Type[] = [];
 
-    private methodSignature: MethodSignature;
-    private methodSubSignature: MethodSubSignature;
+    private methodSignature!: MethodSignature;
+    private methodSubSignature!: MethodSubSignature;
 
     private body?: ArkBody;
-    private viewTree: ViewTree;
+    private viewTree?: ViewTree;
 
     private bodyBuilder?: BodyBuilder;
 
@@ -287,7 +287,7 @@ export class ArkMethod implements ArkExport {
         this.viewTree = viewTree;
     }
 
-    public getViewTree(): ViewTree {
+    public getViewTree(): ViewTree | undefined {
         return this.viewTree;
     }
 

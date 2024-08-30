@@ -518,7 +518,7 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
     protected op2: Value;
     protected operator: BinaryOperator;
 
-    protected type: Type;
+    protected type!: Type;
 
     constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super();
