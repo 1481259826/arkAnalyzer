@@ -23,21 +23,35 @@ export function fetchDependenciesFromFile(filePath: string): { [k: string]: unkn
     if (!fs.existsSync(filePath)) {
         return {};
     }
-    const file = parseJsonText(fs.readFileSync(filePath, 'utf-8'));
+    let configurationsText: string;
+    try {
+        configurationsText = fs.readFileSync(filePath, 'utf-8');
+    } catch (error) {
+        logger.error(`Error reading file: ${error}`);
+        return {};
+    }
+    const file = parseJsonText(configurationsText);
     return file;
 }
 
 export function parseJsonText(text: string): { [k: string]: unknown } {
-    const file = ts.parseJsonText('', text);
+    let file;
+    try {
+        file = ts.parseJsonText('', text);
+    } catch (error) {
+        logger.error(`Error parsing file: ${error}`);
+        return {};
+    }
     const rootObjectLiteralExpression = getRootObjectLiteral(file);
     if (!rootObjectLiteralExpression) {
+        logger.error('The JSON5 file format is incorrect, rootObjectLiteralExpression is null.');
         return {};
     }
     return parseObjectLiteralExpression(rootObjectLiteralExpression, file);
 }
 
 function getRootObjectLiteral(file: ts.JsonSourceFile): ts.ObjectLiteralExpression | undefined {
-    if (!file.statements || !file.statements.length) {
+    if (!file || !file.statements || !file.statements.length) {
         logger.error('The JSON5 file format is incorrect, the root node statements is empty.');
         return undefined;
     }

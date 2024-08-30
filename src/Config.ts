@@ -80,9 +80,22 @@ export class SceneConfig {
 
     public buildFromJson(configJsonPath: string) {
         if (fs.existsSync(configJsonPath)) {
-            const configurationsText = fs.readFileSync(configJsonPath, "utf8");
+            let configurationsText: string;
+            try {
+                configurationsText = fs.readFileSync(configJsonPath, 'utf-8');
+            } catch (error) {
+                logger.error(`Error reading file: ${error}`);
+                return;
+            }
+
             logger.info(configurationsText);
-            const configurations = JSON.parse(configurationsText);
+            let configurations: any;
+            try {
+                configurations = JSON.parse(configurationsText);
+            } catch (error) {
+                logger.error(`Error parsing JSON: ${error}`);
+                return;
+            }
 
             const targetProjectName: string = configurations.targetProjectName
                 ? configurations.targetProjectName

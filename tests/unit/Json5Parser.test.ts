@@ -24,6 +24,12 @@ describe("fetchDependenciesFromFile Test", () => {
         assert.isDefined(map.dependencies);
     })
 
+    it('file does not exist case', () => {
+        let filePath = path.join(__dirname, '../../notExist.json');
+        let map = fetchDependenciesFromFile(filePath);
+        assert.isNotNull(map);
+    })
+
     it('f case', () => {
         let filePath = path.join(__dirname, '../sample/sceneBoard.json5');
         let map = fetchDependenciesFromFile(filePath);
