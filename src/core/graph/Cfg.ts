@@ -16,7 +16,6 @@
 import { DefUseChain } from '../base/DefUseChain';
 import { Local } from '../base/Local';
 import { Stmt } from '../base/Stmt';
-import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
 import { BasicBlock } from './BasicBlock';
 
@@ -29,8 +28,7 @@ export class Cfg {
     private startingStmt: Stmt = new Stmt();
 
     private defUseChains: DefUseChain[] = [];
-    private declaringMethod: ArkMethod;
-    declaringClass: ArkClass;
+    private declaringMethod: ArkMethod = new ArkMethod();
 
     constructor() {
 

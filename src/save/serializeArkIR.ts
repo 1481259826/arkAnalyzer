@@ -136,7 +136,7 @@ export const program = new Command()
     .option('-m, --multi', 'Flag to indicate the input is a directory', false)
     .option('-p, --project', 'Flag to indicate the input is a project directory', false)
     .option('-v, --verbose', 'Verbose output', false)
-    .action((input, output, options) => {
+    .action((input: any, output: any, options: any) => {
 
         // Check for invalid combinations of flags
         if (options.multi && options.project) {

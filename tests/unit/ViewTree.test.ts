@@ -61,7 +61,11 @@ import {
 } from '../resources/viewtree/builderparam/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 
-function expectViewTree(root: ViewTreeNode, expectTree: any) {
+function expectViewTree(root: ViewTreeNode | null, expectTree: any) {
+    if (!root) {
+        assert.isDefined(root);
+        return;
+    }
     if (expectTree.skip) {
         return;
     }

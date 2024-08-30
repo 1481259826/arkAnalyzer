@@ -34,10 +34,10 @@ const LOOP_CONTROL_TYPE = new Set([BlockType.WHILE, BlockType.FOR, BlockType.FOR
 
 export class CfgStructualAnalysis {
     /** key: loop header, value: loop node dfs */
-    private loopPath: Map<BasicBlock, Set<BasicBlock>>;
-    private blockTypes: Map<BasicBlock, BlockType>;
-    private forIncMap: Map<BasicBlock, BasicBlock>;
-    private doWhilePair: Map<BasicBlock, BasicBlock>;
+    private loopPath: Map<BasicBlock, Set<BasicBlock>> = new Map();
+    private blockTypes: Map<BasicBlock, BlockType> = new Map();
+    private forIncMap: Map<BasicBlock, BasicBlock> = new Map();
+    private doWhilePair: Map<BasicBlock, BasicBlock> = new Map();
     private dominanceTree: DominanceTree;
 
     public constructor(cfg: Cfg) {

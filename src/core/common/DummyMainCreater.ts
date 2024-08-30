@@ -58,7 +58,7 @@ export class DummyMainCreater {
 
     private entryMethods: ArkMethod[] = [];
     private classLocalMap: Map<ArkMethod, Local | null> = new Map();
-    private dummyMain: ArkMethod;
+    private dummyMain: ArkMethod = new ArkMethod();
     private scene: Scene;
 
     constructor(scene: Scene) {

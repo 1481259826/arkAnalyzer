@@ -336,7 +336,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
 }
 
 class TreeNodeStack {
-    protected root: ViewTreeNodeImpl;
+    protected root: ViewTreeNodeImpl | null = null;
     protected stack: ViewTreeNodeImpl[];
 
     constructor() {
@@ -444,7 +444,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * ViewTree root node.
      * @returns root node
      */
-    public getRoot(): ViewTreeNode {
+    public getRoot(): ViewTreeNode | null {
         this.buildViewTree();
         return this.root;
     }

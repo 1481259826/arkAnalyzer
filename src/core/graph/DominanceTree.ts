@@ -23,9 +23,9 @@ export class DominanceTree {
     private parents: number[] = [];
     private doms: Array<Set<number>> = [];
     // d dom n && n -> d
-    private backEdges: Set<number[]>;
+    private backEdges: Set<number[]> = new Set<number[]>();
     // backEdges headers
-    private headers: Set<number>;
+    private headers: Set<number> = new Set<number>();
 
     constructor(dominanceFinder: DominanceFinder) {
         this.blocks = dominanceFinder.getBlocks();
@@ -112,7 +112,7 @@ export class DominanceTree {
     }
 
     private buildBackEdges() {
-        if (this.backEdges) {
+        if (this.backEdges.size > 0) {
             return;
         }
         this.backEdges = new Set();

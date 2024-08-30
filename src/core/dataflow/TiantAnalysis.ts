@@ -35,10 +35,10 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
     entryPoint: Stmt;
     entryMethod: ArkMethod;
     scene: Scene;
-    classMap: Map<FileSignature | NamespaceSignature, ArkClass[]>;
-    globalVariableMap: Map<FileSignature | NamespaceSignature, Local[]>;
-    sources: ArkMethod[];
-    sinks: ArkMethod[];
+    classMap: Map<FileSignature | NamespaceSignature, ArkClass[]> = new Map<FileSignature | NamespaceSignature, ArkClass[]>();
+    globalVariableMap: Map<FileSignature | NamespaceSignature, Local[]> = new Map<FileSignature | NamespaceSignature, Local[]>();
+    sources: ArkMethod[] = [];
+    sinks: ArkMethod[] = [];
     constructor(stmt: Stmt, method: ArkMethod){
         super();
         this.entryPoint = stmt;

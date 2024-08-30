@@ -23,6 +23,7 @@ import { ArkMethod } from '../model/ArkMethod';
 import { DataflowProblem, FlowFunction } from './DataflowProblem';
 import { PathEdge, PathEdgePoint } from './Edge';
 import { BasicBlock } from '../graph/BasicBlock';
+import { MethodSignature } from '../model/ArkSignature';
 
 /*
 this program is roughly an implementation of the paper: Practical Extensions to the IFDS Algorithm.
@@ -45,7 +46,7 @@ export abstract class DataflowSolver<D> {
     private endSummary: Map<PathEdgePoint<D>, Set<PathEdgePoint<D>>>;
     private summaryEdge: Set<CallToReturnCacheEdge<D>>; // summaryEdge不是加速一个函数内多次调用同一个函数，而是加速多次调用同一个函数f时，f内的函数调用
     private scene: Scene;
-    private CHA: ClassHierarchyAnalysisAlgorithm;
+    private CHA?: ClassHierarchyAnalysisAlgorithm;
     private stmtNexts: Map<Stmt, Set<Stmt>>;
     private laterEdges: Set<PathEdge<D>> = new Set();
 
@@ -127,7 +128,10 @@ export abstract class DataflowSolver<D> {
     }
 
     protected getAllCalleeMethods(callNode: ArkInvokeStmt): Set<ArkMethod> {
-        const methodSignatures = this.CHA.resolveCall(this.problem.getEntryMethod().getSignature(), callNode);
+        const methodSignatures: MethodSignature[] = [];
+        if (this.CHA) {
+            methodSignatures.push(...this.CHA.getMethods());
+        }
         const methods: Set<ArkMethod> = new Set();
         for (const methodSignature of methodSignatures) {
             const method = this.scene.getMethod(methodSignature);

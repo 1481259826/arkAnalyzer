@@ -42,6 +42,7 @@ import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
 import { Origin_Component, Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import { ValueUtil } from '../../core/common/ValueUtil';
 
 const logger = Logger.getLogger();
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
@@ -70,7 +71,7 @@ export abstract class SourceStmt implements Dump {
     original: Stmt;
     context: StmtPrinterContext;
     line: number;
-    text: string;
+    text: string = '';
     transformer: SourceTransformer;
 
     constructor(context: StmtPrinterContext, original: Stmt) {
@@ -140,12 +141,12 @@ enum AssignStmtDumpType {
 }
 
 export class SourceAssignStmt extends SourceStmt {
-    private leftOp: Value;
-    private rightOp: Value;
-    private leftCode: string;
-    private rightCode: string;
+    private leftOp: Value = ValueUtil.getUndefinedConst();
+    private rightOp: Value = ValueUtil.getUndefinedConst();
+    private leftCode: string = '';
+    private rightCode: string = '';
+    private dumpType?: AssignStmtDumpType;
     private leftTypeCode: string;
-    private dumpType: AssignStmtDumpType;
 
     constructor(context: StmtPrinterContext, original: ArkAssignStmt) {
         super(context, original);
