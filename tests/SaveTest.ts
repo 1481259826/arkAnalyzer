@@ -41,7 +41,6 @@ function testAppProjectSave() {
 
     let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out'));
     for (let f of scene.getFiles()) {
-        //printer.dumpToDot(f);
         printer.dumpToTs(f);
     }
 }
@@ -53,7 +52,6 @@ function testSimpleSave() {
     scene.buildSceneFromProjectDir(config);
     let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out'));
     for (let f of scene.getFiles()) {
-        //printer.dumpToDot(f);
         printer.dumpToTs(f);
     }
 }

@@ -57,7 +57,6 @@ return
 export class DummyMainCreater {
 
     private entryMethods: ArkMethod[] = [];
-    // private dummyMainClass: ArkClass;
     private classLocalMap: Map<ArkMethod, Local | null> = new Map();
     private dummyMain: ArkMethod;
     private scene: Scene;
@@ -109,10 +108,6 @@ export class DummyMainCreater {
     private createDummyMainCfg(): Cfg {
         const dummyCfg = new Cfg();
         dummyCfg.setDeclaringMethod(this.dummyMain);
-
-        // const leftThis = new Local('this');
-        // const rightThis = new ArkThisRef(new ClassType(this.dummyMainClass.getSignature()));
-        // const start = new ArkAssignStmt(leftThis, rightThis);
 
         const firstBlock = new BasicBlock();
         dummyCfg.addBlock(firstBlock);

@@ -35,7 +35,6 @@ export class VisibleValueTest {
         const visibleValue = scene.getVisibleValue();
 
         for (const arkFile of scene.arkFiles) {
-            // logger.info('=============== arkFile:', arkFile.getName(), '================');
             visibleValue.updateIntoScope(arkFile);
             this.printVisibleValues(visibleValue.getCurrVisibleValues());
             for (const arkClass of arkFile.getClasses()) {
@@ -43,17 +42,14 @@ export class VisibleValueTest {
                     continue;
                 }
 
-                // logger.info('======== arkClass:', arkClass.getName(), '========');
                 visibleValue.updateIntoScope(arkClass);
                 this.printVisibleValues(visibleValue.getCurrVisibleValues());
                 for (const arkMethod of arkClass.getMethods()) {
-                    // logger.info('==== arkMethod:', arkMethod.getName(), '====');
                     visibleValue.updateIntoScope(arkMethod);
                     this.printVisibleValues(visibleValue.getCurrVisibleValues());
 
                     const cfg = arkMethod.getBody().getCfg();
                     for (const block of cfg.getBlocks()) {
-                        // logger.info('==== block{', block.toString(), '}');
                         visibleValue.updateIntoScope(block);
                         this.printVisibleValues(visibleValue.getCurrVisibleValues());
 
@@ -93,11 +89,5 @@ export class VisibleValueTest {
 }
 
 const visibleValueTest = new VisibleValueTest();
-// const scene = visibleValueTest.buildScene();
-// visibleValueTest.testSimpleVisibleValue();
+visibleValueTest.testSimpleVisibleValue();
 visibleValueTest.testScopeChain();
-
-
-
-
-debugger

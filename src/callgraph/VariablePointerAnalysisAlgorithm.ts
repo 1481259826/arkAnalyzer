@@ -103,7 +103,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
 
     protected addReachable(entryPoints: MethodSignature[]) {
         for (let method of entryPoints) {
-            // logger.info("[addReachable] processing method: "+method.toString())
             if (isItemRegistered<MethodSignature>(
                 method, this.reachableMethods,
                 (a, b) => a.toString() === b.toString(),
@@ -132,11 +131,9 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                         let classType = rightOp.getType() as ClassType;
                         let pointer = new PointerTarget(classType, PointerTarget.genLocation(method, stmt));
 
-                        // logger.info("\t[addReachable] find new expr in method, add workList: "+(leftOp as Local).getName()+" -> "+pointer.getType())
                         this.workList.push(
                             new PointerTargetPair(this.pointerFlowGraph.getPointerSetElement(leftOp, null, null), pointer));
                     } else if (rightOp instanceof Local) {
-                        // logger.info("\t[addReachable] find assign expr in method, add pointer flow edge: "+(rightOp as Local).getName()+" -> "+(leftOp as Local).getType())
                         this.addEdgeIntoPointerFlowGraph(
                             this.pointerFlowGraph.getPointerSetElement(rightOp, null, null),
                             this.pointerFlowGraph.getPointerSetElement(leftOp, null, null),
@@ -165,7 +162,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     }
 
     protected processInstanceInvokeStmt(identifier: Value, pointer: PointerTarget) {
-        // logger.info("[processInvokeStmt] process identifier: "+(identifier as Local).getName())
         for (let stmt of this.reachableStmts) {
             if (stmt.containsInvokeExpr()) {
                 let expr = stmt.getInvokeExpr();
@@ -189,14 +185,12 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
                 if (!targetMethod) {
                     continue;
                 }
-                // logger.info("\t[processInvokeStmt] get specific call target: "+specificCallTarget.toString()+", from stmt: "+stmt.toString())
 
                 let targetMethodThisInstance: Value | null = targetMethod.getThisInstance();
                 if (targetMethodThisInstance == null) {
                     continue;
                 }
 
-                // logger.info("\t[processInvokeStmt] add pointer to call target this instance: "+pointer.getType())
                 this.workList.push(new PointerTargetPair(
                     this.pointerFlowGraph.getPointerSetElement(targetMethodThisInstance, null, null),
                     pointer));
@@ -276,7 +270,6 @@ export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
 
         let parameters = expr.getArgs();
         let methodParameterInstances = targetMethod.getParameterInstances();
-        // logger.info("[processInvokeStmt] add pointer flow edges for invoke stmt parameter")
         for (let i = 0; i < parameters.length; i++) {
             // 参数指针传递
             this.addEdgeIntoPointerFlowGraph(

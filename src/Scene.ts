@@ -570,7 +570,6 @@ export class Scene {
                         const importNameSpaceClasses = classMap.get(importNameSpace.getNamespaceSignature())!;
                         importClasses.push(...importNameSpaceClasses.filter(c => !importClasses.includes(c) && c.getName() != '_DEFAULT_ARK_CLASS'));
                     } catch {
-                        // logger.log(importNameSpace)
                     }
 
                 }
@@ -680,7 +679,6 @@ export class Scene {
                         const importNameSpaceClasses = globalVariableMap.get(importNameSpace.getNamespaceSignature())!;
                         importLocals.push(...importNameSpaceClasses.filter(c => !importLocals.includes(c) && c.getName() != '_DEFAULT_ARK_CLASS'));
                     } catch {
-                        // logger.log(importNameSpace)
                     }
 
                 }

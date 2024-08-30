@@ -35,28 +35,6 @@ function  main(x:number,y:number) {
     let n = new num();
     n.n=1;
     x = n.get();
-    // let c = y/y;  // zero division
-    // if (x==0) {
-    //     x = nonZero();
-    // } else {
-    //     x = 3;
-    // }
-    // x = x/x;
-    // x = identity(y);
-    // x = 3/x;  // zero division
-    // if (x==0) {
-    //     x = 3;
-    // } else {
-    //     x = 0;
-    // }
-    // x = x/x; // zero division
-
-    // if (x==0) {
-    //     x = 3;
-    // } else {
-    //     x = zero();
-    // }
-    // x = x/x; // zero division
 }
 
 function func1(a:number,b:number){

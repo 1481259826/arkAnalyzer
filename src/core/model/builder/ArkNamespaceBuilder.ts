@@ -111,9 +111,6 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             ts.isInterfaceDeclaration(child) ||
             ts.isEnumDeclaration(child) ||
             ts.isStructDeclaration(child)
-            //child.kind === ts.SyntaxKind.ClassDeclaration
-            //child.kind === ts.SyntaxKind.InterfaceDeclaration
-            //child.kind === ts.SyntaxKind.EnumDeclaration
         ) {
             let cls: ArkClass = new ArkClass();
 
@@ -166,35 +163,3 @@ function genDefaultArkClass(ns: ArkNamespace, node: ts.ModuleDeclaration, source
     ns.setDefaultClass(defaultClass);
     ns.addArkClass(defaultClass);
 }
-
-// function findIndicatedChild(node: NodeA, childType: string): NodeA | null {
-//     for (let child of node.children) {
-//         if (child.kind == childType) {
-//             return child;
-//         }
-//     }
-//     return null;
-// }
-
-// function processExportValAndFirstNode(node: NodeA, ns: ArkNamespace, isDefault: boolean): void {
-//     let exportClauseName: string = '';
-//     let exportClauseType: string = node.kind;
-//     let cld = findIndicatedChild(node, 'VariableDeclarationList');
-//     if (cld) {
-//         let c = findIndicatedChild(cld, 'SyntaxList');
-//         if (c) {
-//             let cc = findIndicatedChild(c, 'VariableDeclaration');
-//             if (cc) {
-//                 let ccc = findIndicatedChild(cc, 'Identifier');
-//                 if (ccc) {
-//                     exportClauseName = ccc.text;
-//                 }
-//             }
-//         }
-//     }
-//     let exportInfo = new ExportInfo();
-//     exportInfo.build(exportClauseName, exportClauseType, new LineColPosition(-1, -1));
-//     exportInfo.setDefault(isDefault);
-
-//     ns.addExportInfo(exportInfo);
-// }

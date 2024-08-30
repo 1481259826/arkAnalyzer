@@ -138,7 +138,6 @@ export class JsonPrinter extends Printer {
             typeParameters: field.getTypeParameters().map(type => this.serializeType(type)),
             questionToken: field.getQuestionToken(),
             exclamationToken: field.getExclamationToken(),
-            // initializer: this.serializeValue(field.getInitializer()),
         };
     }
 
@@ -341,12 +340,9 @@ export class JsonPrinter extends Printer {
     private serializeBasicBlock(block: BasicBlock): any {
         const successors = block.getSuccessors().map(successor => successor.getId());
         successors.sort((a, b) => a - b);
-        // const predecessors = block.getPredecessors().map(predecessor => predecessor.getId());
-        // predecessors.sort((a, b) => a - b);
         return {
             id: block.getId(),
             successors,
-            // predecessors,
             stmts: block.getStmts().map(stmt => this.serializeStmt(stmt)),
         };
     }

@@ -789,8 +789,6 @@ export class ArkPhiExpr extends AbstractExpr {
     private args: Local[];
     private argToBlock: Map<Local, BasicBlock>;
 
-    // private type:Type;
-
     constructor() {
         super();
         this.args = [];

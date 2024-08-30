@@ -144,7 +144,6 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
             } else if (ts.isPropertyAccessExpression(node.name.expression)) {
                 name = handlePropertyAccessExpression(node.name.expression);
             } else {
-                debugger;
                 logger.warn('Other method ComputedPropertyName found!');
             }
         } else {

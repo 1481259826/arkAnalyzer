@@ -288,24 +288,18 @@ export class CfgBuilder {
                 lastStatement = s;
                 break;
             } else if (ts.isBreakStatement(c)) {
-                // let brstm = new StatementBuilder('breakStatement', 'break;', c, scope.id);
-                // judgeLastType(brstm);
                 let p: ts.Node | null = c;
                 while (p) {
                     if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
                         const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
                         judgeLastType(lastLoopNextF);
                         lastLoopNextF.lasts.add(lastStatement);
-                        // brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
-                        // this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
                         return;
                     }
                     if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
                         const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
                         judgeLastType(lastSwitchExit);
                         lastSwitchExit.lasts.add(lastStatement);
-                        // brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
-                        // this.switchExitStack[this.switchExitStack.length - 1].lasts.add(brstm.next);
                         return;
                     }
                     p = p.parent;
@@ -507,7 +501,6 @@ export class CfgBuilder {
                     }
                     const catchStatement = new StatementBuilder('statement', catchOrNot.code, c.catchClause, catchOrNot.nextT.scopeID);
                     catchStatement.next = catchOrNot.nextT;
-                    // catchOrNot.nextT.lasts.add(catchStatement);
                     trystm.catchStatement = catchStatement;
                     catchStatement.lasts.add(trystm);
                     if (c.catchClause.variableDeclaration) {
@@ -854,7 +847,6 @@ export class CfgBuilder {
             mes += this.declaringClass?.getDeclaringArkFile().getName() + '.' + this.declaringClass.getName() + '.' + this.name;
         }
         mes += '\n' + stmt.code;
-        // console.log(mes)
         throw new textError(mes);
     }
 

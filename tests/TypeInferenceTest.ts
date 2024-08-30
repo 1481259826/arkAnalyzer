@@ -24,18 +24,12 @@ Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN);
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
-        // tests/resources/typeInference/multi_module/main_module
-        // out/ets2ts/applications_photos/common/src/main/ets/default/model/browser/photo
         const config_path = "tests\\resources\\typeInference\\ProjectTypeInferenceTestConfig.json";
-        // const config_path = "tests\\resources\\type\\TypeTestConfig.json";
-        // const config_path = "tests\\resources\\typeInference\\ohapps.json";
         let config: SceneConfig = new SceneConfig();
         config.buildFromJson(config_path);
-        // config.buildFromProjectDir("codeLab\\ArkTS2TSRes")
         const scene = new Scene();
         scene.buildBasicInfo(config);
         scene.buildScene4HarmonyProject();
-        // scene.buildSceneFromProjectDir(config);
         scene.collectProjectImportInfos();
         const creater = new DummyMainCreater(scene);
         creater.createDummyMain();
@@ -99,8 +93,6 @@ export class TypeInferenceTest {
                 for (const arkMethod of arkClass.getMethods()) {
                     logger.error('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
-                    // this.printStmts(body);
-
                 }
             }
         }
@@ -109,14 +101,10 @@ export class TypeInferenceTest {
     public testTypeInference(): void {
         let scene = this.buildScene();
         scene.inferTypes();
-        // this.printScene(scene);
     }
 }
 
 logger.error('type inference test start');
 let typeInferenceTest = new TypeInferenceTest();
-// typeInferenceTest.buildScene();
-// typeInferenceTest.testLocalTypes();
 typeInferenceTest.testTypeInference();
-// typeInferenceTest.testFunctionReturnType();
 logger.error('type inference test end\n');

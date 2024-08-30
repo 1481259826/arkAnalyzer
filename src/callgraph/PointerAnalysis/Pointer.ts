@@ -109,7 +109,6 @@ export class LocalPointer extends Pointer {
  */
 
 export class InstanceFieldPointer extends Pointer {
-    // private identifier: Value // 用于表示指针集的唯一归属
     private basePointerTarget: PointerTarget
     private fieldSignature: FieldSignature
 

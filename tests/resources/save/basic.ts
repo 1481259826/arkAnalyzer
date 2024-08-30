@@ -204,7 +204,7 @@ function deleteTest() {
     let bbb: number[] = x.b;
     delete x.a;
     delete bbb[0];
-    logger.info(x); // { b: [ undefined, 100 ] }
+    logger.info(x);
     delete x;
 }
 

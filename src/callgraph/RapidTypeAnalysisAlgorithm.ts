@@ -179,7 +179,6 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
         let callMethods: ArkMethod[] = []
 
         if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-            // logger.info("instanceInvoke:   "+invokeExpr.getMethodSignature().toString())
             let classCompleteType = invokeExpr.getBase().getType()
             if (classCompleteType instanceof ClassType) {
                 let extendedClasses = this.scene.getExtendedClasses(classCompleteType.getClassSignature())
@@ -198,7 +197,6 @@ export class RapidTypeAnalysisAlgorithm extends AbstractCallGraph {
                 }
             }
         } else if (invokeExpr instanceof ArkStaticInvokeExpr) {
-            // logger.info("static:   "+invokeExpr.getMethodSignature().toString())
             if (callName.includes('.')) {
                 // a.b()的静态调用
                 let lastDotIndex = callName.lastIndexOf('.')

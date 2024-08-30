@@ -92,7 +92,7 @@ export class SourceImportInfo extends SourceBase {
 
     public dump(): string {
         if (this.info.getImportType() === 'Identifier') {
-            // import fs from 'fs'
+            // sample: import fs from 'fs'
             this.printer
                 .writeIndent()
                 .writeLine(
@@ -101,7 +101,7 @@ export class SourceImportInfo extends SourceBase {
                     }';`
                 );
         } else if (this.info.getImportType() === 'NamedImports') {
-            // import {xxx} from './yyy'
+            // sample: import {xxx} from './yyy'
             if (this.info.getNameBeforeAs()) {
                 this.printer
                     .writeIndent()
@@ -120,7 +120,7 @@ export class SourceImportInfo extends SourceBase {
                     );
             }
         } else if (this.info.getImportType() === 'NamespaceImport') {
-            // import * as ts from 'ohos-typescript'
+            // sample: import * as ts from 'ohos-typescript'
             this.printer
                 .writeIndent()
                 .writeLine(
@@ -129,7 +129,7 @@ export class SourceImportInfo extends SourceBase {
                     }';`
                 );
         } else if (this.info.getImportType() == 'EqualsImport') {
-            // import mmmm = require('./xxx')
+            // sample: import mmmm = require('./xxx')
             this.printer
                 .writeIndent()
                 .writeLine(
@@ -138,7 +138,7 @@ export class SourceImportInfo extends SourceBase {
                     }');`
                 );
         } else {
-            // import '../xxx'
+            // sample: import '../xxx'
             this.printer
                 .writeIndent()
                 .writeLine(`import '${this.info.getImportFrom() as string}';`);
