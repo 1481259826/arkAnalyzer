@@ -63,17 +63,17 @@ const SourceBasicTest_CASE3_EXPECT = `export function listParameters(u: number, 
 `;
 
 const SourceBasicTest_CASE4_EXPECT = `configure({appenders: {console: {type: 'console', layout: {type: 'pattern', pattern: '[%d] [%p] [%z] [ArkAnalyzer] - %m'}}}, categories: {default: {appenders: ['console'], level: 'info', enableCallStack: false}}});
-let logger = getLogger();
-let someClass = class <Type> {
+const logger = getLogger();
+const someClass = class <Type> {
   content: Type;
   constructor(value: Type) {
     this.content = value;
   }
 };
-let m = new someClass('Hello, world');
-let iterator = await yieldTest();
+const m: someClass = new someClass('Hello, world');
+const iterator = await yieldTest();
 export let x = 1;
-export let soo = 123;
+export const soo = 123;
 forLoopTest();
 controlTest();
 deleteTest();

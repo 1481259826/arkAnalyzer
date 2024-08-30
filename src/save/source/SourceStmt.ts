@@ -44,6 +44,7 @@ import { SourceTransformer, TransformerContext } from './SourceTransformer';
 import { Origin_Component, Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
 
 const logger = Logger.getLogger();
+const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
 
 export interface StmtPrinterContext extends TransformerContext {
     getStmtReader(): StmtReader;
@@ -143,10 +144,12 @@ export class SourceAssignStmt extends SourceStmt {
     private rightOp: Value;
     private leftCode: string;
     private rightCode: string;
+    private leftTypeCode: string;
     private dumpType: AssignStmtDumpType;
 
     constructor(context: StmtPrinterContext, original: ArkAssignStmt) {
         super(context, original);
+        this.leftTypeCode = '';
     }
 
     public transfer2ts(): void {
@@ -195,6 +198,21 @@ export class SourceAssignStmt extends SourceStmt {
             this.setText(`${this.leftCode} = ${this.rightCode}`);
             this.dumpType = AssignStmtDumpType.TEMP_REPLACE;
         }
+
+        let leftOpType = this.leftOp.getType();
+        if (leftOpType instanceof ClassType) {
+            let name = leftOpType.getClassSignature().getClassName();
+            if (SourceUtils.isAnonymousClass(name)) {
+                this.leftTypeCode = 'any';
+            } else {
+                this.leftTypeCode = name;
+            }
+        } else {
+            this.leftTypeCode = this.transformer.typeToString(leftOpType);
+        }
+        if (IGNOR_TYPES.has(this.leftTypeCode)) {
+            this.leftTypeCode = '';
+        }
     }
 
     protected beforeDump(): void {
@@ -215,10 +233,15 @@ export class SourceAssignStmt extends SourceStmt {
                 if (this.context.isLocalDefined(this.leftOp)) {
                     this.setText(`${this.leftCode} = ${this.rightCode};`);
                 } else {
+                    let flag = this.leftOp.getConstFlag() ? 'const': 'let';
                     if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
-                        this.setText(`export let ${this.leftCode} = ${this.rightCode};`);
+                        this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
                     } else {
-                        this.setText(`let ${this.leftCode} = ${this.rightCode};`);
+                        if (this.leftTypeCode.length > 0) {
+                            this.setText(`${flag} ${this.leftCode}: ${this.leftTypeCode} = ${this.rightCode};`);
+                        } else {
+                            this.setText(`${flag} ${this.leftCode} = ${this.rightCode};`);
+                        }
                     }
 
                     this.context.defineLocal(this.leftOp);
@@ -271,7 +294,9 @@ export class SourceAssignStmt extends SourceStmt {
                     if (originType == Origin_Component) {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
                     } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
-                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
+                        this.rightCode = `${this.transformer.literalObjectToString(
+                            this.rightOp.getType() as ClassType
+                        )}`;
                     } else {
                         this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
                             ', '

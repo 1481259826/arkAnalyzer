@@ -23,7 +23,7 @@ const CASE1_EXPECT = `enum SceneBuildStage {
   METHOD_DONE = BUILD_INIT | CLASS_DONE,
   ALL = 'all'.length,
 }
-let ALL_BUILD_STAGE = [SceneBuildStage.BUILD_INIT, SceneBuildStage.CLASS_DONE, SceneBuildStage.METHOD_DONE];
+const ALL_BUILD_STAGE: any[] = [SceneBuildStage.BUILD_INIT, SceneBuildStage.CLASS_DONE, SceneBuildStage.METHOD_DONE];
 export enum ValueTag {
   TAINT,
 }
@@ -42,7 +42,7 @@ declare enum ViewTreeNodeType {
 }
 let systemComponent = ViewTreeNodeType.SystemComponent;
 let nameOfsystemComponent = ViewTreeNodeType.systemComponent;
-let obj = {x: 1};
+let obj: Object = {x: 1};
 for (let [key, value] of Object.entries(ViewTreeNodeType)) {
   obj.key = value;
 }

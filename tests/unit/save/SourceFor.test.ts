@@ -17,11 +17,11 @@ import { PrinterBuilder, Scene, SceneConfig, SourceFilePrinter } from '../../../
 import { describe, expect, it } from 'vitest';
 import path from 'path';
 
-const CASE1_EXPECT = `let someArray = [1, 'string', false];
+const CASE1_EXPECT = `let someArray: (number | string | boolean)[] = [1, 'string', false];
 for (let entry of someArray) {
   console.info(entry);
 }
-let list = [4, 5, 6];
+let list: number[] = [4, 5, 6];
 for (let i of list) {
   console.info(i);
 }
@@ -31,7 +31,7 @@ for (let i of list) {
 list.forEach((i: any) => {
   console.info(i);
 });
-let i = 0;
+let i: number = 0;
 for (; i < list.length; i = i + 1) {
   if (i == 0) {
     continue;

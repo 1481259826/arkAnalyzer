@@ -20,7 +20,7 @@ import path from 'path';
 const CASE1_EXPECT = `function identity<T>(arg: T): T {
   return arg;
 }
-let myIdentity = identity;
+let myIdentity: (arg: T) => T  = identity;
 let output = identity('myString');
 class GenericNumber<T> {
   zeroValue: T;
@@ -53,7 +53,7 @@ class Lion extends Animal1 {
 function createInstance<A>(c: ConstructorType): A {
   return new c();
 }
-let l = new Lion();
+let l: Lion = new Lion();
 logger.info(l.keeper);
 `;
 
