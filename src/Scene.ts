@@ -57,7 +57,7 @@ enum SceneBuildStage {
 export class Scene {
     private projectName: string = '';
     private projectFiles: string[] = [];
-    private realProjectDir: string;
+    private realProjectDir: string = '';
 
     private moduleScenesMap: Map<string, ModuleScene> = new Map();
     private modulePath2NameMap: Map<string, string> = new Map<string, string>();
@@ -104,7 +104,14 @@ export class Scene {
 
         const buildProfile = path.join(this.realProjectDir, './build-profile.json5');
         if (fs.existsSync(buildProfile)) {
-            const buildProfileJson = parseJsonText(fs.readFileSync(buildProfile, 'utf-8'));
+            let configurationsText: string;
+            try {
+                configurationsText = fs.readFileSync(buildProfile, 'utf-8')
+            } catch (error) {
+                logger.error(`Error reading file: ${error}`);
+                return;
+            }
+            const buildProfileJson = parseJsonText(configurationsText);
             const modules = buildProfileJson.modules;
             if (modules instanceof Array) {
                 modules.forEach((module) => {
@@ -829,7 +836,7 @@ export class Scene {
 }
 
 export class ModuleScene {
-    private projectScene: Scene;
+    private projectScene: Scene = new Scene();
     private moduleName: string = '';
     private modulePath: string = '';
 
