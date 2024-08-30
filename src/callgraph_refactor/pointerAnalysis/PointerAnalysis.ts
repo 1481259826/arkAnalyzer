@@ -311,7 +311,7 @@ export class PointerAnalysis extends AbstractAnalysis{
             })
         })
         this.pagBuilder.resetUpdatedNodes()
-        this.pagBuilder.printUnprocessedCallSites(processedCallSites)
+        this.pagBuilder.handleUnprocessedCallSites(processedCallSites)
         
         changed = this.pagBuilder.handleReachable() || changed;
         this.initWorklist();
@@ -367,8 +367,7 @@ export class PointerAnalysis extends AbstractAnalysis{
     }
 
     public mayAlias(leftValue: Value, rightValue: Value): boolean {
-        // TODO: finish mayAlias
-        return false
+        return !this.noAlias(leftValue, rightValue)
     }
 
     public getRelatedNodes(value: Value): Set<Value> {

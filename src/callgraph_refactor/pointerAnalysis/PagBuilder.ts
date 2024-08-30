@@ -207,6 +207,7 @@ export class PagBuilder {
 
         this.addEdgesFromFuncPag(funcPag, cid);
         this.addCallsEdgesFromFuncPag(funcPag, cid);
+        this.addDynamicCallSite(funcPag);
         this.handledFunc.add(`${cid}-${funcID}`)
     }
 
@@ -258,13 +259,17 @@ export class PagBuilder {
             }
         }
 
+        return true;
+    }
+
+    public addDynamicCallSite(funcPag: FuncPag) {
         // add dyn callsite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
             let base = (cs.callStmt.getInvokeExpr()! as ArkInstanceInvokeExpr).getBase()
             // TODO: check base under different cid
             let baseNodeIDs = this.pag.getNodesByValue(base)
             if (!baseNodeIDs) {
-                logger.error(`[build dynamic call site] can not handle call site with base ${base.toString()}`)
+                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`)
                 continue
             }
             for (let nodeID of baseNodeIDs!.values()) {
@@ -276,8 +281,6 @@ export class PagBuilder {
                 node.addRelatedDynCallSite(cs)
             }
         }
-
-        return true;
     }
 
     public addDynamicCallEdge(cs: DynCallSite, baseClassPTNode: NodeID, cid: ContextID): NodeID[] {
@@ -408,7 +411,7 @@ export class PagBuilder {
         return srcNodes;
     }
 
-    public printUnprocessedCallSites(processedCallSites: Set<DynCallSite>) {
+    public handleUnprocessedCallSites(processedCallSites: Set<DynCallSite>) {
         for (let funcID of this.funcHandledThisRound) {
             let funcPag = this.funcPags.get(funcID)!
             let callSites = funcPag.getDynamicCallSites()
@@ -423,7 +426,7 @@ export class PagBuilder {
                 // Get PAG nodes for this base's local
                 let ctx2NdMap = this.pag.getNodesByValue(base);
                 if (ctx2NdMap) {
-                    for (let [cid, nodeId] of ctx2NdMap.entries()) {
+                    for (let [cid] of ctx2NdMap.entries()) {
                         this.handleUnkownDynamicCall(cs, cid);
                     }
                 }
