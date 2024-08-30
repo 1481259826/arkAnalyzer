@@ -785,7 +785,10 @@ export class Scene {
                         abilityEntryMethods.push(method);
                     }
                 }
-                cls = cls.getSuperClass();
+                const superClass = cls.getSuperClass();
+                if (superClass) {
+                    cls = superClass;
+                }
             }
             entryMethods.push(...abilityEntryMethods);
         }

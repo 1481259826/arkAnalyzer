@@ -218,8 +218,9 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         this.type = ViewTreeNodeType.Builder;
         this.signature = builder.getSignature();
         this.classSignature = this.signature;
-        if (builder.getViewTree().getRoot()) {
-            for (let child of builder.getViewTree().getRoot().children) {
+        const root = builder.getViewTree()?.getRoot();
+        if (root) {
+            for (let child of root.children) {
                 this.children.push(child as ViewTreeNodeImpl);
             }
         } else {

@@ -254,7 +254,7 @@ describe('builder Test', () => {
             return;
         }
 
-        let vt = method.getViewTree();
+        let vt = method.getViewTree()!;
         let root = vt.getRoot();
         expectViewTree(root, Case_moreRootBuilderTest_Expect_ViewTree);
     });
@@ -262,7 +262,7 @@ describe('builder Test', () => {
     it('test ComplexStateValueTest ', async () => {
         let arkFile = scene.getFiles().find((file) => file.getName() == 'BuilderTest.ets');
         let arkClass = arkFile?.getClassWithName('ComplexStateValueTest');
-        let vt = arkClass?.getViewTree();
+        let vt = arkClass?.getViewTree()!;
         if (!vt) {
             assert.isDefined(vt);
             return;
@@ -345,7 +345,7 @@ describe('normal Test', () => {
             assert.isNotNull(arkClass);
             return;
         }
-        let vt = await arkClass.getViewTree();
+        let vt = await arkClass.getViewTree()!;
         let type = vt.getClassFieldType('mComplexToggleLayout');
         expect((type as Decorator).getKind()).equals('StorageLink');
         let stateValues = vt.getStateValues();
