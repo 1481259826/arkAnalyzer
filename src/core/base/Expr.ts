@@ -43,6 +43,8 @@ import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
+import { ImportInfo } from "../model/ArkImport";
+import { Constant } from "./Constant";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
 
@@ -267,6 +269,18 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
     public inferType(arkClass: ArkClass): ArkStaticInvokeExpr {
         this.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkClass));
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
+        if (methodName === 'import' && this.getArgs()[0] instanceof Constant) {
+            const importInfo = new ImportInfo();
+            importInfo.setNameBeforeAs('*')
+            importInfo.setImportClauseName('t');
+            importInfo.setImportFrom((this.getArgs()[0] as Constant).getValue());
+            importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
+            const type = TypeInference.parseArkExport2Type(importInfo.getLazyExportInfo()?.getArkExport());
+            if (type) {
+                this.getMethodSignature().getMethodSubSignature().setReturnType(type);
+            }
+            return this;
+        }
         let method;
         const arkExport = ModelUtils.getStaticMethodWithName(methodName, arkClass)
             ?? ModelUtils.getArkExportInImportInfoWithName(methodName, arkClass.getDeclaringArkFile());

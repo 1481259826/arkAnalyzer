@@ -164,7 +164,8 @@ export class ArkFile {
     }
 
     public getExportInfoBy(name: string): ExportInfo | null {
-        const exportInfo = this.exportInfoMap.get(name);
+        const exportInfo = name === 'default' ?
+            this.getExportInfos().find(p => p.isDefault()) : this.exportInfoMap.get(name);
         if (exportInfo) {
             return setTypeForExportInfo(exportInfo);
         }

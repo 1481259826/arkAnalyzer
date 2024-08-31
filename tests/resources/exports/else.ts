@@ -33,5 +33,13 @@ let calendar = i18n.getCalendar(i18n.getSystemLocale());
 calendar.getTimeZone();
 
 export default class dfs {
+    public async dynamicImport() {
+        let a = await import('./exportSample');
+        const z = a.z;
+        const default1 = a.default;
+        const b = a.b;
+        let f = a.testing;
+        const space = a.MyNameSpace;
+    }
 
 }
