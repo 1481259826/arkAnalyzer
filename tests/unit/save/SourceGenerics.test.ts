@@ -55,6 +55,26 @@ function createInstance<A>(c: ConstructorType): A {
 }
 let l: Lion = new Lion();
 logger.info(l.keeper);
+declare interface BreakPointTypeOption<T> {
+  sm?: T;
+  md?: T;
+  lg?: T;
+}
+export class BreakpointType<T> {
+  options: BreakPointTypeOption;
+  constructor(option: BreakPointTypeOption<T>) {
+    this.options = option;
+  }
+  getValue(currentPoint: string): T {
+    if (currentPoint === 'sm') {
+      return this.options.sm as T;
+    }
+    if (currentPoint === 'md') {
+      return this.options.md as T;
+    }
+    return this.options.lg as T;
+  }
+}
 `;
 
 const CASE2_EXPECT = `class GenericNumber<T> {
@@ -70,6 +90,8 @@ describe('SourceGenericsTest', () => {
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
     let arkfile = scene.getFiles().find((value) => {
         return value.getName().endsWith('generics.ts');
     });

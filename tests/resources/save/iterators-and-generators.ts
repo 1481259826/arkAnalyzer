@@ -35,9 +35,11 @@ list.forEach(i => {
 
 for (let i = 0; i < list.length; i++) {
     if (i == 0) {
+        console.log('continue');
         continue;
     }
     if (i == 2) {
+        console.log('break');
         break;
     }
     console.info(list[i]);

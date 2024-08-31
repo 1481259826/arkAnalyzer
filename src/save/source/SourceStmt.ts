@@ -695,7 +695,7 @@ export class SourceDoWhileStmt extends SourceWhileStmt {
 }
 
 export class SourceElseStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+    constructor(context: StmtPrinterContext, original: Stmt) {
         super(context, original);
     }
 

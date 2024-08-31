@@ -19,7 +19,7 @@ function identity<T>(arg: T): T {
 let myIdentity: <T>(arg: T) => T = identity;
 
 // TODO: <string> lost
-let output = identity<string>("myString");
+let output = identity<string>('myString');
 
 class GenericNumber<T> {
     zeroValue: T;
@@ -65,4 +65,26 @@ function createInstance<A extends Animal1>(c: new () => A): A {
 let l = new Lion();
 logger.info(l.keeper);
 
+declare interface BreakPointTypeOption<T> {
+    sm?: T;
+    md?: T;
+    lg?: T;
+}
 
+export class BreakpointType<T> {
+    options: BreakPointTypeOption<T>;
+
+    constructor(option: BreakPointTypeOption<T>) {
+        this.options = option;
+    }
+
+    getValue(currentPoint: string): T {
+        if (currentPoint === 'sm') {
+            return this.options.sm as T;
+        } else if (currentPoint === 'md') {
+            return this.options.md as T;
+        } else {
+            return this.options.lg as T;
+        }
+    }
+}
