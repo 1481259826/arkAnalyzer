@@ -13,21 +13,40 @@
  * limitations under the License.
  */
 
-namespace FnPtrTest1 {
-    function testlocal(x: any) {
-        let a = x;
-        let b = a;
+namespace AnoTest {
+
+    class Fru { }
+
+    class Foo {
+        fmap: Set<Fru> = new Set();
+
+        fooFun() {
+            this.fmap.forEach(elem => {
+                gfun(elem);
+            })
+        }
+
+        handleNum(nu: number) {
+            return nu + 1;
+        }
     }
 
-    function foo(f: (x: any) => number): void {
-        let a = () => {} 
-        f(a);
-        let g = f;
-        g(2)
+    function gfun(fru: Fru) {
+        return fru;
+    }
+
+    function getArr(a: number[]) {
+        return a;
     }
 
     function main() {
-        const c = (x: any): number => x(2);
-        foo(c);
+        let foo = new Foo();
+        foo.fooFun();
+
+        getArr([1,2]).forEach(n => {
+            foo.handleNum(n);
+            let f2 = new Foo();
+            f2.handleNum(n);
+        })
     }
 }
