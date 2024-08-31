@@ -35,26 +35,6 @@ function loggingIdentity<T>(arg: T): T {
   logger.info(arg.length);
   return arg;
 }
-class BeeKeeper {
-  hasMask: boolean;
-}
-class ZooKeeper {
-  nametag: string;
-}
-class Animal1 {
-  numLegs: number;
-}
-class Bee extends Animal1 {
-  keeper: BeeKeeper;
-}
-class Lion extends Animal1 {
-  keeper: ZooKeeper;
-}
-function createInstance<A>(c: ConstructorType): A {
-  return new c();
-}
-let l: Lion = new Lion();
-logger.info(l.keeper);
 declare interface BreakPointTypeOption<T> {
   sm?: T;
   md?: T;
