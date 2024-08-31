@@ -19,7 +19,7 @@ import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkSwitchStmt, Stmt } from '..
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import { ArkBody } from '../../core/model/ArkBody';
 import { ArkMethod } from '../../core/model/ArkMethod';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import {
     SourceBreakStmt,
@@ -44,7 +44,7 @@ import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ModelUtils } from '../../core/common/ModelUtils';
 import { SourceUtils } from './SourceUtils';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
 
 export class SourceBody implements StmtPrinterContext {
     protected printer: ArkCodeBuffer;

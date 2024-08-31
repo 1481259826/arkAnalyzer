@@ -15,10 +15,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import Logger from './utils/logger';
+import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { getAllFiles } from './utils/getAllFiles';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Config');
 
 export interface Sdk {
     name: string;

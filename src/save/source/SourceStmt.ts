@@ -36,7 +36,7 @@ import {
 import { ClassType, Type } from '../../core/base/Type';
 import { Value } from '../../core/base/Value';
 import { BasicBlock } from '../../core/graph/BasicBlock';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
@@ -44,7 +44,7 @@ import { SourceTransformer, TransformerContext } from './SourceTransformer';
 import { Origin_Component, Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
 
 export interface StmtPrinterContext extends TransformerContext {

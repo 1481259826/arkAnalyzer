@@ -22,10 +22,10 @@ import {
     PointerTargetPair,
     StaticFieldPointer,
 } from './Pointer';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FieldSignature } from '../../core/model/ArkSignature';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PointerFlowGraph');
 
 export class PointerFlowGraph {
     private pointerSet: Set<Pointer>

@@ -29,11 +29,11 @@ import {
     StringType,
     UnionType,
 } from '../../src';
-import Logger, { LOG_LEVEL } from '../../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../../src/utils/logger';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'InferArrayTest');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 describe("Infer Array Test", () => {
 

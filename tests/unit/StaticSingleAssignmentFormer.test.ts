@@ -17,11 +17,11 @@ import { describe, it } from 'vitest';
 import { Scene, SceneConfig } from '../../src';
 import path from 'path';
 import { StaticSingleAssignmentFormer } from '../../src/transformer/StaticSingleAssignmentFormer';
-import Logger, { LOG_LEVEL } from '../../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../../src/utils/logger';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'StaticSingleAssignmentFormer');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 describe('StaticSingleAssignmentFormer Test', () => {
     let config: SceneConfig = new SceneConfig();

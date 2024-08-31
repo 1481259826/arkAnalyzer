@@ -20,12 +20,12 @@ import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
 import ts from 'ohos-typescript';
 import { ArkNamespace } from '../ArkNamespace';
 import { buildModifiers } from './builderUtils';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { buildExportAssignment, buildExportDeclaration, buildExportInfo } from './ArkExportBuilder';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkNamespaceBuilder');
 
 export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance: ArkFile | ArkNamespace, ns: ArkNamespace, sourceFile: ts.SourceFile) {
     // ns name

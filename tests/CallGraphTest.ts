@@ -17,7 +17,7 @@ import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { MethodSignature } from '../src/core/model/ArkSignature';
 import { printCallGraphDetails } from '../src/utils/callGraphUtils';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 
 let config: SceneConfig = new SceneConfig()
 config.buildFromProjectDir('tests/resources/callgraph/benchMarks/test')

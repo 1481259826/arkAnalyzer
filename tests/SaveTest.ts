@@ -17,9 +17,11 @@ import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { PrinterBuilder } from '../src/save/PrinterBuilder';
 import { join } from 'path';
-import Logger from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 
-const logger = Logger.getLogger();
+const logPath = 'out/ArkAnalyzer.log';
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SceneTest');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 function testAppProjectSave() {
     let config: SceneConfig = new SceneConfig();

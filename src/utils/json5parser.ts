@@ -15,9 +15,9 @@
 
 import * as ts from 'ohos-typescript';
 import * as fs from 'fs';
-import Logger from './logger';
+import Logger, { LOG_MODULE_TYPE } from './logger';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'json5parser');
 
 export function fetchDependenciesFromFile(filePath: string): { [k: string]: unknown } {
     if (!fs.existsSync(filePath)) {
