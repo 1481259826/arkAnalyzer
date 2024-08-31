@@ -13,24 +13,35 @@
  * limitations under the License.
  */
 
-namespace static_call {
-    class StaticCall {
-        static foo(n: number, o: Object): Object {
-            if (n > 0) {
-                return StaticCall.bar(n, o);
-            }
-            return o;
-        }
-    
-        static bar(n: number, o: Object): Object {
-            return StaticCall.foo(n - 1, o); // 注意，这里使用 n - 1 而不是 n-- 来避免可能的递归调用中的副作用
-        }
-    }
-    
-    function main(): void {
-        const o = StaticCall.foo(100, new Object());
+abstract class Animal {
+    public sound(): void {}
+}
+
+class Dog extends Animal {
+    public sound(): void {
+        let cat = new Cat()
+        cat.sound()
     }
 }
 
+class Cat extends Animal {
+    public sound(): void {
+        
+    }
+}
 
+class Pig extends Animal {
+    public sound(): void {
+        
+    }
+}
 
+function makeSound(animal: Animal) {
+    animal.sound()
+}
+
+function main() {
+    // let dog = new Dog()
+    // dog.sound()
+    makeSound(new Dog())
+}

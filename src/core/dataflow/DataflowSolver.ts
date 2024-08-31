@@ -23,6 +23,9 @@ import { ArkMethod } from '../model/ArkMethod';
 import { DataflowProblem, FlowFunction } from './DataflowProblem';
 import { PathEdge, PathEdgePoint } from './Edge';
 import { BasicBlock } from '../graph/BasicBlock';
+import { CallGraph } from '../../callgraph_refactor/model/CallGraph';
+import { CallGraphBuilder } from '../../callgraph_refactor/model/builder/CallGraphBuilder';
+import { ClassHierarchyAnalysis } from '../../callgraph_refactor/algorithm/ClassHierarchyAnalysis';
 
 /*
 this program is roughly an implementation of the paper: Practical Extensions to the IFDS Algorithm.
@@ -45,7 +48,7 @@ export abstract class DataflowSolver<D> {
     private endSummary: Map<PathEdgePoint<D>, Set<PathEdgePoint<D>>>;
     private summaryEdge: Set<CallToReturnCacheEdge<D>>; // summaryEdge不是加速一个函数内多次调用同一个函数，而是加速多次调用同一个函数f时，f内的函数调用
     private scene: Scene;
-    private CHA: ClassHierarchyAnalysisAlgorithm;
+    private CHA: ClassHierarchyAnalysis;
     private stmtNexts: Map<Stmt, Set<Stmt>>;
     private laterEdges: Set<PathEdge<D>> = new Set();
 
@@ -87,7 +90,11 @@ export abstract class DataflowSolver<D> {
         this.pathEdgeSet.add(edge);
 
         // build CHA
-        this.CHA = this.scene.makeCallGraphCHA([this.problem.getEntryMethod().getSignature()]) as ClassHierarchyAnalysisAlgorithm;
+        let cg = new CallGraph(this.scene)
+        let cgBuilder = new CallGraphBuilder(cg, this.scene)
+        cgBuilder.buildClassHierarchyCallGraph([this.problem.getEntryMethod().getSignature()])
+        this.CHA = new ClassHierarchyAnalysis(this.scene, cg)
+        // this.CHA = this.scene.makeCallGraphCHA([this.problem.getEntryMethod().getSignature()]) as ClassHierarchyAnalysisAlgorithm;
         this.buildStmtMap();
 
         return;
@@ -127,10 +134,12 @@ export abstract class DataflowSolver<D> {
     }
 
     protected getAllCalleeMethods(callNode: ArkInvokeStmt): Set<ArkMethod> {
-        const methodSignatures = this.CHA.resolveCall(this.problem.getEntryMethod().getSignature(), callNode);
+        // const methodSignatures = this.CHA.resolveCall(this.problem.getEntryMethod().getSignature(), callNode);
+        const callSites = this.CHA.resolveCall(
+            this.CHA.getCallGraph().getCallGraphNodeByMethod(this.problem.getEntryMethod().getSignature()).getID(), callNode);
         const methods: Set<ArkMethod> = new Set();
-        for (const methodSignature of methodSignatures) {
-            const method = this.scene.getMethod(methodSignature);
+        for (const callSite of callSites) {
+            const method = this.scene.getMethod(this.CHA.getCallGraph().getMethodByFuncID(callSite.calleeFuncID)!);
             if (method) {
                 methods.add(method);
             }

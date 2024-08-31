@@ -84,7 +84,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     subtract(other: this): boolean {
         let changed = false;
         for (const elem of other.pts) {
-            changed = changed || this.remove(elem);
+            changed = this.remove(elem) || changed;
         }
 
         return changed;

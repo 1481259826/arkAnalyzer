@@ -29,7 +29,7 @@ import { ArrayType, ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PtsSet } from './PtsDS';
 import { ContextID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagNode, PagThisRefNode, PagNewExprNode, PagLocalNode } from './Pag';
 import { PAGStat } from '../common/Statistics';
 
 const logger = Logger.getLogger();
@@ -55,12 +55,12 @@ export class PagBuilder {
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
-    private dynamicCallSitesMap: Map<FuncID, Set<DynCallSite>> = new Map();
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     private funcHandledThisRound: Set<FuncID> = new Set();
+    private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -166,7 +166,7 @@ export class PagBuilder {
                 } else if (inkExpr instanceof ArkInstanceInvokeExpr) {
                     let ptcs = this.cg.getDynCallsiteByStmt(stmt);
                     if (ptcs) {
-                        this.addToDynamicCallSite(funcID, ptcs);
+                        this.addToDynamicCallSite(fpag, ptcs);
                     }
                 }
             } else if (stmt instanceof ArkInvokeStmt) {
@@ -181,7 +181,7 @@ export class PagBuilder {
 
                 let dycs = this.cg.getDynCallsiteByStmt(stmt);
                 if (dycs) {
-                    this.addToDynamicCallSite(funcID, dycs);
+                    this.addToDynamicCallSite(fpag, dycs);
                 } else {
                     throw new Error('Can not find callsite by stmt');
                 }
@@ -234,10 +234,6 @@ export class PagBuilder {
 
     /// add Copy edges interprocedural
     public addCallsEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
-        if (funcPag.getNormalCallSites() == undefined) {
-            return false;
-        }
-
         for (let cs of funcPag.getNormalCallSites()) {
             let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
             this.addStaticPagCallEdge(cs, cid, calleeCid);
@@ -259,6 +255,25 @@ export class PagBuilder {
                 // }
                 
                 this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+            }
+        }
+
+        // add dyn callsite in funcpag to base node
+        for (let cs of funcPag.getDynamicCallSites()) {
+            let base = (cs.callStmt.getInvokeExpr()! as ArkInstanceInvokeExpr).getBase()
+            // TODO: check base under different cid
+            let baseNodeIDs = this.pag.getNodesByValue(base)
+            if (!baseNodeIDs) {
+                logger.error(`[build dynamic call site] can not handle call site with base ${base.toString()}`)
+                continue
+            }
+            for (let nodeID of baseNodeIDs!.values()) {
+                let node = this.pag.getNode(nodeID)
+                if (!(node instanceof PagLocalNode)) {
+                    continue
+                }
+
+                node.addRelatedDynCallSite(cs)
             }
         }
 
@@ -334,11 +349,26 @@ export class PagBuilder {
         return srcNodes;
     }
 
+    public addUpdatedNode(nodeID: NodeID, diffPT: PtsSet<NodeID>) {
+        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new PtsSet()
+        updatedNode.union(diffPT)
+        this.updatedNodesThisRound.set(nodeID, updatedNode)
+    }
+
+    public getUpdatedNodes() {
+        return this.updatedNodesThisRound
+    }
+
+    public resetUpdatedNodes() {
+        this.updatedNodesThisRound.clear()
+    }
+
     public handleUnkownDynamicCall(cs: DynCallSite, cid: ContextID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
         let ivkExpr = cs.callStmt.getInvokeExpr() as AbstractInvokeExpr;
-        logger.warn( "Handling unknown dyn call : \n  " + callerNode.getMethod().toString() 
+        let calleeName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        logger.warn( "Handling unknown dyn call site : \n  " + callerNode.getMethod().toString() 
             + '\n  --> ' + ivkExpr.toString() + '\n  CID: ' + cid );
 
         let callees: ArkMethod[] = []
@@ -366,6 +396,7 @@ export class PagBuilder {
             if (!callerNode) {
                 throw new Error("Can not get caller method node");
             }
+            logger.warn(`\tAdd call edge of unknown call ${callee.getSignature().toString()}`)
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
@@ -375,6 +406,29 @@ export class PagBuilder {
             }
         })
         return srcNodes;
+    }
+
+    public printUnprocessedCallSites(processedCallSites: Set<DynCallSite>) {
+        for (let funcID of this.funcHandledThisRound) {
+            let funcPag = this.funcPags.get(funcID)!
+            let callSites = funcPag.getDynamicCallSites()
+
+            const diffCallSites = new Set(Array.from(callSites).filter(item => !processedCallSites.has(item)))
+            diffCallSites.forEach((cs) => {
+                let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+                // Get local of base class
+                let base = ivkExpr.getBase();
+                // TODO: remove this after multiple this local fixed
+                base = this.getRealThisLocal(base, cs.callerFuncID)
+                // Get PAG nodes for this base's local
+                let ctx2NdMap = this.pag.getNodesByValue(base);
+                if (ctx2NdMap) {
+                    for (let [cid, nodeId] of ctx2NdMap.entries()) {
+                        this.handleUnkownDynamicCall(cs, cid);
+                    }
+                }
+            })
+        }
     }
 
     private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
@@ -683,45 +737,22 @@ export class PagBuilder {
         }
         return false;
     }
-    
-    public addToDynamicCallSite(funcId: FuncID, cs: DynCallSite): void {
-        this.dynamicCallSitesMap = this.dynamicCallSitesMap ?? new Map();
-        let csSet: Set<DynCallSite>;
-        if (this.dynamicCallSitesMap.has(funcId)) {
-            csSet = this.dynamicCallSitesMap.get(funcId)!;
-        } else {
-            csSet = new Set();
-            this.dynamicCallSitesMap.set(funcId, csSet);
-        }
-        csSet.add(cs);
+
+    public addToDynamicCallSite(funcPag: FuncPag, cs: DynCallSite): void {
+        funcPag.addDynamicCallSite(cs);
         this.pagStat.numDynamicCall++;
 
         logger.trace("[add dynamic callsite] "+cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
     }
 
-    public getDynamicCallSites(): Set<DynCallSite> {
-        let tempSet = new Set<DynCallSite>();
-        for(let funcId of this.funcHandledThisRound) {
-            this.dynamicCallSitesMap.get(funcId)?.forEach(s => {
-                if(tempSet.has(s)) {
-                    return;
-                }
-                tempSet.add(s);
-            });
-        }
-
-        return tempSet
-    }
-
-    public clearDynamicCallSiteSet() {
-        if (this.dynamicCallSitesMap) {
-            this.dynamicCallSitesMap.clear();
-        }
-    }
-
     public setPtForNode(node: NodeID, pts: PtsSet<NodeID> | undefined): void {
         if (!pts) {
             return;
+        }
+
+        for (let pt of pts) {
+            let heapObjNode = this.pag.getNode(pt) as PagNewExprNode;
+            heapObjNode.addRelatedNodes(node);
         }
 
         (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
