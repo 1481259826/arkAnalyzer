@@ -35,6 +35,8 @@ class User extends Account implements Updatable, Serializable {
     name!: string;
     #attributes: Map<any, any>;
     roles = ['user'];
+    selectIndex: number = 0;
+    role: string = this.roles[this.selectIndex];
     readonly createdAt = new Date();
 
     constructor(id: string, name: string) {

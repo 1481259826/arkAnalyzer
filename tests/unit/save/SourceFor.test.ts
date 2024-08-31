@@ -34,13 +34,13 @@ list.forEach((i: any) => {
 let i: number = 0;
 for (; i < list.length; i = i + 1) {
   if (i == 0) {
-    continue;
+    console.log('continue');
   } else {
     if (i == 2) {
+      console.log('break');
       break;
-    } else {
-      console.info(list[i]);
     }
+    console.info(list[i]);
   }
 }
 let pets = new Set(['Cat', 'Dog', 'Hamster']);
@@ -54,37 +54,31 @@ i = 0;
 do {
   if (i == 0) {
     continue;
-  } else {
-    if (i == 2) {
-      break;
-    } else {
-      console.info(list[i]);
-    }
   }
+  if (i == 2) {
+    break;
+  }
+  console.info(list[i]);
 } while (i++ < list.length)
 i = list.length;
 while (i-- < list.length) {
   if (i == 0) {
     continue;
-  } else {
-    if (i == 2) {
-      break;
-    } else {
-      console.info(list[i]);
-    }
   }
+  if (i == 2) {
+    break;
+  }
+  console.info(list[i]);
 }
 i = list.length;
 while (i-- < list.length) {
   if (i == 0) {
     continue;
-  } else {
-    if (i == 2) {
-      break;
-    } else {
-      console.info(list[i]);
-    }
   }
+  if (i == 2) {
+    break;
+  }
+  console.info(list[i]);
 }
 `;
 

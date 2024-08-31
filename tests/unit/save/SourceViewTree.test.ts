@@ -31,7 +31,6 @@ struct HelloGrandsonComponent {
   static build(a: number) {
     if (a != 0) {
       return 1;
-    } else {
     }
   }
 }
@@ -258,15 +257,14 @@ export default class SongItemBuilder {
     this.songItem = songItem;
     if (!this.context != 0) {
       return this.songItem;
-    } else {
-      let rawfileFd = await this.context.resourceManager.getRawFd(songItem.src).catch((error: BusinessError) => {
+    }
+    let rawfileFd = await this.context.resourceManager.getRawFd(songItem.src).catch((error: BusinessError) => {
       Logger.error('resourceManager error code ' + error.code + ' message ' + error.message + '');
     });
-      if (rawfileFd != 0) {
-        this.realUrl = rawfileFd;
-      } else {
-        Logger.error('get rawfileFd failed');
-      }
+    if (rawfileFd != 0) {
+      this.realUrl = rawfileFd;
+    } else {
+      Logger.error('get rawfileFd failed');
     }
     Logger.info('MediaAssetBuilder build realUrl:' + this.realUrl);
     return this.songItem;

@@ -65,7 +65,6 @@ export default class ZipCodeValidator implements StringValidator {
     return s.length === 5 && numberRegexp.test(s);
   }
 }
-export {ZipCodeValidator};
 export {ZipCodeValidator as mainValidator};
 export class ParseIntBasedZipCodeValidator {
   isAcceptable(s: string) {
@@ -84,7 +83,9 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   displayName?: boolean;
   name!: string;
   private attributes: Map<any, any>;
-  roles = ['user'];
+  roles: string[] = ['user'];
+  selectIndex: number = 0;
+  role: string = this.roles[this.selectIndex];
   readonly createdAt = new Date();
   constructor(id: string, name: string) {
     super(id);
@@ -93,7 +94,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   setName(name: string) {
     this.name = name;
   }
-  verifyName = (name: string) => {
+  verifyName: (name: string) =>  = (name: string) => {
   };
   sync(cb: (result: string) => void ): void {
   }
@@ -124,6 +125,7 @@ describe('SourceClassesTest', () => {
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
 
     it('case1: whole file', () => {
         let arkfile = scene.getFiles().find((value) => {
