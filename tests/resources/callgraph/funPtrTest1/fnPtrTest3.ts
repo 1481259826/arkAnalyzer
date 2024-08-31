@@ -20,9 +20,17 @@ namespace FnPtrTest3 {
     }
 
     class MyStruct implements Trait{
+        private s: string;
+        constructor(i: string) {
+            this.s = i;
+        }
+
         static foo() { }
-        bar() { }
+        bar() {
+            console.log(`in bar(), this.s is ${this.s}`)
+         }
         gen<T>(t: T): T {
+            console.log(`in gen(${t}) `)
             return t;
         }
 
@@ -48,7 +56,7 @@ namespace FnPtrTest3 {
         let fp3: () => void = MyStruct.foo;
         fp3();
 
-        let m = new MyStruct();
+        let m = new MyStruct('');
         let fp4: (this: MyStruct) => void = MyStruct.prototype.bar;
         fp4.call(m);
 
@@ -58,7 +66,7 @@ namespace FnPtrTest3 {
         let fp5: (t: number) => number = MyStruct.prototype.gen;
         fp5.call(m, 2);
 
-        let fp6: (this: MyStruct) => void = m.f;
+        let fp6: () => void = m.f;
         fp6.call(m);
 
         let fp6_2: () => void = m.f;
@@ -67,6 +75,6 @@ namespace FnPtrTest3 {
         let fp7: (t: number) => number = (t: number) => m.gen(t)
         let a = fp7(3)
     }
-}
 
-FnPtrTest3.main()
+    main();
+}
