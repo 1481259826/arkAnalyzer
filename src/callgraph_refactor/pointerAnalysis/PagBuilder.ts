@@ -236,7 +236,7 @@ export class PagBuilder {
     /// add Copy edges interprocedural
     public addCallsEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
         for (let cs of funcPag.getNormalCallSites()) {
-            let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID);
+            let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
             this.addStaticPagCallEdge(cs, cid, calleeCid);
 
             // Add edge to thisRef for special calls
@@ -337,7 +337,7 @@ export class PagBuilder {
         // TODO: movo to cgbuilder
         this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
         if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
-            let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
+            let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
             let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
             let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
             srcNodes.push(...staticSrcNodes);
@@ -402,7 +402,7 @@ export class PagBuilder {
             logger.warn(`\tAdd call edge of unknown call ${callee.getSignature().toString()}`)
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
-                let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID());
+                let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
                 let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
                 let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
                 srcNodes.push(...staticSrcNodes);
@@ -471,7 +471,7 @@ export class PagBuilder {
      */
     public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
         if(!calleeCid) {
-            calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID);
+            calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID, true);
         }
 
         let srcNodes: NodeID[] = []

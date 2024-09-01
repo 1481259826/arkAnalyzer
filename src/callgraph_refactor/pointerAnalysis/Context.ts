@@ -19,6 +19,7 @@ export type ContextID = number
 
 class Context {
     private contextElems: number[];
+    static sEmptyCtx: Context = new Context([]);
 
     constructor(contextElems: number[] = []) {
         this.contextElems = contextElems;
@@ -73,23 +74,44 @@ class Context {
 
 class ContextCache {
     private contextList: Context[] = [];
-    private contextToIndexMap: Map<String, number> = new Map();
+    private contextToIDMap: Map<String, number> = new Map();
 
     constructor() {
         this.contextList = [];
-        this.contextToIndexMap = new Map();
+        this.contextToIDMap = new Map();
     }
 
-    public getContextID(context: Context): number {
+    public getOrNewContextID(context: Context): ContextID {
         let cStr = context.toString();
-        if (this.contextToIndexMap.has(cStr)) {
-            return this.contextToIndexMap.get(cStr) as number;
+        if (this.contextToIDMap.has(cStr)) {
+            return this.contextToIDMap.get(cStr) as ContextID;
         } else {
             const id = this.contextList.length;
             this.contextList.push(context);
-            this.contextToIndexMap.set(cStr, id);
+            this.contextToIDMap.set(cStr, id);
             return id;
         }
+    }
+
+    public updateContext(id: ContextID, newContext: Context, oldContext: Context): boolean {
+        if(this.contextList.length < id) {
+            return false;
+        }
+        this.contextList[id] = newContext;
+        let oldCStr = oldContext.toString();
+        let newCStr = newContext.toString();
+        this.contextToIDMap.delete(oldCStr);
+        this.contextToIDMap.set(newCStr, id);
+        return true;
+    }
+
+    public getContextID(context: Context): ContextID | undefined {
+        let cStr = context.toString();
+        if (this.contextToIDMap.has(cStr)) {
+            return this.contextToIDMap.get(cStr) as ContextID;
+        }
+
+        return undefined;
     }
 
     public getContext(id: number): Context | undefined {
@@ -123,7 +145,7 @@ export class KLimitedContextSensitive {
     }
 
     public getContextID(context: Context): ContextID{
-        return this.ctxCache.getContextID(context);
+        return this.ctxCache.getOrNewContextID(context);
     }
 
     public getContextByID(context_id: number): Context | undefined {
@@ -131,17 +153,27 @@ export class KLimitedContextSensitive {
     }
 
     public getNewContextID(callerFuncId: FuncID): ContextID {
-         return this.ctxCache.getContextID(Context.new([callerFuncId]));
+         return this.ctxCache.getOrNewContextID(Context.new([callerFuncId]));
     }
 
-    public getOrNewContext(callerCid: ContextID, calleeFuncId: FuncID): ContextID {
+    public getOrNewContext(callerCid: ContextID, calleeFuncId: FuncID, findCalleeAsTop: boolean = false): ContextID {
         const callerCtx = this.ctxCache.getContext(callerCid);
         if (!callerCtx) {
             throw new Error(`Context with id ${callerCid} not found.`);
         }
 
-        const calleeCtx = Context.newKLimitedContext(callerCtx, calleeFuncId, this.k);
-        const calleeCid = this.ctxCache.getContextID(calleeCtx);
+        const calleeNewCtx = Context.newKLimitedContext(callerCtx, calleeFuncId, this.k);
+        if (findCalleeAsTop){
+            const calleeAsTopCtx = Context.newKLimitedContext(Context.sEmptyCtx, calleeFuncId, this.k);
+            let topID = this.ctxCache.getContextID(calleeAsTopCtx);
+            if (topID) {
+                let ctx = this.ctxCache.getContext(topID);
+                this.ctxCache.updateContext(topID, calleeNewCtx, calleeAsTopCtx);
+                return topID;
+            }
+        }
+
+        const calleeCid = this.ctxCache.getOrNewContextID(calleeNewCtx);
         return calleeCid;
     }
 }

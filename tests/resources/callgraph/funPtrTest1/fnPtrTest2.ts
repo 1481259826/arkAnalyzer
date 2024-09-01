@@ -25,15 +25,28 @@ namespace AnoTest {
                 gfun(elem);
             })
         }
+
+        handleNum(nu: number) {
+            return nu + 1;
+        }
     }
 
     function gfun(fru: Fru) {
         return fru;
     }
 
+    function getArr(a: number[]) {
+        return a;
+    }
+
     function main() {
         let foo = new Foo();
-
         foo.fooFun();
+
+        getArr([1,2]).forEach(n => {
+            foo.handleNum(n);
+            let f2 = new Foo();
+            f2.handleNum(n);
+        })
     }
 }

@@ -26,6 +26,7 @@ import {
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkNormalBinopExpr,
+    ArkPtrInvokeExpr,
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
@@ -846,7 +847,11 @@ export class ArkIRTransformer {
             }
 
             methodSignature.getMethodSubSignature().setMethodName(callerName);
-            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+            if (callerValue.getType() instanceof FunctionType) {
+                invokeValue = new ArkPtrInvokeExpr(methodSignature, callerValue, args)
+            } else {
+                invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+            }
 
         } else {
             ({value: callerValue, stmts: callerStmts} = this.generateAssignStmtForValue(callerValue));
