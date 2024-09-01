@@ -17,10 +17,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
-import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
-import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
-import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
@@ -41,6 +37,8 @@ import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
+import { CallGraph } from './callgraph/model/CallGraph';
+import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 
 const logger = Logger.getLogger();
 
@@ -417,28 +415,20 @@ export class Scene {
         return this.ohPkgFilePath;
     }
 
-    public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph;
-        callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints);
-        return callGraphCHA;
+    public makeCallGraphCHA(entryPoints: MethodSignature[]): CallGraph {
+        let callGraph = new CallGraph(this)
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this)
+        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+        return callGraph;
     }
 
-    public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph;
-        callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints);
-        return callGraphRTA;
+    public makeCallGraphRTA(entryPoints: MethodSignature[]): CallGraph {
+        let callGraph = new CallGraph(this)
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this)
+        callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
+        return callGraph;
     }
-
-    public makeCallGraphVPA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        // WIP context-insensitive 上下文不敏感
-        let callGraphVPA: AbstractCallGraph;
-        callGraphVPA = new VariablePointerAnalysisAlogorithm(this);
-        callGraphVPA.loadCallGraph(entryPoints);
-        return callGraphVPA;
-    }
-
+    
     /**
      * inference type for each non-default method
      * because default and generated method was finished

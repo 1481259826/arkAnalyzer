@@ -397,6 +397,8 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     const cfg = new Cfg();
     cfg.addBlock(basicBlock);
     cfg.setStartingStmt(startingStmt);
+    cfg.setDeclaringMethod(defaultConstructor);
+    cfg.getStmts().forEach(s => s.setCfg(cfg));
     const originalCfg = new Cfg();
 
     defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map(), new Map()));

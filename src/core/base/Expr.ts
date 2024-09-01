@@ -283,6 +283,43 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
     }
 }
 
+export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
+    private funPtrLocal: Local;
+    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[]) {
+        super(methodSignature, args);
+        this.funPtrLocal = ptr;
+    }
+
+    public setFunPtrLocal(ptr: Local): void {
+        this.funPtrLocal = ptr;
+    }
+
+    public getFuncPtrLocal(): Local {
+        return this.funPtrLocal;
+    }
+
+    public toString(): string {
+        let strs: string[] = [];
+        strs.push('ptrinvoke <');
+        strs.push(this.getMethodSignature().toString());
+        strs.push('>(');
+        if (this.getArgs().length > 0) {
+            for (const arg of this.getArgs()) {
+                strs.push(arg.toString());
+                strs.push(', ');
+            }
+            strs.pop();
+        }
+        strs.push(')');
+        return strs.join('');
+    }
+
+    public inferType(arkClass: ArkClass): ArkPtrInvokeExpr {
+        // TODO: handle type inference
+        return this;
+    }
+}
+
 export class ArkNewExpr extends AbstractExpr {
     private classType: ClassType;
 
