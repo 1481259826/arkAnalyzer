@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { BaseEdge, BaseNode, GraphTraits, NodeID } from "../callgraph_refactor/model/BaseGraph";
+import { BaseEdge, BaseNode, GraphTraits, NodeID } from "../callgraph/model/BaseGraph";
 import { Printer } from "./Printer";
 
 function escapeStr(input: string): string {
