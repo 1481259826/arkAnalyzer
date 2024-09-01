@@ -14,18 +14,17 @@
  */
 
 import { Scene } from '../../Scene';
-import { ClassHierarchyAnalysisAlgorithm } from '../../callgraph/ClassHierarchyAnalysisAlgorithm';
 import { AbstractInvokeExpr } from '../base/Expr';
-import { AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { AbstractRef } from '../base/Ref';
 import { ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
 import { DataflowProblem, FlowFunction } from './DataflowProblem';
 import { PathEdge, PathEdgePoint } from './Edge';
 import { BasicBlock } from '../graph/BasicBlock';
-import { CallGraph } from '../../callgraph_refactor/model/CallGraph';
-import { CallGraphBuilder } from '../../callgraph_refactor/model/builder/CallGraphBuilder';
-import { ClassHierarchyAnalysis } from '../../callgraph_refactor/algorithm/ClassHierarchyAnalysis';
+import { CallGraph } from '../../callgraph/model/CallGraph';
+import { CallGraphBuilder } from '../../callgraph/model/builder/CallGraphBuilder';
+import { ClassHierarchyAnalysis } from '../../callgraph/algorithm/ClassHierarchyAnalysis';
 
 /*
 this program is roughly an implementation of the paper: Practical Extensions to the IFDS Algorithm.

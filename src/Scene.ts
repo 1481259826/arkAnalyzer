@@ -38,8 +38,8 @@ import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
-import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
-import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
+import { CallGraph } from './callgraph/model/CallGraph';
+import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 
 const logger = Logger.getLogger();
 
@@ -411,13 +411,20 @@ export class Scene {
         return this.ohPkgFilePath;
     }
 
-    public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph;
-        callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints);
-        return callGraphCHA;
+    public makeCallGraphCHA(entryPoints: MethodSignature[]): CallGraph {
+        let callGraph = new CallGraph(this)
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this)
+        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+        return callGraph;
     }
 
+    public makeCallGraphRTA(entryPoints: MethodSignature[]): CallGraph {
+        let callGraph = new CallGraph(this)
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this)
+        callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
+        return callGraph;
+    }
+    
     /**
      * inference type for each non-default method
      * because default and generated method was finished

@@ -20,8 +20,8 @@ import { MethodSignature } from "../src/core/model/ArkSignature";
 import { printCallGraphDetails } from "../src/utils/callGraphUtils";
 import Logger, { LOG_LEVEL } from "../src/utils/logger";
 import { ArkFile } from '../src/core/model/ArkFile';
-import { CallGraph } from '../src/callgraph_refactor/model/CallGraph';
-import { CallGraphBuilder } from '../src/callgraph_refactor/model/builder/CallGraphBuilder';
+import { CallGraph } from '../src/callgraph/model/CallGraph';
+import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
 
 //let config: SceneConfig = new SceneConfig("./tests/AppTestConfig.json");
 let config: SceneConfig = new SceneConfig()

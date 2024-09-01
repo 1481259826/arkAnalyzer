@@ -14,20 +14,30 @@
  */
 
 import {SceneConfig} from "../../src/Config";
-import {VariablePointerAnalysisAlogorithm as vaa} from "../../src/callgraph/VariablePointerAnalysisAlgorithm";
-import {describe, it, assert} from "vitest";
+import {describe, it} from "vitest";
 import path from "path";
 import {Scene} from "../../src/Scene";
+import { PointerAnalysisConfig } from "../../src/callgraph/pointerAnalysis/PointerAnalysisConfig";
+import { CallGraph } from "../../src/callgraph/model/CallGraph";
+import { CallGraphBuilder } from "../../src/callgraph/model/builder/CallGraphBuilder";
+import { Pag } from "../../src/callgraph/pointerAnalysis/Pag";
+import { PointerAnalysis } from "../../src/callgraph/pointerAnalysis/PointerAnalysis";
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../resources/save"));
 let scene = new Scene();
 scene.buildSceneFromProjectDir(config);
-let arkfile = scene.getFiles().find(file => file.getName() == 'basic.ts');
-describe("AnalysisAlgorithm Test", () => {
-    let ms = scene.getMethods().map(x => x.getSignature());
-    let ch = new vaa(scene);
+describe("PointerAnalysisAlgorithm Test", () => {
+    let cg = new CallGraph(scene);
+    let cgBuilder = new CallGraphBuilder(cg, scene);
+    cgBuilder.buildDirectCallGraph();
+
+    let pag = new Pag();
+    let entry = cg.getEntries()
+    let ptaConfig = new PointerAnalysisConfig(2, "./out", true, true)
+    let pta = new PointerAnalysis(pag, cg, scene, ptaConfig)
+    pta.setEntries(entry)
     it('normal case', () => {
-        ch.loadCallGraph(ms);
+        pta.start()
     })
 })
