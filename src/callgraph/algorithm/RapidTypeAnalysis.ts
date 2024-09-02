@@ -56,10 +56,10 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                 this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), 
                 callerMethod))
         } else {
-            let declareClass = calleeMethod.getDeclaringArkClass()
+            let declareClass = calleeMethod!.getDeclaringArkClass()
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod.getName())
+                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
                 if (possibleCalleeMethod) {
                     if (!this.instancedClasses.has(arkClass.getSignature())) {
                         this.addIgnoredCalls(

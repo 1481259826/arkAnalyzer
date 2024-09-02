@@ -43,13 +43,13 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
             // get specific method
             // resolveResult.push(calleeMethod.getSignature())
             resolveResult.push(new CallSite(invokeStmt, undefined, 
-                this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), 
-                callerMethod))
+                this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), 
+                callerMethod!))
         } else {
             let declareClass = calleeMethod.getDeclaringArkClass()
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod.getName())
+                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
                 if (possibleCalleeMethod) {
                     resolveResult.push(
                         new CallSite(invokeStmt, undefined, 

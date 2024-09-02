@@ -205,7 +205,7 @@ export class PointerAnalysis extends AbstractAnalysis{
                     }
                     let srcNode = edge.getSrcNode() as PagNode;
                     this.ptaStat.numProcessedWrite++;
-                    for (let pt of diffPts) {
+                    for (let pt of diffPts!) {
                         // filter pt
                         let dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                         if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
@@ -224,7 +224,7 @@ export class PointerAnalysis extends AbstractAnalysis{
                     }
                     let dstNode = edge.getDstNode() as PagNode;
                     this.ptaStat.numProcessedLoad++;
-                    for (let pt of diffPts) {
+                    for (let pt of diffPts!) {
                         let srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                         if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
                             this.ptaStat.numRealLoad++;
