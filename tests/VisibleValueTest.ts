@@ -16,9 +16,11 @@
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { Value } from '../src/core/base/Value';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'VisibleValueTest');
+const logPath = 'out/ArkAnalyzer.log';
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 export class VisibleValueTest {
     public buildScene(): Scene {

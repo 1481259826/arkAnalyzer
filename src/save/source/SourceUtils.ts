@@ -31,10 +31,10 @@ import {
     SPECIAL_CONTAINER_COMPONENT,
 } from '../../core/common/EtsConst';
 import { ArkClass } from '../../core/model/ArkClass';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceUtils');
 
 export const Origin_TypeLiteral = 'TypeLiteral';
 export const Origin_Object = 'Object';

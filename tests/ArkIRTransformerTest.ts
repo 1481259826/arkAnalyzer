@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 import fs from 'fs';
 import * as ts from 'ohos-typescript';
 import { ArkIRTransformer } from '../src/core/common/ArkIRTransformer';
@@ -28,8 +28,8 @@ import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
 import { ETS_COMPILER_OPTIONS } from '../src/core/common/EtsConst';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 class ArkIRTransformerTest {
     public async testSimpleStmt() {

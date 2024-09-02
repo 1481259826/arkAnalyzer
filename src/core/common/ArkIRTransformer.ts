@@ -85,7 +85,7 @@ import {
     MethodSignature,
     MethodSubSignature
 } from '../model/ArkSignature';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { IRUtils } from './IRUtils';
 import { ArkMethod } from '../model/ArkMethod';
 import { buildArkMethodFromArkClass } from '../model/builder/ArkMethodBuilder';
@@ -106,7 +106,7 @@ import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
 
 export const DUMMY_INITIALIZER_STMT = 'dummyInitializerStmt';
 

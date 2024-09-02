@@ -38,13 +38,13 @@ import { Value } from './Value';
 import { AbstractFieldRef, AbstractRef, ArkParameterRef } from './Ref';
 import { ModelUtils } from '../common/ModelUtils';
 import { ArkAssignStmt } from './Stmt';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
 
 /**
  * @category core/base/expr

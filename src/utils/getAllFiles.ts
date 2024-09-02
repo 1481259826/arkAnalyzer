@@ -15,9 +15,9 @@
 
 import fs from 'fs';
 import path from 'path';
-import Logger from './logger';
+import Logger, { LOG_MODULE_TYPE } from './logger';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'getAllFiles');
 /**
  * 从指定目录中提取指定后缀名的所有文件
  * @param srcPath string 要提取文件的项目入口，相对或绝对路径都可

@@ -15,13 +15,13 @@
 
 import ts from 'ohos-typescript';
 import { ArkField } from '../ArkField';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { LineColPosition } from '../../base/Position';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { buildModifiers, buildParameters, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFieldBuilder');
 
 export type PropertyLike = ts.PropertyDeclaration | ts.PropertyAssignment;
 

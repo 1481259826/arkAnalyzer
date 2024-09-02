@@ -32,10 +32,10 @@ import {
     StaticFieldPointer,
 } from './PointerAnalysis/Pointer';
 import { PointerFlowGraph } from './PointerAnalysis/PointerFlowGraph';
-import Logger from '../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../utils/logger';
 import { AbstractFieldRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../core/base/Ref';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'VariablePointerAnalysisAlgorithm');
 
 export class VariablePointerAnalysisAlogorithm extends AbstractCallGraph {
     private pointerFlowGraph: PointerFlowGraph;
