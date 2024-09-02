@@ -1,0 +1,114 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { Scene } from "../../Scene";
+import { AbstractInvokeExpr } from "../../core/base/Expr";
+import { Stmt } from "../../core/base/Stmt";
+import { ArkClass } from "../../core/model/ArkClass";
+import { ArkMethod } from "../../core/model/ArkMethod";
+import { NodeID } from "../model/BaseGraph";
+import { CallGraph, FuncID, CallSite, CallGraphNode } from "../model/CallGraph";
+import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
+
+export abstract class AbstractAnalysis {
+    protected scene: Scene
+    protected cg!: CallGraph;
+    protected cgBuilder!: CallGraphBuilder;
+    protected workList: FuncID[] = []
+    
+    constructor(s: Scene) {
+        this.scene = s
+    }
+
+    public getScene(): Scene {
+        return this.scene
+    }
+
+    public getCallGraph(): CallGraph {
+        return this.cg
+    }
+
+    protected abstract resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[]
+    protected abstract preProcessMethod(funcID: FuncID): CallSite[]
+
+    public resolveInvokeExpr(invokeExpr: AbstractInvokeExpr): ArkMethod | undefined {
+        const method = this.scene.getMethod(invokeExpr.getMethodSignature())
+        if (method != null) {
+            return method
+        }
+    }
+
+    public getClassHierarchy(arkClass: ArkClass): ArkClass[] {
+        // TODO: remove abstract class
+        let classWorkList: ArkClass[] = [arkClass]
+        // TODO: check class with no super Class
+        // let classHierarchy: ArkClass[] = [arkClass.getSuperClass()]
+        let classHierarchy:ArkClass[] = []
+
+        while(classWorkList.length > 0) {
+            // TODO: no dumplicated check, TS doesn't allow multi extend
+            let tempClass = classWorkList.shift()!
+            classWorkList.push(...tempClass.getExtendedClasses().values())
+            classHierarchy.push(tempClass)
+        }
+
+        return classHierarchy
+    }
+
+    public start(): void {
+        this.init()
+        while (this.workList.length != 0) {
+            const method = this.workList.shift() as FuncID
+
+            // pre process for RTA only
+            this.preProcessMethod(method).forEach((cs: CallSite) => {
+                this.workList.push(cs.calleeFuncID)
+            })
+
+            this.processMethod(method).forEach((cs: CallSite) => {
+                this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt)
+                this.workList.push(cs.calleeFuncID)
+            })
+        }
+    }
+
+    protected init(): void {
+        this.cg.getEntries().forEach((entryFunc) => {
+            this.workList.push(entryFunc)
+        })
+    }
+
+    protected processMethod(methodID: FuncID): CallSite[] {
+        let cgNode = this.cg.getNode(methodID) as CallGraphNode
+        let arkMethod = this.scene.getMethod(cgNode.getMethod());
+        let calleeMethods: CallSite[] = []
+
+        if (!arkMethod) {
+            throw new Error("can not find method");
+        }
+
+        const cfg = arkMethod.getCfg()
+        if (!cfg) {
+            return []
+        }
+        cfg.getStmts().forEach((stmt) => {
+            if (stmt.containsInvokeExpr()) {
+                calleeMethods.push(...this.resolveCall(cgNode.getID(), stmt))
+            }
+        })
+
+        return calleeMethods
+    }
+}
