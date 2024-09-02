@@ -62,6 +62,7 @@ export class PagBuilder {
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
+    private singletonFuncMap: Map<FuncID, boolean> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -675,6 +676,10 @@ export class PagBuilder {
      * rule: static method, assign heap obj to global var or static field, return the receiver
      */
     public isSingletonFunction(funcID: FuncID): boolean {
+        if (this.singletonFuncMap.has(funcID)) {
+            return this.singletonFuncMap.get(funcID)!
+        }
+
         let arkMethod = this.cg.getArkMethodByFuncID(funcID)
         if (!arkMethod) {
             return false
@@ -692,12 +697,14 @@ export class PagBuilder {
         let returnValues = arkMethod.getReturnValues()
 
         let result = this.isValueConnected([...funcPag.getInternalEdges()!], heapObjects, returnValues)
+        this.singletonFuncMap.set(funcID, result)
         return result
     }
 
     private isValueConnected(edges: InternalEdge[], leftNodes: Value[], targetNodes: Value[]): boolean {
         // build funcPag graph
         const graph = new Map<Value, Value[]>();
+        let hasStaticFieldOrGlobalVar: boolean = false
     
         for (const edge of edges) {
             let dst = this.getRealInstanceRef(edge.dst)
@@ -709,7 +716,15 @@ export class PagBuilder {
                 graph.set(src, []);
             }
 
+            if (dst instanceof ArkStaticFieldRef || src instanceof ArkStaticFieldRef) {
+                hasStaticFieldOrGlobalVar = true
+            }
+
             graph.get(src)!.push(dst);
+        }
+
+        if (!hasStaticFieldOrGlobalVar) {
+            return false
         }
 
         for (const targetNode of targetNodes) {
