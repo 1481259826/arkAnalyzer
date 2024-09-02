@@ -423,6 +423,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>,
     cfg.addBlock(block);
     cfg.setStartingStmt(assignStmt);
     cfg.buildDefUseStmt();
+    cfg.setDeclaringMethod(initMethod);
     initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, stmtMap, new Map()));
 }
 

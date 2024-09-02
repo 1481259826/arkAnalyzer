@@ -95,3 +95,14 @@ export function getCallbackMethodFromStmt(stmt: Stmt, scene: Scene): ArkMethod |
     }
     return null;
 }
+
+export function addCfg2Stmt(method: ArkMethod) {
+    const cfg = method.getCfg();
+    if (cfg) {
+        for (const block of cfg.getBlocks()) {
+            for (const stmt of block.getStmts()) {
+                stmt.setCfg(cfg);
+            }
+        }
+    }
+}

@@ -12,8 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-let func1 = (i: number) => i++;
-function f() {
-  type a = number
-}
+radio.getOperatorName(slotId, (error, value) => {
+  if (error) {
+    LogUtils.i(TAG, 'getOperatorName error:' + JSON.stringify(error))
+    reject(error);
+  } else {
+    LogUtils.i(TAG, 'getOperatorName value:' + JSON.stringify(value))
+    resolve(value);
+  }
+});
