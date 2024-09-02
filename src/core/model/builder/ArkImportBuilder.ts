@@ -22,13 +22,13 @@ import { buildModifiers } from './builderUtils';
 import { Decorator } from '../../base/Decorator';
 import { ExportInfo, ExportType, FromInfo } from '../ArkExport';
 import { FileSignature, LocalSignature } from '../ArkSignature';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { transfer2UnixPath } from '../../../utils/pathTransfer';
 import { FileUtils, ModulePath } from '../../../utils/FileUtils';
 import { Sdk } from '../../../Config';
 import { AliasType } from '../../base/Type';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkImportBuilder');
 let moduleMap: Map<string, ModulePath> | undefined = undefined;
 const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
 

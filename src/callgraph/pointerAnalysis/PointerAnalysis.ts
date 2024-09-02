@@ -22,14 +22,16 @@ import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
 import { ClassType, Type } from "../../core/base/Type";
 import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
 import { Stmt } from "../../core/base/Stmt";
-import Logger from "../../utils/logger"
+import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
 import { PTAStat } from "../common/Statistics";
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
 import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { DiffPTData, PtsSet } from "./PtsDS";
-const logger = Logger.getLogger()
+// const logger = Logger.getLogger()
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 export class PointerAnalysis extends AbstractAnalysis{
     private pag: Pag;

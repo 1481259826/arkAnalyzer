@@ -15,11 +15,11 @@
 
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SceneTest');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 class SceneTest {
     public async testETsWholePipline() {

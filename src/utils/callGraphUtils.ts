@@ -17,10 +17,10 @@ import { Scene } from '../Scene';
 import { ArkClass } from '../core/model/ArkClass';
 import { ArkMethod } from '../core/model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../core/model/ArkSignature';
-import Logger from './logger';
+import Logger, { LOG_MODULE_TYPE } from './logger';
 import { ModelUtils } from '../core/common/ModelUtils';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'callGraphUtils');
 
 export class MethodSignatureManager {
     private _workList: MethodSignature[] = [];

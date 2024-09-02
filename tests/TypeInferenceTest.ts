@@ -16,11 +16,11 @@
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE} from '../src/utils/logger';
 import { DummyMainCreater } from '../src/core/common/DummyMainCreater';
 
-const logger = Logger.getLogger();
-Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'TypeInferenceTest');
+Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN, LOG_LEVEL.WARN);
 
 export class TypeInferenceTest {
     public buildScene(): Scene {

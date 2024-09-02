@@ -26,7 +26,7 @@ import { ArkFile } from './core/model/ArkFile';
 import { ArkMethod } from './core/model/ArkMethod';
 import { ArkNamespace } from './core/model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
-import Logger from './utils/logger';
+import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { Local } from './core/base/Local';
 import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
@@ -40,7 +40,7 @@ import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 enum SceneBuildStage {
     BUILD_INIT,

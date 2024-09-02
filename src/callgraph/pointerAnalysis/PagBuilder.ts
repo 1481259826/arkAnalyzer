@@ -20,7 +20,7 @@ import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExp
 import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
-import Logger from "../../utils/logger";
+import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
 import { Local } from '../../core/base/Local';
 import { NodeID } from '../model/BaseGraph';
 import { ClassSignature } from '../../core/model/ArkSignature';
@@ -32,7 +32,8 @@ import { ContextID, KLimitedContextSensitive } from './Context';
 import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode } from './Pag';
 import { PtsSet } from './PtsDS';
 
-const logger = Logger.getLogger();
+// const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 export class CSFuncID{
     public cid: ContextID;

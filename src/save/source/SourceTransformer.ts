@@ -37,7 +37,7 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ArkCodeBuffer } from '../ArkStream';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Origin_TypeLiteral, SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
@@ -68,7 +68,7 @@ import {
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
 export interface TransformerContext {
     getArkFile(): ArkFile;

@@ -18,7 +18,7 @@ import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { MethodSignature } from "../src/core/model/ArkSignature";
 import { printCallGraphDetails } from "../src/utils/callGraphUtils";
-import Logger, { LOG_LEVEL } from "../src/utils/logger";
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from "../src/utils/logger";
 import { ArkFile } from '../src/core/model/ArkFile';
 import { CallGraph } from '../src/callgraph/model/CallGraph';
 import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
@@ -27,7 +27,7 @@ let config: SceneConfig = new SceneConfig()
 // config.buildFromProjectDir('tests/resources/callgraph/test1')
 config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test')
 // config.buildFromJson("./tests/resources/callgraph/callGraphConfigUnix.json");
-Logger.setLogLevel(LOG_LEVEL.ERROR)
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG TEST');
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config)

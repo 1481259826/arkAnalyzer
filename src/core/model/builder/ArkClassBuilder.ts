@@ -17,7 +17,7 @@ import { ArkField } from '../ArkField';
 import { ArkFile } from '../ArkFile';
 import { ArkMethod } from '../ArkMethod';
 import { ArkNamespace } from '../ArkNamespace';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import ts from 'ohos-typescript';
 import { ArkClass } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod } from './ArkMethodBuilder';
@@ -35,7 +35,7 @@ import {
 } from '../../common/Const';
 import { IRUtils } from '../../common/IRUtils';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClassBuilder');
 
 export type ClassLikeNode =
     ts.ClassDeclaration |

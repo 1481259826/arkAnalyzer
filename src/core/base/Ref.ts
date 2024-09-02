@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType, } from './Type';
@@ -22,7 +22,7 @@ import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ValueUtil } from '../common/ValueUtil';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
 /**
  * @category core/base/ref

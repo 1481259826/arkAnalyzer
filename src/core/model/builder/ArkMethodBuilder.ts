@@ -26,7 +26,7 @@ import {
     buildTypeParameters,
     handlePropertyAccessExpression,
 } from './builderUtils';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ArkParameterRef, ArkThisRef } from '../../base/Ref';
 import { ArkBody } from '../ArkBody';
 import { Cfg } from '../../graph/Cfg';
@@ -39,7 +39,7 @@ import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from '../../common/Const';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkMethodBuilder');
 
 export type MethodLikeNode =
     ts.FunctionDeclaration |

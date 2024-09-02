@@ -21,10 +21,11 @@ import { ClassSignature } from "../../core/model/ArkSignature";
 import { NodeID } from "../model/BaseGraph";
 import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
 import { AbstractAnalysis } from "./AbstractAnalysis";
-import Logger from "../../utils/logger"
+import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
 import { ClassType } from "../../core/base/Type";
  
-const logger = Logger.getLogger();
+// const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'RTA');
 
 export class RapidTypeAnalysis extends AbstractAnalysis {
     // TODO: signature duplicated check

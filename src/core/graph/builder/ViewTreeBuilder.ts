@@ -39,11 +39,11 @@ import { ArkField } from '../../model/ArkField';
 import { ArkMethod } from '../../model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
 import { Cfg } from '../Cfg';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
 import { ModelUtils } from '../../common/ModelUtils';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ViewTreeBuilder');
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
 
 class StateValuesUtils {

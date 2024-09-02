@@ -21,9 +21,9 @@ import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
 import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
 import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
 import { Sdk } from "../src/Config";
-import Logger, {LOG_LEVEL} from "../src/utils/logger"
+import Logger, {LOG_LEVEL, LOG_MODULE_TYPE} from "../src/utils/logger"
  
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA TEST');
 Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.TRACE)
 
 let etsSdk: Sdk = {

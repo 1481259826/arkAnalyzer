@@ -24,8 +24,15 @@ export enum LOG_LEVEL {
     TRACE = 'TRACE',
 }
 
+export enum LOG_MODULE_TYPE {
+    DEFAULT = 'default',
+    ARKANALYZER = 'ArkAnalyzer',
+    HOMECHECK = 'HomeCheck',
+    TOOL = 'Tool',
+}
+
 export default class ConsoleLogger {
-    public static configure(logFilePath: string, level: LOG_LEVEL): void {
+    public static configure(logFilePath: string, arkanalyzer_level: LOG_LEVEL = LOG_LEVEL.ERROR, tool_level: LOG_LEVEL = LOG_LEVEL.INFO): void {
         configure({
             appenders: {
                 file: {
@@ -37,7 +44,7 @@ export default class ConsoleLogger {
                     encoding: 'utf-8',
                     layout: {
                         type: 'pattern',
-                        pattern: '[%d] [%p] [%z] [ArkAnalyzer] - %m',
+                        pattern: '[%d] [%p] [%z] [%X{module}] - [%X{tag}] %m',
                     },
                 },
                 console: {
@@ -54,20 +61,29 @@ export default class ConsoleLogger {
                     level: 'info',
                     enableCallStack: false,
                 },
-                codelinter: {
+                ArkAnalyzer: {
                     appenders: ['file'],
-                    level,
+                    level: arkanalyzer_level,
+                    enableCallStack: true,
+                },
+                Tool: {
+                    appenders: ['file'],
+                    level: tool_level,
                     enableCallStack: true,
                 },
             },
         });
     }
 
-    public static getLogger(): Logger {
-        return getLogger('codelinter');
-    }
-
-    public static setLogLevel(level: LOG_LEVEL): void {
-        getLogger('codelinter').level = level;
+    public static getLogger(log_type: LOG_MODULE_TYPE, tag: string = '-'): Logger {
+        let logger;
+        if (log_type === LOG_MODULE_TYPE.DEFAULT || log_type === LOG_MODULE_TYPE.ARKANALYZER) {
+            logger = getLogger(log_type);
+        } else {
+            logger = getLogger(LOG_MODULE_TYPE.TOOL);
+        }
+        logger.addContext('module', log_type);
+        logger.addContext('tag', tag);
+        return logger;
     }
 }
