@@ -29,7 +29,7 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge } from './Pag';
 import { PtsSet } from './PtsDS';
 
 // const logger = Logger.getLogger();
@@ -107,7 +107,10 @@ export class PagBuilder {
 
         while (this.worklist.length > 0) {
             let csFunc = this.worklist.shift() as CSFuncID;
-            this.buildFunPag(csFunc.funcID);
+            this.buildFuncPag(csFunc.funcID);
+            if (this.isSingletonFunction(csFunc.funcID)) {
+                csFunc.cid = 0
+            }
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
             this.addToFuncHandledListThisRound(csFunc.funcID);
         }
@@ -125,7 +128,7 @@ export class PagBuilder {
         }
     }
 
-    public buildFunPag(funcID: FuncID): boolean {
+    public buildFuncPag(funcID: FuncID): boolean {
         if (this.funcPags.has(funcID)) {
             return false;
         }
@@ -665,6 +668,90 @@ export class PagBuilder {
         }
 
         return real;
+    }
+
+    /**
+     * check if a method is singleton function
+     * rule: static method, assign heap obj to global var or static field, return the receiver
+     */
+    public isSingletonFunction(funcID: FuncID): boolean {
+        let arkMethod = this.cg.getArkMethodByFuncID(funcID)
+        if (!arkMethod) {
+            return false
+        }
+
+        if (!arkMethod.getModifiers().has("StaticKeyword")) {
+            return false
+        }
+
+        let funcPag = this.funcPags.get(funcID)!
+        let heapObjects = [...funcPag.getInternalEdges()!]
+            .filter(edge => edge.kind == PagEdgeKind.Address)
+            .map(edge => edge.dst)
+
+        let returnValues = arkMethod.getReturnValues()
+
+        let result = this.isValueConnected([...funcPag.getInternalEdges()!], heapObjects, returnValues)
+        return result
+    }
+
+    private isValueConnected(edges: InternalEdge[], leftNodes: Value[], targetNodes: Value[]): boolean {
+        // build funcPag graph
+        const graph = new Map<Value, Value[]>();
+    
+        for (const edge of edges) {
+            let dst = this.getRealInstanceRef(edge.dst)
+            let src = this.getRealInstanceRef(edge.src)
+            if (!graph.has(dst)) {
+                graph.set(dst, []);
+            }
+            if (!graph.has(src)) {
+                graph.set(src, []);
+            }
+
+            graph.get(src)!.push(dst);
+        }
+
+        for (const targetNode of targetNodes) {
+            for (const leftNode of leftNodes) {
+                const visited = new Set<Value>();
+                let meetStaticField = false
+                if (this.funcPagDfs(graph, visited, leftNode, targetNode, meetStaticField)) {
+                    return true; // a value pair that satisfy condition
+                }
+
+                if (!meetStaticField) {
+                    break; // heap obj will not deal any more
+                }
+            }
+        }
+
+        return false
+    }
+
+    private funcPagDfs(graph: Map<Value, Value[]>, visited: Set<Value>, currentNode: Value, targetNode: Value, 
+        staticFieldFound: boolean): boolean {
+        if (currentNode === targetNode) {
+            return staticFieldFound;
+        }
+    
+        visited.add(currentNode);
+    
+        for (const neighbor of graph.get(currentNode) || []) {
+            const isSpecialNode = neighbor instanceof ArkStaticFieldRef;
+
+            if (!visited.has(neighbor)) {
+                if (isSpecialNode) {
+                    staticFieldFound = true;
+                }
+
+                if (this.funcPagDfs(graph, visited, neighbor, targetNode, staticFieldFound)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {

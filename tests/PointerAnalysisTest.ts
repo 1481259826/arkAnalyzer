@@ -20,17 +20,15 @@ import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilde
 import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
 import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
 import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
-import { Sdk } from "../src/Config";
-import Logger, {LOG_LEVEL, LOG_MODULE_TYPE} from "../src/utils/logger"
+import Logger, {LOG_LEVEL} from "../src/utils/logger"
  
-const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA TEST');
 Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.TRACE)
 
-let etsSdk: Sdk = {
-    name: "ohos",
-    path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
-    moduleName: ""
-}
+// let etsSdk: Sdk = {
+//     name: "ohos",
+//     path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
+//     moduleName: ""
+// }
 
 let config: SceneConfig = new SceneConfig()
 // config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/resources/pta/uiTest",
@@ -38,7 +36,7 @@ let config: SceneConfig = new SceneConfig()
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
 // config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-config.buildFromProjectDir('./tests/resources/callgraph/anoTest');
+config.buildFromProjectDir('./tests/resources/pta/singleton');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');

@@ -706,7 +706,7 @@ export class Pag extends BaseGraph {
     }
 }
 
-type InternalEdge = {src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt}
+export type InternalEdge = {src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt}
 
 export class FuncPag {
     private internalEdges!: Set<InternalEdge>;
