@@ -22,6 +22,7 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ArkCodeBuffer } from '../ArkStream';
 import { Local } from '../../core/base/Local';
 import { TransformerContext } from './SourceTransformer';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 export interface Dump {
     getLine(): number;
@@ -38,6 +39,10 @@ export abstract class SourceBase
     public constructor(arkFile: ArkFile, indent: string = '') {
         super(indent);
         this.arkFile = arkFile;
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return undefined
     }
 
     public getArkFile(): ArkFile {

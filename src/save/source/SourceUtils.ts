@@ -33,6 +33,8 @@ import {
 import { ArkClass } from '../../core/model/ArkClass';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
+import { ClassSignature } from '../../core/model/ArkSignature';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceUtils');
 
@@ -201,5 +203,20 @@ export class SourceUtils {
             }
         }
         return false;
+    }
+
+    public static getStaticInvokeClassFullName(classSignature: ClassSignature, namespace: ArkNamespace | undefined): string {
+        let namespaceName = classSignature.getDeclaringNamespaceSignature()?.getNamespaceName();
+        let className = classSignature.getClassName();
+
+        let code: string[] = [];
+        if (namespaceName && namespaceName.length > 0 && namespaceName != namespace?.getName()) {
+            code.push(namespaceName);
+        }
+
+        if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
+            code.push(className);
+        }
+        return code.join('.');
     }
 }

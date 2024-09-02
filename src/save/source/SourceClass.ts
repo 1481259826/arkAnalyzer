@@ -21,6 +21,7 @@ import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
 import { Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../../core/common/Const';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 /**
  * @category save
@@ -33,6 +34,10 @@ export class SourceClass extends SourceBase {
         super(cls.getDeclaringArkFile(), indent);
         this.cls = cls;
         this.transformer = new SourceTransformer(this);
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return this.cls.getDeclaringArkNamespace();
     }
 
     public getLine(): number {

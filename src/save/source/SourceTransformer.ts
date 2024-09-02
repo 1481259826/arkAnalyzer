@@ -67,11 +67,13 @@ import {
 } from '../../core/common/EtsConst';
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
 export interface TransformerContext {
     getArkFile(): ArkFile;
+    getDeclaringArkNamespace(): ArkNamespace | undefined;
 
     getMethod(signature: MethodSignature): ArkMethod | null;
 
@@ -126,8 +128,9 @@ export class SourceTransformer {
             return this.anonymousMethodToString(method, this.context.getPrinter().getIndent());
         }
 
-        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
-        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        let classSignature = methodSignature.getDeclaringClassSignature();
+        let className = SourceUtils.getStaticInvokeClassFullName(classSignature, this.context.getDeclaringArkNamespace());
+        let methodName = methodSignature.getMethodSubSignature().getMethodName();
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
@@ -168,7 +171,7 @@ export class SourceTransformer {
             }
         }
 
-        if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
+        if (className && className.length > 0) {
             return `${className}.${methodName}(${args.join(', ')})`;
         }
         return `${methodName}(${args.join(', ')})`;
@@ -201,7 +204,7 @@ export class SourceTransformer {
         }
     }
 
-    public exprToString(expr: AbstractExpr): string {
+    private exprToString(expr: AbstractExpr): string {
         if (expr instanceof ArkInstanceInvokeExpr) {
             return `${this.instanceInvokeExprToString(expr)}`;
         }

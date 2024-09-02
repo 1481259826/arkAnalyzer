@@ -32,7 +32,7 @@ export class SourceExportInfo extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.info.getExportClauseType() !== ExportType.UNKNOWN) {
+        if (this.info.getArkExport()?.getModifiers().has('ExportKeyword') || this.info.getExportClauseType() == ExportType.LOCAL) {
             return this.printer.toString();
         }
 
