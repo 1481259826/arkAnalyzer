@@ -14,44 +14,49 @@
  */
 
 
+const TAG = 'ClassTest';
 class Animal {
     protected _name: string | undefined;
-    public constructor(theName: string) {
-        this._name = theName; 
+    public constructor(theName: string){
+        this._name = theName;
     }
-    public move(distanceInMeters: number = 0) {
+    public move(distanceInMeters: number = 0){
         logger.info(`${this._name} moved ${distanceInMeters}m.`);
     }
 
-    get name():string| undefined {
+    get name(): string | undefined{
         return this._name;
     }
 
-    set name(newName: string | undefined ) {
+    set name(newName: string | undefined){
         this._name = newName;
     }
 
-    public print(a: Animal[]): number | null {
+    public print(a: Animal[]): number | null{
         return 0;
     }
 
-    public testArrayReturn():string[] {
+    public testArrayReturn(): string[]{
         return [];
     }
 }
 
 class Snake extends Animal {
-    constructor(name: string) { super(name); }
-    move(distanceInMeters = 5) {
-        logger.info("Slithering...");
+    constructor (name: string){
+        super(name);
+    }
+    move(distanceInMeters = 5){
+        logger.info('Slithering...');
         super.move(distanceInMeters);
     }
 }
 
 class Horse extends Animal {
-    constructor(name: string) { super(name); }
-    move(distanceInMeters = 45) {
-        logger.info("Galloping...");
+    constructor (name: string){
+        super(name);
+    }
+    move(distanceInMeters = 45){
+        logger.info('Galloping...');
         super.move(distanceInMeters);
     }
 }
@@ -62,20 +67,20 @@ export interface StringValidator {
 export const numberRegexp = /^[0-9]+$/;
 
 export default class ZipCodeValidator implements StringValidator {
-    isAcceptable(s?: string) {
+    isAcceptable(s?: string){
         return s!.length === 5 && numberRegexp.test(s!);
     }
 }
 export { ZipCodeValidator, ZipCodeValidator as mainValidator };
 
 export class ParseIntBasedZipCodeValidator {
-    isAcceptable(s: string) {
+    isAcceptable(s: string){
         return s.length === 5 && parseInt(s).toString() === s;
     }
 }
 
 class ObjectLiteralTest {
-    test: Object = {x: 'n', child: [
+    public test: Object = {x: 'n', child: [
         {
             x: 'c',
             child: []

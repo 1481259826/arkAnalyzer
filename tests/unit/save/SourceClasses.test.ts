@@ -17,7 +17,8 @@ import { Scene, SceneConfig, SourceClassPrinter, SourceFilePrinter } from '../..
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
-const SourceClassesTest_CASE1_EXPECT = `class Animal {
+const SourceClassesTest_CASE1_EXPECT = `const TAG: string = 'ClassTest';
+class Animal {
   protected _name: string | undefined;
   public constructor(theName: string) {
     this._name = theName;
@@ -72,11 +73,11 @@ export class ParseIntBasedZipCodeValidator {
   }
 }
 class ObjectLiteralTest {
-  test: Object = {x: 'n', child: [{x: 'c', child: []}]};
+  public test: Object = {x: 'n', child: [{x: 'c', child: []}]};
 }
 `;
 const SourceClassesTest_CASE2_EXPECT = `class ObjectLiteralTest {
-  test: Object = {x: 'n', child: [{x: 'c', child: []}]};
+  public test: Object = {x: 'n', child: [{x: 'c', child: []}]};
 }
 `;
 const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Updatable, Serializable {
@@ -129,7 +130,7 @@ describe('SourceClassesTest', () => {
 
     it('case1: whole file', () => {
         let arkfile = scene.getFiles().find((value) => {
-            return value.getName() == 'classes.ts';
+            return value.getName() == 'classes.ets';
         });
         if (!arkfile) {
             return;
@@ -141,7 +142,7 @@ describe('SourceClassesTest', () => {
 
     it('case2: ObjectLiteralTest', () => {
         let arkfile = scene.getFiles().find((value) => {
-            return value.getName() == 'classes.ts';
+            return value.getName() == 'classes.ets';
         });
         let cls = arkfile?.getClassWithName('ObjectLiteralTest');
         if (!cls) {
