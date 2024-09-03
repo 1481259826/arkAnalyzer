@@ -39,13 +39,14 @@ import {
 } from '../base/Type';
 import { ArkMethod } from '../model/ArkMethod';
 import { ClassSignature } from '../model/ArkSignature';
-import { ModelUtils } from './ModelUtils';
 import { ArkExport } from '../model/ArkExport';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
+import { SUPER_NAME } from "./TSConst";
+import { ModelUtils } from "./ModelUtils";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -421,6 +422,9 @@ export class TypeInference {
     }
 
     public static inferBaseType(baseName: string, arkClass: ArkClass): Type | null {
+        if (SUPER_NAME === baseName) {
+            return this.parseArkExport2Type(arkClass.getSuperClass());
+        }
         const field = arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
             ?.getBody()?.getLocals()?.get(baseName);
         if (field && !this.isUnclearType(field.getType())) {

@@ -19,7 +19,7 @@ import { ArkClass } from './ArkClass';
 import { ArkFile } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
 import { ClassSignature, NamespaceSignature } from './ArkSignature';
-import { setTypeForExportInfo } from './builder/ArkImportBuilder';
+import { ALL } from "../common/TSConst";
 
 /**
  * @category core/model
@@ -185,15 +185,17 @@ export class ArkNamespace implements ArkExport {
     }
 
     public getExportInfos(): ExportInfo[] {
-        return Array.from(this.exportInfos.values());
+        const exportInfos: ExportInfo[] = [];
+        this.exportInfos.forEach((value, key) => {
+            if (key !== ALL || value.getFrom()) {
+                exportInfos.push(value);
+            }
+        })
+        return exportInfos;
     }
 
-    public getExportInfoBy(name: string): ExportInfo | null {
-        const exportInfo = this.exportInfos.get(name);
-        if (exportInfo) {
-            return setTypeForExportInfo(exportInfo);
-        }
-        return null;
+    public getExportInfoBy(name: string): ExportInfo | undefined {
+        return this.exportInfos.get(name);
     }
 
     public addExportInfo(exportInfo: ExportInfo) {

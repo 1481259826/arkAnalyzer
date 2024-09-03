@@ -15,10 +15,11 @@
 
 import ts from 'ohos-typescript';
 import { LineColPosition } from '../../base/Position';
-import { ArkExport, ExportInfo, ExportType } from '../ArkExport';
+import { ArkExport, ExportInfo, ExportType, FromInfo } from '../ArkExport';
 import { Decorator } from '../../base/Decorator';
 import { buildModifiers } from './builderUtils';
 import { ArkFile } from '../ArkFile';
+import { ALL, DEFAULT } from "../../common/TSConst";
 
 export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 
@@ -30,6 +31,16 @@ function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineCol
         .arkExport(arkInstance)
         .originTsPosition(line)
         .declaringArkFile(arkFile)
+        .build();
+}
+
+
+export function buildDefaultClassExportInfo(im: FromInfo, file: ArkFile) {
+    return new ExportInfo.Builder()
+        .exportClauseType(ExportType.CLASS)
+        .exportClauseName(im.getOriginName())
+        .declaringArkFile(file)
+        .arkExport(file.getDefaultClass())
         .build();
 }
 
@@ -63,7 +74,7 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
 
     let builder1 = new ExportInfo.Builder()
         .exportClauseType(ExportType.UNKNOWN)
-        .nameBeforeAs('*')
+        .nameBeforeAs(ALL)
         .modifiers(modifiers)
         .tsSourceCode(tsSourceCode)
         .exportFrom(exportFrom)
@@ -72,7 +83,7 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
     if (node.exportClause && ts.isNamespaceExport(node.exportClause) && ts.isIdentifier(node.exportClause.name)) { // just like: export * as xx from './yy'
         exportInfos.push(builder1.exportClauseName(node.exportClause.name.text).build());
     } else if (!node.exportClause && node.moduleSpecifier) { // just like: export * from './yy'
-        exportInfos.push(builder1.exportClauseName('*').build());
+        exportInfos.push(builder1.exportClauseName(ALL).build());
     }
     return exportInfos;
 }
@@ -110,7 +121,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
             .tsSourceCode(tsSourceCode)
             .originTsPosition(originTsPosition)
             .declaringArkFile(arkFile)
-            .exportClauseName('default')
+            .exportClauseName(DEFAULT)
         if (ts.isIdentifier(node.expression)) { // just like: export default xx
             exportInfo.nameBeforeAs(node.expression.text);
         } else if (ts.isAsExpression(node.expression)) { // just like: export default xx as YY

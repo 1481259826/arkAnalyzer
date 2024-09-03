@@ -74,7 +74,7 @@ export class Scene {
     private methodsMap: Map<string, ArkMethod> = new Map();
     // TODO: type of key should be signature object
     private sdkArkFilesMap: Map<string, ArkFile> = new Map<string, ArkFile>();
-
+    private componentMap: Map<string, ArkFile> = new Map<string, ArkFile>();
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
@@ -195,8 +195,17 @@ export class Scene {
             arkFile.setProjectName(sdkName);
             buildArkFileFromFile(file, path.normalize(sdkPath), arkFile);
             ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
-            const fileSig = arkFile.getFileSignature().toString();
-            this.sdkArkFilesMap.set(fileSig, arkFile);
+            if (file.includes('component' + path.sep)) {
+                let fileName = path.basename(file).replace(/\..*$/, '').replace(/_(.)/g,
+                    function (match, group1) {
+                        return group1.toUpperCase();
+                    });
+                fileName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+                this.componentMap.set(fileName, arkFile);
+            } else {
+                const fileSig = arkFile.getFileSignature().toString();
+                this.sdkArkFilesMap.set(fileSig, arkFile);
+            }
         });
     }
 
@@ -274,6 +283,10 @@ export class Scene {
 
     public getProjectFiles() {
         return this.projectFiles;
+    }
+
+    public getComponentFile(componentName: string): ArkFile | null {
+        return this.componentMap.get(componentName) || null;
     }
 
     public getFile(fileSignature: FileSignature): ArkFile | null {
@@ -425,7 +438,7 @@ export class Scene {
         callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
         return callGraph;
     }
-    
+
     /**
      * inference type for each non-default method
      * because default and generated method was finished

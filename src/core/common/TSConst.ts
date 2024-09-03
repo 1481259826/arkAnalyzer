@@ -17,5 +17,9 @@ export const CONSTRUCTOR_NAME = 'constructor';
 export const SUPER_NAME = 'super';
 export const THIS_NAME = 'this';
 
+export const DEFAULT = 'default';
+
+export const ALL = '*';
+
 // ast const
 export const DECLARE_KEYWORD = 'DeclareKeyword';

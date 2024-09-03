@@ -45,6 +45,7 @@ import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 import { ImportInfo } from "../model/ArkImport";
 import { Constant } from "./Constant";
+import { ALL } from "../common/TSConst";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
 
@@ -271,7 +272,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         if (methodName === 'import' && this.getArgs()[0] instanceof Constant) {
             const importInfo = new ImportInfo();
-            importInfo.setNameBeforeAs('*')
+            importInfo.setNameBeforeAs(ALL)
             importInfo.setImportClauseName('t');
             importInfo.setImportFrom((this.getArgs()[0] as Constant).getValue());
             importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
