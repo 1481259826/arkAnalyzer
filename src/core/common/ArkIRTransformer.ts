@@ -388,7 +388,7 @@ export class ArkIRTransformer {
         const castExpr = new ArkCastExpr(yieldValue, UnknownType.getInstance());
         if (ts.isVariableDeclarationList(forOfStatement.initializer)) {
             const variableDeclarationList = forOfStatement.initializer as ts.VariableDeclarationList;
-            const isConst = variableDeclarationList.flags == ts.NodeFlags.Const;
+            const isConst = (variableDeclarationList.flags & ts.NodeFlags.Const) != 0;
             const variableDeclaration = variableDeclarationList.declarations[0];
             if (ts.isArrayBindingPattern(variableDeclaration.name)) {
                 const {
@@ -1189,7 +1189,7 @@ export class ArkIRTransformer {
         }
 
         if (leftValue instanceof Local) {
-            leftValue.setConstFlag(nodeFlag == ts.NodeFlags.Const);
+            leftValue.setConstFlag((nodeFlag & ts.NodeFlags.Const) != 0);
             if (variableDeclaration.type) {
                 leftValue.setType(this.resolveTypeNode(variableDeclaration.type));
             }
