@@ -457,6 +457,12 @@ export class CfgBuilder {
                     } else {
                         switchstm.default = casestm.next;
                     }
+                    // case: 之类的代码不会被三地址码识别，可能会导致空block，暂时删除
+                    switchstm.nexts[switchstm.nexts.length - 1] = casestm.next!;
+                    for (const stmt of [...casestm.lasts]) {
+                        casestm.next!.lasts.add(stmt);
+                    }
+                    casestm.next!.lasts.delete(casestm);
 
                     if (lastCaseExit) {
                         lastCaseExit.next = casestm.next;
@@ -643,7 +649,7 @@ export class CfgBuilder {
                         stmt.next.passTmies++;
                         if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == 'loopStatement') || stmt.next.isDoWhile) {
                             if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)
-                              && !(ts.isCaseClause(stmt.astNode!) || ts.isDefaultClause(stmt.astNode!))) {
+                                && !(ts.isCaseClause(stmt.astNode!) || ts.isDefaultClause(stmt.astNode!))) {
                                 stmtQueue.push(stmt.next);
                                 break;
                             }
@@ -756,7 +762,7 @@ export class CfgBuilder {
     addStmtBuilderPosition() {
         for (const stmt of this.statementArray) {
             if (stmt.astNode) {
-                const {line, character} = ts.getLineAndCharacterOfPosition(
+                const { line, character } = ts.getLineAndCharacterOfPosition(
                     this.sourceFile,
                     stmt.astNode.getStart(this.sourceFile),
                 );
@@ -1239,10 +1245,10 @@ export class CfgBuilder {
     }
 
     private insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock: Map<Block, BasicBlock>,
-                                              conditionBlockBuilder: Block,
-                                              stmtsInsertBeforeCondition: Stmt[],
-                                              collectReenter: Boolean,
-                                              cfg: Cfg): void {
+        conditionBlockBuilder: Block,
+        stmtsInsertBeforeCondition: Stmt[],
+        collectReenter: Boolean,
+        cfg: Cfg): void {
         const blockId = conditionBlockBuilder.id;
         const block = blockBuilderToCfgBlock.get(conditionBlockBuilder) as BasicBlock;
         const blockBuildersBeforeCondition: Block[] = [];
