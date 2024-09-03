@@ -41,6 +41,7 @@ import { ArkFile } from '../../core/model/ArkFile';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ModelUtils } from '../../core/common/ModelUtils';
 import { SourceUtils } from './SourceUtils';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
 
@@ -84,6 +85,10 @@ export class SourceBody implements StmtPrinterContext {
     }
     public getArkFile(): ArkFile {
         return this.method.getDeclaringArkFile();
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return this.method.getDeclaringArkClass().getDeclaringArkNamespace();
     }
 
     public getMethod(signature: MethodSignature): ArkMethod | null {

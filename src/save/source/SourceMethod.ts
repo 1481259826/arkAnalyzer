@@ -22,6 +22,7 @@ import { SourceStmt } from './SourceStmt';
 import { SourceTransformer } from './SourceTransformer';
 import { SourceUtils } from './SourceUtils';
 import { Stmt } from '../../core/base/Stmt';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 /**
  * @category save
@@ -35,6 +36,10 @@ export class SourceMethod extends SourceBase {
         this.method = method;
         this.transformer = new SourceTransformer(this);
         this.inBuilder = this.initInBuilder();
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return this.method.getDeclaringArkClass().getDeclaringArkNamespace();
     }
 
     public setInBuilder(inBuilder: boolean): void {
@@ -178,7 +183,7 @@ export class SourceMethod extends SourceBase {
     private initInBuilder(): boolean {
         return (
             this.method.hasBuilderDecorator() ||
-            (this.method.getName() == 'build' &&
+            ((this.method.getName() == 'build' || this.method.getName() == 'pageTransition') &&
                 !this.method.containsModifier('StaticKeyword') &&
                 this.method.getDeclaringArkClass().hasViewTree())
         );
