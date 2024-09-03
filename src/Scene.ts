@@ -33,7 +33,6 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ExportType } from './core/model/ArkExport';
-import { ClassType } from './core/base/Type';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
@@ -184,7 +183,6 @@ export class Scene {
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
-        this.genExtendedClasses();
         this.addDefaultConstructors();
     }
 
@@ -217,7 +215,6 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
-        this.genExtendedClasses();
         this.addDefaultConstructors();
     }
 
@@ -466,22 +463,6 @@ export class Scene {
             arkFile.getImportInfos().forEach((importInfo) => {
                 this.globalImportInfos.push(importInfo);
             });
-        });
-    }
-
-    private genExtendedClasses() {
-        this.getClassesMap().forEach((cls) => {
-            if (cls.getSuperClassName() !== '') {
-                const type = TypeInference.inferUnclearReferenceType(cls.getSuperClassName(), cls);
-                let superClass;
-                if (type && type instanceof ClassType) {
-                    superClass = cls.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
-                }
-                if (superClass) {
-                    cls.setSuperClass(superClass);
-                    superClass.addExtendedClass(cls);
-                }
-            }
         });
     }
 

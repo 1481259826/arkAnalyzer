@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Type } from '../base/Type';
+import { ClassType, Type } from '../base/Type';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkField } from './ArkField';
 import { ArkFile } from './ArkFile';
@@ -24,6 +24,7 @@ import { Local } from '../base/Local';
 import { Decorator } from '../base/Decorator';
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from '../common/EtsConst';
 import { ArkExport, ExportType } from './ArkExport';
+import { TypeInference } from "../common/TypeInference";
 
 /**
  * @category core/model
@@ -40,7 +41,7 @@ export class ArkClass implements ArkExport {
     private classSignature!: ClassSignature;
 
     private superClassName: string = '';
-    private superClass?: ArkClass;
+    private superClass?: ArkClass | null;
     private implementedInterfaceNames: string[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private typeParameters: Type[] = [];
@@ -156,7 +157,19 @@ export class ArkClass implements ArkExport {
     }
 
     public getSuperClass(): ArkClass | null {
-        return this.superClass ?? null;
+        if (this.superClass === undefined) {
+            const type = TypeInference.inferUnclearReferenceType(this.superClassName, this);
+            if (type instanceof ClassType) {
+                let superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature());
+                if (superClass) {
+                    superClass.addExtendedClass(this);
+                    this.superClass = superClass;
+                    return this.superClass;
+                }
+            }
+            this.superClass = null;
+        }
+        return this.superClass;
     }
 
     public setSuperClass(superClass: ArkClass) {
