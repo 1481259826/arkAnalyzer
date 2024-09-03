@@ -42,7 +42,7 @@ class Animal {
 }
 
 class Snake extends Animal {
-    constructor (name: string){
+    constructor(name: string){
         super(name);
     }
     move(distanceInMeters = 5){
