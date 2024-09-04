@@ -15,9 +15,9 @@
 
 import { ArkFile } from './ArkFile';
 import { LineColPosition } from '../base/Position';
-import { findExportInfo } from './builder/ArkImportBuilder';
 import { Decorator } from '../base/Decorator';
 import { ExportInfo, FromInfo } from './ArkExport';
+import { findExportInfo } from "../common/ModelUtils";
 
 /**
  * @category core/model
@@ -61,7 +61,7 @@ export class ImportInfo implements FromInfo {
         if (this.lazyExportInfo === undefined) {
             this.lazyExportInfo = findExportInfo(this);
         }
-        return this.lazyExportInfo;
+        return this.lazyExportInfo || null;
     }
 
     public setDeclaringArkFile(declaringArkFile: ArkFile): void {
@@ -129,6 +129,9 @@ export class ImportInfo implements FromInfo {
     }
 
     public isDefault(): boolean {
+        if (this.nameBeforeAs === 'default') {
+            return true;
+        }
         return this.importType === 'Identifier';
     }
 }

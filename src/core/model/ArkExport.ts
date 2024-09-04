@@ -17,6 +17,8 @@ import { LineColPosition } from '../base/Position';
 import { Decorator } from '../base/Decorator';
 import { ArkFile } from './ArkFile';
 import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
+import { DEFAULT } from "../common/TSConst";
+
 
 export type ExportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
 
@@ -60,7 +62,7 @@ export class ExportInfo implements FromInfo {
     private exportClauseName: string = '';
 
     private exportClauseType: ExportType = ExportType.UNKNOWN;
-    private arkExport?: ArkExport;
+    private arkExport?: ArkExport | null;
     private exportFrom?: string;
 
     private originTsPosition?: LineColPosition;
@@ -95,18 +97,16 @@ export class ExportInfo implements FromInfo {
     }
 
     public setArkExport(value: ArkExport | null) {
-        if (value) {
-            this.arkExport = value;
-        }
+        this.arkExport = value;
     }
 
-    public getArkExport(): ArkExport | null {
-        return this.arkExport ?? null;
+    public getArkExport(): ArkExport | undefined | null {
+        return this.arkExport;
     }
 
     public isDefault(): boolean {
         if (this.exportFrom) {
-            return this.nameBeforeAs === 'default';
+            return this.nameBeforeAs === DEFAULT;
         }
         if (this._default === undefined) {
             this._default = this.modifiers?.has('DefaultKeyword');
@@ -179,7 +179,7 @@ export class ExportInfo implements FromInfo {
         }
 
         public arkExport(value: ArkExport): ArkExportBuilder {
-            this.exportInfo.setArkExport(value);
+            this.exportInfo.arkExport = value;
             return this;
         }
 

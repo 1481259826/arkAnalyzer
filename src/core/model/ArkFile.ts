@@ -19,7 +19,7 @@ import { ImportInfo } from './ArkImport';
 import { ArkClass } from './ArkClass';
 import { ArkNamespace } from './ArkNamespace';
 import { ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
-import { setTypeForExportInfo } from './builder/ArkImportBuilder';
+import { ALL } from "../common/TSConst";
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
@@ -160,19 +160,21 @@ export class ArkFile {
     }
 
     public getExportInfos(): ExportInfo[] {
-        return Array.from(this.exportInfoMap.values());
+        const exportInfos: ExportInfo[] = [];
+        this.exportInfoMap.forEach((value, key) => {
+            if (key !== ALL || value.getFrom()) {
+                exportInfos.push(value);
+            }
+        })
+        return exportInfos;
     }
 
-    public getExportInfoBy(name: string): ExportInfo | null {
-        const exportInfo = this.exportInfoMap.get(name);
-        if (exportInfo) {
-            return setTypeForExportInfo(exportInfo);
-        }
-        return null;
+    public getExportInfoBy(name: string): ExportInfo | undefined {
+        return this.exportInfoMap.get(name);
     }
 
-    public addExportInfo(exportInfo: ExportInfo) {
-        this.exportInfoMap.set(exportInfo.getExportClauseName(), exportInfo);
+    public addExportInfo(exportInfo: ExportInfo, key?: string) {
+        this.exportInfoMap.set(key ?? exportInfo.getExportClauseName(), exportInfo);
     }
 
     public setProjectName(projectName: string) {
