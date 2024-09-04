@@ -92,7 +92,7 @@ export abstract class AbstractAnalysis {
 
     protected processMethod(methodID: FuncID): CallSite[] {
         let cgNode = this.cg.getNode(methodID) as CallGraphNode
-        let arkMethod = this.scene.getMethod(cgNode.getMethod());
+        let arkMethod = this.scene.getMethod(cgNode.getMethod(), true);
         let calleeMethods: CallSite[] = []
 
         if (!arkMethod) {

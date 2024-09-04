@@ -778,6 +778,8 @@ export class Scene {
                 const superClass = cls.getSuperClass();
                 if (superClass) {
                     cls = superClass;
+                } else {
+                    break;
                 }
             }
             entryMethods.push(...abilityEntryMethods);
