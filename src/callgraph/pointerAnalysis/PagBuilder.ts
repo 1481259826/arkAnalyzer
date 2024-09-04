@@ -110,6 +110,7 @@ export class PagBuilder {
             let csFunc = this.worklist.shift() as CSFuncID;
             this.buildFuncPag(csFunc.funcID);
             if (this.isSingletonFunction(csFunc.funcID)) {
+                logger.info(`function ${csFunc.funcID} is marker as singleton function`)
                 csFunc.cid = 0
             }
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
@@ -252,13 +253,6 @@ export class PagBuilder {
                 let callee = this.scene.getMethod(this.cg.getMethodByFuncID(cs.calleeFuncID)!)!
                 let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
                 let baseNodeID = baseNode.getID();
-                // baseNode.getIncomingEdge().forEach(e => {
-                //     if(e.getKind() == PagEdgeKind.Address)
-                //         baseNodeID = e.getSrcNode().getID()
-                // })
-                // if (!baseNodeID) {
-                //     throw new Error()
-                // }
                 
                 this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
             }
@@ -753,6 +747,7 @@ export class PagBuilder {
         visited.add(currentNode);
     
         for (const neighbor of graph.get(currentNode) || []) {
+            // TODO: add global variable
             const isSpecialNode = neighbor instanceof ArkStaticFieldRef;
 
             if (!visited.has(neighbor)) {

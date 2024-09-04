@@ -24,7 +24,6 @@ import { AbstractAnalysis } from "./AbstractAnalysis";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
 import { ClassType } from "../../core/base/Type";
  
-// const logger = Logger.getLogger();
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'RTA');
 
 export class RapidTypeAnalysis extends AbstractAnalysis {

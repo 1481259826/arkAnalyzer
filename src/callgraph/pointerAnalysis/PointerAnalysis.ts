@@ -29,11 +29,10 @@ import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode } from
 import { PagBuilder } from "./PagBuilder";
 import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { DiffPTData, PtsSet } from "./PtsDS";
-// const logger = Logger.getLogger()
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
-export class PointerAnalysis extends AbstractAnalysis{
+export class PointerAnalysis extends AbstractAnalysis {
     private pag: Pag;
     private pagBuilder: PagBuilder;
     private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
