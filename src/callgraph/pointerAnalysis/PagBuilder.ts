@@ -110,7 +110,6 @@ export class PagBuilder {
             let csFunc = this.worklist.shift() as CSFuncID;
             this.buildFuncPag(csFunc.funcID);
             if (this.isSingletonFunction(csFunc.funcID)) {
-                logger.info(`function ${csFunc.funcID} is marker as singleton function`)
                 csFunc.cid = 0
             }
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
@@ -676,10 +675,12 @@ export class PagBuilder {
 
         let arkMethod = this.cg.getArkMethodByFuncID(funcID)
         if (!arkMethod) {
+            this.singletonFuncMap.set(funcID, false)
             return false
         }
 
         if (!arkMethod.getModifiers().has("StaticKeyword")) {
+            this.singletonFuncMap.set(funcID, false)
             return false
         }
 
@@ -692,6 +693,9 @@ export class PagBuilder {
 
         let result = this.isValueConnected([...funcPag.getInternalEdges()!], heapObjects, returnValues)
         this.singletonFuncMap.set(funcID, result)
+        if (result) {
+            logger.info(`function ${funcID} is marked as singleton function`)
+        }
         return result
     }
 
@@ -851,8 +855,10 @@ export class PagBuilder {
         }
 
         for (let pt of pts) {
-            let heapObjNode = this.pag.getNode(pt) as PagNewExprNode;
-            heapObjNode.addRelatedNodes(node);
+            let heapObjNode = this.pag.getNode(pt);
+            if (heapObjNode instanceof PagNewExprNode) {
+                heapObjNode.addRelatedNodes(node);
+            }
         }
 
         (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
