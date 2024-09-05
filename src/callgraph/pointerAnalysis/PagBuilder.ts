@@ -246,14 +246,18 @@ export class PagBuilder {
 
             // Add edge to thisRef for special calls
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-            let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr
+            let ivkExpr = cs.callStmt.getInvokeExpr()
             if(calleeCGNode.getKind() == CallGraphNodeKind.constructor ||
                 calleeCGNode.getKind() == CallGraphNodeKind.intrinsic) { 
                 let callee = this.scene.getMethod(this.cg.getMethodByFuncID(cs.calleeFuncID)!)!
-                let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
-                let baseNodeID = baseNode.getID();
-                
-                this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+                if (ivkExpr instanceof ArkInstanceInvokeExpr) {
+                    let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
+                    let baseNodeID = baseNode.getID();
+                    
+                    this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+                } else {
+                    logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`)
+                }
             }
         }
 
