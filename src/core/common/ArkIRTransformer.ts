@@ -1006,9 +1006,9 @@ export class ArkIRTransformer {
             elementTypes.add(elementValue.getType());
         }
 
-        let baseType = AnyType.getInstance();
+        let baseType: Type = AnyType.getInstance();
         if (elementTypes.size == 1) {
-            baseType = elementTypes.keys().next().value;
+            baseType = elementTypes.keys().next().value as Type;
         } else if (elementTypes.size > 1) {
             baseType = new UnionType(Array.from(elementTypes));
         }
@@ -1658,12 +1658,10 @@ export class ArkIRTransformer {
         const originalStmt = new Stmt();
         originalStmt.setText(node.getText(this.sourceFile));
         const positionInfo = LineColPosition.buildFromNode(node, this.sourceFile);
-        originalStmt.setOriginPositionInfo(positionInfo);
         originalStmt.setPositionInfo(positionInfo);
 
         for (const stmt of stmts) {
-            if (stmt.getOriginPositionInfo().getLineNo() === -1) {
-                stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
+            if (!this.stmtToOriginalStmt.has(stmt)){
                 this.stmtToOriginalStmt.set(stmt, originalStmt);
             }
         }

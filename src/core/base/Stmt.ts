@@ -25,7 +25,6 @@ import { LineColPosition } from './Position';
  */
 export class Stmt {
     private text: string = '';
-    private originPosition: LineColPosition = LineColPosition.DEFAULT;
     private position: LineColPosition = LineColPosition.DEFAULT;
     private cfg: Cfg | null = null;
 
@@ -156,12 +155,13 @@ export class Stmt {
         return this.position;
     }
 
-    public setOriginPositionInfo(originPosition: LineColPosition): void {
-        this.originPosition = originPosition;
-    }
-
     public getOriginPositionInfo(): LineColPosition {
-        return this.originPosition;
+        const originPositionInfo = this.cfg?.getDeclaringMethod()?.getBody()?.getStmtToOriginalStmt()
+            ?.get(this)?.position;
+        if (!originPositionInfo) {
+            return LineColPosition.DEFAULT;
+        }
+        return originPositionInfo;
     }
 
     public toString(): string {
