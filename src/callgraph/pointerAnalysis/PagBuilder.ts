@@ -29,7 +29,7 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge } from './Pag';
 import { PtsSet } from './PtsDS';
 
 // const logger = Logger.getLogger();
@@ -62,6 +62,7 @@ export class PagBuilder {
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
+    private singletonFuncMap: Map<FuncID, boolean> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -107,7 +108,10 @@ export class PagBuilder {
 
         while (this.worklist.length > 0) {
             let csFunc = this.worklist.shift() as CSFuncID;
-            this.buildFunPag(csFunc.funcID);
+            this.buildFuncPag(csFunc.funcID);
+            if (this.isSingletonFunction(csFunc.funcID)) {
+                csFunc.cid = 0
+            }
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
             this.addToFuncHandledListThisRound(csFunc.funcID);
         }
@@ -125,7 +129,7 @@ export class PagBuilder {
         }
     }
 
-    public buildFunPag(funcID: FuncID): boolean {
+    public buildFuncPag(funcID: FuncID): boolean {
         if (this.funcPags.has(funcID)) {
             return false;
         }
@@ -242,21 +246,18 @@ export class PagBuilder {
 
             // Add edge to thisRef for special calls
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-            let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr
+            let ivkExpr = cs.callStmt.getInvokeExpr()
             if(calleeCGNode.getKind() == CallGraphNodeKind.constructor ||
                 calleeCGNode.getKind() == CallGraphNodeKind.intrinsic) { 
                 let callee = this.scene.getMethod(this.cg.getMethodByFuncID(cs.calleeFuncID)!)!
-                let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
-                let baseNodeID = baseNode.getID();
-                // baseNode.getIncomingEdge().forEach(e => {
-                //     if(e.getKind() == PagEdgeKind.Address)
-                //         baseNodeID = e.getSrcNode().getID()
-                // })
-                // if (!baseNodeID) {
-                //     throw new Error()
-                // }
-                
-                this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+                if (ivkExpr instanceof ArkInstanceInvokeExpr) {
+                    let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
+                    let baseNodeID = baseNode.getID();
+                    
+                    this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+                } else {
+                    logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`)
+                }
             }
         }
 
@@ -667,6 +668,110 @@ export class PagBuilder {
         return real;
     }
 
+    /**
+     * check if a method is singleton function
+     * rule: static method, assign heap obj to global var or static field, return the receiver
+     */
+    public isSingletonFunction(funcID: FuncID): boolean {
+        if (this.singletonFuncMap.has(funcID)) {
+            return this.singletonFuncMap.get(funcID)!
+        }
+
+        let arkMethod = this.cg.getArkMethodByFuncID(funcID)
+        if (!arkMethod) {
+            this.singletonFuncMap.set(funcID, false)
+            return false
+        }
+
+        if (!arkMethod.getModifiers().has("StaticKeyword")) {
+            this.singletonFuncMap.set(funcID, false)
+            return false
+        }
+
+        let funcPag = this.funcPags.get(funcID)!
+        let heapObjects = [...funcPag.getInternalEdges()!]
+            .filter(edge => edge.kind == PagEdgeKind.Address)
+            .map(edge => edge.dst)
+
+        let returnValues = arkMethod.getReturnValues()
+
+        let result = this.isValueConnected([...funcPag.getInternalEdges()!], heapObjects, returnValues)
+        this.singletonFuncMap.set(funcID, result)
+        if (result) {
+            logger.info(`function ${funcID} is marked as singleton function`)
+        }
+        return result
+    }
+
+    private isValueConnected(edges: InternalEdge[], leftNodes: Value[], targetNodes: Value[]): boolean {
+        // build funcPag graph
+        const graph = new Map<Value, Value[]>();
+        let hasStaticFieldOrGlobalVar: boolean = false
+    
+        for (const edge of edges) {
+            let dst = this.getRealInstanceRef(edge.dst)
+            let src = this.getRealInstanceRef(edge.src)
+            if (!graph.has(dst)) {
+                graph.set(dst, []);
+            }
+            if (!graph.has(src)) {
+                graph.set(src, []);
+            }
+
+            if (dst instanceof ArkStaticFieldRef || src instanceof ArkStaticFieldRef) {
+                hasStaticFieldOrGlobalVar = true
+            }
+
+            graph.get(src)!.push(dst);
+        }
+
+        if (!hasStaticFieldOrGlobalVar) {
+            return false
+        }
+
+        for (const targetNode of targetNodes) {
+            for (const leftNode of leftNodes) {
+                const visited = new Set<Value>();
+                let meetStaticField = false
+                if (this.funcPagDfs(graph, visited, leftNode, targetNode, meetStaticField)) {
+                    return true; // a value pair that satisfy condition
+                }
+
+                if (!meetStaticField) {
+                    break; // heap obj will not deal any more
+                }
+            }
+        }
+
+        return false
+    }
+
+    private funcPagDfs(graph: Map<Value, Value[]>, visited: Set<Value>, currentNode: Value, targetNode: Value, 
+        staticFieldFound: boolean): boolean {
+        if (currentNode === targetNode) {
+            return staticFieldFound;
+        }
+    
+        visited.add(currentNode);
+    
+        for (const neighbor of graph.get(currentNode) || []) {
+            // TODO: add global variable
+            const isSpecialNode = neighbor instanceof ArkStaticFieldRef;
+
+            if (!visited.has(neighbor)) {
+                if (isSpecialNode) {
+                    staticFieldFound = true;
+                }
+
+                if (this.funcPagDfs(graph, visited, neighbor, targetNode, staticFieldFound)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
         if (this.stmtIsCreateAddressObj(stmt)) {
             return PagEdgeKind.Address;
@@ -754,8 +859,10 @@ export class PagBuilder {
         }
 
         for (let pt of pts) {
-            let heapObjNode = this.pag.getNode(pt) as PagNewExprNode;
-            heapObjNode.addRelatedNodes(node);
+            let heapObjNode = this.pag.getNode(pt);
+            if (heapObjNode instanceof PagNewExprNode) {
+                heapObjNode.addRelatedNodes(node);
+            }
         }
 
         (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
