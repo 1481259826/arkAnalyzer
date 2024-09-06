@@ -414,7 +414,11 @@ export class PagBuilder {
 
     public handleUnprocessedCallSites(processedCallSites: Set<DynCallSite>) {
         for (let funcID of this.funcHandledThisRound) {
-            let funcPag = this.funcPags.get(funcID)!
+            let funcPag = this.funcPags.get(funcID)
+            if (!funcPag) {
+                logger.error(`can not find funcPag of handled func ${funcID}`)
+                continue
+            }
             let callSites = funcPag.getDynamicCallSites()
 
             const diffCallSites = new Set(Array.from(callSites).filter(item => !processedCallSites.has(item)))
