@@ -199,10 +199,6 @@ export class Stmt {
     public setText(text: string): void {
         this.text = text;
     }
-
-    public updateText(): void {
-        this.text = this.toString();
-    }
 }
 
 export class ArkAssignStmt extends Stmt {
@@ -238,7 +234,6 @@ export class ArkAssignStmt extends Stmt {
 
     public toString(): string {
         const str = this.getLeftOp() + ' = ' + this.getRightOp();
-        this.setText(str);
         return str;
     }
 
@@ -271,7 +266,6 @@ export class ArkInvokeStmt extends Stmt {
 
     public toString(): string {
         const str = this.invokeExpr.toString();
-        this.setText(str);
         return str;
     }
 
@@ -306,7 +300,6 @@ export class ArkIfStmt extends Stmt {
 
     public toString(): string {
         const str = 'if ' + this.conditionExpr;
-        this.setText(str);
         return str;
     }
 
@@ -342,7 +335,6 @@ export class ArkReturnStmt extends Stmt {
 
     public toString(): string {
         const str = 'return ' + this.op;
-        this.setText(str);
         return str;
     }
 
@@ -365,7 +357,6 @@ export class ArkReturnVoidStmt extends Stmt {
 
     public toString(): string {
         const str = 'return';
-        this.setText(str);
         return str;
     }
 }
@@ -377,7 +368,6 @@ export class ArkNopStmt extends Stmt {
 
     public toString(): string {
         const str = 'nop';
-        this.setText(str);
         return str;
     }
 }
@@ -421,7 +411,6 @@ export class ArkSwitchStmt extends Stmt {
 
         strs.push('default : }');
         const str = strs.join('');
-        this.setText(str);
         return str;
     }
 
@@ -448,7 +437,6 @@ export class ArkThrowStmt extends Stmt {
 
     public toString(): string {
         const str = 'throw ' + this.op;
-        this.setText(str);
         return str;
     }
 
