@@ -19,18 +19,20 @@ import {
     AbstractInvokeExpr,
     ArkConditionExpr,
     ArkInstanceInvokeExpr,
+    ArkNewExpr,
     ArkStaticInvokeExpr,
     RelationalBinaryOperator,
 } from '../base/Expr';
 import { Local } from '../base/Local';
 import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt } from '../base/Stmt';
-import { BooleanType, ClassType, NumberType } from '../base/Type';
+import { BooleanType, ClassType, NumberType, UnclearReferenceType } from '../base/Type';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkBody } from '../model/ArkBody';
 import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
+import { ArkNamespace } from '../model/ArkNamespace';
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：
@@ -39,7 +41,9 @@ import { ArkMethod } from '../model/ArkMethod';
 count = 0
 while (true) {
     if (count == 1) {
-        onCreate()
+        temp1 = new ability
+        temp2 = new want
+        temp1.onCreate(temp2)
     }
     if (count == 2) {
         onDestroy()
@@ -60,11 +64,23 @@ export class DummyMainCreater {
     private classLocalMap: Map<ArkMethod, Local | null> = new Map();
     private dummyMain: ArkMethod = new ArkMethod();
     private scene: Scene;
+    private tempLocalIndex: number = 0;
+    private builtInClass: Map<string, ArkClass> = new Map;
 
     constructor(scene: Scene) {
         this.scene = scene;
         this.entryMethods = this.scene.getEntryMethodsFromModuleJson5();
         this.entryMethods.push(...scene.getCallbackMethods());
+        this.buildBuiltInClass();
+    }
+
+    private buildBuiltInClass() {
+        for (const sdkFile of this.scene.getSdkArkFilesMap().values()) {
+            if (sdkFile.getName() == 'api\\@ohos.app.ability.Want.d.ts') {
+                const arkClass = sdkFile.getClassWithName('Want')!;
+                this.builtInClass.set('Want', arkClass);
+            }
+        }
     }
 
     public setEntryMethods(methods: ArkMethod[]): void {
@@ -95,8 +111,18 @@ export class DummyMainCreater {
                 this.classLocalMap.set(method, null);
             } else {
                 const declaringArkClass = method.getDeclaringArkClass();
-                const local = new Local('temp' + declaringArkClass.getName(), new ClassType(declaringArkClass.getSignature()));
-                this.classLocalMap.set(method, local);
+                let newLocal: Local | null = null;
+                for (const local of this.classLocalMap.values()) {
+                    if ((local?.getType() as ClassType).getClassSignature() == declaringArkClass.getSignature()) {
+                        newLocal = local;
+                        break;
+                    }
+                }
+                if (!newLocal) {
+                    newLocal = new Local('temp' + this.tempLocalIndex, new ClassType(declaringArkClass.getSignature()));
+                    this.tempLocalIndex++;
+                }
+                this.classLocalMap.set(method, newLocal);
             }
         }
         const localSet = new Set(Array.from(this.classLocalMap.values()).filter((value): value is Local => value !== null));
@@ -116,6 +142,12 @@ export class DummyMainCreater {
             const staticInvokeExpr = new ArkStaticInvokeExpr(method.getSignature(), []);
             const invokeStmt = new ArkInvokeStmt(staticInvokeExpr);
             firstBlock.addStmt(invokeStmt);
+        }
+
+        const locals = Array.from(new Set(this.classLocalMap.values()));
+        for (const local of locals) {
+            const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(local?.getType() as ClassType))
+            firstBlock.addStmt(assStmt);
         }
 
         const countLocal = new Local('count', NumberType.getInstance());
@@ -147,15 +179,33 @@ export class DummyMainCreater {
                 block.addSuccessorBlock(ifBlock);
             }
 
+            const invokeBlock = new BasicBlock();
+            const paramLocals: Local[] = [];
+            for (const param of method.getParameters()) {
+                const paramType = param.getType();
+                const paramLocal = new Local('temp' + this.tempLocalIndex++, paramType);
+                paramLocals.push(paramLocal);
+                if (paramType instanceof ClassType) {
+                    const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(paramType));
+                    invokeBlock.addStmt(assStmt);
+                } else if (paramType instanceof UnclearReferenceType) {
+                    const arkClass = this.getArkClassFromParamType(paramType.getName(), method.getDeclaringArkFile());
+                    if (arkClass) {
+                        const classType = new ClassType(arkClass.getSignature());
+                        paramLocal.setType(classType);
+                        const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(classType));
+                        invokeBlock.addStmt(assStmt);
+                    }
+                }
+            }
             const local = this.classLocalMap.get(method);
             let invokeExpr: AbstractInvokeExpr;
             if (local) {
-                invokeExpr = new ArkInstanceInvokeExpr(local, method.getSignature(), []);
+                invokeExpr = new ArkInstanceInvokeExpr(local, method.getSignature(), paramLocals);
             } else {
-                invokeExpr = new ArkStaticInvokeExpr(method.getSignature(), []);
+                invokeExpr = new ArkStaticInvokeExpr(method.getSignature(), paramLocals);
             }
             const invokeStmt = new ArkInvokeStmt(invokeExpr);
-            const invokeBlock = new BasicBlock();
             dummyCfg.addBlock(invokeBlock);
             invokeBlock.addStmt(invokeStmt);
             ifBlock.addSuccessorBlock(invokeBlock);
@@ -174,6 +224,28 @@ export class DummyMainCreater {
         returnBlock.addPredecessorBlock(whileBlock);
 
         return dummyCfg;
+    }
+
+    private getArkClassFromParamType(name: string, file: ArkFile): ArkClass | null {
+        if (name.includes('.')) {
+            const nsName = name.split('.')[0];
+            const clsName = name.split('.')[1];
+            const importInfo = file.getImportInfoBy(nsName);
+            const arkExport = importInfo?.getLazyExportInfo()?.getArkExport();
+            if (arkExport instanceof ArkNamespace) {
+                const arkClass = arkExport.getClassWithName(clsName);
+                if (arkClass) {
+                    return arkClass;
+                }
+            }
+        } else {
+            const importInfo = file.getImportInfoBy(name);
+            const arkExport = importInfo?.getLazyExportInfo()?.getArkExport();
+            if (arkExport instanceof ArkClass) {
+                return arkExport;
+            }
+        }
+        return null;
     }
 
     private addCfg2Stmt() {

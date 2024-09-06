@@ -25,6 +25,8 @@ import { BasicBlock } from '../graph/BasicBlock';
 import { CallGraph } from '../../callgraph/model/CallGraph';
 import { CallGraphBuilder } from '../../callgraph/model/builder/CallGraphBuilder';
 import { ClassHierarchyAnalysis } from '../../callgraph/algorithm/ClassHierarchyAnalysis';
+import { addCfg2Stmt } from '../../utils/entryMethodUtils';
+import { getRecallMethodInParam } from './Util';
 
 /*
 this program is roughly an implementation of the paper: Practical Extensions to the IFDS Algorithm.
@@ -95,7 +97,7 @@ export abstract class DataflowSolver<D> {
         this.CHA = new ClassHierarchyAnalysis(this.scene, cg)
         // this.CHA = this.scene.makeCallGraphCHA([this.problem.getEntryMethod().getSignature()]) as ClassHierarchyAnalysisAlgorithm;
         this.buildStmtMap();
-
+        this.setCfg4AllStmt();
         return;
     }
 
@@ -128,6 +130,14 @@ export abstract class DataflowSolver<D> {
         for (const classes of this.scene.getClassMap()) {
             for (const cls of classes[1]) {
                 this.buildStmtMapInClass(cls);
+            }
+        }
+    }
+
+    private setCfg4AllStmt() {
+        for (const cls of this.scene.getClasses()) {
+            for (const mtd of cls.getMethods(true)) {
+                addCfg2Stmt(mtd);
             }
         }
     }
@@ -225,8 +235,8 @@ export abstract class DataflowSolver<D> {
     protected processNormalNode(edge: PathEdge<D>) {
         let start: PathEdgePoint<D> = edge.edgeStart;
         let end: PathEdgePoint<D> = edge.edgeEnd;
-        let stmts: Stmt[] = this.getChildren(end.node);
-        for (let stmt of stmts.reverse()) {
+        let stmts: Stmt[] = [...this.getChildren(end.node)].reverse();
+        for (let stmt of stmts) {
             let flowFunction: FlowFunction<D> = this.problem.getNormalFlowFunction(end.node, stmt);
             let set: Set<D> = flowFunction.getDataFacts(end.fact);
             for (let fact of set) {
@@ -241,11 +251,20 @@ export abstract class DataflowSolver<D> {
     protected processCallNode(edge: PathEdge<D>) {
         let start: PathEdgePoint<D> = edge.edgeStart;
         let callEdgePoint: PathEdgePoint<D> = edge.edgeEnd;
-        let callees: Set<ArkMethod> = this.getAllCalleeMethods(callEdgePoint.node as ArkInvokeStmt);
+        const invokeStmt = callEdgePoint.node as ArkInvokeStmt;
+        let callees: Set<ArkMethod>;
+        if (this.scene.getFilesMap().get(invokeStmt.getInvokeExpr().getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature().toString())) {
+            callees = this.getAllCalleeMethods(callEdgePoint.node as ArkInvokeStmt);
+        } else {
+            callees = new Set([getRecallMethodInParam(invokeStmt)!]);
+        }
         let callNode: Stmt = edge.edgeEnd.node;
         let returnSite: Stmt = this.getReturnSiteOfCall(callEdgePoint.node);
         for (let callee of callees) {
             let callFlowFunc: FlowFunction<D> = this.problem.getCallFlowFunction(callNode, callee);
+            if (!callee.getCfg()) {
+                continue;
+            }
             let firstStmt: Stmt = [...callee.getCfg()!.getBlocks()][0].getStmts()[callee.getParameters().length];
             let facts: Set<D> = callFlowFunc.getDataFacts(callEdgePoint.fact);
             for (let fact of facts) {
@@ -313,6 +332,9 @@ export abstract class DataflowSolver<D> {
         for (const expr of stmt.getExprs()) {
             if (expr instanceof AbstractInvokeExpr) {
                 if (this.scene.getFilesMap().get(expr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature().toString())) {
+                    return true;
+                }
+                if (stmt instanceof ArkInvokeStmt && getRecallMethodInParam(stmt)) {
                     return true;
                 }
             }
