@@ -33,6 +33,8 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
+import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
+import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：
@@ -89,23 +91,26 @@ export class DummyMainCreater {
 
     public createDummyMain(): void {
         const dummyMainFile = new ArkFile();
-        dummyMainFile.setName('@dummyFile');
         dummyMainFile.setScene(this.scene);
-        dummyMainFile.genFileSignature();
+        const dummyMainFileSignature = new FileSignature('', '@dummyFile')
+        dummyMainFile.setFileSignature(dummyMainFileSignature)
         this.scene.getFilesMap().set(dummyMainFile.getFileSignature().toString(), dummyMainFile);
         const dummyMainClass = new ArkClass();
-        dummyMainClass.setName('@dummyClass');
         dummyMainClass.setDeclaringArkFile(dummyMainFile);
-        dummyMainClass.genSignature();
         dummyMainFile.addArkClass(dummyMainClass);
+        const dummyMainClassSignature = new ClassSignature('@dummyClass',
+            dummyMainClass.getDeclaringArkFile().getFileSignature(), dummyMainClass.getDeclaringArkNamespace()?.getSignature() || null);
+        dummyMainClass.setSignature(dummyMainClassSignature);
 
         this.dummyMain = new ArkMethod();
-        this.dummyMain.setName('@dummyMain');
         this.dummyMain.setDeclaringArkClass(dummyMainClass);
-        this.dummyMain.setDeclaringArkFile();
         this.dummyMain.setIsGeneratedFlag(true);
         dummyMainClass.addMethod(this.dummyMain);
-        this.dummyMain.genSignature();
+        const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName('@dummyMain');
+        const methodSignature = new MethodSignature(this.dummyMain.getDeclaringArkClass().getSignature(),
+            methodSubSignature);
+        this.dummyMain.setSignature(methodSignature);
+
         for (const method of this.entryMethods) {
             if (method.getDeclaringArkClass().isDefaultArkClass()) {
                 this.classLocalMap.set(method, null);

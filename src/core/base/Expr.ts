@@ -15,7 +15,7 @@
 
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
-import { ArkClass } from '../model/ArkClass';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
@@ -43,13 +43,10 @@ import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
-import { ImportInfo } from "../model/ArkImport";
-import { Constant } from "./Constant";
-
-import { ALL, CONSTRUCTOR_NAME, IMPORT } from "../common/TSConst";
-import { COMPONENT_CREATE_FUNCTION, COMPONENT_POP_FUNCTION } from "../common/EtsConst";
-import { CLASS_ORIGIN_TYPE_OBJECT } from "../common/Const";
-
+import { ImportInfo } from '../model/ArkImport';
+import { Constant } from './Constant';
+import { ALL, CONSTRUCTOR_NAME, IMPORT } from '../common/TSConst';
+import { COMPONENT_CREATE_FUNCTION, COMPONENT_POP_FUNCTION } from '../common/EtsConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
 
@@ -220,7 +217,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     }
 
     private tryInferFormGlobal(methodName: string, arkClass: ArkClass) {
-        if (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT) {
+        if (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT) {
             const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
             if (global instanceof ArkMethod) {
                 TypeInference.inferMethodReturnType(global);
@@ -316,7 +313,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
                 }
                 return this;
             }
-            if (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT) {
+            if (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT) {
                 let className;
                 if (COMPONENT_CREATE_FUNCTION === methodName || COMPONENT_POP_FUNCTION === methodName) {
                     className = this.getMethodSignature().getDeclaringClassSignature().getClassName();

@@ -14,14 +14,15 @@
  */
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { BaseSignature, FieldSignature } from '../model/ArkSignature';
+import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
-import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType, } from './Type';
+import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from './Type';
 import { Value } from './Value';
-import { ArkClass } from '../model/ArkClass';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ValueUtil } from '../common/ValueUtil';
-import { CLASS_ORIGIN_TYPE_OBJECT } from "../common/Const";
+import { ArkField } from '../model/ArkField';
+import { ArkMethod } from '../model/ArkMethod';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
@@ -144,7 +145,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         let baseType: Type | null = this.base.getType();
         if (this.base instanceof Local && baseType instanceof UnknownType) {
             baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
-            if (!baseType && (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT)) {
+            if (!baseType && (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT)) {
                 const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(this.base.getName());
                 baseType = TypeInference.parseArkExport2Type(global);
             }
@@ -163,36 +164,45 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
             return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
         }
 
-        const oldFieldSignature = this.getFieldSignature();
-        let fieldNewType = oldFieldSignature.getType();
-        const fieldType = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
-        if (fieldType) {
-            fieldNewType = fieldType;
+        let oldFieldSignature = this.getFieldSignature();
+        const propertyAndproperty = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
+        let property = null;
+        let propertyType = oldFieldSignature.getType();
+        if (propertyAndproperty) {
+            property = propertyAndproperty[0];
+            propertyType = propertyAndproperty[1];
         }
-
-        let newDeclaringSignatureOfField: BaseSignature;
         if (baseType instanceof ClassType) {
-            newDeclaringSignatureOfField = baseType.getClassSignature();
-            const cls = arkClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
-            if (cls?.getStaticFieldWithName(this.getFieldName()) || cls?.getStaticMethodWithName(this.getFieldName())) {
-                return new ArkStaticFieldRef(
-                    new FieldSignature(oldFieldSignature.getFieldName(), newDeclaringSignatureOfField, fieldNewType,
-                        oldFieldSignature.isStatic()));
+            if (property && property instanceof ArkField) {
+                const fieldSignature = property.getSignature();
+                if (property.isStatic()) {
+                    return new ArkStaticFieldRef(fieldSignature);
+                } else {
+                    this.setFieldSignature(fieldSignature);
+                }
             }
-
-            this.setFieldSignature(
-                new FieldSignature(oldFieldSignature.getFieldName(), newDeclaringSignatureOfField, fieldNewType,
-                    oldFieldSignature.isStatic()));
+            const newFieldSignature = new FieldSignature(oldFieldSignature.getFieldName(), baseType.getClassSignature(),
+                propertyType,
+                oldFieldSignature.isStatic());
+            if (property && property instanceof ArkMethod) {
+                if (property.isStatic()) {
+                    newFieldSignature.setStaticFlag(true);
+                    return new ArkStaticFieldRef(newFieldSignature);
+                } else {
+                    newFieldSignature.setStaticFlag(false);
+                }
+            }
+            this.setFieldSignature(newFieldSignature);
             return this;
         } else if (baseType instanceof AnnotationNamespaceType) {
-            newDeclaringSignatureOfField = baseType.getNamespaceSignature();
-            return new ArkStaticFieldRef(
-                new FieldSignature(oldFieldSignature.getFieldName(), newDeclaringSignatureOfField, fieldNewType,
-                    oldFieldSignature.isStatic()));
+            const newFieldSignature = new FieldSignature(oldFieldSignature.getFieldName(),
+                baseType.getNamespaceSignature(), propertyType,
+                oldFieldSignature.isStatic());
+            return new ArkStaticFieldRef(newFieldSignature);
         }
-        logger.warn('infer field ref FieldSignature type fail: ' + this.toString());
         this.setFieldSignature(
-            new FieldSignature(oldFieldSignature.getFieldName(), oldFieldSignature.getDeclaringSignature(), fieldNewType,
+            new FieldSignature(oldFieldSignature.getFieldName(), oldFieldSignature.getDeclaringSignature(),
+                propertyType,
                 oldFieldSignature.isStatic()));
         return this;
     }

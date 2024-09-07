@@ -24,13 +24,11 @@ import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { buildExportAssignment, buildExportDeclaration, buildExportInfo } from './ArkExportBuilder';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
+import { NamespaceSignature } from '../ArkSignature';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkNamespaceBuilder');
 
 export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance: ArkFile | ArkNamespace, ns: ArkNamespace, sourceFile: ts.SourceFile) {
-    // ns name
-    ns.setName(node.name.text);
-
     // modifiers
     if (node.modifiers) {
         buildModifiers(node, sourceFile).forEach((modifier) => {
@@ -39,16 +37,16 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
     }
 
     if (declaringInstance instanceof ArkFile) {
-        ns.setDeclaringType("ArkFile");
         ns.setDeclaringArkFile(declaringInstance);
     } else {
-        ns.setDeclaringType("ArkNamespace");
         ns.setDeclaringArkNamespace(declaringInstance);
         ns.setDeclaringArkFile(declaringInstance.getDeclaringArkFile());
     }
     ns.setDeclaringInstance(declaringInstance);
-
-    ns.genNamespaceSignature();
+    const namespaceName = node.name.text;
+    const namespaceSignature = new NamespaceSignature(namespaceName, ns.getDeclaringArkFile().getFileSignature(),
+        ns.getDeclaringArkNamespace()?.getSignature() || null);
+    ns.setSignature(namespaceSignature);
 
     // TODO: whether needed?
     ns.setCode(node.getText(sourceFile));

@@ -60,7 +60,7 @@ export class FileSignature {
 }
 
 export class NamespaceSignature {
-    private namespaceName: string = "";
+    private namespaceName: string;
     private declaringFileSignature: FileSignature;
     private declaringNamespaceSignature: NamespaceSignature | null;
 
@@ -167,8 +167,18 @@ export class FieldSignature {
         return this.type;
     }
 
-    public isStatic() {
+    public isStatic(): boolean {
         return this.staticFlag;
+    }
+
+    // temp for being compatible with existing type inference
+    public setType(type: Type): void {
+        this.type = type;
+    }
+
+    // temp for being compatible with existing type inference
+    public setStaticFlag(flag: boolean): void {
+        this.staticFlag = flag;
     }
 
     public toString(): string {
@@ -209,13 +219,23 @@ export class MethodSubSignature {
         return parameterTypes;
     }
 
-    public getReturnType() {
+    public getReturnType(): Type {
         return this.returnType;
     }
 
-    public isStatic() {
+    public isStatic(): boolean {
         return this.staticFlag;
     }
+
+    // // temp for being compatible with existing type inference
+    // public setReturnType(returnType: Type): void {
+    //     this.returnType = returnType;
+    // }
+    //
+    // // temp for being compatible with existing type inference
+    // public setStaticFlag(flag: boolean): void {
+    //     this.staticFlag = flag;
+    // }
 
     public toString(): string {
         let paraStr = "";

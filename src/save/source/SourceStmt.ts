@@ -41,8 +41,12 @@ import { ArkCodeBuffer } from '../ArkStream';
 import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
-import { Origin_Component, Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import {
+    CLASS_CATEGORY_COMPONENT,
+    SourceUtils,
+} from './SourceUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
+import { ClassCategory } from '../../core/model/ArkClass';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
@@ -259,7 +263,7 @@ export class SourceAssignStmt extends SourceStmt {
         }
     }
 
-    private getClassOriginType(type: Type): string | undefined {
+    private getClassOriginType(type: Type): number | undefined {
         if (!(type instanceof ClassType)) {
             return undefined;
         }
@@ -292,9 +296,9 @@ export class SourceAssignStmt extends SourceStmt {
                         args.push(this.transformer.valueToString(v));
                     });
 
-                    if (originType == Origin_Component) {
+                    if (originType == CLASS_CATEGORY_COMPONENT) {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
-                    } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
+                    } else if (originType == ClassCategory.TYPE_LITERAL || originType == ClassCategory.OBJECT) {
                         this.rightCode = `${this.transformer.literalObjectToString(
                             this.rightOp.getType() as ClassType
                         )}`;
@@ -311,9 +315,9 @@ export class SourceAssignStmt extends SourceStmt {
             }
         }
 
-        if (originType == Origin_Component) {
+        if (originType == CLASS_CATEGORY_COMPONENT) {
             this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}()`;
-        } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
+        } else if (originType == ClassCategory.TYPE_LITERAL || originType == ClassCategory.OBJECT) {
             this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
         } else {
             this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}()`;

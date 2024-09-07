@@ -13,5 +13,16 @@
  * limitations under the License.
  */
 
-let p = new Point();
-delete p.y;
+// function main() {
+//     type numberType = number
+//     const n: numberType = 1;
+// }
+
+
+
+class Hello {
+    static #i: number;
+    public static i = 0;
+    private readonly j: number;
+    protected k: string;
+}
