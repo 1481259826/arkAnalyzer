@@ -14,7 +14,7 @@
  */
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { FieldSignature } from '../model/ArkSignature';
+import { BaseSignature, FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import { AnnotationNamespaceType, ArrayType, ClassType, Type, UnclearReferenceType, UnknownType, } from './Type';
 import { Value } from './Value';
@@ -162,29 +162,44 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
             return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
         }
+
+        const oldFieldSignature = this.getFieldSignature();
+        let fieldNewType = oldFieldSignature.getType();
         const fieldType = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
         if (fieldType) {
-            this.getFieldSignature().setType(fieldType);
+            fieldNewType = fieldType;
         }
+
+        let newDeclaringSignatureOfField: BaseSignature;
         if (baseType instanceof ClassType) {
-            this.getFieldSignature().setDeclaringSignature(baseType.getClassSignature());
+            newDeclaringSignatureOfField = baseType.getClassSignature();
             const cls = arkClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
             if (cls?.getStaticFieldWithName(this.getFieldName()) || cls?.getStaticMethodWithName(this.getFieldName())) {
-                return new ArkStaticFieldRef(this.getFieldSignature());
+                return new ArkStaticFieldRef(
+                    new FieldSignature(oldFieldSignature.getFieldName(), newDeclaringSignatureOfField, fieldNewType,
+                        oldFieldSignature.isStatic()));
             }
+
+            this.setFieldSignature(
+                new FieldSignature(oldFieldSignature.getFieldName(), newDeclaringSignatureOfField, fieldNewType,
+                    oldFieldSignature.isStatic()));
             return this;
         } else if (baseType instanceof AnnotationNamespaceType) {
-            this.getFieldSignature().setDeclaringSignature(baseType.getNamespaceSignature());
-            return new ArkStaticFieldRef(this.getFieldSignature());
+            newDeclaringSignatureOfField = baseType.getNamespaceSignature();
+            return new ArkStaticFieldRef(
+                new FieldSignature(oldFieldSignature.getFieldName(), newDeclaringSignatureOfField, fieldNewType,
+                    oldFieldSignature.isStatic()));
         }
         logger.warn('infer field ref FieldSignature type fail: ' + this.toString());
+        this.setFieldSignature(
+            new FieldSignature(oldFieldSignature.getFieldName(), oldFieldSignature.getDeclaringSignature(), fieldNewType,
+                oldFieldSignature.isStatic()));
         return this;
     }
 }
 
 export class ArkStaticFieldRef extends AbstractFieldRef {
     constructor(fieldSignature: FieldSignature) {
-        fieldSignature.setStatic();
         super(fieldSignature);
     }
 

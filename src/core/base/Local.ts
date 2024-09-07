@@ -20,7 +20,9 @@ import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';
-import { LocalSignature, MethodSignature } from '../model/ArkSignature';
+import { ClassSignature, LocalSignature, MethodSignature } from '../model/ArkSignature';
+import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
+import { UNKNOWN_METHOD_NAME } from '../common/Const';
 
 /**
  * @category core/base
@@ -112,7 +114,8 @@ export class Local implements Value, ArkExport {
     }
 
     public getSignature(): LocalSignature {
-        return this.signature ?? new LocalSignature(this.name, new MethodSignature());
+        return this.signature ?? new LocalSignature(this.name, new MethodSignature(ClassSignature.DEFAULT,
+            ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(UNKNOWN_METHOD_NAME)));
     }
 
     public setSignature(signature: LocalSignature): void {

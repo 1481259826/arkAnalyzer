@@ -144,12 +144,8 @@ export class ArkClass implements ArkExport {
     }
 
     public genSignature() {
-        let classSig = new ClassSignature();
-        classSig.setClassName(this.name);
-        classSig.setDeclaringFileSignature(this.declaringArkFile.getFileSignature());
-        if (this.declaringArkNamespace) {
-            classSig.setDeclaringNamespaceSignature(this.declaringArkNamespace.getNamespaceSignature());
-        }
+        let classSig = new ClassSignature(this.name, this.declaringArkFile.getFileSignature(),
+            this.declaringArkNamespace?.getNamespaceSignature() || null);
         this.setSignature(classSig);
     }
 

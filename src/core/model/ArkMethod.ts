@@ -150,9 +150,7 @@ export class ArkMethod implements ArkExport {
 
     public setReturnType(type: Type) {
         this.returnType = type;
-        if (this.methodSubSignature) {
-            this.methodSubSignature.setReturnType(type);
-        }
+        this.genSignature(); // temp for being compatible with existing type inference
     }
 
     public getSignature() {
@@ -172,19 +170,10 @@ export class ArkMethod implements ArkExport {
     }
 
     public genSignature() {
-        let mtdSubSig = new MethodSubSignature();
-        mtdSubSig.setMethodName(this.name);
-        mtdSubSig.setParameters(this.parameters);
-        mtdSubSig.setReturnType(this.returnType);
-        if (this.isStatic()) {
-            mtdSubSig.setStatic();
-        }
-        this.setSubSignature(mtdSubSig);
-
-        let mtdSig = new MethodSignature();
-        mtdSig.setDeclaringClassSignature(this.declaringArkClass.getSignature());
-        mtdSig.setMethodSubSignature(mtdSubSig);
-        this.setSignature(mtdSig);
+        const methodSubSignature = new MethodSubSignature(this.name, this.parameters, this.returnType, this.isStatic());
+        this.setSubSignature(methodSubSignature);
+        const methodSignature = new MethodSignature(this.declaringArkClass.getSignature(), methodSubSignature);
+        this.setSignature(methodSignature);
     }
 
     public getModifiers() {

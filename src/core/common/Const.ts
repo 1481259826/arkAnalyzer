@@ -24,3 +24,11 @@ export const CLASS_ORIGIN_TYPE_CLASS = 'Class';
 // ArkMethod const
 export const INSTANCE_INIT_METHOD_NAME = '@instance_init';
 export const STATIC_INIT_METHOD_NAME = '@static_init';
+
+// ArkSignature const
+export const UNKNOWN_PROJECT_NAME = '_UnknownProjectName';
+export const UNKNOWN_FILE_NAME = '_UnknownFileName';
+export const UNKNOWN_NAMESPACE_NAME = '_UnknownNamespaceName';
+export const UNKNOWN_CLASS_NAME = ''; // temp for being compatible with existing type inference
+export const UNKNOWN_FIELD_NAME = ''; // temp for being compatible with existing type inference
+export const UNKNOWN_METHOD_NAME = ''; // temp for being compatible with existing type inference

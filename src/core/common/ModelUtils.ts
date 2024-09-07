@@ -503,9 +503,7 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
     const fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
     const scene = im.getDeclaringArkFile().getScene();
     if (/\.e?ts$/.test(originPath)) {
-        const fromSignature = new FileSignature();
-        fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
-        fromSignature.setFileName(fileName);
+        const fromSignature = new FileSignature(im.getDeclaringArkFile().getProjectName(), fileName);
         return scene.getFile(fromSignature);
     }
     const projectName = im.getDeclaringArkFile().getProjectName();

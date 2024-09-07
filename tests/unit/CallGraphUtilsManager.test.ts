@@ -19,12 +19,14 @@ import { MethodSignatureManager, printCallGraphDetails, SceneManager } from '../
 import { assert, describe, expect, it, vi } from 'vitest';
 import { Scene } from '../../src/Scene';
 import path from 'path';
+import { ArkSignatureBuilder } from '../../src/core/model/builder/ArkSignatureBuilder';
+import { UNKNOWN_METHOD_NAME } from '../../src/core/common/Const';
 
 describe("MethodSignatureManager Test", () => {
 
     it('addToWorkList removeFromWorkList case', () => {
         let test = new MethodSignatureManager();
-        let ms = new MethodSignature();
+        let ms = ArkSignatureBuilder.buildMethodSignatureFromMethodName(UNKNOWN_METHOD_NAME);
         test.addToWorkList(ms);
         expect(test.workList.length).toBe(1);
         assert.equal(ms, test.findInWorkList(ms));
@@ -34,7 +36,7 @@ describe("MethodSignatureManager Test", () => {
 
     it('addToProcessedList removeFromProcessedList  case', () => {
         let test = new MethodSignatureManager();
-        let ms = new MethodSignature();
+        let ms = ArkSignatureBuilder.buildMethodSignatureFromMethodName(UNKNOWN_METHOD_NAME);
         test.addToProcessedList(ms);
         let list = test.processedList;
         expect(list.length).toBe(1);
@@ -53,25 +55,20 @@ describe("SceneManager Test", () => {
     sceneManager.scene = new Scene();
     sceneManager.scene.buildSceneFromProjectDir(config);
     it('get Method case', () => {
-        let ms = new MethodSignature();
+        let ms = ArkSignatureBuilder.buildMethodSignatureFromMethodName(UNKNOWN_METHOD_NAME);
         assert.isNull(sceneManager.getMethod(ms));
     })
 
     it('get Class case', () => {
-        let clazz = new ClassSignature();
-        clazz.setClassName("undefined");
+        let clazz = ArkSignatureBuilder.buildClassSignatureFromClassName('undefined');
         assert.isNull(sceneManager.getClass(clazz));
-        clazz.setClassName("test");
+        clazz = ArkSignatureBuilder.buildClassSignatureFromClassName('test');
         assert.isNull(sceneManager.getClass(clazz));
     })
 
     it('get exsit case', () => {
-        let clazz = new ClassSignature();
-        clazz.setClassName("Edge");
-        let file = new FileSignature();
-        file.setFileName("Edge.ts");
-        file.setProjectName("dataflow");
-        clazz.setDeclaringFileSignature(file);
+        let file = new FileSignature('dataflow', 'Edge.ts');
+        let clazz = new ClassSignature('Edge', file);
         let res = sceneManager.getExtendedClasses(clazz);
         expect(res.length).toBe(1);
         assert.equal(clazz.toString(), res[0].getSignature().toString());
@@ -83,7 +80,7 @@ describe("MethodSignatureManager Test", () => {
 
     it('normal case', () => {
         let set = new Set<MethodSignature>();
-        let ms = new MethodSignature();
+        let ms = ArkSignatureBuilder.buildMethodSignatureFromMethodName(UNKNOWN_METHOD_NAME);
         set.add(ms);
         let map = new Map();
         map.set(ms, [ms]);

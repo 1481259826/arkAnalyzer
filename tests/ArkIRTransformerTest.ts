@@ -78,6 +78,8 @@ class ArkIRTransformerTest {
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
+        logger.error('\nbafore inferTypes');
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -111,18 +113,18 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
             logger.error(`text: ${threeAddresStmt.toString()}`);
-            logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
-            if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
-                logger.error(`text: ${threeAddresStmt.toString()}`);
-            }
+            // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
+            // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
+            //     logger.error(`text: ${threeAddresStmt.toString()}`);
+            // }
         }
 
-        logger.error('--- originalStmts ---');
-        const originalCfg = body.getOriginalCfg();
-        for (const originalStmt of originalCfg.getStmts()) {
-            logger.error(`text: ${originalStmt.toString()}`);
-            logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
-        }
+        // logger.error('--- originalStmts ---');
+        // const originalCfg = body.getOriginalCfg();
+        // for (const originalStmt of originalCfg.getStmts()) {
+        //     logger.error(`text: ${originalStmt.toString()}`);
+        //     logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
+        // }
     }
 
     private printScene(scene: Scene): void {
@@ -184,9 +186,9 @@ class ArkIRTransformerTest {
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
-arkIRTransformerTest.testSimpleStmt();
+// arkIRTransformerTest.testSimpleStmt();
 arkIRTransformerTest.testStmtsOfSimpleProject();
-arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.printCfg();
-arkIRTransformerTest.simpleTest();
+// arkIRTransformerTest.testStmtsOfEtsProject();
+// arkIRTransformerTest.printCfg();
+// arkIRTransformerTest.simpleTest();
 

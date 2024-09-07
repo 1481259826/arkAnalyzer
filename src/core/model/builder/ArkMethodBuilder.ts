@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ClassType, Type } from '../../base/Type';
+import { ClassType, Type, UnknownType } from '../../base/Type';
 import { BodyBuilder } from '../../common/BodyBuilder';
 import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
 import { ArkClass } from '../ArkClass';
@@ -365,13 +365,9 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
             index++;
         }
 
-        const superMethodSignature = new MethodSignature();
-        superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
-        const superMethodSubSignature = new MethodSubSignature();
-        superMethodSubSignature.setMethodName(SUPER_NAME);
-        superMethodSubSignature.setParameters(parentConstructor.getParameters());
-        superMethodSubSignature.setReturnType(defaultConstructor.getReturnType());
-        superMethodSignature.setMethodSubSignature(superMethodSubSignature);
+        const superMethodSubSignature = new MethodSubSignature(SUPER_NAME, parentConstructor.getParameters(),
+            defaultConstructor.getReturnType());
+        const superMethodSignature = new MethodSignature(arkClass.getSignature(), superMethodSubSignature);
 
         const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, parameterLocals);
         const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
@@ -382,8 +378,9 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         defaultConstructor.genSignature();
 
         if (arkClass.getSuperClass()) {
-            const superMethodSignature = new MethodSignature();
-            superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
+            const superClass = arkClass.getSuperClass() as ArkClass;
+            const superMethodSubSignature = new MethodSubSignature(SUPER_NAME, [], UnknownType.getInstance());
+            const superMethodSignature = new MethodSignature(superClass.getSignature(), superMethodSubSignature);
             const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, []);
             const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
             basicBlock.addStmt(superInvokeStmt);

@@ -48,7 +48,7 @@ export class ArkFile {
     private scene!: Scene;
     private moduleScene?: ModuleScene;
 
-    private fileSignature: FileSignature = new FileSignature();
+    private fileSignature: FileSignature = FileSignature.DEFAULT;
 
     private ohPackageJson5Path: string[] = [];
 
@@ -198,10 +198,7 @@ export class ArkFile {
     }
 
     public genFileSignature() {
-        let fileSignature = new FileSignature();
-        fileSignature.setFileName(this.name);
-        fileSignature.setProjectName(this.projectName);
-        this.fileSignature = fileSignature;
+        this.fileSignature = new FileSignature(this.projectName, this.name);
     }
 
     public getFileSignature() {

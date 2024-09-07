@@ -44,9 +44,7 @@ describe("Infer Array Test", () => {
     projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     it('normal case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('test_new_array');
         assert.isDefined(method);
@@ -58,9 +56,7 @@ describe("Infer Array Test", () => {
     })
 
     it('array case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('testArray');
         const stmt = method?.getCfg()?.getStmts()[2];
@@ -71,9 +67,7 @@ describe("Infer Array Test", () => {
     })
 
     it('array Expr case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('arrayExpr');
         const stmts = method?.getCfg()?.getStmts();
@@ -88,9 +82,7 @@ describe("Infer Array Test", () => {
     })
 
     it('array Literal case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('arrayLiteral');
         const stmts = method?.getCfg()?.getStmts();
@@ -106,9 +98,7 @@ describe("Infer Array Test", () => {
     })
 
     it('fieldRef to ArrayRef case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('test_new_array');
         const stmts = method?.getCfg()?.getStmts();
@@ -122,9 +112,7 @@ describe("Infer Array Test", () => {
 
 
     it('demo case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("demo.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getClassWithName('StaticUserB')?.getMethodWithName('f1');
         const stmt = method?.getCfg()?.getStmts()[1];
@@ -134,9 +122,7 @@ describe("Infer Array Test", () => {
     })
 
     it('field case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Field.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Field.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getClassWithName('C2')?.getMethodWithName('f2');
         const stmt = method?.getCfg()?.getStmts()[2];
@@ -147,9 +133,7 @@ describe("Infer Array Test", () => {
     })
 
     it('field type case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Field.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const fields = file?.getClassWithName('FieldType')?.getFields();
         if (fields) {
@@ -160,16 +144,12 @@ describe("Infer Array Test", () => {
     })
 
     it('supperClass Test case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("B.ets");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'B.ets');
         assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('ClassB')?.getSuperClass());
     })
 
     it('constructor case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("demo.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);
         const returnType = file?.getClassWithName('Test')?.getMethodWithName('constructor')
             ?.getReturnType();
@@ -231,9 +211,7 @@ describe("Infer Array Test", () => {
     })
 
     it('field to ArrayRef case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Field.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Field.ts');
         const file = projectScene.getFile(fileId);
         const stmts = file?.getClassWithName('User')?.getFieldWithName('role')?.getInitializer();
         assert.isDefined(stmts);

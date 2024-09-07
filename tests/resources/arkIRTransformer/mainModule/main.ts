@@ -13,25 +13,5 @@
  * limitations under the License.
  */
 
-let func1 = (i: number) => i;
-let func2 = () => {
-    let i = 0;
-    i++;
-};
-let func3 = () => func2();
-let func4 = (i: number) => i++;
-
-
-type PrimitiveAliasType = number;
-type LiteralAliasType = 2;
-// type FunctionAliasType = (a: number, b: number) => number;
-type ObjectLiteralAliasType = { i: number };
-type UnionAliasType = number | string;
-type TupleAliasType = [i: number]
-
-const primitive: PrimitiveAliasType = 1;
-const literal: LiteralAliasType = 2;
-// const func: FunctionAliasType = (a: number, b: number) => a;
-const objectLiteral: ObjectLiteralAliasType = {i: 3};
-const union: UnionAliasType = 's';
-const tuple: TupleAliasType = [4];
+let p = new Point();
+delete p.y;

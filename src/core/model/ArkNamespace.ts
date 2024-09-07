@@ -70,13 +70,8 @@ export class ArkNamespace implements ArkExport {
     }
 
     public genNamespaceSignature() {
-        let namespaceSignature = new NamespaceSignature();
-        namespaceSignature.setNamespaceName(this.name);
-        namespaceSignature.setDeclaringFileSignature(this.declaringArkFile.getFileSignature());
-        if (this.declaringArkNamespace) {
-            namespaceSignature.setDeclaringNamespaceSignature(this.declaringArkNamespace.getNamespaceSignature());
-        }
-        this.namespaceSignature = namespaceSignature;
+        this.namespaceSignature = new NamespaceSignature(this.name, this.declaringArkFile.getFileSignature(),
+            this.declaringArkNamespace?.namespaceSignature || null);
     }
 
     public getSignature() {

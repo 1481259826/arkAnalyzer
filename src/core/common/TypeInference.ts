@@ -38,7 +38,6 @@ import {
     VoidType,
 } from '../base/Type';
 import { ArkMethod } from '../model/ArkMethod';
-import { ClassSignature } from '../model/ArkSignature';
 import { ArkExport } from '../model/ArkExport';
 import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
@@ -48,6 +47,8 @@ import { ArkNamespace } from '../model/ArkNamespace';
 import { SUPER_NAME } from "./TSConst";
 import { ModelUtils } from "./ModelUtils";
 import { COMPONENT_PATH } from "./EtsConst";
+import { Builtin } from './Builtin';
+import { FieldSignature } from '../model/ArkSignature';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -79,12 +80,18 @@ export class TypeInference {
         } else if (beforeType) {
             fieldType = this.inferUnclearedType(beforeType, arkClass, rightType);
         }
+
+        const oldFieldSignature = arkField.getSignature();
         if (fieldType) {
             arkField.setType(fieldType);
-            arkField.getSignature().setType(fieldType);
+            arkField.setSignature(
+                new FieldSignature(oldFieldSignature.getFieldName(), oldFieldSignature.getDeclaringSignature(),
+                    fieldType, oldFieldSignature.isStatic()));
         } else if (rightType && this.isUnclearType(beforeType) && !this.isUnclearType(rightType)) {
             arkField.setType(rightType);
-            arkField.getSignature().setType(rightType);
+            arkField.setSignature(
+                new FieldSignature(oldFieldSignature.getFieldName(), oldFieldSignature.getDeclaringSignature(),
+                    rightType, oldFieldSignature.isStatic()));
         }
     }
 
@@ -280,8 +287,11 @@ export class TypeInference {
             }
         } else if (leftOp instanceof ArkInstanceFieldRef) {
             const fieldRef = leftOp.inferType(arkClass);
+            const oldFieldSignature = leftOp.getFieldSignature();
             if (this.isUnclearType(leftOp.getType()) && !this.isUnclearType(stmt.getRightOp().getType())) {
-                leftOp.getFieldSignature().setType(stmt.getRightOp().getType());
+                leftOp.setFieldSignature(
+                    new FieldSignature(oldFieldSignature.getFieldName(), oldFieldSignature.getDeclaringSignature(),
+                        stmt.getRightOp().getType(), oldFieldSignature.isStatic()));
             }
             if (fieldRef instanceof ArkStaticFieldRef) {
                 stmt.setLeftOp(fieldRef);
@@ -333,8 +343,7 @@ export class TypeInference {
             case 'never':
                 return NeverType.getInstance();
             case 'RegularExpression':
-                const classSignature = new ClassSignature();
-                classSignature.setClassName('RegExp');
+                const classSignature = Builtin.REGEXP_CLASS_SIGNATURE;
                 return new ClassType(classSignature);
             default:
                 return new UnclearReferenceType(typeStr);
