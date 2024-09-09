@@ -44,7 +44,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         } else {
             logger.warn("Other property expression type found!");
         }
-    } else if (member.name && ts.isIdentifier(member.name)) {
+    } else if (member.name && (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name))) {
         let propertyName = member.name.text;
         field.setName(propertyName);
     } else if (member.name && ts.isPrivateIdentifier(member.name)) {

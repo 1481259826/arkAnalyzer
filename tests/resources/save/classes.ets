@@ -87,3 +87,7 @@ class ObjectLiteralTest {
         }
     ]}
 }
+
+let formData = {
+    'isPlay': false
+}
