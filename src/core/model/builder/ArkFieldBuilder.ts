@@ -44,7 +44,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         } else {
             logger.warn("Other property expression type found!");
         }
-    } else if (member.name && (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name))) {
+    } else if (member.name && (ts.isIdentifier(member.name) || ts.isLiteralExpression(member.name))) {
         let propertyName = member.name.text;
         field.setName(propertyName);
     } else if (member.name && ts.isPrivateIdentifier(member.name)) {
@@ -126,7 +126,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
 export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile) {
     let field = new ArkField();
     field.setCode(member.getText(sourceFile));
-    if (ts.isIdentifier(member.name)) {
+    if (ts.isIdentifier(member.name) || ts.isLiteralExpression(member.name)) {
         field.setName(member.name.text);
     }
     else if (ts.isComputedPropertyName(member.name)) {
@@ -135,7 +135,7 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
             field.setName(propertyName);
         } else if (ts.isPropertyAccessExpression(member.name.expression)) {
             field.setName(handlePropertyAccessExpression(member.name.expression));
-        } else if (ts.isStringLiteral(member.name.expression)) {
+        } else if (ts.isLiteralExpression(member.name.expression)) {
             field.setName(member.name.expression.text);
         } else {
             logger.warn("Other type of computed property name found!");

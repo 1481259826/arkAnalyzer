@@ -89,5 +89,9 @@ class ObjectLiteralTest {
 }
 
 let formData = {
-    'isPlay': false
+    'isPlay': false,
+    'while': true,
+    'tes\'t': 2,
+    '+': '+',
+    1: 1
 }

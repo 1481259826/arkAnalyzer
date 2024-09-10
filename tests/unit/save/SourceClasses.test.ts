@@ -75,7 +75,7 @@ export class ParseIntBasedZipCodeValidator {
 class ObjectLiteralTest {
   public test: Object = {x: 'n', child: [{x: 'c', child: []}]};
 }
-let formData = {isPlay: false};
+let formData = {isPlay: false, while: true, 'tes\\\'t': 2, '+': '+', '1': 1};
 `;
 const SourceClassesTest_CASE2_EXPECT = `class ObjectLiteralTest {
   public test: Object = {x: 'n', child: [{x: 'c', child: []}]};
