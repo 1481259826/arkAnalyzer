@@ -63,6 +63,7 @@ export class PagBuilder {
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
+    public globalThisValue: Value = new Local("globalThis");
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -589,10 +590,17 @@ export class PagBuilder {
 
         // this local is also not uniq!!!
         // remove below block once this issue fixed
-        if (v instanceof Local && v.getName() === 'this') {
-            return this.getOrNewThisLoalNode(cid, v as Local, s);
 
+        // globalThis process can not be removed while all `globalThis` ref is the same Value
+        if (v instanceof Local) {
+            if (v.getName() == "this") {
+                return this.getOrNewThisLoalNode(cid, v as Local, s);
+            } else if (v.getName() == "globalThis" && v.getDeclaringStmt() == null) {
+                // globalThis node has no cid
+                return this.getOrNewGlobalThisNode(0)
+            }
         }
+
         v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
     }
@@ -624,6 +632,10 @@ export class PagBuilder {
         return thisNode;
     }
 
+    public getOrNewGlobalThisNode(cid: ContextID): PagNode {
+        return this.pag.getOrNewNode(cid, this.globalThisValue);
+    }
+
     public getUniqThisLocalNode(cid: ContextID): NodeID | undefined{
         return this.cid2ThisLocalMap.get(cid);
     }
@@ -649,6 +661,11 @@ export class PagBuilder {
 
         if (!sig.isStatic()) {
             base = (v as ArkInstanceFieldRef).getBase()
+            if (base instanceof Local && base.getName() == "globalThis" && base.getDeclaringStmt() == null) {
+                // replace the base in fieldRef
+                base = this.globalThisValue;
+                (v as ArkInstanceFieldRef).setBase(base as Local)
+            }
         }
         let real
         if (sig.isStatic()) {
@@ -792,13 +809,17 @@ export class PagBuilder {
         return PagEdgeKind.Unknown;
     }
 
+    /**\
+     * ArkNewExpr, ArkNewArrayExpr, function ptr, globalThis
+     */
     private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
-        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || (
-                lhOp instanceof Local && rhOp instanceof Local && 
-                rhOp.getType() instanceof FunctionType && 
-                rhOp.getDeclaringStmt() === null)
+        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || 
+            (lhOp instanceof Local && rhOp instanceof Local && 
+            rhOp.getType() instanceof FunctionType && 
+            rhOp.getDeclaringStmt() === null || 
+            (rhOp instanceof Local && rhOp.getName() == "globalThis" && rhOp.getDeclaringStmt() == null))
         ) {
             return true;
         }

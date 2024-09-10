@@ -25,7 +25,7 @@ import { Stmt } from "../../core/base/Stmt";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
 import { PTAStat } from "../common/Statistics";
-import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode } from "./Pag";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode, PagGlobalThisNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
 import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { DiffPTData, PtsSet } from "./PtsDS";
@@ -141,6 +141,11 @@ export class PointerAnalysis extends AbstractAnalysis {
 
             let { src, dst } = e.getEndPoints();
             this.ptd.addPts(dst, src);
+            if (this.pag.getNode(src) instanceof PagGlobalThisNode) {
+                // readd globalThis heapObj into workList
+                this.ptd.addPts(src, src)
+                this.worklist.push(src)
+            }
 
             this.worklist.push(dst);
         }
