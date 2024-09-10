@@ -15,7 +15,7 @@
 
 export const BinaryExpression_Expect_IR = {
     stmts: [
-        'this = this: @expression/BinaryExpressionTest.ts: _DEFAULT_ARK_CLASS',
+        'this = this: unknown',
         'a = 0',
         'b = 0',
         '$temp0 = a + b',
@@ -53,7 +53,7 @@ export const BinaryExpression_Expect_IR = {
 
 export const UnaryExpression_Expect_IR = {
     stmts: [
-        'this = this: @expression/UnaryExpressionTest.ts: _DEFAULT_ARK_CLASS',
+        'this = this: unknown',
         'a = 1',
         'b = -a',
         'c = ~a',
@@ -64,7 +64,7 @@ export const UnaryExpression_Expect_IR = {
 
 export const NewExpression_Expect_IR = {
     stmts: [
-        'this = this: @expression/NewExpressionTest.ts: _DEFAULT_ARK_CLASS',
+        'this = this: unknown',
         'sz1 = 1',
         '$temp0 = newarray (any)[sz1]',
         'arr1 = $temp0',
@@ -87,7 +87,7 @@ export const NewExpression_Expect_IR = {
 
 export const LiteralExpression_Expect_IR = {
     stmts: [
-        'this = this: @expression/LiteralExpressionTest.ts: _DEFAULT_ARK_CLASS',
+        'this = this: unknown',
         '$temp0 = newarray (number)[3]',
         '$temp0[0] = 1',
         '$temp0[1] = 2',
@@ -106,7 +106,7 @@ export const LiteralExpression_Expect_IR = {
 
 export const Operator_Expect_IR = {
     stmts: [
-        'this = this: @expression/OperatorTest.ts: _DEFAULT_ARK_CLASS',
+        'this = this: unknown',
         '$temp0 = new @_UnknownProjectName/_UnknownFileName: Point',
         'instanceinvoke $temp0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
         'p = $temp0',

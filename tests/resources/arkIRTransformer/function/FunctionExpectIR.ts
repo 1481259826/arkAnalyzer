@@ -17,7 +17,7 @@ export const ArrowFunction_Expect_IR = {
     methods: [{
         name: '_DEFAULT_ARK_METHOD',
         stmts: [
-            'this = this: @function/ArrowFunctionTest.ts: _DEFAULT_ARK_CLASS',
+            'this = this: unknown',
             'func1 = AnonymousMethod-_DEFAULT_ARK_METHOD-0',
             'func2 = AnonymousMethod-_DEFAULT_ARK_METHOD-1',
             'func3 = AnonymousMethod-_DEFAULT_ARK_METHOD-2',
@@ -28,13 +28,13 @@ export const ArrowFunction_Expect_IR = {
         name: 'AnonymousMethod-_DEFAULT_ARK_METHOD-0',
         stmts: [
             'i = parameter0: number',
-            'this = this: @function/ArrowFunctionTest.ts: _DEFAULT_ARK_CLASS',
+            'this = this: unknown',
             'return i',
         ],
     }, {
         name: 'AnonymousMethod-_DEFAULT_ARK_METHOD-1',
         stmts: [
-            'this = this: @function/ArrowFunctionTest.ts: _DEFAULT_ARK_CLASS',
+            'this = this: unknown',
             'i = 0',
             'i = i + 1',
             'return',
@@ -42,7 +42,7 @@ export const ArrowFunction_Expect_IR = {
     }, {
         name: 'AnonymousMethod-_DEFAULT_ARK_METHOD-2',
         stmts: [
-            'this = this: @function/ArrowFunctionTest.ts: _DEFAULT_ARK_CLASS',
+            'this = this: unknown',
             '$temp0 = staticinvoke <@_UnknownProjectName/_UnknownFileName: .func2()>()',
             'return $temp0',
         ],
@@ -50,7 +50,7 @@ export const ArrowFunction_Expect_IR = {
         name: 'AnonymousMethod-_DEFAULT_ARK_METHOD-3',
         stmts: [
             'i = parameter0: number',
-            'this = this: @function/ArrowFunctionTest.ts: _DEFAULT_ARK_CLASS',
+            'this = this: unknown',
             'i = i + 1',
             'return i',
         ],

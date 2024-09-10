@@ -122,6 +122,10 @@ export class ClassSignature {
         return this.className;
     }
 
+    public setClassName(className: string) {
+        this.className = className;
+    }
+
     public getType(): ClassType {
         return new ClassType(this);
     }
