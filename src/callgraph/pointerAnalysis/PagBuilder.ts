@@ -63,7 +63,7 @@ export class PagBuilder {
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
-    public globalThisValue: Value = new Local("globalThis");
+    private globalThisValue?: Value;
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -633,7 +633,7 @@ export class PagBuilder {
     }
 
     public getOrNewGlobalThisNode(cid: ContextID): PagNode {
-        return this.pag.getOrNewNode(cid, this.globalThisValue);
+        return this.pag.getOrNewNode(cid, this.getGlobalThisValue());
     }
 
     public getUniqThisLocalNode(cid: ContextID): NodeID | undefined{
@@ -663,7 +663,7 @@ export class PagBuilder {
             base = (v as ArkInstanceFieldRef).getBase()
             if (base instanceof Local && base.getName() == "globalThis" && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
-                base = this.globalThisValue;
+                base = this.getGlobalThisValue();
                 (v as ArkInstanceFieldRef).setBase(base as Local)
             }
         }
@@ -787,6 +787,10 @@ export class PagBuilder {
         }
 
         return false;
+    }
+
+    public getGlobalThisValue(): Value {
+        return this.globalThisValue ?? new Local("globalThis")
     }
 
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
