@@ -18,9 +18,9 @@ import {
     ArrayType,
     ClassType,
     FunctionType,
+    GenericType,
     TupleType,
     Type,
-    TypeParameterType,
     UnclearReferenceType,
     UnionType,
     UnknownType,
@@ -134,10 +134,13 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
 }
 
 export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDeclaration>,
-                                    sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): Type[] {
-    let typeParams: Type[] = [];
+                                    sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): GenericType[] {
+    let genericTypes: GenericType[] = [];
     typeParameters.forEach((typeParameter) => {
-        typeParams.push(tsNode2Type(typeParameter, sourceFile, arkInstance));
+        const genericType = tsNode2Type(typeParameter, sourceFile, arkInstance);
+        if (genericType instanceof GenericType) {
+            genericTypes.push(genericType);
+        }
 
         if (typeParameter.modifiers) {
             logger.warn('This typeparameter has modifiers.');
@@ -147,7 +150,7 @@ export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDe
             logger.warn('This typeparameter has expression.');
         }
     });
-    return typeParams;
+    return genericTypes;
 }
 
 export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkInstance: ArkMethod | ArkField, sourceFile: ts.SourceFile) {
@@ -326,8 +329,16 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
         return new FunctionType(mtd.getSignature());
     } else if (ts.isTypeParameterDeclaration(typeNode)) {
-        const typeParameterName = typeNode.name.text;
-        return new TypeParameterType(typeParameterName);
+        const name = typeNode.name.text;
+        let defaultType;
+        if (typeNode.default) {
+            defaultType = tsNode2Type(typeNode.default, sourceFile, arkInstance);
+        }
+        let constraint;
+        if (typeNode.constraint) {
+            constraint = tsNode2Type(typeNode.constraint, sourceFile, arkInstance);
+        }
+        return new GenericType(name, defaultType, constraint);
     } else if (ts.isTupleTypeNode(typeNode)) {
         const types: Type[] = [];
         typeNode.elements.forEach(element => {

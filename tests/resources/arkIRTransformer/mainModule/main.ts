@@ -12,17 +12,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// function main() {
-//     type numberType = number
-//     const n: numberType = 1;
-// }
-
-
-
-class Hello {
-    static #i: number;
-    public static i = 0;
-    private readonly j: number;
-    protected k: string;
-}

@@ -144,7 +144,7 @@ export class JsonPrinter extends Printer {
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
             modifiers: Array.from(method.getModifiers()),
-            typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
+            typeParameters: method.getGenericTypes()?.map(type => this.serializeType(type)) || [],
             body: this.serializeMethodBody(method.getBody()),
         };
     }

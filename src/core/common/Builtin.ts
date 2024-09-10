@@ -14,6 +14,7 @@
  */
 
 import { ClassSignature, FileSignature } from '../model/ArkSignature';
+import { ClassType } from '../base/Type';
 
 export class Builtin {
     // built-in classes
@@ -36,6 +37,7 @@ export class Builtin {
     public static SET_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.SET);
     public static MAP_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.MAP);
     public static REGEXP_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.REGEXP);
+    public static REGEXP_CLASS_TYPE = new ClassType(this.REGEXP_CLASS_SIGNATURE);
     public static BUILT_IN_CLASS_SIGNATURE_MAP = this.buildBuiltInClassSignatureMap();
 
     // constants for iterator
@@ -48,7 +50,8 @@ export class Builtin {
 
     public static ITERATOR_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ITERATOR);
     public static ITERATOR_RESULT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ITERATOR_RESULT);
-
+    public static ITERATOR_CLASS_TYPE = new ClassType(this.ITERATOR_CLASS_SIGNATURE);
+    public static ITERATOR_RESULT_CLASS_TYPE = new ClassType(this.ITERATOR_RESULT_CLASS_SIGNATURE);
 
 
     private static buildBuiltInClasses(): Set<string> {

@@ -68,11 +68,13 @@ export abstract class AbstractExpr implements Value {
 export abstract class AbstractInvokeExpr extends AbstractExpr {
     private methodSignature: MethodSignature;
     private args: Value[];
+    private realGenericTypes?: Type[];//新增
 
-    constructor(methodSignature: MethodSignature, args: Value[]) {
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
         super();
         this.methodSignature = methodSignature;
         this.args = args;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getMethodSignature(): MethodSignature {
@@ -99,6 +101,10 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
         return this.methodSignature.getType();
     }
 
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
+    }
+
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(...this.args);
@@ -112,8 +118,8 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
 export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     private base: Local;
 
-    constructor(base: Local, methodSignature: MethodSignature, args: Value[]) {
-        super(methodSignature, args);
+    constructor(base: Local, methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
         this.base = base;
     }
 
@@ -263,8 +269,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
 }
 
 export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
-    constructor(methodSignature: MethodSignature, args: Value[]) {
-        super(methodSignature, args);
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
     }
 
     public toString(): string {
@@ -344,8 +350,8 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
     private funPtrLocal: Local;
 
-    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[]) {
-        super(methodSignature, args);
+    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
         this.funPtrLocal = ptr;
     }
 

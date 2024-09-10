@@ -135,6 +135,7 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
     else {
         logger.warn("Please contact developers to support new type of GetAccessor name!");
     }
+
     const fieldType = mthd.getReturnType();
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, false);
     field.setSignature(fieldSignature);

@@ -89,9 +89,8 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     });
 
     if (methodNode.typeParameters) {
-        buildTypeParameters(methodNode.typeParameters, sourceFile, mtd).forEach((typeParameter) => {
-            mtd.addTypeParameter(typeParameter);
-        });
+        const genericTypes = buildTypeParameters(methodNode.typeParameters, sourceFile, mtd);
+        mtd.setGenericTypes(genericTypes);
     }
 
     // build MethodSignature
