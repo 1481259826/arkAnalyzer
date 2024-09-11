@@ -37,6 +37,8 @@ export enum PagEdgeKind {
     Address, Copy, Load, Write, This, Unknown
 };
 
+export const GLOBAL_THIS: string = 'globaThis'
+
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
 
@@ -451,16 +453,14 @@ export class PagFuncNode extends PagNode {
  * almost same as PagNewExprNode, used only for globalThis and its field reference
  */
 export class PagGlobalThisNode extends PagNode {
-    fieldNodes!: Map<string, NodeID>
+    fieldNodes: Map<string, NodeID>
 
     constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
         super(id, cid, r, PagNodeKind.GlobalThis, stmt)
+        this.fieldNodes = new Map()
     }
 
     public addFieldNode(fieldSignature: AbstractFieldRef, nodeID: NodeID): boolean {
-        if (!this.fieldNodes) {
-            this.fieldNodes = new Map()
-        }
         if (this.fieldNodes.has(fieldSignature.getFieldSignature().toString())) {
             return false
         }
@@ -469,16 +469,10 @@ export class PagGlobalThisNode extends PagNode {
     }
 
     public getFieldNode(fieldSignature: AbstractFieldRef): NodeID | undefined {
-        if (!this.fieldNodes) {
-            return undefined
-        }
         return this.fieldNodes.get(fieldSignature.getFieldSignature().toString())
     }
 
     public getFieldNodes(): Map<string, NodeID> | undefined {
-        if (!this.fieldNodes) {
-            return undefined
-        }
         return this.fieldNodes
     }
 }
@@ -558,7 +552,7 @@ export class Pag extends BaseGraph {
             } else {
                 // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
                 // value has been replaced in param
-                if (value.getName() == "globalThis" && value.getDeclaringStmt() == null) {
+                if (value.getName() == GLOBAL_THIS && value.getDeclaringStmt() == null) {
                     pagNode = new PagGlobalThisNode(id, 0, value)
                 } else {
                     pagNode = new PagLocalNode(id, cid, value, stmt);

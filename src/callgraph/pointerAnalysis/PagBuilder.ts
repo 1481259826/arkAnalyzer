@@ -29,7 +29,7 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge, GLOBAL_THIS } from './Pag';
 import { PtsSet } from './PtsDS';
 
 // const logger = Logger.getLogger();
@@ -595,7 +595,7 @@ export class PagBuilder {
         if (v instanceof Local) {
             if (v.getName() == "this") {
                 return this.getOrNewThisLoalNode(cid, v as Local, s);
-            } else if (v.getName() == "globalThis" && v.getDeclaringStmt() == null) {
+            } else if (v.getName() == GLOBAL_THIS && v.getDeclaringStmt() == null) {
                 // globalThis node has no cid
                 return this.getOrNewGlobalThisNode(0)
             }
@@ -661,7 +661,7 @@ export class PagBuilder {
 
         if (!sig.isStatic()) {
             base = (v as ArkInstanceFieldRef).getBase()
-            if (base instanceof Local && base.getName() == "globalThis" && base.getDeclaringStmt() == null) {
+            if (base instanceof Local && base.getName() == GLOBAL_THIS && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
                 base = this.getGlobalThisValue();
                 (v as ArkInstanceFieldRef).setBase(base as Local)
@@ -790,7 +790,7 @@ export class PagBuilder {
     }
 
     public getGlobalThisValue(): Value {
-        return this.globalThisValue ?? new Local("globalThis")
+        return this.globalThisValue ?? new Local(GLOBAL_THIS)
     }
 
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
@@ -823,7 +823,7 @@ export class PagBuilder {
             (lhOp instanceof Local && rhOp instanceof Local && 
             rhOp.getType() instanceof FunctionType && 
             rhOp.getDeclaringStmt() === null || 
-            (rhOp instanceof Local && rhOp.getName() == "globalThis" && rhOp.getDeclaringStmt() == null))
+            (rhOp instanceof Local && rhOp.getName() == GLOBAL_THIS && rhOp.getDeclaringStmt() == null))
         ) {
             return true;
         }
