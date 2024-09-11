@@ -37,6 +37,8 @@ export enum PagEdgeKind {
     Address, Copy, Load, Write, This, Unknown
 };
 
+export const GLOBAL_THIS: string = 'globaThis'
+
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
 
@@ -98,7 +100,7 @@ export class ThisPagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, Function }
+export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, Function, GlobalThis }
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -282,6 +284,8 @@ export class PagNode extends BaseNode {
     public getDotAttr(): string {
         switch(this.getKind()) {
             case PagNodeKind.HeapObj:
+            case PagNodeKind.Function:
+            case PagNodeKind.GlobalThis:
                 return 'shape=box3d';
             case PagNodeKind.LocalVar:
                 return 'shape=box';
@@ -289,8 +293,6 @@ export class PagNode extends BaseNode {
                 return 'shape=component';
             case PagNodeKind.Param:
                 return 'shape=box';
-            case PagNodeKind.Function:
-                return 'shape=box3d';
             default:
                 return 'shape=box';
         }
@@ -378,6 +380,9 @@ export class PagThisRefNode extends PagNode {
 }
 
 
+/**
+ * below is heapObj like Node
+ */
 export class PagNewExprNode extends PagNode {
     fieldNodes!: Map<string, NodeID>
     referenceNodes: Set<NodeID>
@@ -444,6 +449,34 @@ export class PagFuncNode extends PagNode {
     }
 }
 
+/**
+ * almost same as PagNewExprNode, used only for globalThis and its field reference
+ */
+export class PagGlobalThisNode extends PagNode {
+    fieldNodes: Map<string, NodeID>
+
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
+        super(id, cid, r, PagNodeKind.GlobalThis, stmt)
+        this.fieldNodes = new Map()
+    }
+
+    public addFieldNode(fieldSignature: AbstractFieldRef, nodeID: NodeID): boolean {
+        if (this.fieldNodes.has(fieldSignature.getFieldSignature().toString())) {
+            return false
+        }
+        this.fieldNodes.set(fieldSignature.getFieldSignature().toString(), nodeID);
+        return true
+    }
+
+    public getFieldNode(fieldSignature: AbstractFieldRef): NodeID | undefined {
+        return this.fieldNodes.get(fieldSignature.getFieldSignature().toString())
+    }
+
+    public getFieldNodes(): Map<string, NodeID> | undefined {
+        return this.fieldNodes
+    }
+}
+
 export class Pag extends BaseGraph {
 
     private cg!: CallGraph;
@@ -488,16 +521,20 @@ export class Pag extends BaseGraph {
     }
 
     public getOrClonePagFieldNode(src: PagInstanceFieldNode, basePt: NodeID): PagInstanceFieldNode {
-        let baseNode = this.getNode(basePt) as PagNewExprNode
-        let existedNode = baseNode.getFieldNode(src.getValue() as ArkInstanceFieldRef)
-        if (existedNode) {
-            return this.getNode(existedNode) as PagInstanceFieldNode
+        let baseNode = this.getNode(basePt)
+        if (baseNode instanceof PagNewExprNode || baseNode instanceof PagGlobalThisNode) {
+            let existedNode = baseNode.getFieldNode(src.getValue() as ArkInstanceFieldRef)
+            if (existedNode) {
+                return this.getNode(existedNode) as PagInstanceFieldNode
+            }
+    
+            let fieldNode = this.getOrClonePagNode(src, basePt)
+            baseNode.addFieldNode(src.getValue() as ArkInstanceFieldRef, fieldNode.getID())
+            fieldNode.setBasePt(basePt)
+            return fieldNode
+        } else {
+            throw new Error(`Error clone field node ${src.getValue()}`)
         }
-
-        let fieldNode = this.getOrClonePagNode(src, basePt)
-        baseNode.addFieldNode(src.getValue() as ArkInstanceFieldRef, fieldNode.getID())
-        fieldNode.setBasePt(basePt)
-        return fieldNode
     }
 
     public addPagNode(cid: ContextID, value: Value, stmt?: Stmt, refresh: boolean = true): PagNode {
@@ -513,7 +550,13 @@ export class Pag extends BaseGraph {
                     pagNode.setMethod(valueType.getMethodSignature())
                 }
             } else {
-                pagNode = new PagLocalNode(id, cid, value, stmt);
+                // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
+                // value has been replaced in param
+                if (value.getName() == GLOBAL_THIS && value.getDeclaringStmt() == null) {
+                    pagNode = new PagGlobalThisNode(id, 0, value)
+                } else {
+                    pagNode = new PagLocalNode(id, cid, value, stmt);
+                }
             }
         } else if (value instanceof ArkInstanceFieldRef) {
             pagNode = new PagInstanceFieldNode(id, cid, value, stmt);

@@ -29,7 +29,7 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge, GLOBAL_THIS } from './Pag';
 import { PtsSet } from './PtsDS';
 
 // const logger = Logger.getLogger();
@@ -63,6 +63,7 @@ export class PagBuilder {
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
+    private globalThisValue?: Value;
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -589,10 +590,17 @@ export class PagBuilder {
 
         // this local is also not uniq!!!
         // remove below block once this issue fixed
-        if (v instanceof Local && v.getName() === 'this') {
-            return this.getOrNewThisLoalNode(cid, v as Local, s);
 
+        // globalThis process can not be removed while all `globalThis` ref is the same Value
+        if (v instanceof Local) {
+            if (v.getName() == "this") {
+                return this.getOrNewThisLoalNode(cid, v as Local, s);
+            } else if (v.getName() == GLOBAL_THIS && v.getDeclaringStmt() == null) {
+                // globalThis node has no cid
+                return this.getOrNewGlobalThisNode(0)
+            }
         }
+
         v = this.getRealInstanceRef(v);
         return this.pag.getOrNewNode(cid, v, s);
     }
@@ -624,6 +632,10 @@ export class PagBuilder {
         return thisNode;
     }
 
+    public getOrNewGlobalThisNode(cid: ContextID): PagNode {
+        return this.pag.getOrNewNode(cid, this.getGlobalThisValue());
+    }
+
     public getUniqThisLocalNode(cid: ContextID): NodeID | undefined{
         return this.cid2ThisLocalMap.get(cid);
     }
@@ -649,6 +661,11 @@ export class PagBuilder {
 
         if (!sig.isStatic()) {
             base = (v as ArkInstanceFieldRef).getBase()
+            if (base instanceof Local && base.getName() == GLOBAL_THIS && base.getDeclaringStmt() == null) {
+                // replace the base in fieldRef
+                base = this.getGlobalThisValue();
+                (v as ArkInstanceFieldRef).setBase(base as Local)
+            }
         }
         let real
         if (sig.isStatic()) {
@@ -772,6 +789,10 @@ export class PagBuilder {
         return false;
     }
 
+    public getGlobalThisValue(): Value {
+        return this.globalThisValue ?? new Local(GLOBAL_THIS)
+    }
+
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
         if (this.stmtIsCreateAddressObj(stmt)) {
             return PagEdgeKind.Address;
@@ -792,13 +813,17 @@ export class PagBuilder {
         return PagEdgeKind.Unknown;
     }
 
+    /**\
+     * ArkNewExpr, ArkNewArrayExpr, function ptr, globalThis
+     */
     private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
-        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || (
-                lhOp instanceof Local && rhOp instanceof Local && 
-                rhOp.getType() instanceof FunctionType && 
-                rhOp.getDeclaringStmt() === null)
+        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || 
+            (lhOp instanceof Local && rhOp instanceof Local && 
+            rhOp.getType() instanceof FunctionType && 
+            rhOp.getDeclaringStmt() === null || 
+            (rhOp instanceof Local && rhOp.getName() == GLOBAL_THIS && rhOp.getDeclaringStmt() == null))
         ) {
             return true;
         }
