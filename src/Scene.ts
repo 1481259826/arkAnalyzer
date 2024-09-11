@@ -32,7 +32,7 @@ import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
-import { ExportType } from './core/model/ArkExport';
+import { ArkExport, ExportType } from './core/model/ArkExport';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
@@ -74,7 +74,7 @@ export class Scene {
     private methodsMap: Map<string, ArkMethod> = new Map();
     // TODO: type of key should be signature object
     private sdkArkFilesMap: Map<string, ArkFile> = new Map<string, ArkFile>();
-    private componentMap: Map<string, ArkFile> = new Map<string, ArkFile>();
+    private globalMap: Map<string, ArkExport> = new Map<string, ArkExport>();
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
@@ -195,17 +195,8 @@ export class Scene {
             arkFile.setProjectName(sdkName);
             buildArkFileFromFile(file, path.normalize(sdkPath), arkFile);
             ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
-            if (file.includes('component' + path.sep)) {
-                let fileName = path.basename(file).replace(/\..*$/, '').replace(/_(.)/g,
-                    function (match, group1) {
-                        return group1.toUpperCase();
-                    });
-                fileName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-                this.componentMap.set(fileName, arkFile);
-            } else {
-                const fileSig = arkFile.getFileSignature().toString();
-                this.sdkArkFilesMap.set(fileSig, arkFile);
-            }
+            const fileSig = arkFile.getFileSignature().toString();
+            this.sdkArkFilesMap.set(fileSig, arkFile);
         });
     }
 
@@ -285,8 +276,8 @@ export class Scene {
         return this.projectFiles;
     }
 
-    public getComponentFile(componentName: string): ArkFile | null {
-        return this.componentMap.get(componentName) || null;
+    public getGlobal(globalName: string): ArkExport | null {
+        return this.globalMap.get(globalName) || null;
     }
 
     public getFile(fileSignature: FileSignature): ArkFile | null {
@@ -444,6 +435,9 @@ export class Scene {
      * because default and generated method was finished
      */
     public inferTypes() {
+        this.sdkArkFilesMap.forEach(file => {
+            ModelUtils.buildGlobalMap(file, this.globalMap);
+        })
         this.filesMap.forEach(file => {
             ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
                 arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));

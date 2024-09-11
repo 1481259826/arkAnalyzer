@@ -47,6 +47,7 @@ import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { SUPER_NAME } from "./TSConst";
 import { ModelUtils } from "./ModelUtils";
+import { COMPONENT_PATH } from "./EtsConst";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -138,7 +139,6 @@ export class TypeInference {
             logger.warn('empty body');
             return;
         }
-
         const arkClass = arkMethod.getDeclaringArkClass();
         body.getAliasTypeMap()?.forEach((value) => this.inferUnclearedType(value, arkClass));
         const cfg = body.getCfg();
@@ -434,6 +434,9 @@ export class TypeInference {
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
                 ?.getBody()?.getAliasTypeMap()?.get(baseName)
             ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
+        if (!arkExport && arkClass.getDeclaringArkFile().getFilePath().includes(COMPONENT_PATH)) {
+            arkExport = arkClass.getDeclaringArkFile().getScene().getGlobal(baseName);
+        }
         return this.parseArkExport2Type(arkExport);
     }
 }

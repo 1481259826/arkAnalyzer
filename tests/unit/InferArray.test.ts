@@ -44,7 +44,6 @@ describe("Infer Array Test", () => {
     projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     it('normal case', () => {
-
         const fileId = new FileSignature();
         fileId.setFileName("inferSample.ts");
         fileId.setProjectName(projectScene.getProjectName());

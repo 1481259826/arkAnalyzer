@@ -38,6 +38,7 @@ import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from '../../common/Const';
+import { COMPONENT_CREATE_FUNCTION } from "../../common/EtsConst";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkMethodBuilder');
 
@@ -152,11 +153,11 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     }
     //TODO, hard code
     else if (ts.isConstructorDeclaration(node)) {
-        name = 'constructor';
+        name = CONSTRUCTOR_NAME;
     } else if (ts.isConstructSignatureDeclaration(node)) {
         name = 'construct-signature';
     } else if (ts.isCallSignatureDeclaration(node)) {
-        name = 'call-signature';
+        name = COMPONENT_CREATE_FUNCTION;
     } else if (ts.isGetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Get-' + node.name.text;
     } else if (ts.isSetAccessor(node) && ts.isIdentifier(node.name)) {
