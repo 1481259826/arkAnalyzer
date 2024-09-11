@@ -92,6 +92,5 @@ let formData = {
     'isPlay': false,
     'while': true,
     'tes\'t': 2,
-    '+': '+',
     1: 1
 }
