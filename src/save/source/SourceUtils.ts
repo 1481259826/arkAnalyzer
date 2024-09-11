@@ -35,6 +35,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
+import ts from 'ohos-typescript';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceUtils');
 
@@ -89,39 +90,6 @@ export class SourceUtils {
             return Origin_Component;
         }
         return cls.getOriginType();
-    }
-
-    public static flipOperator(operator: string): string {
-        let newOperater = operator;
-        switch (operator) {
-            case '<':
-                newOperater = '>=';
-                break;
-            case '<=':
-                newOperater = '>';
-                break;
-            case '>':
-                newOperater = '<=';
-                break;
-            case '>=':
-                newOperater = '<';
-                break;
-            case '==':
-                newOperater = '!=';
-                break;
-            case '===':
-                newOperater = '!==';
-                break;
-            case '!=':
-                newOperater = '==';
-                break;
-            case '!==':
-                newOperater = '===';
-                break;
-            default:
-                break;
-        }
-        return newOperater;
     }
 
     public static isComponentPop(invokeExpr: ArkStaticInvokeExpr): boolean {
@@ -205,7 +173,10 @@ export class SourceUtils {
         return false;
     }
 
-    public static getStaticInvokeClassFullName(classSignature: ClassSignature, namespace: ArkNamespace | undefined): string {
+    public static getStaticInvokeClassFullName(
+        classSignature: ClassSignature,
+        namespace: ArkNamespace | undefined
+    ): string {
         let namespaceName = classSignature.getDeclaringNamespaceSignature()?.getNamespaceName();
         let className = classSignature.getClassName();
 
@@ -218,5 +189,33 @@ export class SourceUtils {
             code.push(className);
         }
         return code.join('.');
+    }
+
+    public static isIdentifierText(text: string): boolean {
+        let ch = text.charCodeAt(0);
+        if (!ts.isIdentifierStart(ch, ts.ScriptTarget.Latest)) {
+            return false;
+        }
+
+        for (let i = 1; i < text.length; i++) {
+            if (!ts.isIdentifierPart(text.charCodeAt(i), ts.ScriptTarget.Latest)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static escape(text: string): string {
+        return text
+            .replace(/\\/g, '\\\\')
+            .replace(/\f/g, `\\f`)
+            .replace(/\n/g, `\\n`)
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t')
+            .replace(/\v/g, '\\v')
+            .replace(/\?/g, '\\?')
+            .replace(/\'/g, "\\'")
+            .replace(/\"/g, '\\"');
     }
 }

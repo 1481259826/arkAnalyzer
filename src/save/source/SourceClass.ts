@@ -104,7 +104,13 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            this.printer.write(field.getName());
+            let name = SourceUtils.escape(field.getName());
+            if (SourceUtils.isIdentifierText(field.getName())) {
+                this.printer.write(name);
+            } else {
+                this.printer.write(`'${name}'`);
+            }
+
             let instanceInitializer = this.parseFieldInitMethod(INSTANCE_INIT_METHOD_NAME);
             if (instanceInitializer.has(field.getName())) {
                 this.printer.write(`: ${instanceInitializer.get(field.getName())}`);
@@ -122,7 +128,13 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            this.printer.write(`${field.getName()}: ${this.transformer.typeToString(field.getType())}`);
+            let name = SourceUtils.escape(field.getName());
+            if (SourceUtils.isIdentifierText(field.getName())) {
+                this.printer.write(`${name}: ${this.transformer.typeToString(field.getType())}`);
+            } else {
+                this.printer.write(`'${name}': ${this.transformer.typeToString(field.getType())}`);
+            }
+
             if (index != array.length - 1) {
                 this.printer.write(`, `);
             }

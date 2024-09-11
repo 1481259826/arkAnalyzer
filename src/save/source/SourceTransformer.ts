@@ -188,17 +188,7 @@ export class SourceTransformer {
 
     public static constToString(value: Constant): string {
         if (value.getType() == 'string') {
-            return `'${value
-                .getValue()
-                .replace(/\\/g, '\\\\')
-                .replace(/\f/g, `\\f`)
-                .replace(/\n/g, `\\n`)
-                .replace(/\r/g, '\\r')
-                .replace(/\t/g, '\\t')
-                .replace(/\v/g, '\\v')
-                .replace(/\?/g, '\\?')
-                .replace(/\'/g, "\\'")
-                .replace(/\"/g, '\\"')}'`;
+            return `'${SourceUtils.escape(value.getValue())}'`;
         } else {
             return value.getValue();
         }
