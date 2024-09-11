@@ -62,7 +62,6 @@ export class TypeInference {
                 this.resolveExprsInStmt(stmt, arkClass);
                 this.resolveFieldRefsInStmt(stmt, arkClass, arkClass.getMethodWithName('@instance_init'));
                 this.resolveArkAssignStmt(stmt, arkClass);
-                stmt.updateText();
             }
             const lastStmt = stmts[stmts.length - 1];
             if (lastStmt instanceof ArkAssignStmt) {
@@ -148,7 +147,6 @@ export class TypeInference {
                 this.resolveExprsInStmt(stmt, arkClass);
                 this.resolveFieldRefsInStmt(stmt, arkClass, arkMethod);
                 this.resolveArkAssignStmt(stmt, arkClass);
-                stmt.updateText();
             }
         }
         this.inferMethodReturnType(arkMethod);

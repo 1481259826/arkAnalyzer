@@ -20,8 +20,8 @@ describe('SceneConfig Test', () => {
     it('true case', () => {
         let config: SceneConfig = new SceneConfig();
         config.buildFromJson('./tests/resources/scene/SceneTestConfig.json');
-        assert.equal(config.getTargetProjectName(), '0_show_case');
-        assert.equal(config.getTargetProjectDirectory(), 'D:\\Codes\\resources\\SE4OpenHarmony-main\\Apps\\OHApps\\AppSampleD');
+        assert.equal(config.getTargetProjectName(), 'applications_photos');
+        assert.equal(config.getTargetProjectDirectory(), 'D:\\Codes\\resources\\applications\\applications_photos');
         assert.equal(config.getSdksObj().length, 1);
     })
 

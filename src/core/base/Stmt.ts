@@ -25,9 +25,6 @@ import { LineColPosition } from './Position';
  */
 export class Stmt {
     private text: string = '';
-    private def: Value | null = null;
-    private uses: Value[] = [];
-    private originPosition: LineColPosition = LineColPosition.DEFAULT;
     private position: LineColPosition = LineColPosition.DEFAULT;
     private cfg: Cfg | null = null;
 
@@ -36,17 +33,7 @@ export class Stmt {
 
     /** Return a list of values which are uesd in this statement */
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        for (const use of this.uses) {
-            if (!(use instanceof AbstractExpr)) {
-                uses.push(use);
-            }
-        }
-        return uses;
-    }
-
-    public addUse(use: Value): void {
-        this.uses.push(use);
+        return [];
     }
 
     public replaceUse(oldUse: Value, newUse: Value): void {
@@ -54,18 +41,11 @@ export class Stmt {
         stmtUseReplacer.caseStmt(this);
     }
 
-    public replaceUses(uses: Value[]): void {
-        this.uses = Array.from(uses);
-    }
-
     /** Return the def which is uesd in this statement */
     public getDef(): Value | null {
-        return this.def;
+        return null;
     }
 
-    public setDef(def: Value): void {
-        this.def = def;
-    }
 
     public getCfg(): Cfg | null {
         return this.cfg;
@@ -89,7 +69,7 @@ export class Stmt {
     }
 
     public containsInvokeExpr(): boolean {
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof AbstractInvokeExpr) {
                 return true;
             }
@@ -97,17 +77,8 @@ export class Stmt {
         return false;
     }
 
-    public replaceInvokeExpr(newInvokeExpr: AbstractInvokeExpr) {
-        for (let i = 0; i < this.uses.length; i++) {
-            if (this.uses[i] instanceof AbstractInvokeExpr) {
-                this.uses[i] = newInvokeExpr;
-            }
-        }
-
-    }
-
     public getInvokeExpr(): AbstractInvokeExpr | undefined {
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof AbstractInvokeExpr) {
                 return use as AbstractInvokeExpr;
             }
@@ -117,7 +88,7 @@ export class Stmt {
 
     public getExprs(): AbstractExpr[] {
         let exprs: AbstractExpr[] = [];
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof AbstractExpr) {
                 exprs.push(use);
             }
@@ -126,25 +97,25 @@ export class Stmt {
     }
 
     public containsArrayRef(): boolean {
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof ArkArrayRef) {
                 return true;
             }
         }
-        if (this.def instanceof ArkArrayRef) {
+        if (this.getDef() instanceof ArkArrayRef) {
             return true;
         }
         return false;
     }
 
     public getArrayRef(): ArkArrayRef | undefined {
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof ArkArrayRef) {
                 return use as ArkArrayRef;
             }
         }
 
-        if (this.def instanceof ArkArrayRef) {
+        if (this.getDef() instanceof ArkArrayRef) {
             return undefined;
         }
 
@@ -152,25 +123,25 @@ export class Stmt {
     }
 
     public containsFieldRef(): boolean {
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof AbstractFieldRef) {
                 return true;
             }
         }
 
-        if (this.def instanceof AbstractFieldRef) {
+        if (this.getDef() instanceof AbstractFieldRef) {
             return true;
         }
         return false;
     }
 
     public getFieldRef(): AbstractFieldRef | undefined {
-        for (const use of this.uses) {
+        for (const use of this.getUses()) {
             if (use instanceof AbstractFieldRef) {
                 return use as AbstractFieldRef;
             }
         }
-        if (this.def instanceof AbstractFieldRef) {
+        if (this.getDef() instanceof AbstractFieldRef) {
             return undefined;
         }
         return undefined;
@@ -184,12 +155,13 @@ export class Stmt {
         return this.position;
     }
 
-    public setOriginPositionInfo(originPosition: LineColPosition): void {
-        this.originPosition = originPosition;
-    }
-
     public getOriginPositionInfo(): LineColPosition {
-        return this.originPosition;
+        const originPositionInfo = this.cfg?.getDeclaringMethod()?.getBody()?.getStmtToOriginalStmt()
+            ?.get(this)?.position;
+        if (!originPositionInfo) {
+            return LineColPosition.DEFAULT;
+        }
+        return originPositionInfo;
     }
 
     public toString(): string {
@@ -198,10 +170,6 @@ export class Stmt {
 
     public setText(text: string): void {
         this.text = text;
-    }
-
-    public updateText(): void {
-        this.text = this.toString();
     }
 }
 
@@ -213,8 +181,6 @@ export class ArkAssignStmt extends Stmt {
         super();
         this.leftOp = leftOp;
         this.rightOp = rightOp;
-        this.setDef(leftOp);
-        this.updateUses();
     }
 
     public getLeftOp(): Value {
@@ -223,8 +189,6 @@ export class ArkAssignStmt extends Stmt {
 
     public setLeftOp(newLeftOp: Value): void {
         this.leftOp = newLeftOp;
-        this.setDef(newLeftOp);
-        this.updateUses();
     }
 
     public getRightOp(): Value {
@@ -233,21 +197,23 @@ export class ArkAssignStmt extends Stmt {
 
     public setRightOp(rightOp: Value): void {
         this.rightOp = rightOp;
-        this.updateUses();
     }
 
     public toString(): string {
         const str = this.getLeftOp() + ' = ' + this.getRightOp();
-        this.setText(str);
         return str;
     }
 
-    private updateUses(): void {
+    public getDef(): Value | null {
+        return this.leftOp;
+    }
+
+    public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(...this.leftOp.getUses());
         uses.push(this.rightOp);
         uses.push(...this.rightOp.getUses());
-        this.replaceUses(uses);
+        return uses;
     }
 }
 
@@ -257,12 +223,10 @@ export class ArkInvokeStmt extends Stmt {
     constructor(invokeExpr: AbstractInvokeExpr) {
         super();
         this.invokeExpr = invokeExpr;
-        this.updateUses();
     }
 
     public replaceInvokeExpr(newExpr: AbstractInvokeExpr) {
         this.invokeExpr = newExpr;
-        this.updateUses();
     }
 
     public getInvokeExpr() {
@@ -271,15 +235,14 @@ export class ArkInvokeStmt extends Stmt {
 
     public toString(): string {
         const str = this.invokeExpr.toString();
-        this.setText(str);
         return str;
     }
 
-    private updateUses(): void {
+    public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(this.invokeExpr);
         uses.push(...this.invokeExpr.getUses());
-        this.replaceUses(uses);
+        return uses;
     }
 }
 
@@ -289,7 +252,6 @@ export class ArkIfStmt extends Stmt {
     constructor(conditionExpr: ArkConditionExpr) {
         super();
         this.conditionExpr = conditionExpr;
-        this.updateUses();
     }
 
     public getConditionExprExpr() {
@@ -306,15 +268,14 @@ export class ArkIfStmt extends Stmt {
 
     public toString(): string {
         const str = 'if ' + this.conditionExpr;
-        this.setText(str);
         return str;
     }
 
-    private updateUses(): void {
+    public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(this.conditionExpr);
         uses.push(...this.conditionExpr.getUses());
-        this.replaceUses(uses);
+        return uses;
     }
 }
 
@@ -324,7 +285,6 @@ export class ArkReturnStmt extends Stmt {
     constructor(op: Value) {
         super();
         this.op = op;
-        this.updateUses();
     }
 
     public getExpectedSuccessorCount(): number {
@@ -337,20 +297,18 @@ export class ArkReturnStmt extends Stmt {
 
     public setReturnValue(returnValue: Value): void {
         this.op = returnValue;
-        this.updateUses();
     }
 
     public toString(): string {
         const str = 'return ' + this.op;
-        this.setText(str);
         return str;
     }
 
-    private updateUses(): void {
+    public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(this.op);
         uses.push(...this.op.getUses());
-        this.replaceUses(uses);
+        return uses;
     }
 }
 
@@ -365,7 +323,6 @@ export class ArkReturnVoidStmt extends Stmt {
 
     public toString(): string {
         const str = 'return';
-        this.setText(str);
         return str;
     }
 }
@@ -377,7 +334,6 @@ export class ArkNopStmt extends Stmt {
 
     public toString(): string {
         const str = 'nop';
-        this.setText(str);
         return str;
     }
 }
@@ -390,7 +346,6 @@ export class ArkSwitchStmt extends Stmt {
         super();
         this.key = key;
         this.cases = cases;
-        this.updateUses();
     }
 
     public getKey(): Value {
@@ -421,15 +376,14 @@ export class ArkSwitchStmt extends Stmt {
 
         strs.push('default : }');
         const str = strs.join('');
-        this.setText(str);
         return str;
     }
 
-    private updateUses(): void {
+    public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(this.key);
         uses.push(...this.key.getUses());
-        this.replaceUses(uses);
+        return uses;
     }
 }
 
@@ -439,7 +393,6 @@ export class ArkThrowStmt extends Stmt {
     constructor(op: Value) {
         super();
         this.op = op;
-        this.updateUses();
     }
 
     public getOp(): Value {
@@ -448,14 +401,13 @@ export class ArkThrowStmt extends Stmt {
 
     public toString(): string {
         const str = 'throw ' + this.op;
-        this.setText(str);
         return str;
     }
 
-    private updateUses(): void {
+    public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(this.op);
         uses.push(...this.op.getUses());
-        this.replaceUses(uses);
+        return uses;
     }
 }

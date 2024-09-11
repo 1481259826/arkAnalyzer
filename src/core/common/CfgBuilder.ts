@@ -1035,6 +1035,7 @@ export class CfgBuilder {
         blockInCfg.setId(0);
         stmts.forEach(stmt => {
             blockInCfg.addStmt(stmt);
+            stmt.setCfg(cfg);
         });
         cfg.addBlock(blockInCfg);
         cfg.setStartingStmt(stmts[0]);
@@ -1093,7 +1094,6 @@ export class CfgBuilder {
                     cfg.setStartingStmt(stmt);
                 }
                 blockInCfg.addStmt(stmt);
-                stmt.setCfg(cfg);
             }
             cfg.addBlock(blockInCfg);
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
@@ -1223,6 +1223,9 @@ export class CfgBuilder {
                 const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
                 block.setId(blockBuilder.id);
             }
+        }
+        for (const stmt of cfg.getStmts()) {
+            stmt.setCfg(cfg);
         }
 
         const originalCfg = new Cfg();
