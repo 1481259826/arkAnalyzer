@@ -17,6 +17,7 @@ import { ArkField } from '../model/ArkField';
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';
+import { LineColPosition } from './Position';
 
 /**
  * @category core/base/type
@@ -443,6 +444,24 @@ export class AliasType extends Type implements ArkExport {
 
     public getSignature(): LocalSignature {
         return this.signature;
+    }
+}
+
+export class AliasTypeDeclaration {
+    private sourceCode: string;
+    private position: LineColPosition;
+
+    constructor(sourceCode: string, position: LineColPosition) {
+        this.sourceCode = sourceCode;
+        this.position = position;
+    }
+
+    public getSourceCode(): string {
+        return this.sourceCode;
+    }
+
+    public getPosition(): LineColPosition {
+        return this.position;
     }
 }
 
