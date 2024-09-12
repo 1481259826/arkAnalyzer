@@ -422,6 +422,9 @@ export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>,
     block.addStmt(new ArkReturnVoidStmt());
     const cfg = new Cfg();
     cfg.addBlock(block);
+    for (const stmt of block.getStmts()) {
+        stmt.setCfg(cfg);
+    }
     cfg.setStartingStmt(assignStmt);
     cfg.buildDefUseStmt();
     cfg.setDeclaringMethod(initMethod);
