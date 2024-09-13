@@ -13,14 +13,18 @@
  * limitations under the License.
  */
 
-import { assert, describe, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 import { ArkClass, FileSignature, Scene, SceneConfig } from '../../src';
 
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
-    config.getSdksObj().push({ moduleName: "", name: "lottie", path: path.join(__dirname, "../resources/thirdModule") });
+    config.getSdksObj().push({
+        moduleName: "",
+        name: "lottie",
+        path: path.join(__dirname, "../resources/thirdModule")
+    });
     config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
@@ -93,14 +97,17 @@ describe("export Test", () => {
     })
 
     it('all case', () => {
-        projectScene.getMethods().forEach(m => {
+        let unknownCount = 0;
+        projectScene.getMethods(true).forEach(m => {
             m.getCfg()?.getStmts().forEach(s => {
                 const text = s.toString();
                 if (text.includes('Unknown')) {
-                    console.log(text + ' warning ' + m.getSignature().toString());
+                    unknownCount++;
+                    console.debug(text + ' warning ' + m.getSignature().toString());
                 }
             })
         })
+        expect(unknownCount).lessThanOrEqual(3);
     })
 })
 
@@ -108,7 +115,11 @@ describe("function Test", () => {
     it('thirdModule index case', () => {
         let config: SceneConfig = new SceneConfig();
         config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
-        config.getSdksObj().push({ moduleName: "", name: "lottie", path: path.join(__dirname, "../resources/lottieModule") });
+        config.getSdksObj().push({
+            moduleName: "",
+            name: "lottie",
+            path: path.join(__dirname, "../resources/lottieModule")
+        });
         config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
         let scene: Scene = new Scene();
         scene.buildSceneFromProjectDir(config);

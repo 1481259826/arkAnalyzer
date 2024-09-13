@@ -25,6 +25,7 @@ import { Decorator } from '../base/Decorator';
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from '../common/EtsConst';
 import { ArkExport, ExportType } from './ArkExport';
 import { TypeInference } from "../common/TypeInference";
+import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from "../common/Const";
 
 /**
  * @category core/model
@@ -127,7 +128,11 @@ export class ArkClass implements ArkExport {
     }
 
     public isDefaultArkClass(): boolean {
-        return this.getName() === "_DEFAULT_ARK_CLASS";
+        return this.getName() === DEFAULT_ARK_CLASS_NAME;
+    }
+
+    public isAnonymousClass(): boolean {
+        return this.name.startsWith(ANONYMOUS_CLASS_PREFIX);
     }
 
     public getSignature() {

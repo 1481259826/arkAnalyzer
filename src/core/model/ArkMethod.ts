@@ -27,6 +27,7 @@ import { Decorator } from "../base/Decorator";
 import { MethodParameter } from "./builder/ArkMethodBuilder";
 import { BodyBuilder } from "../common/BodyBuilder";
 import { ArkExport, ExportType } from "./ArkExport";
+import { DEFAULT_ARK_METHOD_NAME } from "../common/Const";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -35,6 +36,8 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
  * @category core/model
  */
 export class ArkMethod implements ArkExport {
+    public static ANONYMOUS_METHOD_PREFIX = 'AnonymousMethod-';
+
     private name: string = '';
     private code: string = '';
     private line: number = -1;
@@ -126,7 +129,11 @@ export class ArkMethod implements ArkExport {
     }
 
     public isDefaultArkMethod(): boolean {
-        return this.getName() === '_DEFAULT_ARK_METHOD';
+        return this.getName() === DEFAULT_ARK_METHOD_NAME;
+    }
+
+    public isAnonymousMethod(): boolean {
+        return this.name.startsWith(ArkMethod.ANONYMOUS_METHOD_PREFIX);
     }
 
     public getParameters() {

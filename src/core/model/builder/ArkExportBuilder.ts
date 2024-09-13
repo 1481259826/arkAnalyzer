@@ -35,12 +35,12 @@ function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineCol
 }
 
 
-export function buildDefaultClassExportInfo(im: FromInfo, file: ArkFile) {
+export function buildDefaultExportInfo(im: FromInfo, file: ArkFile, arkExport?: ArkExport) {
     return new ExportInfo.Builder()
-        .exportClauseType(ExportType.CLASS)
+        .exportClauseType(arkExport?.getExportType() ?? ExportType.CLASS)
         .exportClauseName(im.getOriginName())
         .declaringArkFile(file)
-        .arkExport(file.getDefaultClass())
+        .arkExport(arkExport ?? file.getDefaultClass())
         .build();
 }
 

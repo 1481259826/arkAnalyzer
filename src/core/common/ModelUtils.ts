@@ -27,7 +27,9 @@ import path from "path";
 import { Sdk } from "../../Config";
 import { transfer2UnixPath } from "../../utils/pathTransfer";
 import { ALL, DEFAULT } from "./TSConst";
-import { buildDefaultClassExportInfo } from "../model/builder/ArkExportBuilder";
+import { buildDefaultExportInfo } from "../model/builder/ArkExportBuilder";
+import { API_INTERNAL, COMPONENT_INSTANCE, COMPONENT_PATH } from "./EtsConst";
+import { ClassType, UnclearReferenceType } from "../base/Type";
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -317,7 +319,8 @@ export class ModelUtils {
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
-        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name);
+        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name)
+            ?? arkClass.getSuperClass()?.getMethodWithName(name);
         if (arkMethod) {
             return arkMethod;
         }
@@ -329,6 +332,36 @@ export class ModelUtils {
             return findArkExport(arkClass.getDeclaringArkFile().getExportInfoBy(name));
         }
         return null;
+    }
+
+    public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
+        if (file.getFilePath().includes(COMPONENT_PATH) || file.getFilePath().includes(API_INTERNAL)) {
+            this.getAllClassesInFile(file).forEach(cls => {
+                if (!cls.isAnonymousClass()) {
+                    globalMap.set(cls.getName(), cls);
+                    cls.getMethods().forEach(mtd => {
+                        if (!mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod()) {
+                            globalMap.set(mtd.getName(), mtd);
+                        }
+                    })
+                }
+            });
+            file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().forEach(local => {
+                const name = local.getName();
+                if (!name.endsWith(COMPONENT_INSTANCE)) {
+                    const type = local.getType();
+                    let arkExport;
+                    if (type instanceof UnclearReferenceType) {
+                        arkExport = findArkExportInFile(type.getName(), file);
+                    } else if (type instanceof ClassType) {
+                        arkExport = file.getScene().getClass(type.getClassSignature());
+                    }
+                    if (arkExport) {
+                        globalMap.set(name, arkExport);
+                    }
+                }
+            })
+        }
     }
 
 }
@@ -511,9 +544,14 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
         }
     }
 
-    if (file.getDefaultClass() && (fromInfo.getOriginName() === ALL || /\.d\.e?ts$/.test(file.getName()))) {
-        exportInfo = buildDefaultClassExportInfo(fromInfo, file);
+    if (fromInfo.getOriginName() === ALL) {
+        exportInfo = buildDefaultExportInfo(fromInfo, file);
         file.addExportInfo(exportInfo, ALL);
+    } else if (/\.d\.e?ts$/.test(file.getName())) {
+        const declare = findArkExportInFile(fromInfo.getOriginName(), file);
+        if (declare) {
+            exportInfo = buildDefaultExportInfo(fromInfo, file, declare);
+        }
     }
 
     return exportInfo;

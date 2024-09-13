@@ -13,14 +13,37 @@
  * limitations under the License.
  */
 
-export const CONSTRUCTOR_NAME = 'constructor';
-export const SUPER_NAME = 'super';
-export const THIS_NAME = 'this';
+interface ColumnOptions {
 
-export const DEFAULT = 'default';
 
-export const ALL = '*';
+    space?: string | number;
+}
 
-export const IMPORT = 'import';
-// ast const
-export const DECLARE_KEYWORD = 'DeclareKeyword';
+
+interface ColumnInterface {
+
+
+    (options?: ColumnOptions): ColumnAttribute;
+}
+
+
+declare class ColumnAttribute extends CommonMethod<ColumnAttribute> {
+
+
+    alignItems(value: HorizontalAlign): ColumnAttribute;
+
+
+    justifyContent(value: FlexAlign): ColumnAttribute;
+
+
+    pointLight(value: PointLightStyle): ColumnAttribute;
+
+
+    reverse(isReversed: Optional<boolean>): ColumnAttribute;
+}
+
+
+declare const Column: ColumnInterface;
+
+
+declare const ColumnInstance: ColumnAttribute;

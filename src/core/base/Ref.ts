@@ -21,6 +21,7 @@ import { Value } from './Value';
 import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ValueUtil } from '../common/ValueUtil';
+import { CLASS_ORIGIN_TYPE_OBJECT } from "../common/Const";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
@@ -143,6 +144,10 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         let baseType: Type | null = this.base.getType();
         if (this.base instanceof Local && baseType instanceof UnknownType) {
             baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
+            if (!baseType && (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT)) {
+                const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(this.base.getName());
+                baseType = TypeInference.parseArkExport2Type(global);
+            }
         } else if (baseType instanceof UnclearReferenceType) {
             baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
         }
