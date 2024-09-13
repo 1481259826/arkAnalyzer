@@ -46,6 +46,7 @@ import { ArkMethod } from '../model/ArkMethod';
 import { ImportInfo } from '../model/ArkImport';
 import { Constant } from './Constant';
 import { ALL, CONSTRUCTOR_NAME, IMPORT } from '../common/TSConst';
+import { Builtin } from '../common/Builtin';
 import { COMPONENT_CREATE_FUNCTION, COMPONENT_POP_FUNCTION } from '../common/EtsConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
@@ -251,6 +252,13 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 const signature = new MethodSignature(baseType.getClassSignature(), subSignature);
                 this.setMethodSignature(signature);
                 return this;
+            } else if (methodName === Builtin.ITERATOR_NEXT) { //sdk隐式构造
+                const returnType = this.getMethodSignature().getMethodSubSignature().getReturnType();
+                if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
+                    .getProjectName() === Builtin.DUMMY_PROJECT) {
+                    returnType.setRealGenericTypes(baseType.getRealGenericTypes());
+                    return this;
+                }
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
             const namespace = scene.getNamespace(baseType.getNamespaceSignature());
@@ -262,7 +270,13 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                     return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
                 }
             }
-
+        } else if (baseType instanceof ArrayType && methodName === Builtin.ITERATOR_FUNCTION) {
+            const returnType = this.getMethodSignature().getMethodSubSignature().getReturnType();
+            if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
+                .getProjectName() === Builtin.DUMMY_PROJECT) {
+                returnType.setRealGenericTypes([baseType.getBaseType()]);
+                return this;
+            }
         }
         return null;
     }
@@ -875,8 +889,8 @@ export class ArkCastExpr extends AbstractExpr {
     }
 
     public inferType(arkClass: ArkClass): AbstractExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkClass);
-        if (type) {
+        const type = TypeInference.inferUnclearedType(this.type, arkClass) ?? this.op.getType();
+        if (!TypeInference.isUnclearType(type)) {
             this.type = type;
         }
         return this;

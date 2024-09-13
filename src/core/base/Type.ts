@@ -359,6 +359,10 @@ export class ClassType extends Type {
         return this.realGenericTypes;
     }
 
+    public setRealGenericTypes(types: Type[] | undefined): void {
+        this.realGenericTypes = types;
+    }
+
     public toString(): string {
         return this.classSignature.toString();
     }

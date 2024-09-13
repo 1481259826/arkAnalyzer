@@ -423,6 +423,13 @@ export class TypeInference {
         if (baseType instanceof ClassType) {
             const arkClass = declareClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
             if (!arkClass) {
+                if (fieldName === Builtin.ITERATOR_RESULT_VALUE && baseType.getClassSignature()
+                    .getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT) {
+                    const types = baseType.getRealGenericTypes();
+                    if (types && types.length > 0) {
+                        return types[0];
+                    }
+                }
                 return null;
             }
             const property = ModelUtils.findPropertyInClass(fieldName, arkClass);

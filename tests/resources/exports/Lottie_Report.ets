@@ -14,11 +14,13 @@
  */
 
 import lottie from '@ohos/lottie';
+import { AnimationItem } from '@ohos/lottie';
 
 function testLottie() {
     const anim = lottie.loadAnimation({name:'test'});
 }
 
+export default class LottieUtils {
 @Entry
 @Component
 struct MyComponent {
@@ -53,4 +55,16 @@ struct BlurEffectsExample {
     }
 }
 
+    public static releaseAnimationByObj(animateItems: AnimationItem[]){
+        for(let item of animateItems) {
+            item.destroy();
+        }
+    }
+
+    public static releaseAnimationByName(animateNames: string[]){
+        for(let name of animateNames) {
+            lottie.destroy(name);
+        }
+    }
+}
 
