@@ -140,7 +140,7 @@ export class TypeInference {
         }
 
         const arkClass = arkMethod.getDeclaringArkClass();
-        body.getAliasTypeMap()?.forEach((value) => this.inferUnclearedType(value, arkClass));
+        body.getAliasTypeMap()?.forEach((value) => this.inferUnclearedType(value[0], arkClass));
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
@@ -432,7 +432,7 @@ export class TypeInference {
             ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
-                ?.getBody()?.getAliasTypeMap()?.get(baseName)
+                ?.getBody()?.getAliasTypeMap()?.get(baseName)?.[0]
             ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
         return this.parseArkExport2Type(arkExport);
     }

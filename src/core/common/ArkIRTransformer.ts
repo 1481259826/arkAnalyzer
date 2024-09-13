@@ -59,6 +59,7 @@ import {
 } from '../base/Stmt';
 import {
     AliasType,
+    AliasTypeDeclaration,
     AnyType,
     ArrayType,
     BooleanType,
@@ -84,7 +85,7 @@ import {
     FieldSignature,
     LocalSignature,
     MethodSignature,
-    MethodSubSignature
+    MethodSubSignature,
 } from '../model/ArkSignature';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { IRUtils } from './IRUtils';
@@ -126,7 +127,7 @@ export class ArkIRTransformer {
 
     private inBuildMethod = false;
     private stmtToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
-    private aliasTypeMap: Map<string, AliasType> = new Map();
+    private aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]> = new Map();
 
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
@@ -148,7 +149,7 @@ export class ArkIRTransformer {
         return this.stmtToOriginalStmt;
     }
 
-    public getAliasTypeMap(): Map<string, AliasType> {
+    public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> {
         return this.aliasTypeMap;
     }
 
@@ -272,8 +273,12 @@ export class ArkIRTransformer {
     private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {
         const aliasName = typeAliasDeclaration.name.text;
         const originalType = this.resolveTypeNode(typeAliasDeclaration.type);
-        this.aliasTypeMap.set(aliasName, new AliasType(aliasName, originalType,
-            new LocalSignature(aliasName, this.declaringMethod.getSignature())));
+        const aliasType = new AliasType(aliasName, originalType,
+            new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        const sourceCode = typeAliasDeclaration.getText(this.sourceFile);
+        const aliasTypePosition = LineColPosition.buildFromNode(typeAliasDeclaration, this.sourceFile);
+        const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition)
+            this.aliasTypeMap.set(aliasName, [aliasType, aliasTypeDeclaration]);
         return [];
     }
 
@@ -1602,8 +1607,8 @@ export class ArkIRTransformer {
 
     private resolveTypeReferenceNode(typeReferenceNode: ts.TypeReferenceNode): Type {
         const typeReferenceFullName = typeReferenceNode.getText(this.sourceFile);
-        const aliasType = this.aliasTypeMap.get(typeReferenceFullName);
-        if (!aliasType) {
+        const aliasTypeAndPosition = this.aliasTypeMap.get(typeReferenceFullName);
+        if (!aliasTypeAndPosition) {
             const genericTypes: Type[] = [];
             if (typeReferenceNode.typeArguments) {
                 for (const typeArgument of typeReferenceNode.typeArguments) {
@@ -1616,7 +1621,7 @@ export class ArkIRTransformer {
             const typeName = typeNameNode.getText(this.sourceFile);
             return new UnclearReferenceType(typeName, genericTypes);
         } else {
-            return aliasType;
+            return aliasTypeAndPosition[0];
         }
     }
 

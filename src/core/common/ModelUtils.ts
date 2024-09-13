@@ -313,7 +313,7 @@ export class ModelUtils {
             ?? namespace.getClassWithName(name)
             ?? namespace.getNamespaceWithName(name)
             ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(name)
-            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get(name);
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get(name)?.[0];
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
@@ -409,7 +409,7 @@ function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
         if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
             arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name) || null;
         } else if (exportInfo.getExportClauseType() === ExportType.TYPE) {
-            arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeMap().get(name) || null;
+            arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeMap().get(name)?.[0] || null;
         } else {
             arkExport = findArkExportInFile(name, exportInfo.getDeclaringArkFile());
         }
@@ -431,7 +431,7 @@ export function findArkExportInFile(name: string, declaringArkFile: ArkFile): Ar
         ?? declaringArkFile.getDefaultClass().getMethodWithName(name)
         ?? declaringArkFile.getNamespaceWithName(name)
         ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name)
-        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeMap().get(name);
+        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeMap().get(name)?.[0];
     if (!arkExport) {
         const importInfo = declaringArkFile.getImportInfoBy(name);
         if (importInfo) {

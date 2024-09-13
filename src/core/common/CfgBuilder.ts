@@ -25,7 +25,7 @@ import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
-import { AliasType } from '../base/Type';
+import { AliasType, AliasTypeDeclaration } from '../base/Type';
 
 class StatementBuilder {
     type: string;
@@ -991,7 +991,7 @@ export class CfgBuilder {
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
-        aliasTypeMap: Map<string, AliasType>
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1005,7 +1005,7 @@ export class CfgBuilder {
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
-        aliasTypeMap: Map<string, AliasType>
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1059,7 +1059,7 @@ export class CfgBuilder {
         originalCfg: Cfg,
         stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
-        aliasTypeMap: Map<string, AliasType>
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
