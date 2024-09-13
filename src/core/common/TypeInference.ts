@@ -435,7 +435,7 @@ export class TypeInference {
                 ?.getBody()?.getAliasTypeMap()?.get(baseName)
             ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
         if (!arkExport && arkClass.getDeclaringArkFile().getFilePath().includes(COMPONENT_PATH)) {
-            arkExport = arkClass.getDeclaringArkFile().getScene().getGlobal(baseName);
+            arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
         return this.parseArkExport2Type(arkExport);
     }

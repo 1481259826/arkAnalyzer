@@ -319,7 +319,8 @@ export class ModelUtils {
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
-        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name);
+        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name)
+            ?? arkClass.getSuperClass()?.getMethodWithName(name);
         if (arkMethod) {
             return arkMethod;
         }
@@ -336,13 +337,11 @@ export class ModelUtils {
     public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
         if (file.getFilePath().includes(COMPONENT_PATH) || file.getFilePath().includes(API_INTERNAL)) {
             this.getAllClassesInFile(file).forEach(cls => {
-                const className = cls.getName();
-                if (!className.startsWith('AnonymousClass-')) {
-                    globalMap.set(className, cls);
+                if (!cls.isAnonymousClass()) {
+                    globalMap.set(cls.getName(), cls);
                     cls.getMethods().forEach(mtd => {
-                        const methodName = mtd.getName();
-                        if (!methodName.startsWith('AnonymousMethod-')) {
-                            globalMap.set(methodName, mtd);
+                        if (!mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod()) {
+                            globalMap.set(mtd.getName(), mtd);
                         }
                     })
                 }

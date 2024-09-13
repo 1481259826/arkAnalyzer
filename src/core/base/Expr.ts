@@ -165,15 +165,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         }
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         if (!baseType) {
-            if (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT) {
-                const global = arkClass.getDeclaringArkFile().getScene().getGlobal(methodName);
-                if (global instanceof ArkMethod) {
-                    TypeInference.inferMethodReturnType(global);
-                    this.setMethodSignature(global.getSignature());
-                    return this;
-                }
+            if (!this.tryInferFormGlobal(methodName, arkClass)) {
+                logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
             }
-            logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
             return this;
         }
         if (this.base instanceof Local) {
@@ -213,19 +207,26 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         } else {
             result = this.inferMethod(baseType, methodName, scene);
         }
-        if (!result && (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT)) {
-            const global = arkClass.getDeclaringArkFile().getScene().getGlobal(methodName);
-            if (global instanceof ArkMethod) {
-                TypeInference.inferMethodReturnType(global);
-                this.setMethodSignature(global.getSignature());
-                result = this;
-            }
+        if (!result && this.tryInferFormGlobal(methodName, arkClass)) {
+            result = this;
         }
         if (result) {
             return result;
         }
         logger.warn('invoke ArkInstanceInvokeExpr MethodSignature type fail: ', this.toString());
         return this;
+    }
+
+    private tryInferFormGlobal(methodName: string, arkClass: ArkClass) {
+        if (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT) {
+            const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
+            if (global instanceof ArkMethod) {
+                TypeInference.inferMethodReturnType(global);
+                this.setMethodSignature(global.getSignature());
+                return true;
+            }
+        }
+        return false;
     }
 
     private inferMethod(baseType: Type, methodName: string, scene: Scene): AbstractInvokeExpr | null {
@@ -316,7 +317,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
                     className = this.getMethodSignature().getDeclaringClassSignature().getClassName();
                 }
                 const globalName = className ?? methodName;
-                const global = arkClass.getDeclaringArkFile().getScene().getGlobal(globalName);
+                const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(globalName);
                 if (global instanceof ArkMethod) {
                     method = global;
                 } else if (global instanceof ArkClass) {

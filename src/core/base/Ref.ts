@@ -145,7 +145,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         if (this.base instanceof Local && baseType instanceof UnknownType) {
             baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
             if (!baseType && (arkClass.hasComponentDecorator() || arkClass.getOriginType() === CLASS_ORIGIN_TYPE_OBJECT)) {
-                const global = arkClass.getDeclaringArkFile().getScene().getGlobal(this.base.getName());
+                const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(this.base.getName());
                 baseType = TypeInference.parseArkExport2Type(global);
             }
         } else if (baseType instanceof UnclearReferenceType) {

@@ -74,7 +74,7 @@ export class Scene {
     private methodsMap: Map<string, ArkMethod> = new Map();
     // TODO: type of key should be signature object
     private sdkArkFilesMap: Map<string, ArkFile> = new Map<string, ArkFile>();
-    private globalMap: Map<string, ArkExport> = new Map<string, ArkExport>();
+    private sdkGlobalMap: Map<string, ArkExport> = new Map<string, ArkExport>();
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
@@ -276,8 +276,8 @@ export class Scene {
         return this.projectFiles;
     }
 
-    public getGlobal(globalName: string): ArkExport | null {
-        return this.globalMap.get(globalName) || null;
+    public getSdkGlobal(globalName: string): ArkExport | null {
+        return this.sdkGlobalMap.get(globalName) || null;
     }
 
     public getFile(fileSignature: FileSignature): ArkFile | null {
@@ -436,7 +436,7 @@ export class Scene {
      */
     public inferTypes() {
         this.sdkArkFilesMap.forEach(file => {
-            ModelUtils.buildGlobalMap(file, this.globalMap);
+            ModelUtils.buildGlobalMap(file, this.sdkGlobalMap);
         })
         this.filesMap.forEach(file => {
             ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
