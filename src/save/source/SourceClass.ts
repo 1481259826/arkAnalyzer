@@ -66,9 +66,9 @@ export class SourceClass extends SourceBase {
         if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
             this.printer.write(this.cls.getName());
         }
-
-        if (this.cls.getTypeParameter().length > 0) {
-            this.printer.write(`<${this.transformer.typeArrayToString(this.cls.getTypeParameter())}>`);
+        const genericsTypes = this.cls.getGenericsTypes();
+        if (genericsTypes) {
+            this.printer.write(`<${this.transformer.typeArrayToString(genericsTypes)}>`);
         }
         if (this.cls.getSuperClassName() && !this.cls.hasComponentDecorator()) {
             this.printer.write(` extends ${this.cls.getSuperClassName()}`);

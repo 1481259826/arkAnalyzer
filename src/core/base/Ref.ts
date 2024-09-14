@@ -23,6 +23,7 @@ import { TypeInference } from '../common/TypeInference';
 import { ValueUtil } from '../common/ValueUtil';
 import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
+import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX, CLASS_ORIGIN_TYPE_OBJECT } from '../common/Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
@@ -245,6 +246,14 @@ export class ArkParameterRef extends AbstractRef {
         this.paramType = newType;
     }
 
+    public inferType(arkClass: ArkClass): AbstractRef {
+        let type = TypeInference.inferUnclearedType(this.paramType, arkClass);
+        if (type) {
+            this.paramType = type;
+        }
+        return this;
+    }
+
     public getUses(): Value[] {
         let uses: Value[] = [];
         return uses;
@@ -262,6 +271,19 @@ export class ArkThisRef extends AbstractRef {
     constructor(type: ClassType) {
         super();
         this.type = type;
+    }
+
+    public inferType(arkClass: ArkClass): AbstractRef {
+        if(this.type instanceof ClassType){
+            const className = this.type.getClassSignature().getClassName();
+            if (className.startsWith(ANONYMOUS_CLASS_PREFIX)) {
+                let type = TypeInference.inferBaseType(className.split(ANONYMOUS_CLASS_DELIMITER)[1], arkClass);
+                if (type instanceof ClassType) {
+                    this.type = type;
+                }
+            }
+        }
+        return this;
     }
 
     public getType(): ClassType {

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ClassType, Type } from '../base/Type';
+import { ClassType, GenericType } from '../base/Type';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkField } from './ArkField';
 import { ArkFile } from './ArkFile';
@@ -24,8 +24,8 @@ import { Local } from '../base/Local';
 import { Decorator } from '../base/Decorator';
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from '../common/EtsConst';
 import { ArkExport, ExportType } from './ArkExport';
-import { TypeInference } from "../common/TypeInference";
-import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from "../common/Const";
+import { TypeInference } from '../common/TypeInference';
+import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
 
 export enum ClassCategory {
     CLASS = 0,
@@ -53,7 +53,7 @@ export class ArkClass implements ArkExport {
     private superClass?: ArkClass | null;
     private implementedInterfaceNames: string[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    private typeParameters: Type[] = [];
+    private genericsTypes?: GenericType[];
 
     private defaultMethod: ArkMethod | null = null;
 
@@ -240,12 +240,15 @@ export class ArkClass implements ArkExport {
         this.modifiers.add(name);
     }
 
-    public getTypeParameter() {
-        return this.typeParameters;
+    public getGenericsTypes() {
+        return this.genericsTypes;
     }
 
-    public addTypeParameter(typeParameter: Type) {
-        this.typeParameters.push(typeParameter);
+    public addGenericType(gType: GenericType) {
+        if (!this.genericsTypes) {
+            this.genericsTypes = [];
+        }
+        this.genericsTypes.push(gType);
     }
 
     public containsModifier(name: string) {
@@ -253,7 +256,7 @@ export class ArkClass implements ArkExport {
     }
 
     public isStatic(): boolean {
-        if (this.modifiers.has("StaticKeyword")) {
+        if (this.modifiers.has('StaticKeyword')) {
             return true;
         }
         return false;

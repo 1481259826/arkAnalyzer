@@ -60,11 +60,11 @@ export class ArkField {
     constructor() {
     }
 
-    public getDeclaringClass() {
+    public getDeclaringArkClass() {
         return this.declaringClass;
     }
 
-    public setDeclaringClass(declaringClass: ArkClass) {
+    public setDeclaringArkClass(declaringClass: ArkClass) {
         this.declaringClass = declaringClass;
     }
 

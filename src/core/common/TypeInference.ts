@@ -23,6 +23,7 @@ import {
     ArkInstanceFieldRef,
     ArkParameterRef,
     ArkStaticFieldRef,
+    ArkThisRef,
 } from '../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import {
@@ -57,6 +58,7 @@ import { COMPONENT_PATH } from "./EtsConst";
 import { Builtin } from './Builtin';
 import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { UNKNOWN_FILE_NAME } from './Const';
+import { EMPTY_STRING } from './ValueUtil';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -64,7 +66,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 export class TypeInference {
 
     public static inferTypeInArkField(arkField: ArkField): void {
-        const arkClass = arkField.getDeclaringClass();
+        const arkClass = arkField.getDeclaringArkClass();
         const stmts = arkField.getInitializer();
         let rightType: Type | undefined;
         let fieldRef: AbstractFieldRef | undefined = undefined;
@@ -287,6 +289,8 @@ export class TypeInference {
             let type = this.inferUnclearedType(leftOpType, arkClass, rightOp.getType());
             if (type) {
                 leftOp.setType(type);
+            } else if (rightOp instanceof ArkThisRef) {
+                leftOp.setType(rightOp.getType());
             } else if (this.isUnclearType(leftOpType) && !this.isUnclearType(stmt.getRightOp().getType())) {
                 leftOp.setType(stmt.getRightOp().getType());
             }
@@ -389,25 +393,26 @@ export class TypeInference {
         if (!refName) {
             return null;
         }
-        const stdName = refName.replace(/<\w+>/, '');
-        //import Reference
-        const importSignature = ModelUtils.getArkExportInImportInfoWithName(stdName, arkClass.getDeclaringArkFile());
-        const importType = this.parseArkExport2Type(importSignature);
-        if (importType) {
-            return importType;
-        }
         //split and iterate to infer each type
-        const singleNames = stdName.split('.');
-        let type = this.inferBaseType(singleNames[0], arkClass);
-        for (let i = 1; i < singleNames.length; i++) {
-            if (!type) {
-                return null;
+        const singleNames = refName.split('.');
+        let type = null;
+        for (let i = 0; i < singleNames.length; i++) {
+            let genericName: string = EMPTY_STRING;
+            const name = singleNames[i].replace(/<(\w+)>/, function(match, group1) {
+                genericName = group1;
+                return EMPTY_STRING;
+            });
+            if (i === 0) {
+                type = this.inferBaseType(name, arkClass);
+            } else if (type) {
+                type = this.inferFieldType(type, name, arkClass);
             }
-            const propertyAndType = this.inferFieldType(type, singleNames[i], arkClass);
-            if (propertyAndType) {
-                type = propertyAndType[1];
-            } else {
-                type = null;
+            if (genericName && (type instanceof ClassType || type instanceof FunctionType)) {
+                const realTypes = genericName.split(',').map(generic => {
+                    const realType = this.inferBaseType(generic, arkClass);
+                    return realType ?? new UnclearReferenceType(generic);
+                });
+                type.setRealGenericTypes(realTypes);
             }
         }
         return type;
@@ -470,9 +475,9 @@ export class TypeInference {
             ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
-                ?.getBody()?.getAliasTypeMap()?.get(baseName)?.[0]
+                ?.getBody()?.getAliasTypeByName(baseName)
             ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
-        if (!arkExport && arkClass.getDeclaringArkFile().getFilePath().includes(COMPONENT_PATH)) {
+        if (!arkExport) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
         return this.parseArkExport2Type(arkExport);

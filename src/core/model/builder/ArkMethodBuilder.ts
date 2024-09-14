@@ -20,6 +20,7 @@ import { ArkClass, ClassCategory } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import ts from 'ohos-typescript';
 import {
+    buildGenericType,
     buildModifiers,
     buildParameters,
     buildReturnType,
@@ -89,8 +90,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     });
 
     if (methodNode.typeParameters) {
-        const genericTypes = buildTypeParameters(methodNode.typeParameters, sourceFile, mtd);
-        mtd.setGenericTypes(genericTypes);
+        mtd.setGenericTypes(buildTypeParameters(methodNode.typeParameters, sourceFile, mtd));
     }
 
     // build MethodSignature
@@ -101,7 +101,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     });
     let returnType = UnknownType.getInstance();
     if (methodNode.type) {
-        returnType = buildReturnType(methodNode.type, sourceFile, mtd);
+        returnType = buildGenericType(buildReturnType(methodNode.type, sourceFile, mtd), mtd);
     }
     const methodSubSignature = new MethodSubSignature(methodName, methodParameters, returnType, mtd.isStatic());
     const methodSignature = new MethodSignature(mtd.getDeclaringArkClass().getSignature(), methodSubSignature);

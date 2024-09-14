@@ -119,15 +119,7 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
     let heritageClausesMap: Map<string, string> = new Map<string, string>();
     heritageClauses?.forEach((heritageClause) => {
         heritageClause.types.forEach((type) => {
-            let heritageClauseName: string = '';
-            if (ts.isIdentifier(type.expression)) {
-                heritageClauseName = (type.expression as ts.Identifier).text;
-            } else if (ts.isPropertyAccessExpression(type.expression)) {
-                heritageClauseName = handlePropertyAccessExpression(type.expression);
-            } else {
-                logger.warn('Other type expression found!!!');
-            }
-            heritageClausesMap.set(heritageClauseName, ts.SyntaxKind[heritageClause.token]);
+            heritageClausesMap.set(type.getText(), ts.SyntaxKind[heritageClause.token]);
         });
     });
     return heritageClausesMap;
@@ -238,7 +230,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
 
         // type
         if (parameter.type) {
-            methodParameter.setType(tsNode2Type(parameter.type, sourceFile, arkInstance));
+            methodParameter.setType(buildGenericType(tsNode2Type(parameter.type, sourceFile, arkInstance), arkInstance));
         } else {
             methodParameter.setType(UnknownType.getInstance());
         }
@@ -261,6 +253,21 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
         parameters.push(methodParameter);
     });
     return parameters;
+}
+
+export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField): Type {
+    if (type instanceof UnclearReferenceType) {
+        const typeName = type.getName();
+        let gType;
+        if (arkInstance instanceof ArkMethod) {
+            gType = arkInstance.getGenericTypes()?.find(f => f.getName() === typeName);
+        }
+        if (!gType) {
+            gType = arkInstance.getDeclaringArkClass().getGenericsTypes()?.find(f => f.getName() === typeName);
+        }
+        return gType ?? type;
+    }
+    return type;
 }
 
 export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, method: ArkMethod) {
@@ -303,7 +310,7 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         if (arkInstance instanceof ArkMethod) {
             declaringClass = arkInstance.getDeclaringArkClass();
         } else if (arkInstance instanceof ArkField) {
-            declaringClass = arkInstance.getDeclaringClass();
+            declaringClass = arkInstance.getDeclaringArkClass();
         } else {
             declaringClass = arkInstance;
         }
@@ -324,7 +331,7 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         } else if (arkInstance instanceof ArkClass) {
             cls = arkInstance;
         } else {
-            cls = arkInstance.getDeclaringClass();
+            cls = arkInstance.getDeclaringArkClass();
         }
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
         return new FunctionType(mtd.getSignature());

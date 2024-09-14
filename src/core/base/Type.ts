@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { ArkField } from '../model/ArkField';
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';

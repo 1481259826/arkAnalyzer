@@ -74,7 +74,7 @@ export function buildNormalArkClassFromArkFile(clsNode: ClassLikeNode, arkFile: 
                                                sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
     cls.setDeclaringArkFile(arkFile);
     cls.setCode(clsNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
@@ -90,7 +90,7 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode, arkN
     cls.setDeclaringArkNamespace(arkNamespace);
     cls.setDeclaringArkFile(arkNamespace.getDeclaringArkFile());
     cls.setCode(clsNode.getText(sourceFile));
-    const {line, character} = ts.getLineAndCharacterOfPosition(
+    const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
         clsNode.getStart(sourceFile),
     );
@@ -180,7 +180,7 @@ function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sour
 
     if (clsNode.typeParameters) {
         buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
-            cls.addTypeParameter(typeParameter);
+            cls.addGenericType(typeParameter);
         });
     }
 
@@ -217,7 +217,7 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
 
     if (clsNode.typeParameters) {
         buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
-            cls.addTypeParameter(typeParameter);
+            cls.addGenericType(typeParameter);
         });
     }
 
@@ -254,7 +254,7 @@ function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass
 
     if (clsNode.typeParameters) {
         buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
-            cls.addTypeParameter(typeParameter);
+            cls.addGenericType(typeParameter);
         });
     }
 
@@ -305,7 +305,14 @@ function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClas
         cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
     cls.setSignature(classSignature);
 
+
+
     cls.setCategory(ClassCategory.TYPE_LITERAL);
+    if (ts.isTypeAliasDeclaration(clsNode.parent) && clsNode.parent.typeParameters) {
+        buildTypeParameters(clsNode.parent.typeParameters, sourceFile, cls).forEach((typeParameter) => {
+            cls.addGenericType(typeParameter);
+        });
+    }
     buildArkClassMembers(clsNode, cls, sourceFile);
 }
 

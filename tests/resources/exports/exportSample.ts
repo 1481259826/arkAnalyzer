@@ -21,7 +21,7 @@ export * as z from './test'; //kind 278
 
 export let blah = 'test';
 
-const a = 1
+const a = 1;
 const b = 'a';
 export { a, b };
 
@@ -30,7 +30,7 @@ export function testing() {
     cc();
 }
 
-export { testing as testing2 }
+export { testing as testing2 };
 
 export const c = '';
 
@@ -70,3 +70,15 @@ class ThrowTest {
 
 export default new ThrowTest();
 
+export namespace ComponentService {
+
+    export type Constructor<T> = {
+        new(): T;
+        readonly prototype: T;
+    }
+
+    export function register<T extends ComponentService.Constructor<MyInterface>>(clazz: T): T {
+        return clazz;
+    }
+
+}

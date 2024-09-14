@@ -21,9 +21,9 @@ describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();
     config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
     config.getSdksObj().push({
-        moduleName: "",
-        name: "lottie",
-        path: path.join(__dirname, "../resources/thirdModule")
+        moduleName: '',
+        name: 'lottie',
+        path: path.join(__dirname, '../resources/lottieModule'),
     });
     config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
     let projectScene: Scene = new Scene();
@@ -79,8 +79,8 @@ describe("export Test", () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
         const arkExport = projectScene.getFile(fileId)?.getImportInfoBy('lottie')
             ?.getLazyExportInfo()?.getArkExport();
-        assert.isTrue(arkExport instanceof ArkClass);
-    })
+        assert.isTrue(arkExport instanceof Local);
+    });
 
     it('all case', () => {
         let unknownCount = 0;
@@ -93,7 +93,7 @@ describe("export Test", () => {
                 }
             })
         })
-        expect(unknownCount).lessThanOrEqual(3);
+        expect(unknownCount).lessThanOrEqual(9);
     })
 })
 

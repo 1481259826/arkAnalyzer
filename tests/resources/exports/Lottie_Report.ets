@@ -21,6 +21,20 @@ function testLottie() {
 }
 
 export default class LottieUtils {
+
+    public static releaseAnimationByObj(animateItems: AnimationItem[]){
+        for(let item of animateItems) {
+            item.destroy();
+        }
+    }
+
+    public static releaseAnimationByName(animateNames: string[]){
+        for(let name of animateNames) {
+            lottie.destroy(name);
+        }
+    }
+}
+
 @Entry
 @Component
 struct MyComponent {
@@ -54,17 +68,3 @@ struct BlurEffectsExample {
         }.width('100%').margin({ top: 5 });
     }
 }
-
-    public static releaseAnimationByObj(animateItems: AnimationItem[]){
-        for(let item of animateItems) {
-            item.destroy();
-        }
-    }
-
-    public static releaseAnimationByName(animateNames: string[]){
-        for(let name of animateNames) {
-            lottie.destroy(name);
-        }
-    }
-}
-
