@@ -353,8 +353,11 @@ export class SourceTransformer {
 
     public typeToString(type: Type): string {
         if (type instanceof LiteralType) {
-            let literalName = type.getLiteralName() as string;
-            return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
+            let literalName = type.getLiteralName();
+            if (typeof literalName === 'string' && literalName.endsWith('Keyword')) {
+                return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
+            }
+            return `${literalName}`;
         }
 
         if (type instanceof PrimitiveType) {

@@ -33,7 +33,7 @@ import {
     ArkThrowStmt,
     Stmt,
 } from '../../core/base/Stmt';
-import { ClassType, Type } from '../../core/base/Type';
+import { AliasType, ClassType, Type } from '../../core/base/Type';
 import { Value } from '../../core/base/Value';
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
@@ -830,6 +830,18 @@ export class SourceThrowStmt extends SourceStmt {
 
     public transfer2ts(): void {
         this.setText(`throw ${this.transformer.valueToString((this.original as ArkThrowStmt).getOp())};`);
+    }
+}
+
+export class SourceTypeAliasStmt extends SourceStmt {
+    aliasType: AliasType;
+    constructor(context: StmtPrinterContext, original: Stmt, aliasType: AliasType) {
+        super(context, original);
+        this.aliasType = aliasType;
+    }
+
+    public transfer2ts(): void {
+        this.setText(`type ${this.aliasType.getName()} = ${this.transformer.typeToString(this.aliasType.getOriginalType())};`);
     }
 }
 
