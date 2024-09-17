@@ -89,6 +89,7 @@ export class DummyMainCreater {
 
     public createDummyMain(): void {
         const dummyMainFile = new ArkFile();
+        dummyMainFile.setProjectName(this.scene.getProjectName())
         dummyMainFile.setName('@dummyFile');
         dummyMainFile.setScene(this.scene);
         dummyMainFile.genFileSignature();
@@ -103,7 +104,6 @@ export class DummyMainCreater {
         this.dummyMain.setName('@dummyMain');
         this.dummyMain.setDeclaringArkClass(dummyMainClass);
         this.dummyMain.setDeclaringArkFile();
-        this.dummyMain.setIsGeneratedFlag(true);
         dummyMainClass.addMethod(this.dummyMain);
         this.dummyMain.genSignature();
         for (const method of this.entryMethods) {
@@ -129,6 +129,7 @@ export class DummyMainCreater {
         const dummyBody = new ArkBody(localSet, new Cfg(), this.createDummyMainCfg(), new Map(), new Map());
         this.dummyMain.setBody(dummyBody)
         this.addCfg2Stmt()
+        this.scene.addToMethodsMap(this.dummyMain);
     }
 
     private createDummyMainCfg(): Cfg {

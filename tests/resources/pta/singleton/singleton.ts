@@ -22,20 +22,18 @@ namespace Singleton {
                 this.gender = new Gender()
                 Worker.gender
             }
-            return this.gender
+             return this.gender
         }
     }
 
-    class Gender {
-
-    }
+    class Gender {}
 
     function main() {
-        Worker.getGender()
+        let a = Worker.getGender()
         temp()
     }
 
     function temp() {
-        Worker.getGender()
+        let b = Worker.getGender()
     }
 }

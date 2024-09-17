@@ -28,7 +28,7 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
-import { ContextID, KLimitedContextSensitive } from './Context';
+import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
 import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge, GLOBAL_THIS } from './Pag';
 import { PtsSet } from './PtsDS';
 
@@ -74,12 +74,18 @@ export class PagBuilder {
         this.pagStat = new PAGStat();
     }
 
-    private addToWorklist(id: CSFuncID) {
-        if (this.worklist.includes(id)) {
-            return;
+    private buildFuncPagAndAddToWorklist(cs: CSFuncID): CSFuncID {
+        if (this.worklist.includes(cs)) {
+            return cs;
         }
 
-        this.worklist.push(id);
+        this.buildFuncPag(cs.funcID);
+        if (this.isSingletonFunction(cs.funcID)) {
+            cs.cid= DUMMY_CID;
+        }
+
+        this.worklist.push(cs);
+        return cs
     }
 
     private addToFuncHandledListThisRound(id: FuncID) {
@@ -95,7 +101,7 @@ export class PagBuilder {
         funcIDs.forEach(funcID => {
             let cid = this.ctx.getNewContextID(funcID);
             let csFuncID = new CSFuncID(cid, funcID);
-            this.addToWorklist(csFuncID)
+            this.buildFuncPagAndAddToWorklist(csFuncID)
         });
 
         this.handleReachable();
@@ -109,10 +115,10 @@ export class PagBuilder {
 
         while (this.worklist.length > 0) {
             let csFunc = this.worklist.shift() as CSFuncID;
-            this.buildFuncPag(csFunc.funcID);
-            if (this.isSingletonFunction(csFunc.funcID)) {
-                csFunc.cid = 0
-            }
+            // this.buildFuncPag(csFunc.funcID);
+            // if (this.isSingletonFunction(csFunc.funcID)) {
+            //     csFunc.cid = DUMMY_CID 
+            // }
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
             this.addToFuncHandledListThisRound(csFunc.funcID);
         }
@@ -124,7 +130,7 @@ export class PagBuilder {
         for (let funcID of this.cg.getEntries()) {
             let cid = this.ctx.getNewContextID(funcID);
             let csFuncID =new CSFuncID(cid, funcID);
-            this.addToWorklist(csFuncID);
+            this.buildFuncPagAndAddToWorklist(csFuncID);
 
             this.handleReachable();
         }
@@ -526,7 +532,10 @@ export class PagBuilder {
             // method have no cfg body
             return srcNodes;
         }
-        this.addToWorklist(new CSFuncID(calleeCid, cs.calleeFuncID));
+
+        let calleeCS = this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, cs.calleeFuncID));
+        // callee cid will updated if callee is singleton
+        calleeCid = calleeCS.cid
 
         // TODO: getParameterInstances's performance is not good. Need to refactor 
         //let params = calleeMethod.getParameterInstances();

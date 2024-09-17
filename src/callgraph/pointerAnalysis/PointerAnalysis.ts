@@ -57,25 +57,24 @@ export class PointerAnalysis extends AbstractAnalysis {
     static pointerAnalysisForWholeProject(projectScene: Scene, config?: PointerAnalysisConfig): PointerAnalysis {
         let cg = new CallGraph(projectScene);
         let cgBuilder = new CallGraphBuilder(cg, projectScene)
-        cgBuilder.buildDirectCallGraph();
+        cgBuilder.buildDirectCallGraphForScene();
         let pag = new Pag();
         if (!config) {
             config = new PointerAnalysisConfig(1, "out/", false, false)
         }
 
-        let entries: FuncID[] = [];// to get from dummy main
+        let entries: FuncID[] = cg.getEntries();
         const dummyMainCreator = new DummyMainCreater(projectScene)
         dummyMainCreator.createDummyMain()
         const dummyMainMethod = dummyMainCreator.getDummyMain()
-        dummyMainMethod.getBody()?.getCfg().getStmts().forEach((stmt) => {
-            let invokeExpr = stmt.getInvokeExpr()
-            if (invokeExpr) {
-                entries.push(cg.getCallGraphNodeByMethod(invokeExpr.getMethodSignature()).getID())
-            }
-        })
+        cgBuilder.buildDirectCallGraph([dummyMainMethod])
+        let dummyMainMethodID = cg.getCallGraphNodeByMethod(dummyMainMethod.getSignature()).getID()
+        // cgBuilder.setEntries();
+        // entries = cg.getEntries();
+ 
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
         
-        pta.setEntries(entries);
+        pta.setEntries([dummyMainMethodID]);
         pta.start();
         return pta;
     }

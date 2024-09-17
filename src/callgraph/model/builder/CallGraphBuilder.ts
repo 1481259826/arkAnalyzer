@@ -19,6 +19,7 @@ import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "
 import { NodeID } from '../BaseGraph';
 import { ClassHierarchyAnalysis } from '../../algorithm/ClassHierarchyAnalysis';
 import { RapidTypeAnalysis } from '../../algorithm/RapidTypeAnalysis';
+import { ArkMethod } from '../../../core/model/ArkMethod';
 
 export class CallGraphBuilder {
     private cg: CallGraph;
@@ -29,8 +30,16 @@ export class CallGraphBuilder {
         this.scene = s;
     }
 
-    public buildDirectCallGraph(): void {
+
+    public buildDirectCallGraphForScene(): void {
         const methods = this.scene.getMethods();
+        this.buildDirectCallGraph(methods);
+
+        // set entries at end
+        this.setEntries();
+    }
+
+    public buildDirectCallGraph(methods: ArkMethod[]): void {
         for (const method of methods) {
             let m = method.getSignature();
             let kind  = CallGraphNodeKind.real;
@@ -69,9 +78,6 @@ export class CallGraphBuilder {
                 }
             }
         }
-
-        // set entries at end
-        this.setEntries();
     }
 
     public buildClassHierarchyCallGraph(entries: Method[]): void {
