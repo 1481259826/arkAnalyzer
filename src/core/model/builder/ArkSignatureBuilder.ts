@@ -13,17 +13,32 @@
  * limitations under the License.
  */
 
-import { ClassSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
+import { ClassSignature, FieldSignature, FileSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
+import { UnknownType } from '../../base/Type';
 
 export class ArkSignatureBuilder {
-    public static buildMethodSignatureFromClassNameAndMethodName(className: string, methodName: string): MethodSignature {
-        const classSignature = new ClassSignature();
-        classSignature.setClassName(className);
-        const methodSubSignature = new MethodSubSignature();
-        methodSubSignature.setMethodName(methodName);
-        const methodSignature = new MethodSignature();
-        methodSignature.setDeclaringClassSignature(classSignature);
-        methodSignature.setMethodSubSignature(methodSubSignature);
-        return methodSignature;
+    public static buildMethodSignatureFromClassNameAndMethodName(className: string, methodName: string,
+                                                                 staticFlag: boolean = false): MethodSignature {
+        const classSignature = this.buildClassSignatureFromClassName(className);
+        const methodSubSignature = this.buildMethodSubSignatureFromMethodName(methodName, staticFlag);
+        return new MethodSignature(classSignature, methodSubSignature);
+    }
+
+    public static buildMethodSignatureFromMethodName(methodName: string, staticFlag: boolean = false): MethodSignature {
+        const methodSubSignature = this.buildMethodSubSignatureFromMethodName(methodName, staticFlag);
+        return new MethodSignature(ClassSignature.DEFAULT, methodSubSignature);
+    }
+
+    public static buildMethodSubSignatureFromMethodName(methodName: string,
+                                                        staticFlag: boolean = false): MethodSubSignature {
+        return new MethodSubSignature(methodName, [], UnknownType.getInstance(), staticFlag);
+    }
+
+    public static buildClassSignatureFromClassName(className: string): ClassSignature {
+        return new ClassSignature(className, FileSignature.DEFAULT);
+    }
+
+    public static buildFieldSignatureFromFieldName(fieldName: string, staticFlag: boolean = false): FieldSignature {
+        return new FieldSignature(fieldName, ClassSignature.DEFAULT, UnknownType.getInstance(), staticFlag);
     }
 }

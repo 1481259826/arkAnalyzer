@@ -14,8 +14,9 @@
  */
 
 import { transfer2UnixPath } from '../../utils/pathTransfer';
-import { ClassType, Type, UnknownType } from '../base/Type';
+import { ClassType, Type } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
+import { UNKNOWN_CLASS_NAME, UNKNOWN_FILE_NAME, UNKNOWN_NAMESPACE_NAME, UNKNOWN_PROJECT_NAME } from '../common/Const';
 
 export type Signature =
     FileSignature
@@ -33,26 +34,22 @@ export interface ArkSignature {
  * @category core/model
  */
 export class FileSignature {
-    private projectName: string = "_UnknownProjectName";
-    private fileName: string = "_UnknownFileName";
+    private projectName: string;
+    private fileName: string;
 
-    constructor() {
+    public static readonly DEFAULT: FileSignature = new FileSignature(UNKNOWN_PROJECT_NAME, UNKNOWN_FILE_NAME);
+
+    constructor(projectName: string, fileName: string) {
+        this.projectName = projectName;
+        this.fileName = fileName;
     }
 
     public getProjectName() {
         return this.projectName;
     }
 
-    public setProjectName(projectName: string) {
-        this.projectName = projectName;
-    }
-
     public getFileName() {
         return this.fileName;
-    }
-
-    public setFileName(fileName: string) {
-        this.fileName = fileName;
     }
 
     public toString(): string {
@@ -63,35 +60,30 @@ export class FileSignature {
 }
 
 export class NamespaceSignature {
-    private namespaceName: string = "";
-    private declaringFileSignature: FileSignature = new FileSignature();
-    private declaringNamespaceSignature: NamespaceSignature | null = null;
+    private namespaceName: string;
+    private declaringFileSignature: FileSignature;
+    private declaringNamespaceSignature: NamespaceSignature | null;
 
-    constructor() {
+    public static readonly DEFAULT: NamespaceSignature = new NamespaceSignature(UNKNOWN_NAMESPACE_NAME,
+        FileSignature.DEFAULT, null);
+
+    constructor(namespaceName: string, declaringFileSignature: FileSignature,
+                declaringNamespaceSignature: NamespaceSignature | null = null) {
+        this.namespaceName = namespaceName;
+        this.declaringFileSignature = declaringFileSignature;
+        this.declaringNamespaceSignature = declaringNamespaceSignature;
     }
 
     public getNamespaceName() {
         return this.namespaceName;
     }
 
-    public setNamespaceName(namespaceName: string) {
-        this.namespaceName = namespaceName;
-    }
-
     public getDeclaringFileSignature() {
         return this.declaringFileSignature;
     }
 
-    public setDeclaringFileSignature(declaringFileSignature: FileSignature) {
-        this.declaringFileSignature = declaringFileSignature;
-    }
-
     public getDeclaringNamespaceSignature() {
         return this.declaringNamespaceSignature;
-    }
-
-    public setDeclaringNamespaceSignature(declaringNamespaceSignature: NamespaceSignature) {
-        this.declaringNamespaceSignature = declaringNamespaceSignature;
     }
 
     public toString(): string {
@@ -104,39 +96,34 @@ export class NamespaceSignature {
 }
 
 export class ClassSignature {
-    private declaringFileSignature: FileSignature = new FileSignature();
-    private declaringNamespaceSignature: NamespaceSignature | null = null;
-    private className: string = "";
+    private declaringFileSignature: FileSignature;
+    private declaringNamespaceSignature: NamespaceSignature | null;
+    private className: string;
+
+    public static readonly DEFAULT: ClassSignature = new ClassSignature(UNKNOWN_CLASS_NAME, FileSignature.DEFAULT,
+        null);
+
+    constructor(className: string, declaringFileSignature: FileSignature,
+                declaringNamespaceSignature: NamespaceSignature | null = null) {
+        this.className = className;
+        this.declaringFileSignature = declaringFileSignature;
+        this.declaringNamespaceSignature = declaringNamespaceSignature;
+    }
 
     public getDeclaringFileSignature() {
         return this.declaringFileSignature;
-    }
-
-    public setDeclaringFileSignature(declaringFileSignature: FileSignature) {
-        this.declaringFileSignature = declaringFileSignature;
     }
 
     public getDeclaringNamespaceSignature() {
         return this.declaringNamespaceSignature;
     }
 
-    public setDeclaringNamespaceSignature(declaringNamespaceSignature: NamespaceSignature) {
-        this.declaringNamespaceSignature = declaringNamespaceSignature;
-    }
-
     public getClassName() {
         return this.className;
     }
 
-    public setClassName(className: string) {
-        this.className = className;
-    }
-
     public getType(): ClassType {
         return new ClassType(this);
-    }
-
-    constructor() {
     }
 
     public toString(): string {
@@ -151,17 +138,20 @@ export class ClassSignature {
 export type BaseSignature = ClassSignature | NamespaceSignature;
 
 export class FieldSignature {
-    private declaringSignature: BaseSignature = new ClassSignature();
-    private fieldName: string = '';
-    private type: Type = UnknownType.getInstance();
-    private static: boolean = false;
+    private declaringSignature: BaseSignature;
+    private fieldName: string;
+    private type: Type;
+    private staticFlag: boolean;
+
+    constructor(fieldName: string, declaringSignature: BaseSignature, type: Type, staticFlag: boolean = false) {
+        this.fieldName = fieldName;
+        this.declaringSignature = declaringSignature;
+        this.type = type;
+        this.staticFlag = staticFlag;
+    }
 
     public getDeclaringSignature() {
         return this.declaringSignature;
-    }
-
-    public setDeclaringSignature(declaringClassSignature: BaseSignature) {
-        this.declaringSignature = declaringClassSignature;
     }
 
     public getBaseName() {
@@ -173,27 +163,22 @@ export class FieldSignature {
         return this.fieldName;
     }
 
-    public setFieldName(fieldName: string) {
-        this.fieldName = fieldName;
-    }
-
-    public setType(newType: Type): void {
-        this.type = newType;
-    }
-
     public getType(): Type {
         return this.type;
     }
 
-    public setStatic() {
-        this.static = true;
+    public isStatic(): boolean {
+        return this.staticFlag;
     }
 
-    public isStatic() {
-        return this.static;
+    // temp for being compatible with existing type inference
+    public setType(type: Type): void {
+        this.type = type;
     }
 
-    constructor() {
+    // temp for being compatible with existing type inference
+    public setStaticFlag(flag: boolean): void {
+        this.staticFlag = flag;
     }
 
     public toString(): string {
@@ -206,57 +191,55 @@ export class FieldSignature {
 }
 
 export class MethodSubSignature {
-    private methodName: string = '';
-    private parameters: MethodParameter[] = [];
-    private parameterTypes: Set<Type> = new Set<Type>();
-    private returnType: Type = UnknownType.getInstance();
-    private static: boolean = false;
+    private methodName: string;
+    private parameters: MethodParameter[];
+    private returnType: Type;
+    private staticFlag: boolean;
+
+    constructor(methodName: string, parameters: MethodParameter[], returnType: Type, staticFlag: boolean = false) {
+        this.methodName = methodName;
+        this.parameters = parameters;
+        this.returnType = returnType;
+        this.staticFlag = staticFlag;
+    }
 
     public getMethodName() {
         return this.methodName;
-    }
-
-    public setMethodName(methodName: string) {
-        this.methodName = methodName;
     }
 
     public getParameters() {
         return this.parameters;
     }
 
-    public getParameterTypes() {
-        return this.parameterTypes;
-    }
-
-    public setParameters(parameter: MethodParameter[]) {
-        this.parameters = parameter;
-        parameter.forEach((value) => {
-            this.parameterTypes.add(value.getType());
+    public getParameterTypes(): Type[] {
+        const parameterTypes: Type[] = [];
+        this.parameters.forEach((parameter) => {
+            parameterTypes.push(parameter.getType());
         });
+        return parameterTypes;
     }
 
-    public getReturnType() {
+    public getReturnType(): Type {
         return this.returnType;
     }
 
-    public setReturnType(returnType: Type) {
-        this.returnType = returnType;
+    public isStatic(): boolean {
+        return this.staticFlag;
     }
 
-    public setStatic() {
-        this.static = true;
-    }
-
-    public isStatic() {
-        return this.static;
-    }
-
-    constructor() {
-    }
+    // // temp for being compatible with existing type inference
+    // public setReturnType(returnType: Type): void {
+    //     this.returnType = returnType;
+    // }
+    //
+    // // temp for being compatible with existing type inference
+    // public setStaticFlag(flag: boolean): void {
+    //     this.staticFlag = flag;
+    // }
 
     public toString(): string {
         let paraStr = "";
-        this.parameterTypes.forEach((parameterType) => {
+        this.getParameterTypes().forEach((parameterType) => {
             paraStr += parameterType.toString() + ", ";
         });
         paraStr = paraStr.replace(/, $/, '');
@@ -272,30 +255,24 @@ export class MethodSubSignature {
  * @category core/model
  */
 export class MethodSignature {
-    private declaringClassSignature: ClassSignature = new ClassSignature();
-    private methodSubSignature: MethodSubSignature = new MethodSubSignature();
+    private declaringClassSignature: ClassSignature;
+    private methodSubSignature: MethodSubSignature;
+
+    constructor(declaringClassSignature: ClassSignature, methodSubSignature: MethodSubSignature) {
+        this.declaringClassSignature = declaringClassSignature;
+        this.methodSubSignature = methodSubSignature;
+    }
 
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
-    }
-
-    public setDeclaringClassSignature(declaringClassSignature: ClassSignature) {
-        this.declaringClassSignature = declaringClassSignature;
     }
 
     public getMethodSubSignature() {
         return this.methodSubSignature;
     }
 
-    public setMethodSubSignature(methodSubSig: MethodSubSignature) {
-        this.methodSubSignature = methodSubSig;
-    }
-
     public getType(): Type {
         return this.methodSubSignature.getReturnType();
-    }
-
-    constructor() {
     }
 
     public toString(): string {
@@ -325,39 +302,6 @@ export class LocalSignature {
     }
 }
 
-export class InterfaceSignature {
-    private arkFile: string = '';
-    private interfaceName: string = '';
-
-    public getArkFile() {
-        return this.arkFile;
-    }
-
-    public setArkFile(arkFile: string) {
-        this.arkFile = arkFile;
-    }
-
-    public getInterfaceName() {
-        return this.interfaceName;
-    }
-
-    public setInterfaceName(interfaceName: string) {
-        this.interfaceName = interfaceName;
-    }
-
-    constructor() {
-    }
-
-    public build(arkFile: string, interfaceName: string) {
-        this.setArkFile(arkFile);
-        this.setInterfaceName(interfaceName);
-    }
-
-    public toString(): string {
-        return `<${this.getArkFile()}>.<#Interface#>.<${this.getInterfaceName()}>`
-    }
-}
-
 //TODO, reconstruct
 export function fieldSignatureCompare(leftSig: FieldSignature, rightSig: FieldSignature): boolean {
     if (leftSig.getDeclaringSignature().toString() === rightSig.getDeclaringSignature().toString() &&
@@ -376,7 +320,7 @@ export function methodSignatureCompare(leftSig: MethodSignature, rightSig: Metho
 }
 
 export function methodSubSignatureCompare(leftSig: MethodSubSignature, rightSig: MethodSubSignature): boolean {
-    if ((leftSig.getMethodName() == rightSig.getMethodName()) && setCompare(leftSig.getParameterTypes(),
+    if ((leftSig.getMethodName() == rightSig.getMethodName()) && arrayCompare(leftSig.getParameterTypes(),
         rightSig.getParameterTypes()) && leftSig.getReturnType() == rightSig.getReturnType()) {
         return true;
     }
@@ -408,12 +352,6 @@ function arrayCompare(leftArray: any[], rightArray: any[]) {
         }
     }
     return true;
-}
-
-function setCompare(leftSet: Set<Type>, rightSet: Set<Type>) {
-    const arr1 = Array.from(leftSet);
-    const arr2 = Array.from(rightSet);
-    return arrayCompare(arr1, arr2);
 }
 
 export function genSignature4ImportClause(arkFileName: string, importClauseName: string): string {

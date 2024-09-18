@@ -110,7 +110,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   }
   protected handleRequest() {
   }
-  private static userCount = 0;
+  private static userCount: number = 0;
   static registerUser(user: User) {
   }
 }

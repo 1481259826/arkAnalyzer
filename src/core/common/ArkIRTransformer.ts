@@ -350,17 +350,17 @@ export class ArkIRTransformer {
             ({ value: iterableValue, stmts: iterableStmts } = this.generateAssignStmtForValue(iterableValue));
             stmts.push(...iterableStmts);
         }
-        const iteratorMethodSignature = new MethodSignature();
-        iteratorMethodSignature.getMethodSubSignature().setReturnType(Builtin.ITERATOR_CLASS_SIGNATURE.getType());
-        iteratorMethodSignature.getMethodSubSignature().setMethodName(Builtin.ITERATOR_FUNCTION);
+        const iteratorMethodSubSignature = new MethodSubSignature(Builtin.ITERATOR_FUNCTION, [],
+            Builtin.ITERATOR_CLASS_SIGNATURE.getType());
+        const iteratorMethodSignature = new MethodSignature(ClassSignature.DEFAULT, iteratorMethodSubSignature);
         const iteratorInvokeExpr = new ArkInstanceInvokeExpr(iterableValue as Local, iteratorMethodSignature, []);
         const { value: iterator, stmts: iteratorStmts } = this.generateAssignStmtForValue(iteratorInvokeExpr);
         stmts.push(...iteratorStmts);
         (iterator as Local).setType(Builtin.ITERATOR_CLASS_SIGNATURE.getType());
 
-        const nextMethodSignature = new MethodSignature();
-        nextMethodSignature.getMethodSubSignature().setReturnType(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
-        nextMethodSignature.getMethodSubSignature().setMethodName(Builtin.ITERATOR_NEXT);
+        const nextMethodSubSignature = new MethodSubSignature(Builtin.ITERATOR_NEXT, [],
+            Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
+        const nextMethodSignature = new MethodSignature(ClassSignature.DEFAULT, nextMethodSubSignature);
         const iteratorNextInvokeExpr = new ArkInstanceInvokeExpr(iterator as Local, nextMethodSignature, []);
         const {
             value: iteratorResult,
@@ -368,9 +368,8 @@ export class ArkIRTransformer {
         } = this.generateAssignStmtForValue(iteratorNextInvokeExpr);
         stmts.push(...iteratorResultStmts);
         (iteratorResult as Local).setType(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
-        const doneFieldSignature = new FieldSignature();
-        doneFieldSignature.setDeclaringSignature(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE);
-        doneFieldSignature.setFieldName(Builtin.ITERATOR_RESULT_DONE);
+        const doneFieldSignature = new FieldSignature(Builtin.ITERATOR_RESULT_DONE,
+            Builtin.ITERATOR_RESULT_CLASS_SIGNATURE, BooleanType.getInstance(), false);
         const {
             value: doneFlag,
             stmts: doneFlagStmts,
@@ -380,9 +379,8 @@ export class ArkIRTransformer {
         const conditionExpr = new ArkConditionExpr(doneFlag, ValueUtil.getBooleanConstant(true), RelationalBinaryOperator.Equality);
         stmts.push(new ArkIfStmt(conditionExpr));
 
-        const valueFieldSignature = new FieldSignature();
-        valueFieldSignature.setDeclaringSignature(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE);
-        valueFieldSignature.setFieldName(Builtin.ITERATOR_RESULT_VALUE);
+        const valueFieldSignature = new FieldSignature(Builtin.ITERATOR_RESULT_VALUE,
+            Builtin.ITERATOR_RESULT_CLASS_SIGNATURE, UnknownType.getInstance(), false);
         const {
             value: yieldValue,
             stmts: yieldValueStmts,
@@ -422,8 +420,7 @@ export class ArkIRTransformer {
                 const elements = variableDeclaration.name.elements;
                 for (const element of elements) {
                     const fieldName = element.propertyName ? element.propertyName.getText(this.sourceFile) : element.name.getText(this.sourceFile);
-                    const fieldSignature = new FieldSignature();
-                    fieldSignature.setFieldName(fieldName);
+                    const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
                     const fieldRef = new ArkInstanceFieldRef(objectItem as Local, fieldSignature);
                     const fieldLocal = this.getOrCreatLocal(element.name.getText(this.sourceFile));
                     fieldLocal.setConstFlag(isConst);
@@ -665,9 +662,9 @@ export class ArkIRTransformer {
         const { value: newExprValue, stmts: newExprStmts } = this.generateAssignStmtForValue(newExpr);
         stmts.push(...newExprStmts);
 
-        const constructorMethodSignature = new MethodSignature();
-        constructorMethodSignature.setDeclaringClassSignature(anonymousClassSignature);
-        constructorMethodSignature.getMethodSubSignature().setMethodName(CONSTRUCTOR_NAME);
+        const constructorMethodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(
+            CONSTRUCTOR_NAME);
+        const constructorMethodSignature = new MethodSignature(anonymousClassSignature, constructorMethodSubSignature);
         stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, constructorMethodSignature, [])));
         return { value: newExprValue, stmts: stmts };
     }
@@ -676,19 +673,16 @@ export class ArkIRTransformer {
                                  componentExpression: ts.EtsComponentExpression | ts.CallExpression, currStmts: Stmt[]): ValueAndStmts {
         const stmts: Stmt[] = [...currStmts];
 
-        const classSignature = new ClassSignature();
-        classSignature.setClassName(componentName);
+        const classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(componentName);
         const classType = new ClassType(classSignature);
         const newExpr = new ArkNewExpr(classType);
         const { value: newExprValue, stmts: newExprStmts } = this.generateAssignStmtForValue(newExpr);
         stmts.push(...newExprStmts);
 
-        const methodSubSignature = new MethodSubSignature();
-        methodSubSignature.setMethodName('constructor');
-        const methodSignature = new MethodSignature();
-        methodSignature.setDeclaringClassSignature(classSignature);
-        methodSignature.setMethodSubSignature(methodSubSignature);
-        stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, methodSignature, args)));
+        const constructorMethodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(
+            CONSTRUCTOR_NAME);
+        const constructorMethodSignature = new MethodSignature(classSignature, constructorMethodSubSignature);
+        stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, constructorMethodSignature, args)));
 
         let createViewArgs = [newExprValue];
         if (ts.isEtsComponentExpression(componentExpression) && componentExpression.body) {
@@ -817,8 +811,8 @@ export class ArkIRTransformer {
             ({ value: baseValue, stmts: baseStmts } = this.generateAssignStmtForValue(baseValue));
             stmts.push(...baseStmts);
         }
-        const fieldSignature = new FieldSignature();
-        fieldSignature.setFieldName(propertyAccessExpression.name.getText(this.sourceFile));
+        const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(
+            propertyAccessExpression.name.getText(this.sourceFile));
         const fieldRef = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
         return { value: fieldRef, stmts: stmts };
     }
@@ -846,8 +840,7 @@ export class ArkIRTransformer {
             elementAccessExpr = new ArkArrayRef(baseValue as Local, argumentValue);
         } else {
             // TODO: deal with ArkStaticFieldRef
-            const fieldSignature = new FieldSignature();
-            fieldSignature.setFieldName(argumentValue.toString());
+            const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(argumentValue.toString());
             elementAccessExpr = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
         }
         return { value: elementAccessExpr, stmts: stmts };
@@ -866,7 +859,6 @@ export class ArkIRTransformer {
             args.push(argValue);
         }
 
-        const methodSignature = new MethodSignature();
         let {
             value: callerValue,
             stmts: callerStmts,
@@ -874,22 +866,21 @@ export class ArkIRTransformer {
         stmts.push(...callerStmts);
         let invokeValue: Value;
         if (callerValue instanceof ArkInstanceFieldRef) {
-            methodSignature.getMethodSubSignature().setMethodName(callerValue.getFieldName());
+            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName())
             invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args);
         } else if (callerValue instanceof ArkStaticFieldRef) {
-            methodSignature.getMethodSubSignature().setMethodName(callerValue.getFieldName());
+            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName())
             invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
-            let classSignature = new ClassSignature();
-            classSignature.setClassName(callerName);
+            let classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(callerName);
             // temp for component
             let cls = ModelUtils.getClass(this.declaringMethod, classSignature);
             if (cls?.hasComponentDecorator()) {
                 return this.createCustomViewStmt(callerName, args, callExpression, stmts);
             }
 
-            methodSignature.getMethodSubSignature().setMethodName(callerName);
+            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerName)
             if (callerValue.getType() instanceof FunctionType) {
                 invokeValue = new ArkPtrInvokeExpr(methodSignature, callerValue, args)
             } else {
@@ -899,7 +890,7 @@ export class ArkIRTransformer {
         } else {
             ({ value: callerValue, stmts: callerStmts } = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
-            methodSignature.getMethodSubSignature().setMethodName((callerValue as Local).getName());
+            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName((callerValue as Local).getName())
             invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
         }
         return { value: invokeValue, stmts: stmts };
@@ -965,18 +956,15 @@ export class ArkIRTransformer {
 
             return { value: arrayExprValue, stmts: stmts };
         } else {
-            const classSignature = new ClassSignature();
-            classSignature.setClassName(className);
+            const classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(className);
             const classType = new ClassType(classSignature);
             const newExpr = new ArkNewExpr(classType);
             const { value: newExprValue, stmts: newExprStmts } = this.generateAssignStmtForValue(newExpr);
             stmts.push(...newExprStmts);
 
-            const methodSubSignature = new MethodSubSignature();
-            methodSubSignature.setMethodName('constructor');
-            const methodSignature = new MethodSignature();
-            methodSignature.setDeclaringClassSignature(classSignature);
-            methodSignature.setMethodSubSignature(methodSubSignature);
+            const constructorMethodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(
+                CONSTRUCTOR_NAME);
+            const constructorMethodSignature = new MethodSignature(classSignature, constructorMethodSubSignature);
 
             const argValues: Value[] = [];
             if (newExpression.arguments) {
@@ -990,7 +978,7 @@ export class ArkIRTransformer {
                     argValues.push(argValue);
                 }
             }
-            stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, methodSignature, argValues)));
+            stmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(newExprValue as Local, constructorMethodSignature, argValues)));
             return { value: newExprValue, stmts: stmts };
         }
     }
@@ -1218,8 +1206,7 @@ export class ArkIRTransformer {
             const elements = leftOpNode.elements;
             for (const element of elements) {
                 const fieldName = element.name.getText(this.sourceFile);
-                const fieldSignature = new FieldSignature();
-                fieldSignature.setFieldName(fieldName);
+                const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
                 const fieldRef = new ArkInstanceFieldRef(leftValue as Local, fieldSignature);
                 if (element.initializer) {
                     let {
@@ -1436,8 +1423,7 @@ export class ArkIRTransformer {
                 constant = ValueUtil.createStringConst((literalNode as ts.StringLiteral).text);
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral:
-                const classSignature = new ClassSignature();
-                classSignature.setClassName('RegExp');
+                const classSignature = Builtin.REGEXP_CLASS_SIGNATURE;
                 constant = new Constant((literalNode as ts.RegularExpressionLiteral).text, classSignature.getType());
                 break;
             case ts.SyntaxKind.NoSubstitutionTemplateLiteral:

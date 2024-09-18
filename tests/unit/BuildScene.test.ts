@@ -28,9 +28,7 @@ describe("build scene Test", () => {
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
     it('build case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Target.ets");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), "Target.ets", );
         const file = projectScene.getFile(fileId);
         assert.isDefined(file);
 

@@ -27,8 +27,8 @@ export class Builtin {
     public static BUILT_IN_CLASSES = this.buildBuiltInClasses();
 
     // signature for built-in class
-    public static DUMMY_PROJECT = 'ES2015';
-    public static DUMMY_FILE = 'BuiltinClass';
+    public static DUMMY_PROJECT_NAME = 'ES2015';
+    public static DUMMY_FILE_NAME = 'BuiltinClass';
 
     public static BUILT_IN_CLASSES_FILE_SIGNATURE = Builtin.buildBuiltInClassesFileSignature();
     public static OBJECT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.OBJECT);
@@ -62,17 +62,11 @@ export class Builtin {
     }
 
     private static buildBuiltInClassesFileSignature(): FileSignature {
-        const builtInClassesFileSignature = new FileSignature();
-        builtInClassesFileSignature.setProjectName(this.DUMMY_PROJECT);
-        builtInClassesFileSignature.setFileName(this.DUMMY_FILE);
-        return builtInClassesFileSignature;
+        return new FileSignature(this.DUMMY_PROJECT_NAME, this.DUMMY_FILE_NAME);
     }
 
     public static buildBuiltInClassSignature(className: string): ClassSignature {
-        const builtInClassSignature = new ClassSignature();
-        builtInClassSignature.setClassName(className);
-        builtInClassSignature.setDeclaringFileSignature(this.BUILT_IN_CLASSES_FILE_SIGNATURE);
-        return builtInClassSignature;
+        return new ClassSignature(className, this.BUILT_IN_CLASSES_FILE_SIGNATURE);
     }
 
     private static buildBuiltInClassSignatureMap(): Map<string, ClassSignature> {

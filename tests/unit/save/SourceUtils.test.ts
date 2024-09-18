@@ -31,17 +31,6 @@ describe('SourceUtilsTest', () => {
     let clsPrinter = new SourceClassPrinter(arkClass!);
     let transformer = new SourceTransformer(clsPrinter);
 
-    it('TypeLiteralType case', () => {
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        let type = new ty.TypeLiteralType();
-        type.setMembers(arkClass.getFields());
-
-        assert.equal(transformer.typeToString(type), '{name:undefined}');
-    });
-
     it('LiteralType case', () => {
         let type = new ty.LiteralType('BooleanKeyword');
         assert.equal(transformer.typeToString(type), 'boolean');

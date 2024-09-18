@@ -16,11 +16,10 @@
 import { Decorator } from '../base/Decorator';
 import { LineColPosition } from '../base/Position';
 import { Stmt } from '../base/Stmt';
-import { Type } from '../base/Type';
 import { BUILDER_PARAM_DECORATOR } from '../common/EtsConst';
 import { ArkClass } from './ArkClass';
-import { FieldSignature, MethodSignature } from './ArkSignature';
-import { MethodParameter } from './builder/ArkMethodBuilder';
+import { FieldSignature } from './ArkSignature';
+import { Type } from '../base/Type';
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
@@ -29,28 +28,32 @@ const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'Local', 'Param', 'Event', 'Provider', 'Consumer'
 ])
 
+export enum FieldCategory {
+    PROPERTY_DECLARATION = 0,
+    PROPERTY_ASSIGNMENT = 1,
+    SHORT_HAND_PROPERTY_ASSIGNMENT = 2,
+    SPREAD_ASSIGNMENT = 3,
+    PROPERTY_SIGNATURE = 4,
+    ENUM_MEMBER = 5,
+    INDEX_SIGNATURE = 6,
+    GET_ACCESSOR = 7,
+}
+
 /**
  * @category core/model
  */
 export class ArkField {
-    public static DEFAULT_ARK_Field = '_DEFAULT_ARK_Field';
-    private name: string = "";
     private code: string = "";
-    private fieldType: string = "";
+    private category!: FieldCategory;
 
     private declaringClass!: ArkClass;
 
-    private type!: Type;
-    private parameters: MethodParameter[] = [];
-    private typeParameters: Type[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private questionToken: boolean = false;
     private exclamationToken: boolean = false;
 
     private fieldSignature!: FieldSignature;
     private originPosition?: LineColPosition;
-
-    private arkMethodSignature?: MethodSignature;
 
     private initializer: Stmt[] = [];
 
@@ -73,52 +76,20 @@ export class ArkField {
         this.code = code;
     }
 
-    public getFieldType() {
-        return this.fieldType;
+    public getCategory(): FieldCategory {
+        return this.category;
     }
 
-    public setFieldType(fieldType: string) {
-        this.fieldType = fieldType;
+    public setCategory(category: FieldCategory): void {
+        this.category = category;
     }
 
     public getName() {
-        return this.name;
+        return this.fieldSignature.getFieldName();
     }
 
-    public setName(name: string) {
-        this.name = name;
-    }
-
-    public getType() {
-        return this.type;
-    }
-
-    public setType(type: Type) {
-        this.type = type;
-    }
-
-    public getParameters() {
-        return this.parameters;
-    }
-
-    public setParameters(parameters: MethodParameter[]) {
-        this.parameters = parameters;
-    }
-
-    public addParameter(parameter: MethodParameter) {
-        this.typeParameters.push(parameter);
-    }
-
-    public getTypeParameters() {
-        return this.typeParameters;
-    }
-
-    public setTypeParameters(typeParameters: Type[]) {
-        this.typeParameters = typeParameters;
-    }
-
-    public addTypeParameters(typeParameter: Type) {
-        this.typeParameters.push(typeParameter);
+    public getType():Type {
+        return this.fieldSignature.getType();
     }
 
     public getModifiers() {
@@ -135,17 +106,6 @@ export class ArkField {
 
     public setSignature(fieldSig: FieldSignature) {
         this.fieldSignature = fieldSig;
-    }
-
-    public genSignature() {
-        let fieldSig = new FieldSignature();
-        fieldSig.setType(this.type);
-        fieldSig.setDeclaringSignature(this.declaringClass.getSignature());
-        fieldSig.setFieldName(this.name);
-        if (this.isStatic()) {
-            fieldSig.setStatic();
-        }
-        this.setSignature(fieldSig);
     }
 
     public getInitializer(): Stmt[] {
@@ -213,14 +173,6 @@ export class ArkField {
 
     public getOriginPosition(): LineColPosition {
         return this.originPosition ?? LineColPosition.DEFAULT;
-    }
-
-    public setArkMethodSignature(methodSignature: MethodSignature) {
-        this.arkMethodSignature = methodSignature;
-    }
-
-    public getArkMethodSignature() {
-        return this.arkMethodSignature;
     }
 
     public getDecorators(): Decorator[] {

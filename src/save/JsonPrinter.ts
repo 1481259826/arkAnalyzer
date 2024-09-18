@@ -135,7 +135,6 @@ export class JsonPrinter extends Printer {
         return {
             signature: this.serializeFieldSignature(field.getSignature()),
             modifiers: Array.from(field.getModifiers()),
-            typeParameters: field.getTypeParameters().map(type => this.serializeType(type)),
             questionToken: field.getQuestionToken(),
             exclamationToken: field.getExclamationToken(),
         };

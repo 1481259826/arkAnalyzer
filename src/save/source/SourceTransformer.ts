@@ -33,12 +33,12 @@ import {
     NormalBinaryOperator,
 } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkClass } from '../../core/model/ArkClass';
+import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ArkCodeBuffer } from '../ArkStream';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import { SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
     ArrayType,
@@ -48,7 +48,6 @@ import {
     PrimitiveType,
     StringType,
     Type,
-    TypeLiteralType,
     TypeParameterType,
     UnclearReferenceType,
     UnionType,
@@ -361,14 +360,6 @@ export class SourceTransformer {
             return type.getName();
         }
 
-        if (type instanceof TypeLiteralType) {
-            let typesStr: string[] = [];
-            for (const member of type.getMembers()) {
-                typesStr.push(member.getName() + ':' + member.getType());
-            }
-            return `{${typesStr.join(', ')}}`;
-        }
-
         if (type instanceof UnionType) {
             let typesStr: string[] = [];
             for (const member of type.getTypes()) {
@@ -392,7 +383,7 @@ export class SourceTransformer {
             }
             if (SourceUtils.isAnonymousClass(name)) {
                 let cls = this.context.getClass(type.getClassSignature());
-                if (cls && cls.getOriginType() == Origin_TypeLiteral) {
+                if (cls && cls.getCategory() == ClassCategory.TYPE_LITERAL) {
                     return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
                 }
                 return 'Object';

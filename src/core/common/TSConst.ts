@@ -22,5 +22,6 @@ export const DEFAULT = 'default';
 export const ALL = '*';
 
 export const IMPORT = 'import';
+
 // ast const
 export const DECLARE_KEYWORD = 'DeclareKeyword';

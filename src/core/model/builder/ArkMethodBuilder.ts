@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { ClassType, Type } from '../../base/Type';
+import { ClassType, Type, UnknownType } from '../../base/Type';
 import { BodyBuilder } from '../../common/BodyBuilder';
 import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
-import { ArkClass } from '../ArkClass';
+import { ArkClass, ClassCategory } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import ts from 'ohos-typescript';
 import {
@@ -37,8 +37,8 @@ import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
-import { CLASS_ORIGIN_TYPE_CLASS, CLASS_ORIGIN_TYPE_OBJECT, DEFAULT_ARK_CLASS_NAME } from '../../common/Const';
-import { COMPONENT_CREATE_FUNCTION } from "../../common/EtsConst";
+import { CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
+import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkMethodBuilder');
 
@@ -57,9 +57,10 @@ export type MethodLikeNode =
 export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd: ArkMethod,
                                                   sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
     mtd.setDeclaringArkClass(declaringClass);
-    mtd.setDeclaringArkFile();
-    mtd.setName('_DEFAULT_ARK_METHOD');
-    mtd.genSignature();
+
+    const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(DEFAULT_ARK_METHOD_NAME, true);
+    const methodSignature = new MethodSignature(mtd.getDeclaringArkClass().getSignature(), methodSubSignature);
+    mtd.setSignature(methodSignature);
 
     const defaultMethodNode = node ? node : sourceFile;
 
@@ -70,7 +71,6 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
 export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
 
     mtd.setDeclaringArkClass(declaringClass);
-    mtd.setDeclaringArkFile();
 
     if (ts.isFunctionDeclaration(methodNode)) {
         mtd.setAsteriskToken(methodNode.asteriskToken != undefined);
@@ -84,20 +84,9 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setLine(line + 1);
     mtd.setColumn(character + 1);
 
-    const methodName = buildMethodName(methodNode, declaringClass, sourceFile, declaringMethod);
-    mtd.setName(methodName);
-
-    buildParameters(methodNode.parameters, mtd, sourceFile).forEach((parameter) => {
-        mtd.addParameter(parameter);
-    });
-
     buildModifiers(methodNode, sourceFile).forEach((value) => {
         mtd.addModifier(value);
     });
-
-    if (methodNode.type) {
-        mtd.setReturnType(buildReturnType(methodNode.type, sourceFile, mtd));
-    }
 
     if (methodNode.typeParameters) {
         buildTypeParameters(methodNode.typeParameters, sourceFile, mtd).forEach((typeParameter) => {
@@ -105,7 +94,19 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         });
     }
 
-    mtd.genSignature();
+    // build MethodSignature
+    const methodName = buildMethodName(methodNode, declaringClass, sourceFile, declaringMethod);
+    const methodParameters: MethodParameter[] = [];
+    buildParameters(methodNode.parameters, mtd, sourceFile).forEach((parameter) => {
+        methodParameters.push(parameter);
+    });
+    let returnType = UnknownType.getInstance();
+    if (methodNode.type) {
+        returnType = buildReturnType(methodNode.type, sourceFile, mtd);
+    }
+    const methodSubSignature = new MethodSubSignature(methodName, methodParameters, returnType, mtd.isStatic());
+    const methodSignature = new MethodSignature(mtd.getDeclaringArkClass().getSignature(), methodSubSignature);
+    mtd.setSignature(methodSignature);
 
     let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd, sourceFile);
     mtd.setBodyBuilder(bodyBuilder);
@@ -157,7 +158,7 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     } else if (ts.isConstructSignatureDeclaration(node)) {
         name = 'construct-signature';
     } else if (ts.isCallSignatureDeclaration(node)) {
-        name = COMPONENT_CREATE_FUNCTION;
+        name = CALL_SIGNATURE_NAME;
     } else if (ts.isGetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Get-' + node.name.text;
     } else if (ts.isSetAccessor(node) && ts.isIdentifier(node.name)) {
@@ -312,9 +313,9 @@ export class MethodParameter {
 }
 
 function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
-    const originClassType = arkClass.getOriginType();
+    const originClassType = arkClass.getCategory();
     return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null &&
-        (originClassType == CLASS_ORIGIN_TYPE_CLASS || originClassType == CLASS_ORIGIN_TYPE_OBJECT) &&
+        (originClassType == ClassCategory.CLASS || originClassType == ClassCategory.OBJECT) &&
         arkClass.getName() != DEFAULT_ARK_CLASS_NAME &&
         !arkClass.getModifiers().has(DECLARE_KEYWORD);
 }
@@ -336,8 +337,6 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
 
     const defaultConstructor: ArkMethod = new ArkMethod();
     defaultConstructor.setDeclaringArkClass(arkClass);
-    defaultConstructor.setDeclaringArkFile();
-    defaultConstructor.setName(CONSTRUCTOR_NAME);
     defaultConstructor.setCode('');
     defaultConstructor.setIsGeneratedFlag(true);
 
@@ -347,11 +346,16 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     let startingStmt: Stmt = new ArkAssignStmt(thisLocal, new ArkThisRef(new ClassType(arkClass.getSignature())));
     basicBlock.addStmt(startingStmt);
     if (parentConstructor != null) {
+        const methodParameters: MethodParameter[] = [];
         parentConstructor.getParameters().forEach(parameter => {
-            defaultConstructor.addParameter(parameter);
+            methodParameters.push(parameter);
         });
-        defaultConstructor.setReturnType(parentConstructor.getReturnType());
-        defaultConstructor.genSignature();
+        let returnType = parentConstructor.getReturnType();
+        const methodSubSignature = new MethodSubSignature(CONSTRUCTOR_NAME, methodParameters, returnType,
+            defaultConstructor.isStatic());
+        const methodSignature = new MethodSignature(defaultConstructor.getDeclaringArkClass().getSignature(),
+            methodSubSignature);
+        defaultConstructor.setSignature(methodSignature);
 
         const stmts: Stmt[] = [];
         let index = 0;
@@ -365,13 +369,9 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
             index++;
         }
 
-        const superMethodSignature = new MethodSignature();
-        superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
-        const superMethodSubSignature = new MethodSubSignature();
-        superMethodSubSignature.setMethodName(SUPER_NAME);
-        superMethodSubSignature.setParameters(parentConstructor.getParameters());
-        superMethodSubSignature.setReturnType(defaultConstructor.getReturnType());
-        superMethodSignature.setMethodSubSignature(superMethodSubSignature);
+        const superMethodSubSignature = new MethodSubSignature(SUPER_NAME, parentConstructor.getParameters(),
+            defaultConstructor.getReturnType());
+        const superMethodSignature = new MethodSignature(arkClass.getSignature(), superMethodSubSignature);
 
         const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, parameterLocals);
         const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
@@ -379,11 +379,15 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         const returnVoidStmt = new ArkReturnVoidStmt();
         basicBlock.addStmt(returnVoidStmt);
     } else {
-        defaultConstructor.genSignature();
+        const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(CONSTRUCTOR_NAME);
+        const methodSignature = new MethodSignature(defaultConstructor.getDeclaringArkClass().getSignature(),
+            methodSubSignature);
+        defaultConstructor.setSignature(methodSignature);
 
         if (arkClass.getSuperClass()) {
-            const superMethodSignature = new MethodSignature();
-            superMethodSignature.setDeclaringClassSignature(arkClass.getSignature());
+            const superClass = arkClass.getSuperClass() as ArkClass;
+            const superMethodSubSignature = new MethodSubSignature(SUPER_NAME, [], UnknownType.getInstance());
+            const superMethodSignature = new MethodSignature(superClass.getSignature(), superMethodSubSignature);
             const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, []);
             const superInvokeStmt = new ArkInvokeStmt(superInvokeExpr);
             basicBlock.addStmt(superInvokeStmt);

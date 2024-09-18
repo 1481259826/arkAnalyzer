@@ -35,6 +35,7 @@ import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
+import { FileSignature } from '../ArkSignature';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFileBuilder');
 
@@ -48,12 +49,13 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
  * @param arkFile
  * @returns
  */
-export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile) {
+export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile,
+                                     projectName: string) {
     arkFile.setFilePath(absoluteFilePath);
     arkFile.setProjectDir(projectDir);
-    arkFile.setName(path.relative(projectDir, absoluteFilePath));
 
-    arkFile.genFileSignature();
+    const fileSignature = new FileSignature(projectName, path.relative(projectDir, absoluteFilePath));
+    arkFile.setFileSignature(fileSignature);
 
     arkFile.setCode(fs.readFileSync(arkFile.getFilePath(), 'utf8'));
     const sourceFile = ts.createSourceFile(

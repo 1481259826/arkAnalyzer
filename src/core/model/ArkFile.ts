@@ -29,11 +29,8 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
  * @category core/model
  */
 export class ArkFile {
-
-    private name: string = ''; //name also means the relative path
     private absoluteFilePath: string = '';
     private projectDir: string = '';
-    private projectName: string = '';
     private code: string = '';
 
     private defaultClass!: ArkClass;
@@ -48,7 +45,7 @@ export class ArkFile {
     private scene!: Scene;
     private moduleScene?: ModuleScene;
 
-    private fileSignature: FileSignature = new FileSignature();
+    private fileSignature: FileSignature = FileSignature.DEFAULT;
 
     private ohPackageJson5Path: string[] = [];
 
@@ -57,12 +54,8 @@ export class ArkFile {
     constructor() {
     }
 
-    public setName(name: string) {
-        this.name = name;
-    }
-
     public getName() {
-        return this.name;
+        return this.fileSignature.getFileName();
     }
 
     public setScene(scene: Scene) {
@@ -177,12 +170,8 @@ export class ArkFile {
         this.exportInfoMap.set(key ?? exportInfo.getExportClauseName(), exportInfo);
     }
 
-    public setProjectName(projectName: string) {
-        this.projectName = projectName;
-    }
-
     public getProjectName() {
-        return this.projectName;
+        return this.fileSignature.getProjectName();
     }
 
     public getModuleName() {
@@ -197,15 +186,12 @@ export class ArkFile {
         return this.ohPackageJson5Path;
     }
 
-    public genFileSignature() {
-        let fileSignature = new FileSignature();
-        fileSignature.setFileName(this.name);
-        fileSignature.setProjectName(this.projectName);
-        this.fileSignature = fileSignature;
-    }
-
     public getFileSignature() {
         return this.fileSignature;
+    }
+
+    public setFileSignature(fileSignature: FileSignature): void {
+        this.fileSignature = fileSignature;
     }
 
     public getAllNamespacesUnderThisFile(): ArkNamespace[] {

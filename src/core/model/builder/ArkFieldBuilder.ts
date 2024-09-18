@@ -14,12 +14,14 @@
  */
 
 import ts from 'ohos-typescript';
-import { ArkField } from '../ArkField';
+import { ArkField, FieldCategory } from '../ArkField';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
-import { LineColPosition } from '../../base/Position';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
-import { buildModifiers, buildParameters, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
+import { buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
+import { FieldSignature } from '../ArkSignature';
+import { Type, UnknownType } from '../../base/Type';
+import { LineColPosition } from '../../base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFieldBuilder');
 
@@ -28,43 +30,48 @@ export type PropertyLike = ts.PropertyDeclaration | ts.PropertyAssignment;
 export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment
     | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass): ArkField {
     let field = new ArkField();
-    field.setFieldType(ts.SyntaxKind[member.kind]);
+    field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
     field.setCode(member.getText(sourceFile));
-    field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-    if (cls) {
-        field.setDeclaringClass(cls);
-    }
 
+    field.setDeclaringClass(cls);
+
+    field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
+
+    let fieldName = member.getText(sourceFile);
     if (member.name && ts.isComputedPropertyName(member.name)) {
         if (ts.isIdentifier(member.name.expression)) {
-            let propertyName = member.name.expression.text;
-            field.setName(propertyName);
+            fieldName = member.name.expression.text;
         } else if (ts.isPropertyAccessExpression(member.name.expression)) {
-            field.setName(handlePropertyAccessExpression(member.name.expression));
+            fieldName = handlePropertyAccessExpression(member.name.expression);
         } else {
             logger.warn("Other property expression type found!");
         }
     } else if (member.name && (ts.isIdentifier(member.name) || ts.isLiteralExpression(member.name))) {
-        let propertyName = member.name.text;
-        field.setName(propertyName);
+        fieldName = member.name.text;
     } else if (member.name && ts.isPrivateIdentifier(member.name)) {
         let propertyName = member.name.text;
-        field.setName(propertyName.substring(1));
+        fieldName = propertyName.substring(1);
         field.addModifier(ts.ScriptElementKindModifier.privateMemberModifier);
     } else {
         logger.warn("Other type of property name found!");
     }
-
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
         let modifiers = buildModifiers(member, sourceFile);
         modifiers.forEach((modifier) => {
             field.addModifier(modifier);
         });
     }
-
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-        field.setType(tsNode2Type(member.type, sourceFile, cls));
+    if (ts.isEnumMember(member)) {
+        field.addModifier('StaticKeyword');
     }
+
+    let fieldType: Type = UnknownType.getInstance();
+    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
+        fieldType = tsNode2Type(member.type, sourceFile, cls);
+    }
+    const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic());
+    field.setSignature(fieldSignature);
+
 
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.questionToken) {
         field.setQuestionToken(true);
@@ -74,90 +81,93 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         field.setExclamationToken(true);
     }
 
-    if (ts.isEnumMember(member)) {
-        field.addModifier('StaticKeyword');
-    }
-
-    if (cls) {
-        cls.addField(field);
-    }
-
-    field.genSignature();
-
+    cls.addField(field);
     return field;
 }
 
 export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass) {
-    let field = new ArkField();
+    const field = new ArkField();
     field.setCode(member.getText(sourceFile));
-    field.setFieldType(ts.SyntaxKind[member.kind]);
-    if (cls) {
-        field.setDeclaringClass(cls);
-    }
+    field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
+    field.setDeclaringClass(cls);
 
-    if (member.name) {
-        field.setName(member.name.getText(sourceFile));
-    }
-    else {
-        field.setName(buildAnonymousFieldName(cls));
-    }
-
-    //TODO: parameters
-    field.setParameters(buildParameters(member.parameters, field, sourceFile));
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
-    //modifiers
     if (member.modifiers) {
         buildModifiers(member, sourceFile).forEach((modifier) => {
             field.addModifier(modifier);
         });
     }
 
-    //type
-    field.setType(tsNode2Type(member.type, sourceFile, field));
+    const fieldName = '[' + member.parameters[0].getText(sourceFile) + ']';
+    const fieldType = tsNode2Type(member.type, sourceFile, field);
+    const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, true);
+    field.setSignature(fieldSignature);
 
-    if (cls) {
-        cls.addField(field);
-    }
-
-    field.genSignature();
+    cls.addField(field);
 }
 
 export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile) {
+    let cls = mthd.getDeclaringArkClass();
     let field = new ArkField();
+    field.setDeclaringClass(cls);
+
     field.setCode(member.getText(sourceFile));
+    field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
+    field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
+
+    let fieldName = member.getText(sourceFile);
     if (ts.isIdentifier(member.name) || ts.isLiteralExpression(member.name)) {
-        field.setName(member.name.text);
+        fieldName = member.name.text;
     }
     else if (ts.isComputedPropertyName(member.name)) {
         if (ts.isIdentifier(member.name.expression)) {
             let propertyName = member.name.expression.text;
-            field.setName(propertyName);
+            fieldName = propertyName;
         } else if (ts.isPropertyAccessExpression(member.name.expression)) {
-            field.setName(handlePropertyAccessExpression(member.name.expression));
+            fieldName = handlePropertyAccessExpression(member.name.expression);
         } else if (ts.isLiteralExpression(member.name.expression)) {
-            field.setName(member.name.expression.text);
+            fieldName = member.name.expression.text;
         } else {
             logger.warn("Other type of computed property name found!");
         }
     }
     else {
         logger.warn("Please contact developers to support new type of GetAccessor name!");
-        field.setName('');
     }
-    let cls = mthd.getDeclaringArkClass();
-    field.setFieldType(ts.SyntaxKind[member.kind]);
-    field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
-    field.setDeclaringClass(cls);
-    field.setParameters(mthd.getParameters());
-    field.setType(mthd.getReturnType());
-    field.setTypeParameters(mthd.getTypeParameter());
-    field.setArkMethodSignature(mthd.getSignature());
-    field.genSignature();
+    const fieldType = mthd.getReturnType();
+    const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, false);
+    field.setSignature(fieldSignature);
     cls.addField(field);
 }
 
-function buildAnonymousFieldName(arkClass: ArkClass) {
-    const fieldName = 'IndexSignature-' + arkClass.getName() + '-' + arkClass.getIndexSignatureNumber();
-    return fieldName;
+function mapSyntaxKindToFieldOriginType(syntaxKind: ts.SyntaxKind): FieldCategory | null {
+    let fieldOriginType: FieldCategory | null = null;
+    switch (syntaxKind) {
+        case ts.SyntaxKind.PropertyDeclaration:
+            fieldOriginType = FieldCategory.PROPERTY_DECLARATION;
+            break;
+        case ts.SyntaxKind.PropertyAssignment:
+            fieldOriginType = FieldCategory.PROPERTY_ASSIGNMENT;
+            break;
+        case ts.SyntaxKind.ShorthandPropertyAssignment:
+            fieldOriginType = FieldCategory.SHORT_HAND_PROPERTY_ASSIGNMENT;
+            break;
+        case ts.SyntaxKind.SpreadAssignment:
+            fieldOriginType = FieldCategory.SPREAD_ASSIGNMENT;
+            break;
+        case ts.SyntaxKind.PropertySignature:
+            fieldOriginType = FieldCategory.PROPERTY_SIGNATURE;
+            break;
+        case ts.SyntaxKind.EnumMember:
+            fieldOriginType = FieldCategory.ENUM_MEMBER;
+            break;
+        case ts.SyntaxKind.IndexSignature:
+            fieldOriginType = FieldCategory.INDEX_SIGNATURE;
+            break;
+        case ts.SyntaxKind.GetAccessor:
+            fieldOriginType = FieldCategory.GET_ACCESSOR;
+            break;
+    }
+    return fieldOriginType;
 }

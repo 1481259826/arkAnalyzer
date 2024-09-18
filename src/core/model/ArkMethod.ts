@@ -13,21 +13,19 @@
  * limitations under the License.
  */
 
-import { ArkParameterRef, ArkThisRef } from "../base/Ref";
-import { ArkAssignStmt, ArkReturnStmt, Stmt } from "../base/Stmt";
-import { Type, UnknownType } from "../base/Type";
-import { Value } from "../base/Value";
-import { Cfg } from "../graph/Cfg";
-import { ViewTree } from "../graph/ViewTree";
-import { ArkBody } from "./ArkBody";
-import { ArkClass } from "./ArkClass";
-import { ArkFile } from "./ArkFile";
-import { MethodSignature, MethodSubSignature } from "./ArkSignature";
-import { Decorator } from "../base/Decorator";
-import { MethodParameter } from "./builder/ArkMethodBuilder";
-import { BodyBuilder } from "../common/BodyBuilder";
-import { ArkExport, ExportType } from "./ArkExport";
-import { DEFAULT_ARK_METHOD_NAME } from "../common/Const";
+import { ArkParameterRef, ArkThisRef } from '../base/Ref';
+import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
+import { Type } from '../base/Type';
+import { Value } from '../base/Value';
+import { Cfg } from '../graph/Cfg';
+import { ViewTree } from '../graph/ViewTree';
+import { ArkBody } from './ArkBody';
+import { ArkClass } from './ArkClass';
+import { MethodSignature } from './ArkSignature';
+import { Decorator } from '../base/Decorator';
+import { BodyBuilder } from '../common/BodyBuilder';
+import { ArkExport, ExportType } from './ArkExport';
+import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -36,23 +34,16 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
  * @category core/model
  */
 export class ArkMethod implements ArkExport {
-    public static ANONYMOUS_METHOD_PREFIX = 'AnonymousMethod-';
-
-    private name: string = '';
     private code: string = '';
     private line: number = -1;
     private column: number = -1;
 
-    private declaringArkFile!: ArkFile;
     private declaringArkClass!: ArkClass;
 
-    private returnType: Type = UnknownType.getInstance();
-    private parameters: MethodParameter[] = [];
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private typeParameters: Type[] = [];
 
     private methodSignature!: MethodSignature;
-    private methodSubSignature!: MethodSubSignature;
 
     private body?: ArkBody;
     private viewTree?: ViewTree;
@@ -70,11 +61,7 @@ export class ArkMethod implements ArkExport {
     }
 
     public getName() {
-        return this.name;
-    }
-
-    public setName(name: string) {
-        this.name = name;
+        return this.methodSignature.getMethodSubSignature().getMethodName();
     }
 
     public getCode() {
@@ -110,11 +97,7 @@ export class ArkMethod implements ArkExport {
     }
 
     public getDeclaringArkFile() {
-        return this.declaringArkFile;
-    }
-
-    public setDeclaringArkFile() {
-        this.declaringArkFile = this.getDeclaringArkClass().getDeclaringArkFile();
+        return this.declaringArkClass.getDeclaringArkFile();
     }
 
     public isExported(): boolean {
@@ -133,26 +116,15 @@ export class ArkMethod implements ArkExport {
     }
 
     public isAnonymousMethod(): boolean {
-        return this.name.startsWith(ArkMethod.ANONYMOUS_METHOD_PREFIX);
+        return this.getName().startsWith(ANONYMOUS_METHOD_PREFIX);
     }
 
     public getParameters() {
-        return this.parameters;
-    }
-
-    public addParameter(methodParameter: MethodParameter) {
-        this.parameters.push(methodParameter);
+        return this.methodSignature.getMethodSubSignature().getParameters();
     }
 
     public getReturnType() {
-        return this.returnType;
-    }
-
-    public setReturnType(type: Type) {
-        this.returnType = type;
-        if (this.methodSubSignature) {
-            this.methodSubSignature.setReturnType(type);
-        }
+        return this.methodSignature.getType();
     }
 
     public getSignature() {
@@ -164,27 +136,7 @@ export class ArkMethod implements ArkExport {
     }
 
     public getSubSignature() {
-        return this.methodSubSignature;
-    }
-
-    public setSubSignature(methodSubSignature: MethodSubSignature) {
-        this.methodSubSignature = methodSubSignature;
-    }
-
-    public genSignature() {
-        let mtdSubSig = new MethodSubSignature();
-        mtdSubSig.setMethodName(this.name);
-        mtdSubSig.setParameters(this.parameters);
-        mtdSubSig.setReturnType(this.returnType);
-        if (this.isStatic()) {
-            mtdSubSig.setStatic();
-        }
-        this.setSubSignature(mtdSubSig);
-
-        let mtdSig = new MethodSignature();
-        mtdSig.setDeclaringClassSignature(this.declaringArkClass.getSignature());
-        mtdSig.setMethodSubSignature(mtdSubSig);
-        this.setSignature(mtdSig);
+        return this.methodSignature.getMethodSubSignature();
     }
 
     public getModifiers() {
@@ -308,7 +260,7 @@ export class ArkMethod implements ArkExport {
 
     public setBodyBuilder(bodyBuilder: BodyBuilder) {
         this.bodyBuilder = bodyBuilder;
-        if (this.declaringArkFile.getScene().buildClassDone()) {
+        if (this.getDeclaringArkFile().getScene().buildClassDone()) {
             this.buildBody();
         }
     }
