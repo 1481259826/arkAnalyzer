@@ -27,12 +27,20 @@ import { ArkExport, ExportType } from './ArkExport';
 import { TypeInference } from "../common/TypeInference";
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from "../common/Const";
 
+export enum ClassCategory {
+    CLASS = 0,
+    STRUCT = 1,
+    INTERFACE = 2,
+    ENUM = 3,
+    TYPE_LITERAL = 4,
+    OBJECT = 5,
+}
+
 /**
  * @category core/model
  */
 export class ArkClass implements ArkExport {
-    private name: string = '';
-    private originType: string = "Class";
+    private category!: ClassCategory;
     private code?: string;
     private line: number = -1;
     private column: number = -1;
@@ -68,11 +76,7 @@ export class ArkClass implements ArkExport {
     }
 
     public getName() {
-        return this.name;
-    }
-
-    public setName(name: string) {
-        this.name = name;
+        return this.classSignature.getClassName();
     }
 
     public getCode() {
@@ -99,12 +103,12 @@ export class ArkClass implements ArkExport {
         this.column = column;
     }
 
-    public getOriginType() {
-        return this.originType;
+    public getCategory(): ClassCategory {
+        return this.category;
     }
 
-    public setOriginType(originType: string) {
-        this.originType = originType;
+    public setCategory(category: ClassCategory): void {
+        this.category = category;
     }
 
     public getDeclaringArkFile() {
@@ -132,7 +136,7 @@ export class ArkClass implements ArkExport {
     }
 
     public isAnonymousClass(): boolean {
-        return this.name.startsWith(ANONYMOUS_CLASS_PREFIX);
+        return this.getName().startsWith(ANONYMOUS_CLASS_PREFIX);
     }
 
     public getSignature() {
@@ -141,16 +145,6 @@ export class ArkClass implements ArkExport {
 
     public setSignature(classSig: ClassSignature) {
         this.classSignature = classSig;
-    }
-
-    public genSignature() {
-        let classSig = new ClassSignature();
-        classSig.setClassName(this.name);
-        classSig.setDeclaringFileSignature(this.declaringArkFile.getFileSignature());
-        if (this.declaringArkNamespace) {
-            classSig.setDeclaringNamespaceSignature(this.declaringArkNamespace.getNamespaceSignature());
-        }
-        this.setSignature(classSig);
     }
 
     public getSuperClassName() {

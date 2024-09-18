@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
-import { ArkClass } from '../../core/model/ArkClass';
+import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { Dump, SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
-import { Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import { SourceUtils } from './SourceUtils';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { FieldCategory } from '../../core/model/ArkField';
 
 /**
  * @category save
@@ -47,11 +48,11 @@ export class SourceClass extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.cls.getOriginType() == Origin_Object) {
+        if (this.cls.getCategory() == ClassCategory.OBJECT) {
             return this.dumpObject();
         }
 
-        if (this.cls.getOriginType() == Origin_TypeLiteral) {
+        if (this.cls.getCategory() == ClassCategory.TYPE_LITERAL) {
             return this.dumpTypeLiteral();
         }
 
@@ -60,7 +61,7 @@ export class SourceClass extends SourceBase {
         this.printer
             .writeIndent()
             .writeSpace(this.modifiersToString(this.cls.getModifiers()))
-            .write(`${this.cls.getOriginType().toLowerCase()} `);
+            .write(`${SourceUtils.classOriginTypeToString.get(this.cls.getCategory())} `);
 
         if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
             this.printer.write(this.cls.getName());
@@ -164,7 +165,7 @@ export class SourceClass extends SourceBase {
         let staticInitializer = this.parseFieldInitMethod(STATIC_INIT_METHOD_NAME);
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
-            if (field.getFieldType() == 'GetAccessor') {
+            if (field.getCategory() == FieldCategory.GET_ACCESSOR) {
                 continue;
             }
             if (field.getModifiers().has('StaticKeyword')) {

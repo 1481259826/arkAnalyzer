@@ -19,7 +19,7 @@ import { ArkMethod } from '../ArkMethod';
 import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import ts from 'ohos-typescript';
-import { ArkClass } from '../ArkClass';
+import { ArkClass, ClassCategory } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod } from './ArkMethodBuilder';
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
@@ -29,11 +29,13 @@ import { ArkInstanceFieldRef } from '../../base/Ref';
 import {
     ANONYMOUS_CLASS_DELIMITER,
     ANONYMOUS_CLASS_PREFIX,
-    CLASS_ORIGIN_TYPE_OBJECT,
+    DEFAULT_ARK_CLASS_NAME,
     INSTANCE_INIT_METHOD_NAME,
     STATIC_INIT_METHOD_NAME,
 } from '../../common/Const';
 import { IRUtils } from '../../common/IRUtils';
+import { ClassSignature, MethodSignature } from '../ArkSignature';
+import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClassBuilder');
 
@@ -100,8 +102,9 @@ export function buildNormalArkClassFromArkNamespace(clsNode: ClassLikeNode, arkN
 }
 
 function buildDefaultArkClass(cls: ArkClass, sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
-    cls.setName('_DEFAULT_ARK_CLASS');
-    cls.genSignature();
+    const defaultArkClassSignature = new ClassSignature(DEFAULT_ARK_CLASS_NAME,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(defaultArkClassSignature);
 
     genDefaultArkMethod(cls, sourceFile, node);
 }
@@ -140,32 +143,40 @@ export function buildNormalArkClass(clsNode: ClassLikeNode, cls: ArkClass, sourc
 
 function init4InstanceInitMethod(cls: ArkClass) {
     const instanceInit = new ArkMethod();
-    instanceInit.setName(INSTANCE_INIT_METHOD_NAME);
     instanceInit.setDeclaringArkClass(cls);
-    instanceInit.setDeclaringArkFile();
     instanceInit.setIsGeneratedFlag(true);
+    const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(INSTANCE_INIT_METHOD_NAME);
+    const methodSignature = new MethodSignature(instanceInit.getDeclaringArkClass().getSignature(),
+        methodSubSignature);
+    instanceInit.setSignature(methodSignature);
+
     cls.addMethod(instanceInit);
     cls.setInstanceInitMethod(instanceInit);
 }
 
 function init4StaticInitMethod(cls: ArkClass) {
     const staticInit = new ArkMethod();
-    staticInit.setName(STATIC_INIT_METHOD_NAME);
     staticInit.setDeclaringArkClass(cls);
-    staticInit.setDeclaringArkFile();
     staticInit.setIsGeneratedFlag(true);
+    const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(STATIC_INIT_METHOD_NAME);
+    const methodSignature = new MethodSignature(staticInit.getDeclaringArkClass().getSignature(),
+        methodSubSignature);
+    staticInit.setSignature(methodSignature);
+
     cls.addMethod(staticInit);
     cls.setStaticInitMethod(staticInit);
 }
 
 function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+    let className = '';
     if (clsNode.name) {
-        cls.setName(clsNode.name.text);
+        className = clsNode.name.text;
     } else {
-        genAnonymousClassName(clsNode, cls, declaringMethod);
+        className = genAnonymousClassName(clsNode, cls, declaringMethod);
     }
-
-    cls.genSignature();
+    const classSignature = new ClassSignature(className,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(classSignature);
 
     if (clsNode.typeParameters) {
         buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
@@ -187,22 +198,22 @@ function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sour
         cls.addModifier(modifier);
     });
 
-    cls.setOriginType('Struct');
+    cls.setCategory(ClassCategory.STRUCT);
     init4InstanceInitMethod(cls);
     init4StaticInitMethod(cls);
     buildArkClassMembers(clsNode, cls, sourceFile);
-    cls.getInstanceInitMethod().genSignature();
-    cls.getStaticInitMethod().genSignature();
 }
 
 function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+    let className = '';
     if (clsNode.name) {
-        cls.setName(clsNode.name.text);
+        className = clsNode.name.text;
     } else {
-        genAnonymousClassName(clsNode, cls, declaringMethod);
+        className = genAnonymousClassName(clsNode, cls, declaringMethod);
     }
-
-    cls.genSignature();
+    const classSignature = new ClassSignature(className,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(classSignature);
 
     if (clsNode.typeParameters) {
         buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
@@ -224,22 +235,22 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
         cls.addModifier(modifier);
     });
 
-    cls.setOriginType('Class');
+    cls.setCategory(ClassCategory.CLASS);
     init4InstanceInitMethod(cls);
     init4StaticInitMethod(cls);
     buildArkClassMembers(clsNode, cls, sourceFile);
-    cls.getInstanceInitMethod().genSignature();
-    cls.getStaticInitMethod().genSignature();
 }
 
 function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+    let className = '';
     if (clsNode.name) {
-        cls.setName(clsNode.name.text);
+        className = clsNode.name.text;
     } else {
-        genAnonymousClassName(clsNode, cls, declaringMethod);
+        className = genAnonymousClassName(clsNode, cls, declaringMethod);
     }
-
-    cls.genSignature();
+    const classSignature = new ClassSignature(className,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(classSignature);
 
     if (clsNode.typeParameters) {
         buildTypeParameters(clsNode.typeParameters, sourceFile, cls).forEach((typeParameter) => {
@@ -261,48 +272,51 @@ function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass
         cls.addModifier(modifier);
     });
 
-    cls.setOriginType('Interface');
+    cls.setCategory(ClassCategory.INTERFACE);
 
     buildArkClassMembers(clsNode, cls, sourceFile);
 }
 
 function buildEnum2ArkClass(clsNode: ts.EnumDeclaration, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+    let className = '';
     if (clsNode.name) {
-        cls.setName(clsNode.name.text);
+        className = clsNode.name.text;
     } else {
-        genAnonymousClassName(clsNode, cls, declaringMethod);
+        className = genAnonymousClassName(clsNode, cls, declaringMethod);
     }
-
-    cls.genSignature();
+    const classSignature = new ClassSignature(className,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(classSignature);
 
     buildModifiers(clsNode, sourceFile).forEach((modifier) => {
         cls.addModifier(modifier);
     });
 
-    cls.setOriginType('Enum');
+    cls.setCategory(ClassCategory.ENUM);
 
     init4StaticInitMethod(cls);
     buildArkClassMembers(clsNode, cls, sourceFile);
-    cls.getStaticInitMethod().genSignature();
 }
 
 function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClass,
                                        sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
-    genAnonymousClassName(clsNode, cls, declaringMethod);
+    const className = genAnonymousClassName(clsNode, cls, declaringMethod);
+    const classSignature = new ClassSignature(className,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(classSignature);
 
-    cls.genSignature();
-
-    cls.setOriginType('TypeLiteral');
+    cls.setCategory(ClassCategory.TYPE_LITERAL);
     buildArkClassMembers(clsNode, cls, sourceFile);
 }
 
 function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpression, cls: ArkClass,
                                                sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
-    genAnonymousClassName(clsNode, cls, declaringMethod);
+    const className = genAnonymousClassName(clsNode, cls, declaringMethod);
+    const classSignature = new ClassSignature(className,
+        cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
+    cls.setSignature(classSignature);
 
-    cls.genSignature();
-
-    cls.setOriginType(CLASS_ORIGIN_TYPE_OBJECT);
+    cls.setCategory(ClassCategory.OBJECT);
 
     let arkMethods: ArkMethod[] = [];
 
@@ -318,18 +332,16 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
         } else {
             let arkMethod = new ArkMethod();
             arkMethod.setDeclaringArkClass(cls);
-            arkMethod.setDeclaringArkFile();
             buildArkMethodFromArkClass(property, cls, arkMethod, sourceFile);
         }
     });
     buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmtMap, instanceIRTransformer.getThisLocal());
-    cls.getInstanceInitMethod().genSignature();
     arkMethods.forEach((mtd) => {
         cls.addMethod(mtd);
     });
 }
 
-function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass, declaringMethod?: ArkMethod) {
+function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass, declaringMethod?: ArkMethod): string {
     const declaringArkNamespace = cls.getDeclaringArkNamespace();
     const declaringArkFile = cls.getDeclaringArkFile();
     let anonymousClassName = '';
@@ -342,7 +354,7 @@ function genAnonymousClassName(clsNode: ClassLikeNode, cls: ArkClass, declaringM
     } else {
         anonymousClassName = ANONYMOUS_CLASS_PREFIX + ANONYMOUS_CLASS_DELIMITER + declaringMethodName + declaringArkFile.getAnonymousClassNumber();
     }
-    cls.setName(anonymousClassName);
+    return anonymousClassName;
 }
 
 function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile: ts.SourceFile) {

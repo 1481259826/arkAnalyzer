@@ -25,7 +25,6 @@ import { ALL } from "../common/TSConst";
  * @category core/model
  */
 export class ArkNamespace implements ArkExport {
-    private name: string = '';
     private code: string = ''
     private line: number = -1;
     private column: number = -1;
@@ -34,7 +33,6 @@ export class ArkNamespace implements ArkExport {
     private declaringArkNamespace: ArkNamespace | null = null;
 
     private declaringInstance!: ArkFile | ArkNamespace;
-    private declaringType: string = '';
 
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private exportInfos: Map<string, ExportInfo> = new Map<string, ExportInfo>();
@@ -69,13 +67,7 @@ export class ArkNamespace implements ArkExport {
         return Array.from(this.namespaces.values());
     }
 
-    public genNamespaceSignature() {
-        let namespaceSignature = new NamespaceSignature();
-        namespaceSignature.setNamespaceName(this.name);
-        namespaceSignature.setDeclaringFileSignature(this.declaringArkFile.getFileSignature());
-        if (this.declaringArkNamespace) {
-            namespaceSignature.setDeclaringNamespaceSignature(this.declaringArkNamespace.getNamespaceSignature());
-        }
+    public setSignature(namespaceSignature: NamespaceSignature): void {
         this.namespaceSignature = namespaceSignature;
     }
 
@@ -88,11 +80,7 @@ export class ArkNamespace implements ArkExport {
     }
 
     public getName() {
-        return this.name;
-    }
-
-    public setName(name: string) {
-        this.name = name;
+        return this.namespaceSignature.getNamespaceName();
     }
 
     public getCode() {
@@ -117,14 +105,6 @@ export class ArkNamespace implements ArkExport {
 
     public setColumn(column: number) {
         this.column = column;
-    }
-
-    public setDeclaringType(declaringType: string) {
-        this.declaringType = declaringType;
-    }
-
-    public getDeclaringType() {
-        return this.declaringType;
     }
 
     public getDeclaringInstance() {

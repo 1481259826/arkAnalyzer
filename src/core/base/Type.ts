@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { ArkField } from '../model/ArkField';
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';
@@ -465,35 +464,6 @@ export class AliasTypeDeclaration {
     }
 }
 
-export class TypeLiteralType extends Type {
-    private members: ArkField[] = [];
-
-    constructor() {
-        super();
-    }
-
-    public getMembers() {
-        return this.members;
-    }
-
-    public setMembers(members: ArkField[]) {
-        this.members = members;
-    }
-
-    public addMember(member: ArkField) {
-        this.members.push(member);
-    }
-
-    public toString() {
-        let strMembers: string[] = [];
-        this.members.forEach((member) => {
-            strMembers.push(member.getName().toString());
-        });
-        return '[' + strMembers.join(', ') + ']';
-    }
-
-}
-
 export abstract class AnnotationType extends Type {
     private originType: string;
 
@@ -512,7 +482,7 @@ export abstract class AnnotationType extends Type {
 }
 
 export class AnnotationNamespaceType extends AnnotationType {
-    private namespaceSignature: NamespaceSignature = new NamespaceSignature();
+    private namespaceSignature: NamespaceSignature = NamespaceSignature.DEFAULT;
 
     public static getInstance(signature: NamespaceSignature): AnnotationNamespaceType {
         const type = new AnnotationNamespaceType(signature.getNamespaceName());

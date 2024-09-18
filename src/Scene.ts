@@ -178,8 +178,7 @@ export class Scene {
             logger.info('=== parse file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
-            arkFile.setProjectName(this.projectName);
-            buildArkFileFromFile(file, this.realProjectDir, arkFile);
+            buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
@@ -192,8 +191,7 @@ export class Scene {
             logger.info('=== parse sdk file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
-            arkFile.setProjectName(sdkName);
-            buildArkFileFromFile(file, path.normalize(sdkPath), arkFile);
+            buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
             ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
@@ -818,7 +816,6 @@ export class ModuleScene {
 
     private moduleOhPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
-    private filesMap: Map<string, ArkFile> = new Map();
 
     constructor() {
     }
@@ -875,10 +872,9 @@ export class ModuleScene {
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this.projectScene);
             arkFile.setModuleScene(this);
-            arkFile.setProjectName(this.projectScene.getProjectName());
-            buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile);
+            buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,
+                this.projectScene.getProjectName());
             const fileSig = arkFile.getFileSignature().toString();
-            this.filesMap.set(fileSig, arkFile);
             this.projectScene.getFilesMap().set(fileSig, arkFile);
         });
     }

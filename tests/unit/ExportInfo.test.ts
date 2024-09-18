@@ -30,9 +30,7 @@ describe("export Test", () => {
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
     it('debug case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("test.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
         assert.equal(file?.getImportInfos().length, 2);
@@ -41,9 +39,7 @@ describe("export Test", () => {
     })
 
     it('namespace export case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("test.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const file = projectScene.getFile(fileId);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
@@ -53,44 +49,34 @@ describe("export Test", () => {
     })
 
     it('supperClass Test case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("exportSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'exportSample.ts');
         assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('d')?.getSuperClass());
     })
 
     it('import index case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("exportSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'exportSample.ts');
         assert.isNotNull(projectScene.getFile(fileId)?.getImportInfoBy('Constants')?.getLazyExportInfo());
     })
 
     it('sdk case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("test.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         assert.isDefined(projectScene.getFile(fileId)?.getImportInfoBy('hilog')?.getLazyExportInfo());
     })
 
     it('namespace case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("else.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'else.ts');
         const stmts = projectScene.getFile(fileId)?.getDefaultClass()
             .getMethodWithName('something')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
         if (stmts) {
             assert.equal(stmts[2].toString(), 'staticinvoke <@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.[static]setWebDebuggingAccess(boolean)>(false)');
             assert.equal(stmts[6].toString(), 'instanceinvoke controller.<@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.loadUrl(string|Resource, Array<WebHeader>)>(\'\')')
-            assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
+            assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
         }
     })
 
     it('thirdModule case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Lottie_Report.ets");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
         const arkExport = projectScene.getFile(fileId)?.getImportInfoBy('lottie')
             ?.getLazyExportInfo()?.getArkExport();
         assert.isTrue(arkExport instanceof ArkClass);
@@ -124,9 +110,7 @@ describe("function Test", () => {
         let scene: Scene = new Scene();
         scene.buildSceneFromProjectDir(config);
         scene.inferTypes();
-        const fileId = new FileSignature();
-        fileId.setFileName("Lottie_Report.ets");
-        fileId.setProjectName(scene.getProjectName());
+        const fileId = new FileSignature(scene.getProjectName(), 'Lottie_Report.ets');
         const signature = scene.getFile(fileId)?.getImportInfoBy('lottie')?.getLazyExportInfo()
             ?.getArkExport()?.toString();
         assert.equal(signature, 'Lottie')
