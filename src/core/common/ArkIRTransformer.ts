@@ -54,7 +54,7 @@ import {
     ArkInvokeStmt,
     ArkReturnStmt,
     ArkReturnVoidStmt,
-    ArkThrowStmt,
+    ArkThrowStmt, OriginalStmt,
     Stmt,
 } from '../base/Stmt';
 import {
@@ -321,8 +321,7 @@ export class ArkIRTransformer {
         if (forStatement.initializer) {
             stmts.push(...this.tsNodeToValueAndStmts(forStatement.initializer).stmts);
         }
-        const dummyInitializerStmt = new Stmt();
-        dummyInitializerStmt.setText(DUMMY_INITIALIZER_STMT);
+        const dummyInitializerStmt = new OriginalStmt(DUMMY_INITIALIZER_STMT, LineColPosition.DEFAULT);
         stmts.push(dummyInitializerStmt);
 
         if (forStatement.condition) {
@@ -441,8 +440,7 @@ export class ArkIRTransformer {
 
     private whileStatementToStmts(whileStatement: ts.WhileStatement): Stmt[] {
         const stmts: Stmt[] = [];
-        const dummyInitializerStmt = new Stmt();
-        dummyInitializerStmt.setText(DUMMY_INITIALIZER_STMT);
+        const dummyInitializerStmt = new OriginalStmt(DUMMY_INITIALIZER_STMT, LineColPosition.DEFAULT);
         stmts.push(dummyInitializerStmt);
 
         const {
@@ -1664,10 +1662,8 @@ export class ArkIRTransformer {
     }
 
     public mapStmtsToTsStmt(stmts: Stmt[], node: ts.Node): void {
-        const originalStmt = new Stmt();
-        originalStmt.setText(node.getText(this.sourceFile));
-        const positionInfo = LineColPosition.buildFromNode(node, this.sourceFile);
-        originalStmt.setPositionInfo(positionInfo);
+        const originalStmt = new OriginalStmt(node.getText(this.sourceFile),
+            LineColPosition.buildFromNode(node, this.sourceFile));
 
         for (const stmt of stmts) {
             if (!this.stmtToOriginalStmt.has(stmt)){

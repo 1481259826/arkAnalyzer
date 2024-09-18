@@ -24,7 +24,7 @@ import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildIni
 import { buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
-import { ArkAssignStmt, Stmt } from '../../base/Stmt';
+import { ArkAssignStmt, OriginalStmt, Stmt } from '../../base/Stmt';
 import { ArkInstanceFieldRef } from '../../base/Ref';
 import {
     ANONYMOUS_CLASS_DELIMITER,
@@ -443,9 +443,7 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmtMa
         const assignStmt = new ArkAssignStmt(fieldRef, rightOp);
         stmts.push(assignStmt);
         for (const stmt of stmts) {
-            const originStmt = new Stmt();
-            originStmt.setText(field.getCode());
-            originStmt.setPositionInfo(field.getOriginPosition());
+            const originStmt = new OriginalStmt(field.getCode(), field.getOriginPosition());
             initStmtMap.set(stmt, originStmt);
         }
         field.setInitializer(stmts);

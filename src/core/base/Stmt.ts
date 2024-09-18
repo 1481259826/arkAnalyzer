@@ -23,13 +23,10 @@ import { LineColPosition } from './Position';
 /**
  * @category core/base/stmt
  */
-export class Stmt {
-    private text: string = '';
-    private position: LineColPosition = LineColPosition.DEFAULT;
-    private cfg: Cfg | null = null;
-
-    constructor() {
-    }
+export abstract class Stmt {
+    protected text: string = '';
+    protected position: LineColPosition = LineColPosition.DEFAULT;
+    protected cfg: Cfg | null = null;
 
     /** Return a list of values which are uesd in this statement */
     public getUses(): Value[] {
@@ -164,12 +161,22 @@ export class Stmt {
         return originPositionInfo;
     }
 
-    public toString(): string {
-        return this.text;
-    }
+    abstract toString(): string ;
 
     public setText(text: string): void {
         this.text = text;
+    }
+}
+
+export class OriginalStmt extends Stmt {
+    constructor(text: string, position: LineColPosition) {
+        super();
+        this.text = text;
+        this.position = position;
+    }
+
+    public toString(): string {
+        return this.text;
     }
 }
 

@@ -13,7 +13,16 @@
  * limitations under the License.
  */
 
-import { ArkConditionExpr, ArkIfStmt, BasicBlock, Cfg, Local, RelationalBinaryOperator, Stmt } from '../../src/index';
+import {
+    ArkConditionExpr,
+    ArkIfStmt,
+    BasicBlock,
+    Cfg, LineColPosition,
+    Local,
+    OriginalStmt,
+    RelationalBinaryOperator,
+    Stmt,
+} from '../../src/index';
 import { describe, expect, it } from 'vitest';
 import { AbstractFlowGraph } from '../../src/utils/CfgStructualAnalysis';
 import { ValueUtil } from '../../src/core/common/ValueUtil';
@@ -22,7 +31,7 @@ describe('CfgStructualAnalysisTest', () => {
     it('case1: structual analysis', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new Stmt();
+        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
 
         for (let i = 0; i < 9; i++) {
             let bb = new BasicBlock();
@@ -83,7 +92,7 @@ describe('CfgStructualAnalysisTest', () => {
     it('case2: structual analysis while', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new Stmt();
+        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
 
         for (let i = 0; i < 4; i++) {
             let bb = new BasicBlock();
@@ -124,7 +133,7 @@ describe('CfgStructualAnalysisTest', () => {
     it('case3: structual analysis do-while', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new Stmt();
+        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
 
         for (let i = 0; i < 5; i++) {
             let bb = new BasicBlock();
@@ -172,7 +181,7 @@ describe('CfgStructualAnalysisTest', () => {
     it('case4: structual analysis do-while', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new Stmt();
+        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
 
         for (let i = 0; i < 6; i++) {
             let bb = new BasicBlock();
@@ -224,7 +233,7 @@ describe('CfgStructualAnalysisTest', () => {
     it('case5: structual analysis for', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new Stmt();
+        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
 
         for (let i = 0; i < 7; i++) {
             let bb = new BasicBlock();
