@@ -19,10 +19,14 @@ import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../../core/base/Stmt";
 import { ArkMethod } from "../../core/model/ArkMethod";
 import { ClassSignature } from "../../core/model/ArkSignature";
 import { Scene } from "../../Scene";
+import { COMPONENT_LIFECYCLE_METHOD_NAME } from "../../utils/entryMethodUtils";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Dummy Call');
 
+/**
+ * TODO: constructor pointer and cid
+ */
 export class DummyCallCreator {
     private scene: Scene
     private pageMap
@@ -87,11 +91,15 @@ export class DummyCallCreator {
         }
 
         let callStmts: Stmt[] = []
-        // TODO: filter callback method
-        componentClass.getMethods().filter(method => method)
+        // call back method is listed
+        componentClass.getMethods().filter(method => COMPONENT_LIFECYCLE_METHOD_NAME.includes(method.getName()))
             .forEach((method: ArkMethod) => {
-                // TODO: args ?
-                callStmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(base, method.getSignature(), [])))
+                // TODO: args pointer ?
+                if (method.getParameters().length == 0) {
+                    callStmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(base, method.getSignature(), [])))
+                } else {
+                    logger.warn(`parameters in callback function hasn't been processed: ${method.getSignature().toString()}`)
+                }
             })
 
         return callStmts
