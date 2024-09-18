@@ -30,7 +30,7 @@ scene.buildSceneFromProjectDir(config);
 describe("PointerAnalysisAlgorithm Test", () => {
     let cg = new CallGraph(scene);
     let cgBuilder = new CallGraphBuilder(cg, scene);
-    cgBuilder.buildDirectCallGraph();
+    cgBuilder.buildDirectCallGraphForScene();
 
     let pag = new Pag();
     let entry = cg.getEntries()
