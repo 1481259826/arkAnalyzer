@@ -215,8 +215,7 @@ export class ArkStaticFieldRef extends AbstractFieldRef {
     }
 
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        return uses;
+        return [];
     }
 
     public toString(): string {
@@ -255,8 +254,7 @@ export class ArkParameterRef extends AbstractRef {
     }
 
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        return uses;
+        return [];
     }
 
     public toString(): string {
@@ -289,8 +287,7 @@ export class ArkThisRef extends AbstractRef {
     }
 
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        return uses;
+        return [];
     }
 
     public toString(): string {
@@ -311,8 +308,7 @@ export class ArkCaughtExceptionRef extends AbstractRef {
     }
 
     public getUses(): Value[] {
-        let uses: Value[] = [];
-        return uses;
+        return [];
     }
 
     public toString(): string {

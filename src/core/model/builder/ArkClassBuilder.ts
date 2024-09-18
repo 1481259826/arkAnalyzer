@@ -36,6 +36,7 @@ import {
 import { IRUtils } from '../../common/IRUtils';
 import { ClassSignature, MethodSignature } from '../ArkSignature';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
+import { FullPosition } from '../../base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClassBuilder');
 
@@ -431,16 +432,23 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
 
 function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initStmtMap: Map<Stmt, Stmt>, initNode?: ts.Node) {
     if (initNode) {
-        const valueAndStmts = transformer.tsNodeToValueAndStmts(initNode);
-        const stmts = valueAndStmts.stmts;
-        const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
-        let rightOp = valueAndStmts.value;
-        if (IRUtils.moreThanOneAddress(rightOp)) {
-            const rightOpValueAndStmts = transformer.generateAssignStmtForValue(rightOp);
-            rightOp = rightOpValueAndStmts.value;
-            stmts.push(...rightOpValueAndStmts.stmts);
+        const stmts: Stmt[] = [];
+        let {
+            value: initValue,
+            valueOriginalPositions: initPositions,
+            stmts: initStmts,
+        } = transformer.tsNodeToValueAndStmts(initNode);
+        stmts.push(...initStmts);
+        if (IRUtils.moreThanOneAddress(initValue)) {
+            ({ value: initValue, valueOriginalPositions: initPositions, stmts: initStmts } =
+                transformer.generateAssignStmtForValue(initValue, initPositions));
+            stmts.push(...initStmts);
         }
-        const assignStmt = new ArkAssignStmt(fieldRef, rightOp);
+
+        const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());
+        const fieldRefPositons = [FullPosition.DEFAULT, FullPosition.DEFAULT];
+        const assignStmt = new ArkAssignStmt(fieldRef, initValue);
+        assignStmt.setOperandOriginalPositions([...fieldRefPositons, ...initPositions]);
         stmts.push(assignStmt);
         for (const stmt of stmts) {
             const originStmt = new OriginalStmt(field.getCode(), field.getOriginPosition());

@@ -29,7 +29,6 @@ import {
     ArkTypeOfExpr,
     ArkUnopExpr,
     ArkYieldExpr,
-    ArrayLiteralExpr,
     NormalBinaryOperator,
 } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
@@ -237,14 +236,6 @@ export class SourceTransformer {
 
         if (expr instanceof ArkUnopExpr) {
             return `${expr.getOperator()}${this.valueToString(expr.getOp())}`;
-        }
-
-        if (expr instanceof ArrayLiteralExpr) {
-            let elements: string[] = [];
-            expr.getElements().forEach((element) => {
-                elements.push(this.valueToString(element));
-            });
-            return `[${elements.join(', ')}]`;
         }
 
         if (expr instanceof ArkAwaitExpr) {

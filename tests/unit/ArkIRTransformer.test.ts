@@ -17,7 +17,7 @@ import { assert, describe, expect, it } from 'vitest';
 import { Scene, SceneConfig, Stmt } from '../../src';
 import path from 'path';
 import {
-    BinaryExpression_Expect_IR,
+    BinaryExpression_Expect_IR, CallExpression_Expect_IR,
     LiteralExpression_Expect_IR,
     NewExpression_Expect_IR,
     Operator_Expect_IR,
@@ -33,9 +33,10 @@ import { ArrowFunction_Expect_IR } from '../resources/arkIRTransformer/function/
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
-function testMethodStmts(scene: Scene, filePath: string, expectStmts: string[]): void {
+function testMethodStmts(scene: Scene, filePath: string, expectStmts: any[]): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
-    const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === DEFAULT_ARK_METHOD_NAME));
+    const arkMethod = arkFile?.getDefaultClass().getMethods()
+        .find((method) => (method.getName() === DEFAULT_ARK_METHOD_NAME));
     const stmts = arkMethod?.getCfg()?.getStmts();
     if (!stmts) {
         assert.isDefined(stmts);
@@ -67,10 +68,23 @@ function testFileStmts(scene: Scene, filePath: string, expectFileStmts: any): vo
     }
 }
 
-function assertStmtsEqual(stmts: Stmt[], expectStmts: string[]): void {
-    expect(stmts.length).eq(expectStmts.length);
+function assertStmtsEqual(stmts: Stmt[], expectStmts: any[]): void {
+    expect(stmts.length).toEqual(expectStmts.length);
     for (let i = 0; i < stmts.length; i++) {
-        expect(stmts[i].toString()).eq(expectStmts[i]);
+        expect(stmts[i].toString()).toEqual(expectStmts[i].text);
+
+        const operandOriginalPositions: any[] = [];
+        for (const operand of stmts[i].getDefAndUses()) {
+            const operandOriginalPosition = stmts[i].getOperandOriginalPosition(operand);
+            if (operandOriginalPosition) {
+                operandOriginalPositions.push(
+                    [operandOriginalPosition.getFirstLine(), operandOriginalPosition.getFirstCol(),
+                        operandOriginalPosition.getLastLine(), operandOriginalPosition.getLastCol()]);
+            } else {
+                operandOriginalPositions.push(operandOriginalPosition);
+            }
+        }
+        expect(operandOriginalPositions).toEqual(expectStmts[i].operandOriginalPositions);
     }
 }
 
@@ -103,6 +117,10 @@ describe('expression Test', () => {
 
     it('test operator', async () => {
         testMethodStmts(scene, 'OperatorTest.ts', Operator_Expect_IR.stmts);
+    });
+
+    it('test call expression', async () => {
+        testMethodStmts(scene, 'CallExpressionTest.ts', CallExpression_Expect_IR.stmts);
     });
 });
 

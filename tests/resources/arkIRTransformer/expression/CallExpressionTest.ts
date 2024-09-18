@@ -13,26 +13,15 @@
  * limitations under the License.
  */
 
-// delete operator
-let p = new Point();
-delete p.y;
+// instance invoke
+a1.call1();
+let a2 = a3.call2();
+let a4 = a3.call3(para1, para2);
 
-// void operator
-let a = 0;
-void a;
-let b = 1;
-void (a + b);
+// static invoke
+call10();
+let a20 = call20();
+let a40 = call30(para10, para20);
 
-// await operator
-await 10;
-const x = await 11;
-
-// yield operator
-yield 20;
-
-// instanceof operator
-let isCat = cat instanceof Cat;
-
-// type assertion
-let foo1 = bar as Foo;
-let foo2 = <Foo>bar;
+// call chain
+let a200 = call200().call300(para100, para200);
