@@ -63,17 +63,13 @@ export class PointerAnalysis extends AbstractAnalysis {
             config = new PointerAnalysisConfig(1, "out/", false, false)
         }
 
-        let entries: FuncID[] = cg.getEntries();
         const dummyMainCreator = new DummyMainCreater(projectScene)
         dummyMainCreator.createDummyMain()
         const dummyMainMethod = dummyMainCreator.getDummyMain()
         cgBuilder.buildDirectCallGraph([dummyMainMethod])
         let dummyMainMethodID = cg.getCallGraphNodeByMethod(dummyMainMethod.getSignature()).getID()
-        // cgBuilder.setEntries();
-        // entries = cg.getEntries();
  
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
-        
         pta.setEntries([dummyMainMethodID]);
         pta.start();
         return pta;

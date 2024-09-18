@@ -115,10 +115,6 @@ export class PagBuilder {
 
         while (this.worklist.length > 0) {
             let csFunc = this.worklist.shift() as CSFuncID;
-            // this.buildFuncPag(csFunc.funcID);
-            // if (this.isSingletonFunction(csFunc.funcID)) {
-            //     csFunc.cid = DUMMY_CID 
-            // }
             this.buildPagFromFuncPag(csFunc.funcID, csFunc.cid);
             this.addToFuncHandledListThisRound(csFunc.funcID);
         }
