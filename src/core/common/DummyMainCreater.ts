@@ -92,24 +92,23 @@ export class DummyMainCreater {
     public createDummyMain(): void {
         const dummyMainFile = new ArkFile();
         dummyMainFile.setScene(this.scene);
-        const dummyMainFileSignature = new FileSignature('', '@dummyFile')
+        const dummyMainFileSignature = new FileSignature(this.scene.getProjectName(), '@dummyFile')
         dummyMainFile.setFileSignature(dummyMainFileSignature)
         this.scene.getFilesMap().set(dummyMainFile.getFileSignature().toString(), dummyMainFile);
         const dummyMainClass = new ArkClass();
         dummyMainClass.setDeclaringArkFile(dummyMainFile);
-        dummyMainFile.addArkClass(dummyMainClass);
         const dummyMainClassSignature = new ClassSignature('@dummyClass',
             dummyMainClass.getDeclaringArkFile().getFileSignature(), dummyMainClass.getDeclaringArkNamespace()?.getSignature() || null);
         dummyMainClass.setSignature(dummyMainClassSignature);
+        dummyMainFile.addArkClass(dummyMainClass);
 
         this.dummyMain = new ArkMethod();
         this.dummyMain.setDeclaringArkClass(dummyMainClass);
-        this.dummyMain.setIsGeneratedFlag(true);
-        dummyMainClass.addMethod(this.dummyMain);
         const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName('@dummyMain');
         const methodSignature = new MethodSignature(this.dummyMain.getDeclaringArkClass().getSignature(),
             methodSubSignature);
         this.dummyMain.setSignature(methodSignature);
+        dummyMainClass.addMethod(this.dummyMain);
 
         for (const method of this.entryMethods) {
             if (method.getDeclaringArkClass().isDefaultArkClass()) {
@@ -134,6 +133,7 @@ export class DummyMainCreater {
         const dummyBody = new ArkBody(localSet, new Cfg(), this.createDummyMainCfg(), new Map(), new Map());
         this.dummyMain.setBody(dummyBody)
         this.addCfg2Stmt()
+        this.scene.addToMethodsMap(this.dummyMain);
     }
 
     private createDummyMainCfg(): Cfg {

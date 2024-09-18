@@ -388,6 +388,10 @@ export class Scene {
         return Array.from(this.getMethodsMap(refresh).values());
     }
 
+    public addToMethodsMap(method: ArkMethod): void {
+        this.methodsMap.set(method.getSignature().toString(), method);
+    }
+
     public hasMainMethod(): boolean {
         return false;
     }
@@ -743,29 +747,20 @@ export class Scene {
         const entryMethods: ArkMethod[] = [];
         for (const ability of abilities) {
             const abilityEntryMethods: ArkMethod[] = [];
-            let cls = ability;
-            // 遍历父类，加入子类中没有的method
-            while (cls) {
-                for (const method of cls.getMethods()) {
-                    for (const modifier of method.getModifiers()) {
-                        if (modifier == 'private') {
-                            continue;
-                        }
-                    }
-                    for (const mtd of abilityEntryMethods) {
-                        if (mtd.getName() == method.getName()) {
-                            continue;
-                        }
-                    }
-                    if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
-                        abilityEntryMethods.push(method);
+            let cls: ArkClass = ability;
+            for (const method of cls.getMethods()) {
+                for (const modifier of method.getModifiers()) {
+                    if (modifier == 'private') {
+                        continue;
                     }
                 }
-                const superClass = cls.getSuperClass();
-                if (superClass) {
-                    cls = superClass;
-                } else {
-                    break;
+                for (const mtd of abilityEntryMethods) {
+                    if (mtd.getName() == method.getName()) {
+                        continue;
+                    }
+                }
+                if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
+                    abilityEntryMethods.push(method);
                 }
             }
             entryMethods.push(...abilityEntryMethods);

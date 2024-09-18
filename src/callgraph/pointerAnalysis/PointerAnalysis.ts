@@ -19,7 +19,7 @@ import { NodeID } from "../model/BaseGraph";
 import path from "path";
 import { CallGraph, CallSite, DynCallSite, FuncID } from "../model/CallGraph";
 import { AbstractAnalysis } from "../algorithm/AbstractAnalysis";
-import { ClassType, Type } from "../../core/base/Type";
+import { ClassType, Type, UnknownType } from "../../core/base/Type";
 import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
 import { Stmt } from "../../core/base/Stmt";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
@@ -57,24 +57,20 @@ export class PointerAnalysis extends AbstractAnalysis {
     static pointerAnalysisForWholeProject(projectScene: Scene, config?: PointerAnalysisConfig): PointerAnalysis {
         let cg = new CallGraph(projectScene);
         let cgBuilder = new CallGraphBuilder(cg, projectScene)
-        cgBuilder.buildDirectCallGraph();
+        cgBuilder.buildDirectCallGraphForScene();
         let pag = new Pag();
         if (!config) {
             config = new PointerAnalysisConfig(1, "out/", false, false)
         }
 
-        let entries: FuncID[] = [];// to get from dummy main
         const dummyMainCreator = new DummyMainCreater(projectScene)
         dummyMainCreator.createDummyMain()
         const dummyMainMethod = dummyMainCreator.getDummyMain()
-        dummyMainMethod.getBody()?.getCfg().getStmts().forEach((stmt) => {
-            let invokeExpr = stmt.getInvokeExpr()
-            if (invokeExpr) {
-                entries.push(cg.getCallGraphNodeByMethod(invokeExpr.getMethodSignature()).getID())
-            }
-        })
+        cgBuilder.buildDirectCallGraph([dummyMainMethod])
+        let dummyMainMethodID = cg.getCallGraphNodeByMethod(dummyMainMethod.getSignature()).getID()
+ 
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
-        pta.setEntries(entries);
+        pta.setEntries([dummyMainMethodID]);
         pta.start();
         return pta;
     }
@@ -396,37 +392,35 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     private detectTypeDiff(nodeId: NodeID): void {
-        // TODO: 存在一个key下的value重复的情况
         if (this.config.detectTypeDiff == false) {
             return;
         }
 
         this.typeDiffMap = this.typeDiffMap ?? new Map();
         let node = this.pag.getNode(nodeId) as PagNode;
-        // We any consider type diff for Local node
-        if (!(node instanceof PagLocalNode)) {
-            return;
-        }
 
         let value = node.getValue();
         let origType = node.getValue().getType();
         // TODO: union type
-        if (!(origType instanceof ClassType)) {
+        if (!(origType instanceof ClassType || origType instanceof UnknownType)) {
             return;
         }
 
         let findSameType = false;
         let pts = node.getPointTo();
+        if (pts.size == 0) {
+            return;
+        }
+
         pts.forEach(pt => {
             let ptNode = this.pag.getNode(pt) as PagNode;
             let type = ptNode.getValue().getType();
             if (type.toString() != origType.toString()) {
-                let diffSet = this.typeDiffMap.get(value);
-                if (!diffSet) {
-                    diffSet = new Set();
-                    this.typeDiffMap.set(value, diffSet);
+                let diffSet = this.typeDiffMap.get(value) ?? new Set();
+                this.typeDiffMap.set(value, diffSet);
+                if (!diffSet.has(type)) {
+                    diffSet.add(type);
                 }
-                diffSet.add(type);
             } else {
                 findSameType = true;
             }

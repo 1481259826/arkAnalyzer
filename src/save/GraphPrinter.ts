@@ -112,6 +112,9 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
 
         for(let node of itor) {
             let nodeAttr = node.getDotAttr();
+            if (nodeAttr == '') {
+                continue;
+            }
             let nodeLabel = escapeStr(node.getDotLabel());
 
             this.printer.writeLine(`\tNode${node.getID()} [shape=recode,${nodeAttr},label="${nodeLabel}"];`)
@@ -126,6 +129,9 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
 
     public writeEdge(edge: BaseEdge): void {
         let edgeAttr = edge.getDotAttr();
+        if (edgeAttr == '') {
+            return
+        }
         this.printer.writeLine(`\tNode${edge.getSrcID()} -> Node${edge.getDstID()}[${edgeAttr}]`);
     }
 

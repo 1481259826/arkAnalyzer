@@ -16,6 +16,7 @@
 import {FuncID} from '../model/CallGraph'
 
 export type ContextID = number
+export const DUMMY_CID = 0 
 
 class Context {
     private contextElems: number[];
@@ -86,6 +87,7 @@ class ContextCache {
         if (this.contextToIDMap.has(cStr)) {
             return this.contextToIDMap.get(cStr) as ContextID;
         } else {
+            // real cid start from 1
             const id = this.contextList.length;
             this.contextList.push(context);
             this.contextToIDMap.set(cStr, id);
@@ -134,6 +136,8 @@ export class KLimitedContextSensitive {
     constructor(k: number) {
         this.k = k;
         this.ctxCache = new ContextCache();
+        // put dummy cid
+        this.getEmptyContextID();
     }
 
     public emptyContext(): Context {
