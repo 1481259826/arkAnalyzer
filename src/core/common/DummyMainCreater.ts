@@ -13,7 +13,10 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { Scene } from '../../Scene';
+import { COMPONENT_LIFECYCLE_METHOD_NAME, getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from '../../utils/entryMethodUtils';
 import { Constant } from '../base/Constant';
 import {
     AbstractInvokeExpr,
@@ -35,6 +38,11 @@ import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
+import { CONSTRUCTOR_NAME } from './TSConst';
+import { fetchDependenciesFromFile } from '../../utils/json5parser';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：
@@ -71,8 +79,9 @@ export class DummyMainCreater {
 
     constructor(scene: Scene) {
         this.scene = scene;
-        this.entryMethods = this.scene.getEntryMethodsFromModuleJson5();
-        this.entryMethods.push(...scene.getCallbackMethods());
+        this.entryMethods = this.getEntryMethodsFromModuleJson5();
+        this.entryMethods.push(...this.getEntryMethodsFromComponents())
+        this.entryMethods.push(...this.getCallbackMethods());
         this.buildBuiltInClass();
     }
 
@@ -151,7 +160,21 @@ export class DummyMainCreater {
 
         const locals = Array.from(new Set(this.classLocalMap.values()));
         for (const local of locals) {
-            const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(local?.getType() as ClassType))
+            if (!local) {
+                continue;
+            }
+            let clsType = local.getType() as ClassType
+            let cls = this.scene.getClass(clsType.getClassSignature());
+            if (!cls) {
+                continue;
+            }
+            const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(clsType));
+            let consMtd = cls.getMethodWithName(CONSTRUCTOR_NAME);
+            if (consMtd) {
+                let ivkExpr = new ArkInstanceInvokeExpr(local, consMtd.getSignature(), [])
+                let ivkStmt = new ArkInvokeStmt(ivkExpr);
+                firstBlock.addStmt(ivkStmt);
+            }
             firstBlock.addStmt(assStmt);
         }
 
@@ -269,4 +292,121 @@ export class DummyMainCreater {
         return this.dummyMain;
     }
 
+    private getEntryMethodsFromComponents(): ArkMethod[]{
+        const COMPONENT_BASE_CLASSES = ['CustomComponent','ViewPU']
+        let methods: ArkMethod[] = [];
+        this.scene.getClasses()
+            .filter(cls => COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName())
+                            && cls.getName() == 'CertInstallFromStorage')
+            .forEach(cls => {
+                methods.push(...cls.getMethods().filter(mtd => COMPONENT_LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
+            });
+        return methods;
+    }
+
+    private getAllAbilities(): ArkClass[]{
+        const ABILITY_BASE_CLASSES = ['UIExtensionAbility']
+        let abilities: ArkClass[] = [];
+        this.scene.getClasses()
+            .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
+            .forEach(cls => abilities.push(cls));
+        return abilities;
+    }
+
+    public getEntryMethodsFromModuleJson5(): ArkMethod[] {
+        const projectDir = this.scene.getRealProjectDir();
+
+        const buildProfile = path.join(projectDir, 'build-profile.json5');
+        if (!fs.existsSync(buildProfile)) {
+            logger.error(`${buildProfile} is not exists.`);
+            return [];
+        }
+
+        const abilities: ArkClass[] = [];
+        const buildProfileConfig = fetchDependenciesFromFile(buildProfile);
+        let modules: Array<any> | undefined;
+        if (buildProfileConfig instanceof Object) {
+            Object.entries(buildProfileConfig).forEach(([k, v]) => {
+                if (k == 'modules' && Array.isArray(v)) {
+                    modules = v;
+                    return;
+                }
+            });
+        }
+        if (Array.isArray(modules)) {
+            for (const module of modules) {
+                const modulePath = path.join(projectDir, module.srcPath);
+                let moduleAbilities = this.getAbilitiesByParseModuleJson(modulePath);
+                abilities.push(...moduleAbilities);
+            }
+        }
+
+        const entryMethods: ArkMethod[] = [];
+        for (const ability of abilities) {
+            const abilityEntryMethods: ArkMethod[] = [];
+            let cls: ArkClass = ability;
+            for (const method of cls.getMethods()) {
+                for (const modifier of method.getModifiers()) {
+                    if (modifier == 'private') {
+                        continue;
+                    }
+                }
+                for (const mtd of abilityEntryMethods) {
+                    if (mtd.getName() == method.getName()) {
+                        continue;
+                    }
+                }
+                if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
+                    abilityEntryMethods.push(method);
+                }
+            }
+            entryMethods.push(...abilityEntryMethods);
+        }
+        return entryMethods;
+    }
+
+    public getAbilitiesByParseModuleJson(modulePath: string): ArkClass[] {
+        const jsonPath = path.join(modulePath, '/src/main/module.json5');
+
+        let abilities: ArkClass[] = []
+        const ABILITY_NAMES = ['abilities', 'extensionAbilities']
+        try {
+            const config = fetchDependenciesFromFile(jsonPath);
+            const configModule = config.module;
+            if (configModule instanceof Object) {
+                Object.entries(configModule).forEach(([k, v]) => {
+                    if (ABILITY_NAMES.includes(k)) {
+                        const moduleAbilities = getAbilities(v, modulePath, this.scene);
+                        for (const ability of moduleAbilities) {
+                            if (!abilities.includes(ability)) {
+                                abilities.push(ability);
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (err) {
+            logger.error(err)
+        }
+
+        return abilities;
+    }
+
+    public getCallbackMethods(): ArkMethod[] {
+        const callbackMethods: ArkMethod[] = [];
+        this.scene.getMethods().forEach(method => {
+            if (!method.getCfg()) {
+                return;
+            }
+            method.getCfg()!.getBlocks().forEach(block => {
+                block.getStmts().forEach(stmt => {
+                    const cbMethod = getCallbackMethodFromStmt(stmt, this.scene);
+                    if (cbMethod && !callbackMethods.includes(cbMethod)) {
+                        callbackMethods.push(cbMethod);
+                    }
+                });
+            });
+        });
+        return callbackMethods;
+    }
 }

@@ -49,6 +49,26 @@ export const CALLBACK_METHOD_NAME: string[] = [
     "onVisibleAreaChange", // 组件可见区域变化事件，组件在屏幕中的显示区域面积变化时触发
   ];
 
+export const COMPONENT_LIFECYCLE_METHOD_NAME: string[] = [
+    'build',
+    'aboutToAppear',
+    'aboutToDisappear',
+    'aboutToReuse',
+    'aboutToRecycle',
+    'onWillApplyTheme',
+    'onLayout',
+    'onPlaceChildren',
+    'onMeasure',
+    'onMeasureSize',
+    'onPageShow',
+    'onPageHide',
+    'onFormRecycle',
+    'onFormRecover',
+    'onBackPress',
+    'pageTransition',
+    'onDidBuild'
+];
+
 export interface AbilityMessage {
     srcEntry: string;
     name: string;

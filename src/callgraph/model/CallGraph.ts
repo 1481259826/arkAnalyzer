@@ -170,6 +170,7 @@ export class CallGraph extends BaseGraph {
     // private inDirectCallEdgeNum: number;
     private entries!: NodeID[];
     private cgStat: CGStat;
+    private dummyMainMethodID: FuncID | undefined;
 
     constructor(s: Scene) {
         super();
@@ -381,5 +382,13 @@ export class CallGraph extends BaseGraph {
 
     public printStat(): void {
         this.cgStat.printStat();
+    }
+
+    setDummyMainFuncID(dummyMainMethodID: number) {
+        this.dummyMainMethodID = dummyMainMethodID;
+    }
+
+    getDummyMainFuncID(): FuncID | undefined {
+        return this.dummyMainMethodID;
     }
 }
