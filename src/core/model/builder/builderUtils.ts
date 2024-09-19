@@ -127,10 +127,12 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
 
 export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDeclaration>,
                                     sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): GenericType[] {
-    let genericTypes: GenericType[] = [];
+    const genericTypes: GenericType[] = [];
+    let index = -1;
     typeParameters.forEach((typeParameter) => {
         const genericType = tsNode2Type(typeParameter, sourceFile, arkInstance);
         if (genericType instanceof GenericType) {
+            genericType.setIndex(++index);
             genericTypes.push(genericType);
         }
 

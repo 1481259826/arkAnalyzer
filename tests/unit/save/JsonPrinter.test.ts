@@ -1106,7 +1106,6 @@ const JsonPrinter_Shape_EXPECTED = {
     "modifiers": [
         "AbstractKeyword"
     ],
-    "typeParameters": [],
     "superClassName": "",
     "implementedInterfaceNames": [],
     "fields": [],
@@ -1576,8 +1575,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         name: "_DEFAULT_ARK_CLASS",
     },
     modifiers: [
-    ],
-    typeParameters: [
     ],
     superClassName: "",
     implementedInterfaceNames: [

@@ -81,4 +81,24 @@ export namespace ComponentService {
         return clazz;
     }
 
+    class Box<T = string> {
+        private t: T;
+        constructor() {}
+
+        set(value: T) {
+            this.t = value;
+        }
+
+        get(): T {
+            return this.t;
+        }
+    }
+
+    function testGeneric(){
+        const myDox = new Box();
+        let string = myDox.get();
+        const yourDox = new Box<number>();
+        let number = yourDox.get();
+    }
 }
+

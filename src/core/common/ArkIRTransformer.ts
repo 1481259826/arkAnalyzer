@@ -132,7 +132,7 @@ export class ArkIRTransformer {
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
         this.declaringMethod = declaringMethod;
-        this.thisLocal = new Local(THIS_NAME, UnknownType.getInstance());
+        this.thisLocal = new Local(THIS_NAME, declaringMethod.getDeclaringArkClass().getSignature().getType());
         this.locals.set(this.thisLocal.getName(), this.thisLocal);
         this.inBuildMethod = ModelUtils.isArkUIBuilderMethod(declaringMethod);
     }

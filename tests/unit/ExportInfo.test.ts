@@ -15,7 +15,8 @@
 
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
-import { ArkClass, FileSignature, Scene, SceneConfig } from '../../src';
+import { FileSignature, Local, Scene, SceneConfig } from '../../src';
+
 
 describe("export Test", () => {
     let config: SceneConfig = new SceneConfig();

@@ -126,7 +126,8 @@ export class SourceMethod extends SourceBase {
         }
         const genericTypes = method.getGenericTypes();
         if (genericTypes && genericTypes.length > 0) {
-            let typeParameters: string[] = [];
+            let
+                typeParameters: string[] = [];
             genericTypes.forEach((genericType) => {
                 typeParameters.push(this.transformer.typeToString(genericType));
             });

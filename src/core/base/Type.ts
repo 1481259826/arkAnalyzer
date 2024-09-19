@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { ArkField } from '../model/ArkField';
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { Decorator } from './Decorator';
@@ -467,6 +466,7 @@ export class GenericType extends Type {
     private name: string;
     private defaultType?: Type;
     private constraint?: Type;
+    private index?: number;
 
     constructor(name: string, defaultType?: Type, constraint?: Type) {
         super();
@@ -485,6 +485,14 @@ export class GenericType extends Type {
 
     public getConstraint(): Type | undefined {
         return this.constraint;
+    }
+
+    public setIndex(index: number) {
+        this.index = index;
+    }
+
+    public getIndex(): number {
+        return this.index ?? 0;
     }
 
     public toString(): string {
@@ -514,42 +522,6 @@ export class AliasTypeDeclaration {
 
     public getPosition(): LineColPosition {
         return this.position;
-    }
-}
-
-export class GenericType extends Type {
-    private name: string;
-    private defaultType?: Type;
-    private constraint?: Type;
-
-    constructor(name: string, defaultType?: Type, constraint?: Type) {
-        super();
-        this.name = name;
-        this.defaultType = defaultType;
-        this.constraint = constraint;
-    }
-
-    public getName(): string {
-        return this.name;
-    }
-
-    public getDefaultType(): Type | undefined {
-        return this.defaultType;
-    }
-
-    public getConstraint(): Type | undefined {
-        return this.constraint;
-    }
-
-    public toString(): string {
-        let str = this.name;
-        if (this.constraint) {
-            str += ' extends ' + this.constraint.toString();
-        }
-        if (this.defaultType) {
-            str += ' = ' + this.defaultType.toString();
-        }
-        return str;
     }
 }
 
