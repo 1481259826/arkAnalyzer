@@ -75,6 +75,11 @@ export abstract class AbstractAnalysis {
         this.init()
         while (this.workList.length != 0) {
             const method = this.workList.shift() as FuncID
+            const cgNode = this.cg.getNode(method) as CallGraphNode
+
+            if (this.processedMethod.has(method) || cgNode.getIsSdkMethod()) {
+                continue;
+            }
 
             // pre process for RTA only
             this.preProcessMethod(method).forEach((cs: CallSite) => {
