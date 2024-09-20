@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-import { ArkInstanceInvokeExpr, ArkNewExpr } from "../../core/base/Expr";
-import { Local } from "../../core/base/Local";
-import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../../core/base/Stmt";
-import { ArkMethod } from "../../core/model/ArkMethod";
-import { ClassSignature } from "../../core/model/ArkSignature";
-import { Scene } from "../../Scene";
-import { COMPONENT_LIFECYCLE_METHOD_NAME } from "../../utils/entryMethodUtils";
-import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
+
+import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
+import { Local } from '../../core/base/Local';
+import { Stmt, ArkInvokeStmt } from '../../core/base/Stmt';
+import { ArkMethod } from '../../core/model/ArkMethod';
+import { ClassSignature } from '../../core/model/ArkSignature';
+import { Scene } from '../../Scene';
+import { COMPONENT_LIFECYCLE_METHOD_NAME } from '../../utils/entryMethodUtils';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Dummy Call');
 
@@ -28,39 +29,39 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Dummy Call');
  * TODO: constructor pointer and cid
  */
 export class DummyCallCreator {
-    private scene: Scene
-    private pageMap
+    private scene: Scene;
+    private pageMap;
     // TODO: classSig -> str ? 
     private componentMap: Map<ClassSignature, Set<Stmt>>;
 
     constructor(scene: Scene) {
-        this.scene = scene
-        this.componentMap = new Map()
-        this.pageMap = new Map()
+        this.scene = scene;
+        this.componentMap = new Map();
+        this.pageMap = new Map();
     }
 
-    public getDummyCallByPage(classSig: ClassSignature): Set<Stmt> {
+    public getDummyCallByPage(classSig: ClassSignature, basePage: Local): Set<Stmt> {
         let dummyCallStmts = this.pageMap.get(classSig);
         if (dummyCallStmts) {
-            return dummyCallStmts
+            return dummyCallStmts;
         }
 
-        dummyCallStmts = this.buildDummyCallBody(classSig)
+        dummyCallStmts = this.buildDummyCallBody(classSig, basePage);
 
-        this.pageMap.set(classSig, dummyCallStmts)
-        return dummyCallStmts
+        this.pageMap.set(classSig, dummyCallStmts);
+        return dummyCallStmts;
     }
 
-    public getDummyCallByComponent(classSig: ClassSignature): Set<Stmt> {
+    public getDummyCallByComponent(classSig: ClassSignature, baseComponent: Local): Set<Stmt> {
         let dummyCallStmts = this.componentMap.get(classSig);
         if (dummyCallStmts) {
-            return dummyCallStmts
+            return dummyCallStmts;
         }
 
-        dummyCallStmts = this.buildDummyCallBody(classSig)
+        dummyCallStmts = this.buildDummyCallBody(classSig, baseComponent);
 
-        this.componentMap.set(classSig, dummyCallStmts)
-        return dummyCallStmts
+        this.componentMap.set(classSig, dummyCallStmts);
+        return dummyCallStmts;
     }
 
     /**
@@ -68,40 +69,33 @@ export class DummyCallCreator {
      * @param classSig class signature
      * @returns dummy call edges
      */
-    private buildDummyCallBody(classSig: ClassSignature): Set<Stmt> {
-        let dummyCallStmts: Set<Stmt> = new Set()
+    private buildDummyCallBody(classSig: ClassSignature, baseComponent: Local): Set<Stmt> {
+        let dummyCallStmts: Set<Stmt> = new Set();
 
-        // TODO: check Stmt type
-        let newStmt: ArkAssignStmt = this.getComponentNewStmt(classSig)
-        dummyCallStmts.add(newStmt)
-        this.getComponentCallStmts(classSig, newStmt.getLeftOp() as Local).forEach(stmt => dummyCallStmts.add(stmt))
+        this.getComponentCallStmts(classSig, baseComponent).forEach(stmt => dummyCallStmts.add(stmt));
 
-        return dummyCallStmts
-    }
-
-    private getComponentNewStmt(classSig: ClassSignature): ArkAssignStmt {
-        return new ArkAssignStmt(new Local(`dummy_${classSig.getClassName()}`, classSig.getType()), new ArkNewExpr(classSig.getType()))
+        return dummyCallStmts;
     }
 
     private getComponentCallStmts(classSig: ClassSignature, base: Local): Stmt[] {
-        let componentClass = this.scene.getClass(classSig)
+        let componentClass = this.scene.getClass(classSig);
         if (!componentClass) {
-            logger.error(`can not find class ${classSig.toString()}`)
-            return []
+            logger.error(`can not find class ${classSig.toString()}`);
+            return [];
         }
 
-        let callStmts: Stmt[] = []
-        // call back method is listed
+        let callStmts: Stmt[] = [];
+        // filter callback method
         componentClass.getMethods().filter(method => COMPONENT_LIFECYCLE_METHOD_NAME.includes(method.getName()))
             .forEach((method: ArkMethod) => {
                 // TODO: args pointer ?
-                if (method.getParameters().length == 0) {
-                    callStmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(base, method.getSignature(), [])))
+                if (method.getParameters().length === 0) {
+                    callStmts.push(new ArkInvokeStmt(new ArkInstanceInvokeExpr(base, method.getSignature(), [])));
                 } else {
-                    logger.warn(`parameters in callback function hasn't been processed: ${method.getSignature().toString()}`)
+                    logger.warn(`parameters in callback function hasn't been processed: ${method.getSignature().toString()}`);
                 }
-            })
+            });
 
-        return callStmts
+        return callStmts;
     }
 }
