@@ -103,7 +103,7 @@ export class Scene {
         if (fs.existsSync(buildProfile)) {
             let configurationsText: string;
             try {
-                configurationsText = fs.readFileSync(buildProfile, 'utf-8')
+                configurationsText = fs.readFileSync(buildProfile, 'utf-8');
             } catch (error) {
                 logger.error(`Error reading file: ${error}`);
                 return;
@@ -415,16 +415,16 @@ export class Scene {
     }
 
     public makeCallGraphCHA(entryPoints: MethodSignature[]): CallGraph {
-        let callGraph = new CallGraph(this)
-        let callGraphBuilder = new CallGraphBuilder(callGraph, this)
-        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+        let callGraph = new CallGraph(this);
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this);
+        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints);
         return callGraph;
     }
 
     public makeCallGraphRTA(entryPoints: MethodSignature[]): CallGraph {
-        let callGraph = new CallGraph(this)
-        let callGraphBuilder = new CallGraphBuilder(callGraph, this)
-        callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
+        let callGraph = new CallGraph(this);
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this);
+        callGraphBuilder.buildRapidTypeCallGraph(entryPoints);
         return callGraph;
     }
 
@@ -435,9 +435,10 @@ export class Scene {
     public inferTypes() {
         this.sdkArkFilesMap.forEach(file => {
             ModelUtils.buildGlobalMap(file, this.sdkGlobalMap);
-        })
+        });
         this.filesMap.forEach(file => {
             ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
+                TypeInference.inferGenericType(arkClass.getGenericsTypes(),arkClass);
                 arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
                 const defaultArkMethod = arkClass.getDefaultArkMethod();
                 if (defaultArkMethod) {

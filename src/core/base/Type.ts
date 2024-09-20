@@ -483,8 +483,16 @@ export class GenericType extends Type {
         return this.defaultType;
     }
 
+    public setDefaultType(type: Type): void {
+        this.defaultType = type;
+    }
+
     public getConstraint(): Type | undefined {
         return this.constraint;
+    }
+
+    public setConstraint(type: Type): void {
+        this.constraint = type;
     }
 
     public setIndex(index: number) {

@@ -33,7 +33,7 @@ import {
     ArrayType,
     BooleanType,
     ClassType,
-    FunctionType,
+    FunctionType, GenericType,
     NeverType,
     NullType,
     NumberType,
@@ -154,13 +154,13 @@ export class TypeInference {
         }
         const arkClass = arkMethod.getDeclaringArkClass();
         body.getAliasTypeMap()?.forEach((value) => this.inferUnclearedType(value[0], arkClass));
+        this.inferGenericType(arkMethod.getGenericTypes(), arkClass);
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
                 this.resolveExprsInStmt(stmt, arkClass);
                 this.resolveFieldRefsInStmt(stmt, arkClass, arkMethod);
                 this.resolveArkAssignStmt(stmt, arkClass);
-                stmt.setText(stmt.toString());
             }
         }
         this.inferMethodReturnType(arkMethod);
@@ -397,6 +397,25 @@ export class TypeInference {
             method.setSignature(
                 new MethodSignature(oldMethodSignature.getDeclaringClassSignature(), newMethodSubSignature));
         }
+    }
+
+    public static inferGenericType(types: GenericType[] | undefined, arkClass: ArkClass) {
+        types?.forEach(type => {
+            const defaultType = type.getDefaultType();
+            if (defaultType instanceof UnclearReferenceType) {
+                const newDefaultType = TypeInference.inferUnclearReferenceType(defaultType.getName(), arkClass);
+                if (newDefaultType) {
+                    type.setDefaultType(newDefaultType);
+                }
+            }
+            const constraint = type.getConstraint();
+            if (constraint instanceof UnclearReferenceType) {
+                const newConstraint = TypeInference.inferUnclearReferenceType(constraint.getName(), arkClass);
+                if (newConstraint) {
+                    type.setConstraint(newConstraint);
+                }
+            }
+        });
     }
 
     public static inferUnclearReferenceType(refName: string, arkClass: ArkClass): Type | null {
