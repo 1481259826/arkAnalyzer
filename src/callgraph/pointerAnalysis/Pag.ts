@@ -167,6 +167,10 @@ export class PagNode extends BaseNode {
         return this.copyOutEdges;
     }
 
+    public getIncomingCopyEdges(): PagEdgeSet {
+        return this.copyInEdges;
+    }
+
     public getOutgoingLoadEdges(): PagEdgeSet {
         return this.loadOutEdges;
     }
