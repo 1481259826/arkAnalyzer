@@ -23,13 +23,13 @@ function testLottie() {
 export default class LottieUtils {
 
     public static releaseAnimationByObj(animateItems: AnimationItem[]){
-        for(let item of animateItems) {
+        for (let item of animateItems) {
             item.destroy();
         }
     }
 
     public static releaseAnimationByName(animateNames: string[]){
-        for(let name of animateNames) {
+        for (let name of animateNames) {
             lottie.destroy(name);
         }
     }
