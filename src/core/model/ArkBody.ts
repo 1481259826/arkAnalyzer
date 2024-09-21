@@ -68,4 +68,12 @@ export class ArkBody {
     public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> {
         return this.aliasTypeMap;
     }
+
+    public getAliasTypeByName(name: string): AliasType | null {
+        const aliasTypeInfo: [AliasType, AliasTypeDeclaration] | undefined = this.aliasTypeMap.get(name);
+        if (aliasTypeInfo) {
+            return aliasTypeInfo[0];
+        }
+        return null;
+    }
 }

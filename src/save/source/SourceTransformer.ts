@@ -44,11 +44,11 @@ import {
     ArrayType,
     ClassType,
     FunctionType,
+    GenericType,
     LiteralType,
     PrimitiveType,
     StringType,
     Type,
-    TypeParameterType,
     UnclearReferenceType,
     UnionType,
     UnknownType,
@@ -422,7 +422,7 @@ export class SourceTransformer {
             return type.getName();
         }
 
-        if (type instanceof TypeParameterType) {
+        if (type instanceof GenericType) {
             return type.getName();
         }
 

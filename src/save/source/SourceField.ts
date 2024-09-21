@@ -27,7 +27,7 @@ export class SourceField extends SourceBase {
     private initializer: Map<string, string>;
 
     public constructor(field: ArkField, indent: string = '', initializer: Map<string, string>) {
-        super(field.getDeclaringClass().getDeclaringArkFile(), indent);
+        super(field.getDeclaringArkClass().getDeclaringArkFile(), indent);
         this.field = field;
         this.transformer = new SourceTransformer(this);
         this.initializer = initializer;

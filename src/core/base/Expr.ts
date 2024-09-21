@@ -25,6 +25,7 @@ import {
     BooleanType,
     ClassType,
     FunctionType,
+    GenericType,
     NullType,
     NumberType,
     StringType,
@@ -46,6 +47,7 @@ import { ArkMethod } from '../model/ArkMethod';
 import { ImportInfo } from '../model/ArkImport';
 import { Constant } from './Constant';
 import { ALL, CONSTRUCTOR_NAME, IMPORT } from '../common/TSConst';
+import { Builtin } from '../common/Builtin';
 import { COMPONENT_CREATE_FUNCTION, COMPONENT_POP_FUNCTION } from '../common/EtsConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
@@ -68,11 +70,13 @@ export abstract class AbstractExpr implements Value {
 export abstract class AbstractInvokeExpr extends AbstractExpr {
     private methodSignature: MethodSignature;
     private args: Value[];
+    private realGenericTypes?: Type[];//新增
 
-    constructor(methodSignature: MethodSignature, args: Value[]) {
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
         super();
         this.methodSignature = methodSignature;
         this.args = args;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getMethodSignature(): MethodSignature {
@@ -96,7 +100,18 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
     }
 
     public getType(): Type {
-        return this.methodSignature.getType();
+        let type = this.methodSignature.getType();
+        if (type instanceof GenericType) {
+            const realType = this.realGenericTypes?.[type.getIndex()];
+            if (realType) {
+                type = realType;
+            }
+        }
+        return type;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
     }
 
     public getUses(): Value[] {
@@ -112,8 +127,8 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
 export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     private base: Local;
 
-    constructor(base: Local, methodSignature: MethodSignature, args: Value[]) {
-        super(methodSignature, args);
+    constructor(base: Local, methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
         this.base = base;
     }
 
@@ -245,6 +260,13 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                 const signature = new MethodSignature(baseType.getClassSignature(), subSignature);
                 this.setMethodSignature(signature);
                 return this;
+            } else if (methodName === Builtin.ITERATOR_NEXT) { //sdk隐式构造
+                const returnType = this.getMethodSignature().getMethodSubSignature().getReturnType();
+                if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
+                    .getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+                    returnType.setRealGenericTypes(baseType.getRealGenericTypes());
+                    return this;
+                }
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
             const namespace = scene.getNamespace(baseType.getNamespaceSignature());
@@ -256,15 +278,21 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
                     return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
                 }
             }
-
+        } else if (baseType instanceof ArrayType && methodName === Builtin.ITERATOR_FUNCTION) {
+            const returnType = this.getMethodSignature().getMethodSubSignature().getReturnType();
+            if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
+                .getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+                returnType.setRealGenericTypes([baseType.getBaseType()]);
+                return this;
+            }
         }
         return null;
     }
 }
 
 export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
-    constructor(methodSignature: MethodSignature, args: Value[]) {
-        super(methodSignature, args);
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
     }
 
     public toString(): string {
@@ -299,7 +327,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         if (!method) {
             if (methodName === IMPORT && this.getArgs()[0] instanceof Constant) {
                 const importInfo = new ImportInfo();
-                importInfo.setNameBeforeAs(ALL)
+                importInfo.setNameBeforeAs(ALL);
                 importInfo.setImportClauseName(ALL);
                 importInfo.setImportFrom((this.getArgs()[0] as Constant).getValue());
                 importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
@@ -344,8 +372,8 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
     private funPtrLocal: Local;
 
-    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[]) {
-        super(methodSignature, args);
+    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
         this.funPtrLocal = ptr;
     }
 
@@ -407,7 +435,8 @@ export class ArkNewExpr extends AbstractExpr {
         const className = this.classType.getClassSignature().getClassName();
         const type = TypeInference.inferUnclearReferenceType(className, arkClass);
         if (type && type instanceof ClassType) {
-            this.classType = type;
+            let realGenericTypes = this.classType.getRealGenericTypes();
+            this.classType = realGenericTypes ? new ClassType(type.getClassSignature(), realGenericTypes) : type;
         }
         return this;
     }
@@ -869,8 +898,8 @@ export class ArkCastExpr extends AbstractExpr {
     }
 
     public inferType(arkClass: ArkClass): AbstractExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkClass);
-        if (type) {
+        const type = TypeInference.inferUnclearedType(this.type, arkClass) ?? this.op.getType();
+        if (!TypeInference.isUnclearType(type)) {
             this.type = type;
         }
         return this;

@@ -65,32 +65,32 @@ export class UnknownType extends Type {
     }
 }
 
-/**
- * typeParameter type
- * @category core/base/type
- */
-export class TypeParameterType extends Type {
-    private name: string;
-    private type: Type;
-
-    constructor(name: string, type: Type = UnknownType.getInstance()) {
-        super();
-        this.name = name;
-        this.type = type;
-    }
-
-    public getName() {
-        return this.name;
-    }
-
-    public getType() {
-        return this.type;
-    }
-
-    public toString() {
-        return this.name;
-    }
-}
+// /**
+//  * typeParameter type
+//  * @category core/base/type
+//  */
+// export class TypeParameterType extends Type {
+//     private name: string;
+//     private type: Type;
+//
+//     constructor(name: string, type: Type = UnknownType.getInstance()) {
+//         super();
+//         this.name = name;
+//         this.type = type;
+//     }
+//
+//     public getName() {
+//         return this.name;
+//     }
+//
+//     public getType() {
+//         return this.type;
+//     }
+//
+//     public toString() {
+//         return this.name;
+//     }
+// }
 
 /**
  * unclear type
@@ -312,14 +312,20 @@ export class NeverType extends Type {
  */
 export class FunctionType extends Type {
     private methodSignature: MethodSignature;
+    private realGenericTypes?: Type[];
 
-    constructor(methodSignature: MethodSignature) {
+    constructor(methodSignature: MethodSignature, realGenericTypes?: Type[]) {
         super();
         this.methodSignature = methodSignature;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getMethodSignature(): MethodSignature {
         return this.methodSignature;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
     }
 
     public toString(): string {
@@ -333,10 +339,12 @@ export class FunctionType extends Type {
  */
 export class ClassType extends Type {
     private classSignature: ClassSignature;
+    private realGenericTypes?: Type[];
 
-    constructor(classSignature: ClassSignature) {
+    constructor(classSignature: ClassSignature, realGenericTypes?: Type[]) {
         super();
         this.classSignature = classSignature;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getClassSignature(): ClassSignature {
@@ -345,6 +353,14 @@ export class ClassType extends Type {
 
     public setClassSignature(newClassSignature: ClassSignature): void {
         this.classSignature = newClassSignature;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
+    }
+
+    public setRealGenericTypes(types: Type[] | undefined): void {
+        this.realGenericTypes = types;
     }
 
     public toString(): string {
@@ -443,6 +459,59 @@ export class AliasType extends Type implements ArkExport {
 
     public getSignature(): LocalSignature {
         return this.signature;
+    }
+}
+
+export class GenericType extends Type {
+    private name: string;
+    private defaultType?: Type;
+    private constraint?: Type;
+    private index?: number;
+
+    constructor(name: string, defaultType?: Type, constraint?: Type) {
+        super();
+        this.name = name;
+        this.defaultType = defaultType;
+        this.constraint = constraint;
+    }
+
+    public getName(): string {
+        return this.name;
+    }
+
+    public getDefaultType(): Type | undefined {
+        return this.defaultType;
+    }
+
+    public setDefaultType(type: Type): void {
+        this.defaultType = type;
+    }
+
+    public getConstraint(): Type | undefined {
+        return this.constraint;
+    }
+
+    public setConstraint(type: Type): void {
+        this.constraint = type;
+    }
+
+    public setIndex(index: number) {
+        this.index = index;
+    }
+
+    public getIndex(): number {
+        return this.index ?? 0;
+    }
+
+    public toString(): string {
+        let str = this.name;
+        if (this.constraint) {
+            str += ' extends ' + this.constraint.toString();
+        }
+        if (this.defaultType) {
+            str += ' = ' + this.defaultType.toString();
+        }
+        return str;
     }
 }
 
