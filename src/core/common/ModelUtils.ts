@@ -26,9 +26,9 @@ import { FileUtils, ModulePath } from '../../utils/FileUtils';
 import path from 'path';
 import { Sdk } from '../../Config';
 import { transfer2UnixPath } from '../../utils/pathTransfer';
-import { ALL, DEFAULT } from './TSConst';
+import { ALL, DEFAULT, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
-import { API_INTERNAL, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
+import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
 import { ClassType, UnclearReferenceType } from '../base/Type';
 import { Scene } from '../../Scene';
 
@@ -359,7 +359,7 @@ export class ModelUtils {
             });
             file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().forEach(local => {
                 const name = local.getName();
-                if (!name.endsWith(COMPONENT_INSTANCE)) {
+                if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX) && !name.endsWith(COMPONENT_INSTANCE)) {
                     const type = local.getType();
                     let arkExport;
                     if (type instanceof UnclearReferenceType) {
@@ -367,8 +367,25 @@ export class ModelUtils {
                     } else if (type instanceof ClassType) {
                         arkExport = file.getScene().getClass(type.getClassSignature());
                     }
-                    if (arkExport) {
-                        globalMap.set(name, arkExport);
+                    if (arkExport instanceof ArkClass) {
+                        const signature = new ClassSignature(name, arkExport.getSignature().getDeclaringFileSignature(),
+                            arkExport.getSignature().getDeclaringNamespaceSignature());
+                        let entry = new ArkClass();
+                        entry.setSignature(signature);
+                        arkExport.getMethods().forEach(m => {
+                            const ms = m.getSignature();
+                            m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                            entry.addMethod(m);
+                        });
+                        const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
+                        if (attr instanceof ArkClass) {
+                            attr.getMethods().forEach(m => {
+                                const ms = m.getSignature();
+                                m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                                entry.addMethod(m);
+                            });
+                        }
+                        globalMap.set(name, entry);
                     }
                 }
             });
