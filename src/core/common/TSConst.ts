@@ -25,3 +25,5 @@ export const IMPORT = 'import';
 
 // ast const
 export const DECLARE_KEYWORD = 'DeclareKeyword';
+
+export const TEMP_LOCAL_PREFIX = '$temp';
