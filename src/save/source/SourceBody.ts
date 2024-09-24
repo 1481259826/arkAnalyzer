@@ -31,6 +31,7 @@ import {
     SourceForStmt,
     SourceIfStmt,
     SourceStmt,
+    SourceTypeAliasStmt,
     SourceWhileStmt,
     stmt2SourceStmt,
     StmtPrinterContext,
@@ -157,6 +158,15 @@ export class SourceBody implements StmtPrinterContext {
         this.cfgUtils.preOrder(this.cfgUtils.getEntry(), (block, type) => {
             this.buildBasicBlock(block, type);
         });
+        this.buildTypeAliasStmt();
+    }
+
+    private buildTypeAliasStmt(): void {
+        for (const [_, [aliasType, declaration]] of this.arkBody.getAliasTypeMap()) {
+            let stmt = new Stmt();
+            stmt.setPositionInfo(declaration.getPosition());
+            this.pushStmt(new SourceTypeAliasStmt(this, stmt, aliasType));
+        }
     }
 
     private buildBasicBlock(block: BasicBlock | undefined, type: CodeBlockType): void {

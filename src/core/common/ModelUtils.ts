@@ -20,16 +20,17 @@ import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkExport, ExportInfo, ExportType, FromInfo } from '../model/ArkExport';
-import { ArkField } from "../model/ArkField";
-import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
-import { FileUtils, ModulePath } from "../../utils/FileUtils";
-import path from "path";
-import { Sdk } from "../../Config";
-import { transfer2UnixPath } from "../../utils/pathTransfer";
-import { ALL, DEFAULT } from "./TSConst";
-import { buildDefaultExportInfo } from "../model/builder/ArkExportBuilder";
-import { API_INTERNAL, COMPONENT_INSTANCE, COMPONENT_PATH } from "./EtsConst";
-import { ClassType, UnclearReferenceType } from "../base/Type";
+import { ArkField } from '../model/ArkField';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { FileUtils, ModulePath } from '../../utils/FileUtils';
+import path from 'path';
+import { Sdk } from '../../Config';
+import { transfer2UnixPath } from '../../utils/pathTransfer';
+import { ALL, DEFAULT, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
+import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
+import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
+import { ClassType, UnclearReferenceType } from '../base/Type';
+import { Scene } from '../../Scene';
 
 export class ModelUtils {
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
@@ -281,6 +282,16 @@ export class ModelUtils {
         return isArkUIBuilderMethod;
     }
 
+    public static getArkClassInBuild(scene: Scene, classType: ClassType): ArkClass | null {
+        const classSignature = classType.getClassSignature();
+        const file = scene.getFile(classSignature.getDeclaringFileSignature());
+        const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
+        if (namespaceSignature) {
+            return file?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
+        }
+        return file?.getClassWithName(classSignature.getClassName()) || null;
+    }
+
 
     public static getClass(method: ArkMethod, signature: ClassSignature): ArkClass | null {
         let cls: ArkClass | undefined | null = method.getDeclaringArkFile().getScene().getClass(signature);
@@ -314,8 +325,8 @@ export class ModelUtils {
             ?? findArkExport(namespace.getExportInfoBy(name))
             ?? namespace.getClassWithName(name)
             ?? namespace.getNamespaceWithName(name)
-            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(name)
-            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get(name)?.[0];
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name)
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(name);
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
@@ -343,12 +354,12 @@ export class ModelUtils {
                         if (!mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod()) {
                             globalMap.set(mtd.getName(), mtd);
                         }
-                    })
+                    });
                 }
             });
             file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().forEach(local => {
                 const name = local.getName();
-                if (!name.endsWith(COMPONENT_INSTANCE)) {
+                if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX) && !name.endsWith(COMPONENT_INSTANCE)) {
                     const type = local.getType();
                     let arkExport;
                     if (type instanceof UnclearReferenceType) {
@@ -356,11 +367,28 @@ export class ModelUtils {
                     } else if (type instanceof ClassType) {
                         arkExport = file.getScene().getClass(type.getClassSignature());
                     }
-                    if (arkExport) {
-                        globalMap.set(name, arkExport);
+                    if (arkExport instanceof ArkClass) {
+                        const signature = new ClassSignature(name, arkExport.getSignature().getDeclaringFileSignature(),
+                            arkExport.getSignature().getDeclaringNamespaceSignature());
+                        let entry = new ArkClass();
+                        entry.setSignature(signature);
+                        arkExport.getMethods().forEach(m => {
+                            const ms = m.getSignature();
+                            m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                            entry.addMethod(m);
+                        });
+                        const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
+                        if (attr instanceof ArkClass) {
+                            attr.getMethods().forEach(m => {
+                                const ms = m.getSignature();
+                                m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                                entry.addMethod(m);
+                            });
+                        }
+                        globalMap.set(name, entry);
                     }
                 }
-            })
+            });
         }
     }
 
@@ -442,7 +470,7 @@ function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
         if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
             arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name) || null;
         } else if (exportInfo.getExportClauseType() === ExportType.TYPE) {
-            arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeMap().get(name)?.[0] || null;
+            arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name) || null;
         } else {
             arkExport = findArkExportInFile(name, exportInfo.getDeclaringArkFile());
         }
@@ -464,7 +492,7 @@ export function findArkExportInFile(name: string, declaringArkFile: ArkFile): Ar
         ?? declaringArkFile.getDefaultClass().getMethodWithName(name)
         ?? declaringArkFile.getNamespaceWithName(name)
         ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name)
-        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeMap().get(name)?.[0];
+        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name);
     if (!arkExport) {
         const importInfo = declaringArkFile.getImportInfoBy(name);
         if (importInfo) {

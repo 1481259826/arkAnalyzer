@@ -124,12 +124,14 @@ export class SourceMethod extends SourceBase {
             }
             code.write(this.resolveMethodName(method.getName()));
         }
-        if (method.getTypeParameter().length > 0) {
-            let typeParameters: string[] = [];
-            method.getTypeParameter().forEach((parameter) => {
-                typeParameters.push(this.transformer.typeToString(parameter));
+        const genericTypes = method.getGenericTypes();
+        if (genericTypes && genericTypes.length > 0) {
+            let
+                typeParameters: string[] = [];
+            genericTypes.forEach((genericType) => {
+                typeParameters.push(this.transformer.typeToString(genericType));
             });
-            code.write(`<${this.transformer.typeArrayToString(method.getTypeParameter())}>`);
+            code.write(`<${this.transformer.typeArrayToString(genericTypes)}>`);
         }
 
         let parameters: string[] = [];

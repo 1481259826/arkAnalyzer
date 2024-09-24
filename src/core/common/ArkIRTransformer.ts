@@ -351,15 +351,15 @@ export class ArkIRTransformer {
             stmts.push(...iterableStmts);
         }
         const iteratorMethodSubSignature = new MethodSubSignature(Builtin.ITERATOR_FUNCTION, [],
-            Builtin.ITERATOR_CLASS_SIGNATURE.getType());
+            Builtin.ITERATOR_CLASS_TYPE);
         const iteratorMethodSignature = new MethodSignature(ClassSignature.DEFAULT, iteratorMethodSubSignature);
         const iteratorInvokeExpr = new ArkInstanceInvokeExpr(iterableValue as Local, iteratorMethodSignature, []);
         const { value: iterator, stmts: iteratorStmts } = this.generateAssignStmtForValue(iteratorInvokeExpr);
         stmts.push(...iteratorStmts);
-        (iterator as Local).setType(Builtin.ITERATOR_CLASS_SIGNATURE.getType());
+        (iterator as Local).setType(Builtin.ITERATOR_CLASS_TYPE);
 
         const nextMethodSubSignature = new MethodSubSignature(Builtin.ITERATOR_NEXT, [],
-            Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
+            Builtin.ITERATOR_RESULT_CLASS_TYPE);
         const nextMethodSignature = new MethodSignature(ClassSignature.DEFAULT, nextMethodSubSignature);
         const iteratorNextInvokeExpr = new ArkInstanceInvokeExpr(iterator as Local, nextMethodSignature, []);
         const {
@@ -367,7 +367,7 @@ export class ArkIRTransformer {
             stmts: iteratorResultStmts,
         } = this.generateAssignStmtForValue(iteratorNextInvokeExpr);
         stmts.push(...iteratorResultStmts);
-        (iteratorResult as Local).setType(Builtin.ITERATOR_RESULT_CLASS_SIGNATURE.getType());
+        (iteratorResult as Local).setType(Builtin.ITERATOR_RESULT_CLASS_TYPE);
         const doneFieldSignature = new FieldSignature(Builtin.ITERATOR_RESULT_DONE,
             Builtin.ITERATOR_RESULT_CLASS_SIGNATURE, BooleanType.getInstance(), false);
         const {
@@ -848,6 +848,16 @@ export class ArkIRTransformer {
 
     private callExpressionToValueAndStmts(callExpression: ts.CallExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
+
+        let realGenericTypes: Type[] | undefined = undefined;
+        if (callExpression.typeArguments) {
+            realGenericTypes = [];
+            callExpression.typeArguments.forEach(typeArgument => {
+                // @ts-ignore
+                realGenericTypes.push(this.resolveTypeNode(typeArgument));
+            });
+        }
+
         const args: Value[] = [];
         for (const argument of callExpression.arguments) {
             let { value: argValue, stmts: arguStmts } = this.tsNodeToValueAndStmts(argument);
@@ -867,10 +877,10 @@ export class ArkIRTransformer {
         let invokeValue: Value;
         if (callerValue instanceof ArkInstanceFieldRef) {
             const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName())
-            invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args);
+            invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args, realGenericTypes);
         } else if (callerValue instanceof ArkStaticFieldRef) {
             const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName())
-            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
             let classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(callerName);
@@ -882,16 +892,16 @@ export class ArkIRTransformer {
 
             const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerName)
             if (callerValue.getType() instanceof FunctionType) {
-                invokeValue = new ArkPtrInvokeExpr(methodSignature, callerValue, args)
+                invokeValue = new ArkPtrInvokeExpr(methodSignature, callerValue, args, realGenericTypes);
             } else {
-                invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+                invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
             }
 
         } else {
             ({ value: callerValue, stmts: callerStmts } = this.generateAssignStmtForValue(callerValue));
             stmts.push(...callerStmts);
             const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName((callerValue as Local).getName())
-            invokeValue = new ArkStaticInvokeExpr(methodSignature, args);
+            invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
         }
         return { value: invokeValue, stmts: stmts };
     }
@@ -956,8 +966,17 @@ export class ArkIRTransformer {
 
             return { value: arrayExprValue, stmts: stmts };
         } else {
+            let realGenericTypes: Type[] | undefined = undefined;
+            if (newExpression.typeArguments) {
+                realGenericTypes = [];
+                newExpression.typeArguments.forEach(typeArgument => {
+                    // @ts-ignore
+                    realGenericTypes.push(this.resolveTypeNode(typeArgument));
+                });
+            }
+
             const classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(className);
-            const classType = new ClassType(classSignature);
+            const classType = new ClassType(classSignature, realGenericTypes);
             const newExpr = new ArkNewExpr(classType);
             const { value: newExprValue, stmts: newExprStmts } = this.generateAssignStmtForValue(newExpr);
             stmts.push(...newExprStmts);
@@ -1423,8 +1442,7 @@ export class ArkIRTransformer {
                 constant = ValueUtil.createStringConst((literalNode as ts.StringLiteral).text);
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral:
-                const classSignature = Builtin.REGEXP_CLASS_SIGNATURE;
-                constant = new Constant((literalNode as ts.RegularExpressionLiteral).text, classSignature.getType());
+                constant = new Constant((literalNode as ts.RegularExpressionLiteral).text, Builtin.REGEXP_CLASS_TYPE);
                 break;
             case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 constant = ValueUtil.createStringConst((literalNode as ts.NoSubstitutionTemplateLiteral).text);

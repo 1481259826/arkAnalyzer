@@ -18,15 +18,19 @@ import { AbstractInvokeExpr } from "../../core/base/Expr";
 import { Stmt } from "../../core/base/Stmt";
 import { ArkClass } from "../../core/model/ArkClass";
 import { ArkMethod } from "../../core/model/ArkMethod";
+import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
 import { NodeID } from "../model/BaseGraph";
 import { CallGraph, FuncID, CallSite, CallGraphNode } from "../model/CallGraph";
 import { CallGraphBuilder } from "../model/builder/CallGraphBuilder";
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG');
 
 export abstract class AbstractAnalysis {
     protected scene: Scene
     protected cg!: CallGraph;
     protected cgBuilder!: CallGraphBuilder;
     protected workList: FuncID[] = []
+    protected processedMethod!: Set<FuncID>;
     
     constructor(s: Scene) {
         this.scene = s
@@ -71,6 +75,11 @@ export abstract class AbstractAnalysis {
         this.init()
         while (this.workList.length != 0) {
             const method = this.workList.shift() as FuncID
+            const cgNode = this.cg.getNode(method) as CallGraphNode
+
+            if (this.processedMethod.has(method) || cgNode.getIsSdkMethod()) {
+                continue;
+            }
 
             // pre process for RTA only
             this.preProcessMethod(method).forEach((cs: CallSite) => {
@@ -79,12 +88,18 @@ export abstract class AbstractAnalysis {
 
             this.processMethod(method).forEach((cs: CallSite) => {
                 this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt)
-                this.workList.push(cs.calleeFuncID)
+                if (!this.processedMethod.has(cs.calleeFuncID)) {
+                    this.workList.push(cs.calleeFuncID)
+                    logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`)
+                    
+                    this.processedMethod.add(cs.calleeFuncID)
+                }
             })
         }
     }
 
     protected init(): void {
+        this.processedMethod = new Set()
         this.cg.getEntries().forEach((entryFunc) => {
             this.workList.push(entryFunc)
         })

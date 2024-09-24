@@ -21,7 +21,7 @@ const CASE1_EXPECT = `function identity<T>(arg: T): T {
   return arg;
 }
 let myIdentity: (arg: T) => T  = identity;
-let output = identity('myString');
+let output: string = identity('myString');
 class GenericNumber<T> {
   zeroValue: T;
   add: (x: T, y: T) => T ;

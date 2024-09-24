@@ -123,7 +123,7 @@ export class JsonPrinter extends Printer {
         return {
             signature: this.serializeClassSignature(cls.getSignature()),
             modifiers: Array.from(cls.getModifiers()),
-            typeParameters: cls.getTypeParameter().map((type) => this.serializeType(type)),
+            typeParameters: cls.getGenericsTypes()?.map((type) => this.serializeType(type)),
             superClassName: cls.getSuperClassName(),
             implementedInterfaceNames: cls.getImplementedInterfaceNames(),
             fields: cls.getFields().map((field) => this.serializeField(field)),
@@ -144,7 +144,7 @@ export class JsonPrinter extends Printer {
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
             modifiers: Array.from(method.getModifiers()),
-            typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
+            typeParameters: method.getGenericTypes()?.map(type => this.serializeType(type)) || [],
             body: this.serializeMethodBody(method.getBody()),
         };
     }

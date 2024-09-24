@@ -15,7 +15,7 @@
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { Type } from '../base/Type';
+import { GenericType } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
@@ -41,7 +41,7 @@ export class ArkMethod implements ArkExport {
     private declaringArkClass!: ArkClass;
 
     private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    private typeParameters: Type[] = [];
+    private genericTypes?: GenericType[];
 
     private methodSignature!: MethodSignature;
 
@@ -147,12 +147,16 @@ export class ArkMethod implements ArkExport {
         this.modifiers.add(name);
     }
 
-    public getTypeParameter() {
-        return this.typeParameters;
+    public getGenericTypes(): GenericType[] | undefined {
+        return this.genericTypes;
     }
 
-    public addTypeParameter(typeParameter: Type) {
-        this.typeParameters.push(typeParameter);
+    public isGenericsMethod(): boolean {
+        return this.genericTypes != undefined;
+    }
+
+    public setGenericTypes(genericTypes: GenericType[]): void {
+        this.genericTypes = genericTypes;
     }
 
     public containsModifier(name: string) {

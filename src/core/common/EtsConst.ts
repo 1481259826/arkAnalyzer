@@ -916,3 +916,5 @@ export const COMPONENT_PATH: string = path.sep + 'component' + path.sep;
 export const COMPONENT_COMMON: string = 'Common';
 export const COMPONENT_INSTANCE: string = 'Instance';
 export const API_INTERNAL: string = path.sep + '@internal' + path.sep;
+
+export const COMPONENT_ATTRIBUTE: string = 'Attribute';

@@ -13,13 +13,9 @@
  * limitations under the License.
  */
 
-import { PrinterBuilder } from './../src/save/PrinterBuilder';
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { MethodSignature } from "../src/core/model/ArkSignature";
-import { printCallGraphDetails } from "../src/utils/callGraphUtils";
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from "../src/utils/logger";
-import { ArkFile } from '../src/core/model/ArkFile';
 import { CallGraph } from '../src/callgraph/model/CallGraph';
 import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
 
@@ -27,7 +23,7 @@ let config: SceneConfig = new SceneConfig()
 // config.buildFromProjectDir('tests/resources/callgraph/test1')
 config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test')
 // config.buildFromJson("./tests/resources/callgraph/callGraphConfigUnix.json");
-const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG TEST');
+// const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG TEST');
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config)
@@ -49,10 +45,9 @@ function runScene(config: SceneConfig) {
 
     let callGraph = new CallGraph(projectScene)
     let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
-    // callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
-    callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
-    callGraph.dump("out/cg/cg.dot")
-    // let callGraph = projectScene.makeCallGraphRTA(entryPoints)
+    callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
+    // callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
+    // callGraph.dump("out/cg/cg.dot")
     // debugger;
 }
 runScene(config);

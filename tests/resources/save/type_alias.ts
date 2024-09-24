@@ -13,17 +13,10 @@
  * limitations under the License.
  */
 
-export const CONSTRUCTOR_NAME = 'constructor';
-export const SUPER_NAME = 'super';
-export const THIS_NAME = 'this';
+type Location = {
+    x: number;
+    y: number;
+};
 
-export const DEFAULT = 'default';
-
-export const ALL = '*';
-
-export const IMPORT = 'import';
-
-// ast const
-export const DECLARE_KEYWORD = 'DeclareKeyword';
-
-export const TEMP_LOCAL_PREFIX = '$temp';
+type FileNotFound = 404;
+type TextInput = string;

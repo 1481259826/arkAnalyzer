@@ -18,7 +18,7 @@ import { ArkField, FieldCategory } from '../ArkField';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
-import { buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
+import { buildGenericType, buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
 import { FieldSignature } from '../ArkSignature';
 import { Type, UnknownType } from '../../base/Type';
 import { LineColPosition } from '../../base/Position';
@@ -33,7 +33,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
     field.setCode(member.getText(sourceFile));
 
-    field.setDeclaringClass(cls);
+    field.setDeclaringArkClass(cls);
 
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
@@ -67,7 +67,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
 
     let fieldType: Type = UnknownType.getInstance();
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-        fieldType = tsNode2Type(member.type, sourceFile, cls);
+        fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
     }
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic());
     field.setSignature(fieldSignature);
@@ -89,7 +89,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     const field = new ArkField();
     field.setCode(member.getText(sourceFile));
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
-    field.setDeclaringClass(cls);
+    field.setDeclaringArkClass(cls);
 
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
@@ -100,7 +100,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     }
 
     const fieldName = '[' + member.parameters[0].getText(sourceFile) + ']';
-    const fieldType = tsNode2Type(member.type, sourceFile, field);
+    const fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, field), field);
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, true);
     field.setSignature(fieldSignature);
 
@@ -110,7 +110,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
 export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile) {
     let cls = mthd.getDeclaringArkClass();
     let field = new ArkField();
-    field.setDeclaringClass(cls);
+    field.setDeclaringArkClass(cls);
 
     field.setCode(member.getText(sourceFile));
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
@@ -135,6 +135,7 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
     else {
         logger.warn("Please contact developers to support new type of GetAccessor name!");
     }
+
     const fieldType = mthd.getReturnType();
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, false);
     field.setSignature(fieldSignature);
