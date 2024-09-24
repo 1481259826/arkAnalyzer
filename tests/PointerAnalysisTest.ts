@@ -16,7 +16,7 @@
 import { SceneConfig } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { CallGraph } from '../src/callgraph/model/CallGraph';
-import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder'
+import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
 import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
 import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
 import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
@@ -36,7 +36,7 @@ let config: SceneConfig = new SceneConfig()
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
 // config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-config.buildFromProjectDir('./tests/resources/pta/singleton');
+config.buildFromProjectDir('./tests/resources/pta/Array');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
@@ -53,19 +53,30 @@ function runScene(config: SceneConfig, output: string) {
     // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
+    let methods = 
+        projectScene.getFiles()
+            .filter(arkFile => arkFile.getName() === "array.ts")
+            .flatMap(arkFile => arkFile.getNamespaces())
+            .filter(arkNamespace => arkNamespace.getName() === "ArrayTest")
+            .flatMap(arkNamespace => arkNamespace.getClasses())
+            .filter(arkClass => arkClass.getName() === "_DEFAULT_ARK_CLASS")
+            .flatMap(arkClass => arkClass.getMethods())
+            .filter(arkMethod => arkMethod.getName() === "main")
+            .map(arkMethod => arkMethod.getSignature())
     let cg = new CallGraph(projectScene);
-    let cgBuilder = new CallGraphBuilder(cg, projectScene);
-    cgBuilder.buildDirectCallGraph();
+    let cgBuilder = new CallGraphBuilder(cg, projectScene)
+    cgBuilder.buildDirectCallGraph(projectScene.getMethods());
+    let entry = cg.getCallGraphNodeByMethod(methods[0]).getID()
 
     let pag = new Pag();
 
-    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries([entry[0]]);
+    pta.setEntries([entry]);
     pta.start();
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
-    cg.dump(output+"/subcg.dot", entry[0])
+    cg.dump(output+"/subcg.dot", entry)
     console.log("fin")
 }
 runScene(config, "./out/applications_camera");

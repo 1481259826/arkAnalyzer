@@ -25,7 +25,7 @@ import { Stmt } from "../../core/base/Stmt";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
 import { PTAStat } from "../common/Statistics";
-import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode } from "./Pag";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode, PagArrayNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
 import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { DiffPTData, PtsSet } from "./PtsDS";
@@ -79,7 +79,9 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     protected init() {
         logger.warn(`========== Init Pointer Analysis ==========`)
+        // start statistics
         this.ptaStat.startStat();
+        // build funcPag with entries
         this.pagBuilder.buildForEntries(this.entries);
         if (this.config.dotDump) {
             this.pag.dump(path.join(this.config.outputDirectory, 'ptaInit_pag.dot'));
@@ -124,6 +126,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             this.ptaStat.iterTimes++;
             logger.warn(`========== Pointer Analysis Round ${this.ptaStat.iterTimes} ==========`)
 
+            // do pointer transfer
             this.solveWorklist();
             // process dynamic call
             reanalyzer = this.onTheFlyDynamicCallSolve();
@@ -133,6 +136,9 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
     }
 
+    /**
+     * get newly added Address Edge, and add them to initial WorkList
+     */
     private initWorklist() {
         for (let e of this.pag.getAddrEdges()) {
             this.ptaStat.numProcessedAddr++;
@@ -199,7 +205,9 @@ export class PointerAnalysis extends AbstractAnalysis {
                 return
             }
             nodeIDs.forEach((nodeID) => {
+                // get abstract field node
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
+
                 fieldNode?.getIncomingEdge().forEach((edge) => {
                     if (edge.getKind() != PagEdgeKind.Write) {
                         return
@@ -209,8 +217,14 @@ export class PointerAnalysis extends AbstractAnalysis {
                     this.ptaStat.numProcessedWrite++;
                     for (let pt of diffPts!) {
                         // filter pt
-                        let dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
-                        if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
+                        // clone the real field node with abstract field node
+                        let dstNode;
+                        if (fieldNode instanceof PagArrayNode) {
+                            dstNode = this.pag.getOrClonePagArrayFieldNode(fieldNode, pt);
+                        } else {
+                            dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
+                        }
+                        if (this.pag.addPagEdge(srcNode, dstNode!, PagEdgeKind.Copy)) {
                             this.ptaStat.numRealWrite++;
 
                             if (this.ptd.resetElem(srcNode.getID())) {
@@ -227,8 +241,13 @@ export class PointerAnalysis extends AbstractAnalysis {
                     let dstNode = edge.getDstNode() as PagNode;
                     this.ptaStat.numProcessedLoad++;
                     for (let pt of diffPts!) {
-                        let srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
-                        if (this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy)) {
+                        let srcNode;
+                        if (fieldNode instanceof PagArrayNode) {
+                            srcNode = this.pag.getOrClonePagArrayFieldNode(fieldNode, pt);
+                        } else {
+                            srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
+                        }
+                        if (this.pag.addPagEdge(srcNode!, dstNode, PagEdgeKind.Copy)) {
                             this.ptaStat.numRealLoad++;
 
                             // TODO: if field is used before initialzed, newSrc node has no diff pts
@@ -244,6 +263,9 @@ export class PointerAnalysis extends AbstractAnalysis {
         return true;
     }
 
+    /**
+     * If current node is a base of a called method, pointer in this node will be transfered into `this` Local in method
+     */
     private handleThis(nodeID: NodeID): boolean {
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingThisEdges()?.forEach(thisEdge => {

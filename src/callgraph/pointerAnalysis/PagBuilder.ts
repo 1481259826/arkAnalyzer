@@ -17,7 +17,7 @@ import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeK
 import { Scene } from '../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
 import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
@@ -860,7 +860,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (rhOp instanceof Local && 
-            (lhOp instanceof ArkInstanceFieldRef)) {
+            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkArrayRef)) {
             return true;
         }
         return false;
@@ -871,7 +871,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (lhOp instanceof Local && 
-            (rhOp instanceof ArkInstanceFieldRef)) {
+            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkArrayRef)) {
             return true;
         }
         return false;
@@ -892,7 +892,7 @@ export class PagBuilder {
         for (let pt of pts) {
             let heapObjNode = this.pag.getNode(pt);
             if (heapObjNode instanceof PagNewExprNode) {
-                heapObjNode.addRelatedNodes(node);
+                // heapObjNode.addRelatedNodes(node);
             }
         }
 

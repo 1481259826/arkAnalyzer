@@ -18,7 +18,7 @@ import { CallGraph, CallSite, DynCallSite } from '../model/CallGraph';
 import { Value } from '../../core/base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt';
 import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr } from '../../core/base/Expr';
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { AbstractFieldRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
@@ -383,17 +383,25 @@ export class PagThisRefNode extends PagNode {
     }
 }
 
+export class PagArrayNode extends PagNode {
+    base: Value;
+
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkArrayRef, stmt?: Stmt) {
+        super(id, cid, expr, PagNodeKind.LocalVar, stmt);
+        this.base = expr.getBase();
+    }
+}
+
 
 /**
  * below is heapObj like Node
  */
 export class PagNewExprNode extends PagNode {
+    // store the cloned field node
     fieldNodes!: Map<string, NodeID>
-    referenceNodes: Set<NodeID>
 
     constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: AbstractExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
-        this.referenceNodes = new Set()
     }
 
     public addFieldNode(fieldSignature: AbstractFieldRef, nodeID: NodeID): boolean {
@@ -420,13 +428,26 @@ export class PagNewExprNode extends PagNode {
         }
         return this.fieldNodes
     }
+}
 
-    public getRelatedNodes(): Set<NodeID> {
-        return this.referenceNodes
+export class PagNewArrayExprNode extends PagNode {
+    // store the cloned array ref node
+    elementNode: NodeID | undefined;
+
+    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: ArkNewArrayExpr, stmt?: Stmt) {
+        super(id, cid, expr, PagNodeKind.HeapObj, stmt);
     }
 
-    public addRelatedNodes(nodeID: NodeID): void {
-        this.referenceNodes.add(nodeID)
+    public addElementNode(nodeID: NodeID): boolean {
+        if (!this.elementNode) {
+            this.elementNode = nodeID;
+        }
+
+        return true;
+    }
+
+    public getElementNode(): NodeID | undefined {
+        return this.elementNode;
     }
 }
 
@@ -527,6 +548,7 @@ export class Pag extends BaseGraph {
     public getOrClonePagFieldNode(src: PagInstanceFieldNode, basePt: NodeID): PagInstanceFieldNode {
         let baseNode = this.getNode(basePt)
         if (baseNode instanceof PagNewExprNode || baseNode instanceof PagGlobalThisNode) {
+            // check if real field node has been created with basePT, using FieldSignature as key
             let existedNode = baseNode.getFieldNode(src.getValue() as ArkInstanceFieldRef)
             if (existedNode) {
                 return this.getNode(existedNode) as PagInstanceFieldNode
@@ -538,6 +560,25 @@ export class Pag extends BaseGraph {
             return fieldNode
         } else {
             throw new Error(`Error clone field node ${src.getValue()}`)
+        }
+    }
+
+    public getOrClonePagArrayFieldNode(src: PagArrayNode, basePt: NodeID): PagInstanceFieldNode {
+        let baseNode = this.getNode(basePt);
+        if (baseNode instanceof PagNewArrayExprNode) {
+            // check if Array Ref real node has been created or not, if not: create a real Array Ref node
+            let existedNode = baseNode.getElementNode();
+            if (existedNode) {
+                return this.getNode(existedNode) as PagInstanceFieldNode;
+            }
+
+            // let arrayBase: Local = (src.getValue() as ArkArrayRef).getBase()
+            let fieldNode = this.getOrClonePagNode(src, basePt)
+            baseNode.addElementNode(fieldNode.getID());
+            fieldNode.setBasePt(basePt);
+            return fieldNode;
+        } else {
+            throw new Error(`Error clone array field node ${src.getValue()}`);
         }
     }
 
@@ -566,8 +607,12 @@ export class Pag extends BaseGraph {
             pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
             pagNode = new PagStaticFieldNode(id, cid, value, stmt);
-        } else if (value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr) {
+        } else if (value instanceof ArkArrayRef) {
+            pagNode = new PagArrayNode(id, cid, value, stmt);
+        } else if (value instanceof ArkNewExpr) {
             pagNode = new PagNewExprNode(id, cid, value, stmt);
+        } else if (value instanceof ArkNewArrayExpr) {
+            pagNode = new PagNewArrayExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
@@ -585,7 +630,7 @@ export class Pag extends BaseGraph {
             }
             ctx2NdMap.set(cid, id);
 
-            if (value instanceof ArkInstanceFieldRef) {
+            if (value instanceof ArkInstanceFieldRef || value instanceof ArkArrayRef) {
                 let base = value.getBase();
                 //TODO: remove below once this Local is not uniq in @instance_init is fix
                 if (base instanceof Local && base.getName() === 'this')
