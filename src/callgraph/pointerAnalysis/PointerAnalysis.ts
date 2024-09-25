@@ -385,7 +385,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             workListNodes.push(nodeID);
         }
 
-        while(workListNodes.length != 0) {
+        while (workListNodes.length !== 0) {
             let valueNodeID: NodeID = workListNodes.shift()!
             if (processedNodes.has(valueNodeID)) {
                 continue;
@@ -394,24 +394,28 @@ export class PointerAnalysis extends AbstractAnalysis {
             let valueNode = this.pag.getNode(valueNodeID) as PagNode;
 
             let inCopyEdges = valueNode.getIncomingCopyEdges();
-            if (inCopyEdges) {
-                inCopyEdges.forEach(edge => {
-                    let srcID = edge.getSrcID();
-                    if (!processedNodes.has(srcID)) {
-                        workListNodes.push(srcID);
-                    }
-                })
+            if (!inCopyEdges) {
+                continue;
             }
+
+            inCopyEdges.forEach(edge => {
+                let srcID = edge.getSrcID();
+                if (!processedNodes.has(srcID)) {
+                    workListNodes.push(srcID);
+                }
+            });
             
             let outCopyEdges = valueNode.getOutgoingCopyEdges();
-            if (outCopyEdges) {
-                outCopyEdges.forEach(edge => {
-                    let dstID = edge.getDstID();
-                    if (!processedNodes.has(dstID)) {
-                        workListNodes.push(dstID);
-                    }
-                })
+            if (!outCopyEdges) {
+                continue;
             }
+
+            outCopyEdges.forEach(edge => {
+                let dstID = edge.getDstID();
+                if (!processedNodes.has(dstID)) {
+                    workListNodes.push(dstID);
+                }
+            });
         
             processedNodes.add(valueNodeID);
         }
