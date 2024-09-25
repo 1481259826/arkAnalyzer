@@ -28,7 +28,7 @@ import {
 } from '../base/Expr';
 import { Local } from '../base/Local';
 import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt } from '../base/Stmt';
-import { BooleanType, ClassType, NumberType, UnclearReferenceType } from '../base/Type';
+import { BooleanType, ClassType, NumberType, Type, UnclearReferenceType } from '../base/Type';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkBody } from '../model/ArkBody';
@@ -209,15 +209,28 @@ export class DummyMainCreater {
 
             const invokeBlock = new BasicBlock();
             const paramLocals: Local[] = [];
+            let paramIdx = 0;
             for (const param of method.getParameters()) {
-                const paramType = param.getType();
+                let paramType: Type | undefined = param.getType();
+                let checkMethod = method;
+                // In ArkIR from abc scenario, param type is undefined in some cases
+                // Then try to get it from super class(SDK)
+                // TODO - need handle method overload to get the correct method
+                if (!paramType) {
+                    let superCls = method.getDeclaringArkClass().getSuperClass();
+                    let methodInSuperCls = superCls?.getMethodWithName(method.getName());
+                    if (methodInSuperCls) {
+                        paramType = methodInSuperCls.getParameters().at(paramIdx)?.getType();
+                        checkMethod = methodInSuperCls;
+                    }
+                }
                 const paramLocal = new Local('temp' + this.tempLocalIndex++, paramType);
                 paramLocals.push(paramLocal);
                 if (paramType instanceof ClassType) {
                     const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(paramType));
                     invokeBlock.addStmt(assStmt);
                 } else if (paramType instanceof UnclearReferenceType) {
-                    const arkClass = this.getArkClassFromParamType(paramType.getName(), method.getDeclaringArkFile());
+                    const arkClass = this.getArkClassFromParamType(paramType.getName(), checkMethod.getDeclaringArkFile());
                     if (arkClass) {
                         const classType = new ClassType(arkClass.getSignature());
                         paramLocal.setType(classType);
@@ -225,6 +238,7 @@ export class DummyMainCreater {
                         invokeBlock.addStmt(assStmt);
                     }
                 }
+                paramIdx++;
             }
             const local = this.classLocalMap.get(method);
             let invokeExpr: AbstractInvokeExpr;
@@ -296,21 +310,22 @@ export class DummyMainCreater {
         const COMPONENT_BASE_CLASSES = ['CustomComponent','ViewPU']
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
-            .filter(cls => COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName())
-                            && cls.getName() == 'CertInstallFromStorage')
+            .filter(cls => COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName()))
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => COMPONENT_LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
             });
         return methods;
     }
 
-    private getAllAbilities(): ArkClass[]{
-        const ABILITY_BASE_CLASSES = ['UIExtensionAbility']
-        let abilities: ArkClass[] = [];
+    private getMethodsFromAllAbilities(): ArkMethod[]{
+        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability']
+        let methods: ArkMethod[] = [];
         this.scene.getClasses()
             .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
-            .forEach(cls => abilities.push(cls));
-        return abilities;
+            .forEach(cls => {
+                methods.push(...cls.getMethods().filter(mtd => LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
+            });
+        return methods;
     }
 
     public getEntryMethodsFromModuleJson5(): ArkMethod[] {
