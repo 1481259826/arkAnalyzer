@@ -372,56 +372,56 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     public mayAlias(leftValue: Value, rightValue: Value): boolean {
-        return !this.noAlias(leftValue, rightValue)
+        return !this.noAlias(leftValue, rightValue);
     }
 
     public getRelatedNodes(value: Value): Set<Value> {
         let valueNodes = this.pag.getNodesByValue(value)?.values()!
-        let relatedAllNodes: Set<Value> = new Set()
-        let workListNodes: NodeID[] = []
-        let processedNodes: Set<NodeID> = new Set()
+        let relatedAllNodes: Set<Value> = new Set();
+        let workListNodes: NodeID[] = [];
+        let processedNodes: Set<NodeID> = new Set();
 
         for (const nodeID of valueNodes) {
-            workListNodes.push(nodeID)
+            workListNodes.push(nodeID);
         }
 
         while(workListNodes.length != 0) {
             let valueNodeID: NodeID = workListNodes.shift()!
             if (processedNodes.has(valueNodeID)) {
-                continue
+                continue;
             }
 
-            let valueNode = this.pag.getNode(valueNodeID) as PagNode
+            let valueNode = this.pag.getNode(valueNodeID) as PagNode;
 
-            let inCopyEdges = valueNode.getIncomingCopyEdges()
+            let inCopyEdges = valueNode.getIncomingCopyEdges();
             if (inCopyEdges) {
                 inCopyEdges.forEach(edge => {
-                    let srcID = edge.getSrcID()
+                    let srcID = edge.getSrcID();
                     if (!processedNodes.has(srcID)) {
-                        workListNodes.push(srcID)
+                        workListNodes.push(srcID);
                     }
                 })
             }
             
-            let outCopyEdges = valueNode.getOutgoingCopyEdges()
+            let outCopyEdges = valueNode.getOutgoingCopyEdges();
             if (outCopyEdges) {
                 outCopyEdges.forEach(edge => {
-                    let dstID = edge.getDstID()
+                    let dstID = edge.getDstID();
                     if (!processedNodes.has(dstID)) {
-                        workListNodes.push(dstID)
+                        workListNodes.push(dstID);
                     }
                 })
             }
         
-            processedNodes.add(valueNodeID)
+            processedNodes.add(valueNodeID);
         }
 
         processedNodes.forEach(nodeID => {
-            let valueNode = this.pag.getNode(nodeID) as PagNode
-            relatedAllNodes.add(valueNode.getValue())
+            let valueNode = this.pag.getNode(nodeID) as PagNode;
+            relatedAllNodes.add(valueNode.getValue());
         })
 
-        return relatedAllNodes
+        return relatedAllNodes;
     }
 
     private detectTypeDiff(nodeId: NodeID): void {
