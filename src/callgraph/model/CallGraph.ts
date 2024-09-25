@@ -384,11 +384,11 @@ export class CallGraph extends BaseGraph {
         this.cgStat.printStat();
     }
 
-    setDummyMainFuncID(dummyMainMethodID: number) {
+    public setDummyMainFuncID(dummyMainMethodID: number): void {
         this.dummyMainMethodID = dummyMainMethodID;
     }
 
-    getDummyMainFuncID(): FuncID | undefined {
+    public getDummyMainFuncID(): FuncID | undefined {
         return this.dummyMainMethodID;
     }
 }

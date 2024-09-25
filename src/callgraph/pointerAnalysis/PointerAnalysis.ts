@@ -66,10 +66,6 @@ export class PointerAnalysis extends AbstractAnalysis {
         const dummyMainCreator = new DummyMainCreater(projectScene)
         dummyMainCreator.createDummyMain()
         const dummyMainMethod = dummyMainCreator.getDummyMain()
-        dummyMainMethod.getCfg()?.getStmts().forEach(stmt => {
-            console.log(stmt.toString());
-        })
-        console.log('\n')
         cgBuilder.buildDirectCallGraph([dummyMainMethod])
 
         let dummyMainMethodID = cg.getCallGraphNodeByMethod(dummyMainMethod.getSignature()).getID()

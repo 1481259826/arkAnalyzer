@@ -80,7 +80,7 @@ export class DummyMainCreater {
     constructor(scene: Scene) {
         this.scene = scene;
         this.entryMethods = this.getEntryMethodsFromModuleJson5();
-        this.entryMethods.push(...this.getEntryMethodsFromComponents())
+        this.entryMethods.push(...this.getEntryMethodsFromComponents());
         this.entryMethods.push(...this.getCallbackMethods());
         this.buildBuiltInClass();
     }
@@ -317,8 +317,8 @@ export class DummyMainCreater {
         return methods;
     }
 
-    private getMethodsFromAllAbilities(): ArkMethod[]{
-        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability']
+    public getMethodsFromAllAbilities(): ArkMethod[] {
+        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
             .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
@@ -342,7 +342,7 @@ export class DummyMainCreater {
         let modules: Array<any> | undefined;
         if (buildProfileConfig instanceof Object) {
             Object.entries(buildProfileConfig).forEach(([k, v]) => {
-                if (k == 'modules' && Array.isArray(v)) {
+                if (k === 'modules' && Array.isArray(v)) {
                     modules = v;
                     return;
                 }
@@ -362,12 +362,12 @@ export class DummyMainCreater {
             let cls: ArkClass = ability;
             for (const method of cls.getMethods()) {
                 for (const modifier of method.getModifiers()) {
-                    if (modifier == 'private') {
+                    if (modifier === 'private') {
                         continue;
                     }
                 }
                 for (const mtd of abilityEntryMethods) {
-                    if (mtd.getName() == method.getName()) {
+                    if (mtd.getName() === method.getName()) {
                         continue;
                     }
                 }
@@ -383,8 +383,8 @@ export class DummyMainCreater {
     public getAbilitiesByParseModuleJson(modulePath: string): ArkClass[] {
         const jsonPath = path.join(modulePath, '/src/main/module.json5');
 
-        let abilities: ArkClass[] = []
-        const ABILITY_NAMES = ['abilities', 'extensionAbilities']
+        let abilities: ArkClass[] = [];
+        const ABILITY_NAMES = ['abilities', 'extensionAbilities'];
         try {
             const config = fetchDependenciesFromFile(jsonPath);
             const configModule = config.module;
@@ -401,7 +401,7 @@ export class DummyMainCreater {
                 });
             }
         } catch (err) {
-            logger.error(err)
+            logger.error(err);
         }
 
         return abilities;

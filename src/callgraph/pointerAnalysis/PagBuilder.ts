@@ -31,9 +31,7 @@ import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
 import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge, GLOBAL_THIS } from './Pag';
 import { PtsSet } from './PtsDS';
-import { CONSTRUCTOR_NAME } from '../../core/common/TSConst';
 
-// const logger = Logger.getLogger();
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 export class CSFuncID{
@@ -670,7 +668,7 @@ export class PagBuilder {
         let base: Value;
         let real: Value | undefined;
 
-        if(v instanceof ArkInstanceFieldRef) {
+        if (v instanceof ArkInstanceFieldRef) {
             base = (v as ArkInstanceFieldRef).getBase()
             if (base instanceof Local && base.getName() == GLOBAL_THIS && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
