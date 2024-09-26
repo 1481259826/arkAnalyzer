@@ -92,7 +92,7 @@ export abstract class AbstractAnalysis {
                     this.workList.push(cs.calleeFuncID)
                     logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`)
                     
-                    this.processedMethod.add(cs.calleeFuncID)
+                    this.processedMethod.add(cs.callerFuncID)
                 }
             })
         }

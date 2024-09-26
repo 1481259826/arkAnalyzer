@@ -20,6 +20,7 @@ import { ArkClass } from "../../core/model/ArkClass";
 import { NodeID } from "../model/BaseGraph";
 import { CallGraph, CallSite } from "../model/CallGraph";
 import { AbstractAnalysis } from "./AbstractAnalysis";
+import { FunctionType } from "../../core/base/Type";
 
 export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
@@ -35,6 +36,18 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         if (!invokeExpr) {
             return []
         }
+
+        // process anonymous method call
+        if (invokeExpr.getArgs().length === 1 && invokeExpr.getArg(0).getType() instanceof FunctionType) {
+            let anonymousMethodSig = invokeExpr.getArg(0).getType() as FunctionType;
+            resolveResult.push(
+                new CallSite(invokeStmt, undefined, 
+                    this.cg.getCallGraphNodeByMethod(anonymousMethodSig.getMethodSignature()).getID(),
+                    callerMethod
+                )
+            )
+        }
+
         let calleeMethod = this.resolveInvokeExpr(invokeExpr)
         if (!calleeMethod) {
             return resolveResult
@@ -49,8 +62,16 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
             let declareClass = calleeMethod.getDeclaringArkClass()
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
+                if (arkClass.getModifiers().has('AbstractKeyword')) {
+                    return;
+                }
+
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
-                if (possibleCalleeMethod) {
+                
+                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && declareClass.getSignature().toString() !== arkClass.getSignature().toString()) {
+                    return;
+                }
+                if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has('AbstractKeyword')) {
                     resolveResult.push(
                         new CallSite(invokeStmt, undefined, 
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
