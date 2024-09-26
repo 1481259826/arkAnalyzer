@@ -22,7 +22,7 @@ import { NodeID } from "../model/BaseGraph";
 import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
 import { AbstractAnalysis } from "./AbstractAnalysis";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
-import { ClassType } from "../../core/base/Type";
+import { ClassType, FunctionType } from "../../core/base/Type";
  
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'RTA');
 
@@ -44,10 +44,26 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
         if (!invokeExpr) {
             return []
         }
+
+        // process anonymous method call
+        invokeExpr.getArgs().forEach((args) => {
+            let argsType = args.getType()
+            if (argsType instanceof FunctionType) {
+                let anonymousMethodSig = argsType.getMethodSignature()
+                resolveResult.push(
+                    new CallSite(invokeStmt, undefined, 
+                        this.cg.getCallGraphNodeByMethod(anonymousMethodSig).getID(),
+                        callerMethod
+                    )
+                )
+            }
+        })
+        
         let calleeMethod = this.resolveInvokeExpr(invokeExpr)
         if (!calleeMethod) {
             return resolveResult
         }
+        
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
             // resolveResult.push(calleeMethod.getSignature())
@@ -58,8 +74,18 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
             let declareClass = calleeMethod!.getDeclaringArkClass()
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
+                if (arkClass.getModifiers().has('AbstractKeyword')) {
+                    return;
+                }
+
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
-                if (possibleCalleeMethod) {
+
+                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
+                    // remove the generated method
+                    return;
+                }
+
+                if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has('AbstractKeyword')) {
                     if (!this.instancedClasses.has(arkClass.getSignature())) {
                         this.addIgnoredCalls(
                             arkClass.getSignature(), callerMethod,

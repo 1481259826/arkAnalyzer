@@ -87,7 +87,10 @@ export abstract class AbstractAnalysis {
             })
 
             this.processMethod(method).forEach((cs: CallSite) => {
-                this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt)
+                let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID)
+                if (!me?.isGenerated()) {
+                    this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt)
+                }
                 if (!this.processedMethod.has(cs.calleeFuncID)) {
                     this.workList.push(cs.calleeFuncID)
                     logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`)

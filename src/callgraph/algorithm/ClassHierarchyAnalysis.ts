@@ -38,15 +38,18 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         }
 
         // process anonymous method call
-        if (invokeExpr.getArgs().length === 1 && invokeExpr.getArg(0).getType() instanceof FunctionType) {
-            let anonymousMethodSig = invokeExpr.getArg(0).getType() as FunctionType;
-            resolveResult.push(
-                new CallSite(invokeStmt, undefined, 
-                    this.cg.getCallGraphNodeByMethod(anonymousMethodSig.getMethodSignature()).getID(),
-                    callerMethod
+        invokeExpr.getArgs().forEach((args) => {
+            let argsType = args.getType()
+            if (argsType instanceof FunctionType) {
+                let anonymousMethodSig = argsType.getMethodSignature()
+                resolveResult.push(
+                    new CallSite(invokeStmt, undefined, 
+                        this.cg.getCallGraphNodeByMethod(anonymousMethodSig).getID(),
+                        callerMethod
+                    )
                 )
-            )
-        }
+            }
+        })
 
         let calleeMethod = this.resolveInvokeExpr(invokeExpr)
         if (!calleeMethod) {
@@ -68,9 +71,11 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
                 
-                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && declareClass.getSignature().toString() !== arkClass.getSignature().toString()) {
+                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
+                    // remove the generated method
                     return;
                 }
+
                 if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has('AbstractKeyword')) {
                     resolveResult.push(
                         new CallSite(invokeStmt, undefined, 
