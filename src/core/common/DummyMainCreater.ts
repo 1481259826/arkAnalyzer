@@ -306,8 +306,8 @@ export class DummyMainCreater {
         return this.dummyMain;
     }
 
-    private getEntryMethodsFromComponents(): ArkMethod[]{
-        const COMPONENT_BASE_CLASSES = ['CustomComponent','ViewPU']
+    private getEntryMethodsFromComponents(): ArkMethod[] {
+        const COMPONENT_BASE_CLASSES = ['CustomComponent', 'ViewPU'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
             .filter(cls => COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName()))
