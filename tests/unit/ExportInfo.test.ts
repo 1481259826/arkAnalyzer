@@ -46,6 +46,8 @@ describe("export Test", () => {
         assert.isNotEmpty(stmts);
         if (stmts) {
             assert.equal(stmts[10].toString(), 'staticinvoke <@exports/exportSample.ts: _DEFAULT_ARK_CLASS.write()>()');
+            assert.equal(stmts[2].toString(), '$temp0 = @exports/exportSample.ts: _DEFAULT_ARK_CLASS.[static]z');
+            assert.equal(stmts[9].toString(), '$temp2 = @exports/exportSample.ts: _DEFAULT_ARK_CLASS.[static]MyNameSpace');
         }
     })
 
