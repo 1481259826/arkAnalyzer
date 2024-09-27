@@ -80,7 +80,7 @@ export class CallGraphBuilder {
         }
     }
 
-    public buildClassHierarchyCallGraph(entries: Method[]): void {
+    public buildClassHierarchyCallGraph(entries: Method[], displayGeneratedMethod: Boolean = false): void {
         let cgEntries: NodeID[] = []
         entries.forEach((entry: Method) => {
             cgEntries.push(this.cg.getCallGraphNodeByMethod(entry).getID())
@@ -88,10 +88,10 @@ export class CallGraphBuilder {
         this.cg.setEntries(cgEntries)
 
         let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg)
-        classHierarchyAnalysis.start()
+        classHierarchyAnalysis.start(displayGeneratedMethod)
     }
 
-    public buildRapidTypeCallGraph(entries: Method[]): void {
+    public buildRapidTypeCallGraph(entries: Method[], displayGeneratedMethod: Boolean = false): void {
         let cgEntries: NodeID[] = []
         entries.forEach((entry: Method) => {
             cgEntries.push(this.cg.getCallGraphNodeByMethod(entry).getID())
@@ -99,7 +99,7 @@ export class CallGraphBuilder {
         this.cg.setEntries(cgEntries)
 
         let rapidTypeAnalysis: RapidTypeAnalysis = new RapidTypeAnalysis(this.scene, this.cg)
-        rapidTypeAnalysis.start()
+        rapidTypeAnalysis.start(displayGeneratedMethod)
     }
 
     /// Get direct call callee

@@ -81,7 +81,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
 
                 if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
-                    // remove the generated method
+                    // remove the generated method in extended classes
                     return;
                 }
 
