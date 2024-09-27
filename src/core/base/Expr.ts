@@ -551,6 +551,11 @@ export class ArkAwaitExpr extends AbstractExpr {
         return this.promise.getType();
     }
 
+    public inferType(arkClass: ArkClass): ArkAwaitExpr {
+        TypeInference.inferValueType(this.promise, arkClass);
+        return this;
+    }
+
     public getUses(): Value[] {
         const uses: Value[] = [];
         uses.push(this.promise);
