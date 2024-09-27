@@ -44,7 +44,6 @@ import {
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
-    ArkNopStmt,
     ArkReturnStmt,
     ArkReturnVoidStmt,
     ArkSwitchStmt,
@@ -66,7 +65,6 @@ import {
     ArkTypeOfExpr,
     ArkUnopExpr,
     ArkYieldExpr,
-    ArrayLiteralExpr,
 } from '../core/base/Expr';
 import { Constant } from '../core/base/Constant';
 import { MethodParameter } from '../core/model/builder/ArkMethodBuilder';
@@ -425,12 +423,6 @@ export class JsonPrinter extends Printer {
                 blocks: args.map(arg => argToBlock.get(arg)!.getId()),
                 type: this.serializeType(value.getType()),
             };
-        } else if (value instanceof ArrayLiteralExpr) {
-            return {
-                _: 'ArrayLiteralExpr',
-                elements: value.getElements().map(arg => this.serializeValue(arg)),
-                type: this.serializeType(value.getType()),
-            };
         } else if (value instanceof ArkConditionExpr) {
             return {
                 _: 'ConditionExpr',
@@ -507,11 +499,7 @@ export class JsonPrinter extends Printer {
     }
 
     private serializeStmt(stmt: Stmt): any {
-        if (stmt instanceof ArkNopStmt) {
-            return {
-                _: 'NopStmt',
-            };
-        } else if (stmt instanceof ArkAssignStmt) {
+        if (stmt instanceof ArkAssignStmt) {
             return {
                 _: 'AssignStmt',
                 left: this.serializeValue(stmt.getLeftOp()),

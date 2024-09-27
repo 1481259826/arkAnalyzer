@@ -48,7 +48,7 @@ describe("Infer Array Test", () => {
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('test_new_array');
         assert.isDefined(method);
-        const stmt = method?.getCfg()?.getStmts()[1];
+        const stmt = method?.getCfg()?.getStmts()[2];
         assert.isTrue(stmt instanceof ArkAssignStmt);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkNewArrayExpr);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp().getType() instanceof ArrayType);
@@ -104,9 +104,9 @@ describe("Infer Array Test", () => {
         const stmts = method?.getCfg()?.getStmts();
         assert.isDefined(stmts);
         if (stmts) {
-            assert.equal(stmts[9].toString(), 'c = $temp1[$temp2]');
-            assert.equal(stmts[11].toString(), 's = $temp3[a]');
-            assert.equal(stmts[13].toString(), 'n = $temp4[3]');
+            assert.equal(stmts[10].toString(), 'c = $temp2[$temp3]');
+            assert.equal(stmts[12].toString(), 's = $temp4[a]');
+            assert.equal(stmts[14].toString(), 'n = $temp5[3]');
         }
     })
 

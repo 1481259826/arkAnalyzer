@@ -1010,26 +1010,28 @@ export class CfgBuilder {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         stmts.push(...arkIRTransformer.prebuildStmts());
-
         const expressionBodyNode = (this.astRoot as ts.ArrowFunction).body as ts.Expression;
         const expressionBodyStmts: Stmt[] = [];
         let {
             value: expressionBodyValue,
+            valueOriginalPositions: expressionBodyPositions,
             stmts: tempStmts,
         } = arkIRTransformer.tsNodeToValueAndStmts(expressionBodyNode);
         expressionBodyStmts.push(...tempStmts);
         if (IRUtils.moreThanOneAddress(expressionBodyValue)) {
             ({
                 value: expressionBodyValue,
+                valueOriginalPositions: expressionBodyPositions,
                 stmts: tempStmts,
-            } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue));
+            } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue, expressionBodyPositions));
             expressionBodyStmts.push(...tempStmts);
         }
-        expressionBodyStmts.push(new ArkReturnStmt(expressionBodyValue));
+        const returnStmt = new ArkReturnStmt(expressionBodyValue);
+        returnStmt.setOperandOriginalPositions([expressionBodyPositions[0], ...expressionBodyPositions]);
+        expressionBodyStmts.push(returnStmt);
         arkIRTransformer.mapStmtsToTsStmt(expressionBodyStmts, expressionBodyNode);
         stmts.push(...expressionBodyStmts);
         const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
-
         const cfg = new Cfg();
         const blockInCfg = new BasicBlock();
         blockInCfg.setId(0);
@@ -1039,7 +1041,6 @@ export class CfgBuilder {
         });
         cfg.addBlock(blockInCfg);
         cfg.setStartingStmt(stmts[0]);
-
         const originalCfg = new Cfg();
         const blockInOriginalCfg = new BasicBlock();
         blockInOriginalCfg.setId(0);

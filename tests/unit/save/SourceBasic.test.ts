@@ -140,13 +140,13 @@ const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
   let i: number = 0;
   for (; i < sampleData.length; i = i + 1) {
     if (sampleData[i] % 2 === 0) {
-      logger.info('' + sampleData[i] + ' 是偶数');
+      logger.info(sampleData[i] + ' 是偶数');
     } else {
-      logger.info('' + sampleData[i] + ' 是奇数');
+      logger.info(sampleData[i] + ' 是奇数');
     }
     let count: number = 0;
     while (count < sampleData[i]) {
-      logger.info('当前计数: ' + count + '');
+      logger.info('当前计数: ' + count);
       count = count + 1;
     }
     let j: number = 0;
@@ -154,11 +154,11 @@ const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
       if (j === 2) {
         continue;
       }
-      logger.info('当前内层循环计数: ' + j + '');
+      logger.info('当前内层循环计数: ' + j);
     }
     let k: number = 0;
     while (k < 3) {
-      logger.info('外层循环计数: ' + k + '');
+      logger.info('外层循环计数: ' + k);
       logger.info('Department name: ' + k);
       if (k === 1) {
         k = k + 1;

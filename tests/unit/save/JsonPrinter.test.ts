@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+import path from 'path';
+import { describe, expect, it } from 'vitest';
 import { ArkFile, Scene, SceneConfig } from '../../../src/index';
 import { JsonPrinter } from '../../../src/save/JsonPrinter';
-import { describe, expect, it } from 'vitest';
-import path from 'path';
 
 describe('JsonPrinterTest', () => {
     let config: SceneConfig = new SceneConfig();
@@ -1275,13 +1275,13 @@ const JsonPrinter_Shape_EXPECTED = {
                     {
                         "name": "$temp0",
                         "type": {
-                            "_": "StringType"
+                            "_": "NumberType"
                         }
                     },
                     {
                         "name": "$temp1",
                         "type": {
-                            "_": "StringType"
+                            "_": "NumberType"
                         }
                     },
                     {
@@ -1292,6 +1292,12 @@ const JsonPrinter_Shape_EXPECTED = {
                     },
                     {
                         "name": "$temp3",
+                        "type": {
+                            "_": "StringType"
+                        }
+                    },     
+                    {
+                        "name": "$temp4",
                         "type": {
                             "_": "StringType"
                         }
@@ -1331,43 +1337,32 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp0",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "NumberType"
                                         }
                                     },
                                     "right": {
-                                        "_": "BinopExpr",
-                                        "op": "+",
-                                        "left": {
-                                            "_": "Constant",
-                                            "value": "Area: ",
+                                        "_": "InstanceCallExpr",
+                                        "instance": {
+                                            "_": "Local",
+                                            "name": "this",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "ClassType",
+                                                "signature": {
+                                                    "name": "Shape"
+                                                }
                                             }
                                         },
-                                        "right": {
-                                            "_": "InstanceCallExpr",
-                                            "instance": {
-                                                "_": "Local",
-                                                "name": "this",
-                                                "type": {
-                                                    "_": "ClassType",
-                                                    "signature": {
-                                                        "name": "Shape"
-                                                    }
-                                                }
+                                        "method": {
+                                            "enclosingClass": {
+                                                "name": "Shape"
                                             },
-                                            "method": {
-                                                "enclosingClass": {
-                                                    "name": "Shape"
-                                                },
-                                                "name": "area",
-                                                "parameters": [],
-                                                "returnType": {
-                                                    "_": "NumberType"
-                                                }
-                                            },
-                                            "args": []
-                                        }
+                                            "name": "area",
+                                            "parameters": [],
+                                            "returnType": {
+                                                "_": "NumberType"
+                                            }
+                                        },
+                                        "args": []
                                     }
                                 },
                                 {
@@ -1376,26 +1371,32 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "Local",
                                         "name": "$temp1",
                                         "type": {
-                                            "_": "StringType"
+                                            "_": "NumberType"
                                         }
                                     },
                                     "right": {
-                                        "_": "BinopExpr",
-                                        "op": "+",
-                                        "left": {
+                                        "_": "InstanceCallExpr",
+                                        "instance": {
                                             "_": "Local",
-                                            "name": "$temp0",
+                                            "name": "this",
                                             "type": {
-                                                "_": "StringType"
+                                                "_": "ClassType",
+                                                "signature": {
+                                                    "name": "Shape"
+                                                }
                                             }
                                         },
-                                        "right": {
-                                            "_": "Constant",
-                                            "value": ", Perimeter: ",
-                                            "type": {
-                                                "_": "StringType"
+                                        "method": {
+                                            "enclosingClass": {
+                                                "name": "Shape"
+                                            },
+                                            "name": "perimeter",
+                                            "parameters": [],
+                                            "returnType": {
+                                                "_": "NumberType"
                                             }
-                                        }
+                                        },
+                                        "args": []
                                     }
                                 },
                                 {
@@ -1411,35 +1412,19 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "_": "BinopExpr",
                                         "op": "+",
                                         "left": {
-                                            "_": "Local",
-                                            "name": "$temp1",
+                                            "_": "Constant",
                                             "type": {
                                                 "_": "StringType"
-                                            }
+                                            },
+                                            "value": "Area: ",
+
                                         },
                                         "right": {
-                                            "_": "InstanceCallExpr",
-                                            "instance": {
-                                                "_": "Local",
-                                                "name": "this",
-                                                "type": {
-                                                    "_": "ClassType",
-                                                    "signature": {
-                                                        "name": "Shape"
-                                                    }
-                                                }
-                                            },
-                                            "method": {
-                                                "enclosingClass": {
-                                                    "name": "Shape"
-                                                },
-                                                "name": "perimeter",
-                                                "parameters": [],
-                                                "returnType": {
-                                                    "_": "NumberType"
-                                                }
-                                            },
-                                            "args": []
+                                            "_": "Local",
+                                            "name": "$temp0",
+                                            "type": {
+                                                "_": "NumberType"
+                                            }
                                         }
                                     }
                                 },
@@ -1464,9 +1449,37 @@ const JsonPrinter_Shape_EXPECTED = {
                                         },
                                         "right": {
                                             "_": "Constant",
-                                            "value": "",
+                                            "value": ", Perimeter: ",
                                             "type": {
                                                 "_": "StringType"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "_": "AssignStmt",
+                                    "left": {
+                                        "_": "Local",
+                                        "name": "$temp4",
+                                        "type": {
+                                            "_": "StringType"
+                                        }
+                                    },
+                                    "right": {
+                                        "_": "BinopExpr",
+                                        "op": "+",
+                                        "left": {
+                                            "_": "Local",
+                                            "name": "$temp3",
+                                            "type": {
+                                                "_": "StringType"
+                                            }
+                                        },
+                                        "right": {
+                                            "_": "Local",
+                                            "name": "$temp1",
+                                            "type": {
+                                                "_": "NumberType"
                                             }
                                         }
                                     }
@@ -1475,7 +1488,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "ReturnStmt",
                                     "arg": {
                                         "_": "Local",
-                                        "name": "$temp3",
+                                        "name": "$temp4",
                                         "type": {
                                             "_": "StringType"
                                         }
@@ -2948,18 +2961,6 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                             _: "StringType",
                         },
                     },
-                    {
-                        name: "$temp2",
-                        type: {
-                            _: "StringType",
-                        },
-                    },
-                    {
-                        name: "$temp3",
-                        type: {
-                            _: "StringType",
-                        },
-                    },
                 ],
                 cfg: {
                     blocks: [
@@ -3132,7 +3133,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp2",
+                                        name: "$temp1",
                                         type: {
                                             _: "StringType",
                                         },
@@ -3165,38 +3166,10 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     },
                                 },
                                 {
-                                    _: "AssignStmt",
-                                    left: {
-                                        _: "Local",
-                                        name: "$temp3",
-                                        type: {
-                                            _: "StringType",
-                                        },
-                                    },
-                                    right: {
-                                        _: "BinopExpr",
-                                        op: "+",
-                                        left: {
-                                            _: "Local",
-                                            name: "$temp2",
-                                            type: {
-                                                _: "StringType",
-                                            },
-                                        },
-                                        right: {
-                                            _: "Constant",
-                                            value: "",
-                                            type: {
-                                                _: "StringType",
-                                            },
-                                        },
-                                    },
-                                },
-                                {
                                     _: "ReturnStmt",
                                     arg: {
                                         _: "Local",
-                                        name: "$temp3",
+                                        name: "$temp1",
                                         type: {
                                             _: "StringType",
                                         },
@@ -3246,38 +3219,10 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     },
                                 },
                                 {
-                                    _: "AssignStmt",
-                                    left: {
-                                        _: "Local",
-                                        name: "$temp1",
-                                        type: {
-                                            _: "StringType",
-                                        },
-                                    },
-                                    right: {
-                                        _: "BinopExpr",
-                                        op: "+",
-                                        left: {
-                                            _: "Local",
-                                            name: "$temp0",
-                                            type: {
-                                                _: "StringType",
-                                            },
-                                        },
-                                        right: {
-                                            _: "Constant",
-                                            value: "",
-                                            type: {
-                                                _: "StringType",
-                                            },
-                                        },
-                                    },
-                                },
-                                {
                                     _: "ReturnStmt",
                                     arg: {
                                         _: "Local",
-                                        name: "$temp1",
+                                        name: "$temp0",
                                         type: {
                                             _: "StringType",
                                         },

@@ -23,7 +23,7 @@ struct HelloGrandsonComponent {
   message: string;
   build() {
     Row() {
-      Text('HelloGrandsonComponent===' + this.message + '')
+      Text('HelloGrandsonComponent===' + this.message)
       .fontSize(30)
       .fontWeight(FontWeight.Bold)
     }
@@ -44,7 +44,7 @@ const CASE2_EXPECT = `namespace Case2 {
   function overBuilder($$: Tmp) {
     Row() {
       Column() {
-        Text('overBuilder===' + $$.paramA1 + '')
+        Text('overBuilder===' + $$.paramA1)
         HelloComponent({message: $$.paramA1})
       }
     }
@@ -55,7 +55,7 @@ const CASE2_EXPECT = `namespace Case2 {
     message: string;
     build() {
       Row() {
-        Text('HelloComponent===' + this.message + '')
+        Text('HelloComponent===' + this.message)
       }
     }
   }
@@ -107,7 +107,7 @@ struct LazyForEachTest {
   aboutToAppear() {
     let i: number = 0;
     while (i <= 20) {
-      this.data.pushData(new StringData(new NestedString('Hello ' + i + '')));
+      this.data.pushData(new StringData(new NestedString('Hello ' + i)));
       i = i + 1;
     }
   }
@@ -230,7 +230,7 @@ const CASE7_EXPECT = `namespace Case2 {
     label: string = 'Parent';
     @Builder
     componentBuilder() {
-      Text('' + this.label + '')
+      Text(this.label)
     }
     build() {
       Column() {
@@ -259,7 +259,7 @@ export default class SongItemBuilder {
       return this.songItem;
     }
     let rawfileFd = await this.context.resourceManager.getRawFd(songItem.src).catch((error: BusinessError) => {
-      Logger.error('resourceManager error code ' + error.code + ' message ' + error.message + '');
+      Logger.error('resourceManager error code ' + error.code + ' message ' + error.message);
     });
     if (rawfileFd != 0) {
       this.realUrl = rawfileFd;
@@ -270,7 +270,7 @@ export default class SongItemBuilder {
     return this.songItem;
   }
   public getRealUrl(): resourceManager.RawFileDescriptor | undefined {
-    Logger.info('url ' + this.realUrl + '');
+    Logger.info('url ' + this.realUrl);
     return this.realUrl;
   }
   public async release(): Promise<void> {

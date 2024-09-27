@@ -18,19 +18,17 @@ import { Cfg } from '../graph/Cfg';
 import { AbstractExpr, AbstractInvokeExpr, ArkConditionExpr } from './Expr';
 import { AbstractFieldRef, ArkArrayRef } from './Ref';
 import { Value } from './Value';
-import { LineColPosition } from './Position';
+import { FullPosition, LineColPosition } from './Position';
 
 /**
  * @category core/base/stmt
  */
-export class Stmt {
-    private text: string = '';
-    private position: LineColPosition = LineColPosition.DEFAULT;
-    private cfg: Cfg | null = null;
-
-    constructor() {
-    }
-
+export abstract class Stmt {
+    protected text: string = '';
+    protected position: LineColPosition = LineColPosition.DEFAULT;
+    protected cfg: Cfg | null = null;
+    protected operandOriginalPositions: FullPosition[] | null = null; // operandOriginalPositions correspond with
+    // def and uses one by one
     /** Return a list of values which are uesd in this statement */
     public getUses(): Value[] {
         return [];
@@ -44,6 +42,16 @@ export class Stmt {
     /** Return the def which is uesd in this statement */
     public getDef(): Value | null {
         return null;
+    }
+
+    public getDefAndUses(): Value[] {
+        const defAndUses: Value[] = [];
+        const def = this.getDef();
+        if (def) {
+            defAndUses.push(def);
+        }
+        defAndUses.push(...this.getUses());
+        return defAndUses;
     }
 
 
@@ -164,12 +172,46 @@ export class Stmt {
         return originPositionInfo;
     }
 
-    public toString(): string {
-        return this.text;
-    }
+    abstract toString(): string ;
 
     public setText(text: string): void {
         this.text = text;
+    }
+
+    public setOperandOriginalPositions(operandOriginalPositions: FullPosition[]): void {
+        this.operandOriginalPositions = operandOriginalPositions;
+    };
+
+    public getOperandOriginalPosition(indexOrOperand: number | Value): FullPosition | null {
+        let index:number = -1;
+        if (typeof indexOrOperand !== 'number') {
+            let operands = this.getDefAndUses();
+            for (let i = 0; i < operands.length; i++) {
+                if (operands[i] === indexOrOperand) {
+                    index = i;
+                    break;
+                }
+            }
+        } else {
+            index = indexOrOperand;
+        }
+
+        if (!this.operandOriginalPositions || index < 0 || index > this.operandOriginalPositions.length) {
+            return null;
+        }
+        return this.operandOriginalPositions[index];
+    };
+}
+
+export class OriginalStmt extends Stmt {
+    constructor(text: string, position: LineColPosition) {
+        super();
+        this.text = text;
+        this.position = position;
+    }
+
+    public toString(): string {
+        return this.text;
     }
 }
 
@@ -323,17 +365,6 @@ export class ArkReturnVoidStmt extends Stmt {
 
     public toString(): string {
         const str = 'return';
-        return str;
-    }
-}
-
-export class ArkNopStmt extends Stmt {
-    constructor() {
-        super();
-    }
-
-    public toString(): string {
-        const str = 'nop';
         return str;
     }
 }
