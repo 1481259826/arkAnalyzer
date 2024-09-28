@@ -318,6 +318,24 @@ export class CallGraph extends BaseGraph {
         return this.stmtToCallSitemap.get(stmt);
     }
 
+    public getDynEdges(): Map<Method, Set<Method>> {
+        let callMap: Map<Method, Set<Method>> = new Map()
+        this.callPairToEdgeMap.forEach((edge: CallGraphEdge) => {
+            let srcMethod = (edge.getSrcNode() as CallGraphNode).getMethod()
+            let dstMethod = (edge.getDstNode() as CallGraphNode).getMethod()
+
+            let dstSet: Set<Method>
+            if (callMap.has(srcMethod)) {
+                dstSet = callMap.get(srcMethod)!
+            } else {
+                dstSet = new Set()
+            }
+            callMap.set(srcMethod, dstSet.add(dstMethod))
+        })
+
+        return callMap
+    }
+
     public getMethodByFuncID(id: FuncID): Method | null {
         let node = this.getNode(id);
         if(node != undefined) {
