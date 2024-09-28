@@ -76,7 +76,7 @@ export class CallGraphEdge extends BaseEdge {
     private indirectCalls: StmtSet = new Set();
     // private callSiteID: CallSiteID;
 
-    constructor(src: CallGraphNode, dst: CallGraphNode ) {
+    constructor(src: CallGraphNode, dst: CallGraphNode) {
         super(src, dst, 0);
         //this.callSiteID = csID;
     }
@@ -94,7 +94,7 @@ export class CallGraphEdge extends BaseEdge {
     }
 
     public getDotAttr(): string {
-        const indirectCallNums:number = this.indirectCalls.size;
+        const indirectCallNums: number = this.indirectCalls.size;
         const directCallNums: number = this.directCalls.size;
         const specialCallNums: number = this.specialCalls.size;
         if ([CallGraphNodeKind.intrinsic, CallGraphNodeKind.constructor].includes(this.getDstNode().getKind())) {
@@ -103,7 +103,7 @@ export class CallGraphEdge extends BaseEdge {
 
         if (indirectCallNums != 0 && directCallNums == 0) {
             return "color=red";
-        } else if (specialCallNums!= 0) {
+        } else if (specialCallNums != 0) {
             return "color=yellow";
         } else if (indirectCallNums == 0 && directCallNums != 0) {
             return "color=black";
@@ -128,7 +128,7 @@ export class CallGraphNode extends BaseNode {
     }
 
     public setSdkMethod(v: boolean): void {
-        this.isSdkMethod = v
+        this.isSdkMethod = v;
     }
 
     public getIsSdkMethod(): boolean {
@@ -145,7 +145,7 @@ export class CallGraphNode extends BaseNode {
 
     public getDotAttr(): string {
         if ([CallGraphNodeKind.intrinsic, CallGraphNodeKind.constructor].includes(this.getKind())) {
-            return ''
+            return '';
         }
         return 'shape=box';
     }
@@ -181,7 +181,7 @@ export class CallGraph extends BaseGraph {
         return `${srcID}-${dstID}`;
     }
 
-    public getCallEdgeByPair(srcID: NodeID, dstID: NodeID): CallGraphEdge |undefined {
+    public getCallEdgeByPair(srcID: NodeID, dstID: NodeID): CallGraphEdge | undefined {
         let key: string = this.getCallPairString(srcID, dstID);
         return this.callPairToEdgeMap.get(key);
     }
@@ -192,11 +192,11 @@ export class CallGraph extends BaseGraph {
         // check if sdk method
         cgNode.setSdkMethod(this.scene.getSdkArkFilesMap().has(
             method.getDeclaringClassSignature().getDeclaringFileSignature().toString()
-        ))
+        ));
 
         let arkMethod = this.scene.getMethod(method);
-        if ( !arkMethod || !arkMethod.getCfg()) {
-            cgNode.isBlankMethod = true;;
+        if (!arkMethod || !arkMethod.getCfg()) {
+            cgNode.isBlankMethod = true;
         }
 
         this.addNode(cgNode);
@@ -216,7 +216,7 @@ export class CallGraph extends BaseGraph {
 
     public getCallGraphNodeByMethod(method: Method): CallGraphNode {
         if (!method) {
-            throw new Error()
+            throw new Error();
         }
         let n = this.methodToCGNodeMap.get(method.toString());
         if (n == undefined) {
@@ -228,9 +228,9 @@ export class CallGraph extends BaseGraph {
         }
 
         return this.getNode(n) as CallGraphNode;
-    } 
+    }
 
-    public addDirectOrSpecialCallEdge(caller: Method, callee: Method, callStmt: Stmt, isDirectCall:boolean = true): void {
+    public addDirectOrSpecialCallEdge(caller: Method, callee: Method, callStmt: Stmt, isDirectCall: boolean = true): void {
         let callerNode = this.getCallGraphNodeByMethod(caller) as CallGraphNode;
         let calleeNode = this.getCallGraphNodeByMethod(callee) as CallGraphNode;
         let args = callStmt.getInvokeExpr()?.getArgs();
@@ -245,7 +245,7 @@ export class CallGraph extends BaseGraph {
             csID = this.callSiteToIdMap.get(cs) as CallSiteID;
         }
 
-        if(this.addStmtToCallSiteMap(callStmt, cs)) {
+        if (this.addStmtToCallSiteMap(callStmt, cs)) {
             // TODO: check stmt exists
         }
 
@@ -276,7 +276,7 @@ export class CallGraph extends BaseGraph {
         }
     }
 
-     public addDynamicCallInfo(callStmt: Stmt, caller: Method, protentialCallee?: Method ): void {
+    public addDynamicCallInfo(callStmt: Stmt, caller: Method, protentialCallee?: Method): void {
         let callerNode = this.getCallGraphNodeByMethod(caller) as CallGraphNode;
         let calleeNode;
         if (protentialCallee) {
@@ -291,7 +291,7 @@ export class CallGraph extends BaseGraph {
     public addDynamicCallEdge(callerID: NodeID, calleeID: NodeID, callStmt: Stmt) {
         let callerNode = this.getNode(callerID) as CallGraphNode;
         let calleeNode = this.getNode(calleeID) as CallGraphNode;
-        
+
         let callEdge = this.getCallEdgeByPair(callerNode.getID(), calleeNode.getID());
         if (callEdge == undefined) {
             callEdge = new CallGraphEdge(callerNode, calleeNode);
@@ -306,7 +306,7 @@ export class CallGraph extends BaseGraph {
         return this.stmtToDynCallSitemap.get(stmt);
     }
 
-    public addStmtToCallSiteMap(stmt: Stmt, cs: CallSite): boolean{
+    public addStmtToCallSiteMap(stmt: Stmt, cs: CallSite): boolean {
         if (this.stmtToCallSitemap.has(stmt)) {
             return false;
         }
@@ -319,33 +319,33 @@ export class CallGraph extends BaseGraph {
     }
 
     public getDynEdges(): Map<Method, Set<Method>> {
-        let callMap: Map<Method, Set<Method>> = new Map()
+        let callMap: Map<Method, Set<Method>> = new Map();
         this.callPairToEdgeMap.forEach((edge: CallGraphEdge) => {
-            let srcMethod = (edge.getSrcNode() as CallGraphNode).getMethod()
-            let dstMethod = (edge.getDstNode() as CallGraphNode).getMethod()
+            let srcMethod = (edge.getSrcNode() as CallGraphNode).getMethod();
+            let dstMethod = (edge.getDstNode() as CallGraphNode).getMethod();
 
-            let dstSet: Set<Method>
+            let dstSet: Set<Method>;
             if (callMap.has(srcMethod)) {
-                dstSet = callMap.get(srcMethod)!
+                dstSet = callMap.get(srcMethod)!;
             } else {
-                dstSet = new Set()
+                dstSet = new Set();
             }
-            callMap.set(srcMethod, dstSet.add(dstMethod))
-        })
+            callMap.set(srcMethod, dstSet.add(dstMethod));
+        });
 
-        return callMap
+        return callMap;
     }
 
     public getMethodByFuncID(id: FuncID): Method | null {
         let node = this.getNode(id);
-        if(node != undefined) {
+        if (node != undefined) {
             return (node as CallGraphNode).getMethod();
         }
         //return undefined;
         return null;
     }
 
-    public getArkMethodByFuncID(id: FuncID) : ArkMethod| null{
+    public getArkMethodByFuncID(id: FuncID): ArkMethod | null {
         let method = this.getMethodByFuncID(id);
         if (method != null) {
             // TODO: SDK Method search
@@ -359,7 +359,7 @@ export class CallGraph extends BaseGraph {
         return this.entries;
     }
 
-    public setEntries(n : NodeID[]): void {
+    public setEntries(n: NodeID[]): void {
         this.entries = n;
     }
 

@@ -13,85 +13,80 @@
  * limitations under the License.
  */
 
-import { ArkStaticInvokeExpr } from "../../core/base/Expr";
+import { ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { Scene } from '../../Scene';
-import { Stmt } from "../../core/base/Stmt";
-import { ArkClass } from "../../core/model/ArkClass";
-import { NodeID } from "../model/BaseGraph";
-import { CallGraph, CallSite } from "../model/CallGraph";
-import { AbstractAnalysis } from "./AbstractAnalysis";
-import { FunctionType } from "../../core/base/Type";
+import { Stmt } from '../../core/base/Stmt';
+import { ArkClass } from '../../core/model/ArkClass';
+import { NodeID } from '../model/BaseGraph';
+import { CallGraph, CallSite } from '../model/CallGraph';
+import { AbstractAnalysis } from './AbstractAnalysis';
 
 export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
     constructor(scene: Scene, cg: CallGraph) {
-        super(scene)
-        this.cg = cg
+        super(scene);
+        this.cg = cg;
     }
 
     public resolveCall(callerMethod: NodeID, invokeStmt: Stmt): CallSite[] {
-        let invokeExpr = invokeStmt.getInvokeExpr()
-        let resolveResult: CallSite[] = []
+        let invokeExpr = invokeStmt.getInvokeExpr();
+        let resolveResult: CallSite[] = [];
 
         if (!invokeExpr) {
-            return []
+            return [];
         }
 
         // process anonymous method call
-        invokeExpr.getArgs().forEach((args) => {
-            let argsType = args.getType()
-            if (argsType instanceof FunctionType) {
-                let anonymousMethodSig = argsType.getMethodSignature()
-                resolveResult.push(
-                    new CallSite(invokeStmt, undefined, 
-                        this.cg.getCallGraphNodeByMethod(anonymousMethodSig).getID(),
-                        callerMethod
-                    )
+        this.getParamAnonymousMethod(invokeExpr).forEach(method => {
+            resolveResult.push(
+                new CallSite(invokeStmt, undefined,
+                    this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod
                 )
-            }
-        })
+            );
+        });
 
-        let calleeMethod = this.resolveInvokeExpr(invokeExpr)
+        let calleeMethod = this.resolveInvokeExpr(invokeExpr);
         if (!calleeMethod) {
-            return resolveResult
+            return resolveResult;
         }
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
             // resolveResult.push(calleeMethod.getSignature())
-            resolveResult.push(new CallSite(invokeStmt, undefined, 
-                this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), 
-                callerMethod!))
+            resolveResult.push(new CallSite(invokeStmt, undefined,
+                this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(),
+                callerMethod!));
         } else {
-            let declareClass = calleeMethod.getDeclaringArkClass()
+            let declareClass = calleeMethod.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
                 if (arkClass.getModifiers().has('AbstractKeyword')) {
                     return;
                 }
 
-                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
-                
-                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
+                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
+
+                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && 
+                    arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
                     // remove the generated method in extended classes
                     return;
                 }
 
                 if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has('AbstractKeyword')) {
                     resolveResult.push(
-                        new CallSite(invokeStmt, undefined, 
+                        new CallSite(invokeStmt, undefined,
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
                             callerMethod
                         )
-                    )
+                    );
                 }
-            })
+            });
         }
 
-        return resolveResult
+        return resolveResult;
     }
 
     protected preProcessMethod(): CallSite[] {
         // do nothing
-        return []
+        return [];
     }
 }
