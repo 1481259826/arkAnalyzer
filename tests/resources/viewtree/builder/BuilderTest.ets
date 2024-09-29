@@ -24,19 +24,47 @@ namespace Case1 {
     }
   }
 
+  @Component
+  struct AppIcon {
+    @State bundleName: string;
+    @State message: string;
+    x: string = '';
+
+    build() {
+      Row() {
+        Text(this.bundleName)
+        Text(this.x = this.message)
+      }
+    }
+  }
+
   @Entry
   @Component
     struct BuilderTest {
     @State label: string = 'Hello';
+    @State height: number = 10;
+    @State bundleName: string = 'test';
+    @State scale: number = 10;
+    @State lastAppInfo: Object | null = null;
+
+    @Builder
+    appInfoBuilder() {
+      AppIcon({
+        bundleName: this.bundleName,
+        message: this.lastAppInfo?.message
+      }).height(this.height)
+    }
+
     build() {
       Column() {
+        this.appInfoBuilder()
         // Pass the this.label reference to the overBuilder component when the overBuilder component is called in the Parent component.
         overBuilder({ paramA1: this.label })
         Button('Click me').onClick(() => {
           // After Click me is clicked, the UI text changes from Hello to ArkUI.
           this.label = 'ArkUI';
         })
-      }
+      }.scale({y: this.scale})
     }
   }
 }

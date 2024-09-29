@@ -179,7 +179,8 @@ export const ControlCenterComponent_Expect_ViewTree = {
                                                     ],
                                                     stateValues: ['style']
                                                 }
-                                            ]
+                                            ],
+                                            stateValues: ['style']
                                         }
                                     ]
                                 }
