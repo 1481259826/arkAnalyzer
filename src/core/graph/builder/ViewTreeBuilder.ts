@@ -99,49 +99,48 @@ class StateValuesUtils {
                     this.parseMethodUsesStateValues(type.getMethodSignature(), uses, visitor);
                     continue;
                 }
-                if (type instanceof ClassType) {
-                    let cls = ModelUtils.getArkClassInBuild(
-                        this.declaringArkClass.getDeclaringArkFile().getScene(),
-                        type
-                    );
-                    if (cls?.getCategory() === ClassCategory.OBJECT) {
-                        cls.getFields().forEach((field) => {
-                            let stmts = field.getInitializer();
-                            if (stmts.length === 0) {
-                                return;
-                            }
-
-                            let assignStmt = stmts[stmts.length - 1];
-                            if (!(assignStmt instanceof ArkAssignStmt)) {
-                                return;
-                            }
-
-                            let value = assignStmt.getRightOp();
-                            if (value instanceof Local) {
-                                value = backtraceLocalInitValue(value);
-                            }
-
-                            if (value instanceof ArkInstanceFieldRef) {
-                                let srcField = this.declaringArkClass.getFieldWithName(value.getFieldName());
-                                let decorators = srcField?.getStateDecorators();
-                                if (srcField && decorators && decorators.length > 0) {
-                                    uses.add(srcField);
-                                }
-                            }
-                        });
-                        continue;
-                    }
-                }
-
-                if (!wholeMethod) {
-                    let declaringStmt = v.getDeclaringStmt();
-                    if (declaringStmt) {
-                        this.parseStmtUsesStateValues(declaringStmt, uses, wholeMethod, visitor);
-                    }
+                this.parseObjectUsedStateValues(uses, type);
+                let declaringStmt = v.getDeclaringStmt();
+                if (!wholeMethod && declaringStmt) {
+                    this.parseStmtUsesStateValues(declaringStmt, uses, wholeMethod, visitor);
                 }
             }
         }
         return uses;
+    }
+
+    private parseObjectUsedStateValues(uses: Set<ArkField> = new Set(), type: Type): void {
+        if (!(type instanceof ClassType)) {
+            return;
+        }
+        let cls = ModelUtils.getArkClassInBuild(this.declaringArkClass.getDeclaringArkFile().getScene(), type);
+        if (cls?.getCategory() !== ClassCategory.OBJECT) {
+            return;
+        }
+        cls.getFields().forEach((field) => {
+            let stmts = field.getInitializer();
+            if (stmts.length === 0) {
+                return;
+            }
+
+            let assignStmt = stmts[stmts.length - 1];
+            if (!(assignStmt instanceof ArkAssignStmt)) {
+                return;
+            }
+
+            let value = assignStmt.getRightOp();
+            if (value instanceof Local) {
+                value = backtraceLocalInitValue(value);
+            }
+
+            if (value instanceof ArkInstanceFieldRef) {
+                let srcField = this.declaringArkClass.getFieldWithName(value.getFieldName());
+                let decorators = srcField?.getStateDecorators();
+                if (srcField && decorators && decorators.length > 0) {
+                    uses.add(srcField);
+                }
+            }
+        });
     }
 
     private parseMethodUsesStateValues(
@@ -713,11 +712,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         node.stateValuesTransfer = this.parseObjectLiteralExpr(cls, arg, builder);
         if (node.stateValuesTransfer) {
             for (let [_, value] of node.stateValuesTransfer) {
-                if (value instanceof ArkField) {
-                    if (value.getStateDecorators().length > 0) {
-                        node.stateValues.add(value);
-                        this.addStateValue(value, node);
-                    }
+                if (value instanceof ArkField && value.getStateDecorators().length > 0) {
+                    node.stateValues.add(value);
+                    this.addStateValue(value, node);
                 }
             }
         }
@@ -725,26 +722,34 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let componentViewTree = cls.getViewTree();
         if (!componentViewTree || !componentViewTree.getRoot()) {
             logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
-        } else {
-            let root = componentViewTree.getRoot() as ViewTreeNodeImpl;
-            if (root.hasBuilderParam()) {
-                root = root.clone(node);
-                if (node.stateValuesTransfer) {
-                    root.walk((item) => {
-                        let child = item as ViewTreeNodeImpl;
-                        if (child.isBuilderParam() && child.builderParam) {
-                            let method = node.stateValuesTransfer?.get(child.builderParam) as ArkMethod;
-                            if (method) {
-                                child.changeBuilderParam2BuilderNode(method);
-                            }
-                        }
-                        return false;
-                    });
-                }
-            }
-            node.children.push(root);
+            return node;
         }
+        let root = componentViewTree.getRoot() as ViewTreeNodeImpl;
+        if (root.hasBuilderParam()) {
+            root = this.cloneBuilderParamNode(node, root);
+        }
+        node.children.push(root);
+
         return node;
+    }
+
+    private cloneBuilderParamNode(node: ViewTreeNodeImpl, root: ViewTreeNodeImpl): ViewTreeNodeImpl {
+        root = root.clone(node);
+        if (node.stateValuesTransfer) {
+            root.walk((item) => {
+                let child = item as ViewTreeNodeImpl;
+                if (!child.isBuilderParam() || !child.builderParam) {
+                    return false;
+                }
+                let method = node.stateValuesTransfer?.get(child.builderParam) as ArkMethod;
+                if (method) {
+                    child.changeBuilderParam2BuilderNode(method);
+                }
+
+                return false;
+            });
+        }
+        return root;
     }
 
     /**
@@ -1041,6 +1046,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             this.popComponentExpect(COMPONENT_IF);
             this.pop();
         }
+        return undefined;
     }
 
     /**
