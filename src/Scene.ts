@@ -34,7 +34,6 @@ import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ArkExport, ExportType } from './core/model/ArkExport';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
-import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
@@ -700,91 +699,6 @@ export class Scene {
             }
         }
         return globalVariableMap;
-    }
-
-    public getEntryMethodsFromModuleJson5(): ArkMethod[] {
-        const projectDir = this.getRealProjectDir();
-        const buildProfile = path.join(projectDir, 'build-profile.json5');
-        if (!fs.existsSync(buildProfile)) {
-            logger.error(`${buildProfile} is not exists.`);
-            return [];
-        }
-
-        const abilities: ArkClass[] = [];
-        const buildProfileConfig = fetchDependenciesFromFile(buildProfile);
-        let modules: Array<any> | undefined;
-        if (buildProfileConfig instanceof Object) {
-            Object.entries(buildProfileConfig).forEach(([k, v]) => {
-                if (k == 'modules' && Array.isArray(v)) {
-                    modules = v;
-                    return;
-                }
-            });
-        }
-        if (Array.isArray(modules)) {
-            for (const module of modules) {
-                try {
-                    const moduleProfile = path.join(projectDir, module.srcPath, '/src/main/module.json5');
-                    const config = fetchDependenciesFromFile(moduleProfile);
-                    const configModule = config.module;
-                    if (configModule instanceof Object) {
-                        Object.entries(configModule).forEach(([k, v]) => {
-                            if (k == 'abilities' || k == 'extensionAbilities') {
-                                const moduleAbilities = getAbilities(v, path.join(projectDir, module.srcPath), this);
-                                for (const ability of moduleAbilities) {
-                                    if (!abilities.includes(ability)) {
-                                        abilities.push(ability);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                } catch (err) {
-                    logger.error(err);
-                }
-            }
-        }
-
-        const entryMethods: ArkMethod[] = [];
-        for (const ability of abilities) {
-            const abilityEntryMethods: ArkMethod[] = [];
-            let cls: ArkClass = ability;
-            for (const method of cls.getMethods()) {
-                for (const modifier of method.getModifiers()) {
-                    if (modifier == 'private') {
-                        continue;
-                    }
-                }
-                for (const mtd of abilityEntryMethods) {
-                    if (mtd.getName() == method.getName()) {
-                        continue;
-                    }
-                }
-                if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
-                    abilityEntryMethods.push(method);
-                }
-            }
-            entryMethods.push(...abilityEntryMethods);
-        }
-        return entryMethods;
-    }
-
-    getCallbackMethods(): ArkMethod[] {
-        const callbackMethods: ArkMethod[] = [];
-        this.getMethods().forEach(method => {
-            if (!method.getCfg()) {
-                return;
-            }
-            method.getCfg()!.getBlocks().forEach(block => {
-                block.getStmts().forEach(stmt => {
-                    const cbMethod = getCallbackMethodFromStmt(stmt, this);
-                    if (cbMethod && !callbackMethods.includes(cbMethod)) {
-                        callbackMethods.push(cbMethod);
-                    }
-                });
-            });
-        });
-        return callbackMethods;
     }
 
     public getStaticInitMethods(): ArkMethod[] {

@@ -32,7 +32,6 @@ import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
 import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge, GLOBAL_THIS } from './Pag';
 import { PtsSet } from './PtsDS';
 
-// const logger = Logger.getLogger();
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 export class CSFuncID{
@@ -666,31 +665,29 @@ export class PagBuilder {
 
         let sig = v.getFieldSignature();
         let sigStr = sig.toString()
-        let base: Value
+        let base: Value;
+        let real: Value | undefined;
 
-        if (!sig.isStatic()) {
+        if (v instanceof ArkInstanceFieldRef) {
             base = (v as ArkInstanceFieldRef).getBase()
             if (base instanceof Local && base.getName() == GLOBAL_THIS && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
                 base = this.getGlobalThisValue();
                 (v as ArkInstanceFieldRef).setBase(base as Local)
             }
-        }
-        let real
-        if (sig.isStatic()) {
-            real = this.staticField2UniqInstanceMap.get(sigStr);
-            if (!real) {
-                this.staticField2UniqInstanceMap.set(sigStr, v);
-                real = v;
-            }
-        } else {
+
             real = this.instanceField2UniqInstanceMap.get([sigStr, base!]);
             if (!real) {
                 this.instanceField2UniqInstanceMap.set([sigStr, base!], v);
                 real = v;
             }
-        }
-
+        } else {
+            real = this.staticField2UniqInstanceMap.get(sigStr);
+            if (!real) {
+                this.staticField2UniqInstanceMap.set(sigStr, v);
+                real = v;
+            }
+        } 
         return real;
     }
 
@@ -926,4 +923,6 @@ export class PagBuilder {
     public printStat(): void {
         this.pagStat.printStat();
     }
+
+
 }

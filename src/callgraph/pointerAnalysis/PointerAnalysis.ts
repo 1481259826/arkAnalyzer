@@ -67,7 +67,9 @@ export class PointerAnalysis extends AbstractAnalysis {
         dummyMainCreator.createDummyMain()
         const dummyMainMethod = dummyMainCreator.getDummyMain()
         cgBuilder.buildDirectCallGraph([dummyMainMethod])
+
         let dummyMainMethodID = cg.getCallGraphNodeByMethod(dummyMainMethod.getSignature()).getID()
+        cg.setDummyMainFuncID(dummyMainMethodID);
  
         let pta = new PointerAnalysis(pag, cg, projectScene, config)
         pta.setEntries([dummyMainMethodID]);
@@ -441,4 +443,5 @@ export class PointerAnalysis extends AbstractAnalysis {
     protected resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[] {
         return []
     }
+
 }
