@@ -104,10 +104,10 @@ class StateValuesUtils {
                         this.declaringArkClass.getDeclaringArkFile().getScene(),
                         type
                     );
-                    if (cls?.getCategory() == ClassCategory.OBJECT) {
+                    if (cls?.getCategory() === ClassCategory.OBJECT) {
                         cls.getFields().forEach((field) => {
                             let stmts = field.getInitializer();
-                            if (stmts.length == 0) {
+                            if (stmts.length === 0) {
                                 return;
                             }
 
@@ -203,14 +203,14 @@ class ViewTreeNodeImpl implements ViewTreeNode {
      * @returns true: node is Builder, false others.
      */
     public isBuilder(): boolean {
-        return this.type == ViewTreeNodeType.Builder;
+        return this.type === ViewTreeNodeType.Builder;
     }
 
     /**
      * @internal
      */
     public isBuilderParam(): boolean {
-        return this.type == ViewTreeNodeType.BuilderParam;
+        return this.type === ViewTreeNodeType.BuilderParam;
     }
 
     /**
@@ -218,7 +218,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
      * @returns true: node is custom component, false others.
      */
     public isCustomComponent(): boolean {
-        return this.type == ViewTreeNodeType.CustomComponent;
+        return this.type === ViewTreeNodeType.CustomComponent;
     }
 
     /**
@@ -400,7 +400,7 @@ class TreeNodeStack {
         let parent = this.getParent();
         node.parent = parent;
         this.stack.push(node);
-        if (parent == null) {
+        if (parent === null) {
             this.root = node;
         } else {
             parent.children.push(node);
@@ -425,7 +425,7 @@ class TreeNodeStack {
      * @internal
      */
     public isEmpty(): boolean {
-        return this.stack.length == 0;
+        return this.stack.length === 0;
     }
 
     /**
@@ -457,7 +457,7 @@ class TreeNodeStack {
     }
 
     private getParent(): ViewTreeNodeImpl | null {
-        if (this.stack.length == 0) {
+        if (this.stack.length === 0) {
             return null;
         }
 
@@ -469,7 +469,7 @@ class TreeNodeStack {
     }
 
     protected isContainer(name: string): boolean {
-        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name == BUILDER_DECORATOR;
+        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name === BUILDER_DECORATOR;
     }
 }
 
@@ -573,7 +573,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         for (const field of this.render.getDeclaringArkClass().getFields()) {
             let decorators = field.getStateDecorators();
             if (decorators.length > 0) {
-                if (decorators.length == 1) {
+                if (decorators.length === 1) {
                     this.fieldTypes.set(field.getName(), decorators[0]);
                 } else {
                     this.fieldTypes.set(field.getName(), decorators);
@@ -623,7 +623,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             .getDeclaringArkNamespace()
             ?.getAllMethodsUnderThisNamespace()
             .forEach((value) => {
-                if (value.getName() == name) {
+                if (value.getName() === name) {
                     method = value;
                 }
             });
@@ -636,7 +636,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             .getAllNamespacesUnderThisFile()
             .forEach((namespace) => {
                 namespace.getAllMethodsUnderThisNamespace().forEach((value) => {
-                    if (value.getName() == name) {
+                    if (value.getName() === name) {
                         method = value;
                     }
                 });
@@ -683,20 +683,20 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             this.push(node);
             this.pop();
             return node;
-        } else {
-            let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
-            this.push(root);
-            if (method.getDeclaringArkClass() == this.render.getDeclaringArkClass()) {
-                for (const [field, nodes] of builderViewTree.getStateValues()) {
-                    for (const node of nodes) {
-                        this.addStateValue(field, node);
-                    }
-                }
-                builderViewTree.getStateValues();
-            }
-            this.pop();
-            return root;
         }
+
+        let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
+        this.push(root);
+        if (method.getDeclaringArkClass() === this.render.getDeclaringArkClass()) {
+            for (const [field, nodes] of builderViewTree.getStateValues()) {
+                for (const node of nodes) {
+                    this.addStateValue(field, node);
+                }
+            }
+            builderViewTree.getStateValues();
+        }
+        this.pop();
+        return root;
     }
 
     /**
@@ -786,7 +786,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
             }
 
-            if (expr == undefined) {
+            if (expr === undefined) {
                 continue;
             }
 
@@ -808,12 +808,12 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             let anonymous = this.findClass(anonymousSig);
             anonymous?.getFields().forEach((field) => {
                 let dstField = cls.getFieldWithName(field.getName());
-                if (dstField?.getStateDecorators().length == 0 && !dstField?.hasBuilderParamDecorator()) {
+                if (dstField?.getStateDecorators().length === 0 && !dstField?.hasBuilderParamDecorator()) {
                     return;
                 }
 
                 let stmts = field.getInitializer();
-                if (stmts.length == 0) {
+                if (stmts.length === 0) {
                     return;
                 }
 
@@ -851,20 +851,24 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             });
         }
 
-        if (transferMap.size == 0) {
+        if (transferMap.size === 0) {
             return;
         }
         return transferMap;
     }
 
-    private viewComponentCreationParser(name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNodeImpl | undefined {
+    private viewComponentCreationParser(
+        name: string,
+        stmt: Stmt,
+        expr: AbstractInvokeExpr
+    ): ViewTreeNodeImpl | undefined {
         let temp = expr.getArg(0) as Local;
         let arg: Value | undefined;
         temp.getUsedStmts().forEach((value) => {
             if (value instanceof ArkInvokeStmt) {
                 let invokerExpr = value.getInvokeExpr();
                 let methodName = invokerExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-                if (methodName == 'constructor') {
+                if (methodName === 'constructor') {
                     arg = invokerExpr.getArg(0);
                 }
             }
@@ -887,7 +891,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         let initValue = backtraceLocalInitValue(temp);
         if (!(initValue instanceof ArkNewExpr)) {
-            return;
+            return undefined;
         }
 
         let clsSignature = (initValue.getType() as ClassType).getClassSignature();
@@ -901,6 +905,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 );
             }
         }
+        return undefined;
     }
 
     private waterFlowCreationParser(name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNodeImpl {
@@ -987,7 +992,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         ['WaterFlow.create', this.waterFlowCreationParser.bind(this)],
     ]);
 
-    private  componentCreateParse(
+    private componentCreateParse(
         componentName: string,
         methodName: string,
         stmt: Stmt,
@@ -1026,13 +1031,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
 
         let currentNode = this.top();
-        if (name == currentNode?.name) {
+        if (name === currentNode?.name) {
             currentNode.addStmt(this, stmt);
-            if (methodName == COMPONENT_POP_FUNCTION) {
+            if (methodName === COMPONENT_POP_FUNCTION) {
                 this.pop();
             }
             return currentNode;
-        } else if (name == COMPONENT_IF && methodName == COMPONENT_POP_FUNCTION) {
+        } else if (name === COMPONENT_IF && methodName === COMPONENT_POP_FUNCTION) {
             this.popComponentExpect(COMPONENT_IF);
             this.pop();
         }
@@ -1053,18 +1058,14 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (local2Node.has(temp)) {
             let component = local2Node.get(temp);
             if (
-                component?.name == COMPONENT_REPEAT &&
-                expr.getMethodSignature().getMethodSubSignature().getMethodName() == 'each'
+                component?.name === COMPONENT_REPEAT &&
+                expr.getMethodSignature().getMethodSubSignature().getMethodName() === 'each'
             ) {
                 let arg = expr.getArg(0);
                 let type = arg.getType();
                 if (type instanceof FunctionType) {
                     let method = this.findMethod(type.getMethodSignature());
-                    if (method) {
-                        if (method.getCfg()) {
-                            this.buildViewTreeFromCfg(method.getCfg() as Cfg);
-                        }
-                    }
+                    this.buildViewTreeFromCfg(method?.getCfg() as Cfg);
                 }
                 this.pop();
             } else {
@@ -1084,14 +1085,16 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         let methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
         let field = this.getDeclaringArkClass().getFieldWithName(methodName);
-        if (name == 'this' && field?.hasBuilderParamDecorator()) {
+        if (name === 'this' && field?.hasBuilderParamDecorator()) {
             return this.addBuilderParamNode(field);
         }
 
         let method = this.findMethod(expr.getMethodSignature());
-        if (name == 'this' && method?.hasBuilderDecorator()) {
+        if (name === 'this' && method?.hasBuilderDecorator()) {
             return this.addBuilderNode(method);
         }
+
+        return undefined;
     }
 
     /**
@@ -1137,6 +1140,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private buildViewTreeFromCfg(cfg: Cfg, local2Node: Map<Local, ViewTreeNodeImpl> = new Map()): void {
+        if (!cfg) {
+            return;
+        }
         let blocks = cfg.getBlocks();
         for (const block of blocks) {
             for (const stmt of block.getStmts()) {
