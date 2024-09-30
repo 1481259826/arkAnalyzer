@@ -305,14 +305,6 @@ export class TypeInference {
             } else if (this.isUnclearType(leftOpType) && !this.isUnclearType(stmt.getRightOp().getType())) {
                 leftOp.setType(stmt.getRightOp().getType());
             }
-        } else if (leftOp instanceof ArkInstanceFieldRef) {
-            const fieldRef = leftOp.inferType(arkClass);
-            if (this.isUnclearType(leftOp.getType()) && !this.isUnclearType(stmt.getRightOp().getType())) {
-                leftOp.getFieldSignature().setType(stmt.getRightOp().getType());
-            }
-            if (fieldRef instanceof ArkStaticFieldRef) {
-                stmt.setLeftOp(fieldRef);
-            }
         }
     }
 

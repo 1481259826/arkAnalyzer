@@ -181,6 +181,12 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
             property = propertyAndproperty[0];
             propertyType = propertyAndproperty[1];
         }
+        if (TypeInference.isUnclearType(propertyType)) {
+            const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
+            if (newType) {
+                propertyType = newType;
+            }
+        }
         let newFieldSignature;
         if (baseType instanceof ClassType && property instanceof ArkField) {
             newFieldSignature = property.getSignature();

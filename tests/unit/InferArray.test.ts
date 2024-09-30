@@ -19,6 +19,7 @@ import { SceneConfig } from '../../src/Config';
 import { Scene } from '../../src/Scene';
 import { FileSignature } from '../../src/core/model/ArkSignature';
 import {
+    AliasType,
     ArkAssignStmt,
     ArkInstanceFieldRef,
     ArkNewArrayExpr,
@@ -145,7 +146,9 @@ describe("Infer Array Test", () => {
 
     it('supperClass Test case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'B.ets');
-        assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('ClassB')?.getSuperClass());
+        const classB = projectScene.getFile(fileId)?.getClassWithName('ClassB');
+        assert.isDefined(classB?.getSuperClass());
+        assert.isTrue(classB?.getFieldWithName('field1')?.getType() instanceof AliasType);
     })
 
     it('constructor case', () => {
