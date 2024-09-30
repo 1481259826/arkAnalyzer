@@ -53,7 +53,7 @@ export class PagEdge extends BaseEdge {
                 return "color=green";
             case PagEdgeKind.Copy:
                 if (this.stmt?.getInvokeExpr() != undefined || this.stmt instanceof ArkReturnStmt) {
-                    return "color=black,style=dotted"
+                    return "color=black,style=dotted";
                 }
                 return "color=black";
             case PagEdgeKind.Load:
@@ -165,6 +165,10 @@ export class PagNode extends BaseNode {
 
     public getOutgoingCopyEdges(): PagEdgeSet {
         return this.copyOutEdges;
+    }
+
+    public getIncomingCopyEdges(): PagEdgeSet {
+        return this.copyInEdges;
     }
 
     public getOutgoingLoadEdges(): PagEdgeSet {

@@ -25,7 +25,7 @@ import { Stmt } from "../../core/base/Stmt";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
 import { DummyMainCreater } from "../../core/common/DummyMainCreater";
 import { PTAStat } from "../common/Statistics";
-import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagNewExprNode, PagGlobalThisNode } from "./Pag";
+import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode } from "./Pag";
 import { PagBuilder } from "./PagBuilder";
 import { PointerAnalysisConfig } from "./PointerAnalysisConfig";
 import { DiffPTData, PtsSet } from "./PtsDS";
@@ -374,23 +374,60 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     public mayAlias(leftValue: Value, rightValue: Value): boolean {
-        return !this.noAlias(leftValue, rightValue)
+        return !this.noAlias(leftValue, rightValue);
     }
 
     public getRelatedNodes(value: Value): Set<Value> {
         let valueNodes = this.pag.getNodesByValue(value)?.values()!
-        let relatedAllNodes: Set<Value> = new Set()
+        let relatedAllNodes: Set<Value> = new Set();
+        let workListNodes: NodeID[] = [];
+        let processedNodes: Set<NodeID> = new Set();
 
         for (const nodeID of valueNodes) {
-            for (let pt of this.ptd.getPropaPts(nodeID)!) {
-                let baseNode = this.pag.getNode(pt)! as PagNewExprNode
-                baseNode.getRelatedNodes().forEach((item) => {
-                    relatedAllNodes.add((this.pag.getNode(item)! as PagNode).getValue())
-                })
-            }
+            workListNodes.push(nodeID);
         }
 
-        return relatedAllNodes
+        while (workListNodes.length !== 0) {
+            let valueNodeID: NodeID = workListNodes.shift()!
+            if (processedNodes.has(valueNodeID)) {
+                continue;
+            }
+
+            let valueNode = this.pag.getNode(valueNodeID) as PagNode;
+
+            let inCopyEdges = valueNode.getIncomingCopyEdges();
+            if (!inCopyEdges) {
+                continue;
+            }
+
+            inCopyEdges.forEach(edge => {
+                let srcID = edge.getSrcID();
+                if (!processedNodes.has(srcID)) {
+                    workListNodes.push(srcID);
+                }
+            });
+            
+            let outCopyEdges = valueNode.getOutgoingCopyEdges();
+            if (!outCopyEdges) {
+                continue;
+            }
+
+            outCopyEdges.forEach(edge => {
+                let dstID = edge.getDstID();
+                if (!processedNodes.has(dstID)) {
+                    workListNodes.push(dstID);
+                }
+            });
+        
+            processedNodes.add(valueNodeID);
+        }
+
+        processedNodes.forEach(nodeID => {
+            let valueNode = this.pag.getNode(nodeID) as PagNode;
+            relatedAllNodes.add(valueNode.getValue());
+        })
+
+        return relatedAllNodes;
     }
 
     private detectTypeDiff(nodeId: NodeID): void {
