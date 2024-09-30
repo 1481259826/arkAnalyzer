@@ -13,126 +13,143 @@
  * limitations under the License.
  */
 
-import { ArkNewExpr, ArkStaticInvokeExpr } from "../../core/base/Expr";
+import { ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { Scene } from '../../Scene';
-import { Stmt } from "../../core/base/Stmt";
-import { ArkClass } from "../../core/model/ArkClass";
-import { ClassSignature } from "../../core/model/ArkSignature";
-import { NodeID } from "../model/BaseGraph";
-import { CallGraph, CallSite, FuncID } from "../model/CallGraph";
-import { AbstractAnalysis } from "./AbstractAnalysis";
-import Logger, { LOG_MODULE_TYPE } from "../../utils/logger"
-import { ClassType } from "../../core/base/Type";
- 
+import { Stmt } from '../../core/base/Stmt';
+import { ArkClass } from '../../core/model/ArkClass';
+import { ClassSignature } from '../../core/model/ArkSignature';
+import { NodeID } from '../model/BaseGraph';
+import { CallGraph, CallSite, FuncID } from '../model/CallGraph';
+import { AbstractAnalysis } from './AbstractAnalysis';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { ClassType } from '../../core/base/Type';
+import { ABSTRACT_KEYWORD } from '../../core/common/TSConst';
+
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'RTA');
 
 export class RapidTypeAnalysis extends AbstractAnalysis {
     // TODO: signature duplicated check
-    private instancedClasses: Set<ClassSignature> = new Set()
+    private instancedClasses: Set<ClassSignature> = new Set();
     // TODO: Set duplicated check
-    private ignoredCalls: Map<ClassSignature, Set<{caller: NodeID, callee: NodeID, callStmt: Stmt}>> = new Map()
+    private ignoredCalls: Map<ClassSignature, Set<{ caller: NodeID, callee: NodeID, callStmt: Stmt }>> = new Map();
 
     constructor(scene: Scene, cg: CallGraph) {
-        super(scene)
-        this.cg = cg
+        super(scene);
+        this.cg = cg;
     }
 
     public resolveCall(callerMethod: NodeID, invokeStmt: Stmt): CallSite[] {
-        let invokeExpr = invokeStmt.getInvokeExpr()
-        let resolveResult: CallSite[] = []
+        let invokeExpr = invokeStmt.getInvokeExpr();
+        let resolveResult: CallSite[] = [];
 
         if (!invokeExpr) {
-            return []
+            return [];
         }
-        let calleeMethod = this.resolveInvokeExpr(invokeExpr)
+
+        // process anonymous method call
+        this.getParamAnonymousMethod(invokeExpr).forEach(method => {
+            resolveResult.push(new CallSite(invokeStmt, undefined,
+                this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
+            );
+        });
+
+        let calleeMethod = this.resolveInvokeExpr(invokeExpr);
         if (!calleeMethod) {
-            return resolveResult
+            return resolveResult;
         }
+
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
-            // resolveResult.push(calleeMethod.getSignature())
-            resolveResult.push(new CallSite(invokeStmt, undefined, 
-                this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), 
-                callerMethod))
+            resolveResult.push(new CallSite(invokeStmt, undefined,
+                this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod)
+            );
         } else {
-            let declareClass = calleeMethod!.getDeclaringArkClass()
+            let declareClass = calleeMethod!.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName())
-                if (possibleCalleeMethod) {
+                if (arkClass.getModifiers().has(ABSTRACT_KEYWORD)) {
+                    return;
+                }
+
+                let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
+
+                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && 
+                    arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
+                    // remove the generated method in extended classes
+                    return;
+                }
+
+                if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has(ABSTRACT_KEYWORD)) {
                     if (!this.instancedClasses.has(arkClass.getSignature())) {
-                        this.addIgnoredCalls(
-                            arkClass.getSignature(), callerMethod,
+                        this.addIgnoredCalls(arkClass.getSignature(), callerMethod,
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
                             invokeStmt
                         );
-                        return
-                    }
-                    resolveResult.push(
-                        new CallSite(invokeStmt, undefined, 
+                    } else {
+                        resolveResult.push(new CallSite(invokeStmt, undefined,
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
-                            callerMethod
-                        )
-                    )
+                            callerMethod)
+                        );
+                    }
                 }
-            })
+            });
         }
 
-        return resolveResult
+        return resolveResult;
     }
 
     protected preProcessMethod(funcID: FuncID): CallSite[] {
-        let newCallSites: CallSite[] = []
-        let instancedClasses: Set<ClassSignature> = this.collectInstancedClassesInMethod(funcID)
+        let newCallSites: CallSite[] = [];
+        let instancedClasses: Set<ClassSignature> = this.collectInstancedClassesInMethod(funcID);
         let newlyInstancedClasses = new Set(
             Array.from(instancedClasses).filter(item => !this.instancedClasses.has(item))
-        )
+        );
 
         newlyInstancedClasses.forEach(sig => {
             let ignoredCalls = this.ignoredCalls.get(sig)
             if (ignoredCalls) {
                 ignoredCalls.forEach((call) => {
-                    this.cg.addDynamicCallEdge(call.caller, call.callee, call.callStmt)
-                    newCallSites.push(new CallSite(call.callStmt, undefined, call.callee, call.caller))
-                })
+                    this.cg.addDynamicCallEdge(call.caller, call.callee, call.callStmt);
+                    newCallSites.push(new CallSite(call.callStmt, undefined, call.callee, call.caller));
+                });
             }
-            this.instancedClasses.add(sig)
-            this.ignoredCalls.delete(sig)
-        })
-        return newCallSites
+            this.instancedClasses.add(sig);
+            this.ignoredCalls.delete(sig);
+        });
+        return newCallSites;
     }
 
     private collectInstancedClassesInMethod(funcID: FuncID) {
-        let instancedClasses: Set<ClassSignature> = new Set()
-        let arkMethod = this.cg.getArkMethodByFuncID(funcID)
+        let instancedClasses: Set<ClassSignature> = new Set();
+        let arkMethod = this.cg.getArkMethodByFuncID(funcID);
 
         if (!arkMethod) {
-            logger.error(`can not find arkMethod by funcID`)
-            return instancedClasses
+            logger.error(`can not find arkMethod by funcID`);
+            return instancedClasses;
         }
 
-        let cfg = arkMethod!.getCfg()
+        let cfg = arkMethod!.getCfg();
         if (!cfg) {
-            logger.error(`arkMethod ${arkMethod.getSignature().toString()} has no cfg`)
-            return instancedClasses
+            logger.error(`arkMethod ${arkMethod.getSignature().toString()} has no cfg`);
+            return instancedClasses;
         }
 
         for (let stmt of cfg!.getStmts()) {
-            let stmtExpr = stmt.getExprs()[0]
+            let stmtExpr = stmt.getExprs()[0];
             if (stmtExpr instanceof ArkNewExpr) {
-                let classSig: ClassSignature = (stmtExpr.getType() as ClassType).getClassSignature()
+                let classSig: ClassSignature = (stmtExpr.getType() as ClassType).getClassSignature();
                 if (classSig != null) {
                     // TODO: need to check if different stmt has single sig
-                    instancedClasses.add(classSig)
+                    instancedClasses.add(classSig);
                 }
             }
         }
-        return instancedClasses
+        return instancedClasses;
     }
 
     public addIgnoredCalls(arkClass: ClassSignature, callerID: FuncID, calleeID: FuncID, invokeStmt: Stmt) {
-        let classMap = this.ignoredCalls.get(arkClass) ?? new Set()
-        classMap.add({caller: callerID, callee: calleeID, callStmt: invokeStmt })
-        this.ignoredCalls.set(arkClass, classMap)
+        let classMap = this.ignoredCalls.get(arkClass) ?? new Set();
+        classMap.add({ caller: callerID, callee: calleeID, callStmt: invokeStmt });
+        this.ignoredCalls.set(arkClass, classMap);
     }
 }
