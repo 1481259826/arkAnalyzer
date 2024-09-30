@@ -121,9 +121,8 @@ export const BuilderTest_Expect_ViewTree = {
     children: [
         {
             name: 'Builder',
-            children: [
-                ParentBuilder_Expect_ViewTree
-            ]
+            children: [ParentBuilder_Expect_ViewTree],
+            stateValues: ['label']
         },
         {
             name: 'Button',
@@ -148,15 +147,45 @@ export const Case1_BuilderTest_Expect_ViewTree = {
     children: [
         {
             name: 'Builder',
-            children: [Case1_OverBuilder_Expect_ViewTree]
+            children: [
+                {
+                    name: 'View',
+                    children: [
+                        {
+                            name: 'Row',
+                            children: [
+                                {
+                                    name: 'Text',
+                                    children: [],
+                                    stateValues: ['bundleName'],
+                                },
+                                {
+                                    name: 'Text',
+                                    children: [],
+                                    stateValues: []
+                                },
+                            ],
+                            stateValues: [],
+                        },
+                    ],
+                    stateValues: ['bundleName', 'height', 'lastAppInfo'],
+                },
+            ],
+        },
+        {
+            name: 'Builder',
+            children: [Case1_OverBuilder_Expect_ViewTree],
+            stateValues: ['label']
         },
         {
             name: 'Button',
             children: [],
-            stateValues: ['label']
-        }
-    ]
-}
+            stateValues: ['label'],
+        },
+    ],
+    stateValues: ['scale'],
+    total: ['label', 'height', 'bundleName', 'scale', 'lastAppInfo']
+};
 
 export const Case2_HelloComponent_Expect_ViewTree = {
     name: 'Row',
@@ -194,15 +223,17 @@ export const Case2_BuilderTest_Expect_ViewTree = {
     children: [
         {
             name: 'Builder',
-            children: [Case2_OverBuilder_Expect_ViewTree]
+            children: [Case2_OverBuilder_Expect_ViewTree],
+            stateValues: ['label']
         },
         {
             name: 'Button',
             children: [],
-            stateValues: ['label']
-        }
-    ]
-}
+            stateValues: ['label'],
+        },
+    ],
+    total: ['label']
+};
 
 export const Case3_OverBuilder_Expect_ViewTree = {
     name: 'Row',
@@ -219,10 +250,12 @@ export const Case3_BuilderTest_Expect_ViewTree = {
     children: [
         {
             name: 'Builder',
-            children: [Case3_OverBuilder_Expect_ViewTree]
-        }
-    ]
-}
+            children: [Case3_OverBuilder_Expect_ViewTree],
+            stateValues: ['label']
+        },
+    ],
+    total: ['label']
+};
 
 export const Case_moreRootBuilderTest_Expect_ViewTree = {
     name: 'Builder',

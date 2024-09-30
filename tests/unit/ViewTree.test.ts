@@ -101,6 +101,9 @@ function testClassViewTree(scene: Scene, clsName: string, expectTree: any) {
         return;
     }
     expectViewTree(vt.getRoot(), expectTree);
+    if (expectTree.total) {
+        expect(vt.getStateValues().size).eq(expectTree.total.length);
+    }
     return vt;
 }
 
@@ -114,6 +117,9 @@ function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: st
         return;
     }
     expectViewTree(vt.getRoot(), expectTree);
+    if (expectTree.total) {
+        expect(vt.getStateValues().size).eq(expectTree.total.length);
+    }
 }
 
 describe('control-contentslot Test', () => {
