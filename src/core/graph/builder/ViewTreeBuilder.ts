@@ -692,7 +692,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     this.addStateValue(field, node);
                 }
             }
-            builderViewTree.getStateValues();
         }
         this.pop();
         return root;
