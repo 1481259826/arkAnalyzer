@@ -33,6 +33,8 @@ import { ClassType, UnclearReferenceType } from '../base/Type';
 import { Scene } from '../../Scene';
 
 export class ModelUtils {
+    public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
+
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
         for (const arkMethod of arkClass.getMethods()) {
             if (arkMethod.getName() == methodName) {
@@ -266,7 +268,7 @@ export class ModelUtils {
     }
 
     public static isArkUIBuilderMethod(arkMethod: ArkMethod): boolean {
-        let isArkUIBuilderMethod = arkMethod.hasBuilderDecorator();
+        let isArkUIBuilderMethod = arkMethod.hasBuilderDecorator() || this.implicitArkUIBuilderMethods.has(arkMethod);
 
         if (
             !isArkUIBuilderMethod &&

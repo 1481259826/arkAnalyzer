@@ -98,8 +98,8 @@ import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import {
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
-    COMPONENT_CUSTOMVIEW,
-    COMPONENT_IF,
+    COMPONENT_CUSTOMVIEW, COMPONENT_FOR_EACH,
+    COMPONENT_IF, COMPONENT_LAZY_FOR_EACH,
     COMPONENT_POP_FUNCTION,
     COMPONENT_REPEAT,
     isEtsSystemComponent,
@@ -127,16 +127,18 @@ export class ArkIRTransformer {
     private declaringMethod: ArkMethod;
     private thisLocal: Local;
 
-    private inBuildMethod = false;
+    private inBuilderMethod = false;
     private stmtToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
     private aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]> = new Map();
+
+    private builderMethodContextFlag = false;
 
     constructor(sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.sourceFile = sourceFile;
         this.declaringMethod = declaringMethod;
         this.thisLocal = new Local(THIS_NAME, declaringMethod.getDeclaringArkClass().getSignature().getType());
         this.locals.set(this.thisLocal.getName(), this.thisLocal);
-        this.inBuildMethod = ModelUtils.isArkUIBuilderMethod(declaringMethod);
+        this.inBuilderMethod = ModelUtils.isArkUIBuilderMethod(declaringMethod);
     }
 
     public getLocals(): Set<Local> {
@@ -516,7 +518,7 @@ export class ArkIRTransformer {
 
     private ifStatementToStmts(ifStatement: ts.IfStatement): Stmt[] {
         const stmts: Stmt[] = [];
-        if (this.inBuildMethod) {
+        if (this.inBuilderMethod) {
             const {
                 value: conditionExpr,
                 valueOriginalPositions: conditionExprPositions,
@@ -812,8 +814,12 @@ export class ArkIRTransformer {
     private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
         const componentName = (etsComponentExpression.expression as ts.Identifier).text;
+        let builderMethodIndexes: Set<number> | undefined = undefined;
+        if (componentName === COMPONENT_FOR_EACH || componentName === COMPONENT_LAZY_FOR_EACH) {
+            builderMethodIndexes = new Set<number>([1]);
+        }
         const { args: args, argPositionsAll: argPositionsAll } = this.parseArguments(stmts,
-            etsComponentExpression.arguments);
+            etsComponentExpression.arguments, builderMethodIndexes);
 
         if (isEtsSystemComponent(componentName)) {
             const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(componentName, COMPONENT_CREATE_FUNCTION);
@@ -1047,19 +1053,26 @@ export class ArkIRTransformer {
         return { value: invokeValue, valueOriginalPositions: invokeValuePositions, stmts: stmts };
     }
 
-    private parseArguments(currStmts: Stmt[], argumentNodes?: ts.NodeArray<ts.Expression>): {
+    private parseArguments(currStmts: Stmt[], argumentNodes?: ts.NodeArray<ts.Expression>,
+                           builderMethodIndexes?: Set<number>): {
         args: Value[],
         argPositionsAll: FullPosition[][]
     } {
         const args: Value[] = [];
         const argPositionsAll: FullPosition[][] = [];
         if (argumentNodes) {
-            for (const argument of argumentNodes) {
+            for (let i = 0; i < argumentNodes.length; i++) {
+                const argument = argumentNodes[i];
+                const prevBuilderMethodContextFlag = this.builderMethodContextFlag;
+                if (builderMethodIndexes?.has(i)) {
+                    this.builderMethodContextFlag = true;
+                }
                 let {
                     value: argValue,
                     valueOriginalPositions: argPositions,
                     stmts: argStmts,
                 } = this.tsNodeToValueAndStmts(argument);
+                this.builderMethodContextFlag = prevBuilderMethodContextFlag;
                 currStmts.push(...argStmts);
                 if (IRUtils.moreThanOneAddress(argValue)) {
                     ({ value: argValue, valueOriginalPositions: argPositions, stmts: argStmts } =
@@ -1076,6 +1089,9 @@ export class ArkIRTransformer {
     private callableNodeToValueAndStmts(callableNode: ts.ArrowFunction | ts.FunctionExpression): ValueAndStmts {
         const declaringClass = this.declaringMethod.getDeclaringArkClass();
         const arrowArkMethod = new ArkMethod();
+        if (this.builderMethodContextFlag) {
+            ModelUtils.implicitArkUIBuilderMethods.add(arrowArkMethod);
+        }
         buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile, this.declaringMethod);
         declaringClass.addMethod(arrowArkMethod);
 
