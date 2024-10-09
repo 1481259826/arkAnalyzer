@@ -18,7 +18,7 @@ import { CallGraph, CallSite, DynCallSite } from '../model/CallGraph';
 import { Value } from '../../core/base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt';
 import { AbstractExpr, ArkNewArrayExpr, ArkNewExpr } from '../../core/base/Expr';
-import { AbstractFieldRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { AbstractFieldRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
@@ -26,6 +26,9 @@ import { Constant } from '../../core/base/Constant';
 import { FunctionType } from '../../core/base/Type';
 import { MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -48,7 +51,7 @@ export class PagEdge extends BaseEdge {
     };
 
     public getDotAttr(): string {
-        switch(this.getKind()) {
+        switch (this.getKind()) {
             case PagEdgeKind.Address:
                 return "color=green";
             case PagEdgeKind.Copy:
@@ -124,7 +127,7 @@ export class PagNode extends BaseNode {
     protected basePt!: NodeID;
     protected clonedFrom!: NodeID;
 
-    constructor (id: NodeID, cid: ContextID|undefined = undefined, value: Value, k: Kind, s?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, value: Value, k: Kind, s?: Stmt) {
         super(id, k);
         this.cid = cid;
         this.value = value;
@@ -197,7 +200,7 @@ export class PagNode extends BaseNode {
         this.addIncomingEdge(e);
     }
 
-    public addAddressOutEdge(e:AddrPagEdge): void {
+    public addAddressOutEdge(e: AddrPagEdge): void {
         this.addressOutEdges == undefined ? this.addressOutEdges = new Set() : undefined;
         this.addressOutEdges.add(e);
         this.addOutgoingEdge(e);
@@ -217,7 +220,7 @@ export class PagNode extends BaseNode {
     }
 
     public addLoadInEdge(e: LoadPagEdge): void {
-        this.loadInEdges == undefined? this.loadInEdges = new Set() : undefined;
+        this.loadInEdges == undefined ? this.loadInEdges = new Set() : undefined;
         this.loadInEdges.add(e);
         this.addIncomingEdge(e);
     }
@@ -281,12 +284,12 @@ export class PagNode extends BaseNode {
         return this.clonedFrom;
     }
 
-    public setClonedFrom(id: NodeID): void{
+    public setClonedFrom(id: NodeID): void {
         this.clonedFrom = id;
     }
 
     public getDotAttr(): string {
-        switch(this.getKind()) {
+        switch (this.getKind()) {
             case PagNodeKind.HeapObj:
             case PagNodeKind.Function:
             case PagNodeKind.GlobalThis:
@@ -325,7 +328,7 @@ export class PagNode extends BaseNode {
         if (this.stmt) {
             label = label + `\n${this.stmt.toString()}`;
             let method = this.stmt.getCfg()?.getDeclaringMethod().getSubSignature().toString();
-            if(method) {
+            if (method) {
                 label = label + '\n' + method;
             }
             label = label + ' ln: ' + this.stmt.getOriginPositionInfo().getLineNo();
@@ -339,7 +342,7 @@ export class PagNode extends BaseNode {
 export class PagLocalNode extends PagNode {
     private relatedDynamicCallSite!: Set<DynCallSite>
 
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, value: Local, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, value: Local, stmt?: Stmt) {
         super(id, cid, value, PagNodeKind.LocalVar, stmt)
     }
 
@@ -355,14 +358,14 @@ export class PagLocalNode extends PagNode {
 }
 
 export class PagInstanceFieldNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, instanceFieldRef: ArkInstanceFieldRef, stmt?: Stmt) {
-        super(id, cid, instanceFieldRef,PagNodeKind.RefVar, stmt)
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, instanceFieldRef: ArkInstanceFieldRef, stmt?: Stmt) {
+        super(id, cid, instanceFieldRef, PagNodeKind.RefVar, stmt)
     }
 
 }
 
 export class PagStaticFieldNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, staticFieldRef: ArkStaticFieldRef, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, staticFieldRef: ArkStaticFieldRef, stmt?: Stmt) {
         super(id, cid, staticFieldRef, PagNodeKind.RefVar, stmt)
     }
 }
@@ -383,17 +386,25 @@ export class PagThisRefNode extends PagNode {
     }
 }
 
+export class PagArrayNode extends PagNode {
+    base: Value;
+
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: ArkArrayRef, stmt?: Stmt) {
+        super(id, cid, expr, PagNodeKind.LocalVar, stmt);
+        this.base = expr.getBase();
+    }
+}
+
 
 /**
  * below is heapObj like Node
  */
 export class PagNewExprNode extends PagNode {
+    // store the cloned field node
     fieldNodes!: Map<string, NodeID>
-    referenceNodes: Set<NodeID>
 
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, expr: AbstractExpr, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: AbstractExpr, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt)
-        this.referenceNodes = new Set()
     }
 
     public addFieldNode(fieldSignature: AbstractFieldRef, nodeID: NodeID): boolean {
@@ -420,18 +431,31 @@ export class PagNewExprNode extends PagNode {
         }
         return this.fieldNodes
     }
+}
 
-    public getRelatedNodes(): Set<NodeID> {
-        return this.referenceNodes
+export class PagNewArrayExprNode extends PagNode {
+    // store the cloned array ref node
+    elementNode: NodeID | undefined;
+
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: ArkNewArrayExpr, stmt?: Stmt) {
+        super(id, cid, expr, PagNodeKind.HeapObj, stmt);
     }
 
-    public addRelatedNodes(nodeID: NodeID): void {
-        this.referenceNodes.add(nodeID)
+    public addElementNode(nodeID: NodeID): boolean {
+        if (!this.elementNode) {
+            this.elementNode = nodeID;
+        }
+
+        return true;
+    }
+
+    public getElementNode(): NodeID | undefined {
+        return this.elementNode;
     }
 }
 
 export class PagParamNode extends PagNode {
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, r: ArkParameterRef, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: ArkParameterRef, stmt?: Stmt) {
         super(id, cid, r, PagNodeKind.Param, stmt)
     }
 }
@@ -440,7 +464,7 @@ export class PagFuncNode extends PagNode {
     private methodSignature!: MethodSignature
     // TODO: may add obj interface
 
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt) {
         super(id, cid, r, PagNodeKind.Function, stmt)
     }
 
@@ -459,7 +483,7 @@ export class PagFuncNode extends PagNode {
 export class PagGlobalThisNode extends PagNode {
     fieldNodes: Map<string, NodeID>
 
-    constructor(id: NodeID, cid: ContextID|undefined = undefined, r: Value, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt) {
         super(id, cid, r, PagNodeKind.GlobalThis, stmt)
         this.fieldNodes = new Map()
     }
@@ -484,10 +508,10 @@ export class PagGlobalThisNode extends PagNode {
 export class Pag extends BaseGraph {
 
     private cg!: CallGraph;
-    private contextValueToIdMap: Map<Value, Map<ContextID,NodeID>> = new Map();
+    private contextValueToIdMap: Map<Value, Map<ContextID, NodeID>> = new Map();
     // contextBaseToIdMap will only be used in instance field
     // Value: instance field base value, NodeID: abstract nodes
-    private contextBaseToIdMap: Map<Value, Map<ContextID,NodeID[]>> = new Map();
+    private contextBaseToIdMap: Map<Value, Map<ContextID, NodeID[]>> = new Map();
     // for reanalyze, will return new addr edges
     private stashAddrEdge: PagEdgeSet = new Set();
     private addrEdge: PagEdgeSet = new Set();
@@ -503,10 +527,10 @@ export class Pag extends BaseGraph {
      */
     public getOrClonePagNode(src: PagNode, basePt: NodeID): PagNode {
         if (src.getBasePt() != undefined) {
-            throw new Error ('This is a cloned ref node, can not be cloned again');
+            throw new Error('This is a cloned ref node, can not be cloned again');
         }
 
-        let cloneSet =  this.clonedNodeMap.get(src.getID());
+        let cloneSet = this.clonedNodeMap.get(src.getID());
         if (!cloneSet) {
             cloneSet = new Map<NodeID, NodeID>();
             this.clonedNodeMap.set(src.getID(), cloneSet);
@@ -524,20 +548,41 @@ export class Pag extends BaseGraph {
         return cloneNode;
     }
 
-    public getOrClonePagFieldNode(src: PagInstanceFieldNode, basePt: NodeID): PagInstanceFieldNode {
+    public getOrClonePagFieldNode(src: PagInstanceFieldNode, basePt: NodeID): PagInstanceFieldNode | undefined {
         let baseNode = this.getNode(basePt)
         if (baseNode instanceof PagNewExprNode || baseNode instanceof PagGlobalThisNode) {
+            // check if real field node has been created with basePT, using FieldSignature as key
             let existedNode = baseNode.getFieldNode(src.getValue() as ArkInstanceFieldRef)
             if (existedNode) {
                 return this.getNode(existedNode) as PagInstanceFieldNode
             }
-    
+
             let fieldNode = this.getOrClonePagNode(src, basePt)
             baseNode.addFieldNode(src.getValue() as ArkInstanceFieldRef, fieldNode.getID())
             fieldNode.setBasePt(basePt)
             return fieldNode
         } else {
-            throw new Error(`Error clone field node ${src.getValue()}`)
+            logger.error(`Error clone field node ${src.getValue()}`)
+            return undefined;
+        }
+    }
+
+    public getOrClonePagArrayFieldNode(src: PagArrayNode, basePt: NodeID): PagInstanceFieldNode {
+        let baseNode = this.getNode(basePt);
+        if (baseNode instanceof PagNewArrayExprNode) {
+            // check if Array Ref real node has been created or not, if not: create a real Array Ref node
+            let existedNode = baseNode.getElementNode();
+            if (existedNode) {
+                return this.getNode(existedNode) as PagInstanceFieldNode;
+            }
+
+            // let arrayBase: Local = (src.getValue() as ArkArrayRef).getBase()
+            let fieldNode = this.getOrClonePagNode(src, basePt);
+            baseNode.addElementNode(fieldNode.getID());
+            fieldNode.setBasePt(basePt);
+            return fieldNode;
+        } else {
+            throw new Error(`Error clone array field node ${src.getValue()}`);
         }
     }
 
@@ -546,7 +591,7 @@ export class Pag extends BaseGraph {
         let pagNode: PagNode
         if (value instanceof Local) {
             const valueType = value.getType()
-            if (valueType instanceof FunctionType && 
+            if (valueType instanceof FunctionType &&
                 (value.getDeclaringStmt() === null)) {
                 // init function pointer
                 pagNode = new PagFuncNode(id, cid, value, stmt)
@@ -566,8 +611,12 @@ export class Pag extends BaseGraph {
             pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
             pagNode = new PagStaticFieldNode(id, cid, value, stmt);
-        } else if (value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr) {
+        } else if (value instanceof ArkArrayRef) {
+            pagNode = new PagArrayNode(id, cid, value, stmt);
+        } else if (value instanceof ArkNewExpr) {
             pagNode = new PagNewExprNode(id, cid, value, stmt);
+        } else if (value instanceof ArkNewArrayExpr) {
+            pagNode = new PagNewArrayExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
@@ -577,51 +626,59 @@ export class Pag extends BaseGraph {
         }
 
         this.addNode(pagNode!);
-        if (refresh) {
-            let ctx2NdMap = this.contextValueToIdMap.get(value);
-            if (!ctx2NdMap) {
-                ctx2NdMap = new Map();
-                this.contextValueToIdMap.set(value, ctx2NdMap);
-            }
-            ctx2NdMap.set(cid, id);
 
-            if (value instanceof ArkInstanceFieldRef) {
-                let base = value.getBase();
-                //TODO: remove below once this Local is not uniq in @instance_init is fix
-                if (base instanceof Local && base.getName() === 'this')
-                    stmt?.getCfg()?.getStmts().forEach(s => {
-                        if (s instanceof ArkAssignStmt && s.getLeftOp() instanceof Local) {
-                            if ((s.getLeftOp() as Local).getName() === 'this') {
-                                base = s.getLeftOp() as Local;
-                                return;
-                            }
-                        }
-                    })
-                let ctxMap = this.contextBaseToIdMap.get(base);
-                if (ctxMap == undefined) {
-                    ctxMap = new Map();
-                    ctxMap.set(cid, [pagNode.getID()]);
-                } else {
-                    let nodes = ctxMap.get(cid);
-                    if (nodes == undefined) {
-                        nodes = [pagNode.getID()];
-                    } else {
-                        nodes.push(pagNode.getID());
-                    }
-                    ctxMap.set(cid, nodes);
-                }
-                this.contextBaseToIdMap.set(base, ctxMap);
-            }
-        }
-        
+        this.addContextMap(refresh, cid, id, value, stmt!, pagNode);
+
         return pagNode!;
+    }
+
+    private addContextMap(refresh: boolean, cid: ContextID, id: NodeID, value: Value, stmt: Stmt, pagNode: PagNode): void {
+        if (!refresh) {
+            return;
+        }
+
+        let ctx2NdMap = this.contextValueToIdMap.get(value);
+        if (!ctx2NdMap) {
+            ctx2NdMap = new Map();
+            this.contextValueToIdMap.set(value, ctx2NdMap);
+        }
+        ctx2NdMap.set(cid, id);
+
+        if (value instanceof ArkInstanceFieldRef || value instanceof ArkArrayRef) {
+            let base = value.getBase();
+            //TODO: remove below once this Local is not uniq in @instance_init is fix
+            if (base instanceof Local && base.getName() === 'this') {
+                stmt?.getCfg()?.getStmts().forEach(s => {
+                    if (s instanceof ArkAssignStmt &&
+                        (s.getLeftOp()) instanceof Local &&
+                        (s.getLeftOp() as Local).getName() === 'this') {
+                        base = s.getLeftOp() as Local;
+                        return;
+                    }
+                });
+            }
+            let ctxMap = this.contextBaseToIdMap.get(base);
+            if (ctxMap === undefined) {
+                ctxMap = new Map();
+                ctxMap.set(cid, [pagNode.getID()]);
+            } else {
+                let nodes = ctxMap.get(cid);
+                if (nodes === undefined) {
+                    nodes = [pagNode.getID()];
+                } else {
+                    nodes.push(pagNode.getID());
+                }
+                ctxMap.set(cid, nodes);
+            }
+            this.contextBaseToIdMap.set(base, ctxMap);
+        }
     }
 
     /*
      * This node has no context info
      * but point to node info
      */
-    public addPagThisRefNode(value: ArkThisRef): PagNode{
+    public addPagThisRefNode(value: ArkThisRef): PagNode {
         let id: NodeID = this.nodeNum;
         let pagNode = new PagThisRefNode(id, value);
         this.addNode(pagNode);
@@ -629,7 +686,7 @@ export class Pag extends BaseGraph {
         return pagNode;
     }
 
-    public addPagThisLocalNode(ptNode: NodeID, value: Local): PagNode{
+    public addPagThisLocalNode(ptNode: NodeID, value: Local): PagNode {
         let id: NodeID = this.nodeNum;
         let pagNode = new PagLocalNode(id, ptNode, value);
         this.addNode(pagNode);
@@ -661,7 +718,7 @@ export class Pag extends BaseGraph {
         }
 
         let ndId = ctx2nd.get(cid);
-        if(!ndId) {
+        if (!ndId) {
             return undefined;
         }
 
@@ -675,7 +732,7 @@ export class Pag extends BaseGraph {
         }
 
         let ndId = ctx2nd.get(cid);
-        if(!ndId) {
+        if (!ndId) {
             return undefined;
         }
 
@@ -694,13 +751,13 @@ export class Pag extends BaseGraph {
         return this.contextValueToIdMap.get(v);
     }
 
-    public getNodesByBaseValue(v: Value): Map<ContextID, NodeID[]> | undefined{
+    public getNodesByBaseValue(v: Value): Map<ContextID, NodeID[]> | undefined {
         return this.contextBaseToIdMap.get(v);
     }
 
     public addPagEdge(src: PagNode, dst: PagNode, kind: PagEdgeKind, stmt?: Stmt): boolean {
         // TODO: check if the edge already existing
-        let edge = new PagEdge(src, dst, kind, stmt); 
+        let edge = new PagEdge(src, dst, kind, stmt);
         if (this.ifEdgeExisting(edge)) {
             return false;
         }
@@ -753,7 +810,7 @@ export class Pag extends BaseGraph {
     }
 }
 
-export type InternalEdge = {src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt}
+export type InternalEdge = { src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt }
 
 export class FuncPag {
     private internalEdges!: Set<InternalEdge>;
@@ -793,7 +850,7 @@ export class FuncPag {
             return false;
         }
 
-        let iEdge: InternalEdge = { src: rhOp, dst: lhOp, kind: k, stmt: stmt};
+        let iEdge: InternalEdge = { src: rhOp, dst: lhOp, kind: k, stmt: stmt };
         this.internalEdges.add(iEdge);
 
         return true;

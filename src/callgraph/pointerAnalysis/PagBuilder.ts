@@ -17,7 +17,7 @@ import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeK
 import { Scene } from '../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
 import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
-import { ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
@@ -29,8 +29,9 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, PagNewExprNode, InternalEdge, GLOBAL_THIS } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS } from './Pag';
 import { PtsSet } from './PtsDS';
+import { STATIC_KEYWORD } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -697,43 +698,43 @@ export class PagBuilder {
      */
     public isSingletonFunction(funcID: FuncID): boolean {
         if (this.singletonFuncMap.has(funcID)) {
-            return this.singletonFuncMap.get(funcID)!
+            return this.singletonFuncMap.get(funcID)!;
         }
 
-        let arkMethod = this.cg.getArkMethodByFuncID(funcID)
+        let arkMethod = this.cg.getArkMethodByFuncID(funcID);
         if (!arkMethod) {
-            this.singletonFuncMap.set(funcID, false)
-            return false
+            this.singletonFuncMap.set(funcID, false);
+            return false;
         }
 
-        if (!arkMethod.getModifiers().has("StaticKeyword")) {
-            this.singletonFuncMap.set(funcID, false)
-            return false
+        if (!arkMethod.getModifiers().has(STATIC_KEYWORD)) {
+            this.singletonFuncMap.set(funcID, false);
+            return false;
         }
 
-        let funcPag = this.funcPags.get(funcID)!
+        let funcPag = this.funcPags.get(funcID)!;
         let heapObjects = [...funcPag.getInternalEdges()!]
             .filter(edge => edge.kind == PagEdgeKind.Address)
-            .map(edge => edge.dst)
+            .map(edge => edge.dst);
 
-        let returnValues = arkMethod.getReturnValues()
+        let returnValues = arkMethod.getReturnValues();
 
-        let result = this.isValueConnected([...funcPag.getInternalEdges()!], heapObjects, returnValues)
-        this.singletonFuncMap.set(funcID, result)
+        let result = this.isValueConnected([...funcPag.getInternalEdges()!], heapObjects, returnValues);
+        this.singletonFuncMap.set(funcID, result);
         if (result) {
-            logger.info(`function ${funcID} is marked as singleton function`)
+            logger.info(`function ${funcID} is marked as singleton function`);
         }
-        return result
+        return result;
     }
 
     private isValueConnected(edges: InternalEdge[], leftNodes: Value[], targetNodes: Value[]): boolean {
         // build funcPag graph
         const graph = new Map<Value, Value[]>();
-        let hasStaticFieldOrGlobalVar: boolean = false
+        let hasStaticFieldOrGlobalVar: boolean = false;
     
         for (const edge of edges) {
-            let dst = this.getRealInstanceRef(edge.dst)
-            let src = this.getRealInstanceRef(edge.src)
+            let dst = this.getRealInstanceRef(edge.dst);
+            let src = this.getRealInstanceRef(edge.src);
             if (!graph.has(dst)) {
                 graph.set(dst, []);
             }
@@ -742,20 +743,20 @@ export class PagBuilder {
             }
 
             if (dst instanceof ArkStaticFieldRef || src instanceof ArkStaticFieldRef) {
-                hasStaticFieldOrGlobalVar = true
+                hasStaticFieldOrGlobalVar = true;
             }
 
             graph.get(src)!.push(dst);
         }
 
         if (!hasStaticFieldOrGlobalVar) {
-            return false
+            return false;
         }
 
         for (const targetNode of targetNodes) {
             for (const leftNode of leftNodes) {
                 const visited = new Set<Value>();
-                let meetStaticField = false
+                let meetStaticField = false;
                 if (this.funcPagDfs(graph, visited, leftNode, targetNode, meetStaticField)) {
                     return true; // a value pair that satisfy condition
                 }
@@ -766,7 +767,7 @@ export class PagBuilder {
             }
         }
 
-        return false
+        return false;
     }
 
     private funcPagDfs(graph: Map<Value, Value[]>, visited: Set<Value>, currentNode: Value, targetNode: Value, 
@@ -796,7 +797,7 @@ export class PagBuilder {
     }
 
     public getGlobalThisValue(): Value {
-        return this.globalThisValue ?? new Local(GLOBAL_THIS)
+        return this.globalThisValue ?? new Local(GLOBAL_THIS);
     }
 
     private getEdgeKindForAssignStmt(stmt: ArkAssignStmt): PagEdgeKind {
@@ -813,7 +814,7 @@ export class PagBuilder {
         }
 
         if (this.stmtIsWriteKind(stmt)) {
-            return PagEdgeKind.Write
+            return PagEdgeKind.Write;
         }
 
         return PagEdgeKind.Unknown;
@@ -860,7 +861,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (rhOp instanceof Local && 
-            (lhOp instanceof ArkInstanceFieldRef)) {
+            (lhOp instanceof ArkInstanceFieldRef || lhOp instanceof ArkArrayRef)) {
             return true;
         }
         return false;
@@ -871,7 +872,7 @@ export class PagBuilder {
         let rhOp = stmt.getRightOp();
 
         if (lhOp instanceof Local && 
-            (rhOp instanceof ArkInstanceFieldRef)) {
+            (rhOp instanceof ArkInstanceFieldRef || rhOp instanceof ArkArrayRef)) {
             return true;
         }
         return false;
@@ -881,19 +882,12 @@ export class PagBuilder {
         funcPag.addDynamicCallSite(cs);
         this.pagStat.numDynamicCall++;
 
-        logger.trace("[add dynamic callsite] "+cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString())
+        logger.trace("[add dynamic callsite] "+cs.callStmt.toString()+":  "+cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString());
     }
 
     public setPtForNode(node: NodeID, pts: PtsSet<NodeID> | undefined): void {
         if (!pts) {
             return;
-        }
-
-        for (let pt of pts) {
-            let heapObjNode = this.pag.getNode(pt);
-            if (heapObjNode instanceof PagNewExprNode) {
-                heapObjNode.addRelatedNodes(node);
-            }
         }
 
         (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
