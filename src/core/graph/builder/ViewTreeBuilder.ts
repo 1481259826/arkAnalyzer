@@ -36,7 +36,7 @@ import {
     isEtsContainerComponent,
     SPECIAL_CONTAINER_COMPONENT,
 } from '../../common/EtsConst';
-import { ArkClass } from '../../model/ArkClass';
+import { ArkClass, ClassCategory } from '../../model/ArkClass';
 import { ArkField } from '../../model/ArkField';
 import { ArkMethod } from '../../model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
@@ -66,6 +66,9 @@ function backtraceLocalInitValue(value: Local): Local | Value {
 type ObjectLiteralMap = Map<ArkField, Value | ObjectLiteralMap>;
 function parseObjectLiteral(objectLiteralCls: ArkClass | null, scene: Scene): ObjectLiteralMap {
     let map: ObjectLiteralMap = new Map();
+    if (objectLiteralCls?.getCategory() !== ClassCategory.OBJECT) {
+        return map;
+    }
     objectLiteralCls?.getFields().forEach((field) => {
         let stmts = field.getInitializer();
         if (stmts.length === 0) {
