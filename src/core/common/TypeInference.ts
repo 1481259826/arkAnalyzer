@@ -420,7 +420,7 @@ export class TypeInference {
         let type = null;
         for (let i = 0; i < singleNames.length; i++) {
             let genericName: string = EMPTY_STRING;
-            const name = singleNames[i].replace(/<(\w+)>/, function(match, group1) {
+            const name = singleNames[i].replace(/<(\w+)>/, function (match, group1) {
                 genericName = group1;
                 return EMPTY_STRING;
             });
@@ -506,9 +506,24 @@ export class TypeInference {
             ?? arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
                 ?.getBody()?.getAliasTypeByName(baseName)
             ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
-        if (!arkExport) {
+        if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
         return this.parseArkExport2Type(arkExport);
+    }
+
+    public static inferRealGenericTypes(realTypes: Type[] | undefined, arkClass: ArkClass): void {
+        if (!realTypes) {
+            return;
+        }
+        for (let i = 0; i < realTypes.length; i++) {
+            const mayType = realTypes[i];
+            if (this.isUnclearType(mayType)) {
+                const newType = this.inferUnclearedType(mayType, arkClass);
+                if (newType) {
+                    realTypes[i] = newType;
+                }
+            }
+        }
     }
 }
