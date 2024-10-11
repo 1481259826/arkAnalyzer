@@ -88,12 +88,11 @@ function parseObjectLiteral(objectLiteralCls: ArkClass | null, scene: Scene): Ob
         map.set(field, value);
         if (value instanceof ArkNewExpr) {
             let subCls = ModelUtils.getArkClassInBuild(scene, value.getClassType());
-            if (subCls) {
-                let childMap = parseObjectLiteral(subCls, scene);
-                if (childMap) {
-                    map.set(field, childMap);
-                }
+            let childMap = parseObjectLiteral(subCls, scene);
+            if (childMap) {
+                map.set(field, childMap);
             }
+            
         }
     });
 
@@ -154,7 +153,7 @@ class StateValuesUtils {
         return uses;
     }
 
-    private objectLiteralMapUsedStateValues(uses: Set<ArkField>, map: ObjectLiteralMap) {
+    private objectLiteralMapUsedStateValues(uses: Set<ArkField>, map: ObjectLiteralMap): void {
         for (const [_, value] of map) {
             if (value instanceof ArkInstanceFieldRef) {
                 let srcField = this.declaringArkClass.getFieldWithName(value.getFieldName());
