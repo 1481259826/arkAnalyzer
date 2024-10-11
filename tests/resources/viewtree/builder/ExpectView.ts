@@ -312,7 +312,7 @@ export const Case_ComplexStateValueTest_Expect_ViewTree = {
                     ]
                 }
             ],
-            stateValues: ['arrayData', 'viewData']
+            stateValues: ['arrayData', 'viewData', 'n']
         }
     ]
 }

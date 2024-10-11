@@ -254,16 +254,22 @@ class ViewData {
   }
 }
 
+interface TestI {
+  n?: number;
+}
+
 @Component
 struct ComplexStateValueTest {
   @State
   arrayData: string[] = [];
   @State
   viewData: ViewData = new ViewData();
+  @State
+  n: number = 0;
 
   build() {
     Column() {
-      ComplexView({data: this.arrayData[0], index: this.viewData.index});
+      ComplexView({data: this.arrayData[0], index: this.viewData.index, t: {n: this.n}});
     }
   }
 }
@@ -274,6 +280,8 @@ struct ComplexView {
   data: string = '';
   @State
   index: number = 0;
+  @State
+  t: TestI = {}
 
   build() {
     Column() {
