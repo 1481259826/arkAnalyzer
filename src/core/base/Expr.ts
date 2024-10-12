@@ -117,7 +117,7 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
                     realType = this.realGenericTypes?.[t.getIndex()];
                 }
                 types.push(realType ?? t);
-            })
+            });
             type = new UnionType(types, type.getCurrType());
         }
         return type;
@@ -202,7 +202,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         }
 
         const scene = arkClass.getDeclaringArkFile().getScene();
-        this.processForEach(methodName, baseType, scene);
+        if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
+            this.processForEach(baseType, scene);
+        }
         TypeInference.inferRealGenericTypes(this.getRealGenericTypes(), arkClass);
         let result;
         if (baseType instanceof AliasType) {
@@ -228,24 +230,22 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         return this;
     }
 
-    private processForEach(methodName: string, baseType: Type | ArrayType, scene: Scene) {
-        if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
-            const arg = this.getArg(0);
-            if (arg.getType() instanceof FunctionType) {
-                const argMethodSignature = (arg.getType() as FunctionType).getMethodSignature();
-                const argMethod = scene.getMethod(argMethodSignature);
-                if (argMethod != null && argMethod.getBody()) {
-                    const body = argMethod.getBody() as ArkBody;
-                    const firstStmt = body.getCfg().getStartingStmt();
-                    if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
-                        const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
-                        parameterRef.setType((baseType as ArrayType).getBaseType());
-                    }
-                    TypeInference.inferTypeInMethod(argMethod);
+    private processForEach(baseType: Type | ArrayType, scene: Scene): void {
+        const arg = this.getArg(0);
+        if (arg.getType() instanceof FunctionType) {
+            const argMethodSignature = (arg.getType() as FunctionType).getMethodSignature();
+            const argMethod = scene.getMethod(argMethodSignature);
+            if (argMethod != null && argMethod.getBody()) {
+                const body = argMethod.getBody() as ArkBody;
+                const firstStmt = body.getCfg().getStartingStmt();
+                if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
+                    const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
+                    parameterRef.setType((baseType as ArrayType).getBaseType());
                 }
-            } else {
-                logger.warn(`arg of forEach must be callable`);
+                TypeInference.inferTypeInMethod(argMethod);
             }
+        } else {
+            logger.warn(`arg of forEach must be callable`);
         }
     }
 

@@ -258,7 +258,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
 }
 
 export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField): Type {
-    function replace(urType: UnclearReferenceType) {
+    function replace(urType: UnclearReferenceType): Type {
         const typeName = urType.getName();
         let gType;
         if (arkInstance instanceof ArkMethod) {
