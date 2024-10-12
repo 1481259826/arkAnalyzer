@@ -258,8 +258,8 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
 }
 
 export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField): Type {
-    if (type instanceof UnclearReferenceType) {
-        const typeName = type.getName();
+    function replace(urType: UnclearReferenceType): Type {
+        const typeName = urType.getName();
         let gType;
         if (arkInstance instanceof ArkMethod) {
             gType = arkInstance.getGenericTypes()?.find(f => f.getName() === typeName);
@@ -267,7 +267,19 @@ export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField):
         if (!gType) {
             gType = arkInstance.getDeclaringArkClass().getGenericsTypes()?.find(f => f.getName() === typeName);
         }
-        return gType ?? type;
+        return gType ?? urType;
+    }
+
+    if (type instanceof UnclearReferenceType) {
+        return replace(type);
+    } else if (type instanceof UnionType) {
+        const types = type.getTypes();
+        for (let i = 0; i < types.length; i++) {
+            const mayType = types[i];
+            if (mayType instanceof UnclearReferenceType) {
+                types[i] = replace(mayType);
+            }
+        }
     }
     return type;
 }
