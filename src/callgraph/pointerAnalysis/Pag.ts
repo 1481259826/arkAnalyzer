@@ -494,8 +494,11 @@ export class PagFuncNode extends PagNode {
     private methodSignature!: MethodSignature
     // TODO: may add obj interface
 
-    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt, method?: MethodSignature) {
         super(id, cid, r, PagNodeKind.Function, stmt)
+        if (method) {
+            this.methodSignature = method;
+        }
     }
 
     public setMethod(method: MethodSignature) {
@@ -624,10 +627,7 @@ export class Pag extends BaseGraph {
             if (valueType instanceof FunctionType &&
                 (value.getDeclaringStmt() === null)) {
                 // init function pointer
-                pagNode = new PagFuncNode(id, cid, value, stmt)
-                if (pagNode instanceof PagFuncNode) {
-                    pagNode.setMethod(valueType.getMethodSignature())
-                }
+                pagNode = new PagFuncNode(id, cid, value, stmt, valueType.getMethodSignature())
             } else {
                 // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
                 // value has been replaced in param
@@ -638,9 +638,21 @@ export class Pag extends BaseGraph {
                 }
             }
         } else if (value instanceof ArkInstanceFieldRef) {
-            pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
+            if (value.getType() instanceof FunctionType) {
+                // TODO: function ptr
+                pagNode = new PagFuncNode(id, cid, value, stmt,
+                    (value.getType() as FunctionType).getMethodSignature());
+            } else {
+                pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
+            }
         } else if (value instanceof ArkStaticFieldRef) {
-            pagNode = new PagStaticFieldNode(id, cid, value, stmt);
+            if (value.getType() instanceof FunctionType) {
+                // TODO: function ptr
+                pagNode = new PagFuncNode(id, cid, value, stmt,
+                    (value.getType() as FunctionType).getMethodSignature());
+            } else {
+                pagNode = new PagStaticFieldNode(id, cid, value, stmt);
+            }
         } else if (value instanceof ArkArrayRef) {
             pagNode = new PagArrayNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
@@ -657,7 +669,7 @@ export class Pag extends BaseGraph {
 
         this.addNode(pagNode!);
 
-        this.addContextMap(refresh, cid, id, value, stmt!, pagNode);
+        this.addContextMap(refresh, cid, id, value, stmt!, pagNode!);
 
         return pagNode!;
     }
