@@ -64,6 +64,7 @@ export class PagBuilder {
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
     private globalThisValue?: Value;
+    private storagePropertyMap: Map<string, Map<string, Local>> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -262,9 +263,40 @@ export class PagBuilder {
                     logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`)
                 }
             }
+
+            // process the Storage API(Static)
+            this.processStorage(cs, calleeCGNode, cid);
         }
 
         return true;
+    }
+
+    private processStorage(cs: CallSite, calleeCGNode: CallGraphNode, cid: ContextID) {
+        let storageName = calleeCGNode.getMethod().getDeclaringClassSignature().getClassName();
+
+        // TODO: add other storages
+        if (storageName === 'AppStorage') {
+            let calleeName = calleeCGNode.getMethod().getMethodSubSignature().getMethodName();
+
+            // TODO: complete AppStorage API
+            if (calleeName === 'setOrCreate') {
+                let propertyName = (cs.args![0] as Constant).getValue();
+                let propertyNode = this.getOrNewPropertyNode('AppStorage', propertyName, cid, cs.callStmt);
+
+                this.addPropertyLinkEdge(propertyNode, cs.args![1], cid, cs.callStmt, 2);
+            } else if (calleeName === 'get') {
+                let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+                let propertyName = (cs.args![0] as Constant).getValue();
+                let propertyNode = this.getOrNewPropertyNode('AppStorage', propertyName, cid, cs.callStmt);
+
+                this.pag.addPagEdge(
+                    propertyNode, this.pag.getOrNewNode(cid, leftOp, cs.callStmt),
+                    PagEdgeKind.Copy, cs.callStmt
+                )
+            }
+        } else if (storageName === 'LocalStorage') {
+
+        }
     }
 
     public addDynamicCallSite(funcPag: FuncPag) {
@@ -647,6 +679,49 @@ export class PagBuilder {
 
     public getUniqThisLocalNode(cid: ContextID): NodeID | undefined{
         return this.cid2ThisLocalMap.get(cid);
+    }
+
+    /**
+     * search the storage map to get propertyNode with given storage and propertyFieldName
+     * @param storage storage type: AppStorage, LocalStorage etc.
+     * @param propertyName string property key
+     * @returns propertyNode: PagLocalNode
+     */
+    public getOrNewPropertyNode(storage: string, propertyName: string, cid: ContextID, stmt: Stmt): PagNode {
+        let storageMap = this.storagePropertyMap.get(storage);
+        let propertyLocal: Local;
+
+        if (!storageMap) {
+            storageMap = new Map();
+        }
+
+        if (storageMap.has(propertyName)) {
+            propertyLocal = storageMap.get(propertyName)!;
+        } else {
+            propertyLocal = new Local(propertyName);
+            storageMap.set(propertyName, propertyLocal);
+        }
+
+        this.storagePropertyMap.set(storage, storageMap);
+
+        return this.getOrNewPagNode(cid, propertyLocal, stmt);
+    }
+
+    /**
+     * add PagEdge
+     * @param edgeKind: edge kind differs from API
+     * @param propertyNode: PAG node created by protpertyName
+     * @param obj: heapObj stored with Storage API
+     */
+    public addPropertyLinkEdge(propertyNode: PagNode, obj: any, cid: ContextID, stmt: Stmt, edgeKind: number) {
+        if (edgeKind === 1) {
+            // propertyNode --> objNode
+        } else if (edgeKind === 2) {
+            // propertyNode <-- objNode
+            this.pag.addPagEdge(this.pag.getOrNewNode(cid, obj), propertyNode, PagEdgeKind.Copy, stmt);
+        } else if (edgeKind === 3) {
+            // propertyNode <-> objNode
+        }
     }
 
     /*
