@@ -2,7 +2,8 @@
   "include":[
     "index.ts",
     "src/**/*",
-    "tests/unit/**/*"
+    "tests/unit/**/*",
+    "tests/HeapDumpTest.ts"
   ],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
