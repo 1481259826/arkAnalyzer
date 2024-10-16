@@ -55,7 +55,6 @@ import {
     ArkReturnStmt,
     ArkReturnVoidStmt,
     ArkThrowStmt,
-    OriginalStmt,
     Stmt,
 } from '../base/Stmt';
 import {
@@ -119,6 +118,17 @@ type ValueAndStmts = {
     stmts: Stmt[]
 };
 
+export class DummyStmt extends Stmt {
+    constructor(text: string) {
+        super();
+        this.text = text;
+    }
+
+    public toString(): string {
+        return this.text!;
+    }
+}
+
 export class ArkIRTransformer {
     private readonly tempLocalPrefix = '$temp';
     private tempLocalIndex: number = 0;
@@ -128,7 +138,7 @@ export class ArkIRTransformer {
     private thisLocal: Local;
 
     private inBuilderMethod = false;
-    private stmtToOriginalStmt: Map<Stmt, Stmt> = new Map<Stmt, Stmt>();
+    private stmtToOriginalText: Map<Stmt, string> = new Map();
     private aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]> = new Map();
 
     private builderMethodContextFlag = false;
@@ -147,10 +157,6 @@ export class ArkIRTransformer {
 
     public getThisLocal(): Local {
         return this.thisLocal;
-    }
-
-    public getStmtToOriginalStmt(): Map<Stmt, Stmt> {
-        return this.stmtToOriginalStmt;
     }
 
     public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> {
@@ -333,7 +339,7 @@ export class ArkIRTransformer {
         if (forStatement.initializer) {
             stmts.push(...this.tsNodeToValueAndStmts(forStatement.initializer).stmts);
         }
-        const dummyInitializerStmt = new OriginalStmt(DUMMY_INITIALIZER_STMT, LineColPosition.DEFAULT);
+        const dummyInitializerStmt = new DummyStmt(DUMMY_INITIALIZER_STMT);
         stmts.push(dummyInitializerStmt);
 
         if (forStatement.condition) {
@@ -485,7 +491,7 @@ export class ArkIRTransformer {
 
     private whileStatementToStmts(whileStatement: ts.WhileStatement): Stmt[] {
         const stmts: Stmt[] = [];
-        const dummyInitializerStmt = new OriginalStmt(DUMMY_INITIALIZER_STMT, LineColPosition.DEFAULT);
+        const dummyInitializerStmt = new DummyStmt(DUMMY_INITIALIZER_STMT);
         stmts.push(dummyInitializerStmt);
 
         const {
@@ -1958,12 +1964,10 @@ export class ArkIRTransformer {
     }
 
     public mapStmtsToTsStmt(stmts: Stmt[], node: ts.Node): void {
-        const originalStmt = new OriginalStmt(node.getText(this.sourceFile),
-            LineColPosition.buildFromNode(node, this.sourceFile));
-
         for (const stmt of stmts) {
-            if (!this.stmtToOriginalStmt.has(stmt)){
-                this.stmtToOriginalStmt.set(stmt, originalStmt);
+            if (!this.stmtToOriginalText.has(stmt)) {
+                this.stmtToOriginalText.set(stmt, node.getText(this.sourceFile));
+                stmt.setOriginPositionInfo(LineColPosition.buildFromNode(node, this.sourceFile));
             }
         }
     }

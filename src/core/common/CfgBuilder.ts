@@ -988,8 +988,6 @@ export class CfgBuilder {
 
     public buildCfgAndOriginalCfg(): {
         cfg: Cfg,
-        originalCfg: Cfg,
-        stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
         aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
@@ -1002,8 +1000,6 @@ export class CfgBuilder {
 
     public buildCfgAndOriginalCfgForSimpleArrowFunction(): {
         cfg: Cfg,
-        originalCfg: Cfg,
-        stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
         aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
@@ -1031,7 +1027,6 @@ export class CfgBuilder {
         expressionBodyStmts.push(returnStmt);
         arkIRTransformer.mapStmtsToTsStmt(expressionBodyStmts, expressionBodyNode);
         stmts.push(...expressionBodyStmts);
-        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
         const cfg = new Cfg();
         const blockInCfg = new BasicBlock();
         blockInCfg.setId(0);
@@ -1041,15 +1036,8 @@ export class CfgBuilder {
         });
         cfg.addBlock(blockInCfg);
         cfg.setStartingStmt(stmts[0]);
-        const originalCfg = new Cfg();
-        const blockInOriginalCfg = new BasicBlock();
-        blockInOriginalCfg.setId(0);
-        originalCfg.addBlock(blockInOriginalCfg);
-        originalCfg.setStartingStmt(stmtToOriginalStmt.get(stmts[0]) as Stmt);
         return {
             cfg: cfg,
-            originalCfg: originalCfg,
-            stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
             aliasTypeMap: arkIRTransformer.getAliasTypeMap()
         };
@@ -1057,19 +1045,14 @@ export class CfgBuilder {
 
     public buildNormalCfgAndOriginalCfg(): {
         cfg: Cfg,
-        originalCfg: Cfg,
-        stmtToOriginalStmt: Map<Stmt, Stmt>,
         locals: Set<Local>,
         aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
         let isStartingStmtInCfgBlock = true;
-        const stmtsInOriginalCfg: Stmt[] = [];
-        const stmtSetInOriginalCfg = new Set<Stmt>();
 
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
-        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
         const blocksContainLoopCondition = new Set<Block>();
         for (let i = 0; i < this.blocks.length; i++) {
             // build block in Cfg
@@ -1098,17 +1081,6 @@ export class CfgBuilder {
             }
             cfg.addBlock(blockInCfg);
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
-
-            // collect stmts in OriginalCfg
-            for (const stmt of stmtsInBlock) {
-                const originalStmt = stmtToOriginalStmt.get(stmt);
-                if (originalStmt) {
-                    if (!stmtSetInOriginalCfg.has(originalStmt)) {
-                        stmtSetInOriginalCfg.add(originalStmt);
-                        stmtsInOriginalCfg.push(originalStmt);
-                    }
-                }
-            }
         }
         let currBlockId = this.blocks.length;
 
@@ -1229,20 +1201,8 @@ export class CfgBuilder {
             stmt.setCfg(cfg);
         }
 
-        const originalCfg = new Cfg();
-        const originalCfgBlock = new BasicBlock();
-        for (let i = 0; i < stmtsInOriginalCfg.length; i++) {
-            if (i === 0) {
-                originalCfg.setStartingStmt(stmtsInOriginalCfg[i]);
-            }
-            originalCfgBlock.addStmt(stmtsInOriginalCfg[i]);
-        }
-        originalCfg.addBlock(originalCfgBlock);
-
         return {
             cfg: cfg,
-            originalCfg: originalCfg,
-            stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
             aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
         };

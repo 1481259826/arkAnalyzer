@@ -142,7 +142,7 @@ export class DummyMainCreater {
             }
         }
         const localSet = new Set(Array.from(this.classLocalMap.values()).filter((value): value is Local => value !== null));
-        const dummyBody = new ArkBody(localSet, new Cfg(), this.createDummyMainCfg(), new Map(), new Map());
+        const dummyBody = new ArkBody(localSet, this.createDummyMainCfg());
         this.dummyMain.setBody(dummyBody)
         this.addCfg2Stmt()
         this.scene.addToMethodsMap(this.dummyMain);
@@ -155,9 +155,14 @@ export class DummyMainCreater {
         const firstBlock = new BasicBlock();
         dummyCfg.addBlock(firstBlock);
 
+        let isStartingStmt = true;
         for (const method of this.scene.getStaticInitMethods()) {
             const staticInvokeExpr = new ArkStaticInvokeExpr(method.getSignature(), []);
             const invokeStmt = new ArkInvokeStmt(staticInvokeExpr);
+            if (isStartingStmt) {
+                dummyCfg.setStartingStmt(invokeStmt);
+                isStartingStmt = false;
+            }
             firstBlock.addStmt(invokeStmt);
         }
 

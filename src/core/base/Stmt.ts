@@ -24,11 +24,13 @@ import { FullPosition, LineColPosition } from './Position';
  * @category core/base/stmt
  */
 export abstract class Stmt {
-    protected text: string = '';
-    protected position: LineColPosition = LineColPosition.DEFAULT;
+    protected text?: string;                            // just for debug
+    protected originalText?: string;
+    protected originalPosition: LineColPosition = LineColPosition.DEFAULT;
     protected cfg: Cfg | null = null;
     protected operandOriginalPositions: FullPosition[] | null = null; // operandOriginalPositions correspond with
-    // def and uses one by one
+                                                                      // def and uses one by one
+
     /** Return a list of values which are uesd in this statement */
     public getUses(): Value[] {
         return [];
@@ -155,27 +157,26 @@ export abstract class Stmt {
         return undefined;
     }
 
-    public setPositionInfo(position: LineColPosition) {
-        this.position = position;
-    }
-
-    public getPositionInfo(): LineColPosition {
-        return this.position;
+    public setOriginPositionInfo(originPositionInfo: LineColPosition): void {
+        this.originalPosition = originPositionInfo;
     }
 
     public getOriginPositionInfo(): LineColPosition {
-        const originPositionInfo = this.cfg?.getDeclaringMethod()?.getBody()?.getStmtToOriginalStmt()
-            ?.get(this)?.position;
-        if (!originPositionInfo) {
-            return LineColPosition.DEFAULT;
-        }
-        return originPositionInfo;
+        return this.originalPosition;
     }
 
     abstract toString(): string ;
 
     public setText(text: string): void {
         this.text = text;
+    }
+
+    public setOriginalText(originalText: string): void {
+        this.originalText = originalText;
+    }
+
+    public getOriginalText(): string | undefined {
+        return this.originalText;
     }
 
     public setOperandOriginalPositions(operandOriginalPositions: FullPosition[]): void {
@@ -201,18 +202,6 @@ export abstract class Stmt {
         }
         return this.operandOriginalPositions[index];
     };
-}
-
-export class OriginalStmt extends Stmt {
-    constructor(text: string, position: LineColPosition) {
-        super();
-        this.text = text;
-        this.position = position;
-    }
-
-    public toString(): string {
-        return this.text;
-    }
 }
 
 export class ArkAssignStmt extends Stmt {

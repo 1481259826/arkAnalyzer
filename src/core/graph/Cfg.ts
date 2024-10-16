@@ -15,10 +15,9 @@
 
 import { DefUseChain } from '../base/DefUseChain';
 import { Local } from '../base/Local';
-import { OriginalStmt, Stmt } from '../base/Stmt';
+import { Stmt } from '../base/Stmt';
 import { ArkMethod } from '../model/ArkMethod';
 import { BasicBlock } from './BasicBlock';
-import { LineColPosition } from '../base/Position';
 
 /**
  * @category core/graph
@@ -26,7 +25,7 @@ import { LineColPosition } from '../base/Position';
 export class Cfg {
     private blocks: Set<BasicBlock> = new Set();
     private stmtToBlock: Map<Stmt, BasicBlock> = new Map();
-    private startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
+    private startingStmt!: Stmt;
 
     private defUseChains: DefUseChain[] = [];
     private declaringMethod: ArkMethod = new ArkMethod();
