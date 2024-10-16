@@ -20,7 +20,7 @@ import path from 'path';
 const CASE1_EXPECT = `function identity<T>(arg: T): T {
   return arg;
 }
-let myIdentity: (arg: T) => T  = identity;
+let myIdentity: @save/generics.ts: _DEFAULT_ARK_CLASS.identity(T) = identity;
 let output: string = identity('myString');
 class GenericNumber<T> {
   zeroValue: T;
@@ -41,7 +41,7 @@ declare interface BreakPointTypeOption<T> {
   lg?: T;
 }
 export class BreakpointType<T> {
-  options: BreakPointTypeOption;
+  options: BreakPointTypeOption<T>;
   constructor(option: BreakPointTypeOption<T>) {
     this.options = option;
   }

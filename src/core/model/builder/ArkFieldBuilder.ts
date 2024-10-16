@@ -20,7 +20,7 @@ import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { buildGenericType, buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
 import { FieldSignature } from '../ArkSignature';
-import { Type, UnknownType } from '../../base/Type';
+import { ClassType, Type, UnknownType } from '../../base/Type';
 import { LineColPosition } from '../../base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFieldBuilder');
@@ -61,13 +61,14 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
             field.addModifier(modifier);
         });
     }
-    if (ts.isEnumMember(member)) {
-        field.addModifier('StaticKeyword');
-    }
 
     let fieldType: Type = UnknownType.getInstance();
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
         fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
+    }
+    if (ts.isEnumMember(member)) {
+        field.addModifier('StaticKeyword');
+        fieldType = new ClassType(cls.getSignature());
     }
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic());
     field.setSignature(fieldSignature);
