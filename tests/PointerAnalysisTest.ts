@@ -36,7 +36,7 @@ let config: SceneConfig = new SceneConfig()
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
 // config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-config.buildFromProjectDir('./tests/resources/pta/Array');
+config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
@@ -53,30 +53,19 @@ function runScene(config: SceneConfig, output: string) {
     // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
-    let methods = 
-        projectScene.getFiles()
-            .filter(arkFile => arkFile.getName() === "array.ts")
-            .flatMap(arkFile => arkFile.getNamespaces())
-            .filter(arkNamespace => arkNamespace.getName() === "ArrayTest")
-            .flatMap(arkNamespace => arkNamespace.getClasses())
-            .filter(arkClass => arkClass.getName() === "_DEFAULT_ARK_CLASS")
-            .flatMap(arkClass => arkClass.getMethods())
-            .filter(arkMethod => arkMethod.getName() === "main")
-            .map(arkMethod => arkMethod.getSignature())
     let cg = new CallGraph(projectScene);
     let cgBuilder = new CallGraphBuilder(cg, projectScene)
-    cgBuilder.buildDirectCallGraph(projectScene.getMethods());
-    let entry = cg.getCallGraphNodeByMethod(methods[0]).getID()
+    cgBuilder.buildDirectCallGraphForScene();
 
     let pag = new Pag();
 
-    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries([entry]);
+    pta.setEntries([entry[2]]);
     pta.start();
     // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
-    cg.dump(output+"/subcg.dot", entry)
+    cg.dump(output+"/subcg.dot", entry[2])
     console.log("fin")
 }
 runScene(config, "./out/applications_camera");

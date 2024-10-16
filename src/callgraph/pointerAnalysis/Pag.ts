@@ -639,18 +639,20 @@ export class Pag extends BaseGraph {
             }
         } else if (value instanceof ArkInstanceFieldRef) {
             if (value.getType() instanceof FunctionType) {
-                // TODO: function ptr
+                // function ptr: let ptr = Class.MethodA
                 pagNode = new PagFuncNode(id, cid, value, stmt,
                     (value.getType() as FunctionType).getMethodSignature());
             } else {
+                // normal field
                 pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
             }
         } else if (value instanceof ArkStaticFieldRef) {
             if (value.getType() instanceof FunctionType) {
-                // TODO: function ptr
+                // function ptr: let ptr = Class.StaticMethodA
                 pagNode = new PagFuncNode(id, cid, value, stmt,
                     (value.getType() as FunctionType).getMethodSignature());
             } else {
+                // normal field
                 pagNode = new PagStaticFieldNode(id, cid, value, stmt);
             }
         } else if (value instanceof ArkArrayRef) {

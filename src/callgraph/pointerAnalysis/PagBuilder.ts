@@ -402,60 +402,16 @@ export class PagBuilder {
     public addDynamicCallEdge(cs: DynCallSite, baseClassPTNode: NodeID, cid: ContextID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let ivkExpr = cs.callStmt.getInvokeExpr();
-        
-        let calleeName = ivkExpr!.getMethodSignature().getMethodSubSignature().getMethodName();
 
-        let ptNode = this.pag.getNode(baseClassPTNode);
+        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
         let value = (ptNode as PagNode).getValue();
-        let callee: ArkMethod | null = null;
-        // TODO: check the condition
-        if (ivkExpr instanceof ArkInstanceInvokeExpr && !(ptNode instanceof PagFuncNode)) {
-            if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
-                return srcNodes;
-            }
-    
-            if (value instanceof ArkNewExpr) {
-                // get class signature
-                let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
-                let cls;
-    
-                cls = this.scene.getClass(clsSig) as ArkClass;
-    
-                while (!callee && cls) {
-                    callee = cls.getMethodWithName(calleeName);
-                    cls = cls.getSuperClass();
-                }
-    
-                if (!callee) {
-                    callee = this.scene.getMethod(ivkExpr!.getMethodSignature());
-                }
-            }
-    
-            // anonymous method
-            if (!callee) {
-                // try to change callee to param anonymous method
-                // TODO: anonymous method param and return value pointer pass
-                let args = cs.args
-                if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
-                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
-                }
-            }
-    
-            if (!callee) {
-                // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
-                // return empty node when {o_2} come in
-                return []
-            }
-        } else if (ivkExpr instanceof ArkPtrInvokeExpr || ptNode instanceof PagFuncNode) {
-            if (ptNode instanceof PagFuncNode) {
-                callee = this.scene.getMethod(ptNode.getMethod());
-            }
+        let callee: ArkMethod | null = this.getDynamicCallee(ptNode, value, ivkExpr!, cs);
 
-            if (!callee) {
-                return [];
-            }
+        if (!callee) {
+            return srcNodes;
         }
 
+        // get caller and callee CG node, add param and return value PAG edge
         let dstCGNode = this.cg.getCallGraphNodeByMethod(callee!.getSignature());
         let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
         if (!callerNode) {
@@ -478,6 +434,61 @@ export class PagBuilder {
         }
 
         return srcNodes;
+    }
+
+    private getDynamicCallee(ptNode: PagNode, value: Value, ivkExpr: AbstractInvokeExpr, cs: DynCallSite): ArkMethod | null {
+        let callee: ArkMethod | null = null;
+        let calleeName = ivkExpr!.getMethodSignature().getMethodSubSignature().getMethodName();
+
+        if (ptNode instanceof PagFuncNode) {
+            // function ptr invoke
+            callee = this.scene.getMethod(ptNode.getMethod());
+
+            if (!callee) {
+                return null;
+            }
+        } else {
+            // instance method invoke
+            if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
+                return null;
+            }
+    
+            // try to get callee by MethodSignature
+            if (value instanceof ArkNewExpr) {
+                // get class signature
+                let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
+                let cls;
+    
+                cls = this.scene.getClass(clsSig) as ArkClass;
+    
+                while (!callee && cls) {
+                    callee = cls.getMethodWithName(calleeName);
+                    cls = cls.getSuperClass();
+                }
+    
+                if (!callee) {
+                    callee = this.scene.getMethod(ivkExpr!.getMethodSignature());
+                }
+            }
+    
+            // try to get callee by anonymous method in param
+            if (!callee) {
+                // try to change callee to param anonymous method
+                // TODO: anonymous method param and return value pointer pass
+                let args = cs.args
+                if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
+                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
+                }
+            }
+    
+            if (!callee) {
+                // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
+                // return empty node when {o_2} come in
+                return null;
+            }
+        }
+
+        return callee;
     }
 
     public addUpdatedNode(nodeID: NodeID, diffPT: PtsSet<NodeID>) {
@@ -560,18 +571,21 @@ export class PagBuilder {
             const diffCallSites = new Set(Array.from(callSites).filter(item => !processedCallSites.has(item)))
             diffCallSites.forEach((cs) => {
                 let ivkExpr = cs.callStmt.getInvokeExpr();
-                if (ivkExpr instanceof ArkInstanceInvokeExpr) {
-                    // Get local of base class
-                    let base = ivkExpr.getBase();
-                    // TODO: remove this after multiple this local fixed
-                    base = this.getRealThisLocal(base, cs.callerFuncID)
-                    // Get PAG nodes for this base's local
-                    let ctx2NdMap = this.pag.getNodesByValue(base);
-                    if (ctx2NdMap) {
-                        for (let [cid] of ctx2NdMap.entries()) {
-                            reAnalyzeNodes.push(...this.handleUnkownDynamicCall(cs, cid));
-                        }
-                    }
+                if (!(ivkExpr instanceof ArkInstanceInvokeExpr)) {
+                    return;
+                }
+                // Get local of base class
+                let base = ivkExpr.getBase();
+                // TODO: remove this after multiple this local fixed
+                base = this.getRealThisLocal(base, cs.callerFuncID)
+                // Get PAG nodes for this base's local
+                let ctx2NdMap = this.pag.getNodesByValue(base);
+                if (!ctx2NdMap) {
+                    return;
+                }
+
+                for (let [cid] of ctx2NdMap.entries()) {
+                    reAnalyzeNodes.push(...this.handleUnkownDynamicCall(cs, cid));
                 }
             })
         }
