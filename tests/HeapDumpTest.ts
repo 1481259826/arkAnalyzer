@@ -32,11 +32,11 @@ const MODULES = new Map<string, string>([
     ['statusbarcomponent', 'feature/statusbarcomponent'],
 ]);
 
-function snapshot(name: string) {
+function snapshot(name: string): void {
     writeHeapSnapshot(`Heap-${Math.ceil(new Date().getTime() / 1000)}-${name}.heapsnapshot`);
 }
 
-function testAppProject() {
+function testAppProject(): void {
     let config: SceneConfig = new SceneConfig();
     config.buildConfig(PROJECT_NAME, PROJECT_ROOT, []);
     let scene: Scene = new Scene();
