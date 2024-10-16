@@ -20,16 +20,16 @@ import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 import { writeHeapSnapshot } from 'v8';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SceneTest');
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'HeapDumpTest');
 Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
-const PROJECT_ROOT = 'Y:/git/scene_board_ext'; 
+const PROJECT_ROOT = 'Y:/git/scene_board_ext';
 const PROJECT_NAME = 'scene_board';
 
 const MODULES = new Map<string, string>([
     ['hisearch', 'feature/hisearch'],
     ['intelligent', 'feature/intelligent'],
-    ['statusbarcomponent', 'feature/statusbarcomponent']
+    ['statusbarcomponent', 'feature/statusbarcomponent'],
 ]);
 
 function snapshot(name: string) {
@@ -42,7 +42,7 @@ function testAppProject() {
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     logger.error('start ... ');
-    
+
     for (const [moduleName, modulePath] of MODULES) {
         scene.buildModuleScene(moduleName, join(PROJECT_ROOT, modulePath));
     }
@@ -54,6 +54,6 @@ function testAppProject() {
     logger.error('end inferTypes ... ');
 }
 
-snapshot('start')
+snapshot('start');
 testAppProject();
-snapshot('end')
+snapshot('end');
