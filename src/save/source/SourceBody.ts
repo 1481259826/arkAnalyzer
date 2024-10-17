@@ -15,7 +15,7 @@
 
 import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, OriginalStmt, Stmt } from '../../core/base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, Stmt } from '../../core/base/Stmt';
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import { ArkBody } from '../../core/model/ArkBody';
 import { ArkMethod } from '../../core/model/ArkMethod';
@@ -43,8 +43,22 @@ import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ModelUtils } from '../../core/common/ModelUtils';
 import { SourceUtils } from './SourceUtils';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { LineColPosition } from '../../core/base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
+
+class AliasStmt extends Stmt {
+
+    constructor(position: LineColPosition) {
+        super();
+        this.originalPosition = position;
+    }
+
+    toString(): string {
+        return '';
+    }
+    
+}
 
 export class SourceBody implements StmtPrinterContext {
     protected printer: ArkCodeBuffer;
@@ -162,8 +176,12 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     private buildTypeAliasStmt(): void {
-        for (const [_, [aliasType, declaration]] of this.arkBody.getAliasTypeMap()) {
-            let stmt = new OriginalStmt('', declaration.getPosition());
+        let map = this.arkBody.getAliasTypeMap();
+        if (!map) {
+            return;
+        }
+        for (const [_, [aliasType, declaration]] of map) {
+            let stmt = new AliasStmt(declaration.getPosition());
             this.pushStmt(new SourceTypeAliasStmt(this, stmt, aliasType));
         }
     }

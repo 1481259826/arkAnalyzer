@@ -27,8 +27,8 @@ export abstract class Stmt {
     protected text?: string;                            // just for debug
     protected originalText?: string;
     protected originalPosition: LineColPosition = LineColPosition.DEFAULT;
-    protected cfg: Cfg | null = null;
-    protected operandOriginalPositions: FullPosition[] | null = null; // operandOriginalPositions correspond with
+    protected cfg!: Cfg;
+    protected operandOriginalPositions?: FullPosition[]; // operandOriginalPositions correspond with
                                                                       // def and uses one by one
 
     /** Return a list of values which are uesd in this statement */
@@ -56,8 +56,7 @@ export abstract class Stmt {
         return defAndUses;
     }
 
-
-    public getCfg(): Cfg | null {
+    public getCfg(): Cfg {
         return this.cfg;
     }
 

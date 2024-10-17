@@ -17,7 +17,7 @@ import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
-import { ArkInstanceFieldRef } from '../src';
+import { ArkInstanceFieldRef, PrinterBuilder } from '../src';
 import { ModelUtils } from '../src/core/common/ModelUtils';
 import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
 
@@ -141,18 +141,18 @@ class ArkIRTransformerTest {
         }
     }
 
-    // public printCfg() {
-    //     const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-    //     const sceneConfig: SceneConfig = new SceneConfig();
-    //     sceneConfig.buildFromProjectDir(projectDir);
-    //     const scene = new Scene();
-    //     scene.buildSceneFromProjectDir(sceneConfig);
-    //
-    //     const printerBuilder = new PrinterBuilder('out');
-    //     for (const arkFile of scene.getFiles()) {
-    //         printerBuilder.dumpToDot(arkFile);
-    //     }
-    // }
+    public printCfg() {
+        const projectDir = 'tests/resources/arkIRTransformer/mainModule';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromProjectDir(projectDir);
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
+
+        const printerBuilder = new PrinterBuilder('out');
+        for (const arkFile of scene.getFiles()) {
+            printerBuilder.dumpToDot(arkFile);
+        }
+    }
 
     public simpleTest() {
         logger.error('simpleTest start');

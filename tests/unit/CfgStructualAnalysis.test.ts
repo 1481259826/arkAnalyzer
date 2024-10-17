@@ -32,6 +32,7 @@ describe('CfgStructualAnalysisTest', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
         let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 9; i++) {
             let bb = new BasicBlock();
@@ -93,6 +94,7 @@ describe('CfgStructualAnalysisTest', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
         let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 4; i++) {
             let bb = new BasicBlock();
@@ -134,6 +136,7 @@ describe('CfgStructualAnalysisTest', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
         let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 5; i++) {
             let bb = new BasicBlock();
@@ -182,6 +185,7 @@ describe('CfgStructualAnalysisTest', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
         let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 6; i++) {
             let bb = new BasicBlock();
@@ -234,6 +238,7 @@ describe('CfgStructualAnalysisTest', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
         let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 7; i++) {
             let bb = new BasicBlock();

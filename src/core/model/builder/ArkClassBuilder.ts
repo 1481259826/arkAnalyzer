@@ -49,6 +49,14 @@ export type ClassLikeNode =
     ts.StructDeclaration |
     ts.ObjectLiteralExpression;
 
+type ClassLikeNodeWithMethod =
+    ts.ClassDeclaration |
+    ts.InterfaceDeclaration |
+    ts.EnumDeclaration |
+    ts.ClassExpression |
+    ts.TypeLiteralNode |
+    ts.StructDeclaration;
+
 export function buildDefaultArkClassFromArkFile(arkFile: ArkFile, defaultClass: ArkClass, astRoot: ts.SourceFile) {
     defaultClass.setDeclaringArkFile(arkFile);
     buildDefaultArkClass(defaultClass, astRoot);
@@ -370,6 +378,7 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     if (ts.isObjectLiteralExpression(clsNode)) {
         return;
     }
+    buildMethodsForClass(clsNode, cls, sourceFile);
     let instanceIRTransformer: ArkIRTransformer;
     let staticIRTransformer: ArkIRTransformer;
     if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
@@ -379,24 +388,6 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     if (ts.isEnumDeclaration(clsNode)) {
         staticIRTransformer = new ArkIRTransformer(sourceFile, cls.getStaticInitMethod());
     }
-    // 先构建所有method，再构建field
-    clsNode.members.forEach((member) => {
-        if (
-            ts.isMethodDeclaration(member) ||
-            ts.isConstructorDeclaration(member) ||
-            ts.isMethodSignature(member) ||
-            ts.isConstructSignatureDeclaration(member) ||
-            ts.isAccessor(member) ||
-            ts.isCallSignatureDeclaration(member)
-        ) {
-            let mthd: ArkMethod = new ArkMethod();
-            buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
-            cls.addMethod(mthd);
-            if (ts.isGetAccessor(member)) {
-                buildGetAccessor2ArkField(member, mthd, sourceFile);
-            }
-        }
-    });
     const staticFieldInitializerStmts: Stmt[] = [];
     const instanceFieldInitializerStmts: Stmt[] = [];
     clsNode.members.forEach((member) => {
@@ -432,6 +423,26 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     if (ts.isEnumDeclaration(clsNode)) {
         buildInitMethod(cls.getStaticInitMethod(), staticFieldInitializerStmts, staticIRTransformer!.getThisLocal());
     }
+}
+
+function buildMethodsForClass(clsNode: ClassLikeNodeWithMethod, cls: ArkClass, sourceFile: ts.SourceFile): void {
+    clsNode.members.forEach((member) => {
+        if (
+            ts.isMethodDeclaration(member) ||
+            ts.isConstructorDeclaration(member) ||
+            ts.isMethodSignature(member) ||
+            ts.isConstructSignatureDeclaration(member) ||
+            ts.isAccessor(member) ||
+            ts.isCallSignatureDeclaration(member)
+        ) {
+            let mthd: ArkMethod = new ArkMethod();
+            buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
+            cls.addMethod(mthd);
+            if (ts.isGetAccessor(member)) {
+                buildGetAccessor2ArkField(member, mthd, sourceFile);
+            }
+        }
+    });
 }
 
 function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?: ts.Node) {

@@ -138,8 +138,8 @@ export class ArkIRTransformer {
     private thisLocal: Local;
 
     private inBuilderMethod = false;
-    private stmtToOriginalText: Map<Stmt, string> = new Map();
     private aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]> = new Map();
+    private stmtsHaveOriginalText: Set<Stmt> = new Set();
 
     private builderMethodContextFlag = false;
 
@@ -1965,9 +1965,10 @@ export class ArkIRTransformer {
 
     public mapStmtsToTsStmt(stmts: Stmt[], node: ts.Node): void {
         for (const stmt of stmts) {
-            if (!this.stmtToOriginalText.has(stmt)) {
-                this.stmtToOriginalText.set(stmt, node.getText(this.sourceFile));
+            if (!this.stmtsHaveOriginalText.has(stmt)) {
+                this.stmtsHaveOriginalText.add(stmt);
                 stmt.setOriginPositionInfo(LineColPosition.buildFromNode(node, this.sourceFile));
+                stmt.setOriginalText(node.getText(this.sourceFile));
             }
         }
     }

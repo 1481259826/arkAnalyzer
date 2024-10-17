@@ -22,7 +22,6 @@ import fs from 'fs';
 import { SourceFilePrinter } from '../../../src/save/source/SourceFilePrinter';
 import { ArkStream } from '../../../src/save/ArkStream';
 import { SourceDefaultClass } from '../../../src/save/source/SourceClass';
-import { DotFilePrinter } from '../../../src';
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
@@ -138,20 +137,7 @@ describe('PrinterBuilderTest', () => {
         if (cls.isDefaultArkClass()) {
             let sdc = new SourceDefaultClass(cls);
             expect(sdc.dump()).eq('');
-            expect(sdc.dumpOriginal()).match(new RegExp(''));
         }
-    });
-
-    it('case7: dot test', () => {
-        arkfile = scene
-            .getFiles()
-            .find((file) => file.getName() == 'modules.ts');
-        if (arkfile == null) {
-            assert.isNotNull(arkfile);
-            return;
-        }
-        let dot = new DotFilePrinter(arkfile);
-        expect(dot.dumpOriginal()).eq(PrinterBuilderTest_CASE_EXPECT);
     });
 
     it('case8: dumpToJson', () => {
@@ -170,15 +156,3 @@ describe('PrinterBuilderTest', () => {
         );
     });
 });
-
-const PrinterBuilderTest_CASE_EXPECT = `digraph "modules.ts" {
-subgraph "cluster_Original_@save/modules.ts: _DEFAULT_ARK_CLASS.[static]_DEFAULT_ARK_METHOD()" {
-  label="@save/modules.ts: _DEFAULT_ARK_CLASS.[static]_DEFAULT_ARK_METHOD()_original";
-  NodeOriginal55000 [label="id:-1
-      let myValidator1 = new ZipCodeValidator();
-      let myValidator2 = new ZCV();
-      let myValidator3 = new validator3.ZipCodeValidator();
-      let myValidator4 = new validator4();"];
-}
-}
-`;
