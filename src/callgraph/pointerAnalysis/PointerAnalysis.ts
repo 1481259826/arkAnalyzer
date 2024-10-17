@@ -320,7 +320,7 @@ export class PointerAnalysis extends AbstractAnalysis {
      * 3. 在addDynamicCall里对传入指针过滤（已处理指针和未处理指针）
      */
     private onTheFlyDynamicCallSolve(): boolean {
-        let changed = false;
+        let changed: boolean = false;
         let processedCallSites: Set<DynCallSite> = new Set();
         this.pagBuilder.getUpdatedNodes().forEach((pts, nodeID) => {
             let node = this.pag.getNode(nodeID) as PagNode;
@@ -347,7 +347,8 @@ export class PointerAnalysis extends AbstractAnalysis {
             })
         })
         this.pagBuilder.resetUpdatedNodes();
-        this.pagBuilder.handleUnprocessedCallSites(processedCallSites);
+        let srcNodes = this.pagBuilder.handleUnprocessedCallSites(processedCallSites);
+        changed = this.addToReanalyze(srcNodes) || changed;
 
         changed = this.pagBuilder.handleReachable() || changed;
         this.initWorklist();

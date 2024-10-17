@@ -29,7 +29,7 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS, StorageType, StorageLinkEdgeType } from './Pag';
 import { PtsSet } from './PtsDS';
 import { STATIC_KEYWORD } from '../../core/common/TSConst';
 
@@ -64,7 +64,7 @@ export class PagBuilder {
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
     private globalThisValue?: Value;
-    private storagePropertyMap: Map<string, Map<string, Local>> = new Map();
+    private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -246,11 +246,16 @@ export class PagBuilder {
     public addCallsEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
         for (let cs of funcPag.getNormalCallSites()) {
             let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
-            this.addStaticPagCallEdge(cs, cid, calleeCid);
-
-            // Add edge to thisRef for special calls
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
             let ivkExpr = cs.callStmt.getInvokeExpr()
+
+            // process the Storage API(Static)
+            if (!this.processStorage(cs, calleeCGNode, cid)) {
+                // If not Storage API, process normal edge
+                this.addStaticPagCallEdge(cs, cid, calleeCid);
+            }
+
+            // Add edge to thisRef for special calls
             if(calleeCGNode.getKind() == CallGraphNodeKind.constructor ||
                 calleeCGNode.getKind() == CallGraphNodeKind.intrinsic) { 
                 let callee = this.scene.getMethod(this.cg.getMethodByFuncID(cs.calleeFuncID)!)!
@@ -263,40 +268,102 @@ export class PagBuilder {
                     logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`)
                 }
             }
-
-            // process the Storage API(Static)
-            this.processStorage(cs, calleeCGNode, cid);
         }
 
         return true;
     }
 
-    private processStorage(cs: CallSite, calleeCGNode: CallGraphNode, cid: ContextID) {
+    /**
+     * process Storage API
+     * @returns boolean: check if the cs represent a Storage API, no matter the API will success or fail
+     */
+    private processStorage(cs: CallSite | DynCallSite, calleeCGNode: CallGraphNode, cid: ContextID): boolean {
+        let storageType!: StorageType;
         let storageName = calleeCGNode.getMethod().getDeclaringClassSignature().getClassName();
 
+        if (storageName === 'SubscribedAbstractProperty') {
+            let calleeBaseLocal = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+            let calleeBaseLocalNode = this.pag.getOrNewNode(cid, calleeBaseLocal) as PagLocalNode;
+            if (calleeBaseLocalNode.isStorageLinked()) {
+                let storage = calleeBaseLocalNode.getStorage();
+
+                storageType = storage.StorageType!;
+            }
+        } else {
+            storageType = this.getStorageType(storageName)!;
+        }
+
         // TODO: add other storages
-        if (storageName === 'AppStorage') {
+        if (storageType === StorageType.APP_STORAGE) {
             let calleeName = calleeCGNode.getMethod().getMethodSubSignature().getMethodName();
 
             // TODO: complete AppStorage API
             if (calleeName === 'setOrCreate') {
                 let propertyName = (cs.args![0] as Constant).getValue();
-                let propertyNode = this.getOrNewPropertyNode('AppStorage', propertyName, cid, cs.callStmt);
+                let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+                let storageObj = cs.args![1];
 
-                this.addPropertyLinkEdge(propertyNode, cs.args![1], cid, cs.callStmt, 2);
+                this.addPropertyLinkEdge(propertyNode, storageObj, cid, cs.callStmt, StorageLinkEdgeType.Local2Property);
+            } else if (calleeName === 'link') {
+                let propertyName = (cs.args![0] as Constant).getValue();
+                let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+                let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+                let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
+                if (linkedOpNode instanceof PagLocalNode) {
+                    linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
+                }
+
+                this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
+                this.pag.addPagEdge(linkedOpNode, propertyNode, PagEdgeKind.Copy);
+            } else if (calleeName === 'prop') {
+                let propertyName = (cs.args![0] as Constant).getValue();
+                let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+                let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+                let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
+                if (linkedOpNode instanceof PagLocalNode) {
+                    linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
+                }
+
+                this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
+                // this.pag.addPagEdge(linkedOpNode, propertyNode, PagEdgeKind.Copy);
+            } else if (calleeName === 'set') {
+                let base = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+                let baseNode = this.pag.getOrNewNode(cid, base) as PagLocalNode;
+
+                if (baseNode.isStorageLinked()) {
+                    let argsNode = this.pag.getOrNewNode(cid, cs.args![0]) as PagNode;
+
+                    this.pag.addPagEdge(argsNode, baseNode, PagEdgeKind.Copy);
+                }
             } else if (calleeName === 'get') {
                 let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-                let propertyName = (cs.args![0] as Constant).getValue();
-                let propertyNode = this.getOrNewPropertyNode('AppStorage', propertyName, cid, cs.callStmt);
+                let ivkExpr = cs.callStmt.getInvokeExpr();
+                let propertyName!: string;
+                if (ivkExpr instanceof ArkStaticInvokeExpr) {
+                    propertyName = (cs.args![0] as Constant).getValue();
+                } else if (ivkExpr instanceof ArkInstanceInvokeExpr) {
+                    let baseNode = this.pag.getOrNewNode(cid, ivkExpr.getBase()) as PagLocalNode;
+                    if (baseNode.isStorageLinked()) {
+                        propertyName = baseNode.getStorage().PropertyName!;
+                    }
+                }
+                // TODO: should not new node
+                let propertyNode = this.getPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+                if (!propertyNode) {
+                    return true;
+                }
 
                 this.pag.addPagEdge(
                     propertyNode, this.pag.getOrNewNode(cid, leftOp, cs.callStmt),
                     PagEdgeKind.Copy, cs.callStmt
-                )
+                );
             }
-        } else if (storageName === 'LocalStorage') {
-
+            return true;
+        } else if (storageType === StorageType.LOCAL_STORAGE) {
+            // TODO: LocalStorage is not Static
         }
+        
+        return false;
     }
 
     public addDynamicCallSite(funcPag: FuncPag) {
@@ -435,6 +502,15 @@ export class PagBuilder {
             if (!callerNode) {
                 throw new Error("Can not get caller method node");
             }
+
+            if (this.processStorage(cs, dstCGNode, cid)) {
+                if (ivkExpr.getArgs().length != 0) {
+                    // for AppStorage.set() instance invoke, add obj to reanalyze list
+                    let argsNode = this.pag.getOrNewNode(cid, cs.args![0]);
+                    srcNodes.push(argsNode.getID());
+                }
+            }
+
             logger.warn(`\tAdd call edge of unknown call ${callee.getSignature().toString()}`)
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
@@ -447,7 +523,8 @@ export class PagBuilder {
         return srcNodes;
     }
 
-    public handleUnprocessedCallSites(processedCallSites: Set<DynCallSite>) {
+    public handleUnprocessedCallSites(processedCallSites: Set<DynCallSite>): NodeID[] {
+        let reAnalyzeNodes: NodeID[] = [];
         for (let funcID of this.funcHandledThisRound) {
             let funcPag = this.funcPags.get(funcID)
             if (!funcPag) {
@@ -467,11 +544,13 @@ export class PagBuilder {
                 let ctx2NdMap = this.pag.getNodesByValue(base);
                 if (ctx2NdMap) {
                     for (let [cid] of ctx2NdMap.entries()) {
-                        this.handleUnkownDynamicCall(cs, cid);
+                        reAnalyzeNodes.push(...this.handleUnkownDynamicCall(cs, cid));
                     }
                 }
             })
         }
+
+        return reAnalyzeNodes;
     }
 
     private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
@@ -687,24 +766,39 @@ export class PagBuilder {
      * @param propertyName string property key
      * @returns propertyNode: PagLocalNode
      */
-    public getOrNewPropertyNode(storage: string, propertyName: string, cid: ContextID, stmt: Stmt): PagNode {
+    public getOrNewPropertyNode(storage: StorageType, propertyName: string, stmt: Stmt): PagNode {
+        let propertyNode = this.getPropertyNode(storage, propertyName, stmt);
+
+        if (propertyNode) {
+            return propertyNode;
+        }
+
+        let storageMap = this.storagePropertyMap.get(storage)!;
+        let propertyLocal = new Local(propertyName);
+        storageMap.set(propertyName, propertyLocal);
+        this.storagePropertyMap.set(storage, storageMap);
+
+        return this.getOrNewPagNode(-1, propertyLocal, stmt);
+    }
+
+    public getPropertyNode(storage: StorageType, propertyName: string, stmt: Stmt): PagNode | undefined {
         let storageMap = this.storagePropertyMap.get(storage);
-        let propertyLocal: Local;
+        let propertyLocal: Local | undefined = undefined;
 
         if (!storageMap) {
             storageMap = new Map();
+            this.storagePropertyMap.set(storage, storageMap);
         }
 
         if (storageMap.has(propertyName)) {
             propertyLocal = storageMap.get(propertyName)!;
-        } else {
-            propertyLocal = new Local(propertyName);
-            storageMap.set(propertyName, propertyLocal);
         }
 
-        this.storagePropertyMap.set(storage, storageMap);
 
-        return this.getOrNewPagNode(cid, propertyLocal, stmt);
+        if (propertyLocal) {
+            return this.getOrNewPagNode(-1, propertyLocal, stmt);
+        }
+        return undefined;
     }
 
     /**
@@ -713,14 +807,21 @@ export class PagBuilder {
      * @param propertyNode: PAG node created by protpertyName
      * @param obj: heapObj stored with Storage API
      */
-    public addPropertyLinkEdge(propertyNode: PagNode, obj: any, cid: ContextID, stmt: Stmt, edgeKind: number) {
-        if (edgeKind === 1) {
+    public addPropertyLinkEdge(propertyNode: PagNode, storageObj: Value, cid: ContextID, stmt: Stmt, edgeKind: number) {
+        if (!(storageObj.getType() instanceof ClassType)) {
+            return true;
+        }
+
+        if (edgeKind === StorageLinkEdgeType.Property2Local) {
             // propertyNode --> objNode
-        } else if (edgeKind === 2) {
+            this.pag.addPagEdge(propertyNode, this.pag.getOrNewNode(cid, storageObj), PagEdgeKind.Copy, stmt);
+        } else if (edgeKind === StorageLinkEdgeType.Local2Property) {
             // propertyNode <-- objNode
-            this.pag.addPagEdge(this.pag.getOrNewNode(cid, obj), propertyNode, PagEdgeKind.Copy, stmt);
-        } else if (edgeKind === 3) {
+            this.pag.addPagEdge(this.pag.getOrNewNode(cid, storageObj), propertyNode, PagEdgeKind.Copy, stmt);
+        } else if (edgeKind === StorageLinkEdgeType.TwoWay) {
             // propertyNode <-> objNode
+            this.pag.addPagEdge(propertyNode, this.pag.getOrNewNode(cid, storageObj), PagEdgeKind.Copy, stmt);
+            this.pag.addPagEdge(this.pag.getOrNewNode(cid, storageObj), propertyNode, PagEdgeKind.Copy, stmt);
         }
     }
 
@@ -893,6 +994,15 @@ export class PagBuilder {
         }
 
         return PagEdgeKind.Unknown;
+    }
+
+    private getStorageType(storageName: string): StorageType {
+        switch(storageName) {
+            case 'AppStorage':
+                return StorageType.APP_STORAGE;
+            default:
+                return StorageType.Undefined;
+        }
     }
 
     /**\
