@@ -50,7 +50,7 @@ export class PTAStat implements StatTraits {
     totalValuesInVisitedFunc: number = 0;
     // Original type is UnkonwnType and not inferred by PTA as well
     numNotInferedUnknownValue: number = 0;
-    numUnhandledFunc: number = 0
+    numUnhandledFunc: number = 0;
 
     iterTimes: number = 0;
     TotalTime: number = 0;
@@ -104,7 +104,7 @@ export class PTAStat implements StatTraits {
                 }
                 visited.add(lop);
 
-                if(inferred.includes(lop)) {
+                if (inferred.includes(lop)) {
                     if (lop.getType() instanceof UnknownType) {
                         this.numInferedUnknownValue++;
                     } else {
@@ -132,7 +132,7 @@ export class PTAStat implements StatTraits {
             if (f) {
                 this.numUnhandledFun++;
             }
-        })
+        });
     }
 
     public getStat(): string {
