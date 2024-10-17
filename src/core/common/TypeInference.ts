@@ -496,9 +496,8 @@ export class TypeInference {
         }
         let arkExport: ArkExport | null = ModelUtils.getClassWithName(baseName, arkClass)
             ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
-            ?? arkClass.getDeclaringArkFile().getDefaultClass().getMethodWithName(baseName)
-            ?? arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
-                ?.getBody()?.getAliasTypeByName(baseName)
+            ?? ModelUtils.getDefaultClass(arkClass)?.getMethodWithName(baseName)
+            ?? ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(baseName)
             ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
         if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
