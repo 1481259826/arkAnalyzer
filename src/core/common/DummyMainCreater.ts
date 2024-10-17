@@ -172,13 +172,13 @@ export class DummyMainCreater {
                 continue;
             }
             const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(clsType));
+            firstBlock.addStmt(assStmt);
             let consMtd = cls.getMethodWithName(CONSTRUCTOR_NAME);
             if (consMtd) {
                 let ivkExpr = new ArkInstanceInvokeExpr(local, consMtd.getSignature(), [])
                 let ivkStmt = new ArkInvokeStmt(ivkExpr);
                 firstBlock.addStmt(ivkStmt);
             }
-            firstBlock.addStmt(assStmt);
         }
 
         const countLocal = new Local('count', NumberType.getInstance());
