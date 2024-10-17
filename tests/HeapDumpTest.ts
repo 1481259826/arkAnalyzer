@@ -43,8 +43,12 @@ function testAppProject(): void {
     scene.buildBasicInfo(config);
     logger.error('start ... ');
 
-    for (const [moduleName, modulePath] of MODULES) {
-        scene.buildModuleScene(moduleName, join(PROJECT_ROOT, modulePath));
+    if (MODULES.size > 0) {
+        for (const [moduleName, modulePath] of MODULES) {
+            scene.buildModuleScene(moduleName, join(PROJECT_ROOT, modulePath));
+        }
+    } else {
+        scene.buildScene4HarmonyProject();
     }
     snapshot('buildScene');
 
