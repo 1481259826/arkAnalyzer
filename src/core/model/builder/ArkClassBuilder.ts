@@ -433,7 +433,6 @@ function buildMethodsForClass(clsNode: ClassLikeNodeWithMethod, cls: ArkClass, s
         ) {
             let mthd: ArkMethod = new ArkMethod();
             buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
-            cls.addMethod(mthd);
             if (ts.isGetAccessor(member)) {
                 buildGetAccessor2ArkField(member, mthd, sourceFile);
             }

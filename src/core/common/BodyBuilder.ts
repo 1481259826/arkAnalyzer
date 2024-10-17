@@ -36,4 +36,8 @@ export class BodyBuilder {
         }
         return null;
     }
+
+    public getCfgBuilder(): CfgBuilder {
+        return this.cfgBuilder;
+    }
 }

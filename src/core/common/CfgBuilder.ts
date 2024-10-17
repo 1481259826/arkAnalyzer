@@ -986,6 +986,15 @@ export class CfgBuilder {
         return this.emptyBody;
     }
 
+    public getAstRootBody(): ts.Block | undefined {
+        if (ts.isFunctionDeclaration(this.astRoot) || ts.isMethodDeclaration(this.astRoot) || ts.isConstructorDeclaration(this.astRoot)
+            || ts.isGetAccessorDeclaration(this.astRoot) || ts.isSetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
+            return this.astRoot.body;
+        } else {
+          return undefined;
+        }
+    }
+
     public buildCfgAndOriginalCfg(): {
         cfg: Cfg,
         locals: Set<Local>,
