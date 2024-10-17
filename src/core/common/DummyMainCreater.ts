@@ -41,6 +41,7 @@ import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { CONSTRUCTOR_NAME } from './TSConst';
 import { fetchDependenciesFromFile } from '../../utils/json5parser';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { Decorator } from '../base/Decorator';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -79,7 +80,8 @@ export class DummyMainCreater {
 
     constructor(scene: Scene) {
         this.scene = scene;
-        this.entryMethods = this.getEntryMethodsFromModuleJson5();
+        // this.entryMethods = this.getEntryMethodsFromModuleJson5();
+        this.entryMethods = this.getMethodsFromAllAbilities();
         this.entryMethods.push(...this.getEntryMethodsFromComponents());
         this.entryMethods.push(...this.getCallbackMethods());
         this.buildBuiltInClass();
@@ -310,7 +312,16 @@ export class DummyMainCreater {
         const COMPONENT_BASE_CLASSES = ['CustomComponent', 'ViewPU'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
-            .filter(cls => COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName()))
+            .filter(cls => {
+                if (COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName())) {
+                    return true;
+                }
+                for(let m of cls.getModifiers()) {
+                    if (m instanceof Decorator && m.getKind() === 'Component') {
+                        return true;
+                    }
+                }
+            })
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => COMPONENT_LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
             });
@@ -318,10 +329,10 @@ export class DummyMainCreater {
     }
 
     public getMethodsFromAllAbilities(): ArkMethod[] {
-        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability'];
+        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
-            .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
+            .filter(cls =>  ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
             });
