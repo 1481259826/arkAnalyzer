@@ -27,8 +27,10 @@ import {
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
+    COMPONENT_FOR_EACH,
     COMPONENT_IF,
     COMPONENT_IF_BRANCH,
+    COMPONENT_LAZY_FOR_EACH,
     COMPONENT_POP_FUNCTION,
     COMPONENT_REPEAT,
     isEtsContainerComponent,
@@ -42,6 +44,7 @@ import { Cfg } from '../Cfg';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
 import { ModelUtils } from '../../common/ModelUtils';
+import { Scene } from '../../../Scene';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ViewTreeBuilder');
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
@@ -58,6 +61,42 @@ function backtraceLocalInitValue(value: Local): Local | Value {
         return rightOp;
     }
     return value;
+}
+
+type ObjectLiteralMap = Map<ArkField, Value | ObjectLiteralMap>;
+function parseObjectLiteral(objectLiteralCls: ArkClass | null, scene: Scene): ObjectLiteralMap {
+    let map: ObjectLiteralMap = new Map();
+    if (objectLiteralCls?.getCategory() !== ClassCategory.OBJECT) {
+        return map;
+    }
+    objectLiteralCls?.getFields().forEach((field) => {
+        let stmts = field.getInitializer();
+        if (stmts.length === 0) {
+            return;
+        }
+
+        let assignStmt = stmts[stmts.length - 1];
+        if (!(assignStmt instanceof ArkAssignStmt)) {
+            return;
+        }
+
+        let value = assignStmt.getRightOp();
+        if (value instanceof Local) {
+            value = backtraceLocalInitValue(value);
+        }
+
+        map.set(field, value);
+        if (value instanceof ArkNewExpr) {
+            let subCls = ModelUtils.getArkClassInBuild(scene, value.getClassType());
+            let childMap = parseObjectLiteral(subCls, scene);
+            if (childMap) {
+                map.set(field, childMap);
+            }
+            
+        }
+    });
+
+    return map;
 }
 
 class StateValuesUtils {
@@ -93,13 +132,18 @@ class StateValuesUtils {
                 if (field && decorators && decorators.length > 0) {
                     uses.add(field);
                 }
+            } else if (v instanceof ArkInstanceInvokeExpr) {
+                this.parseMethodUsesStateValues(v.getMethodSignature(), uses, visitor);
             } else if (v instanceof Local) {
+                if (v.getName() === 'this') {
+                    continue;
+                }
                 let type = v.getType();
                 if (type instanceof FunctionType) {
                     this.parseMethodUsesStateValues(type.getMethodSignature(), uses, visitor);
                     continue;
                 }
-                this.parseObjectUsedStateValues(uses, type);
+                this.parseObjectUsedStateValues(type, uses);
                 let declaringStmt = v.getDeclaringStmt();
                 if (!wholeMethod && declaringStmt) {
                     this.parseStmtUsesStateValues(declaringStmt, uses, wholeMethod, visitor);
@@ -109,38 +153,28 @@ class StateValuesUtils {
         return uses;
     }
 
-    private parseObjectUsedStateValues(uses: Set<ArkField> = new Set(), type: Type): void {
-        if (!(type instanceof ClassType)) {
-            return;
-        }
-        let cls = ModelUtils.getArkClassInBuild(this.declaringArkClass.getDeclaringArkFile().getScene(), type);
-        if (cls?.getCategory() !== ClassCategory.OBJECT) {
-            return;
-        }
-        cls.getFields().forEach((field) => {
-            let stmts = field.getInitializer();
-            if (stmts.length === 0) {
-                return;
-            }
-
-            let assignStmt = stmts[stmts.length - 1];
-            if (!(assignStmt instanceof ArkAssignStmt)) {
-                return;
-            }
-
-            let value = assignStmt.getRightOp();
-            if (value instanceof Local) {
-                value = backtraceLocalInitValue(value);
-            }
-
+    private objectLiteralMapUsedStateValues(uses: Set<ArkField>, map: ObjectLiteralMap): void {
+        for (const [_, value] of map) {
             if (value instanceof ArkInstanceFieldRef) {
                 let srcField = this.declaringArkClass.getFieldWithName(value.getFieldName());
                 let decorators = srcField?.getStateDecorators();
                 if (srcField && decorators && decorators.length > 0) {
                     uses.add(srcField);
                 }
+            } else if (value instanceof Map) {
+                this.objectLiteralMapUsedStateValues(uses, value);
             }
-        });
+        }
+    }
+
+    public parseObjectUsedStateValues(type: Type, uses: Set<ArkField> = new Set()): Set<ArkField> {
+        if (!(type instanceof ClassType)) {
+            return uses;
+        }
+        let cls = ModelUtils.getArkClassInBuild(this.declaringArkClass.getDeclaringArkFile().getScene(), type);
+        let map = parseObjectLiteral(cls, this.declaringArkClass.getDeclaringArkFile().getScene());
+        this.objectLiteralMapUsedStateValues(uses, map);
+        return uses;
     }
 
     private parseMethodUsesStateValues(
@@ -152,7 +186,7 @@ class StateValuesUtils {
             return;
         }
         visitor.add(methodSignature);
-        let method = this.declaringArkClass.getMethod(methodSignature);
+        let method = this.declaringArkClass.getDeclaringArkFile().getScene().getMethod(methodSignature);
         if (!method) {
             return;
         }
@@ -311,7 +345,9 @@ class ViewTreeNodeImpl implements ViewTreeNode {
 
     public addStmt(tree: ViewTreeImpl, stmt: Stmt): void {
         this.parseAttributes(stmt);
-        this.parseStateValues(tree, stmt);
+        if (this.name !== COMPONENT_FOR_EACH && this.name !== COMPONENT_LAZY_FOR_EACH) {
+            this.parseStateValues(tree, stmt);
+        }
     }
 
     private parseAttributes(stmt: Stmt): void {
@@ -709,13 +745,14 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         node.signature = cls.getSignature();
         node.classSignature = node.signature;
         node.stateValuesTransfer = this.parseObjectLiteralExpr(cls, arg, builder);
-        if (node.stateValuesTransfer) {
-            for (let [_, value] of node.stateValuesTransfer) {
-                if (value instanceof ArkField && value.getStateDecorators().length > 0) {
-                    node.stateValues.add(value);
-                    this.addStateValue(value, node);
-                }
-            }
+        if (arg instanceof Local && arg.getType()) {
+            let stateValues = StateValuesUtils.getInstance(this.getDeclaringArkClass()).parseObjectUsedStateValues(
+                arg.getType()
+            );
+            stateValues.forEach((field) => {
+                node.stateValues.add(field);
+                this.addStateValue(field, node);
+            });
         }
         this.push(node);
         let componentViewTree = cls.getViewTree();
@@ -954,10 +991,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         let type = (expr.getArg(1) as Local).getType() as FunctionType;
         let method = this.findMethod(type.getMethodSignature());
-        if (method) {
-            if (method.getCfg()) {
-                this.buildViewTreeFromCfg(method.getCfg() as Cfg);
-            }
+        if (method && method.getCfg()) {
+            this.buildViewTreeFromCfg(method.getCfg() as Cfg);
         }
         return node;
     }

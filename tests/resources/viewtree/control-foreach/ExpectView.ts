@@ -118,7 +118,7 @@ export const ForEachTest2_Expect_ViewTree = {
                     stateValues: ['articleList']
                 }
             ],
-            stateValues: ['isListReachEnd']
+            stateValues: ['isListReachEnd', 'articleList']
         }
     ]
 }
@@ -170,11 +170,23 @@ export const ForEachTest3_Expect_ViewTree = {
                     name: 'ForEach',
                     children: [
                         {
-                            name: 'View',
+                            name: 'If',
                             children: [
-                                ChildItem_Expect_ViewTree
-                            ]
+                                {
+                                    name: 'IfBranch',
+                                    children: [
+                                        {
+                                            name: 'View',
+                                            children: [
+                                                ChildItem_Expect_ViewTree
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            stateValues: ['switch']
                         }
+                        
                     ],
                     stateValues: ['simpleList']
                 }
