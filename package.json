@@ -4,6 +4,7 @@
     "test": "vitest",
     "testonce": "vitest --no-color run",
     "coverage": "vitest run --coverage",
+    "heapdump": "npm run build && node --expose-gc out/tests/HeapDumpTest.js",
     "gendoc": "npx typedoc"
   },
   "dependencies": {
