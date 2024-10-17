@@ -26,6 +26,7 @@ import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from '../common/EtsConst';
 import { ArkExport, ExportType } from './ArkExport';
 import { TypeInference } from '../common/TypeInference';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
+import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 
 export enum ClassCategory {
     CLASS = 0,
@@ -42,8 +43,7 @@ export enum ClassCategory {
 export class ArkClass implements ArkExport {
     private category!: ClassCategory;
     private code?: string;
-    private line: number = -1;
-    private column: number = -1;
+    private lineCol: LineCol = 0;
 
     private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | undefined;
@@ -88,19 +88,19 @@ export class ArkClass implements ArkExport {
     }
 
     public getLine() {
-        return this.line;
+        return getLineNo(this.lineCol);
     }
 
     public setLine(line: number) {
-        this.line = line;
+        this.lineCol = setLine(this.lineCol, line);
     }
 
     public getColumn() {
-        return this.column;
+        return getColNo(this.lineCol);
     }
 
     public setColumn(column: number) {
-        this.column = column;
+        this.lineCol = setCol(this.lineCol, column);
     }
 
     public getCategory(): ClassCategory {

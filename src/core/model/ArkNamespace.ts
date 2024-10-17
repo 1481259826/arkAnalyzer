@@ -20,14 +20,14 @@ import { ArkFile } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
 import { ClassSignature, NamespaceSignature } from './ArkSignature';
 import { ALL } from "../common/TSConst";
+import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 
 /**
  * @category core/model
  */
 export class ArkNamespace implements ArkExport {
     private code: string = ''
-    private line: number = -1;
-    private column: number = -1;
+    private lineCol: LineCol = 0;
 
     private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | null = null;
@@ -92,19 +92,19 @@ export class ArkNamespace implements ArkExport {
     }
 
     public getLine() {
-        return this.line;
+        return getLineNo(this.lineCol);
     }
 
     public setLine(line: number) {
-        this.line = line;
+        this.lineCol = setLine(this.lineCol, line);
     }
 
     public getColumn() {
-        return this.column;
+        return getColNo(this.lineCol);
     }
 
     public setColumn(column: number) {
-        this.column = column;
+        this.lineCol = setCol(this.lineCol, column);
     }
 
     public getDeclaringInstance() {
