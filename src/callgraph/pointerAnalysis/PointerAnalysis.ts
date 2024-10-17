@@ -108,7 +108,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
 
         if (this.config.unhandledFuncDump) {
-            this.dumpUnhandledFunctions()
+            this.dumpUnhandledFunctions();
         }
     }
 
@@ -527,13 +527,13 @@ export class PointerAnalysis extends AbstractAnalysis {
         return this.config;
     }
 
-    private dumpUnhandledFunctions() {
+    private dumpUnhandledFunctions(): void {
         const filePath = path.join(this.config.outputDirectory, 'PtaUnhandledFunctionList.txt');
         fs.access(filePath, fs.constants.F_OK, (err) => {
             if (!err) {
                 fs.truncate(filePath, 0, (err) => {
                     if (err) {
-                        console.log('Error to truncate file ', err)
+                        console.log('Error to truncate file ', err);
                     }
                 });
             }

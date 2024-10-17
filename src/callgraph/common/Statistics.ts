@@ -116,8 +116,8 @@ export class PTAStat implements StatTraits {
                     }
                 }
                 this.totalValuesInVisitedFunc++;
-            })
-        })
+            });
+        });
     }
 
     private getUnhandledFuncStat(): void {

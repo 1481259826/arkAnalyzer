@@ -80,7 +80,8 @@ export class DummyMainCreater {
 
     constructor(scene: Scene) {
         this.scene = scene;
-        // this.entryMethods = this.getEntryMethodsFromModuleJson5();
+        // Currently get entries from module.json5 can't visit all of abilities
+        // Todo: handle ablity/component jump, then get entries from module.json5
         this.entryMethods = this.getMethodsFromAllAbilities();
         this.entryMethods.push(...this.getEntryMethodsFromComponents());
         this.entryMethods.push(...this.getCallbackMethods());
@@ -316,11 +317,12 @@ export class DummyMainCreater {
                 if (COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName())) {
                     return true;
                 }
-                for(let m of cls.getModifiers()) {
+                for (let m of cls.getModifiers()) {
                     if (m instanceof Decorator && m.getKind() === 'Component') {
                         return true;
                     }
                 }
+                return false;
             })
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => COMPONENT_LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
@@ -332,7 +334,7 @@ export class DummyMainCreater {
         const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
-            .filter(cls =>  ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
+            .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
             });
