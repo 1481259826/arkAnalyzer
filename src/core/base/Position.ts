@@ -54,7 +54,7 @@ export function setLineCol(lineNo: number, colNo: number): LineCol {
 
 export function getLineNo(lineCol: LineCol): number {
     let line = lineCol >>> LOW_BITS_SIZE;
-    if (line == MIN_NUMBER) {
+    if (line === MIN_NUMBER) {
         return -1;
     }
     return line;
@@ -62,7 +62,7 @@ export function getLineNo(lineCol: LineCol): number {
 
 export function getColNo(lineCol: LineCol): number {
     let col = lineCol & LOW_BITS_MASK;
-    if (col == MIN_NUMBER) {
+    if (col === MIN_NUMBER) {
         return -1;
     }
     return col;
