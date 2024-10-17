@@ -26,11 +26,7 @@ Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 const PROJECT_ROOT = 'Y:/git/scene_board_ext';
 const PROJECT_NAME = 'scene_board';
 
-const MODULES = new Map<string, string>([
-    ['hisearch', 'feature/hisearch'],
-    ['intelligent', 'feature/intelligent'],
-    ['statusbarcomponent', 'feature/statusbarcomponent'],
-]);
+const MODULES = new Map<string, string>();
 
 function snapshot(name: string): void {
     writeHeapSnapshot(`Heap-${Math.ceil(new Date().getTime() / 1000)}-${name}.heapsnapshot`);
