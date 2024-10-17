@@ -294,6 +294,9 @@ export class ModelUtils {
         return file?.getClassWithName(classSignature.getClassName()) || null;
     }
 
+    public static getDefaultClass(arkClass: ArkClass): ArkClass | null {
+        return arkClass.getDeclaringArkNamespace()?.getDefaultClass() ?? arkClass.getDeclaringArkFile().getDefaultClass();
+    }
 
     public static getClass(method: ArkMethod, signature: ClassSignature): ArkClass | null {
         let cls: ArkClass | undefined | null = method.getDeclaringArkFile().getScene().getClass(signature);

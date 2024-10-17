@@ -174,39 +174,29 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
 
     private getNewFieldSignature(arkClass: ArkClass, baseType: Type): FieldSignature {
         let oldFieldSignature = this.getFieldSignature();
-        const propertyAndproperty = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
-        let property = null;
-        let propertyType = oldFieldSignature.getType();
-        if (propertyAndproperty) {
-            property = propertyAndproperty[0];
-            propertyType = propertyAndproperty[1];
-        }
+        const propertyAndType = TypeInference.inferFieldType(baseType, this.getFieldName(), arkClass);
+        let propertyType = propertyAndType?.[1] ?? oldFieldSignature.getType();
         if (TypeInference.isUnclearType(propertyType)) {
             const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
             if (newType) {
                 propertyType = newType;
             }
         }
-        let newFieldSignature;
-        if (baseType instanceof ClassType && property instanceof ArkField) {
-            newFieldSignature = property.getSignature();
+        let staticFlag: boolean;
+        let signature: BaseSignature;
+        if (baseType instanceof ClassType) {
+            const property = propertyAndType?.[0];
+            staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
+                ((property instanceof ArkMethod || property instanceof ArkField) && property.isStatic());
+            signature = baseType.getClassSignature();
+        } else if (baseType instanceof AnnotationNamespaceType) {
+            staticFlag = true;
+            signature = baseType.getNamespaceSignature();
         } else {
-            let staticFlag: boolean;
-            let signature: BaseSignature;
-            if (baseType instanceof ClassType) {
-                staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
-                    (property instanceof ArkMethod && property.isStatic());
-                signature = baseType.getClassSignature();
-            } else if (baseType instanceof AnnotationNamespaceType) {
-                staticFlag = true;
-                signature = baseType.getNamespaceSignature();
-            } else {
-                staticFlag = oldFieldSignature.isStatic();
-                signature = oldFieldSignature.getDeclaringSignature();
-            }
-            newFieldSignature = new FieldSignature(this.getFieldName(), signature, propertyType, staticFlag);
+            staticFlag = oldFieldSignature.isStatic();
+            signature = oldFieldSignature.getDeclaringSignature();
         }
-        return newFieldSignature;
+        return new FieldSignature(this.getFieldName(), signature, propertyType, staticFlag);
     }
 }
 

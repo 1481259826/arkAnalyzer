@@ -15,6 +15,12 @@
 
 import { Constants, globalFunction } from './constants';
 
+enum TagType {
+    UNKNOWN = -1,
+    NFC = 0,
+    HIVISION = 1,
+}
+
 class C1 {
 
     public n: number = 1;
@@ -25,11 +31,15 @@ class C1 {
     private s = this.c.toString() ?? 'testing';
     public objs: C1[] = [];
     public objs2: C2[] = [new C2()];
+    private tag = TagType.HIVISION;
 }
 
 class C2 {
     f2(p1: C1) {
         console.log(p1.c, p1.n);
+        let tag = TagType.NFC;
+        const tagStr = JSON.stringify(tag);
+        console.warn(tagStr);
     }
 
     test_report() {
@@ -46,6 +56,7 @@ class C2 {
 class FieldType {
     arrUnionHa: (number | string)[] = [1, 'hello'];
     public field1 = Constants.staticFunc();
+    icTest: importClassTest;
 
 }
 
