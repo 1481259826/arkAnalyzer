@@ -1099,7 +1099,6 @@ export class ArkIRTransformer {
             ModelUtils.implicitArkUIBuilderMethods.add(arrowArkMethod);
         }
         buildArkMethodFromArkClass(callableNode, declaringClass, arrowArkMethod, this.sourceFile, this.declaringMethod);
-        declaringClass.addMethod(arrowArkMethod);
 
         const callableType = new FunctionType(arrowArkMethod.getSignature());
         const callableValue = this.getOrCreatLocal(arrowArkMethod.getName(), callableType);

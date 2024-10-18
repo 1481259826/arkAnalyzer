@@ -174,3 +174,95 @@ export const ArrowFunction_Expect_IR = {
         ],
     }],
 };
+
+export const NoOverloadMethod_Expect_IR = {
+    line: 30,
+    methodSignature: [
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction4",
+                returnType: "string"
+            }
+        }
+    ]
+};
+
+export const OverloadMethod_Expect_IR = {
+    line: 3,
+    methodSignature: [
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction1",
+                returnType: "string"
+            }
+        },
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction1",
+                returnType: "number"
+            }
+        },
+    ],
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
+};
+
+export const OverloadClassMethod_Expect_IR = {
+    line: 15,
+    methodSignature: [
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction2",
+                returnType: "string"
+            }
+        },
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction2",
+                returnType: "number"
+            }
+        },
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction2",
+                returnType: "string"
+            }
+        }
+    ],
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
+};
+
+export const OverloadNamespaceMethod_Expect_IR = {
+    line: 27,
+    methodSignature: [
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction3",
+                returnType: "string"
+            }
+        },
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction3",
+                returnType: "number"
+            }
+        },
+        {
+            methodSubSignature: {
+                methodName: "overloadedFunction3",
+                returnType: "boolean"
+            }
+        }
+    ]
+}
