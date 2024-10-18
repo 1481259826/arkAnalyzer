@@ -13,7 +13,10 @@
  * limitations under the License.
  */
 
-import { CallGraphNodeKind } from "../model/CallGraph";
+import { ArkAssignStmt } from "../../core/base/Stmt";
+import { UnknownType } from "../../core/base/Type";
+import { CallGraphNode, CallGraphNodeKind } from "../model/CallGraph";
+import { PointerAnalysis } from "../pointerAnalysis/PointerAnalysis";
 
 abstract class StatTraits {
     public getStat(): string {
@@ -26,6 +29,7 @@ abstract class StatTraits {
 }
 
 export class PTAStat implements StatTraits {
+    pta: PointerAnalysis;
     numProcessedAddr: number = 0;
     numProcessedCopy: number = 0;
     numProcessedLoad: number = 0;
@@ -33,6 +37,20 @@ export class PTAStat implements StatTraits {
     numProcessedThis: number = 0;
     numRealWrite: number = 0;
     numRealLoad: number = 0;
+
+    numUnhandledFun: number = 0;
+    numTotalValuesInHandedFun: number = 0;
+    numTotalHandledValue: number = 0;
+
+    // Original type is UnknownType but inferred by PTA
+    numInferedUnknownValue: number = 0;
+    // Original type is not UnknownType and inferred with different type by PTA
+    numInferedDiffTypeValue: number = 0;
+    // Total number of values in the functions visited by PTA
+    totalValuesInVisitedFunc: number = 0;
+    // Original type is UnkonwnType and not inferred by PTA as well
+    numNotInferedUnknownValue: number = 0;
+    numUnhandledFunc: number = 0;
 
     iterTimes: number = 0;
     TotalTime: number = 0;
@@ -45,6 +63,10 @@ export class PTAStat implements StatTraits {
     rssUsed: number = 0;
     heapUsed: number = 0;
 
+    constructor(pta: PointerAnalysis) {
+        this.pta = pta;
+    }
+
     public startStat(): void {
         this.startTime = this.getNow();
         this.startMemUsage = process.memoryUsage();
@@ -56,10 +78,61 @@ export class PTAStat implements StatTraits {
         this.TotalTime = (this.endTime - this.startTime) / 1000;
         this.rssUsed = Number(this.endMemUsage.rss - this.startMemUsage.rss) / Number(1024 * 1024);
         this.heapUsed = Number(this.endMemUsage.heapTotal - this.startMemUsage.heapTotal) / Number(1024 * 1024);
+        this.getInferedStat();
+        this.getUnhandledFuncStat();
     }
 
     public getNow(): number {
         return new Date().getTime();
+    }
+
+    private getInferedStat(): void {
+        let inferred = Array.from(this.pta.getTypeDiffMap().keys());
+        let visited = new Set();
+
+        let cg = this.pta.getCallGraph();
+        this.pta.getHandledFuncs().forEach(funcID => {
+            let f = cg.getArkMethodByFuncID(funcID);
+            f?.getCfg()?.getStmts().forEach(s => {
+                if (!(s instanceof ArkAssignStmt)) {
+                    return;
+                }
+
+                let lop = s.getLeftOp();
+                if (visited.has(lop)) {
+                    return;
+                }
+                visited.add(lop);
+
+                if (inferred.includes(lop)) {
+                    if (lop.getType() instanceof UnknownType) {
+                        this.numInferedUnknownValue++;
+                    } else {
+                        this.numInferedDiffTypeValue++;
+                    }
+                } else {
+                    if (lop.getType() instanceof UnknownType) {
+                        this.numNotInferedUnknownValue++;
+                    }
+                }
+                this.totalValuesInVisitedFunc++;
+            });
+        });
+    }
+
+    private getUnhandledFuncStat(): void {
+        let cg = this.pta.getCallGraph();
+        this.pta.getUnhandledFuncs().forEach(funcID => {
+            let cgNode = cg.getNode(funcID);
+            if ((cgNode as CallGraphNode).getIsSdkMethod()) {
+                return;
+            }
+
+            let f = cg.getArkMethodByFuncID(funcID);
+            if (f) {
+                this.numUnhandledFun++;
+            }
+        });
     }
 
     public getStat(): string {
@@ -73,6 +146,9 @@ export class PTAStat implements StatTraits {
         output = output + `Real write\t\t${this.numRealWrite}\n`
         output = output + `Real load\t\t${this.numRealLoad}\n`
         output = output + `Processed This\t\t${this.numProcessedThis}\n\n`
+        output = output + `Unhandled function\t${this.numUnhandledFun}\n`
+        output = output + `Total values in visited function\t${this.totalValuesInVisitedFunc}\n`
+        output = output + `Infered Value unknown+different type\t${this.numInferedUnknownValue}+${this.numInferedDiffTypeValue}\n\n`
         output = output + `Total Time\t\t${this.TotalTime} S\n`
         output = output + `Total iterator Times\t${this.iterTimes}\n`
         output = output + `RSS used\t\t${this.rssUsed.toFixed(3)} Mb\n`

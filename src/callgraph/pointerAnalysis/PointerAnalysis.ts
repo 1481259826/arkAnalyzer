@@ -17,7 +17,8 @@ import { Scene } from '../../Scene';
 import { Value } from '../../core/base/Value';
 import { NodeID } from '../model/BaseGraph';
 import path from 'path';
-import { CallGraph, CallSite, DynCallSite, FuncID } from '../model/CallGraph';
+import * as fs from 'fs';
+import { CallGraph, CallGraphNode, CallSite, DynCallSite, FuncID } from '../model/CallGraph';
 import { AbstractAnalysis } from '../algorithm/AbstractAnalysis';
 import { ClassType, Type, UnknownType } from '../../core/base/Type';
 import { CallGraphBuilder } from '../model/builder/CallGraphBuilder';
@@ -50,7 +51,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
         this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
-        this.ptaStat = new PTAStat();
+        this.ptaStat = new PTAStat(this);
         this.config = config;
     }
 
@@ -104,6 +105,10 @@ export class PointerAnalysis extends AbstractAnalysis {
         if (this.config.dotDump) {
             this.pag.dump(path.join(this.config.outputDirectory, 'ptaEnd_pag.dot'));
             this.cg.dump(path.join(this.config.outputDirectory, 'cgEnd.dot'));
+        }
+
+        if (this.config.unhandledFuncDump) {
+            this.dumpUnhandledFunctions();
         }
     }
 
@@ -510,4 +515,47 @@ export class PointerAnalysis extends AbstractAnalysis {
         return [];
     }
 
+    public getUnhandledFuncs(): FuncID[] {
+        return this.pagBuilder.getUnhandledFuncs();
+    }
+
+    public getHandledFuncs(): FuncID[] {
+        return this.pagBuilder.getHandledFuncs();
+    }
+
+    public getPTAConfig(): PointerAnalysisConfig {
+        return this.config;
+    }
+
+    private dumpUnhandledFunctions(): void {
+        const filePath = path.join(this.config.outputDirectory, 'PtaUnhandledFunctionList.txt');
+        fs.access(filePath, fs.constants.F_OK, (err) => {
+            if (!err) {
+                fs.truncate(filePath, 0, (err) => {
+                    if (err) {
+                        console.log('Error to truncate file ', err);
+                    }
+                });
+            }
+
+            let updatedContent: string = '';
+            this.getUnhandledFuncs().forEach(funcID => {
+                let cgNode = this.cg.getNode(funcID);
+                if ((cgNode as CallGraphNode).getIsSdkMethod()) {
+                    return;
+                }
+
+                let f = this.cg.getArkMethodByFuncID(funcID);
+                if (f) {
+                    updatedContent += f.getSignature().toString() + '\n';
+                }
+            });
+
+            fs.writeFile(filePath, updatedContent, 'utf8', (err) => {
+                if (err) {
+                    console.error('Error to write file', err);
+                }
+            });
+        });
+    }
 }

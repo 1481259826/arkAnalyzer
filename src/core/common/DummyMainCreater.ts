@@ -41,6 +41,7 @@ import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { CONSTRUCTOR_NAME } from './TSConst';
 import { fetchDependenciesFromFile } from '../../utils/json5parser';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { Decorator } from '../base/Decorator';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -79,7 +80,9 @@ export class DummyMainCreater {
 
     constructor(scene: Scene) {
         this.scene = scene;
-        this.entryMethods = this.getEntryMethodsFromModuleJson5();
+        // Currently get entries from module.json5 can't visit all of abilities
+        // Todo: handle ablity/component jump, then get entries from module.json5
+        this.entryMethods = this.getMethodsFromAllAbilities();
         this.entryMethods.push(...this.getEntryMethodsFromComponents());
         this.entryMethods.push(...this.getCallbackMethods());
         this.buildBuiltInClass();
@@ -169,13 +172,13 @@ export class DummyMainCreater {
                 continue;
             }
             const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(clsType));
+            firstBlock.addStmt(assStmt);
             let consMtd = cls.getMethodWithName(CONSTRUCTOR_NAME);
             if (consMtd) {
                 let ivkExpr = new ArkInstanceInvokeExpr(local, consMtd.getSignature(), [])
                 let ivkStmt = new ArkInvokeStmt(ivkExpr);
                 firstBlock.addStmt(ivkStmt);
             }
-            firstBlock.addStmt(assStmt);
         }
 
         const countLocal = new Local('count', NumberType.getInstance());
@@ -310,7 +313,17 @@ export class DummyMainCreater {
         const COMPONENT_BASE_CLASSES = ['CustomComponent', 'ViewPU'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
-            .filter(cls => COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName()))
+            .filter(cls => {
+                if (COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName())) {
+                    return true;
+                }
+                for (let m of cls.getModifiers()) {
+                    if (m instanceof Decorator && m.getKind() === 'Component') {
+                        return true;
+                    }
+                }
+                return false;
+            })
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => COMPONENT_LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
             });
@@ -318,7 +331,7 @@ export class DummyMainCreater {
     }
 
     public getMethodsFromAllAbilities(): ArkMethod[] {
-        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability'];
+        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
             .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))

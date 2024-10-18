@@ -918,5 +918,16 @@ export class PagBuilder {
         this.pagStat.printStat();
     }
 
+    public getUnhandledFuncs(): FuncID[] {
+        let handledFuncs = this.getHandledFuncs();
+        let unhandleFuncs = Array.from(this.cg.getNodesIter())
+            .filter(f => !handledFuncs.includes(f.getID()))
+            .map(f => f.getID());
+        return unhandleFuncs;
+    }
+
+    public getHandledFuncs(): FuncID[] {
+        return Array.from(this.funcPags.keys());
+    }
 
 }

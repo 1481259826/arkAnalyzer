@@ -28,7 +28,24 @@ export const LIFECYCLE_METHOD_NAME: string[] = [
     'onForeground', // 应用进入前台
     'onBackground', // 应用进入后台
     'onBackup', // 应用数据备份
-    'onRestore' // 应用数据恢复
+    'onRestore', // 应用数据恢复
+    'onContinue',
+    'onNewWant',
+    'onDump',
+    'onSaveState',
+    'onShare',
+    'onPrepareToTerminate',
+    'onBackPressed',
+    'onSessionCreate',
+    'onSessionDestory',
+    'onAddForm',
+    'onCastToNormalForm',
+    'onUpdateForm',
+    'onChangeFormVisibility',
+    'onFormEvent',
+    'onRemoveForm',
+    'onConfigurationUpdate',
+    'onAcquireFormState'
   ];
 export const CALLBACK_METHOD_NAME: string[] = [
     "onClick", // 点击事件，当用户点击组件时触发

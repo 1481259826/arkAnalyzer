@@ -16,12 +16,14 @@
 import * as fs from 'fs';
 
 export class PointerAnalysisConfig {
-    public kLimit: number
-    public outputDirectory: string
-    public detectTypeDiff: boolean
-    public dotDump: boolean
+    public kLimit: number;
+    public outputDirectory: string;
+    public detectTypeDiff: boolean;
+    public dotDump: boolean;
+    public unhandledFuncDump: boolean;
 
-    constructor(kLimit: number, outputDirectory: string, detectTypeDiff: boolean=false, dotDump: boolean=false) {
+    constructor(kLimit: number, outputDirectory: string, detectTypeDiff: boolean=false,
+        dotDump: boolean = false, unhandledFuncDump: boolean = false) {
         if (kLimit > 5) {
             throw new Error("K Limit too large");
         }
@@ -29,6 +31,7 @@ export class PointerAnalysisConfig {
         this.outputDirectory = outputDirectory;
         this.detectTypeDiff = detectTypeDiff
         this.dotDump = dotDump
+        this.unhandledFuncDump = unhandledFuncDump;
 
         if (!fs.existsSync(outputDirectory)) {
             fs.mkdirSync(outputDirectory, { recursive: true });
