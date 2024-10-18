@@ -41,7 +41,7 @@ export enum PagEdgeKind {
 };
 
 export enum StorageType {
-    APP_STORAGE, LOCAL_STORAGE
+    APP_STORAGE, LOCAL_STORAGE, Undefined
 };
 
 export enum StorageLinkEdgeType {
@@ -351,7 +351,7 @@ export class PagNode extends BaseNode {
 
 export class PagLocalNode extends PagNode {
     private relatedDynamicCallSite!: Set<DynCallSite>;
-    private storageLinked: Boolean = false;
+    private storageLinked: boolean = false;
     private storageType?: StorageType;
     private propertyName?: string;
 
@@ -375,14 +375,14 @@ export class PagLocalNode extends PagNode {
         this.propertyName = propertyName;
     }
 
-    public getStorage() {
+    public getStorage(): {StorageType: StorageType, PropertyName: string} {
         return {
-            StorageType: this.storageType,
-            PropertyName: this.propertyName
+            StorageType: this.storageType!,
+            PropertyName: this.propertyName!
         };
     }
 
-    public isStorageLinked() {
+    public isStorageLinked(): boolean {
         return this.storageLinked;
     }
 }

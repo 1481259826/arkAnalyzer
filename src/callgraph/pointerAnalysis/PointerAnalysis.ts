@@ -208,8 +208,8 @@ export class PointerAnalysis extends AbstractAnalysis {
                 // get abstract field node
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
 
-                this.handleFieldInEdges(fieldNode, diffPts);
-                this.handleFieldOutEdges(fieldNode, diffPts);
+                this.handleFieldInEdges(fieldNode, diffPts!);
+                this.handleFieldOutEdges(fieldNode, diffPts!);
             })
         })
 
