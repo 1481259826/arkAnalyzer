@@ -30,7 +30,7 @@ import {
 import { ModelUtils } from '../../src/core/common/ModelUtils';
 import { DEFAULT_ARK_METHOD_NAME } from '../../src/core/common/Const';
 import {
-    ArrowFunction_Expect_IR, NoOverloadMethod_Expect_IR, OverloadClassMethod_Expect_IR,
+    ArrowFunction_Expect_IR, NoOverloadMethod_Expect_IR, NoOverloadMethodWithBody_Expect_IR, OverloadClassMethod_Expect_IR,
     OverloadMethod_Expect_IR, OverloadNamespaceMethod_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 
@@ -107,7 +107,7 @@ function testClassMethodOverload(scene: Scene, filePath: string, className: stri
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
     const arkClass = arkFile?.getClasses().find((cls) => cls.getName() === className);
     const arkMethod = arkClass?.getMethods().find((method) => (method.getName() === methodName));
-    if(arkMethod === undefined) {
+    if (arkMethod === undefined) {
         assert.isDefined(arkMethod);
         return;
     }
@@ -120,7 +120,7 @@ function testNamespaceMethodOverload(scene: Scene, filePath: string, namespaceNa
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
     const arkNamespace = arkFile?.getNamespaces().find((ns) => ns.getName() === namespaceName);
     const arkMethod = arkNamespace?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
-    if(arkMethod === undefined) {
+    if (arkMethod === undefined) {
         assert.isDefined(arkMethod);
         return;
     }
@@ -132,12 +132,24 @@ function testNamespaceMethodOverload(scene: Scene, filePath: string, namespaceNa
 function testNoMethodOverload(scene: Scene, filePath: string, methodName: string, expectMethod: any): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
     const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
-    if(arkMethod === undefined) {
+    if (arkMethod === undefined) {
         assert.isDefined(arkMethod);
         return;
     }
     assertMethodLineEqual(arkMethod, expectMethod);
     assertMethodBodyEqual(arkMethod, false);
+    assertMethodSignatureEqual(arkMethod, expectMethod);
+}
+
+function testNoMethodOverloadWithBody(scene: Scene, filePath: string, methodName: string, expectMethod: any): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
+    if (arkMethod === undefined) {
+        assert.isDefined(arkMethod);
+        return;
+    }
+    assertMethodLineEqual(arkMethod, expectMethod);
+    assertMethodBodyEqual(arkMethod, true, expectMethod);
     assertMethodSignatureEqual(arkMethod, expectMethod);
 }
 
@@ -231,7 +243,11 @@ describe('function Test', () => {
         testNamespaceMethodOverload(scene, 'OverloadFunctionTest.ts', 'overloadNamespace', 'overloadedFunction3', OverloadNamespaceMethod_Expect_IR);
     });
 
-    it('test no overload function', async () => {
-        testNoMethodOverload(scene, 'OverloadFunctionTest.ts', 'overloadedFunction4', NoOverloadMethod_Expect_IR);
+    it('test no overload function without body', async () => {
+        testNoMethodOverload(scene, 'OverloadFunctionTest.ts', 'function4', NoOverloadMethod_Expect_IR);
+    });
+
+    it('test no overload function with body', async () => {
+        testNoMethodOverloadWithBody(scene, 'OverloadFunctionTest.ts', 'function5', NoOverloadMethodWithBody_Expect_IR);
     });
 });

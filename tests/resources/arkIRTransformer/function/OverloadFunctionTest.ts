@@ -42,4 +42,9 @@ namespace overloadNamespace {
     function overloadedFunction3(x: string): boolean;
 }
 
-function overloadedFunction4(x: string): number;
+function function4(x: string): number;
+
+function function5(x: number): number;
+function function5(x: number): number {
+    return x;
+}

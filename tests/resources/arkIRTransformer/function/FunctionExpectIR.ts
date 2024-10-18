@@ -260,9 +260,28 @@ export const NoOverloadMethod_Expect_IR = {
     methodSignature: [
         {
             methodSubSignature: {
-                methodName: 'overloadedFunction4',
+                methodName: 'function4',
                 returnType: 'string'
             }
         }
     ]
+};
+
+export const NoOverloadMethodWithBody_Expect_IR = {
+    line: 48,
+    methodSignature: [
+        {
+            methodSubSignature: {
+                methodName: 'function5',
+                returnType: 'number'
+            }
+        }
+    ],
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
 };
