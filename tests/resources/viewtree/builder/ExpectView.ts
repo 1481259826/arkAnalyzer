@@ -183,8 +183,8 @@ export const Case1_BuilderTest_Expect_ViewTree = {
             stateValues: ['label'],
         },
     ],
-    stateValues: ['scale'],
-    total: ['label', 'height', 'bundleName', 'scale', 'lastAppInfo']
+    stateValues: ['scale', 'animateScale'],
+    total: ['label', 'height', 'bundleName', 'scale', 'lastAppInfo', 'animateScale']
 };
 
 export const Case2_HelloComponent_Expect_ViewTree = {
