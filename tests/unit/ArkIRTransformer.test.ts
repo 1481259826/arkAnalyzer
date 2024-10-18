@@ -94,7 +94,7 @@ function assertStmtsEqual(stmts: Stmt[], expectStmts: any[]): void {
 function testMethodOverload(scene: Scene, filePath: string, methodName: string, expectMethod: any): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
     const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
-    if(arkMethod === undefined) {
+    if (arkMethod === undefined) {
         assert.isDefined(arkMethod);
         return;
     }
@@ -224,7 +224,7 @@ describe('function Test', () => {
     });
 
     it('test overload class function', async () => {
-        testClassMethodOverload(scene, 'OverloadFunctionTest.ts', 'overloadClass', 'overloadedFunction2', OverloadClassMethod_Expect_IR);
+        testClassMethodOverload(scene, 'OverloadFunctionTest.ts', 'OverloadClass', 'overloadedFunction2', OverloadClassMethod_Expect_IR);
     });
 
     it('test overload namespace function', async () => {
@@ -233,5 +233,5 @@ describe('function Test', () => {
 
     it('test no overload function', async () => {
         testNoMethodOverload(scene, 'OverloadFunctionTest.ts', 'overloadedFunction4', NoOverloadMethod_Expect_IR);
-    })
+    });
 });

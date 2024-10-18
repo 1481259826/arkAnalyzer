@@ -175,31 +175,19 @@ export const ArrowFunction_Expect_IR = {
     }],
 };
 
-export const NoOverloadMethod_Expect_IR = {
-    line: 30,
-    methodSignature: [
-        {
-            methodSubSignature: {
-                methodName: "overloadedFunction4",
-                returnType: "string"
-            }
-        }
-    ]
-};
-
 export const OverloadMethod_Expect_IR = {
-    line: 3,
+    line: 18,
     methodSignature: [
         {
             methodSubSignature: {
-                methodName: "overloadedFunction1",
-                returnType: "string"
+                methodName: 'overloadedFunction1',
+                returnType: 'string'
             }
         },
         {
             methodSubSignature: {
-                methodName: "overloadedFunction1",
-                returnType: "number"
+                methodName: 'overloadedFunction1',
+                returnType: 'number'
             }
         },
     ],
@@ -213,24 +201,24 @@ export const OverloadMethod_Expect_IR = {
 };
 
 export const OverloadClassMethod_Expect_IR = {
-    line: 15,
+    line: 30,
     methodSignature: [
         {
             methodSubSignature: {
-                methodName: "overloadedFunction2",
-                returnType: "string"
+                methodName: 'overloadedFunction2',
+                returnType: 'string'
             }
         },
         {
             methodSubSignature: {
-                methodName: "overloadedFunction2",
-                returnType: "number"
+                methodName: 'overloadedFunction2',
+                returnType: 'number'
             }
         },
         {
             methodSubSignature: {
-                methodName: "overloadedFunction2",
-                returnType: "string"
+                methodName: 'overloadedFunction2',
+                returnType: 'string'
             }
         }
     ],
@@ -244,25 +232,37 @@ export const OverloadClassMethod_Expect_IR = {
 };
 
 export const OverloadNamespaceMethod_Expect_IR = {
-    line: 27,
+    line: 42,
     methodSignature: [
         {
             methodSubSignature: {
-                methodName: "overloadedFunction3",
-                returnType: "string"
+                methodName: 'overloadedFunction3',
+                returnType: 'string'
             }
         },
         {
             methodSubSignature: {
-                methodName: "overloadedFunction3",
-                returnType: "number"
+                methodName: 'overloadedFunction3',
+                returnType: 'number'
             }
         },
         {
             methodSubSignature: {
-                methodName: "overloadedFunction3",
-                returnType: "boolean"
+                methodName: 'overloadedFunction3',
+                returnType: 'boolean'
             }
         }
     ]
-}
+};
+
+export const NoOverloadMethod_Expect_IR = {
+    line: 45,
+    methodSignature: [
+        {
+            methodSubSignature: {
+                methodName: 'overloadedFunction4',
+                returnType: 'string'
+            }
+        }
+    ]
+};
