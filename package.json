@@ -1,6 +1,6 @@
 {
   "name": "arkanalyzer",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "files": [
     "docs",
     "lib"
@@ -16,6 +16,7 @@
     "gendoc": "npx typedoc"
   },
   "dependencies": {
+    "arkanalyzer": "^1.0.4",
     "commander": "11.0.0",
     "log4js": "6.7.1",
     "ohos-typescript": "^4.9.5-r6"
