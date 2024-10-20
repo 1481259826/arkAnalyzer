@@ -101,6 +101,7 @@ export { SourceClass as SourceClassPrinter } from './save/source/SourceClass';
 export { SourceNamespace as SourceNamespacePrinter } from './save/source/SourceNamespace';
 export { SourceFilePrinter } from './save/source/SourceFilePrinter';
 export { JsonPrinter } from './save/JsonPrinter';
+export { GraphPrinter } from './save/GraphPrinter';
 
 // transformer
 export * from './transformer/StaticSingleAssignmentFormer';
