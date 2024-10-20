@@ -67,8 +67,8 @@ export { DataflowResult } from './core/dataflow/DataflowResult';
 export { DataflowSolver, factEqual } from './core/dataflow/DataflowSolver';
 export { Edge, PathEdgePoint, PathEdge } from './core/dataflow/Edge';
 export { Fact } from './core/dataflow/Fact';
-export { TiantAnalysisChecker } from './core/dataflow/TiantAnalysis';
-export { UndefinedVariableChecker } from './core/dataflow/UndefinedVariable';
+export { TiantAnalysisChecker, TiantAnalysisSolver } from './core/dataflow/TiantAnalysis';
+export { UndefinedVariableChecker, UndefinedVariableSolver } from './core/dataflow/UndefinedVariable';
 
 // core/graph
 export { BasicBlock } from './core/graph/BasicBlock';
@@ -85,6 +85,7 @@ export { ArkMethod } from './core/model/ArkMethod';
 export { ArkField } from './core/model/ArkField';
 export { ExportInfo } from './core/model/ArkExport';
 export { ImportInfo } from './core/model/ArkImport';
+export { ArkBody } from './core/model/ArkBody';
 export * from './core/model/ArkSignature';
 export * from './core/model/builder/ArkSignatureBuilder';
 
