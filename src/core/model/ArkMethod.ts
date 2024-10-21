@@ -26,6 +26,7 @@ import { Decorator } from '../base/Decorator';
 import { BodyBuilder } from '../common/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
+import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -34,9 +35,8 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
  * @category core/model
  */
 export class ArkMethod implements ArkExport {
-    private code: string = '';
-    private line: number = -1;
-    private column: number = -1;
+    private code?: string;
+    private lineCol: LineCol = 0;
 
     private declaringArkClass!: ArkClass;
 
@@ -73,19 +73,19 @@ export class ArkMethod implements ArkExport {
     }
 
     public getLine() {
-        return this.line;
+        return getLineNo(this.lineCol);
     }
 
     public setLine(line: number) {
-        this.line = line;
+        this.lineCol = setLine(this.lineCol, line);
     }
 
     public getColumn() {
-        return this.column;
+        return getColNo(this.lineCol);
     }
 
     public setColumn(column: number) {
-        this.column = column;
+        this.lineCol = setCol(this.lineCol, column);
     }
 
     public getDeclaringArkClass() {

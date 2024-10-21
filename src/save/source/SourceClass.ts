@@ -216,8 +216,8 @@ export class SourceDefaultClass extends SourceClass {
                         this.printer.writeLine(code);
                     }
                 }
-            } else {
-                this.printer.writeLine(method.getCode());
+            } else if (method.getCode()) {
+                this.printer.writeLine(method.getCode()!);
             }
         }
         return this.printer.toString();
