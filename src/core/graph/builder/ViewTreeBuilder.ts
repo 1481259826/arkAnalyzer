@@ -15,7 +15,14 @@
 
 import { Constant } from '../../base/Constant';
 import { Decorator } from '../../base/Decorator';
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import {
+    AbstractInvokeExpr,
+    ArkConditionExpr,
+    ArkInstanceInvokeExpr,
+    ArkNewExpr,
+    ArkNormalBinopExpr,
+    ArkStaticInvokeExpr,
+} from '../../base/Expr';
 import { Local } from '../../base/Local';
 import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
@@ -92,7 +99,6 @@ function parseObjectLiteral(objectLiteralCls: ArkClass | null, scene: Scene): Ob
             if (childMap) {
                 map.set(field, childMap);
             }
-            
         }
     });
 
@@ -126,29 +132,7 @@ class StateValuesUtils {
         }
 
         for (const v of values) {
-            if (v instanceof ArkInstanceFieldRef) {
-                let field = this.declaringArkClass.getField(v.getFieldSignature());
-                let decorators = field?.getStateDecorators();
-                if (field && decorators && decorators.length > 0) {
-                    uses.add(field);
-                }
-            } else if (v instanceof ArkInstanceInvokeExpr) {
-                this.parseMethodUsesStateValues(v.getMethodSignature(), uses, visitor);
-            } else if (v instanceof Local) {
-                if (v.getName() === 'this') {
-                    continue;
-                }
-                let type = v.getType();
-                if (type instanceof FunctionType) {
-                    this.parseMethodUsesStateValues(type.getMethodSignature(), uses, visitor);
-                    continue;
-                }
-                this.parseObjectUsedStateValues(type, uses);
-                let declaringStmt = v.getDeclaringStmt();
-                if (!wholeMethod && declaringStmt) {
-                    this.parseStmtUsesStateValues(declaringStmt, uses, wholeMethod, visitor);
-                }
-            }
+            this.parseValueUsesStateValues(v, uses, wholeMethod, visitor);
         }
         return uses;
     }
@@ -163,6 +147,9 @@ class StateValuesUtils {
                 }
             } else if (value instanceof Map) {
                 this.objectLiteralMapUsedStateValues(uses, value);
+            } else if (value instanceof ArkNormalBinopExpr || value instanceof ArkConditionExpr) {
+                this.parseValueUsesStateValues(value.getOp1(), uses);
+                this.parseValueUsesStateValues(value.getOp2(), uses);
             }
         }
     }
@@ -197,6 +184,39 @@ class StateValuesUtils {
         for (const stmt of stmts) {
             this.parseStmtUsesStateValues(stmt, uses, true, visitor);
         }
+    }
+
+    private parseValueUsesStateValues(
+        v: Value,
+        uses: Set<ArkField> = new Set(),
+        wholeMethod: boolean = false,
+        visitor: Set<MethodSignature | Stmt> = new Set()
+    ): Set<ArkField> {
+        if (v instanceof ArkInstanceFieldRef) {
+            let field = this.declaringArkClass.getField(v.getFieldSignature());
+            let decorators = field?.getStateDecorators();
+            if (field && decorators && decorators.length > 0) {
+                uses.add(field);
+            }
+        } else if (v instanceof ArkInstanceInvokeExpr) {
+            this.parseMethodUsesStateValues(v.getMethodSignature(), uses, visitor);
+        } else if (v instanceof Local) {
+            if (v.getName() === 'this') {
+                return uses;
+            }
+            let type = v.getType();
+            if (type instanceof FunctionType) {
+                this.parseMethodUsesStateValues(type.getMethodSignature(), uses, visitor);
+                return uses;
+            }
+            this.parseObjectUsedStateValues(type, uses);
+            let declaringStmt = v.getDeclaringStmt();
+            if (!wholeMethod && declaringStmt) {
+                this.parseStmtUsesStateValues(declaringStmt, uses, wholeMethod, visitor);
+            }
+        }
+
+        return uses;
     }
 }
 

@@ -45,6 +45,7 @@ namespace Case1 {
     @State height: number = 10;
     @State bundleName: string = 'test';
     @State scale: number = 10;
+    @State animateScale: number = 1.0;
     @State lastAppInfo: Object | null = null;
 
     @Builder
@@ -64,7 +65,7 @@ namespace Case1 {
           // After Click me is clicked, the UI text changes from Hello to ArkUI.
           this.label = 'ArkUI';
         })
-      }.scale({y: this.scale})
+      }.scale({y: this.scale * this.animateScale})
     }
   }
 }
