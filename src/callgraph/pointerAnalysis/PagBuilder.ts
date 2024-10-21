@@ -246,7 +246,7 @@ export class PagBuilder {
         for (let cs of funcPag.getNormalCallSites()) {
             let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-            let ivkExpr = cs.callStmt.getInvokeExpr()
+            let ivkExpr = cs.callStmt.getInvokeExpr();
 
             // process the Storage API(Static)
             if (!this.processStorage(cs, calleeCGNode, cid)) {
@@ -264,7 +264,7 @@ export class PagBuilder {
                     
                     this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
                 } else {
-                    logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`)
+                    logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`);
                 }
             }
         }
@@ -385,8 +385,8 @@ export class PagBuilder {
             // TODO: check base under different cid
             let baseNodeIDs = this.pag.getNodesByValue(base);
             if (!baseNodeIDs) {
-                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`)
-                continue
+                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
+                continue;
             }
             for (let nodeID of baseNodeIDs!.values()) {
                 let node = this.pag.getNode(nodeID);
@@ -475,9 +475,9 @@ export class PagBuilder {
             if (!callee) {
                 // try to change callee to param anonymous method
                 // TODO: anonymous method param and return value pointer pass
-                let args = cs.args
-                if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
-                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
+                let args = cs.args;
+                if (args?.length === 1 && args[0].getType() instanceof FunctionType) {
+                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature());
                 }
             }
     
@@ -492,17 +492,17 @@ export class PagBuilder {
     }
 
     public addUpdatedNode(nodeID: NodeID, diffPT: PtsSet<NodeID>) {
-        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new PtsSet()
-        updatedNode.union(diffPT)
-        this.updatedNodesThisRound.set(nodeID, updatedNode)
+        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new PtsSet();
+        updatedNode.union(diffPT);
+        this.updatedNodesThisRound.set(nodeID, updatedNode);
     }
 
     public getUpdatedNodes() {
-        return this.updatedNodesThisRound
+        return this.updatedNodesThisRound;
     }
 
     public resetUpdatedNodes() {
-        this.updatedNodesThisRound.clear()
+        this.updatedNodesThisRound.clear();
     }
 
     public handleUnkownDynamicCall(cs: DynCallSite, cid: ContextID): NodeID[] {
