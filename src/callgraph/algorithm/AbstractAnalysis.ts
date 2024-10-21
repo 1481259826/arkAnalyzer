@@ -92,7 +92,7 @@ export abstract class AbstractAnalysis {
                 let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
 
                 // check if need to display generated method
-                if (displayGeneratedMethod || me?.isGenerated()) {
+                if (displayGeneratedMethod || !(me?.isGenerated())) {
                     this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt);
                 }
 
