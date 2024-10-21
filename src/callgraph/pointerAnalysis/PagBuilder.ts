@@ -278,20 +278,8 @@ export class PagBuilder {
      * @returns boolean: check if the cs represent a Storage API, no matter the API will success or fail
      */
     private processStorage(cs: CallSite | DynCallSite, calleeCGNode: CallGraphNode, cid: ContextID): boolean {
-        let storageType!: StorageType;
         let storageName = calleeCGNode.getMethod().getDeclaringClassSignature().getClassName();
-
-        if (storageName === 'SubscribedAbstractProperty') {
-            let calleeBaseLocal = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
-            let calleeBaseLocalNode = this.pag.getOrNewNode(cid, calleeBaseLocal) as PagLocalNode;
-            if (calleeBaseLocalNode.isStorageLinked()) {
-                let storage = calleeBaseLocalNode.getStorage();
-
-                storageType = storage.StorageType!;
-            }
-        } else {
-            storageType = this.getStorageType(storageName)!;
-        }
+        let storageType: StorageType = this.getStorageType(storageName, cs, cid);
 
         // TODO: add other storages
         if (storageType === StorageType.APP_STORAGE) {
@@ -1016,10 +1004,30 @@ export class PagBuilder {
         return PagEdgeKind.Unknown;
     }
 
-    private getStorageType(storageName: string): StorageType {
+    /**
+     * get storageType enum with method's Declaring ClassName
+     * 
+     * @param storageName ClassName that method belongs to, currently support AppStorage and SubscribedAbstractProperty
+     * SubscribedAbstractProperty: in following listing, `link1` is infered as ClassType `SubscribedAbstractProperty`,
+     * it needs to get PAG node to check the StorageType
+     * let link1: SubscribedAbstractProperty<A> = AppStorage.link('PropA');
+     * link1.set(a);
+     * @param cs: for search PAG node in SubscribedAbstractProperty
+     * @param cid: for search PAG node in SubscribedAbstractProperty
+     * @returns StorageType enum
+     */
+    private getStorageType(storageName: string, cs: CallSite | DynCallSite, cid: ContextID): StorageType {
         switch (storageName) {
             case 'AppStorage':
                 return StorageType.APP_STORAGE;
+            case 'SubscribedAbstractProperty':
+                let calleeBaseLocal = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+                let calleeBaseLocalNode = this.pag.getOrNewNode(cid, calleeBaseLocal) as PagLocalNode;
+                if (calleeBaseLocalNode.isStorageLinked()) {
+                    let storage = calleeBaseLocalNode.getStorage();
+
+                    return storage.StorageType!;
+                }
             default:
                 return StorageType.Undefined;
         }
