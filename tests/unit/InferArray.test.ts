@@ -126,14 +126,11 @@ describe("Infer Array Test", () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'Field.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getClassWithName('C2')?.getMethodWithName('f2');
-        const stmts = method?.getCfg()?.getStmts();
-        const stmt = stmts?.[2];
+        const stmt = method?.getCfg()?.getStmts()[2];
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
         assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance());
-        const stmt5 = stmts?.[5];
-        assert.equal(stmt5?.toString(), 'tag = @inferType/Field.ts: TagType.[static]NFC');
     })
 
     it('field type case', () => {

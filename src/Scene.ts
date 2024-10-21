@@ -450,7 +450,6 @@ export class Scene {
                 arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
             });
         });
-        this.getClassesMap(true);
         this.getMethodsMap(true);
     }
 
