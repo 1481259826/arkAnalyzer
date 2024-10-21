@@ -1,6 +1,14 @@
 {
+  "name": "arkanalyzer",
+  "version": "1.0.5",
+  "files": [
+    "docs",
+    "lib"
+  ],
+  "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
+    "prepack": "tsc -p ./tsconfig.prod.json",
     "test": "vitest",
     "testonce": "vitest --no-color run",
     "coverage": "vitest run --coverage",
