@@ -56,7 +56,6 @@ class C2 {
 class FieldType {
     arrUnionHa: (number | string)[] = [1, 'hello'];
     public field1 = Constants.staticFunc();
-    icTest: importClassTest;
 
 }
 
