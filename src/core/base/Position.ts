@@ -15,11 +15,15 @@
 
 import ts from 'ohos-typescript';
 
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Position');
+
 const LOW_BITS_SIZE = 16;
 const LOW_BITS_MASK = 0xffff;
 const HIGH_BITS_MASK = 0xffff0000;
 const MIN_NUMBER = 0;
 const MAX_NUMBER = 0xffff;
+const INVALID_LINE = -1;
 
 export type LineCol = number;
 
@@ -28,6 +32,7 @@ export function setLine(lineCol: LineCol, lineNo: number): LineCol {
         lineNo = MIN_NUMBER;
     }
     if (lineNo > MAX_NUMBER) {
+        logger.warn(`setLine overflow ${lineNo}`);
         lineNo = MAX_NUMBER;
     }
 
@@ -39,6 +44,7 @@ export function setCol(lineCol: LineCol, colNo: number): LineCol {
         colNo = MIN_NUMBER;
     }
     if (colNo > MAX_NUMBER) {
+        logger.warn(`setCol overflow ${colNo}`);
         colNo = MAX_NUMBER;
     }
 
@@ -55,7 +61,7 @@ export function setLineCol(lineNo: number, colNo: number): LineCol {
 export function getLineNo(lineCol: LineCol): number {
     let line = lineCol >>> LOW_BITS_SIZE;
     if (line === MIN_NUMBER) {
-        return -1;
+        return INVALID_LINE;
     }
     return line;
 }
@@ -63,7 +69,7 @@ export function getLineNo(lineCol: LineCol): number {
 export function getColNo(lineCol: LineCol): number {
     let col = lineCol & LOW_BITS_MASK;
     if (col === MIN_NUMBER) {
-        return -1;
+        return INVALID_LINE;
     }
     return col;
 }
@@ -74,7 +80,7 @@ export function getColNo(lineCol: LineCol): number {
 export class LineColPosition {
     private readonly lineCol: LineCol;
 
-    public static readonly DEFAULT: LineColPosition = new LineColPosition(-1, -1);
+    public static readonly DEFAULT: LineColPosition = new LineColPosition(INVALID_LINE, INVALID_LINE);
 
     constructor(lineNo: number, colNo: number) {
         this.lineCol = setLineCol(lineNo, colNo);
@@ -99,7 +105,7 @@ export class FullPosition {
     private readonly first: LineCol;
     private readonly last: LineCol;
 
-    public static readonly DEFAULT: FullPosition = new FullPosition(-1, -1, -1, -1);
+    public static readonly DEFAULT: FullPosition = new FullPosition(INVALID_LINE, INVALID_LINE, INVALID_LINE, INVALID_LINE);
 
     constructor(firstLine: number, firstCol: number, lastLine: number, lastCol: number) {
         this.first = setLineCol(firstLine, firstCol);
