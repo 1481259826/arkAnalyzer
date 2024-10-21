@@ -40,6 +40,16 @@ export enum PagEdgeKind {
     Address, Copy, Load, Write, This, Unknown
 };
 
+export enum StorageType {
+    APP_STORAGE, LOCAL_STORAGE, Undefined
+};
+
+export enum StorageLinkEdgeType {
+    Property2Local,
+    Local2Property,
+    TwoWay
+}
+
 export const GLOBAL_THIS: string = 'globaThis'
 
 export class PagEdge extends BaseEdge {
@@ -340,7 +350,10 @@ export class PagNode extends BaseNode {
 }
 
 export class PagLocalNode extends PagNode {
-    private relatedDynamicCallSite!: Set<DynCallSite>
+    private relatedDynamicCallSite!: Set<DynCallSite>;
+    private storageLinked: boolean = false;
+    private storageType?: StorageType;
+    private propertyName?: string;
 
     constructor(id: NodeID, cid: ContextID | undefined = undefined, value: Local, stmt?: Stmt) {
         super(id, cid, value, PagNodeKind.LocalVar, stmt)
@@ -354,6 +367,23 @@ export class PagLocalNode extends PagNode {
 
     public getRelatedDynCallSites(): Set<DynCallSite> {
         return this.relatedDynamicCallSite
+    }
+
+    public setStorageLink(storageType: StorageType, propertyName: string): void {
+        this.storageLinked = true;
+        this.storageType = storageType;
+        this.propertyName = propertyName;
+    }
+
+    public getStorage(): {StorageType: StorageType, PropertyName: string} {
+        return {
+            StorageType: this.storageType!,
+            PropertyName: this.propertyName!
+        };
+    }
+
+    public isStorageLinked(): boolean {
+        return this.storageLinked;
     }
 }
 
