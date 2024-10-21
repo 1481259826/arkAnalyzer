@@ -19,10 +19,10 @@ import { Value } from './Value';
 import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ArkExport, ExportType } from '../model/ArkExport';
-import { Decorator } from './Decorator';
 import { ClassSignature, LocalSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { UNKNOWN_METHOD_NAME } from '../common/Const';
+import { ModifierType } from '../model/ArkBaseModel';
 
 /**
  * @category core/base
@@ -36,7 +36,7 @@ export class Local implements Value, ArkExport {
     private declaringStmt: Stmt | null;
     private usedStmts: Stmt[];
     private signature?: LocalSignature;
-    private constFlag: boolean = false;
+    private constFlag?: boolean;
 
     constructor(name: string, type: Type = UnknownType.getInstance()) {
         this.name = name;
@@ -108,9 +108,15 @@ export class Local implements Value, ArkExport {
     public getExportType(): ExportType {
         return ExportType.LOCAL;
     }
+    public getModifiers(): number {
+        return 0;
+    }
 
-    public getModifiers(): Set<string | Decorator> {
-        return new Set();
+    public containsModifier(modifierType: ModifierType): boolean {
+        if (modifierType === ModifierType.CONST) {
+            return this.getConstFlag();
+        }
+        return false;
     }
 
     public getSignature(): LocalSignature {
@@ -123,6 +129,9 @@ export class Local implements Value, ArkExport {
     }
 
     public getConstFlag(): boolean {
+        if (!this.constFlag) {
+            return false;
+        }
         return this.constFlag;
     }
 

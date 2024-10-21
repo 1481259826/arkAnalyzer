@@ -18,10 +18,11 @@ import { ArkField, FieldCategory } from '../ArkField';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
-import { buildGenericType, buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
+import { buildDecorators, buildGenericType, buildModifiers, handlePropertyAccessExpression, tsNode2Type } from './builderUtils';
 import { FieldSignature } from '../ArkSignature';
 import { ClassType, Type, UnknownType } from '../../base/Type';
 import { LineColPosition } from '../../base/Position';
+import { ModifierType } from '../ArkBaseModel';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFieldBuilder');
 
@@ -51,15 +52,14 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     } else if (member.name && ts.isPrivateIdentifier(member.name)) {
         let propertyName = member.name.text;
         fieldName = propertyName.substring(1);
-        field.addModifier(ts.ScriptElementKindModifier.privateMemberModifier);
+        field.addModifier(ModifierType.PRIVATE);
     } else {
         logger.warn("Other type of property name found!");
     }
     if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
-        let modifiers = buildModifiers(member, sourceFile);
-        modifiers.forEach((modifier) => {
-            field.addModifier(modifier);
-        });
+        let modifiers = buildModifiers(member);
+        field.addModifier(modifiers);
+        field.setDecorators(buildDecorators(member, sourceFile));
     }
 
     let fieldType: Type = UnknownType.getInstance();
@@ -67,7 +67,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
     }
     if (ts.isEnumMember(member)) {
-        field.addModifier('StaticKeyword');
+        field.addModifier(ModifierType.STATIC);
         fieldType = new ClassType(cls.getSignature());
     }
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic());
@@ -95,9 +95,8 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
     if (member.modifiers) {
-        buildModifiers(member, sourceFile).forEach((modifier) => {
-            field.addModifier(modifier);
-        });
+        let modifier = buildModifiers(member);
+        field.addModifier(modifier);
     }
 
     const fieldName = '[' + member.parameters[0].getText(sourceFile) + ']';

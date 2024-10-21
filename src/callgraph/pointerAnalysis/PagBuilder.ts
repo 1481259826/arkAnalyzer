@@ -31,7 +31,6 @@ import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
 import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS, StorageType, StorageLinkEdgeType } from './Pag';
 import { PtsSet } from './PtsDS';
-import { STATIC_KEYWORD } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -891,7 +890,7 @@ export class PagBuilder {
             return false;
         }
 
-        if (!arkMethod.getModifiers().has(STATIC_KEYWORD)) {
+        if (!arkMethod.isStatic()) {
             this.singletonFuncMap.set(funcID, false);
             return false;
         }

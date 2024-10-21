@@ -940,7 +940,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (builder) {
             let method = this.findMethod((builder.getType() as FunctionType).getMethodSignature());
             if (!method?.hasBuilderDecorator()) {
-                method?.addModifier(new Decorator(BUILDER_DECORATOR));
+                method?.addDecorator(new Decorator(BUILDER_DECORATOR));
             }
             if (!method?.hasViewTree()) {
                 method?.setViewTree(new ViewTreeImpl(method));

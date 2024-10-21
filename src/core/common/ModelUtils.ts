@@ -274,7 +274,7 @@ export class ModelUtils {
             !isArkUIBuilderMethod &&
             arkMethod.getName() == 'build' &&
             arkMethod.getDeclaringArkClass().hasComponentDecorator() &&
-            !arkMethod.containsModifier('StaticKeyword')
+            !arkMethod.isStatic()
         ) {
             const fileName = arkMethod.getDeclaringArkClass().getDeclaringArkFile().getName();
             if (fileName.endsWith('.ets')) {

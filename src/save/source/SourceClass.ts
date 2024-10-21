@@ -56,7 +56,7 @@ export class SourceClass extends SourceBase {
             return this.dumpTypeLiteral();
         }
 
-        this.printDecorator(this.cls.getModifiers());
+        this.printDecorator(this.cls.getDecorators());
         // print export class name<> + extends c0 implements x1, x2 {
         this.printer
             .writeIndent()
@@ -168,7 +168,7 @@ export class SourceClass extends SourceBase {
             if (field.getCategory() == FieldCategory.GET_ACCESSOR) {
                 continue;
             }
-            if (field.getModifiers().has('StaticKeyword')) {
+            if (field.isStatic()) {
                 items.push(new SourceField(field, this.printer.getIndent(), staticInitializer));
             } else {
                 items.push(new SourceField(field, this.printer.getIndent(), instanceInitializer));

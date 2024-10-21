@@ -120,7 +120,7 @@ export class JsonPrinter extends Printer {
     private serializeClass(cls: ArkClass): any {
         return {
             signature: this.serializeClassSignature(cls.getSignature()),
-            modifiers: Array.from(cls.getModifiers()),
+            modifiers: cls.getModifiers(),
             typeParameters: cls.getGenericsTypes()?.map((type) => this.serializeType(type)),
             superClassName: cls.getSuperClassName(),
             implementedInterfaceNames: cls.getImplementedInterfaceNames(),
@@ -132,7 +132,7 @@ export class JsonPrinter extends Printer {
     private serializeField(field: ArkField): any {
         return {
             signature: this.serializeFieldSignature(field.getSignature()),
-            modifiers: Array.from(field.getModifiers()),
+            modifiers: field.getModifiers(),
             questionToken: field.getQuestionToken(),
             exclamationToken: field.getExclamationToken(),
         };
@@ -141,7 +141,7 @@ export class JsonPrinter extends Printer {
     private serializeMethod(method: ArkMethod): any {
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
-            modifiers: Array.from(method.getModifiers()),
+            modifiers: method.getModifiers(),
             typeParameters: method.getGenericTypes()?.map(type => this.serializeType(type)) || [],
             body: this.serializeMethodBody(method.getBody()),
         };
@@ -171,7 +171,7 @@ export class JsonPrinter extends Printer {
             importType: importInfo.getImportType(),
             importFrom: importInfo.getFrom(),
             nameBeforeAs: importInfo.getNameBeforeAs(),
-            modifiers: Array.from(importInfo.getModifiers()),
+            modifiers: importInfo.getModifiers(),
             originTsPosition: this.serializeLineColPosition(importInfo.getOriginTsPosition()),
         };
     }
@@ -183,7 +183,7 @@ export class JsonPrinter extends Printer {
             exportFrom: exportInfo.getFrom(),
             nameBeforeAs: exportInfo.getNameBeforeAs(),
             isDefault: exportInfo.isDefault(),
-            modifiers: Array.from(exportInfo.getModifiers()),
+            modifiers: exportInfo.getModifiers(),
             originTsPosition: this.serializeLineColPosition(exportInfo.getOriginTsPosition()),
         };
     }
