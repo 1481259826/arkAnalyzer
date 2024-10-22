@@ -179,17 +179,18 @@ export const OverloadMethod_Expect_IR = {
     line: 18,
     methodSignature: [
         {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.overloadedFunction1(number)',
             methodSubSignature: {
-                methodName: 'overloadedFunction1',
                 returnType: 'string'
             }
         },
         {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.overloadedFunction1(string)',
             methodSubSignature: {
-                methodName: 'overloadedFunction1',
                 returnType: 'number'
             }
-        },
+        }
+
     ],
     body: {
         locals: {
@@ -201,23 +202,23 @@ export const OverloadMethod_Expect_IR = {
 };
 
 export const OverloadClassMethod_Expect_IR = {
-    line: 30,
+    line: 33,
     methodSignature: [
         {
+            toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(number, number)',
             methodSubSignature: {
-                methodName: 'overloadedFunction2',
                 returnType: 'string'
             }
         },
         {
+            toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(string, string)',
             methodSubSignature: {
-                methodName: 'overloadedFunction2',
                 returnType: 'number'
             }
         },
         {
+            toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(string, string)',
             methodSubSignature: {
-                methodName: 'overloadedFunction2',
                 returnType: 'string'
             }
         }
@@ -232,47 +233,65 @@ export const OverloadClassMethod_Expect_IR = {
 };
 
 export const OverloadNamespaceMethod_Expect_IR = {
-    line: 42,
+    line: 47,
     methodSignature: [
         {
+            toString: '@function/OverloadFunctionTest.ts: overloadNamespace._DEFAULT_ARK_CLASS.overloadedFunction3(number)',
             methodSubSignature: {
-                methodName: 'overloadedFunction3',
                 returnType: 'string'
             }
         },
         {
+            toString: '@function/OverloadFunctionTest.ts: overloadNamespace._DEFAULT_ARK_CLASS.overloadedFunction3(string)',
             methodSubSignature: {
-                methodName: 'overloadedFunction3',
                 returnType: 'number'
             }
         },
         {
+            toString: '@function/OverloadFunctionTest.ts: overloadNamespace._DEFAULT_ARK_CLASS.overloadedFunction3(string)',
             methodSubSignature: {
-                methodName: 'overloadedFunction3',
                 returnType: 'boolean'
             }
         }
     ]
 };
 
-export const NoOverloadMethod_Expect_IR = {
-    line: 45,
+export const OverloadInterfaceMethod_Expect_IR = {
+    line: 52,
     methodSignature: [
         {
+            toString: '@function/OverloadFunctionTest.ts: OverloadInterface.overloadedFunction4(number)',
             methodSubSignature: {
-                methodName: 'function4',
+                returnType: 'number'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: OverloadInterface.overloadedFunction4(string)',
+            methodSubSignature: {
                 returnType: 'string'
             }
         }
     ]
 };
 
-export const NoOverloadMethodWithBody_Expect_IR = {
-    line: 48,
+export const NoOverloadMethod_Expect_IR = {
+    line: 55,
     methodSignature: [
         {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.function5(string)',
             methodSubSignature: {
-                methodName: 'function5',
+                returnType: 'number'
+            }
+        }
+    ]
+};
+
+export const NoOverloadMethodWithBody_Expect_IR = {
+    line: 58,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.function6(number)',
+            methodSubSignature: {
                 returnType: 'number'
             }
         }

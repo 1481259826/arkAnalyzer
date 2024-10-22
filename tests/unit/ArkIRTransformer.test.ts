@@ -30,7 +30,7 @@ import {
 import { ModelUtils } from '../../src/core/common/ModelUtils';
 import { DEFAULT_ARK_METHOD_NAME } from '../../src/core/common/Const';
 import {
-    ArrowFunction_Expect_IR, NoOverloadMethod_Expect_IR, NoOverloadMethodWithBody_Expect_IR, OverloadClassMethod_Expect_IR,
+    ArrowFunction_Expect_IR, NoOverloadMethod_Expect_IR, NoOverloadMethodWithBody_Expect_IR, OverloadClassMethod_Expect_IR, OverloadInterfaceMethod_Expect_IR,
     OverloadMethod_Expect_IR, OverloadNamespaceMethod_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 
@@ -129,6 +129,19 @@ function testNamespaceMethodOverload(scene: Scene, filePath: string, namespaceNa
     assertMethodSignatureEqual(arkMethod, expectMethod);
 }
 
+function testInterfaceMethodOverload(scene: Scene, filePath: string, interfaceName: string, methodName: string, expectMethod: any): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkClass = arkFile?.getClasses().find((cls) => cls.getName() === interfaceName);
+    const arkMethod = arkClass?.getMethods().find((method) => (method.getName() === methodName));
+    if (arkMethod === undefined) {
+        assert.isDefined(arkMethod);
+        return;
+    }
+    assertMethodLineEqual(arkMethod, expectMethod);
+    assertMethodBodyEqual(arkMethod, false, expectMethod);
+    assertMethodSignatureEqual(arkMethod, expectMethod);
+}
+
 function testNoMethodOverload(scene: Scene, filePath: string, methodName: string, expectMethod: any): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
     const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
@@ -170,9 +183,8 @@ function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void
     const signatures = method.getAllSignature();
     expect(signatures.length).toEqual(expectMethod.methodSignature.length);
     signatures.find((signature, index) => {
-        expect(signature.getMethodSubSignature().getMethodName()).toEqual(expectMethod.methodSignature[index].methodSubSignature.methodName);
-        expect(expectMethod.methodSignature[index].methodSubSignature.returnType.toString())
-            .toEqual(expectMethod.methodSignature[index].methodSubSignature.returnType);
+        expect(signature.toString()).toEqual(expectMethod.methodSignature[index].toString);
+        expect(signature.getMethodSubSignature().getReturnType().toString()).toEqual(expectMethod.methodSignature[index].methodSubSignature.returnType);
     });
 }
 
@@ -243,11 +255,15 @@ describe('function Test', () => {
         testNamespaceMethodOverload(scene, 'OverloadFunctionTest.ts', 'overloadNamespace', 'overloadedFunction3', OverloadNamespaceMethod_Expect_IR);
     });
 
+    it('test overload interface function', async () => {
+        testInterfaceMethodOverload(scene, 'OverloadFunctionTest.ts', 'OverloadInterface', 'overloadedFunction4', OverloadInterfaceMethod_Expect_IR);
+    });
+
     it('test no overload function without body', async () => {
-        testNoMethodOverload(scene, 'OverloadFunctionTest.ts', 'function4', NoOverloadMethod_Expect_IR);
+        testNoMethodOverload(scene, 'OverloadFunctionTest.ts', 'function5', NoOverloadMethod_Expect_IR);
     });
 
     it('test no overload function with body', async () => {
-        testNoMethodOverloadWithBody(scene, 'OverloadFunctionTest.ts', 'function5', NoOverloadMethodWithBody_Expect_IR);
+        testNoMethodOverloadWithBody(scene, 'OverloadFunctionTest.ts', 'function6', NoOverloadMethodWithBody_Expect_IR);
     });
 });

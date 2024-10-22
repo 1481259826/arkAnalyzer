@@ -20,7 +20,7 @@ import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import ts from 'ohos-typescript';
 import { ArkClass, ClassCategory } from '../ArkClass';
-import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod } from './ArkMethodBuilder';
+import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod, getMethodAstBody } from './ArkMethodBuilder';
 import { buildDecorators, buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
@@ -159,6 +159,7 @@ function init4InstanceInitMethod(cls: ArkClass) {
         methodSubSignature);
     instanceInit.setSignature(methodSignature);
 
+    checkAndUpdateMethod(instanceInit, cls);
     cls.addMethod(instanceInit);
     cls.setInstanceInitMethod(instanceInit);
 }
@@ -172,6 +173,7 @@ function init4StaticInitMethod(cls: ArkClass) {
         methodSubSignature);
     staticInit.setSignature(methodSignature);
 
+    checkAndUpdateMethod(staticInit, cls);
     cls.addMethod(staticInit);
     cls.setStaticInitMethod(staticInit);
 }
@@ -350,6 +352,7 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
     });
     buildInitMethod(cls.getInstanceInitMethod(), instanceFieldInitializerStmts, instanceIRTransformer.getThisLocal());
     arkMethods.forEach((mtd) => {
+        checkAndUpdateMethod(mtd, cls);
         cls.addMethod(mtd);
     });
 }
@@ -468,5 +471,27 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?:
             stmt.setOriginalText(fieldSourceCode);
         }
         field.setInitializer(stmts);
+    }
+}
+
+export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass) {
+    let presentMethod = cls.getMethodWithName(method.getName());
+    if (presentMethod !== null) {
+        method.setSignature(genMethodSignature(method, presentMethod));
+    }
+}
+
+function genMethodSignature(method: ArkMethod, presentMethod: ArkMethod): MethodSignature[] {
+    let astBody = getMethodAstBody(method);
+    if (astBody === undefined) {
+        for (let signature of presentMethod.getAllSignature()) {
+            if (signature.isMatch(method.getSignature())) {
+                logger.warn(`Ignore duplicated signature of method: ${method.getSignature().toString()} with return type ${method.getReturnType()}`)
+                return presentMethod.getAllSignature();
+            }
+        }
+        return presentMethod.getAllSignature().concat(method.getSignature());
+    } else {
+        return presentMethod.getAllSignature();
     }
 }

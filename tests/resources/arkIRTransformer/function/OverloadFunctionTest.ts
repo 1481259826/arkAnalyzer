@@ -18,8 +18,10 @@ function overloadedFunction1(x: string): number;
 function overloadedFunction1(x: any): any {
     if (typeof x === 'number') {
         return 'this is number';
-    } else {
+    } else if (typeof x === 'string') {
         return 123;
+    } else {
+        return false;
     }
 }
 
@@ -27,11 +29,14 @@ class OverloadClass {
     public overloadedFunction2(x: number, y: number): string;
     public overloadedFunction2(x: string, y: string): number;
     public overloadedFunction2(x: string, y: string): string;
+    public overloadedFunction2(x: number, y: number): string;
     public overloadedFunction2(x: number | string, y: number | string): string | number {
         if (typeof x === 'number' && typeof y === 'number') {
             return 'this is number';
-        } else {
+        } else if (typeof x === 'string' && typeof y === 'string') {
             return 123;
+        } else {
+            return 'wrong input type';
         }
     }
 }
@@ -42,9 +47,14 @@ namespace overloadNamespace {
     function overloadedFunction3(x: string): boolean;
 }
 
-function function4(x: string): number;
+interface OverloadInterface {
+    overloadedFunction4(x: number): number;
+    overloadedFunction4(x: string): string;
+}
 
-function function5(x: number): number;
-function function5(x: number): number {
+function function5(x: string): number;
+
+function function6(x: number): number;
+function function6(x: number): number {
     return x;
 }

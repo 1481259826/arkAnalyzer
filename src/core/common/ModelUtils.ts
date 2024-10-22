@@ -31,6 +31,7 @@ import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
 import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
 import { ClassType, UnclearReferenceType } from '../base/Type';
 import { Scene } from '../../Scene';
+import { checkAndUpdateMethod } from '../model/builder/ArkClassBuilder';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -380,6 +381,7 @@ export class ModelUtils {
                         arkExport.getMethods().forEach(m => {
                             const ms = m.getSignature();
                             m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                            checkAndUpdateMethod(m, entry);
                             entry.addMethod(m);
                         });
                         const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
@@ -387,6 +389,7 @@ export class ModelUtils {
                             attr.getMethods().forEach(m => {
                                 const ms = m.getSignature();
                                 m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                                checkAndUpdateMethod(m, entry);
                                 entry.addMethod(m);
                             });
                         }
