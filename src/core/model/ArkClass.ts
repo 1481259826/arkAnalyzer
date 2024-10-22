@@ -262,9 +262,8 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         return this.staticMethods.get(methodName) || null;
     }
 
-
     public addMethod(method: ArkMethod) {
-        if (method.getModifiers().has('StaticKeyword')) {
+        if (method.isStatic()) {
             this.staticMethods.set(method.getName(), method);
         } else {
             this.methods.set(method.getName(), method);

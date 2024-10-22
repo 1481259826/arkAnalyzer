@@ -86,7 +86,6 @@ export class SceneConfig {
             const targetProjectDirectory: string = configurations.targetProjectDirectory
                 ? configurations.targetProjectDirectory
                 : '';
-            const projectFiles: string[] = getAllFiles(targetProjectDirectory, ['.ets', '.ts']);
             const sdks: Sdk[] = configurations.sdks
                 ? configurations.sdks
                 : [];
@@ -94,8 +93,7 @@ export class SceneConfig {
             this.buildConfig(
                 targetProjectName,
                 targetProjectDirectory,
-                sdks,
-                projectFiles
+                sdks
             );
         } else {
             logger.error(`Your configJsonPath: "${configJsonPath}" is not exist.`);

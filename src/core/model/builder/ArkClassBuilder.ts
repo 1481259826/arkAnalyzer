@@ -474,7 +474,7 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?:
     }
 }
 
-export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass) {
+export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
     let presentMethod: ArkMethod | null;
     if (method.isStatic()) {
         presentMethod = cls.getStaticMethodWithName(method.getName());
@@ -491,7 +491,7 @@ function genMethodSignature(method: ArkMethod, presentMethod: ArkMethod): Method
     if (astBody === undefined) {
         for (let signature of presentMethod.getAllSignature()) {
             if (signature.isMatch(method.getSignature())) {
-                logger.warn(`Ignore duplicated signature of method: ${method.getSignature().toString()} with return type ${method.getReturnType()}`)
+                logger.warn(`Ignore duplicated signature of method: ${method.getSignature().toString()} with return type ${method.getReturnType()}`);
                 return presentMethod.getAllSignature();
             }
         }
