@@ -13,20 +13,13 @@
  * limitations under the License.
  */
 
-import { Decorator } from '../base/Decorator';
 import { LineColPosition } from '../base/Position';
 import { Stmt } from '../base/Stmt';
-import { BUILDER_PARAM_DECORATOR } from '../common/EtsConst';
 import { ArkClass } from './ArkClass';
 import { FieldSignature } from './ArkSignature';
 import { Type } from '../base/Type';
+import { ArkBaseModel } from './ArkBaseModel';
 
-const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
-    'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
-    'Provide', 'Consume', 'ObjectLink',
-    'LocalStorageLink', 'LocalStorageProp',
-    'Local', 'Param', 'Event', 'Provider', 'Consumer'
-])
 
 export enum FieldCategory {
     PROPERTY_DECLARATION = 0,
@@ -42,13 +35,11 @@ export enum FieldCategory {
 /**
  * @category core/model
  */
-export class ArkField {
+export class ArkField extends ArkBaseModel {
     private code: string = "";
     private category!: FieldCategory;
 
     private declaringClass!: ArkClass;
-
-    private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private questionToken: boolean = false;
     private exclamationToken: boolean = false;
 
@@ -58,6 +49,7 @@ export class ArkField {
     private initializer: Stmt[] = [];
 
     constructor() {
+        super();
     }
 
     public getDeclaringArkClass() {
@@ -92,14 +84,6 @@ export class ArkField {
         return this.fieldSignature.getType();
     }
 
-    public getModifiers() {
-        return this.modifiers;
-    }
-
-    public addModifier(modifier: string | Decorator) {
-        this.modifiers.add(modifier);
-    }
-
     public getSignature(): FieldSignature {
         return this.fieldSignature;
     }
@@ -114,41 +98,6 @@ export class ArkField {
 
     public setInitializer(initializer: Stmt[]) {
         this.initializer = initializer;
-    }
-
-    public isStatic(): boolean {
-        if (this.modifiers.has("StaticKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isProtected(): boolean {
-        if (this.modifiers.has("ProtectedKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isPrivate(): boolean {
-        if (this.modifiers.has("PrivateKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isPublic(): boolean {
-        if (this.modifiers.has("PublicKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isReadonly(): boolean {
-        if (this.modifiers.has("ReadonlyKeyword")) {
-            return true;
-        }
-        return false;
     }
 
     public setQuestionToken(questionToken: boolean) {
@@ -173,24 +122,5 @@ export class ArkField {
 
     public getOriginPosition(): LineColPosition {
         return this.originPosition ?? LineColPosition.DEFAULT;
-    }
-
-    public getDecorators(): Decorator[] {
-        return Array.from(this.modifiers).filter((item) => {
-            return item instanceof Decorator;
-        }) as Decorator[];
-    }
-
-    public getStateDecorators(): Decorator[] {
-        return Array.from(this.modifiers).filter((item) => {
-            return (item instanceof Decorator) && (COMPONENT_MEMBER_DECORATORS.has(item.getKind()));
-        }) as Decorator[];
-    }
-
-    public hasBuilderParamDecorator(): boolean {
-        let decorators = this.getDecorators();
-        return decorators.filter((value) => {
-            return value.getKind() == BUILDER_PARAM_DECORATOR;
-        }).length != 0;
     }
 }

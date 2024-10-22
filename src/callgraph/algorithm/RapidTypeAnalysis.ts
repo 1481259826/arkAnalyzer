@@ -23,7 +23,6 @@ import { CallGraph, CallSite, FuncID } from '../model/CallGraph';
 import { AbstractAnalysis } from './AbstractAnalysis';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ClassType } from '../../core/base/Type';
-import { ABSTRACT_KEYWORD } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'RTA');
 
@@ -67,7 +66,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
             let declareClass = calleeMethod!.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                if (arkClass.getModifiers().has(ABSTRACT_KEYWORD)) {
+                if (arkClass.isAbstract()) {
                     return;
                 }
 
@@ -79,7 +78,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                     return;
                 }
 
-                if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has(ABSTRACT_KEYWORD)) {
+                if (possibleCalleeMethod && !possibleCalleeMethod.isAbstract()) {
                     if (!this.instancedClasses.has(arkClass.getSignature())) {
                         this.addIgnoredCalls(arkClass.getSignature(), callerMethod,
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),

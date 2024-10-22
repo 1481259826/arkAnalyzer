@@ -16,10 +16,10 @@
 import ts from 'ohos-typescript';
 import { LineColPosition } from '../../base/Position';
 import { ArkExport, ExportInfo, ExportType, FromInfo } from '../ArkExport';
-import { Decorator } from '../../base/Decorator';
 import { buildModifiers } from './builderUtils';
 import { ArkFile } from '../ArkFile';
 import { ALL, DEFAULT } from "../../common/TSConst";
+import { ModifierType } from '../ArkBaseModel';
 
 export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 
@@ -47,7 +47,7 @@ export function buildDefaultExportInfo(im: FromInfo, file: ArkFile, arkExport?: 
 function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const tsSourceCode = node.getText(sourceFile);
-    const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
+    const modifiers = node.modifiers ? buildModifiers(node) : 0;
     let exportFrom = '';
     if (node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
         exportFrom = node.moduleSpecifier.text;
@@ -95,9 +95,9 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
     }
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const tsSourceCode = node.getText(sourceFile);
-    const modifiers = buildModifiers(node, sourceFile);
+    let modifiers = buildModifiers(node);
     if (isKeyword(node.getChildren(sourceFile), ts.SyntaxKind.DefaultKeyword)) {
-        modifiers.add(ts.SyntaxKind[ts.SyntaxKind.DefaultKeyword]);
+        modifiers |= ModifierType.DEFAULT;
     }
     if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { // just like: export default {a,b,c}
         node.expression.properties.forEach((property) => {
@@ -141,7 +141,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
 export function buildExportVariableStatement(node: ts.VariableStatement, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     let exportInfos: ExportInfo[] = [];
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
-    const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
+    const modifiers = node.modifiers ? buildModifiers(node) : 0;
     const tsSourceCode = node.getText(sourceFile);
     node.declarationList.declarations.forEach(dec => {
         const exportInfo = new ExportInfo.Builder()
@@ -166,7 +166,7 @@ export function buildExportVariableStatement(node: ts.VariableStatement, sourceF
 export function buildExportTypeAliasDeclaration(node: ts.TypeAliasDeclaration, sourceFile: ts.SourceFile, arkFile: ArkFile): ExportInfo[] {
     let exportInfos: ExportInfo[] = [];
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
-    const modifiers = node.modifiers ? buildModifiers(node, sourceFile) : new Set<string | Decorator>();
+    const modifiers = node.modifiers ? buildModifiers(node) : 0;
     const tsSourceCode = node.getText(sourceFile);
     const exportInfo = new ExportInfo.Builder()
         .exportClauseName(node.name.text)

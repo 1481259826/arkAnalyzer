@@ -15,8 +15,8 @@
 
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
-import { Decorator } from './Decorator';
 import { LineColPosition } from './Position';
+import { ModifierType } from '../model/ArkBaseModel';
 
 /**
  * @category core/base/type
@@ -453,8 +453,12 @@ export class AliasType extends Type implements ArkExport {
         return ExportType.TYPE;
     }
 
-    public getModifiers(): Set<string | Decorator> {
-        return new Set();
+    public getModifiers(): number {
+        return 0;
+    }
+
+    public containsModifier(modifierType: ModifierType): boolean {
+        return false;
     }
 
     public getSignature(): LocalSignature {

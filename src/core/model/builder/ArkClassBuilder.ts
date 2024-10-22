@@ -21,7 +21,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import ts from 'ohos-typescript';
 import { ArkClass, ClassCategory } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod } from './ArkMethodBuilder';
-import { buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
+import { buildDecorators, buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 import { ArkAssignStmt, OriginalStmt, Stmt } from '../../base/Stmt';
@@ -195,9 +195,8 @@ function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sour
         }
     }
 
-    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
-        cls.addModifier(modifier);
-    });
+    cls.setModifiers(buildModifiers(clsNode));
+    cls.setDecorators(buildDecorators(clsNode, sourceFile));
 
     cls.setCategory(ClassCategory.STRUCT);
     init4InstanceInitMethod(cls);
@@ -232,9 +231,8 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
         }
     }
 
-    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
-        cls.addModifier(modifier);
-    });
+    cls.setModifiers(buildModifiers(clsNode));
+    cls.setDecorators(buildDecorators(clsNode, sourceFile));
 
     cls.setCategory(ClassCategory.CLASS);
     init4InstanceInitMethod(cls);
@@ -269,9 +267,8 @@ function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass
         }
     }
 
-    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
-        cls.addModifier(modifier);
-    });
+    cls.setModifiers(buildModifiers(clsNode));
+    cls.setDecorators(buildDecorators(clsNode, sourceFile));
 
     cls.setCategory(ClassCategory.INTERFACE);
 
@@ -289,9 +286,8 @@ function buildEnum2ArkClass(clsNode: ts.EnumDeclaration, cls: ArkClass, sourceFi
         cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
     cls.setSignature(classSignature);
 
-    buildModifiers(clsNode, sourceFile).forEach((modifier) => {
-        cls.addModifier(modifier);
-    });
+    cls.setModifiers(buildModifiers(clsNode));
+    cls.setDecorators(buildDecorators(clsNode, sourceFile));
 
     cls.setCategory(ClassCategory.ENUM);
 

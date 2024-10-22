@@ -20,6 +20,7 @@ import { ArkClass, ClassCategory } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import ts from 'ohos-typescript';
 import {
+    buildDecorators,
     buildGenericType,
     buildModifiers,
     buildParameters,
@@ -37,7 +38,7 @@ import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../bas
 import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
-import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
+import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 
@@ -85,9 +86,8 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setLine(line + 1);
     mtd.setColumn(character + 1);
 
-    buildModifiers(methodNode, sourceFile).forEach((value) => {
-        mtd.addModifier(value);
-    });
+    mtd.setModifiers(buildModifiers(methodNode));
+    mtd.setDecorators(buildDecorators(methodNode, sourceFile));
 
     if (methodNode.typeParameters) {
         mtd.setGenericTypes(buildTypeParameters(methodNode.typeParameters, sourceFile, mtd));
@@ -114,7 +114,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         mtd.setViewTree(buildViewTree(mtd));
     } else if (declaringClass.hasComponentDecorator() &&
         mtd.getSubSignature().toString() == 'build()' &&
-        !mtd.containsModifier('StaticKeyword')) {
+        !mtd.isStatic()) {
         declaringClass.setViewTree(buildViewTree(mtd));
     }
 
@@ -316,7 +316,7 @@ function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
     return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null &&
         (originClassType == ClassCategory.CLASS || originClassType == ClassCategory.OBJECT) &&
         arkClass.getName() != DEFAULT_ARK_CLASS_NAME &&
-        !arkClass.getModifiers().has(DECLARE_KEYWORD);
+        !arkClass.isDeclare();
 }
 
 export function buildDefaultConstructor(arkClass: ArkClass): boolean {

@@ -20,7 +20,6 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { NodeID } from '../model/BaseGraph';
 import { CallGraph, CallSite } from '../model/CallGraph';
 import { AbstractAnalysis } from './AbstractAnalysis';
-import { ABSTRACT_KEYWORD } from '../../core/common/TSConst';
 
 export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
@@ -60,7 +59,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
             let declareClass = calleeMethod.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                if (arkClass.getModifiers().has(ABSTRACT_KEYWORD)) {
+                if (arkClass.isAbstract()) {
                     return;
                 }
 
@@ -72,7 +71,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
                     return;
                 }
 
-                if (possibleCalleeMethod && !possibleCalleeMethod.getModifiers().has(ABSTRACT_KEYWORD)) {
+                if (possibleCalleeMethod && !possibleCalleeMethod.isAbstract()) {
                     resolveResult.push(
                         new CallSite(invokeStmt, undefined,
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),

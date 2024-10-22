@@ -39,6 +39,7 @@ import {
 } from './ArkMethodBuilder';
 import { buildNormalArkClassFromArkMethod } from './ArkClassBuilder';
 import { Builtin } from '../../common/Builtin';
+import { modifierKind2Enum } from '../ArkBaseModel';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'builderUtils');
 
@@ -68,49 +69,51 @@ export function handlePropertyAccessExpression(node: ts.PropertyAccessExpression
     return propertyAccessExpressionName;
 }
 
-export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<string | Decorator> {
-    let modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-
-    function parseModifier(modifier: ts.ModifierLike) {
-        if (ts.SyntaxKind[modifier.kind] == 'FirstContextualKeyword') {
-            modifiers.add('AbstractKeyword');
-        } else if (ts.isDecorator(modifier)) {
-            if (modifier.expression) {
-                let kind = '';
-                let param = '';
-                if (ts.isIdentifier(modifier.expression)) {
-                    kind = modifier.expression.text;
-                } else if (ts.isCallExpression(modifier.expression)) {
-                    if (ts.isIdentifier(modifier.expression.expression)) {
-                        kind = modifier.expression.expression.text;
-                    }
-                    if (modifier.expression.arguments.length > 0) {
-                        const arg = (modifier.expression as ts.CallExpression).arguments[0];
-                        if (ts.isArrowFunction(arg)) {
-                            const body = (arg as ts.ArrowFunction).body;
-                            if (ts.isIdentifier(body)) {
-                                param = body.text;
-                            }
-                        }
-                    }
-                }
-                const decorator = new Decorator(kind);
-                decorator.setContent(modifier.expression.getText(sourceFile));
-                if (param != '') {
-                    decorator.setParam(param);
-                }
-                modifiers.add(decorator);
-            }
-        } else {
-            modifiers.add(ts.SyntaxKind[modifier.kind]);
+export function buildDecorators(node: ts.Node, sourceFile: ts.SourceFile): Set<Decorator> {
+    let decorators: Set<Decorator> = new Set();
+    ts.getAllDecorators(node).forEach((decoratorNode) => {
+        let decorator = parseDecorator(decoratorNode);
+        if (decorator) {
+            decorator.setContent(decoratorNode.expression.getText(sourceFile));
+            decorators.add(decorator);
         }
+    });
+    return decorators;
+}
+
+function parseDecorator(node: ts.Decorator): Decorator | undefined {
+    if (!node.expression) {
+        return undefined;
     }
+
+    let expression = node.expression;
+    if (ts.isIdentifier(expression)) {
+        return new Decorator(expression.text);
+    } 
+    if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) {
+        return undefined;
+    }
+ 
+    let decorator = new Decorator(expression.expression.text);
+    
+    if (expression.arguments.length > 0) {
+        const arg = expression.arguments[0];
+        if (ts.isArrowFunction(arg) && ts.isIdentifier(arg.body)) {
+            decorator.setParam(arg.body.text);
+        }   
+    }
+    
+    return decorator;
+}
+
+export function buildModifiers(node: ts.Node): number {
+    let modifiers: number = 0;
 
     if (ts.canHaveModifiers(node)) {
-        ts.getModifiers(node)?.forEach(parseModifier);
+        ts.getModifiers(node)?.forEach((modifier) => {
+            modifiers |= modifierKind2Enum(modifier.kind);
+        });
     }
-
-    ts.getAllDecorators(node).forEach(parseModifier);
 
     return modifiers;
 }

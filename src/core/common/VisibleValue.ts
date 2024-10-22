@@ -166,7 +166,7 @@ export class VisibleValue {
         const fields = cls.getFields();
         const classSignature = cls.getSignature();
         for (const field of fields) {
-            if (field.getModifiers().has('StaticKeyword')) {
+            if (field.isStatic()) {
                 const staticFieldRef = new ArkStaticFieldRef(field.getSignature());
                 values.push(staticFieldRef);
             } else {
