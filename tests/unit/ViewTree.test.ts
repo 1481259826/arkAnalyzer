@@ -278,6 +278,7 @@ describe('builder Test', () => {
             return;
         }
         let root = vt.getRoot();
+        vt.toDot('output/viewtree.dot');
         expectViewTree(root, Case_ComplexStateValueTest_Expect_ViewTree);
     });
 
