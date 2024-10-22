@@ -1300,53 +1300,13 @@ class ViewTreeDot {
             streamOut.write(`    ${id} [label="${item.name}"]\n`);
         }
 
-        if (item.stateValues.size > 0) {
-            let stateValuesId = `${id}val`;
-            let content: string[] = [];
-            item.stateValues.forEach((value) => {
-                content.push(value.getName());
-            });
-
-            streamOut.write(
-                `    ${stateValuesId} [shape=ellipse label="StateValues\n ${this.escapeDotLabel(
-                    content
-                )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
-            );
-            streamOut.write(`    ${id} -> ${stateValuesId}\n`);
-        }
-
-        if (item.signature) {
-            let signatureId = `${id}signature`;
-            let content = [item.signature.toString()];
-            streamOut.write(
-                `    ${signatureId} [shape=ellipse label="signature\n${this.escapeDotLabel(
-                    content
-                )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
-            );
-            streamOut.write(`    ${id} -> ${signatureId}\n`);
-        }
-
-        if (item.attributes.size > 0) {
-            let attributesId = `${id}attributes`;
-            let content: string[] = [];
-            for (const [key, _] of item.attributes) {
-                if (key != COMPONENT_POP_FUNCTION) {
-                    content.push(key);
-                }
-            }
-            if (content.length > 0) {
-                streamOut.write(
-                    `    ${attributesId} [shape=ellipse label="property|Event\n${this.escapeDotLabel(
-                        content
-                    )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
-                );
-                streamOut.write(`    ${id} -> ${attributesId}\n`);
-            }
-        }
-
         if (parent) {
             streamOut.write(`    ${map.get(parent)!} -> ${id}\n`);
         }
+
+        this.writeNodeStateValues(item, id, streamOut);
+        this.writeNodeAttributes(item, id, streamOut);
+        this.writeNodeSignature(item, id, streamOut);
 
         if (map.get(item)) {
             streamOut.write(`    {rank="same"; ${id};${map.get(item)};}\n`);
@@ -1363,5 +1323,54 @@ class ViewTreeDot {
             map.set(item.signature, id);
         }
         return false;
+    }
+
+    private writeNodeStateValues(item: ViewTreeNode, id: string, streamOut: fs.WriteStream): void {
+        if (item.stateValues.size > 0) {
+            let stateValuesId = `${id}val`;
+            let content: string[] = [];
+            item.stateValues.forEach((value) => {
+                content.push(value.getName());
+            });
+
+            streamOut.write(
+                `    ${stateValuesId} [shape=ellipse label="StateValues\n ${this.escapeDotLabel(
+                    content
+                )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
+            );
+            streamOut.write(`    ${id} -> ${stateValuesId}\n`);
+        }
+    }
+
+    private writeNodeAttributes(item: ViewTreeNode, id: string, streamOut: fs.WriteStream): void {
+        if (item.attributes.size > 0) {
+            let attributesId = `${id}attributes`;
+            let content: string[] = [];
+            for (const [key, _] of item.attributes) {
+                if (key !== COMPONENT_POP_FUNCTION) {
+                    content.push(key);
+                }
+            }
+            if (content.length > 0) {
+                streamOut.write(
+                    `    ${attributesId} [shape=ellipse label="property|Event\n${this.escapeDotLabel(
+                        content
+                    )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
+                );
+                streamOut.write(`    ${id} -> ${attributesId}\n`);
+            }
+        }
+    }
+    private writeNodeSignature(item: ViewTreeNode, id: string, streamOut: fs.WriteStream): void {
+        if (item.signature) {
+            let signatureId = `${id}signature`;
+            let content = [item.signature.toString()];
+            streamOut.write(
+                `    ${signatureId} [shape=ellipse label="signature\n${this.escapeDotLabel(
+                    content
+                )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
+            );
+            streamOut.write(`    ${id} -> ${signatureId}\n`);
+        }
     }
 }
