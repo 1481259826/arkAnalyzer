@@ -413,13 +413,15 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     public getRelatedNodes(value: Value): Set<Value> {
-        let valueNodes = this.pag.getNodesByValue(value)?.values()!;
+        let valueNodes = this.pag.getNodesByValue(value);
         let relatedAllNodes: Set<Value> = new Set();
         let workListNodes: NodeID[] = [];
         let processedNodes: Set<NodeID> = new Set();
 
-        for (const nodeID of valueNodes) {
-            workListNodes.push(nodeID);
+        if (valueNodes) {
+            for (const nodeID of valueNodes.values()) {
+                workListNodes.push(nodeID);
+            }
         }
 
         while (workListNodes.length !== 0) {
@@ -430,10 +432,7 @@ export class PointerAnalysis extends AbstractAnalysis {
 
             let valueNode = this.pag.getNode(valueNodeID) as PagNode;
 
-            let inCopyEdges = valueNode.getIncomingCopyEdges();
-            if (!inCopyEdges) {
-                continue;
-            }
+            let inCopyEdges = valueNode.getIncomingCopyEdges() ?? new Set();
 
             inCopyEdges.forEach(edge => {
                 let srcID = edge.getSrcID();
@@ -442,10 +441,7 @@ export class PointerAnalysis extends AbstractAnalysis {
                 }
             });
 
-            let outCopyEdges = valueNode.getOutgoingCopyEdges();
-            if (!outCopyEdges) {
-                continue;
-            }
+            let outCopyEdges = valueNode.getOutgoingCopyEdges() ?? new Set();
 
             outCopyEdges.forEach(edge => {
                 let dstID = edge.getDstID();
@@ -509,7 +505,7 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     public getTypeDiffMap(): Map<Value, Set<Type>> {
-        return this.typeDiffMap;
+        return this.typeDiffMap ?? new Map();
     }
 
     protected resolveCall(sourceMethod: NodeID, invokeStmt: Stmt): CallSite[] {
