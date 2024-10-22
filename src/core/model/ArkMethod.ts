@@ -117,7 +117,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public getSignature(): MethodSignature {
-        return this.methodSignature[this.methodSignature.length - 1];
+        return this.methodSignature[0];
     }
 
     public getAllSignature(): MethodSignature[] {

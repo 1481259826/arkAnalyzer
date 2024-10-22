@@ -475,7 +475,12 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?:
 }
 
 export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass) {
-    let presentMethod = cls.getMethodWithName(method.getName());
+    let presentMethod: ArkMethod | null;
+    if (method.isStatic()) {
+        presentMethod = cls.getStaticMethodWithName(method.getName());
+    } else {
+        presentMethod = cls.getMethodWithName(method.getName());
+    }
     if (presentMethod !== null) {
         method.setSignature(genMethodSignature(method, presentMethod));
     }
