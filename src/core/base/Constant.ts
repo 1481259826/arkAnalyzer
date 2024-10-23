@@ -28,6 +28,10 @@ export class Constant implements Value {
         this.type = type;
     }
 
+    /**
+     * Returns the constant's value as a **string**.
+     * @returns The constant's value.
+     */
     public getValue(): string {
         return this.value;
     }
@@ -40,6 +44,10 @@ export class Constant implements Value {
         return [];
     }
 
+    /**
+     * Returns the type of this constant.
+     * @returns The type of this constant.
+     */
     public getType(): Type {
         return this.type;
     }
@@ -48,6 +56,10 @@ export class Constant implements Value {
         this.type = newType;
     }
 
+    /**
+     * Get a string of constant value in Constant.
+     * @returns The string of constant value.
+     */
     public toString(): string {
         let str = '';
         if (this.type instanceof StringType) {

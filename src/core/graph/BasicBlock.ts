@@ -17,6 +17,11 @@ import { Stmt } from '../base/Stmt';
 
 /**
  * @category core/graph
+ * A `BasicBlock` is composed of:
+ * - ID: a **number** that uniquely identify the basic block, initialized as -1.
+ * - Statements: an **array** of statements in the basic block.
+ * - Predecessors:  an **array** of basic blocks in front of the current basic block. More accurately, these basic blocks can reach the current block through edges.
+ * - Successors: an **array** of basic blocks after the current basic block. More accurately, the current block can reach these basic blocks through edges.
  */
 export class BasicBlock {
     private id: number = -1;
@@ -35,6 +40,10 @@ export class BasicBlock {
         this.id = id;
     }
 
+    /**
+     * Returns an array of the statements in a basic block.
+     * @returns An array of statements in a basic block.
+     */
     public getStmts(): Stmt[] {
         return this.stmts;
     }
@@ -58,10 +67,32 @@ export class BasicBlock {
         return this.stmts[size - 1];
     }
 
+    /**
+     * Returns successors of the current basic block, whose types are also basic blocks (i.e.{@link BasicBlock}).
+     * @returns Successors of the current basic block.
+     * @example
+     * 1. get block successors.
+
+    ```typescript
+    const body = arkMethod.getBody();
+    const blocks = [...body.getCfg().getBlocks()]
+    for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i]
+        ...
+        for (const next of block.getSuccessors()) {
+        ...
+        }
+    } 
+    ```
+     */
     public getSuccessors(): BasicBlock[] {
         return this.successorBlocks;
     }
 
+    /**
+     * Returns predecessors of the current basic block, whose types are also basic blocks.
+     * @returns An array of basic blocks.
+     */
     public getPredecessors(): BasicBlock[] {
         return this.predecessorBlocks;
     }

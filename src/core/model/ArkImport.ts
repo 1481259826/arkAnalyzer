@@ -52,7 +52,10 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
     }
 
     /**
-     * 获取实际的引用（调用时生成）
+     * Returns the export information, i.e., the actual reference generated at the time of call. 
+     * The export information includes: clause's name, clause's type, modifiers, location 
+     * where it is exported from, etc. If the export information could not be found, **null** will be returned.
+     * @returns The export information. If there is no export information, the return will be a **null**.
      */
     public getLazyExportInfo(): ExportInfo | null {
         if (this.lazyExportInfo === undefined) {

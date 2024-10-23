@@ -41,6 +41,14 @@ export class SceneConfig {
     constructor() {
     }
 
+    /**
+     * Set the scene's config, 
+     * such as  the target project's name, the used sdks and the full path.
+     * @param targetProjectName - the target project's name.
+     * @param targetProjectDirectory - the target project's directory.
+     * @param sdks - sdks used in this scene.
+     * @param fullFilePath - the full file path.
+     */
     public buildConfig(
         targetProjectName: string,
         targetProjectDirectory: string,
@@ -55,6 +63,18 @@ export class SceneConfig {
         }
     }
 
+    /**
+     * Create a sceneConfig object for a specified project path and set the target project directory to the targetProjectDirectory property of the sceneConfig object.
+     * @param targetProjectDirectory - the target project directory, such as xxx/xxx/xxx, started from project directory.
+     * @example
+     * 1. build a sceneConfig object.
+
+    ```typescript
+    const projectDir = 'xxx/xxx/xxx';
+    const sceneConfig: SceneConfig = new SceneConfig();
+    sceneConfig.buildFromProjectDir(projectDir);
+    ```
+     */
     public buildFromProjectDir(targetProjectDirectory: string) {
         this.targetProjectDirectory = targetProjectDirectory;
         this.targetProjectName = path.basename(targetProjectDirectory);
