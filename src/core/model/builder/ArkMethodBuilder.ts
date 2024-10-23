@@ -41,6 +41,7 @@ import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
+import { checkAndUpdateMethod } from './ArkClassBuilder';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkMethodBuilder');
 
@@ -117,7 +118,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         !mtd.isStatic()) {
         declaringClass.setViewTree(buildViewTree(mtd));
     }
-
+    checkAndUpdateMethod(mtd, declaringClass);
     declaringClass.addMethod(mtd);
 }
 
@@ -405,6 +406,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     cfg.getStmts().forEach(s => s.setCfg(cfg));
 
     defaultConstructor.setBody(new ArkBody(locals, cfg));
+    checkAndUpdateMethod(defaultConstructor, arkClass);
     arkClass.addMethod(defaultConstructor);
 
     return true;
@@ -453,5 +455,22 @@ export function addInitInConstructor(arkClass: ArkClass) {
             }
             firstBlockStmts.splice(index, 0, initInvokeStmt);
         }
+    }
+}
+
+export function getMethodAstBody(arkMethod: ArkMethod): ts.Block | undefined {
+    let astNode = arkMethod.getBodyBuilder()?.getCfgBuilder().astRoot;
+    if (astNode === undefined) {
+        return undefined;
+    }
+    if (ts.isFunctionDeclaration(astNode) ||
+        ts.isMethodDeclaration(astNode) ||
+        ts.isConstructorDeclaration(astNode) ||
+        ts.isGetAccessorDeclaration(astNode) ||
+        ts.isSetAccessorDeclaration(astNode) ||
+        ts.isFunctionExpression(astNode)) {
+        return astNode.body;
+    } else {
+        return undefined;
     }
 }

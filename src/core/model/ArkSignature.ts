@@ -282,6 +282,10 @@ export class MethodSignature {
     public toString(): string {
         return this.declaringClassSignature.toString() + '.' + this.methodSubSignature.toString();
     }
+
+    public isMatch(signature: MethodSignature): boolean {
+        return ((this.toString() === signature.toString()) && (this.getType().toString() === signature.getType().toString()));
+    }
 }
 
 export class LocalSignature {

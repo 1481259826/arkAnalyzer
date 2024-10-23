@@ -117,7 +117,6 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, arkFile.getDefaultClass(), mthd, astRoot);
-            arkFile.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
                 arkFile.addExportInfo(buildExportInfo(mthd, arkFile, LineColPosition.buildFromNode(child, astRoot)));
@@ -126,7 +125,6 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, arkFile.getDefaultClass(), mthd, astRoot);
-            arkFile.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
                 arkFile.addExportInfo(buildExportInfo(mthd, arkFile, LineColPosition.buildFromNode(child, astRoot)));

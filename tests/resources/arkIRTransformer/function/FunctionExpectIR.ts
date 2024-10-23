@@ -174,3 +174,133 @@ export const ArrowFunction_Expect_IR = {
         ],
     }],
 };
+
+export const OverloadMethod_Expect_IR = {
+    line: 18,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.overloadedFunction1(number)',
+            methodSubSignature: {
+                returnType: 'string'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.overloadedFunction1(string)',
+            methodSubSignature: {
+                returnType: 'number'
+            }
+        }
+
+    ],
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
+};
+
+export const OverloadClassMethod_Expect_IR = {
+    line: 33,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(number, number)',
+            methodSubSignature: {
+                returnType: 'string'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(string, string)',
+            methodSubSignature: {
+                returnType: 'number'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(string, string)',
+            methodSubSignature: {
+                returnType: 'string'
+            }
+        }
+    ],
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
+};
+
+export const OverloadNamespaceMethod_Expect_IR = {
+    line: 47,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: overloadNamespace._DEFAULT_ARK_CLASS.overloadedFunction3(number)',
+            methodSubSignature: {
+                returnType: 'string'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: overloadNamespace._DEFAULT_ARK_CLASS.overloadedFunction3(string)',
+            methodSubSignature: {
+                returnType: 'number'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: overloadNamespace._DEFAULT_ARK_CLASS.overloadedFunction3(string)',
+            methodSubSignature: {
+                returnType: 'boolean'
+            }
+        }
+    ]
+};
+
+export const OverloadInterfaceMethod_Expect_IR = {
+    line: 52,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: OverloadInterface.overloadedFunction4(number)',
+            methodSubSignature: {
+                returnType: 'number'
+            }
+        },
+        {
+            toString: '@function/OverloadFunctionTest.ts: OverloadInterface.overloadedFunction4(string)',
+            methodSubSignature: {
+                returnType: 'string'
+            }
+        }
+    ]
+};
+
+export const NoOverloadMethod_Expect_IR = {
+    line: 55,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.function5(string)',
+            methodSubSignature: {
+                returnType: 'number'
+            }
+        }
+    ]
+};
+
+export const NoOverloadMethodWithBody_Expect_IR = {
+    line: 58,
+    methodSignature: [
+        {
+            toString: '@function/OverloadFunctionTest.ts: _DEFAULT_ARK_CLASS.function6(number)',
+            methodSubSignature: {
+                returnType: 'number'
+            }
+        }
+    ],
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
+};

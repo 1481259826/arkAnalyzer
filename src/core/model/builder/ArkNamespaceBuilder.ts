@@ -125,7 +125,6 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, namespace.getDefaultClass(), mthd, sourceFile);
-            namespace.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
                 namespace.addExportInfo(buildExportInfo(mthd, namespace.getDeclaringArkFile(),
@@ -135,7 +134,7 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, namespace.getDefaultClass(), mthd, sourceFile);
-            namespace.getDefaultClass().addMethod(mthd);
+
             if (mthd.isExported()) {
                 namespace.addExportInfo(buildExportInfo(mthd, namespace.getDeclaringArkFile(),
                     LineColPosition.buildFromNode(child, sourceFile)));

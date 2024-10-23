@@ -42,7 +42,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     private genericTypes?: GenericType[];
 
-    private methodSignature!: MethodSignature;
+    private methodSignature!: MethodSignature[];
 
     private body?: ArkBody;
     private viewTree?: ViewTree;
@@ -61,7 +61,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public getName() {
-        return this.methodSignature.getMethodSubSignature().getMethodName();
+        return this.getSignature().getMethodSubSignature().getMethodName();
     }
 
     public getCode() {
@@ -109,23 +109,31 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public getParameters() {
-        return this.methodSignature.getMethodSubSignature().getParameters();
+        return this.getSignature().getMethodSubSignature().getParameters();
     }
 
     public getReturnType() {
-        return this.methodSignature.getType();
+        return this.getSignature().getType();
     }
 
-    public getSignature() {
+    public getSignature(): MethodSignature {
+        return this.methodSignature[0];
+    }
+
+    public getAllSignature(): MethodSignature[] {
         return this.methodSignature;
     }
 
-    public setSignature(methodSignature: MethodSignature) {
-        this.methodSignature = methodSignature;
+    public setSignature(methodSignature: MethodSignature | MethodSignature[]) {
+        if (Array.isArray(methodSignature)) {
+            this.methodSignature = methodSignature;
+        } else {
+            this.methodSignature = [methodSignature];
+        }
     }
 
     public getSubSignature() {
-        return this.methodSignature.getMethodSubSignature();
+        return this.getSignature().getMethodSubSignature();
     }
 
     public getGenericTypes(): GenericType[] | undefined {
@@ -138,6 +146,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     public setGenericTypes(genericTypes: GenericType[]): void {
         this.genericTypes = genericTypes;
+    }
+
+    public getBodyBuilder(): BodyBuilder | undefined {
+        return this.bodyBuilder;
     }
 
     public getBody(): ArkBody | undefined {
