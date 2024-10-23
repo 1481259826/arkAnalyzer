@@ -25,7 +25,7 @@ import { Local } from '../../core/base/Local';
 import { NodeID } from '../model/BaseGraph';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkClass } from '../../core/model/ArkClass';
-import { ClassType, FunctionType } from '../../core/base/Type';
+import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
@@ -303,7 +303,12 @@ export class PagBuilder {
     }
 
     private processStorageSetOrCreate(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let propertyName = (cs.args![0] as Constant).getValue();
+        let propertyStr = this.getPropertyName(cs.args![0]);
+        if (!propertyStr) {
+            return;
+        }
+        
+        let propertyName = propertyStr;
         let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
         let storageObj = cs.args![1];
 
@@ -311,7 +316,12 @@ export class PagBuilder {
     }
 
     private processStorageLink(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let propertyName = (cs.args![0] as Constant).getValue();
+        let propertyStr = this.getPropertyName(cs.args![0]);
+        if (!propertyStr) {
+            return;
+        }
+        
+        let propertyName = propertyStr;
         let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
         let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
         let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
@@ -324,25 +334,35 @@ export class PagBuilder {
     }
 
     private processStorageProp(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let propertyName = (cs.args![0] as Constant).getValue();
-                let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-                let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-                let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
-                if (linkedOpNode instanceof PagLocalNode) {
-                    linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
-                }
+        let propertyStr = this.getPropertyName(cs.args![0]);
+        if (!propertyStr) {
+            return;
+        }
 
-                this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
+        let propertyName = propertyStr;
+        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
+        if (linkedOpNode instanceof PagLocalNode) {
+            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
+        }
+
+        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
     }
 
     private processStorageSet(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let base = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
-        let baseNode = this.pag.getOrNewNode(cid, base) as PagLocalNode;
+        let ivkExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
+        if (ivkExpr instanceof ArkInstanceInvokeExpr) {
+            let base = ivkExpr.getBase();
+            let baseNode = this.pag.getOrNewNode(cid, base) as PagLocalNode;
 
-        if (baseNode.isStorageLinked()) {
-            let argsNode = this.pag.getOrNewNode(cid, cs.args![0]) as PagNode;
+            if (baseNode.isStorageLinked()) {
+                let argsNode = this.pag.getOrNewNode(cid, cs.args![0]) as PagNode;
 
-            this.pag.addPagEdge(argsNode, baseNode, PagEdgeKind.Copy);
+                this.pag.addPagEdge(argsNode, baseNode, PagEdgeKind.Copy);
+            }
+        } else if (ivkExpr instanceof ArkStaticInvokeExpr) {
+            // TODO: process AppStorage.set()
         }
     }
 
@@ -351,14 +371,17 @@ export class PagBuilder {
         let ivkExpr = cs.callStmt.getInvokeExpr();
         let propertyName!: string;
         if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            propertyName = (cs.args![0] as Constant).getValue();
+            let propertyStr = this.getPropertyName(cs.args![0]);
+            if (propertyStr) {
+                propertyName = propertyStr;
+            }
         } else if (ivkExpr instanceof ArkInstanceInvokeExpr) {
             let baseNode = this.pag.getOrNewNode(cid, ivkExpr.getBase()) as PagLocalNode;
             if (baseNode.isStorageLinked()) {
                 propertyName = baseNode.getStorage().PropertyName!;
             }
         }
-        // TODO: should not new node
+        
         let propertyNode = this.getPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
         if (!propertyNode) {
             return;
@@ -368,6 +391,19 @@ export class PagBuilder {
             propertyNode, this.pag.getOrNewNode(cid, leftOp, cs.callStmt),
             PagEdgeKind.Copy, cs.callStmt
         );
+    }
+
+    private getPropertyName(value: Value): string | undefined{
+        if (value instanceof Local) {
+            let type = value.getType();
+            if (type instanceof StringType) {
+                return type.getName();
+            }
+        } else if (value instanceof Constant) {
+            return value.getValue();
+        }
+
+        return undefined;
     }
 
     public addDynamicCallSite(funcPag: FuncPag) {
