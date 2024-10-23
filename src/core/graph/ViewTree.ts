@@ -137,5 +137,4 @@ export interface ViewTree {
      * @returns root node
      */
     getRoot(): ViewTreeNode | null;
-
 }

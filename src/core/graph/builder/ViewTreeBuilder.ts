@@ -1223,4 +1223,3 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 export function buildViewTree(render: ArkMethod): ViewTree {
     return new ViewTreeImpl(render);
 }
-
