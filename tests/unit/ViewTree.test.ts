@@ -60,7 +60,6 @@ import {
     Case3_BuilderParamTest_Expect_ViewTree,
 } from '../resources/viewtree/builderparam/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
-import { ViewTreePrinter } from '../../src/save/ViewTreePrinter';
 
 function expectViewTree(root: ViewTreeNode | null, expectTree: any) {
     if (!root) {
