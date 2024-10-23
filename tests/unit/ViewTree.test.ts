@@ -60,6 +60,7 @@ import {
     Case3_BuilderParamTest_Expect_ViewTree,
 } from '../resources/viewtree/builderparam/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
+import { ViewTreePrinter } from '../../src/save/ViewTreePrinter';
 
 function expectViewTree(root: ViewTreeNode | null, expectTree: any) {
     if (!root) {
@@ -278,7 +279,6 @@ describe('builder Test', () => {
             return;
         }
         let root = vt.getRoot();
-        vt.toDot('output/viewtree.dot');
         expectViewTree(root, Case_ComplexStateValueTest_Expect_ViewTree);
     });
 

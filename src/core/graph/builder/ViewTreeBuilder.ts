@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
 import { Constant } from '../../base/Constant';
 import { Decorator } from '../../base/Decorator';
 import {
@@ -56,11 +55,6 @@ import { Scene } from '../../../Scene';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ViewTreeBuilder');
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
-const DOT_FILE_HEADER = `digraph G {
-    graph [nodesep=0.1]
-    node [shape=box]
-    edge [arrowhead=vee]
-`;
 
 function backtraceLocalInitValue(value: Local): Local | Value {
     let stmt = value.getDeclaringStmt();
@@ -549,13 +543,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         this.stateValues = new Map();
         this.fieldTypes = new Map();
         this.buildViewStatus = false;
-    }
-
-    public toDot(output: string): void {
-        let root = this.getRoot();
-        if (root) {
-            new ViewTreeDot(root).toDot(output);
-        }
     }
 
     /**
@@ -1237,140 +1224,3 @@ export function buildViewTree(render: ArkMethod): ViewTree {
     return new ViewTreeImpl(render);
 }
 
-class ViewTreeDot {
-    private root: ViewTreeNode;
-    private dupCnt: number;
-
-    constructor(root: ViewTreeNode) {
-        this.root = root;
-        this.dupCnt = 0;
-    }
-
-    public walk(
-        item: ViewTreeNode,
-        parent: ViewTreeNode | null,
-        map: Map<ViewTreeNode | ClassSignature | MethodSignature, string>,
-        streamOut: fs.WriteStream
-    ): void {
-        let skipChildren = this.writeNode(item, parent, map, streamOut);
-        if (skipChildren) {
-            return;
-        }
-        for (const child of item.children) {
-            this.walk(child, item, map, streamOut);
-        }
-    }
-
-    public toDot(output: string): void {
-        let streamOut = fs.createWriteStream(output);
-        let map: Map<ViewTreeNode | ClassSignature | MethodSignature, string> = new Map();
-        streamOut.write(DOT_FILE_HEADER);
-
-        this.walk(this.root, this.root.parent, map, streamOut);
-
-        streamOut.write('}');
-        streamOut.close();
-    }
-
-    private escapeDotLabel(content: string[]): string {
-        const MAX_LABEL_LEN = 64;
-        const PRE_FIX_LEN = 5;
-        let label = content.join('|');
-        if (label.length > MAX_LABEL_LEN) {
-            return (
-                label.substring(0, PRE_FIX_LEN) + '...' + label.substring(label.length - MAX_LABEL_LEN + PRE_FIX_LEN)
-            );
-        }
-        return label;
-    }
-
-    private writeNode(
-        item: ViewTreeNode,
-        parent: ViewTreeNode | null,
-        map: Map<ViewTreeNode | ClassSignature | MethodSignature, string>,
-        streamOut: fs.WriteStream
-    ): boolean {
-        let id = `Node${map.size}`;
-        let hasSameNode = map.has(item) || map.has(item.signature!);
-
-        if (hasSameNode) {
-            id = `${id}_${this.dupCnt++}`;
-            streamOut.write(`    ${id} [label="${item.name}" style=filled color="green"]\n`);
-        } else {
-            streamOut.write(`    ${id} [label="${item.name}"]\n`);
-        }
-
-        if (parent) {
-            streamOut.write(`    ${map.get(parent)!} -> ${id}\n`);
-        }
-
-        this.writeNodeStateValues(item, id, streamOut);
-        this.writeNodeAttributes(item, id, streamOut);
-        this.writeNodeSignature(item, id, streamOut);
-
-        if (map.get(item)) {
-            streamOut.write(`    {rank="same"; ${id};${map.get(item)};}\n`);
-            streamOut.write(`    ${id} -> ${map.get(item)}[style=dotted]\n`);
-            return true;
-        } else if (map.get(item.signature!)) {
-            streamOut.write(`    {rank="same"; ${id};${map.get(item.signature!)};}\n`);
-            streamOut.write(`    ${id} -> ${map.get(item.signature!)}[style=dotted]\n`);
-            return true;
-        }
-
-        map.set(item, id);
-        if (item.signature && !map.has(item.signature)) {
-            map.set(item.signature, id);
-        }
-        return false;
-    }
-
-    private writeNodeStateValues(item: ViewTreeNode, id: string, streamOut: fs.WriteStream): void {
-        if (item.stateValues.size > 0) {
-            let stateValuesId = `${id}val`;
-            let content: string[] = [];
-            item.stateValues.forEach((value) => {
-                content.push(value.getName());
-            });
-
-            streamOut.write(
-                `    ${stateValuesId} [shape=ellipse label="StateValues\n ${this.escapeDotLabel(
-                    content
-                )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
-            );
-            streamOut.write(`    ${id} -> ${stateValuesId}\n`);
-        }
-    }
-
-    private writeNodeAttributes(item: ViewTreeNode, id: string, streamOut: fs.WriteStream): void {
-        if (item.attributes.size > 0) {
-            let attributesId = `${id}attributes`;
-            let content: string[] = [];
-            for (const [key, _] of item.attributes) {
-                if (key !== COMPONENT_POP_FUNCTION) {
-                    content.push(key);
-                }
-            }
-            if (content.length > 0) {
-                streamOut.write(
-                    `    ${attributesId} [shape=ellipse label="property|Event\n${this.escapeDotLabel(
-                        content
-                    )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
-                );
-                streamOut.write(`    ${id} -> ${attributesId}\n`);
-            }
-        }
-    }
-    private writeNodeSignature(item: ViewTreeNode, id: string, streamOut: fs.WriteStream): void {
-        if (item.signature) {
-            let signatureId = `${id}signature`;
-            let content = [item.signature.toString()];
-            streamOut.write(
-                `    ${signatureId} [shape=ellipse label="signature\n${this.escapeDotLabel(
-                    content
-                )}" fontsize=10 height=.1 style=filled color=".7 .3 1.0" ]\n`
-            );
-            streamOut.write(`    ${id} -> ${signatureId}\n`);
-        }
-    }
-}
