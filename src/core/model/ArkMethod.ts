@@ -153,7 +153,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public getOriginalCfg(): Cfg | undefined {
-        return this.body?.getOriginalCfg();
+        return undefined;
     }
 
     public getParameterInstances(): Value[] {

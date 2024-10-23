@@ -16,10 +16,10 @@
 import {
     ArkConditionExpr,
     ArkIfStmt,
+    ArkReturnVoidStmt,
     BasicBlock,
-    Cfg, LineColPosition,
+    Cfg,
     Local,
-    OriginalStmt,
     RelationalBinaryOperator,
     Stmt,
 } from '../../src/index';
@@ -31,7 +31,8 @@ describe('CfgStructualAnalysisTest', () => {
     it('case1: structual analysis', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 9; i++) {
             let bb = new BasicBlock();
@@ -92,7 +93,8 @@ describe('CfgStructualAnalysisTest', () => {
     it('case2: structual analysis while', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 4; i++) {
             let bb = new BasicBlock();
@@ -133,7 +135,8 @@ describe('CfgStructualAnalysisTest', () => {
     it('case3: structual analysis do-while', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 5; i++) {
             let bb = new BasicBlock();
@@ -181,7 +184,8 @@ describe('CfgStructualAnalysisTest', () => {
     it('case4: structual analysis do-while', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 6; i++) {
             let bb = new BasicBlock();
@@ -233,7 +237,8 @@ describe('CfgStructualAnalysisTest', () => {
     it('case5: structual analysis for', () => {
         let cfg = new Cfg();
         let bbs: BasicBlock[] = [];
-        let startingStmt: Stmt = new OriginalStmt('', LineColPosition.DEFAULT);
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
         for (let i = 0; i < 7; i++) {
             let bb = new BasicBlock();

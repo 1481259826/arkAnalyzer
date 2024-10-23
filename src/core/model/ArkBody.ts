@@ -15,20 +15,15 @@
 
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
-import { Stmt } from '../base/Stmt';
 import { AliasType, AliasTypeDeclaration } from '../base/Type';
 
 export class ArkBody {
     private locals: Map<string, Local>;
-    private originalCfg: Cfg;
     private cfg: Cfg;
-    private stmtToOriginalStmt: Map<Stmt, Stmt>;
-    private aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]> = new Map();
+    private aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>;
 
-    constructor(locals: Set<Local>, originalCfg: Cfg, cfg: Cfg, stmtToOriginalStmt: Map<Stmt, Stmt>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>) {
-        this.originalCfg = originalCfg;
+    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>) {
         this.cfg = cfg;
-        this.stmtToOriginalStmt = stmtToOriginalStmt;
         this.aliasTypeMap = aliasTypeMap;
         this.locals = new Map<string, Local>();
         locals.forEach(local => this.locals.set(local.getName(), local));
@@ -53,24 +48,12 @@ export class ArkBody {
         this.cfg = cfg;
     }
 
-    public getOriginalCfg(): Cfg {
-        return this.originalCfg;
-    }
-
-    public setOriginalCfg(originalCfg: Cfg): void {
-        this.originalCfg = originalCfg;
-    }
-
-    public getStmtToOriginalStmt(): Map<Stmt, Stmt> {
-        return this.stmtToOriginalStmt;
-    }
-
-    public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> {
+    public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> | undefined {
         return this.aliasTypeMap;
     }
 
     public getAliasTypeByName(name: string): AliasType | null {
-        const aliasTypeInfo: [AliasType, AliasTypeDeclaration] | undefined = this.aliasTypeMap.get(name);
+        const aliasTypeInfo: [AliasType, AliasTypeDeclaration] | undefined = this.aliasTypeMap?.get(name);
         if (aliasTypeInfo) {
             return aliasTypeInfo[0];
         }

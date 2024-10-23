@@ -403,21 +403,20 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     cfg.setStartingStmt(startingStmt);
     cfg.setDeclaringMethod(defaultConstructor);
     cfg.getStmts().forEach(s => s.setCfg(cfg));
-    const originalCfg = new Cfg();
 
-    defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map(), new Map()));
+    defaultConstructor.setBody(new ArkBody(locals, cfg));
     arkClass.addMethod(defaultConstructor);
 
     return true;
 }
 
-export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>, thisLocal: Local): void {
+export function buildInitMethod(initMethod: ArkMethod, fieldInitializerStmts: Stmt[], thisLocal: Local): void {
     const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
     const assignStmt = new ArkAssignStmt(thisLocal, new ArkThisRef(classType));
     const block = new BasicBlock();
     block.addStmt(assignStmt);
     const locals: Set<Local> = new Set();
-    for (const stmt of stmtMap.keys()) {
+    for (const stmt of fieldInitializerStmts) {
         block.addStmt(stmt);
         if (stmt.getDef() && stmt.getDef() instanceof Local) {
             locals.add(stmt.getDef() as Local);
@@ -432,7 +431,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>,
     cfg.setStartingStmt(assignStmt);
     cfg.buildDefUseStmt();
     cfg.setDeclaringMethod(initMethod);
-    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, stmtMap, new Map()));
+    initMethod.setBody(new ArkBody(locals, cfg));
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {
