@@ -17,7 +17,6 @@ import ts from 'ohos-typescript';
 import { LineColPosition } from '../../base/Position';
 import { ImportInfo } from '../ArkImport';
 import { buildModifiers } from './builderUtils';
-import { Decorator } from '../../base/Decorator';
 
 
 export function buildImportInfo(node: ts.ImportEqualsDeclaration | ts.ImportDeclaration, sourceFile: ts.SourceFile): ImportInfo[] {
@@ -39,11 +38,9 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
         importFrom = node.moduleSpecifier.text;
     }
 
-    const modifiers: Set<string | Decorator> = new Set<string | Decorator>();
+    let modifiers = 0;
     if (node.modifiers) {
-        buildModifiers(node, sourceFile).forEach((modifier) => {
-            modifiers.add(modifier);
-        });
+        modifiers = buildModifiers(node);
     }
 
     // just like: import '../xxx'
@@ -111,11 +108,9 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
 
     let importInfos: ImportInfo[] = [];
     let importType = 'EqualsImport';
-    const modifiers: Set<string | Decorator> = new Set<string | Decorator>();
+    let modifiers = 0;
     if (node.modifiers) {
-        buildModifiers(node, sourceFile).forEach((modifier) => {
-            modifiers.add(modifier);
-        });
+        modifiers = buildModifiers(node);
     }
     if (node.moduleReference && ts.isExternalModuleReference(node.moduleReference) &&
         node.moduleReference.expression && ts.isStringLiteral(node.moduleReference.expression)) {

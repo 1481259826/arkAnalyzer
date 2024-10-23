@@ -38,7 +38,7 @@ export class SourceField extends SourceBase {
     }
     public dump(): string {
         this.printer.clear();
-        this.printDecorator(this.field.getModifiers());
+        this.printDecorator(this.field.getDecorators());
         this.printer.writeIndent();
         if (this.field.getCategory() !== FieldCategory.ENUM_MEMBER) {
             this.printer.writeSpace(this.modifiersToString(this.field.getModifiers()));

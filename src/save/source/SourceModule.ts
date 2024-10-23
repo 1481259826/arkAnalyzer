@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { ModifierType } from '../../core/model/ArkBaseModel';
 import { ExportInfo, ExportType } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
 import { SourceBase } from './SourceBase';
@@ -32,7 +33,7 @@ export class SourceExportInfo extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.info.getArkExport()?.getModifiers().has('ExportKeyword') || this.info.getExportClauseType() == ExportType.LOCAL) {
+        if (this.info.getArkExport()?.containsModifier(ModifierType.EXPORT) || this.info.getExportClauseType() == ExportType.LOCAL) {
             return this.printer.toString();
         }
 

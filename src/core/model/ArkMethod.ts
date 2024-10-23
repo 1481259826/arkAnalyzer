@@ -22,11 +22,11 @@ import { ViewTree } from '../graph/ViewTree';
 import { ArkBody } from './ArkBody';
 import { ArkClass } from './ArkClass';
 import { MethodSignature } from './ArkSignature';
-import { Decorator } from '../base/Decorator';
 import { BodyBuilder } from '../common/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
+import { ArkBaseModel } from './ArkBaseModel';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -34,13 +34,12 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
 /**
  * @category core/model
  */
-export class ArkMethod implements ArkExport {
+export class ArkMethod extends ArkBaseModel implements ArkExport {
     private code?: string;
     private lineCol: LineCol = 0;
 
     private declaringArkClass!: ArkClass;
 
-    private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
     private genericTypes?: GenericType[];
 
     private methodSignature!: MethodSignature;
@@ -54,6 +53,7 @@ export class ArkMethod implements ArkExport {
     private asteriskToken: boolean = false;
 
     constructor() {
+        super();
     }
 
     getExportType(): ExportType {
@@ -100,17 +100,6 @@ export class ArkMethod implements ArkExport {
         return this.declaringArkClass.getDeclaringArkFile();
     }
 
-    public isExported(): boolean {
-        return this.modifiers.has('ExportKeyword');
-    }
-
-    public isStatic(): boolean {
-        if (this.modifiers.has('StaticKeyword')) {
-            return true;
-        }
-        return false;
-    }
-
     public isDefaultArkMethod(): boolean {
         return this.getName() === DEFAULT_ARK_METHOD_NAME;
     }
@@ -139,14 +128,6 @@ export class ArkMethod implements ArkExport {
         return this.methodSignature.getMethodSubSignature();
     }
 
-    public getModifiers() {
-        return this.modifiers;
-    }
-
-    public addModifier(name: string | Decorator) {
-        this.modifiers.add(name);
-    }
-
     public getGenericTypes(): GenericType[] | undefined {
         return this.genericTypes;
     }
@@ -157,10 +138,6 @@ export class ArkMethod implements ArkExport {
 
     public setGenericTypes(genericTypes: GenericType[]): void {
         this.genericTypes = genericTypes;
-    }
-
-    public containsModifier(name: string) {
-        return this.modifiers.has(name);
     }
 
     public getBody(): ArkBody | undefined {
@@ -176,7 +153,7 @@ export class ArkMethod implements ArkExport {
     }
 
     public getOriginalCfg(): Cfg | undefined {
-        return this.body?.getOriginalCfg();
+        return undefined;
     }
 
     public getParameterInstances(): Value[] {
@@ -235,19 +212,6 @@ export class ArkMethod implements ArkExport {
 
     public getReturnStmt(): Stmt[] {
         return this.getCfg()!.getStmts().filter(stmt => stmt instanceof ArkReturnStmt);
-    }
-
-    public getDecorators(): Decorator[] {
-        return Array.from(this.modifiers).filter((item) => {
-            return item instanceof Decorator;
-        }) as Decorator[];
-    }
-
-    public hasBuilderDecorator(): boolean {
-        let decorators = this.getDecorators();
-        return decorators.filter((value) => {
-            return value.getKind() == 'Builder';
-        }).length != 0;
     }
 
     public setViewTree(viewTree: ViewTree) {

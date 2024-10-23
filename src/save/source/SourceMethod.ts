@@ -86,7 +86,7 @@ export class SourceMethod extends SourceBase {
     }
 
     private printMethod(method: ArkMethod): void {
-        this.printDecorator(method.getModifiers());
+        this.printDecorator(method.getDecorators());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
         if (!method.getBody()) {
@@ -186,7 +186,7 @@ export class SourceMethod extends SourceBase {
         return (
             this.method.hasBuilderDecorator() ||
             ((this.method.getName() == 'build' || this.method.getName() == 'pageTransition') &&
-                !this.method.containsModifier('StaticKeyword') &&
+                !this.method.isStatic() &&
                 this.method.getDeclaringArkClass().hasViewTree())
         );
     }

@@ -41,7 +41,6 @@ import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { CONSTRUCTOR_NAME } from './TSConst';
 import { fetchDependenciesFromFile } from '../../utils/json5parser';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { Decorator } from '../base/Decorator';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -142,7 +141,7 @@ export class DummyMainCreater {
             }
         }
         const localSet = new Set(Array.from(this.classLocalMap.values()).filter((value): value is Local => value !== null));
-        const dummyBody = new ArkBody(localSet, new Cfg(), this.createDummyMainCfg(), new Map(), new Map());
+        const dummyBody = new ArkBody(localSet, this.createDummyMainCfg());
         this.dummyMain.setBody(dummyBody)
         this.addCfg2Stmt()
         this.scene.addToMethodsMap(this.dummyMain);
@@ -155,9 +154,14 @@ export class DummyMainCreater {
         const firstBlock = new BasicBlock();
         dummyCfg.addBlock(firstBlock);
 
+        let isStartingStmt = true;
         for (const method of this.scene.getStaticInitMethods()) {
             const staticInvokeExpr = new ArkStaticInvokeExpr(method.getSignature(), []);
             const invokeStmt = new ArkInvokeStmt(staticInvokeExpr);
+            if (isStartingStmt) {
+                dummyCfg.setStartingStmt(invokeStmt);
+                isStartingStmt = false;
+            }
             firstBlock.addStmt(invokeStmt);
         }
 
@@ -317,10 +321,8 @@ export class DummyMainCreater {
                 if (COMPONENT_BASE_CLASSES.includes(cls.getSuperClassName())) {
                     return true;
                 }
-                for (let m of cls.getModifiers()) {
-                    if (m instanceof Decorator && m.getKind() === 'Component') {
-                        return true;
-                    }
+                if (cls.hasDecorator('Component')) {
+                    return true;
                 }
                 return false;
             })
@@ -374,10 +376,8 @@ export class DummyMainCreater {
             const abilityEntryMethods: ArkMethod[] = [];
             let cls: ArkClass = ability;
             for (const method of cls.getMethods()) {
-                for (const modifier of method.getModifiers()) {
-                    if (modifier === 'private') {
-                        continue;
-                    }
+                if (method.isPrivate()) {
+                    continue;
                 }
                 for (const mtd of abilityEntryMethods) {
                     if (mtd.getName() === method.getName()) {

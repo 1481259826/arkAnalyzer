@@ -99,7 +99,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
             "_": "NumberType"
         }
     },
-    "modifiers": [],
+    "modifiers": 0,
     "typeParameters": [],
     "body": {
         "locals": [
@@ -591,7 +591,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
             "_": "NumberType"
         }
     },
-    "modifiers": [],
+    "modifiers": 0,
     "typeParameters": [],
     "body": {
         "locals": [
@@ -1103,9 +1103,7 @@ const JsonPrinter_Shape_EXPECTED = {
     "signature": {
         "name": "Shape"
     },
-    "modifiers": [
-        "AbstractKeyword"
-    ],
+    "modifiers": 32,
     "superClassName": "",
     "implementedInterfaceNames": [],
     "fields": [],
@@ -1121,7 +1119,7 @@ const JsonPrinter_Shape_EXPECTED = {
                     "_": "UnknownType"
                 }
             },
-            "modifiers": [],
+            "modifiers": 0,
             "typeParameters": [],
             "body": {
                 "locals": [],
@@ -1173,7 +1171,7 @@ const JsonPrinter_Shape_EXPECTED = {
                     "_": "UnknownType"
                 }
             },
-            "modifiers": [],
+            "modifiers": 0,
             "typeParameters": [],
             "body": {
                 "locals": [],
@@ -1225,9 +1223,7 @@ const JsonPrinter_Shape_EXPECTED = {
                     "_": "NumberType"
                 }
             },
-            "modifiers": [
-                "AbstractKeyword"
-            ],
+            "modifiers": 32,
             "typeParameters": [],
             "body": null
         },
@@ -1242,9 +1238,7 @@ const JsonPrinter_Shape_EXPECTED = {
                     "_": "NumberType"
                 }
             },
-            "modifiers": [
-                "AbstractKeyword"
-            ],
+            "modifiers": 32,
             "typeParameters": [],
             "body": null
         },
@@ -1259,7 +1253,7 @@ const JsonPrinter_Shape_EXPECTED = {
                     "_": "StringType"
                 }
             },
-            "modifiers": [],
+            "modifiers": 0,
             "typeParameters": [],
             "body": {
                 "locals": [
@@ -1511,7 +1505,7 @@ const JsonPrinter_Shape_EXPECTED = {
                     "_": "UnknownType"
                 }
             },
-            "modifiers": [],
+            "modifiers": 0,
             "typeParameters": [],
             "body": {
                 "locals": [
@@ -1587,8 +1581,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
     signature: {
         name: "_DEFAULT_ARK_CLASS",
     },
-    modifiers: [
-    ],
+    modifiers: 0,
     superClassName: "",
     implementedInterfaceNames: [
     ],
@@ -1606,8 +1599,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "UnknownType",
                 },
             },
-            modifiers: [
-            ],
+            modifiers: 0,
             typeParameters: [
             ],
             body: {
@@ -1889,8 +1881,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "NumberType",
                 },
             },
-            modifiers: [
-            ],
+            modifiers: 0,
             typeParameters: [
             ],
             body: {
@@ -2383,8 +2374,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "NumberType",
                 },
             },
-            modifiers: [
-            ],
+            modifiers: 0,
             typeParameters: [
             ],
             body: {
@@ -2920,8 +2910,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                     _: "StringType",
                 },
             },
-            modifiers: [
-            ],
+            modifiers: 0,
             typeParameters: [
             ],
             body: {

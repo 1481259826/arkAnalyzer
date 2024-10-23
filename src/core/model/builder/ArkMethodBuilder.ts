@@ -20,6 +20,7 @@ import { ArkClass, ClassCategory } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import ts from 'ohos-typescript';
 import {
+    buildDecorators,
     buildGenericType,
     buildModifiers,
     buildParameters,
@@ -37,7 +38,7 @@ import { ArkAssignStmt, ArkInvokeStmt, ArkReturnVoidStmt, Stmt } from '../../bas
 import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
-import { CONSTRUCTOR_NAME, DECLARE_KEYWORD, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
+import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 
@@ -85,9 +86,8 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setLine(line + 1);
     mtd.setColumn(character + 1);
 
-    buildModifiers(methodNode, sourceFile).forEach((value) => {
-        mtd.addModifier(value);
-    });
+    mtd.setModifiers(buildModifiers(methodNode));
+    mtd.setDecorators(buildDecorators(methodNode, sourceFile));
 
     if (methodNode.typeParameters) {
         mtd.setGenericTypes(buildTypeParameters(methodNode.typeParameters, sourceFile, mtd));
@@ -114,7 +114,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         mtd.setViewTree(buildViewTree(mtd));
     } else if (declaringClass.hasComponentDecorator() &&
         mtd.getSubSignature().toString() == 'build()' &&
-        !mtd.containsModifier('StaticKeyword')) {
+        !mtd.isStatic()) {
         declaringClass.setViewTree(buildViewTree(mtd));
     }
 
@@ -316,7 +316,7 @@ function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
     return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null &&
         (originClassType == ClassCategory.CLASS || originClassType == ClassCategory.OBJECT) &&
         arkClass.getName() != DEFAULT_ARK_CLASS_NAME &&
-        !arkClass.getModifiers().has(DECLARE_KEYWORD);
+        !arkClass.isDeclare();
 }
 
 export function buildDefaultConstructor(arkClass: ArkClass): boolean {
@@ -403,21 +403,20 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     cfg.setStartingStmt(startingStmt);
     cfg.setDeclaringMethod(defaultConstructor);
     cfg.getStmts().forEach(s => s.setCfg(cfg));
-    const originalCfg = new Cfg();
 
-    defaultConstructor.setBody(new ArkBody(locals, originalCfg, cfg, new Map(), new Map()));
+    defaultConstructor.setBody(new ArkBody(locals, cfg));
     arkClass.addMethod(defaultConstructor);
 
     return true;
 }
 
-export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>, thisLocal: Local): void {
+export function buildInitMethod(initMethod: ArkMethod, fieldInitializerStmts: Stmt[], thisLocal: Local): void {
     const classType = new ClassType(initMethod.getDeclaringArkClass().getSignature());
     const assignStmt = new ArkAssignStmt(thisLocal, new ArkThisRef(classType));
     const block = new BasicBlock();
     block.addStmt(assignStmt);
     const locals: Set<Local> = new Set();
-    for (const stmt of stmtMap.keys()) {
+    for (const stmt of fieldInitializerStmts) {
         block.addStmt(stmt);
         if (stmt.getDef() && stmt.getDef() instanceof Local) {
             locals.add(stmt.getDef() as Local);
@@ -432,7 +431,7 @@ export function buildInitMethod(initMethod: ArkMethod, stmtMap: Map<Stmt, Stmt>,
     cfg.setStartingStmt(assignStmt);
     cfg.buildDefUseStmt();
     cfg.setDeclaringMethod(initMethod);
-    initMethod.setBody(new ArkBody(locals, new Cfg(), cfg, stmtMap, new Map()));
+    initMethod.setBody(new ArkBody(locals, cfg));
 }
 
 export function addInitInConstructor(arkClass: ArkClass) {
