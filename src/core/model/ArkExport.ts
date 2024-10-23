@@ -14,25 +14,26 @@
  */
 
 import { LineColPosition } from '../base/Position';
-import { Decorator } from '../base/Decorator';
 import { ArkFile } from './ArkFile';
-import { ArkSignature, ClassSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
-import { Local } from '../base/Local';
+import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
+import { DEFAULT } from "../common/TSConst";
+import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 
-export type TypeSignature = NamespaceSignature | ClassSignature | MethodSignature | Local;
+
+export type ExportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
 
 export enum ExportType {
     NAME_SPACE = 0,
     CLASS = 1,
     METHOD = 2,
     LOCAL = 3,
-    UNKNOWN = 4
+    TYPE = 4,
+    UNKNOWN = 9
 }
 
 export interface ArkExport extends ArkSignature {
-    isExported(): boolean;
-
-    getModifiers(): Set<string | Decorator>;
+    getModifiers(): number;
+    containsModifier(modifierType: ModifierType): boolean;
 
     getName(): string;
 
@@ -45,7 +46,7 @@ export interface FromInfo {
 
     getOriginName(): string;
 
-    getFrom(): string;
+    getFrom(): string | undefined;
 
     getDeclaringArkFile(): ArkFile;
 }
@@ -53,25 +54,24 @@ export interface FromInfo {
 /**
  * @category core/model
  */
-export class ExportInfo implements FromInfo {
+export class ExportInfo extends ArkBaseModel implements FromInfo {
+    private _default?: boolean;
+    private nameBeforeAs?: string;
+    private exportClauseName: string = '';
 
-    private modifiers: Set<string | Decorator> = new Set();
-    private _default: boolean;
-    private nameBeforeAs: string | undefined;
-    private exportClauseName: string;
+    private exportClauseType: ExportType = ExportType.UNKNOWN;
+    private arkExport?: ArkExport | null;
+    private exportFrom?: string;
 
-    private exportClauseType: ExportType;
-    private typeSignature: TypeSignature;
-    private exportFrom: string;
-
-    private originTsPosition: LineColPosition;
-    private tsSourceCode: string;
-    private declaringArkFile: ArkFile;
+    private originTsPosition?: LineColPosition;
+    private tsSourceCode?: string;
+    private declaringArkFile!: ArkFile;
 
     private constructor() {
+        super();
     }
 
-    public getFrom(): string {
+    public getFrom(): string | undefined {
         return this.exportFrom;
     }
 
@@ -95,44 +95,30 @@ export class ExportInfo implements FromInfo {
         return this.nameBeforeAs;
     }
 
-    public clearNameBeforeAs() {
-        if (this.nameBeforeAs === '*') {
-            this.nameBeforeAs = undefined;
-        }
+    public setArkExport(value: ArkExport | null) {
+        this.arkExport = value;
     }
 
-    public setTypeSignature(value: TypeSignature) {
-        this.typeSignature = value;
-    }
-
-    public getExportFrom(): string {
-        return this.exportFrom;
-    }
-
-    public getTypeSignature(): TypeSignature {
-        return this.typeSignature;
+    public getArkExport(): ArkExport | undefined | null {
+        return this.arkExport;
     }
 
     public isDefault(): boolean {
         if (this.exportFrom) {
-            return this.nameBeforeAs === 'default';
+            return this.nameBeforeAs === DEFAULT;
         }
         if (this._default === undefined) {
-            this._default = this.modifiers?.has('DefaultKeyword')
+            this._default = this.containsModifier(ModifierType.DEFAULT);
         }
         return this._default;
     }
 
-    public getModifiers(): Set<string | Decorator> {
-        return this.modifiers;
-    }
-
     public getOriginTsPosition(): LineColPosition {
-        return this.originTsPosition;
+        return this.originTsPosition ?? LineColPosition.DEFAULT;
     }
 
     public getTsSourceCode(): string {
-        return this.tsSourceCode;
+        return this.tsSourceCode ?? '';
     }
 
     public getDeclaringArkFile(): ArkFile {
@@ -157,18 +143,8 @@ export class ExportInfo implements FromInfo {
             return this;
         }
 
-        public addModifier(name: string | Decorator): ArkExportBuilder {
-            if (!this.exportInfo.modifiers) {
-                this.exportInfo.modifiers = new Set<string | Decorator>();
-            }
-            this.exportInfo.modifiers.add(name);
-            return this;
-        }
-
-        public modifiers(modifiers: Set<string | Decorator>): ArkExportBuilder {
-            if (modifiers) {
-                modifiers.forEach(m => this.addModifier(m));
-            }
+        public modifiers(modifiers: number): ArkExportBuilder {
+            this.exportInfo.modifiers = modifiers;
             return this;
         }
 
@@ -187,8 +163,8 @@ export class ExportInfo implements FromInfo {
             return this;
         }
 
-        public typeSignature(value: TypeSignature): ArkExportBuilder {
-            this.exportInfo.setTypeSignature(value);
+        public arkExport(value: ArkExport): ArkExportBuilder {
+            this.exportInfo.arkExport = value;
             return this;
         }
 
@@ -202,6 +178,6 @@ export class ExportInfo implements FromInfo {
         public build(): ExportInfo {
             return this.exportInfo;
         }
-    }
+    };
 
 }

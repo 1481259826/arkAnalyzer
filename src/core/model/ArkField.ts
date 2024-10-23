@@ -13,54 +13,50 @@
  * limitations under the License.
  */
 
-import { Decorator } from '../base/Decorator';
 import { LineColPosition } from '../base/Position';
 import { Stmt } from '../base/Stmt';
-import { Type } from '../base/Type';
-import { BUILDER_PARAM_DECORATOR } from '../common/EtsConst';
 import { ArkClass } from './ArkClass';
-import { FieldSignature, MethodSignature } from './ArkSignature';
-import { MethodParameter } from './builder/ArkMethodBuilder';
+import { FieldSignature } from './ArkSignature';
+import { Type } from '../base/Type';
+import { ArkBaseModel } from './ArkBaseModel';
 
-const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
-    'State', 'Prop', 'Link', 'StorageProp', 'StorageLink',
-    'Provide', 'Consume', 'ObjectLink', 
-    'LocalStorageLink', 'LocalStorageProp', 
-    'Local', 'Param', 'Event', 'Provider', 'Consumer'
-])
+
+export enum FieldCategory {
+    PROPERTY_DECLARATION = 0,
+    PROPERTY_ASSIGNMENT = 1,
+    SHORT_HAND_PROPERTY_ASSIGNMENT = 2,
+    SPREAD_ASSIGNMENT = 3,
+    PROPERTY_SIGNATURE = 4,
+    ENUM_MEMBER = 5,
+    INDEX_SIGNATURE = 6,
+    GET_ACCESSOR = 7,
+}
 
 /**
  * @category core/model
  */
-export class ArkField {
-    public static DEFAULT_ARK_Field = '_DEFAULT_ARK_Field';
-    private name: string = "";
+export class ArkField extends ArkBaseModel {
     private code: string = "";
-    private fieldType: string = "";
+    private category!: FieldCategory;
 
-    private declaringClass: ArkClass;
-
-    private type: Type;
-    private parameters: MethodParameter[] = [];
-    private typeParameters: Type[] = [];
-    private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
+    private declaringClass!: ArkClass;
     private questionToken: boolean = false;
     private exclamationToken: boolean = false;
 
-    private fieldSignature: FieldSignature;
-    private originPosition: LineColPosition;
-
-    private arkMethodSignature: MethodSignature;
+    private fieldSignature!: FieldSignature;
+    private originPosition?: LineColPosition;
 
     private initializer: Stmt[] = [];
 
-    constructor() { }
+    constructor() {
+        super();
+    }
 
-    public getDeclaringClass() {
+    public getDeclaringArkClass() {
         return this.declaringClass;
     }
 
-    public setDeclaringClass(declaringClass: ArkClass) {
+    public setDeclaringArkClass(declaringClass: ArkClass) {
         this.declaringClass = declaringClass;
     }
 
@@ -72,60 +68,20 @@ export class ArkField {
         this.code = code;
     }
 
-    public getFieldType() {
-        return this.fieldType;
+    public getCategory(): FieldCategory {
+        return this.category;
     }
 
-    public setFieldType(fieldType: string) {
-        this.fieldType = fieldType;
+    public setCategory(category: FieldCategory): void {
+        this.category = category;
     }
 
     public getName() {
-        return this.name;
+        return this.fieldSignature.getFieldName();
     }
 
-    public setName(name: string) {
-        this.name = name;
-    }
-
-    public getType() {
-        return this.type;
-    }
-
-    public setType(type: Type) {
-        this.type = type;
-    }
-
-    public getParameters() {
-        return this.parameters;
-    }
-
-    public setParameters(parameters: MethodParameter[]) {
-        this.parameters = parameters;
-    }
-
-    public addParameter(parameter: MethodParameter) {
-        this.typeParameters.push(parameter);
-    }
-
-    public getTypeParameters() {
-        return this.typeParameters;
-    }
-
-    public setTypeParameters(typeParameters: Type[]) {
-        this.typeParameters = typeParameters;
-    }
-
-    public addTypeParameters(typeParameter: Type) {
-        this.typeParameters.push(typeParameter);
-    }
-
-    public getModifiers() {
-        return this.modifiers;
-    }
-
-    public addModifier(modifier: string | Decorator) {
-        this.modifiers.add(modifier);
+    public getType():Type {
+        return this.fieldSignature.getType();
     }
 
     public getSignature(): FieldSignature {
@@ -136,58 +92,12 @@ export class ArkField {
         this.fieldSignature = fieldSig;
     }
 
-    public genSignature() {
-        let fieldSig = new FieldSignature();
-        fieldSig.setType(this.type);
-        fieldSig.setDeclaringSignature(this.declaringClass.getSignature());
-        fieldSig.setFieldName(this.name);
-        if (this.isStatic()) {
-            fieldSig.setStatic();
-        }
-        this.setSignature(fieldSig);
-    }
-
     public getInitializer(): Stmt[] {
         return this.initializer;
     }
 
     public setInitializer(initializer: Stmt[]) {
         this.initializer = initializer;
-    }
-
-    public isStatic(): boolean {
-        if (this.modifiers.has("StaticKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isProtected(): boolean {
-        if (this.modifiers.has("ProtectedKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isPrivate(): boolean {
-        if (this.modifiers.has("PrivateKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isPublic(): boolean {
-        if (this.modifiers.has("PublicKeyword")) {
-            return true;
-        }
-        return false;
-    }
-
-    public isReadonly(): boolean {
-        if (this.modifiers.has("ReadonlyKeyword")) {
-            return true;
-        }
-        return false;
     }
 
     public setQuestionToken(questionToken: boolean) {
@@ -211,33 +121,6 @@ export class ArkField {
     }
 
     public getOriginPosition(): LineColPosition {
-        return this.originPosition;
-    }
-
-    public setArkMethodSignature(methodSignature: MethodSignature) {
-        this.arkMethodSignature = methodSignature;
-    }
-
-    public getArkMethodSignature() {
-        return this.arkMethodSignature;
-    }
-
-    public getDecorators(): Decorator[] {
-        return Array.from(this.modifiers).filter((item) => {
-            return item instanceof Decorator;
-        }) as Decorator[];
-    }
-
-    public getStateDecorators(): Decorator[] {
-        return Array.from(this.modifiers).filter((item) => {
-            return (item instanceof Decorator) && (COMPONENT_MEMBER_DECORATORS.has(item.getKind()));
-        }) as Decorator[];
-    }
-
-    public hasBuilderParamDecorator(): boolean {
-        let decorators = this.getDecorators();
-        return decorators.filter((value) => {
-            return value.getKind() == BUILDER_PARAM_DECORATOR;
-        }).length != 0;
+        return this.originPosition ?? LineColPosition.DEFAULT;
     }
 }

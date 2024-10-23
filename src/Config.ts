@@ -15,27 +15,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import Logger from './utils/logger';
+import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { getAllFiles } from './utils/getAllFiles';
 
-const logger = Logger.getLogger();
-
-/**
- * This class is used to manage all the configurations set up for the analyzer.
- */
-export class Config {
-    project_dir: string;
-    projectName: string;
-    sdkName?: string;
-    sdk_dir?: string;
-
-    constructor(projectName: string, project_dir: string, sdkName?: string, sdk_dir?: string) {
-        this.projectName = projectName;
-        this.project_dir = project_dir;
-        this.sdkName = sdkName;
-        this.sdk_dir = sdk_dir;
-    }
-}
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Config');
 
 export interface Sdk {
     name: string;
@@ -80,9 +63,22 @@ export class SceneConfig {
 
     public buildFromJson(configJsonPath: string) {
         if (fs.existsSync(configJsonPath)) {
-            const configurationsText = fs.readFileSync(configJsonPath, "utf8");
+            let configurationsText: string;
+            try {
+                configurationsText = fs.readFileSync(configJsonPath, 'utf-8');
+            } catch (error) {
+                logger.error(`Error reading file: ${error}`);
+                return;
+            }
+
             logger.info(configurationsText);
-            const configurations = JSON.parse(configurationsText);
+            let configurations: any;
+            try {
+                configurations = JSON.parse(configurationsText);
+            } catch (error) {
+                logger.error(`Error parsing JSON: ${error}`);
+                return;
+            }
 
             const targetProjectName: string = configurations.targetProjectName
                 ? configurations.targetProjectName

@@ -17,6 +17,7 @@
 @Component
 struct ForEachTest3 {
   @State simpleList: Array<string> = ['one', 'two', 'three'];
+  @State switch: boolean = false;
 
   build() {
     Row() {
@@ -29,8 +30,10 @@ struct ForEachTest3 {
           })
 
         ForEach(this.simpleList, (item: string) => {
-          ChildItem({ item: item })
-            .margin({ top: 20 })
+          if (this.checkSwitch()) {
+            ChildItem({ item: item })
+              .margin({ top: 20 })
+          }
         }, (item: string) => item)
       }
       .justifyContent(FlexAlign.Center)
@@ -39,6 +42,10 @@ struct ForEachTest3 {
     }
     .height('100%')
     .backgroundColor(0xF1F3F5)
+  }
+
+  checkSwitch(): boolean {
+    return this.switch;
   }
 }
 

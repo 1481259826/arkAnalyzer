@@ -15,38 +15,35 @@
 
 import { ArkFile } from './ArkFile';
 import { LineColPosition } from '../base/Position';
-import { findExportInfo } from './builder/ArkImportBuilder';
-import { Decorator } from '../base/Decorator';
 import { ExportInfo, FromInfo } from './ArkExport';
+import { findExportInfo } from "../common/ModelUtils";
+import { ArkBaseModel } from './ArkBaseModel';
 
 /**
  * @category core/model
  */
-export class ImportInfo implements FromInfo {
-    private importClauseName: string;
-    private importType: string;
-    private importFrom: string;
-    private nameBeforeAs: string | undefined;
-    private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
+export class ImportInfo extends ArkBaseModel implements FromInfo {
+    private importClauseName: string = '';
+    private importType: string = '';
+    private importFrom?: string;
+    private nameBeforeAs?: string;
+    private declaringArkFile!: ArkFile;
 
-    private declaringArkFile: ArkFile;
-
-    private originTsPosition: LineColPosition;
-    private tsSourceCode: string;
-    private lazyExportInfo: ExportInfo | null;
+    private originTsPosition?: LineColPosition;
+    private tsSourceCode?: string;
+    private lazyExportInfo?: ExportInfo | null;
 
     constructor() {
+        super();
     }
 
     public build(importClauseName: string, importType: string, importFrom: string, originTsPosition: LineColPosition,
-                 modifiers: Set<string | Decorator>, nameBeforeAs?: string) {
+                 modifiers: number, nameBeforeAs?: string) {
         this.setImportClauseName(importClauseName);
         this.setImportType(importType);
         this.setImportFrom(importFrom);
         this.setOriginTsPosition(originTsPosition);
-        modifiers.forEach((modifier) => {
-            this.addModifier(modifier);
-        });
+        this.addModifier(modifiers);
         this.setNameBeforeAs(nameBeforeAs);
     }
 
@@ -61,7 +58,7 @@ export class ImportInfo implements FromInfo {
         if (this.lazyExportInfo === undefined) {
             this.lazyExportInfo = findExportInfo(this);
         }
-        return this.lazyExportInfo;
+        return this.lazyExportInfo || null;
     }
 
     public setDeclaringArkFile(declaringArkFile: ArkFile): void {
@@ -88,10 +85,6 @@ export class ImportInfo implements FromInfo {
         this.importType = importType;
     }
 
-    public getImportFrom(): string {
-        return this.importFrom;
-    }
-
     public setImportFrom(importFrom: string): void {
         this.importFrom = importFrom;
     }
@@ -104,20 +97,12 @@ export class ImportInfo implements FromInfo {
         this.nameBeforeAs = nameBeforeAs;
     }
 
-    public getModifiers(): Set<string | Decorator> {
-        return this.modifiers;
-    }
-
-    public addModifier(name: string | Decorator): void {
-        this.modifiers.add(name);
-    }
-
     public setOriginTsPosition(originTsPosition: LineColPosition): void {
         this.originTsPosition = originTsPosition;
     }
 
     public getOriginTsPosition(): LineColPosition {
-        return this.originTsPosition;
+        return this.originTsPosition ?? LineColPosition.DEFAULT;
     }
 
     public setTsSourceCode(tsSourceCode: string): void {
@@ -125,10 +110,10 @@ export class ImportInfo implements FromInfo {
     }
 
     public getTsSourceCode(): string {
-        return this.tsSourceCode;
+        return this.tsSourceCode ?? '';
     }
 
-    public getFrom(): string {
+    public getFrom(): string | undefined {
         return this.importFrom;
     }
 
@@ -136,12 +121,6 @@ export class ImportInfo implements FromInfo {
         if (this.nameBeforeAs === 'default') {
             return true;
         }
-        let index = this.tsSourceCode.indexOf(this.importClauseName);
-        if (index === -1) {
-            return false;
-        }
-        let start = this.tsSourceCode.indexOf('{');
-        let end = this.tsSourceCode.indexOf('}');
-        return !(index > start && index < end);
+        return this.importType === 'Identifier';
     }
 }

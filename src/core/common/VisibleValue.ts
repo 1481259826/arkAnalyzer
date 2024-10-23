@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Local } from '../base/Local';
 import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
 import { ArkAssignStmt } from '../base/Stmt';
@@ -25,7 +25,7 @@ import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'VisibleValue');
 
 export class VisibleValue {
     private scopeChain: Scope[]; // 不包含currScope
@@ -166,7 +166,7 @@ export class VisibleValue {
         const fields = cls.getFields();
         const classSignature = cls.getSignature();
         for (const field of fields) {
-            if (field.getModifiers().has('StaticKeyword')) {
+            if (field.isStatic()) {
                 const staticFieldRef = new ArkStaticFieldRef(field.getSignature());
                 values.push(staticFieldRef);
             } else {

@@ -15,10 +15,11 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from "../../src/Config";
-import { Scene } from "../../src/Scene";
-import { FileSignature } from "../../src/core/model/ArkSignature";
+import { SceneConfig } from '../../src/Config';
+import { Scene } from '../../src/Scene';
+import { FileSignature } from '../../src/core/model/ArkSignature';
 import {
+    AliasType,
     ArkAssignStmt,
     ArkInstanceFieldRef,
     ArkNewArrayExpr,
@@ -26,31 +27,29 @@ import {
     ArrayType,
     ClassType,
     NumberType,
-    StringType
-} from "../../src";
-import Logger, { LOG_LEVEL } from '../../src/utils/logger';
+    StringType,
+    UnionType,
+} from '../../src';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../../src/utils/logger';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'InferArrayTest');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 describe("Infer Array Test", () => {
 
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"))
+    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     it('normal case', () => {
-
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('test_new_array');
         assert.isDefined(method);
-        const stmt = method?.getCfg()?.getStmts()[1];
+        const stmt = method?.getCfg()?.getStmts()[2];
         assert.isTrue(stmt instanceof ArkAssignStmt);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkNewArrayExpr);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp().getType() instanceof ArrayType);
@@ -58,9 +57,7 @@ describe("Infer Array Test", () => {
     })
 
     it('array case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('testArray');
         const stmt = method?.getCfg()?.getStmts()[2];
@@ -71,9 +68,7 @@ describe("Infer Array Test", () => {
     })
 
     it('array Expr case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('arrayExpr');
         const stmts = method?.getCfg()?.getStmts();
@@ -88,9 +83,7 @@ describe("Infer Array Test", () => {
     })
 
     it('array Literal case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('arrayLiteral');
         const stmts = method?.getCfg()?.getStmts();
@@ -106,25 +99,21 @@ describe("Infer Array Test", () => {
     })
 
     it('fieldRef to ArrayRef case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("inferSample.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass().getMethodWithName('test_new_array');
         const stmts = method?.getCfg()?.getStmts();
         assert.isDefined(stmts);
         if (stmts) {
-            assert.equal(stmts[9].toString(), 'c = $temp1[$temp2]');
-            assert.equal(stmts[11].toString(), 's = $temp3[a]');
-            assert.equal(stmts[13].toString(), 'n = $temp4[3]');
+            assert.equal(stmts[10].toString(), 'c = $temp2[$temp3]');
+            assert.equal(stmts[12].toString(), 's = $temp4[a]');
+            assert.equal(stmts[14].toString(), 'n = $temp5[3]');
         }
     })
 
 
     it('demo case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("demo.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getClassWithName('StaticUserB')?.getMethodWithName('f1');
         const stmt = method?.getCfg()?.getStmts()[1];
@@ -134,42 +123,36 @@ describe("Infer Array Test", () => {
     })
 
     it('field case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Field.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Field.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getClassWithName('C2')?.getMethodWithName('f2');
         const stmt = method?.getCfg()?.getStmts()[2];
         assert.isDefined(stmt);
         assert.isTrue((stmt as ArkAssignStmt).getLeftOp().getType() instanceof ClassType);
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
-        assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance())
+        assert.equal(file?.getClassWithName('C1')?.getFieldWithName('s')?.getType(), StringType.getInstance());
     })
 
     it('field type case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Field.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
         const fields = file?.getClassWithName('FieldType')?.getFields();
         if (fields) {
             const arkField = fields[0];
             assert.equal(arkField.getType(), '(number|string)[]');
-            assert.equal(fields[1].getType(), StringType.getInstance())
+            assert.equal(fields[1].getType(), StringType.getInstance());
         }
     })
 
     it('supperClass Test case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("B.ets");
-        fileId.setProjectName(projectScene.getProjectName());
-        assert.isDefined(projectScene.getFile(fileId)?.getClassWithName('ClassB')?.getSuperClass());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'B.ets');
+        const classB = projectScene.getFile(fileId)?.getClassWithName('ClassB');
+        assert.isDefined(classB?.getSuperClass());
+        assert.isTrue(classB?.getFieldWithName('field1')?.getType() instanceof AliasType);
     })
 
     it('constructor case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("demo.ts");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);
         const returnType = file?.getClassWithName('Test')?.getMethodWithName('constructor')
             ?.getReturnType();
@@ -193,10 +176,50 @@ describe("Infer Array Test", () => {
         projectScene.getMethods().forEach(m => {
             if (m.getSignature().toString().includes('SCBTransitionManager.registerUnlockTransitionController(@inferType/test1.ets: SCBUnlockTransitionController')) {
                 if (projectScene.getMethod(m.getSignature()) !== null) {
-                    flag = true
+                    flag = true;
                 }
             }
         })
-        assert.isTrue(flag)
+        assert.isTrue(flag);
+    })
+
+    it('union array case', () => {
+        let flag = false;
+        projectScene.getMethods().forEach(m => {
+            if (m.getSignature().toString().includes('ISceneEvent[]|ISceneEvent')) {
+                if (projectScene.getMethod(m.getSignature()) !== null) {
+                    flag = true;
+                }
+            }
+        })
+        assert.isTrue(flag);
+    })
+
+    it('union currType case', () => {
+        let count = 0;
+        projectScene.getMethods().forEach(m => {
+            if (m.getSignature().toString().includes('testCurrType')) {
+                m.getCfg()?.getStmts().forEach(stmt => {
+                    if (stmt instanceof ArkAssignStmt) {
+                        const leftOp = stmt.getLeftOp();
+                        if (leftOp.getType() instanceof UnionType &&
+                            (leftOp.getType() as UnionType).getCurrType().toString() === 'string') {
+                            count++;
+                        }
+                    }
+                })
+            }
+        })
+        assert.equal(count, 3);
+    })
+
+    it('field to ArrayRef case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Field.ts');
+        const file = projectScene.getFile(fileId);
+        const stmts = file?.getClassWithName('User')?.getFieldWithName('role')?.getInitializer();
+        assert.isDefined(stmts);
+        if (stmts) {
+            assert.equal(stmts[2].toString(), '$temp3 = $temp1[$temp2]');
+        }
     })
 })

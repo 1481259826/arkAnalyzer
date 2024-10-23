@@ -44,7 +44,6 @@ function assertObj(obj: Object): void {
             throw new Error(msg);
         }
         idx++;
-        debugger;
     }
 }
 
@@ -76,16 +75,11 @@ function doValidation(scene: Scene) : void {
     let customComponents = scene.getCustomComponents();
 
     obj.filesNumber[1] = files.length;
-    //obj.classesNumber[1] = classes.length;
-    //obj.methodsNumber[1] = methods.length;
-    //obj.customComponentsNumber [1] = customComponents.size;
 
     try {
         assertObj(obj);
     } catch (e) {
         console.error(e);
-
-        debugger;
         process.exit(1);
     }
 

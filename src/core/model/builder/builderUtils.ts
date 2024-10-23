@@ -18,16 +18,16 @@ import {
     ArrayType,
     ClassType,
     FunctionType,
+    GenericType,
     TupleType,
     Type,
-    TypeParameterType,
     UnclearReferenceType,
     UnionType,
     UnknownType,
 } from '../../base/Type';
 import { TypeInference } from '../../common/TypeInference';
 import { ArkField } from '../ArkField';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { Decorator } from '../../base/Decorator';
@@ -39,15 +39,16 @@ import {
 } from './ArkMethodBuilder';
 import { buildNormalArkClassFromArkMethod } from './ArkClassBuilder';
 import { Builtin } from '../../common/Builtin';
+import { modifierKind2Enum } from '../ArkBaseModel';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'builderUtils');
 
 export function handleQualifiedName(node: ts.QualifiedName): string {
     let right = (node.right as ts.Identifier).text;
     let left: string = '';
-    if (ts.SyntaxKind[node.left.kind] == 'Identifier') {
+    if (node.left.kind === ts.SyntaxKind.Identifier) {
         left = (node.left as ts.Identifier).text;
-    } else if (ts.SyntaxKind[node.left.kind] == 'QualifiedName') {
+    } else if (node.left.kind === ts.SyntaxKind.QualifiedName) {
         left = handleQualifiedName(node.left as ts.QualifiedName);
     }
     let qualifiedName = left + '.' + right;
@@ -68,49 +69,51 @@ export function handlePropertyAccessExpression(node: ts.PropertyAccessExpression
     return propertyAccessExpressionName;
 }
 
-export function buildModifiers(node: ts.Node, sourceFile: ts.SourceFile): Set<string | Decorator> {
-    let modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-
-    function parseModifier(modifier: ts.ModifierLike) {
-        if (ts.SyntaxKind[modifier.kind] == 'FirstContextualKeyword') {
-            modifiers.add('AbstractKeyword');
-        } else if (ts.isDecorator(modifier)) {
-            if (modifier.expression) {
-                let kind = '';
-                let param = '';
-                if (ts.isIdentifier(modifier.expression)) {
-                    kind = modifier.expression.text;
-                } else if (ts.isCallExpression(modifier.expression)) {
-                    if (ts.isIdentifier(modifier.expression.expression)) {
-                        kind = modifier.expression.expression.text;
-                    }
-                    if (modifier.expression.arguments.length > 0) {
-                        const arg = (modifier.expression as ts.CallExpression).arguments[0];
-                        if (ts.isArrowFunction(arg)) {
-                            const body = (arg as ts.ArrowFunction).body;
-                            if (ts.isIdentifier(body)) {
-                                param = body.text;
-                            }
-                        }
-                    }
-                }
-                const decorator = new Decorator(kind);
-                decorator.setContent(modifier.expression.getText(sourceFile));
-                if (param != '') {
-                    decorator.setParam(param);
-                }
-                modifiers.add(decorator);
-            }
-        } else {
-            modifiers.add(ts.SyntaxKind[modifier.kind]);
+export function buildDecorators(node: ts.Node, sourceFile: ts.SourceFile): Set<Decorator> {
+    let decorators: Set<Decorator> = new Set();
+    ts.getAllDecorators(node).forEach((decoratorNode) => {
+        let decorator = parseDecorator(decoratorNode);
+        if (decorator) {
+            decorator.setContent(decoratorNode.expression.getText(sourceFile));
+            decorators.add(decorator);
         }
+    });
+    return decorators;
+}
+
+function parseDecorator(node: ts.Decorator): Decorator | undefined {
+    if (!node.expression) {
+        return undefined;
     }
+
+    let expression = node.expression;
+    if (ts.isIdentifier(expression)) {
+        return new Decorator(expression.text);
+    } 
+    if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) {
+        return undefined;
+    }
+ 
+    let decorator = new Decorator(expression.expression.text);
+    
+    if (expression.arguments.length > 0) {
+        const arg = expression.arguments[0];
+        if (ts.isArrowFunction(arg) && ts.isIdentifier(arg.body)) {
+            decorator.setParam(arg.body.text);
+        }   
+    }
+    
+    return decorator;
+}
+
+export function buildModifiers(node: ts.Node): number {
+    let modifiers: number = 0;
 
     if (ts.canHaveModifiers(node)) {
-        ts.getModifiers(node)?.forEach(parseModifier);
+        ts.getModifiers(node)?.forEach((modifier) => {
+            modifiers |= modifierKind2Enum(modifier.kind);
+        });
     }
-
-    ts.getAllDecorators(node).forEach(parseModifier);
 
     return modifiers;
 }
@@ -119,25 +122,22 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
     let heritageClausesMap: Map<string, string> = new Map<string, string>();
     heritageClauses?.forEach((heritageClause) => {
         heritageClause.types.forEach((type) => {
-            let heritageClauseName: string = '';
-            if (ts.isIdentifier(type.expression)) {
-                heritageClauseName = (type.expression as ts.Identifier).text;
-            } else if (ts.isPropertyAccessExpression(type.expression)) {
-                heritageClauseName = handlePropertyAccessExpression(type.expression);
-            } else {
-                logger.warn('Other type expression found!!!');
-            }
-            heritageClausesMap.set(heritageClauseName, ts.SyntaxKind[heritageClause.token]);
+            heritageClausesMap.set(type.getText(), ts.SyntaxKind[heritageClause.token]);
         });
     });
     return heritageClausesMap;
 }
 
 export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDeclaration>,
-                                    sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): Type[] {
-    let typeParams: Type[] = [];
+                                    sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): GenericType[] {
+    const genericTypes: GenericType[] = [];
+    let index = -1;
     typeParameters.forEach((typeParameter) => {
-        typeParams.push(tsNode2Type(typeParameter, sourceFile, arkInstance));
+        const genericType = tsNode2Type(typeParameter, sourceFile, arkInstance);
+        if (genericType instanceof GenericType) {
+            genericType.setIndex(++index);
+            genericTypes.push(genericType);
+        }
 
         if (typeParameter.modifiers) {
             logger.warn('This typeparameter has modifiers.');
@@ -147,7 +147,7 @@ export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDe
             logger.warn('This typeparameter has expression.');
         }
     });
-    return typeParams;
+    return genericTypes;
 }
 
 export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkInstance: ArkMethod | ArkField, sourceFile: ts.SourceFile) {
@@ -235,7 +235,7 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
 
         // type
         if (parameter.type) {
-            methodParameter.setType(tsNode2Type(parameter.type, sourceFile, arkInstance));
+            methodParameter.setType(buildGenericType(tsNode2Type(parameter.type, sourceFile, arkInstance), arkInstance));
         } else {
             methodParameter.setType(UnknownType.getInstance());
         }
@@ -258,6 +258,33 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
         parameters.push(methodParameter);
     });
     return parameters;
+}
+
+export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField): Type {
+    function replace(urType: UnclearReferenceType): Type {
+        const typeName = urType.getName();
+        let gType;
+        if (arkInstance instanceof ArkMethod) {
+            gType = arkInstance.getGenericTypes()?.find(f => f.getName() === typeName);
+        }
+        if (!gType) {
+            gType = arkInstance.getDeclaringArkClass().getGenericsTypes()?.find(f => f.getName() === typeName);
+        }
+        return gType ?? urType;
+    }
+
+    if (type instanceof UnclearReferenceType) {
+        return replace(type);
+    } else if (type instanceof UnionType) {
+        const types = type.getTypes();
+        for (let i = 0; i < types.length; i++) {
+            const mayType = types[i];
+            if (mayType instanceof UnclearReferenceType) {
+                types[i] = replace(mayType);
+            }
+        }
+    }
+    return type;
 }
 
 export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, method: ArkMethod) {
@@ -300,7 +327,7 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         if (arkInstance instanceof ArkMethod) {
             declaringClass = arkInstance.getDeclaringArkClass();
         } else if (arkInstance instanceof ArkField) {
-            declaringClass = arkInstance.getDeclaringClass();
+            declaringClass = arkInstance.getDeclaringArkClass();
         } else {
             declaringClass = arkInstance;
         }
@@ -321,13 +348,21 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         } else if (arkInstance instanceof ArkClass) {
             cls = arkInstance;
         } else {
-            cls = arkInstance.getDeclaringClass();
+            cls = arkInstance.getDeclaringArkClass();
         }
         buildArkMethodFromArkClass(typeNode, cls, mtd, sourceFile);
         return new FunctionType(mtd.getSignature());
     } else if (ts.isTypeParameterDeclaration(typeNode)) {
-        const typeParameterName = typeNode.name.text;
-        return new TypeParameterType(typeParameterName);
+        const name = typeNode.name.text;
+        let defaultType;
+        if (typeNode.default) {
+            defaultType = tsNode2Type(typeNode.default, sourceFile, arkInstance);
+        }
+        let constraint;
+        if (typeNode.constraint) {
+            constraint = tsNode2Type(typeNode.constraint, sourceFile, arkInstance);
+        }
+        return new GenericType(name, defaultType, constraint);
     } else if (ts.isTupleTypeNode(typeNode)) {
         const types: Type[] = [];
         typeNode.elements.forEach(element => {

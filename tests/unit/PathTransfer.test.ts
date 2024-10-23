@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { transfer2UnixPath } from "../../src/utils/pathTransfer";
-import { describe, expect, it } from "vitest";
+import { transfer2UnixPath } from '../../src/utils/pathTransfer';
+import { describe, expect, it } from 'vitest';
 
 describe("getAllFiles Test", () => {
     it('normal case 1', () => {

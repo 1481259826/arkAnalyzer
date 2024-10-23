@@ -19,7 +19,7 @@ import { ImportInfo } from './ArkImport';
 import { ArkClass } from './ArkClass';
 import { ArkNamespace } from './ArkNamespace';
 import { ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
-import { setTypeForExportInfo } from './builder/ArkImportBuilder';
+import { ALL } from "../common/TSConst";
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
@@ -29,14 +29,11 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
  * @category core/model
  */
 export class ArkFile {
+    private absoluteFilePath: string = '';
+    private projectDir: string = '';
+    private code: string = '';
 
-    private name: string; //name also means the relative path
-    private absoluteFilePath: string;
-    private projectDir: string;
-    private projectName: string = "";
-    private code: string;
-
-    private defaultClass: ArkClass;
+    private defaultClass!: ArkClass;
 
     // name to model
     private namespaces: Map<string, ArkNamespace> = new Map<string, ArkNamespace>(); // don't contain nested namespaces
@@ -45,10 +42,10 @@ export class ArkFile {
     private importInfoMap: Map<string, ImportInfo> = new Map<string, ImportInfo>();
     private exportInfoMap: Map<string, ExportInfo> = new Map<string, ExportInfo>();
 
-    private scene: Scene;
-    private moduleScene: ModuleScene;
+    private scene!: Scene;
+    private moduleScene?: ModuleScene;
 
-    private fileSignature: FileSignature;
+    private fileSignature: FileSignature = FileSignature.DEFAULT;
 
     private ohPackageJson5Path: string[] = [];
 
@@ -57,12 +54,8 @@ export class ArkFile {
     constructor() {
     }
 
-    public setName(name: string) {
-        this.name = name;
-    }
-
     public getName() {
-        return this.name;
+        return this.fileSignature.getFileName();
     }
 
     public setScene(scene: Scene) {
@@ -160,31 +153,29 @@ export class ArkFile {
     }
 
     public getExportInfos(): ExportInfo[] {
-        return Array.from(this.exportInfoMap.values());
+        const exportInfos: ExportInfo[] = [];
+        this.exportInfoMap.forEach((value, key) => {
+            if (key !== ALL || value.getFrom()) {
+                exportInfos.push(value);
+            }
+        })
+        return exportInfos;
     }
 
-    public getExportInfoBy(name: string): ExportInfo | null {
-        const exportInfo = this.exportInfoMap.get(name);
-        if (exportInfo) {
-            return setTypeForExportInfo(exportInfo);
-        }
-        return null;
+    public getExportInfoBy(name: string): ExportInfo | undefined {
+        return this.exportInfoMap.get(name);
     }
 
-    public addExportInfo(exportInfo: ExportInfo) {
-        this.exportInfoMap.set(exportInfo.getExportClauseName(), exportInfo);
-    }
-
-    public setProjectName(projectName: string) {
-        this.projectName = projectName;
+    public addExportInfo(exportInfo: ExportInfo, key?: string) {
+        this.exportInfoMap.set(key ?? exportInfo.getExportClauseName(), exportInfo);
     }
 
     public getProjectName() {
-        return this.projectName;
+        return this.fileSignature.getProjectName();
     }
 
     public getModuleName() {
-        return this.moduleScene.getModuleName();
+        return this.moduleScene?.getModuleName();
     }
 
     public setOhPackageJson5Path(ohPackageJson5Path: string[]) {
@@ -195,15 +186,12 @@ export class ArkFile {
         return this.ohPackageJson5Path;
     }
 
-    public genFileSignature() {
-        let fileSignature = new FileSignature();
-        fileSignature.setFileName(this.name);
-        fileSignature.setProjectName(this.projectName);
-        this.fileSignature = fileSignature;
-    }
-
     public getFileSignature() {
         return this.fileSignature;
+    }
+
+    public setFileSignature(fileSignature: FileSignature): void {
+        this.fileSignature = fileSignature;
     }
 
     public getAllNamespacesUnderThisFile(): ArkNamespace[] {

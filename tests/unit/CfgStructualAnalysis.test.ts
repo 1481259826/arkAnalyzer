@@ -14,110 +14,277 @@
  */
 
 import {
-    Cfg,
+    ArkConditionExpr,
+    ArkIfStmt,
+    ArkReturnVoidStmt,
     BasicBlock,
+    Cfg,
+    Local,
+    RelationalBinaryOperator,
     Stmt,
 } from '../../src/index';
 import { describe, expect, it } from 'vitest';
-import { DominanceFinder } from '../../src/core/graph/DominanceFinder';
-import { DominanceTree } from '../../src/core/graph/DominanceTree';
-import { CfgStructualAnalysis } from '../../src/utils/CfgStructualAnalysis';
+import { AbstractFlowGraph } from '../../src/utils/CfgStructualAnalysis';
+import { ValueUtil } from '../../src/core/common/ValueUtil';
 
 describe('CfgStructualAnalysisTest', () => {
-    /**
-     *        0
-     *       /  \
-     *      1 -- 2
-     *           | \
-     *           | /
-     *           3
-     *          / \
-     *         4   5
-     *          \ /
-     *           6
-     *           |
-     *           7
-     *          / \
-     *         8   9
-     */
-    let cfg = new Cfg();
-    let bbs: BasicBlock[] = [];
-    let startingStmt: Stmt = new Stmt();
+    it('case1: structual analysis', () => {
+        let cfg = new Cfg();
+        let bbs: BasicBlock[] = [];
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
-    for (let i = 0; i < 10; i++) {
-        let bb = new BasicBlock();
-        bb.setId(i);
-        bbs.push(bb);
-    }
+        for (let i = 0; i < 9; i++) {
+            let bb = new BasicBlock();
+            bb.setId(i);
+            bbs.push(bb);
+        }
 
-    bbs[0].addStmtToFirst(startingStmt);
+        bbs[0].addStmtToFirst(startingStmt);
+        cfg.setStartingStmt(startingStmt);
 
-    bbs[0].addSuccessorBlock(bbs[1]);
-    bbs[0].addSuccessorBlock(bbs[2]);
-    bbs[0].addPredecessorBlock(bbs[8]);
+        bbs[0].addSuccessorBlock(bbs[1]);
 
-    bbs[1].addSuccessorBlock(bbs[2]);
-    bbs[1].addPredecessorBlock(bbs[0]);
+        bbs[1].addPredecessorBlock(bbs[0]);
+        bbs[1].addSuccessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[3]);
 
-    bbs[2].addSuccessorBlock(bbs[3]);
-    bbs[2].addPredecessorBlock(bbs[0]);
-    bbs[2].addPredecessorBlock(bbs[3]);
-    bbs[2].addPredecessorBlock(bbs[7]);
+        bbs[2].addPredecessorBlock(bbs[1]);
+        bbs[2].addSuccessorBlock(bbs[3]);
+        bbs[2].addSuccessorBlock(bbs[2]);
+        bbs[2].addPredecessorBlock(bbs[2]);
 
-    bbs[3].addSuccessorBlock(bbs[2]);
-    bbs[3].addSuccessorBlock(bbs[4]);
-    bbs[3].addSuccessorBlock(bbs[5]);
-    bbs[3].addPredecessorBlock(bbs[2]);
-    bbs[3].addPredecessorBlock(bbs[6]);
+        bbs[3].addPredecessorBlock(bbs[1]);
+        bbs[3].addPredecessorBlock(bbs[2]);
+        bbs[3].addSuccessorBlock(bbs[4]);
+        bbs[3].addSuccessorBlock(bbs[5]);
 
-    bbs[4].addSuccessorBlock(bbs[6]);
-    bbs[4].addPredecessorBlock(bbs[3]);
+        bbs[4].addPredecessorBlock(bbs[3]);
+        bbs[4].addSuccessorBlock(bbs[8]);
 
-    bbs[5].addSuccessorBlock(bbs[6]);
-    bbs[5].addPredecessorBlock(bbs[3]);
+        bbs[5].addPredecessorBlock(bbs[3]);
+        bbs[5].addSuccessorBlock(bbs[6]);
+        bbs[5].addSuccessorBlock(bbs[7]);
 
-    bbs[6].addSuccessorBlock(bbs[3]);
-    bbs[6].addSuccessorBlock(bbs[7]);
-    bbs[6].addPredecessorBlock(bbs[4]);
-    bbs[6].addPredecessorBlock(bbs[5]);
-    bbs[6].addPredecessorBlock(bbs[9]);
+        bbs[6].addPredecessorBlock(bbs[5]);
+        bbs[6].addSuccessorBlock(bbs[7]);
 
-    bbs[7].addSuccessorBlock(bbs[8]);
-    bbs[7].addSuccessorBlock(bbs[9]);
-    bbs[7].addSuccessorBlock(bbs[2]);
-    bbs[7].addPredecessorBlock(bbs[6]);
+        bbs[7].addPredecessorBlock(bbs[5]);
+        bbs[7].addPredecessorBlock(bbs[6]);
+        bbs[7].addSuccessorBlock(bbs[8]);
 
-    bbs[8].addSuccessorBlock(bbs[0]);
-    bbs[8].addPredecessorBlock(bbs[7]);
+        bbs[8].addPredecessorBlock(bbs[4]);
+        bbs[8].addPredecessorBlock(bbs[7]);
 
-    bbs[9].addSuccessorBlock(bbs[6]);
-    bbs[9].addPredecessorBlock(bbs[7]);
+        for (let i = 0; i < 9; i++) {
+            cfg.addBlock(bbs[i]);
+        }
 
-    cfg.setStartingStmt(startingStmt);
+        let afg = new AbstractFlowGraph(cfg);
+        let order: number[] = [];
+        afg.preOrder(afg.getEntry(), (block) => {
+            if (block) {
+                order.push(block?.getId());
+            }
+        })
+        expect(order.join(',')).eq('0,1,3,4,5,6,7,8');
+    });
 
-    for (let i = 0; i < 10; i++) {
-        cfg.addBlock(bbs[i]);
-    }
+    it('case2: structual analysis while', () => {
+        let cfg = new Cfg();
+        let bbs: BasicBlock[] = [];
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
 
-    it('case1: dominance tree', () => {
-        let finder = new DominanceFinder(cfg);
-        let idom = finder.getImmediateDominators();
-        expect(idom.join(',')).eq([0, 0, 0, 2, 3, 3, 3, 6, 7, 7].join(','));
+        for (let i = 0; i < 4; i++) {
+            let bb = new BasicBlock();
+            bb.setId(i);
+            bbs.push(bb);
+        }
 
-        let tree = new DominanceTree(finder);
-        let dom2 = tree.getDominators(bbs[2]);
-        expect(dom2.length).eq(2);
+        bbs[0].addStmtToFirst(startingStmt);
+        cfg.setStartingStmt(startingStmt);
 
-        let dom9 = tree.getDominators(bbs[9]);
-        expect(dom9.length).eq(6);
+        bbs[0].addSuccessorBlock(bbs[1]);
 
-        let cfgUtils = new CfgStructualAnalysis(cfg);
+        bbs[1].addPredecessorBlock(bbs[0]);
+        bbs[1].addPredecessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[3]);
 
-        let loop32 = cfgUtils.naturalLoops(bbs[3], bbs[2]);
-        expect(loop32.size).eq(7);
+        bbs[2].addPredecessorBlock(bbs[1]);
+        bbs[2].addSuccessorBlock(bbs[1]);
 
-        let loop96 = cfgUtils.naturalLoops(bbs[9], bbs[6]);
-        expect(loop96.size).eq(3);
-    
+        bbs[3].addPredecessorBlock(bbs[1]);
+        
+        for (let i = 0; i < 4; i++) {
+            cfg.addBlock(bbs[i]);
+        }
+
+        let afg = new AbstractFlowGraph(cfg);
+
+        let order: number[] = [];
+        afg.preOrder(afg.getEntry(), (block) => {
+            if (block) {
+                order.push(block?.getId());
+            }
+        })
+        expect(order.join(',')).eq('0,1,2,3');
+    });
+
+    it('case3: structual analysis do-while', () => {
+        let cfg = new Cfg();
+        let bbs: BasicBlock[] = [];
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
+
+        for (let i = 0; i < 5; i++) {
+            let bb = new BasicBlock();
+            bb.setId(i);
+            bbs.push(bb);
+        }
+
+        bbs[0].addStmtToFirst(startingStmt);
+        cfg.setStartingStmt(startingStmt);
+
+        bbs[0].addSuccessorBlock(bbs[1]);
+
+        bbs[1].addPredecessorBlock(bbs[0]);
+        bbs[1].addPredecessorBlock(bbs[3]);
+        bbs[1].addSuccessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[3]);
+
+        bbs[2].addPredecessorBlock(bbs[1]);
+        bbs[2].addSuccessorBlock(bbs[3]);
+
+        bbs[3].addPredecessorBlock(bbs[1]);
+        bbs[3].addPredecessorBlock(bbs[2]);
+        bbs[3].addSuccessorBlock(bbs[1]);
+        bbs[3].addSuccessorBlock(bbs[4]);
+
+        bbs[3].addStmt(new ArkIfStmt(new ArkConditionExpr(new Local('temp'), ValueUtil.getBooleanConstant(true), RelationalBinaryOperator.Equality)));
+
+        bbs[4].addPredecessorBlock(bbs[3]);
+        
+        for (let i = 0; i < 5; i++) {
+            cfg.addBlock(bbs[i]);
+        }
+
+        let afg = new AbstractFlowGraph(cfg);
+
+        let order: number[] = [];
+        afg.preOrder(afg.getEntry(), (block) => {
+            if (block) {
+                order.push(block?.getId());
+            }
+        })
+        expect(order.join(',')).eq('0,1,2,3,4');
+    });
+
+    it('case4: structual analysis do-while', () => {
+        let cfg = new Cfg();
+        let bbs: BasicBlock[] = [];
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
+
+        for (let i = 0; i < 6; i++) {
+            let bb = new BasicBlock();
+            bb.setId(i);
+            bbs.push(bb);
+        }
+
+        bbs[0].addStmtToFirst(startingStmt);
+        cfg.setStartingStmt(startingStmt);
+
+        bbs[0].addSuccessorBlock(bbs[1]);
+
+        bbs[1].addPredecessorBlock(bbs[0]);
+        bbs[1].addPredecessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[4]);
+
+        bbs[2].addPredecessorBlock(bbs[1]);
+        bbs[2].addPredecessorBlock(bbs[5]);
+        bbs[2].addSuccessorBlock(bbs[1]);
+        bbs[2].addSuccessorBlock(bbs[3]);
+        bbs[2].addStmt(new ArkIfStmt(new ArkConditionExpr(new Local('temp'), ValueUtil.getBooleanConstant(true), RelationalBinaryOperator.Equality)));
+
+        bbs[3].addPredecessorBlock(bbs[2]);
+        bbs[3].addPredecessorBlock(bbs[4]);
+
+        bbs[4].addPredecessorBlock(bbs[1]);
+        bbs[4].addSuccessorBlock(bbs[3]);
+        bbs[4].addSuccessorBlock(bbs[5]);
+
+        bbs[5].addPredecessorBlock(bbs[4]);
+        bbs[5].addSuccessorBlock(bbs[2]);
+        
+        for (let i = 0; i < 6; i++) {
+            cfg.addBlock(bbs[i]);
+        }
+
+        let afg = new AbstractFlowGraph(cfg);
+
+        let order: number[] = [];
+        afg.preOrder(afg.getEntry(), (block) => {
+            if (block) {
+                order.push(block?.getId());
+            }
+        })
+        expect(order.join(',')).eq('0,1,4,5,2,3');
+    });
+
+    it('case5: structual analysis for', () => {
+        let cfg = new Cfg();
+        let bbs: BasicBlock[] = [];
+        let startingStmt: Stmt = new ArkReturnVoidStmt();
+        startingStmt.setCfg(cfg);
+
+        for (let i = 0; i < 7; i++) {
+            let bb = new BasicBlock();
+            bb.setId(i);
+            bbs.push(bb);
+        }
+
+        bbs[0].addStmtToFirst(startingStmt);
+        cfg.setStartingStmt(startingStmt);
+        bbs[0].addSuccessorBlock(bbs[1]);
+
+        bbs[1].addPredecessorBlock(bbs[0]);
+        bbs[1].addPredecessorBlock(bbs[6]);
+        bbs[1].addSuccessorBlock(bbs[2]);
+        bbs[1].addSuccessorBlock(bbs[4]);
+        bbs[1].addStmt(new ArkIfStmt(new ArkConditionExpr(new Local('temp'), ValueUtil.getBooleanConstant(true), RelationalBinaryOperator.Equality)));
+
+        bbs[2].addPredecessorBlock(bbs[1]);
+        bbs[2].addSuccessorBlock(bbs[3]);
+        bbs[2].addSuccessorBlock(bbs[6]);
+        
+        bbs[3].addPredecessorBlock(bbs[2]);
+        bbs[3].addSuccessorBlock(bbs[4]);
+        bbs[3].addSuccessorBlock(bbs[5]);
+        
+        bbs[4].addPredecessorBlock(bbs[1]);
+        bbs[4].addPredecessorBlock(bbs[3]);
+
+        bbs[5].addPredecessorBlock(bbs[3]);
+        bbs[5].addSuccessorBlock(bbs[6]);
+
+        bbs[6].addPredecessorBlock(bbs[2]);
+        bbs[6].addPredecessorBlock(bbs[5]);
+        bbs[6].addSuccessorBlock(bbs[1]);
+        
+        for (let i = 0; i < 7; i++) {
+            cfg.addBlock(bbs[i]);
+        }
+
+        let afg = new AbstractFlowGraph(cfg);
+        let order: number[] = [];
+        afg.preOrder(afg.getEntry(), (block) => {
+            if (block) {
+                order.push(block?.getId());
+            }
+        })
+        expect(order.join(',')).eq('0,1,2,3,5,6,4');
     });
 });

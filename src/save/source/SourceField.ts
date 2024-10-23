@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
-import { ArkField } from '../../core/model/ArkField';
+import { ArkField, FieldCategory } from '../../core/model/ArkField';
 import { SourceBase } from './SourceBase';
 import { SourceTransformer } from './SourceTransformer';
+import { UnknownType } from '../../core/base/Type';
 
 /**
  * @category save
@@ -26,7 +27,7 @@ export class SourceField extends SourceBase {
     private initializer: Map<string, string>;
 
     public constructor(field: ArkField, indent: string = '', initializer: Map<string, string>) {
-        super(field.getDeclaringClass().getDeclaringArkFile(), indent);
+        super(field.getDeclaringArkClass().getDeclaringArkFile(), indent);
         this.field = field;
         this.transformer = new SourceTransformer(this);
         this.initializer = initializer;
@@ -37,22 +38,14 @@ export class SourceField extends SourceBase {
     }
     public dump(): string {
         this.printer.clear();
-        this.printDecorator(this.field.getModifiers());
+        this.printDecorator(this.field.getDecorators());
         this.printer.writeIndent();
-        if (this.field.getFieldType() !== 'EnumMember') {
+        if (this.field.getCategory() !== FieldCategory.ENUM_MEMBER) {
             this.printer.writeSpace(this.modifiersToString(this.field.getModifiers()));
         }
 
-        if (this.field.getFieldType() == 'IndexSignature') {
-            let index: string[] = [];
-            for (const parameter of this.field.getParameters()) {
-                index.push(`${parameter.getName()}: ${this.transformer.typeToString(parameter.getType())}`);
-            }
-            this.printer.write(`[${index.join(', ')}]`);
-        } else {
-            this.printer.write(this.field.getName());
-        }
-        
+        this.printer.write(this.field.getName());
+
         if (this.field.getQuestionToken()) {
             this.printer.write('?');
         }
@@ -61,7 +54,7 @@ export class SourceField extends SourceBase {
         }
 
         // property.getInitializer() PropertyAccessExpression ArrowFunction ClassExpression FirstLiteralToken StringLiteral
-        if (this.field.getType() && this.field.getFieldType() !== 'EnumMember') {
+        if (!(this.field.getType() instanceof UnknownType) && this.field.getCategory() !== FieldCategory.ENUM_MEMBER) {
             this.printer.write(`: ${this.transformer.typeToString(this.field.getType())}`);
         }
 
@@ -69,7 +62,7 @@ export class SourceField extends SourceBase {
             this.printer.write(` = ${this.initializer.get(this.field.getName())}`);
         }
 
-        if (this.field.getFieldType() == 'EnumMember') {
+        if (this.field.getCategory() == FieldCategory.ENUM_MEMBER) {
             this.printer.writeLine(',');
         } else {
             this.printer.writeLine(';');

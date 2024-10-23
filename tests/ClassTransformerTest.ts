@@ -14,8 +14,8 @@
  */
 
 import classTransformer from '../src/callgraph/classTransformer';
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
 
 let config: SceneConfig = new SceneConfig()
 config.buildFromJson("./tests/resources/classTransformer/classTransformer.json");
@@ -25,6 +25,5 @@ function runScene(config: SceneConfig) {
     projectScene.inferTypes()
     
     classTransformer.genClasses(projectScene.getClasses())
-    debugger;
 }
 runScene(config);

@@ -63,17 +63,17 @@ const SourceBasicTest_CASE3_EXPECT = `export function listParameters(u: number, 
 `;
 
 const SourceBasicTest_CASE4_EXPECT = `configure({appenders: {console: {type: 'console', layout: {type: 'pattern', pattern: '[%d] [%p] [%z] [ArkAnalyzer] - %m'}}}, categories: {default: {appenders: ['console'], level: 'info', enableCallStack: false}}});
-let logger = getLogger();
-let someClass = class <Type> {
+const logger = getLogger();
+const someClass = class <Type> {
   content: Type;
   constructor(value: Type) {
     this.content = value;
   }
 };
-let m = new someClass('Hello, world');
-let iterator = await yieldTest();
+const m: someClass = new someClass('Hello, world');
+const iterator = await yieldTest();
 export let x = 1;
-export let soo = 123;
+export const soo = 123;
 forLoopTest();
 controlTest();
 deleteTest();
@@ -91,6 +91,81 @@ const SourceBasicTest_CASE6_EXPECT = `async function * yieldTest() {
   yield 1;
   yield 2;
   yield 3;
+}
+`;
+
+const SourceBasicTest_CASE7_EXPECT = `function dealColor(rRGB: number, gRGB: number, bRGB: number) {
+  let max = Math.max(Math.max(rRGB, gRGB), bRGB);
+  let min = Math.min(Math.min(rRGB, gRGB), bRGB);
+  let bHSB: number = max / 255;
+  let hHSB: number = 0;
+  if (max === rRGB && gRGB >= bRGB != 0) {
+    hHSB = (60 * (gRGB - bRGB)) / (max - min) + 0;
+  }
+  if (max === rRGB && gRGB < bRGB != 0) {
+    hHSB = (60 * (gRGB - bRGB)) / (max - min) + 360;
+  }
+  if (max === gRGB) {
+    hHSB = (60 * (bRGB - rRGB)) / (max - min) + 120;
+  }
+  if (max === bRGB) {
+    hHSB = (60 * (rRGB - gRGB)) / (max - min) + 240;
+  }
+  if (bHSB >= 0.4) {
+    bHSB = 0.3;
+  } else {
+    if (bHSB >= 0.2) {
+      bHSB = bHSB - 0.1;
+    } else {
+      bHSB = bHSB + 0.2;
+    }
+  }
+}
+`;
+
+const SourceBasicTest_CASE8_EXPECT = `function specialString(text: string) {
+  const lrcLineRegex: RegExp = new RegExp('\\\\[\\\\d{2,}:\\\\d{2}((\\\\.|:)\\\\d{2,})\\\\]', 'g');
+  const lrcTimeRegex1: RegExp = new RegExp('\\\\[\\\\d{2,}', 'i');
+  const lrcTimeRegex2: RegExp = new RegExp('\\\\d{2}\\\\.\\\\d{2,}', 'i');
+  let lyric: string[] = text.split('\\n');
+}
+`;
+
+const SourceBasicTest_CASE9_EXPECT = `function dotDotDotTokenTest(...args: string[]): void {
+}
+`;
+
+const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
+  const sampleData: number[] = [1, 2, 3, 4, 5];
+  let i: number = 0;
+  for (; i < sampleData.length; i = i + 1) {
+    if (sampleData[i] % 2 === 0) {
+      logger.info(sampleData[i] + ' 是偶数');
+    } else {
+      logger.info(sampleData[i] + ' 是奇数');
+    }
+    let count: number = 0;
+    while (count < sampleData[i]) {
+      logger.info('当前计数: ' + count);
+      count = count + 1;
+    }
+    let j: number = 0;
+    for (; j < 5; j = j + 1) {
+      if (j === 2) {
+        continue;
+      }
+      logger.info('当前内层循环计数: ' + j);
+    }
+    let k: number = 0;
+    while (k < 3) {
+      logger.info('外层循环计数: ' + k);
+      logger.info('Department name: ' + k);
+      if (k === 1) {
+        k = k + 1;
+        break;
+      }
+    }
+  }
 }
 `;
 
@@ -170,7 +245,55 @@ describe('SourceBasicTest', () => {
     });
 
     it('case6: yield test', () => {
-      let method = defaultClass?.getMethodWithName('yieldTest');
+        let method = defaultClass?.getMethodWithName('yieldTest');
+        if (!method) {
+            assert.isDefined(method);
+            return;
+        }
+
+        let printer = new SourceMethodPrinter(method);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE6_EXPECT);
+    });
+
+    it('case7: operator test', () => {
+        let method = defaultClass?.getMethodWithName('dealColor');
+        if (!method) {
+            assert.isDefined(method);
+            return;
+        }
+
+        let printer = new SourceMethodPrinter(method);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE7_EXPECT);
+    });
+
+    it('case8: specialString test', () => {
+        let method = defaultClass?.getMethodWithName('specialString');
+        if (!method) {
+            assert.isDefined(method);
+            return;
+        }
+
+        let printer = new SourceMethodPrinter(method);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE8_EXPECT);
+    });
+
+    it('case9: debug test', () => {
+        let method = defaultClass?.getMethodWithName('dotDotDotTokenTest');
+        if (!method) {
+            assert.isDefined(method);
+            return;
+        }
+
+        let printer = new SourceMethodPrinter(method);
+        let source = printer.dump();
+        expect(source).eq(SourceBasicTest_CASE9_EXPECT);
+    });
+
+    it('case10: controlTest', () => {
+      let method = defaultClass?.getMethodWithName('controlTest');
       if (!method) {
           assert.isDefined(method);
           return;
@@ -178,7 +301,6 @@ describe('SourceBasicTest', () => {
 
       let printer = new SourceMethodPrinter(method);
       let source = printer.dump();
-      expect(source).eq(SourceBasicTest_CASE6_EXPECT);
-  });
-
+      expect(source).eq(SourceBasicTest_CASE10_EXPECT);
+    });
 });

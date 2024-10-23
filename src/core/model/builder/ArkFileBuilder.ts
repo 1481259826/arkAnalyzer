@@ -18,10 +18,10 @@ import path from 'path';
 import ts from 'ohos-typescript';
 import { ArkFile } from '../ArkFile';
 import { ArkNamespace } from '../ArkNamespace';
-import Logger from '../../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile } from './ArkClassBuilder';
 import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
-import { buildImportInfo, expandExportInfo, getArkFile } from './ArkImportBuilder';
+import { buildImportInfo } from './ArkImportBuilder';
 import {
     buildExportAssignment,
     buildExportDeclaration,
@@ -35,9 +35,9 @@ import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
-import { ImportInfo } from '../ArkImport';
+import { FileSignature } from '../ArkSignature';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFileBuilder');
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
@@ -49,12 +49,13 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
  * @param arkFile
  * @returns
  */
-export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile) {
+export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile,
+                                     projectName: string) {
     arkFile.setFilePath(absoluteFilePath);
     arkFile.setProjectDir(projectDir);
-    arkFile.setName(path.relative(projectDir, absoluteFilePath));
 
-    arkFile.genFileSignature();
+    const fileSignature = new FileSignature(projectName, path.relative(projectDir, absoluteFilePath));
+    arkFile.setFileSignature(fileSignature);
 
     arkFile.setCode(fs.readFileSync(arkFile.getFilePath(), 'utf8'));
     const sourceFile = ts.createSourceFile(
@@ -116,7 +117,6 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, arkFile.getDefaultClass(), mthd, astRoot);
-            arkFile.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
                 arkFile.addExportInfo(buildExportInfo(mthd, arkFile, LineColPosition.buildFromNode(child, astRoot)));
@@ -125,7 +125,6 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, arkFile.getDefaultClass(), mthd, astRoot);
-            arkFile.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
                 arkFile.addExportInfo(buildExportInfo(mthd, arkFile, LineColPosition.buildFromNode(child, astRoot)));
@@ -163,35 +162,5 @@ function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
     arkFile.addArkClass(defaultClass);
 }
 
-/**
- *
- * 展开 import * 和 export *
- * @param map
- */
-export function expandImportAll(map: Map<string, ArkFile>) {
-    for (const arkFile of map.values()) {
-        const importInfos = arkFile.getImportInfos();
-        importInfos.forEach((item) => {
-            if (item.getNameBeforeAs() === '*') {
-                let formFile = getArkFile(item);
-                if (formFile) {
-                    expandExportInfo(formFile);
-                    let prefix = item.getImportClauseName() === '*' ? '' : item.getImportClauseName() + '.';
-                    formFile.getExportInfos().forEach(e => {
-                        let newInfo = new ImportInfo();
-                        newInfo.build(prefix + e.getExportClauseName(), item.getImportType(),
-                            item.getImportFrom(), item.getOriginTsPosition(), item.getModifiers(), e.getExportClauseName());
-                        newInfo.setDeclaringArkFile(item.getDeclaringArkFile());
-                        newInfo.setTsSourceCode(item.getTsSourceCode());
-                        arkFile.addImportInfo(newInfo);
-                    })
-                } else {
-                    logger.warn("from file not found:" + item.getTsSourceCode())
-                }
-            }
-        })
-
-    }
-}
 
 

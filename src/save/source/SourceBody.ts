@@ -15,15 +15,14 @@
 
 import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkSwitchStmt, Stmt } from '../../core/base/Stmt';
+import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, Stmt } from '../../core/base/Stmt';
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import { ArkBody } from '../../core/model/ArkBody';
 import { ArkMethod } from '../../core/model/ArkMethod';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import {
     SourceBreakStmt,
-    SourceCaseStmt,
     SourceCompoundEndStmt,
     SourceContinueStmt,
     SourceDoStmt,
@@ -32,43 +31,61 @@ import {
     SourceForStmt,
     SourceIfStmt,
     SourceStmt,
-    SourceSwitchStmt,
+    SourceTypeAliasStmt,
     SourceWhileStmt,
     stmt2SourceStmt,
     StmtPrinterContext,
 } from './SourceStmt';
-import { CfgStructualAnalysis } from '../../utils/CfgStructualAnalysis';
+import { AbstractFlowGraph, CodeBlockType } from '../../utils/CfgStructualAnalysis';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ModelUtils } from '../../core/common/ModelUtils';
 import { SourceUtils } from './SourceUtils';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { LineColPosition } from '../../core/base/Position';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
+
+class AliasStmt extends Stmt {
+
+    constructor(position: LineColPosition) {
+        super();
+        this.originalPosition = position;
+    }
+
+    toString(): string {
+        return '';
+    }
+    
+}
 
 export class SourceBody implements StmtPrinterContext {
     protected printer: ArkCodeBuffer;
     private arkBody: ArkBody;
     private stmts: SourceStmt[] = [];
     private method: ArkMethod;
-    private cfgUtils: CfgStructualAnalysis;
+    private cfgUtils: AbstractFlowGraph;
     private tempCodeMap: Map<string, string>;
     private tempVisitor: Set<string>;
     private skipStmts: Set<Stmt>;
     private stmtReader: StmtReader;
     private definedLocals: Set<Local>;
     private inBuilder: boolean;
+    private lastStmt: Stmt;
 
     public constructor(indent: string, method: ArkMethod, inBuilder: boolean) {
         this.printer = new ArkCodeBuffer(indent);
         this.method = method;
         this.arkBody = method.getBody()!;
-        this.cfgUtils = new CfgStructualAnalysis(method.getCfg()!);
+        this.cfgUtils = new AbstractFlowGraph(method.getCfg()!);
         this.tempCodeMap = new Map();
         this.tempVisitor = new Set();
         this.definedLocals = new Set();
         this.inBuilder = inBuilder;
         this.skipStmts = new Set();
+        this.stmtReader = new StmtReader([]);
+        this.lastStmt = this.arkBody.getCfg().getStartingStmt();
         this.buildSourceStmt();
     }
     setSkipStmt(stmt: Stmt): void {
@@ -83,6 +100,10 @@ export class SourceBody implements StmtPrinterContext {
     }
     public getArkFile(): ArkFile {
         return this.method.getDeclaringArkFile();
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return this.method.getDeclaringArkClass().getDeclaringArkNamespace();
     }
 
     public getMethod(signature: MethodSignature): ArkMethod | null {
@@ -148,35 +169,41 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     private buildSourceStmt(): void {
-        let blocks = this.arkBody.getCfg().getBlocks();
-        let visitor = new Set<BasicBlock>();
+        this.cfgUtils.preOrder(this.cfgUtils.getEntry(), (block, type) => {
+            this.buildBasicBlock(block, type);
+        });
+        this.buildTypeAliasStmt();
+    }
 
-        for (const block of blocks) {
-            if (visitor.has(block)) {
-                continue;
-            }
-            visitor.add(block);
-            if (this.cfgUtils.isDoBlock(block)) {
-                this.pushStmt(new SourceDoStmt(this, block.getStmts()[0]));
-                let whileBlock = this.cfgUtils.getDoWhileBlock(block)!;
-                visitor.add(whileBlock);
-
-                this.buildBasicBlock(block, visitor, null);
-                for (const sub of this.cfgUtils.getLoopPath(block) as Set<BasicBlock>) {
-                    if (visitor.has(sub)) {
-                        continue;
-                    }
-                    visitor.add(sub);
-                    this.buildBasicBlock(sub, visitor, null);
-                }
-                this.buildBasicBlock(whileBlock, visitor, null);
-            } else {
-                this.buildBasicBlock(block, visitor, null);
-            }
+    private buildTypeAliasStmt(): void {
+        let map = this.arkBody.getAliasTypeMap();
+        if (!map) {
+            return;
+        }
+        for (const [_, [aliasType, declaration]] of map) {
+            let stmt = new AliasStmt(declaration.getPosition());
+            this.pushStmt(new SourceTypeAliasStmt(this, stmt, aliasType));
         }
     }
 
-    private buildBasicBlock(block: BasicBlock, visitor: Set<BasicBlock>, parent: Stmt | null): void {
+    private buildBasicBlock(block: BasicBlock | undefined, type: CodeBlockType): void {
+        if (type == CodeBlockType.BREAK) {
+            this.pushStmt(new SourceBreakStmt(this, this.lastStmt));
+            return;
+        } else if (type == CodeBlockType.CONTINUE) {
+            this.pushStmt(new SourceContinueStmt(this, this.lastStmt));
+        } else if (type == CodeBlockType.COMPOUND_END) {
+            this.pushStmt(new SourceCompoundEndStmt(this, this.lastStmt, '}'));
+        } else if (type == CodeBlockType.ELSE) {
+            this.pushStmt(new SourceElseStmt(this, this.lastStmt));
+        } else if (type == CodeBlockType.DO) {
+            this.pushStmt(new SourceDoStmt(this, this.lastStmt));
+        }
+
+        if (!block) {
+            return;
+        }
+
         let originalStmts: Stmt[] = this.sortStmt(block.getStmts());
         this.stmtReader = new StmtReader(originalStmts);
         while (this.stmtReader.hasNext()) {
@@ -185,99 +212,21 @@ export class SourceBody implements StmtPrinterContext {
                 continue;
             }
             if (stmt instanceof ArkIfStmt) {
-                if (
-                    this.cfgUtils.isForBlock(block) ||
-                    this.cfgUtils.isWhileBlock(block) ||
-                    this.cfgUtils.isDoWhileBlock(block)
-                ) {
-                    this.buildLoopBasicBlock(stmt, block, visitor, parent);
-                } else {
-                    this.buildIfBasicBlock(stmt, block, visitor, parent);
+                if (type == CodeBlockType.IF) {
+                    this.pushStmt(new SourceIfStmt(this, stmt));
+                } else if (type == CodeBlockType.WHILE) {
+                    this.pushStmt(new SourceWhileStmt(this, stmt, block));
+                } else if (type == CodeBlockType.FOR) {
+                    let inc = this.cfgUtils.getForIncBlock(block)!;
+                    this.pushStmt(new SourceForStmt(this, stmt, block, inc));
+                } else if (type == CodeBlockType.DO_WHILE) {
+                    this.pushStmt(new SourceDoWhileStmt(this, stmt, block));
                 }
-            } else if (stmt instanceof ArkSwitchStmt) {
-                this.pushStmt(new SourceSwitchStmt(this, stmt));
-                let caseIdx = 0;
-                for (const sub of block.getSuccessors()) {
-                    if (!visitor.has(sub)) {
-                        visitor.add(sub);
-                        let caseStmt = new SourceCaseStmt(this, stmt, caseIdx);
-                        this.pushStmt(caseStmt);
-                        this.buildBasicBlock(sub, visitor, stmt);
-                        if (caseStmt.isDefault()) {
-                            this.pushStmt(new SourceCompoundEndStmt(this, stmt, ''));
-                        }
-                    }
-                    caseIdx++;
-                }
-                this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
             } else {
                 this.pushStmt(stmt2SourceStmt(this, stmt));
             }
+            this.lastStmt = stmt;
         }
-    }
-
-    private buildLoopBasicBlock(
-        stmt: ArkIfStmt,
-        block: BasicBlock,
-        visitor: Set<BasicBlock>,
-        parent: Stmt | null
-    ): void {
-        if (this.cfgUtils.isDoWhileBlock(block)) {
-            this.pushStmt(new SourceDoWhileStmt(this, stmt, block));
-            return;
-        }
-
-        if (this.cfgUtils.isForBlock(block)) {
-            let inc = this.cfgUtils.getForIncBlock(block)!;
-            this.pushStmt(new SourceForStmt(this, stmt, block, inc));
-            visitor.add(inc);
-        } else if (this.cfgUtils.isWhileBlock(block)) {
-            this.pushStmt(new SourceWhileStmt(this, stmt, block));
-        }
-
-        for (const sub of this.cfgUtils.getLoopPath(block) as Set<BasicBlock>) {
-            if (visitor.has(sub)) {
-                continue;
-            }
-            visitor.add(sub);
-            this.buildBasicBlock(sub, visitor, parent);
-        }
-        this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
-    }
-
-    private buildIfBasicBlock(stmt: ArkIfStmt, block: BasicBlock, visitor: Set<BasicBlock>, parent: Stmt | null): void {
-        this.pushStmt(new SourceIfStmt(this, stmt));
-        let successorBlocks = block.getSuccessors();
-
-        let loops = this.cfgUtils.getInnermostLoops(block);
-        if (successorBlocks.length > 0) {
-            if (loops && !loops.has(successorBlocks[0])) {
-                this.pushStmt(new SourceBreakStmt(this, stmt));
-            } else if (loops && this.cfgUtils.isLoopControlBlock(successorBlocks[0])) {
-                this.pushStmt(new SourceContinueStmt(this, stmt));
-            } else {
-                if (!visitor.has(successorBlocks[0])) {
-                    visitor.add(successorBlocks[0]);
-                    this.buildBasicBlock(successorBlocks[0], visitor, stmt);
-                }
-            }
-        }
-
-        if (successorBlocks.length > 1 && this.cfgUtils.isIfElseBlock(block)) {
-            if (loops && !loops.has(successorBlocks[1])) {
-                this.pushStmt(new SourceBreakStmt(this, stmt));
-            } else if (loops && this.cfgUtils.isLoopControlBlock(successorBlocks[1])) {
-                this.pushStmt(new SourceContinueStmt(this, stmt));
-            } else {
-                if (!visitor.has(successorBlocks[1])) {
-                    this.pushStmt(new SourceElseStmt(this, stmt));
-                    visitor.add(successorBlocks[1]);
-                    this.buildBasicBlock(successorBlocks[1], visitor, stmt);
-                }
-            }
-        }
-
-        this.pushStmt(new SourceCompoundEndStmt(this, stmt, '}'));
     }
 
     private printStmts(): void {

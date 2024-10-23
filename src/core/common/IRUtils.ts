@@ -16,6 +16,7 @@
 import { AbstractBinopExpr, AbstractInvokeExpr, ArkCastExpr, ArkUnopExpr } from '../base/Expr';
 import { AbstractFieldRef, ArkArrayRef } from '../base/Ref';
 import { Value } from '../base/Value';
+import { Scene } from '../../Scene';
 
 export class IRUtils {
     static moreThanOneAddress(value: Value): boolean {
@@ -24,5 +25,16 @@ export class IRUtils {
             return true;
         }
         return false;
+    }
+
+    static generateTextForStmt(scene: Scene): void {
+        for (const method of scene.getMethods()) {
+            const cfg = method.getCfg();
+            if (cfg) {
+                for (const stmt of cfg.getStmts()) {
+                    stmt.setText(stmt.toString());
+                }
+            }
+        }
     }
 }

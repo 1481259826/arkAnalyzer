@@ -15,8 +15,8 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from "../../src/Config";
-import { Scene } from "../../src/Scene";
+import { SceneConfig } from '../../src/Config';
+import { Scene } from '../../src/Scene';
 
 describe("Anonymous Test", () => {
     let config: SceneConfig = new SceneConfig();

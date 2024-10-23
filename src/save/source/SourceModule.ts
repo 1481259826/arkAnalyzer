@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { ModifierType } from '../../core/model/ArkBaseModel';
 import { ExportInfo, ExportType } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
 import { SourceBase } from './SourceBase';
@@ -32,7 +33,7 @@ export class SourceExportInfo extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.info.getExportClauseType() !== ExportType.UNKNOWN) {
+        if (this.info.getArkExport()?.containsModifier(ModifierType.EXPORT) || this.info.getExportClauseType() == ExportType.LOCAL) {
             return this.printer.toString();
         }
 
@@ -64,9 +65,9 @@ export class SourceExportInfo extends SourceBase {
                 );
             }
         }
-        if (this.info.getExportFrom()) {
+        if (this.info.getFrom()) {
             this.printer.write(
-                ` from '${this.info.getExportFrom() as string}'`
+                ` from '${this.info.getFrom() as string}'`
             );
         }
         this.printer.writeLine(';');
@@ -92,22 +93,22 @@ export class SourceImportInfo extends SourceBase {
 
     public dump(): string {
         if (this.info.getImportType() === 'Identifier') {
-            // import fs from 'fs'
+            // sample: import fs from 'fs'
             this.printer
                 .writeIndent()
                 .writeLine(
                     `import ${this.info.getImportClauseName()} from '${
-                        this.info.getImportFrom() as string
+                        this.info.getFrom() as string
                     }';`
                 );
         } else if (this.info.getImportType() === 'NamedImports') {
-            // import {xxx} from './yyy'
+            // sample: import {xxx} from './yyy'
             if (this.info.getNameBeforeAs()) {
                 this.printer
                     .writeIndent()
                     .writeLine(
                         `import {${this.info.getNameBeforeAs()} as ${this.info.getImportClauseName()}} from '${
-                            this.info.getImportFrom() as string
+                            this.info.getFrom() as string
                         }';`
                     );
             } else {
@@ -115,33 +116,33 @@ export class SourceImportInfo extends SourceBase {
                     .writeIndent()
                     .writeLine(
                         `import {${this.info.getImportClauseName()}} from '${
-                            this.info.getImportFrom() as string
+                            this.info.getFrom() as string
                         }';`
                     );
             }
         } else if (this.info.getImportType() === 'NamespaceImport') {
-            // import * as ts from 'ohos-typescript'
+            // sample: import * as ts from 'ohos-typescript'
             this.printer
                 .writeIndent()
                 .writeLine(
                     `import * as ${this.info.getImportClauseName()} from '${
-                        this.info.getImportFrom() as string
+                        this.info.getFrom() as string
                     }';`
                 );
         } else if (this.info.getImportType() == 'EqualsImport') {
-            // import mmmm = require('./xxx')
+            // sample: import mmmm = require('./xxx')
             this.printer
                 .writeIndent()
                 .writeLine(
                     `import ${this.info.getImportClauseName()} =  require('${
-                        this.info.getImportFrom() as string
+                        this.info.getFrom() as string
                     }');`
                 );
         } else {
-            // import '../xxx'
+            // sample: import '../xxx'
             this.printer
                 .writeIndent()
-                .writeLine(`import '${this.info.getImportFrom() as string}';`);
+                .writeLine(`import '${this.info.getFrom() as string}';`);
         }
         return this.printer.toString();
     }

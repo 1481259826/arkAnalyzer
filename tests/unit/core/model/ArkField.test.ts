@@ -16,13 +16,14 @@
 import { describe, expect, it } from 'vitest';
 import { ArkField } from '../../../../src/core/model/ArkField';
 import { Decorator } from '../../../../src/core/base/Decorator';
+import { ModifierType } from '../../../../src/core/model/ArkBaseModel';
 
 describe("ArkField Test", () => {
     it('test getDecorators', async () => {
         let field = new ArkField();
-        field.addModifier(new Decorator('State'));
-        field.addModifier('static');
-        field.addModifier('public');
+        field.addDecorator(new Decorator('State'));
+        field.addModifier(ModifierType.STATIC);
+        field.addModifier(ModifierType.PUBLIC);
         expect(field.getDecorators().length).eq(1);
     })
 })

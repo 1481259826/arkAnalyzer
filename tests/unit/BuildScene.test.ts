@@ -15,9 +15,9 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from "../../src/Config";
-import { Scene } from "../../src/Scene";
-import { FileSignature } from "../../src/core/model/ArkSignature";
+import { SceneConfig } from '../../src/Config';
+import { Scene } from '../../src/Scene';
+import { FileSignature } from '../../src/core/model/ArkSignature';
 
 describe("build scene Test", () => {
 
@@ -28,9 +28,7 @@ describe("build scene Test", () => {
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
     it('build case', () => {
-        const fileId = new FileSignature();
-        fileId.setFileName("Target.ets");
-        fileId.setProjectName(projectScene.getProjectName());
+        const fileId = new FileSignature(projectScene.getProjectName(), "Target.ets", );
         const file = projectScene.getFile(fileId);
         assert.isDefined(file);
 

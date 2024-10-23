@@ -22,6 +22,8 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ArkCodeBuffer } from '../ArkStream';
 import { Local } from '../../core/base/Local';
 import { TransformerContext } from './SourceTransformer';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
 
 export interface Dump {
     getLine(): number;
@@ -33,11 +35,15 @@ export abstract class SourceBase
     implements Dump, TransformerContext
 {
     protected arkFile: ArkFile;
-    protected inBuilder: boolean;
+    protected inBuilder: boolean = false;
 
     public constructor(arkFile: ArkFile, indent: string = '') {
         super(indent);
         this.arkFile = arkFile;
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return undefined
     }
 
     public getArkFile(): ArkFile {
@@ -66,22 +72,14 @@ export abstract class SourceBase
 
     public abstract getLine(): number;
 
-    protected printDecorator(modifiers: Set<string | Decorator>): void {
-        modifiers.forEach((value) => {
-            if (value instanceof Decorator) {
-                this.printer.writeIndent().writeLine(`@${value.getContent()}`);
-            }
+    protected printDecorator(docorator: Decorator[]): void {
+        docorator.forEach((value) => {
+            this.printer.writeIndent().writeLine(`@${value.getContent()}`);
         });
     }
 
-    protected modifiersToString(modifiers: Set<string | Decorator>): string {
-        let modifiersStr: string[] = [];
-        modifiers.forEach((value) => {
-            if (!(value instanceof Decorator)) {
-                modifiersStr.push(this.resolveKeywordType(value));
-            }
-        });
-
+    protected modifiersToString(modifiers: number): string {
+        let modifiersStr: string[] = modifiers2stringArray(modifiers);
         return modifiersStr.join(' ');
     }
 

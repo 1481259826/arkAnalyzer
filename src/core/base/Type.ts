@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
-import { ArkField } from '../model/ArkField';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import { ArkExport, ExportType } from '../model/ArkExport';
+import { LineColPosition } from './Position';
+import { ModifierType } from '../model/ArkBaseModel';
 
 /**
  * @category core/base/type
@@ -63,33 +65,32 @@ export class UnknownType extends Type {
     }
 }
 
-/**
- * typeParameter type
- * @category core/base/type
- */
-export class TypeParameterType extends Type {
-    private name: string;
-    private type: Type;
-
-    constructor(name: string, type: Type = UnknownType.getInstance()) {
-        super();
-        this.name = name;
-        this.type = type;
-    }
-
-    public getName() {
-        return this.name;
-    }
-
-    public getType() {
-        return this.type;
-    }
-
-    public toString() {
-        return this.name;
-    }
-}
-
+// /**
+//  * typeParameter type
+//  * @category core/base/type
+//  */
+// export class TypeParameterType extends Type {
+//     private name: string;
+//     private type: Type;
+//
+//     constructor(name: string, type: Type = UnknownType.getInstance()) {
+//         super();
+//         this.name = name;
+//         this.type = type;
+//     }
+//
+//     public getName() {
+//         return this.name;
+//     }
+//
+//     public getType() {
+//         return this.type;
+//     }
+//
+//     public toString() {
+//         return this.name;
+//     }
+// }
 
 /**
  * unclear type
@@ -216,19 +217,22 @@ export class UndefinedType extends PrimitiveType {
  * @category core/base/type
  */
 export class LiteralType extends PrimitiveType {
-    private literalName: string | number;
+    public static readonly TRUE = new LiteralType(true);
+    public static readonly FALSE = new LiteralType(false);
 
-    constructor(literalName: string | number) {
+    private literalName: string | number | boolean;
+
+    constructor(literalName: string | number | boolean) {
         super('literal');
         this.literalName = literalName;
     }
 
-    public getliteralName(): string | number {
+    public getLiteralName(): string | number | boolean {
         return this.literalName;
     }
 
     public toString(): string {
-        return this.getName() + ': ' + this.literalName;
+        return this.literalName.toString();
     }
 }
 
@@ -308,14 +312,20 @@ export class NeverType extends Type {
  */
 export class FunctionType extends Type {
     private methodSignature: MethodSignature;
+    private realGenericTypes?: Type[];
 
-    constructor(methodSignature: MethodSignature) {
+    constructor(methodSignature: MethodSignature, realGenericTypes?: Type[]) {
         super();
         this.methodSignature = methodSignature;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getMethodSignature(): MethodSignature {
         return this.methodSignature;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
     }
 
     public toString(): string {
@@ -329,10 +339,12 @@ export class FunctionType extends Type {
  */
 export class ClassType extends Type {
     private classSignature: ClassSignature;
+    private realGenericTypes?: Type[];
 
-    constructor(classSignature: ClassSignature) {
+    constructor(classSignature: ClassSignature, realGenericTypes?: Type[]) {
         super();
         this.classSignature = classSignature;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getClassSignature(): ClassSignature {
@@ -341,6 +353,14 @@ export class ClassType extends Type {
 
     public setClassSignature(newClassSignature: ClassSignature): void {
         this.classSignature = newClassSignature;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
+    }
+
+    public setRealGenericTypes(types: Type[] | undefined): void {
+        this.realGenericTypes = types;
     }
 
     public toString(): string {
@@ -384,16 +404,6 @@ export class ArrayType extends Type {
     }
 }
 
-export class ArrayObjectType extends ArrayType {
-    constructor(baseType: Type, dimension: number) {
-        super(baseType, dimension);
-    }
-
-    public toString(): string {
-        return 'Array<' + this.getBaseType() + '>[]';
-    }
-}
-
 export class TupleType extends Type {
     private types: Type[];
 
@@ -411,12 +421,24 @@ export class TupleType extends Type {
     }
 }
 
-export class AliasType extends Type {
+export class AliasType extends Type implements ArkExport {
     private originalType: Type;
+    private name: string;
+    private signature: LocalSignature;
 
-    constructor(originalType: Type) {
+    constructor(name: string, originalType: Type, signature: LocalSignature) {
         super();
+        this.name = name;
         this.originalType = originalType;
+        this.signature = signature;
+    }
+
+    public getName(): string {
+        return this.name;
+    }
+
+    public setOriginalType(type: Type): void {
+        this.originalType = type;
     }
 
     public getOriginalType(): Type {
@@ -424,47 +446,95 @@ export class AliasType extends Type {
     }
 
     public toString(): string {
-        return 'alias: ' + this.originalType;
+        return this.name;
+    }
+
+    public getExportType(): ExportType {
+        return ExportType.TYPE;
+    }
+
+    public getModifiers(): number {
+        return 0;
+    }
+
+    public containsModifier(modifierType: ModifierType): boolean {
+        return false;
+    }
+
+    public getSignature(): LocalSignature {
+        return this.signature;
     }
 }
 
-/**
- * type of the type alias for the class
- * @category core/base/type
- */
-export class ClassAliasType extends AliasType {
-    constructor(classType: ClassType) {
-        super(classType);
-    }
-}
+export class GenericType extends Type {
+    private name: string;
+    private defaultType?: Type;
+    private constraint?: Type;
+    private index?: number;
 
-export class TypeLiteralType extends Type {
-    private members: ArkField[] = [];
-
-    constructor() {
+    constructor(name: string, defaultType?: Type, constraint?: Type) {
         super();
+        this.name = name;
+        this.defaultType = defaultType;
+        this.constraint = constraint;
     }
 
-    public getMembers() {
-        return this.members;
+    public getName(): string {
+        return this.name;
     }
 
-    public setMembers(members: ArkField[]) {
-        this.members = members;
+    public getDefaultType(): Type | undefined {
+        return this.defaultType;
     }
 
-    public addMember(member: ArkField) {
-        this.members.push(member);
+    public setDefaultType(type: Type): void {
+        this.defaultType = type;
     }
 
-    public toString() {
-        let strMembers: string[] = [];
-        this.members.forEach((member) => {
-            strMembers.push(member.getName().toString());
-        });
-        return '[' + strMembers.join(', ') + ']';
+    public getConstraint(): Type | undefined {
+        return this.constraint;
     }
 
+    public setConstraint(type: Type): void {
+        this.constraint = type;
+    }
+
+    public setIndex(index: number) {
+        this.index = index;
+    }
+
+    public getIndex(): number {
+        return this.index ?? 0;
+    }
+
+    public toString(): string {
+        let str = this.name;
+        if (this.constraint) {
+            str += ' extends ' + this.constraint.toString();
+        }
+        if (this.defaultType) {
+            str += ' = ' + this.defaultType.toString();
+        }
+        return str;
+    }
+}
+
+export class AliasTypeDeclaration {
+    private sourceCode: string;
+    private position: LineColPosition;
+
+    constructor(sourceCode: string, position: LineColPosition) {
+        this.sourceCode = sourceCode;
+        this.position = position;
+    }
+
+    public getSourceCode(): string {
+        return this.sourceCode;
+    }
+
+    public getPosition(): LineColPosition {
+        return this.position;
+    }
 }
 
 export abstract class AnnotationType extends Type {
@@ -485,7 +555,7 @@ export abstract class AnnotationType extends Type {
 }
 
 export class AnnotationNamespaceType extends AnnotationType {
-    private namespaceSignature: NamespaceSignature;
+    private namespaceSignature: NamespaceSignature = NamespaceSignature.DEFAULT;
 
     public static getInstance(signature: NamespaceSignature): AnnotationNamespaceType {
         const type = new AnnotationNamespaceType(signature.getNamespaceName());
@@ -515,3 +585,4 @@ export class AnnotationTypeQueryType extends AnnotationType {
         super(originType);
     }
 }
+

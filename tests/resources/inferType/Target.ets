@@ -40,3 +40,5 @@ export class ClassTarget {
         console.log('ClassTarget.funcTargetC')
     }
 }
+
+export type TypeTarget = string | number;

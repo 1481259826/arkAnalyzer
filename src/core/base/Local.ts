@@ -18,11 +18,16 @@ import { Type, UnknownType } from './Type';
 import { Value } from './Value';
 import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
+import { ArkExport, ExportType } from '../model/ArkExport';
+import { ClassSignature, LocalSignature, MethodSignature } from '../model/ArkSignature';
+import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
+import { UNKNOWN_METHOD_NAME } from '../common/Const';
+import { ModifierType } from '../model/ArkBaseModel';
 
 /**
  * @category core/base
  */
-export class Local implements Value {
+export class Local implements Value, ArkExport {
     private name: string;
     private type: Type;
 
@@ -30,6 +35,8 @@ export class Local implements Value {
 
     private declaringStmt: Stmt | null;
     private usedStmts: Stmt[];
+    private signature?: LocalSignature;
+    private constFlag?: boolean;
 
     constructor(name: string, type: Type = UnknownType.getInstance()) {
         this.name = name;
@@ -96,5 +103,39 @@ export class Local implements Value {
 
     public toString(): string {
         return this.getName();
+    }
+
+    public getExportType(): ExportType {
+        return ExportType.LOCAL;
+    }
+    public getModifiers(): number {
+        return 0;
+    }
+
+    public containsModifier(modifierType: ModifierType): boolean {
+        if (modifierType === ModifierType.CONST) {
+            return this.getConstFlag();
+        }
+        return false;
+    }
+
+    public getSignature(): LocalSignature {
+        return this.signature ?? new LocalSignature(this.name, new MethodSignature(ClassSignature.DEFAULT,
+            ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(UNKNOWN_METHOD_NAME)));
+    }
+
+    public setSignature(signature: LocalSignature): void {
+        this.signature = signature;
+    }
+
+    public getConstFlag(): boolean {
+        if (!this.constFlag) {
+            return false;
+        }
+        return this.constFlag;
+    }
+
+    public setConstFlag(newConstFlag: boolean): void {
+        this.constFlag = newConstFlag;
     }
 }

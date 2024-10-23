@@ -32,3 +32,7 @@ yield 20;
 
 // instanceof operator
 let isCat = cat instanceof Cat;
+
+// type assertion
+let foo1 = bar as Foo;
+let foo2 = <Foo>bar;

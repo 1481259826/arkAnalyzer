@@ -15,66 +15,99 @@
 
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+Logger.configure(logPath, LOG_LEVEL.ERROR, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SceneTest');
+
 
 class SceneTest {
-    public async testETsWholePipline() {
-        logger.error('testETsWholePipline start');
+    public testETsWholePipline() {
+        logger.debug('testETsWholePipline start');
         const buildConfigStartTime = new Date().getTime();
-        logger.error(`memoryUsage before buildConfig in bytes:`);
-        logger.error(process.memoryUsage());
+        let { rss: rssStart, heapTotal: heapTotalStart, heapUsed: heapUsedStart } = process.memoryUsage();
+        rssStart = Math.round(rssStart / 1024 / 1024);
+        heapTotalStart = Math.round(heapTotalStart / 1024 / 1024);
+        heapUsedStart = Math.round(heapUsedStart / 1024 / 1024);
+        logger.debug(
+            `memoryUsage before buildConfig in MB, rss: ${rssStart}, heapTotal: ${heapTotalStart}, heapUsed: ${heapUsedStart}`);
 
         // build config
         // tests/resources/scene/mainModule
         const configPath = 'tests\\resources\\scene\\SceneTestConfig.json';
         let sceneConfig: SceneConfig = new SceneConfig();
-        await sceneConfig.buildFromJson(configPath);
+        sceneConfig.buildFromJson(configPath);
 
-        logger.error(`memoryUsage after buildConfig in bytes:`);
-        logger.error(process.memoryUsage());
         const buildConfigEndTime = new Date().getTime();
-        logger.error('projectFiles cnt:', sceneConfig.getProjectFiles().length);
-        logger.error(`buildConfig took ${(buildConfigEndTime - buildConfigStartTime) / 1000} s`);
+        logger.debug('projectFiles cnt:', sceneConfig.getProjectFiles().length);
+        logger.debug(`buildConfig took ${(buildConfigEndTime - buildConfigStartTime) / 1000} s`);
 
         // build scene
         let scene = new Scene();
         scene.buildBasicInfo(sceneConfig);
-        scene.buildSceneFromProjectDir(sceneConfig);
-        logger.error(`memoryUsage after buildScene in bytes:`);
-        logger.error(process.memoryUsage());
+        scene.buildScene4HarmonyProject();
+        let {
+            rss: rssBuildSceneEnd,
+            heapTotal: heapTotalBuildSceneEnd,
+            heapUsed: heapUsedBuildSceneEnd,
+        } = process.memoryUsage();
+        rssBuildSceneEnd = Math.round(rssBuildSceneEnd / 1024 / 1024);
+        heapTotalBuildSceneEnd = Math.round(heapTotalBuildSceneEnd / 1024 / 1024);
+        heapUsedBuildSceneEnd = Math.round(heapUsedBuildSceneEnd / 1024 / 1024);
+        logger.debug(
+            `memoryUsage after buildScene in MB, rss: ${rssBuildSceneEnd}, heapTotal: ${heapTotalBuildSceneEnd}, heapUsed: ${heapUsedBuildSceneEnd}`);
+        logger.debug(
+            `memoryUsage by buildScene in MB, rss: ${rssBuildSceneEnd - rssStart}, heapTotal: ${heapTotalBuildSceneEnd - heapTotalStart}, heapUsed: ${heapUsedBuildSceneEnd - heapUsedStart}`);
         const buildSceneEndTime = new Date().getTime();
-        logger.error(`buildScene took ${(buildSceneEndTime - buildConfigEndTime) / 1000} s`);
+        logger.debug(`buildScene took ${(buildSceneEndTime - buildConfigEndTime) / 1000} s`);
 
         // infer types
         scene.inferTypes();
-        logger.error(`memoryUsage after inferTypes in bytes:`);
-        logger.error(process.memoryUsage());
+        let {
+            rss: rssInferTypesEnd,
+            heapTotal: heapTotalInferTypesEnd,
+            heapUsed: heapUsedInferTypesEnd,
+        } = process.memoryUsage();
+        rssInferTypesEnd = Math.round(rssInferTypesEnd / 1024 / 1024);
+        heapTotalInferTypesEnd = Math.round(heapTotalInferTypesEnd / 1024 / 1024);
+        heapUsedInferTypesEnd = Math.round(heapUsedInferTypesEnd / 1024 / 1024);
+        logger.debug(
+            `memoryUsage after inferTypes in MB, rss: ${rssInferTypesEnd}, heapTotal: ${heapTotalInferTypesEnd}, heapUsed: ${heapUsedInferTypesEnd}`);
+        logger.debug(
+            `memoryUsage by inferTypes in MB, rss: ${rssInferTypesEnd - rssBuildSceneEnd}, heapTotal: ${heapTotalInferTypesEnd - heapTotalBuildSceneEnd}, heapUsed: ${heapUsedInferTypesEnd - heapUsedBuildSceneEnd}`);
         const inferTypesEndTime = new Date().getTime();
-        logger.error(`inferTypes took ${(inferTypesEndTime - buildSceneEndTime) / 1000} s`);
+        logger.debug(`inferTypes took ${(inferTypesEndTime - buildSceneEndTime) / 1000} s`);
 
         // get viewTree
         for (const arkFile of scene.getFiles()) {
             for (const arkClass of arkFile.getClasses()) {
-                arkClass.getViewTree();
+                arkClass.getViewTree()?.getRoot();
             }
         }
-        logger.error(`memoryUsage after get viewTree in bytes:`);
-        logger.error(process.memoryUsage());
+        let {
+            rss: rssGetViewTreeEnd,
+            heapTotal: heapTotalGetViewTreeEnd,
+            heapUsed: heapUsedGetViewTreeEnd,
+        } = process.memoryUsage();
+        rssGetViewTreeEnd = Math.round(rssGetViewTreeEnd / 1024 / 1024);
+        heapTotalGetViewTreeEnd = Math.round(heapTotalGetViewTreeEnd / 1024 / 1024);
+        heapUsedGetViewTreeEnd = Math.round(heapUsedGetViewTreeEnd / 1024 / 1024);
+        logger.debug(
+            `memoryUsage after getViewTree in MB, rss: ${rssGetViewTreeEnd}, heapTotal: ${heapTotalGetViewTreeEnd}, heapUsed: ${heapUsedGetViewTreeEnd}`);
+        logger.debug(
+            `memoryUsage by getViewTree in MB, rss: ${rssGetViewTreeEnd - rssInferTypesEnd}, heapTotal: ${heapTotalGetViewTreeEnd - heapTotalInferTypesEnd}, heapUsed: ${heapUsedGetViewTreeEnd - heapUsedInferTypesEnd}`);
         const getViewTreeEndTime = new Date().getTime();
-        logger.error(`get viewTree took ${(getViewTreeEndTime - inferTypesEndTime) / 1000} s`);
+        logger.debug(`get viewTree took ${(getViewTreeEndTime - inferTypesEndTime) / 1000} s`);
 
-        logger.error('testETsWholePipline end\n');
+        logger.debug('testETsWholePipline end\n');
     }
 
     public testSimpleProject() {
-        logger.error('testSimpleProject start');
+        logger.debug('testSimpleProject start');
 
         // build config
-        // const projectDir = 'tests/resources/scene/mainModule';
+        // 'tests/resources/scene/mainModule';
         const projectDir = 'tests/resources/scene/mainModuleEts';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
@@ -88,15 +121,15 @@ class SceneTest {
         for (const arkFile of scene.getFiles()) {
             for (const arkClass of arkFile.getClasses()) {
                 arkClass.getViewTree();
-                logger.error(`getViewTree of ${arkClass.getName()} done`);
+                logger.debug(`getViewTree of ${arkClass.getName()} done`);
             }
         }
 
-        logger.error('testSimpleProject end\n');
+        logger.debug('testSimpleProject end\n');
     }
 
     public testEtsProject() {
-        logger.error('testEtsProject start');
+        logger.debug('testEtsProject start');
 
         // build config
         const configPath = 'tests\\resources\\scene\\SceneTestConfig.json';
@@ -109,11 +142,11 @@ class SceneTest {
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
 
-        logger.error('testEtsProject end\n');
+        logger.debug('testEtsProject end\n');
     }
 }
 
 let sceneTest = new SceneTest();
-// sceneTest.testETsWholePipline();
-sceneTest.testSimpleProject();
+sceneTest.testETsWholePipline();
+// sceneTest.testSimpleProject();
 // sceneTest.testEtsProject();

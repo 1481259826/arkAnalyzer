@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-import { cc } from "./test";
-import dfs, { something } from "./else";
-import { Constants } from "./api";
+import { cc } from './test';
+import dfs, { something } from './else';
+import { Constants } from './api';
 
 export * as z from './test'; //kind 278
 
 export let blah = 'test';
 
-const a = 1
+const a = 1;
 const b = 'a';
 export { a, b };
 
@@ -30,7 +30,7 @@ export function testing() {
     cc();
 }
 
-export { testing as testing2 }
+export { testing as testing2 };
 
 export const c = '';
 
@@ -69,4 +69,36 @@ class ThrowTest {
 }
 
 export default new ThrowTest();
+
+export namespace ComponentService {
+
+    export type Constructor<T> = {
+        new(): T;
+        readonly prototype: T;
+    }
+
+    export function register<T extends ComponentService.Constructor<MyInterface>>(clazz: T): T {
+        return clazz;
+    }
+
+    class Box<T = string> {
+        private t: T;
+        constructor() {}
+
+        set(value: T) {
+            this.t = value;
+        }
+
+        get(): T {
+            return this.t;
+        }
+    }
+
+    function testGeneric(){
+        const myDox = new Box();
+        let string = myDox.get();
+        const yourDox = new Box<number>();
+        let number = yourDox.get();
+    }
+}
 

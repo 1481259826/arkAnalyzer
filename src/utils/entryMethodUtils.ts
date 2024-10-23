@@ -28,7 +28,24 @@ export const LIFECYCLE_METHOD_NAME: string[] = [
     'onForeground', // 应用进入前台
     'onBackground', // 应用进入后台
     'onBackup', // 应用数据备份
-    'onRestore' // 应用数据恢复
+    'onRestore', // 应用数据恢复
+    'onContinue',
+    'onNewWant',
+    'onDump',
+    'onSaveState',
+    'onShare',
+    'onPrepareToTerminate',
+    'onBackPressed',
+    'onSessionCreate',
+    'onSessionDestory',
+    'onAddForm',
+    'onCastToNormalForm',
+    'onUpdateForm',
+    'onChangeFormVisibility',
+    'onFormEvent',
+    'onRemoveForm',
+    'onConfigurationUpdate',
+    'onAcquireFormState'
   ];
 export const CALLBACK_METHOD_NAME: string[] = [
     "onClick", // 点击事件，当用户点击组件时触发
@@ -48,6 +65,26 @@ export const CALLBACK_METHOD_NAME: string[] = [
     "onAreaChange", // 组件区域变化事件，组件尺寸、位置变化时触发
     "onVisibleAreaChange", // 组件可见区域变化事件，组件在屏幕中的显示区域面积变化时触发
   ];
+
+export const COMPONENT_LIFECYCLE_METHOD_NAME: string[] = [
+    'build',
+    'aboutToAppear',
+    'aboutToDisappear',
+    'aboutToReuse',
+    'aboutToRecycle',
+    'onWillApplyTheme',
+    'onLayout',
+    'onPlaceChildren',
+    'onMeasure',
+    'onMeasureSize',
+    'onPageShow',
+    'onPageHide',
+    'onFormRecycle',
+    'onFormRecover',
+    'onBackPress',
+    'pageTransition',
+    'onDidBuild'
+];
 
 export interface AbilityMessage {
     srcEntry: string;
@@ -94,4 +131,15 @@ export function getCallbackMethodFromStmt(stmt: Stmt, scene: Scene): ArkMethod |
         }
     }
     return null;
+}
+
+export function addCfg2Stmt(method: ArkMethod) {
+    const cfg = method.getCfg();
+    if (cfg) {
+        for (const block of cfg.getBlocks()) {
+            for (const stmt of block.getStmts()) {
+                stmt.setCfg(cfg);
+            }
+        }
+    }
 }

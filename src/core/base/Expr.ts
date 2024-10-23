@@ -15,15 +15,17 @@
 
 import { TypeInference } from '../common/TypeInference';
 import { BasicBlock } from '../graph/BasicBlock';
-import { ArkClass } from '../model/ArkClass';
-import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
+import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
+    AliasType,
     AnnotationNamespaceType,
     ArrayType,
     BooleanType,
     ClassType,
     FunctionType,
+    GenericType,
     NullType,
     NumberType,
     StringType,
@@ -37,12 +39,18 @@ import { Value } from './Value';
 import { AbstractFieldRef, AbstractRef, ArkParameterRef } from './Ref';
 import { ModelUtils } from '../common/ModelUtils';
 import { ArkAssignStmt } from './Stmt';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkBody } from '../model/ArkBody';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
+import { ArkMethod } from '../model/ArkMethod';
+import { ImportInfo } from '../model/ArkImport';
+import { Constant } from './Constant';
+import { ALL, CONSTRUCTOR_NAME, IMPORT } from '../common/TSConst';
+import { Builtin } from '../common/Builtin';
+import { COMPONENT_CREATE_FUNCTION, COMPONENT_POP_FUNCTION } from '../common/EtsConst';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Expr');
 
 /**
  * @category core/base/expr
@@ -62,11 +70,13 @@ export abstract class AbstractExpr implements Value {
 export abstract class AbstractInvokeExpr extends AbstractExpr {
     private methodSignature: MethodSignature;
     private args: Value[];
+    private realGenericTypes?: Type[];//新增
 
-    constructor(methodSignature: MethodSignature, args: Value[]) {
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
         super();
         this.methodSignature = methodSignature;
         this.args = args;
+        this.realGenericTypes = realGenericTypes;
     }
 
     public getMethodSignature(): MethodSignature {
@@ -90,7 +100,31 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
     }
 
     public getType(): Type {
-        return this.methodSignature.getType();
+        let type = this.methodSignature.getType();
+        if (!this.realGenericTypes) {
+            return type;
+        }
+        if (type instanceof GenericType) {
+            const realType = this.realGenericTypes[type.getIndex()];
+            if (realType) {
+                type = realType;
+            }
+        } else if (type instanceof UnionType) {
+            const types: Type[] = [];
+            type.getTypes().forEach(t => {
+                let realType;
+                if (t instanceof GenericType) {
+                    realType = this.realGenericTypes?.[t.getIndex()];
+                }
+                types.push(realType ?? t);
+            });
+            type = new UnionType(types, type.getCurrType());
+        }
+        return type;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
     }
 
     public getUses(): Value[] {
@@ -106,8 +140,8 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
 export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     private base: Local;
 
-    constructor(base: Local, methodSignature: MethodSignature, args: Value[]) {
-        super(methodSignature, args);
+    constructor(base: Local, methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
         this.base = base;
     }
 
@@ -156,34 +190,26 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         } else if (baseType instanceof UnclearReferenceType) {
             baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
         }
+        const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         if (!baseType) {
-            logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
+            if (!this.tryInferFormGlobal(methodName, arkClass)) {
+                logger.warn('infer ArkInstanceInvokeExpr base type fail: ' + this.toString());
+            }
             return this;
         }
         if (this.base instanceof Local) {
             this.base.setType(baseType);
         }
-        const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
+
         const scene = arkClass.getDeclaringArkFile().getScene();
         if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
-            const arg = this.getArg(0);
-            if (arg.getType() instanceof FunctionType) {
-                const argMethodSignature = (arg.getType() as FunctionType).getMethodSignature();
-                const argMethod = scene.getMethod(argMethodSignature);
-                if (argMethod != null && argMethod.getBody()) {
-                    const body = argMethod.getBody() as ArkBody;
-                    const firstStmt = body.getCfg().getStartingStmt();
-                    if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
-                        const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
-                        parameterRef.setType((baseType as ArrayType).getBaseType());
-                    }
-                    TypeInference.inferTypeInMethod(argMethod);
-                }
-            } else {
-                logger.warn(`arg of forEach must be callable`);
-            }
+            this.processForEach(baseType, scene);
         }
+        TypeInference.inferRealGenericTypes(this.getRealGenericTypes(), arkClass);
         let result;
+        if (baseType instanceof AliasType) {
+            baseType = baseType.getOriginalType();
+        }
         if (baseType instanceof UnionType) {
             for (const type of baseType.getTypes()) {
                 result = this.inferMethod(type, methodName, scene);
@@ -194,6 +220,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         } else {
             result = this.inferMethod(baseType, methodName, scene);
         }
+        if (!result && this.tryInferFormGlobal(methodName, arkClass)) {
+            result = this;
+        }
         if (result) {
             return result;
         }
@@ -201,40 +230,78 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         return this;
     }
 
+    private processForEach(baseType: Type | ArrayType, scene: Scene): void {
+        const arg = this.getArg(0);
+        if (arg.getType() instanceof FunctionType) {
+            const argMethodSignature = (arg.getType() as FunctionType).getMethodSignature();
+            const argMethod = scene.getMethod(argMethodSignature);
+            if (argMethod != null && argMethod.getBody()) {
+                const body = argMethod.getBody() as ArkBody;
+                const firstStmt = body.getCfg().getStartingStmt();
+                if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
+                    const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
+                    parameterRef.setType((baseType as ArrayType).getBaseType());
+                }
+                TypeInference.inferTypeInMethod(argMethod);
+            }
+        } else {
+            logger.warn(`arg of forEach must be callable`);
+        }
+    }
+
+    private tryInferFormGlobal(methodName: string, arkClass: ArkClass) {
+        if (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT) {
+            const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
+            if (global instanceof ArkMethod) {
+                TypeInference.inferMethodReturnType(global);
+                this.setMethodSignature(global.getSignature());
+                return true;
+            }
+        }
+        return false;
+    }
+
     private inferMethod(baseType: Type, methodName: string, scene: Scene): AbstractInvokeExpr | null {
         if (baseType instanceof ClassType) {
             const arkClass = scene.getClass(baseType.getClassSignature());
-            let method = arkClass?.getMethodWithName(methodName) ?? arkClass?.getStaticMethodWithName(methodName);
-            if (method) {
+            const method = arkClass ? ModelUtils.findPropertyInClass(methodName, arkClass) : null;
+            if (method instanceof ArkMethod) {
                 TypeInference.inferMethodReturnType(method);
                 this.setMethodSignature(method.getSignature());
                 if (method.isStatic()) {
-                    return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs());
+                    return new ArkStaticInvokeExpr(method.getSignature(), this.getArgs(), this.getRealGenericTypes());
                 }
                 return this;
-            } else if (methodName === 'constructor') { //sdk隐式构造
-                const subSignature = new MethodSubSignature();
-                subSignature.setMethodName(methodName);
-                subSignature.setReturnType(new ClassType(baseType.getClassSignature()));
-                const signature = new MethodSignature();
-                signature.setDeclaringClassSignature(baseType.getClassSignature());
-                signature.setMethodSubSignature(subSignature);
+            } else if (methodName === CONSTRUCTOR_NAME) { //sdk隐式构造
+                const subSignature = new MethodSubSignature(methodName, [],
+                    new ClassType(baseType.getClassSignature()));
+                const signature = new MethodSignature(baseType.getClassSignature(), subSignature);
                 this.setMethodSignature(signature);
                 return this;
+            } else if (methodName === Builtin.ITERATOR_NEXT) { //sdk隐式构造
+                const returnType = this.getMethodSignature().getMethodSubSignature().getReturnType();
+                if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
+                    .getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+                    returnType.setRealGenericTypes(baseType.getRealGenericTypes());
+                    return this;
+                }
             }
         } else if (baseType instanceof AnnotationNamespaceType) {
             const namespace = scene.getNamespace(baseType.getNamespaceSignature());
-            let foundMethod = namespace?.getDefaultClass()?.getMethodWithName(methodName);
-            if (!foundMethod) {
-                const signature = namespace?.getExportInfoBy(methodName)?.getTypeSignature();
-                if (signature && signature instanceof MethodSignature) {
-                    foundMethod = scene.getMethod(signature);
+            if (namespace) {
+                const foundMethod = ModelUtils.findPropertyInNamespace(methodName, namespace);
+                if (foundMethod instanceof ArkMethod) {
+                    TypeInference.inferMethodReturnType(foundMethod);
+                    this.setMethodSignature(foundMethod.getSignature());
+                    return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs(), this.getRealGenericTypes());
                 }
             }
-            if (foundMethod) {
-                TypeInference.inferMethodReturnType(foundMethod);
-                this.setMethodSignature(foundMethod.getSignature());
-                return new ArkStaticInvokeExpr(foundMethod.getSignature(), this.getArgs());
+        } else if (baseType instanceof ArrayType && methodName === Builtin.ITERATOR_FUNCTION) {
+            const returnType = this.getMethodSignature().getMethodSubSignature().getReturnType();
+            if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
+                .getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+                returnType.setRealGenericTypes([baseType.getBaseType()]);
+                return this;
             }
         }
         return null;
@@ -242,8 +309,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
 }
 
 export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
-    constructor(methodSignature: MethodSignature, args: Value[]) {
-        super(methodSignature, args);
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
     }
 
     public toString(): string {
@@ -264,21 +331,96 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 
     public inferType(arkClass: ArkClass): ArkStaticInvokeExpr {
         this.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkClass));
-        const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
-        let method = ModelUtils.getStaticMethodWithName(methodName, arkClass);
+        const oldMethodSignature = this.getMethodSignature();
+        const oldMethodSubSignature = oldMethodSignature.getMethodSubSignature();
+        const methodName = oldMethodSubSignature.getMethodName();
+        let method;
+        const arkExport = ModelUtils.getStaticMethodWithName(methodName, arkClass)
+            ?? ModelUtils.getArkExportInImportInfoWithName(methodName, arkClass.getDeclaringArkFile());
+        if (arkExport instanceof ArkMethod) {
+            method = arkExport;
+        } else if (arkExport instanceof ArkClass) {
+            method = arkExport.getMethodWithName(CONSTRUCTOR_NAME);
+        }
         if (!method) {
-            let arkFile = arkClass.getDeclaringArkFile();
-            const type = ModelUtils.getTypeSignatureInImportInfoWithName(methodName, arkFile);
-            if (type && type instanceof MethodSignature) {
-                method = arkFile.getScene().getMethod(type);
-            } else if (type && type instanceof ClassSignature) {
-                method = arkFile.getScene().getClass(type)?.getMethodWithName('constructor') || null;
+            if (methodName === IMPORT && this.getArgs()[0] instanceof Constant) {
+                const importInfo = new ImportInfo();
+                importInfo.setNameBeforeAs(ALL);
+                importInfo.setImportClauseName(ALL);
+                importInfo.setImportFrom((this.getArgs()[0] as Constant).getValue());
+                importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
+                const type = TypeInference.parseArkExport2Type(importInfo.getLazyExportInfo()?.getArkExport());
+                if (type) {
+                    const subSignature = new MethodSubSignature(methodName, oldMethodSubSignature.getParameters(),
+                        type);
+                    const signature = new MethodSignature(oldMethodSignature.getDeclaringClassSignature(),
+                        subSignature);
+                    this.setMethodSignature(signature);
+                }
+                return this;
+            }
+            if (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT) {
+                let className;
+                if (COMPONENT_CREATE_FUNCTION === methodName || COMPONENT_POP_FUNCTION === methodName) {
+                    className = this.getMethodSignature().getDeclaringClassSignature().getClassName();
+                }
+                const globalName = className ?? methodName;
+                const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(globalName);
+                if (global instanceof ArkMethod) {
+                    method = global;
+                } else if (global instanceof ArkClass) {
+                    const callable = ModelUtils.findPropertyInClass(methodName, global);
+                    if (callable instanceof ArkMethod) {
+                        method = callable;
+                    } else {
+                        const signature = new MethodSignature(global.getSignature(), oldMethodSubSignature);
+                        this.setMethodSignature(signature);
+                    }
+                }
             }
         }
         if (method) {
             this.setMethodSignature(method.getSignature());
             TypeInference.inferMethodReturnType(method);
         }
+        return this;
+    }
+}
+
+export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
+    private funPtrLocal: Local;
+
+    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[], realGenericTypes?: Type[]) {
+        super(methodSignature, args, realGenericTypes);
+        this.funPtrLocal = ptr;
+    }
+
+    public setFunPtrLocal(ptr: Local): void {
+        this.funPtrLocal = ptr;
+    }
+
+    public getFuncPtrLocal(): Local {
+        return this.funPtrLocal;
+    }
+
+    public toString(): string {
+        let strs: string[] = [];
+        strs.push('ptrinvoke <');
+        strs.push(this.getMethodSignature().toString());
+        strs.push('>(');
+        if (this.getArgs().length > 0) {
+            for (const arg of this.getArgs()) {
+                strs.push(arg.toString());
+                strs.push(', ');
+            }
+            strs.pop();
+        }
+        strs.push(')');
+        return strs.join('');
+    }
+
+    public inferType(arkClass: ArkClass): ArkPtrInvokeExpr {
+        // TODO: handle type inference
         return this;
     }
 }
@@ -311,7 +453,8 @@ export class ArkNewExpr extends AbstractExpr {
         const className = this.classType.getClassSignature().getClassName();
         const type = TypeInference.inferUnclearReferenceType(className, arkClass);
         if (type && type instanceof ClassType) {
-            this.classType = type;
+            let realGenericTypes = this.classType.getRealGenericTypes();
+            this.classType = realGenericTypes ? new ClassType(type.getClassSignature(), realGenericTypes) : type;
         }
         return this;
     }
@@ -321,10 +464,13 @@ export class ArkNewArrayExpr extends AbstractExpr {
     private baseType: Type;
     private size: Value;
 
-    constructor(baseType: Type, size: Value) {
+    private fromLiteral: boolean;
+
+    constructor(baseType: Type, size: Value, fromLiteral: boolean = false) {
         super();
         this.baseType = baseType;
         this.size = size;
+        this.fromLiteral = fromLiteral;
     }
 
     public getSize(): Value {
@@ -345,6 +491,10 @@ export class ArkNewArrayExpr extends AbstractExpr {
 
     public setBaseType(newType: Type): void {
         this.baseType = newType;
+    }
+
+    public isFromLiteral(): boolean {
+        return this.fromLiteral;
     }
 
     public inferType(arkClass: ArkClass): ArkNewArrayExpr {
@@ -417,6 +567,11 @@ export class ArkAwaitExpr extends AbstractExpr {
 
     public getType(): Type {
         return this.promise.getType();
+    }
+
+    public inferType(arkClass: ArkClass): ArkAwaitExpr {
+        TypeInference.inferValueType(this.promise, arkClass);
+        return this;
     }
 
     public getUses(): Value[] {
@@ -511,7 +666,7 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
     protected op2: Value;
     protected operator: BinaryOperator;
 
-    protected type: Type;
+    protected type!: Type;
 
     constructor(op1: Value, op2: Value, operator: BinaryOperator) {
         super();
@@ -735,7 +890,6 @@ export class ArkInstanceOfExpr extends AbstractExpr {
     }
 }
 
-
 // 类型转换
 export class ArkCastExpr extends AbstractExpr {
     private op: Value;
@@ -766,6 +920,14 @@ export class ArkCastExpr extends AbstractExpr {
         return this.type;
     }
 
+    public inferType(arkClass: ArkClass): AbstractExpr {
+        const type = TypeInference.inferUnclearedType(this.type, arkClass) ?? this.op.getType();
+        if (!TypeInference.isUnclearType(type)) {
+            this.type = type;
+        }
+        return this;
+    }
+
     public toString(): string {
         return '<' + this.type + '>' + this.op;
     }
@@ -774,8 +936,6 @@ export class ArkCastExpr extends AbstractExpr {
 export class ArkPhiExpr extends AbstractExpr {
     private args: Local[];
     private argToBlock: Map<Local, BasicBlock>;
-
-    // private type:Type;
 
     constructor() {
         super();
@@ -862,42 +1022,5 @@ export class ArkUnopExpr extends AbstractExpr {
 
     public toString(): string {
         return this.operator + this.op;
-    }
-}
-
-export class ArrayLiteralExpr extends AbstractExpr {
-    private readonly elements: Value[] = [];
-    private type: Type;
-
-    constructor(elements: Value[], type: Type) {
-        super();
-        this.elements = elements;
-        this.type = type;
-    }
-
-    public getUses(): Value[] {
-        let uses: Value[] = [];
-        uses.push();
-        return uses;
-    }
-
-    public inferType(arkClass: ArkClass): ArrayLiteralExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkClass);
-        if (type) {
-            this.type = type;
-        }
-        return this;
-    }
-
-    public getElements(): Value[] {
-        return this.elements;
-    }
-
-    public getType(): Type {
-        return this.type;
-    }
-
-    public toString(): string {
-        return '[' + this.elements.join() + ']';
     }
 }

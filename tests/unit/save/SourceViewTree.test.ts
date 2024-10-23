@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Scene, SceneConfig, SourceClassPrinter, SourceNamespacePrinter } from '../../../src/index';
+import { Scene, SceneConfig, SourceClassPrinter, SourceFilePrinter, SourceNamespacePrinter } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
@@ -23,9 +23,14 @@ struct HelloGrandsonComponent {
   message: string;
   build() {
     Row() {
-      Text('HelloGrandsonComponent===' + this.message + '')
+      Text('HelloGrandsonComponent===' + this.message)
       .fontSize(30)
       .fontWeight(FontWeight.Bold)
+    }
+  }
+  static build(a: number) {
+    if (a != 0) {
+      return 1;
     }
   }
 }
@@ -39,7 +44,7 @@ const CASE2_EXPECT = `namespace Case2 {
   function overBuilder($$: Tmp) {
     Row() {
       Column() {
-        Text('overBuilder===' + $$.paramA1 + '')
+        Text('overBuilder===' + $$.paramA1)
         HelloComponent({message: $$.paramA1})
       }
     }
@@ -50,7 +55,7 @@ const CASE2_EXPECT = `namespace Case2 {
     message: string;
     build() {
       Row() {
-        Text('HelloComponent===' + this.message + '')
+        Text('HelloComponent===' + this.message)
       }
     }
   }
@@ -100,9 +105,9 @@ struct LazyForEachTest {
   @State
   data: MyDataSource = new MyDataSource();
   aboutToAppear() {
-    let i = 0;
+    let i: number = 0;
     while (i <= 20) {
-      this.data.pushData(new StringData(new NestedString('Hello ' + i + '')));
+      this.data.pushData(new StringData(new NestedString('Hello ' + i)));
       i = i + 1;
     }
   }
@@ -225,7 +230,7 @@ const CASE7_EXPECT = `namespace Case2 {
     label: string = 'Parent';
     @Builder
     componentBuilder() {
-      Text('' + this.label + '')
+      Text(this.label)
     }
     build() {
       Column() {
@@ -235,6 +240,44 @@ const CASE7_EXPECT = `namespace Case2 {
       }})
       }
     }
+  }
+}
+`;
+
+const CASE8_EXPECT = `import {common} from '@kit.AbilityKit';
+import {resourceManager} from '@kit.LocalizationKit';
+import {BusinessError} from '@kit.BasicServicesKit';
+import {SongItem} from '../viewmodel/SongData';
+import {Logger} from './Logger';
+export default class SongItemBuilder {
+  private context: common.UIAbilityContext | undefined = AppStorage.get('context');
+  private realUrl?: resourceManager.RawFileDescriptor;
+  private songItem: SongItem | null = null;
+  public async build(songItem: SongItem): Promise<SongItem> {
+    this.songItem = songItem;
+    if (!this.context != 0) {
+      return this.songItem;
+    }
+    let rawfileFd = await this.context.resourceManager.getRawFd(songItem.src).catch((error: BusinessError) => {
+      Logger.error('resourceManager error code ' + error.code + ' message ' + error.message);
+    });
+    if (rawfileFd != 0) {
+      this.realUrl = rawfileFd;
+    } else {
+      Logger.error('get rawfileFd failed');
+    }
+    Logger.info('MediaAssetBuilder build realUrl:' + this.realUrl);
+    return this.songItem;
+  }
+  public getRealUrl(): resourceManager.RawFileDescriptor | undefined {
+    Logger.info('url ' + this.realUrl);
+    return this.realUrl;
+  }
+  public async release(): Promise<void> {
+    if (this.context && this.context !== null && this.songItem !== null != 0) {
+      this.context.resourceManager.closeRawFd(this.songItem.src);
+    }
+    this.songItem = null;
   }
 }
 `;
@@ -352,5 +395,19 @@ describe('SourceViewTreeTest', () => {
         let printer = new SourceNamespacePrinter(ns);
         let source = printer.dump();
         expect(source).eq(CASE7_EXPECT);
+    });
+
+    it('case8: normal build', () => {
+        let arkfile = scene.getFiles().find((value) => {
+            return value.getName().endsWith('SongItemBuilder.ets');
+        });
+        if (!arkfile) {
+            assert.isDefined(arkfile);
+            return;
+        }
+
+        let printer = new SourceFilePrinter(arkfile);
+        let source = printer.dump();
+        expect(source).eq(CASE8_EXPECT);
     });
 });

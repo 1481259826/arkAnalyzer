@@ -22,6 +22,7 @@ import { SourceStmt } from './SourceStmt';
 import { SourceTransformer } from './SourceTransformer';
 import { SourceUtils } from './SourceUtils';
 import { Stmt } from '../../core/base/Stmt';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 /**
  * @category save
@@ -35,6 +36,10 @@ export class SourceMethod extends SourceBase {
         this.method = method;
         this.transformer = new SourceTransformer(this);
         this.inBuilder = this.initInBuilder();
+    }
+
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return this.method.getDeclaringArkClass().getDeclaringArkNamespace();
     }
 
     public setInBuilder(inBuilder: boolean): void {
@@ -81,7 +86,7 @@ export class SourceMethod extends SourceBase {
     }
 
     private printMethod(method: ArkMethod): void {
-        this.printDecorator(method.getModifiers());
+        this.printDecorator(method.getDecorators());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
         if (!method.getBody()) {
@@ -119,17 +124,22 @@ export class SourceMethod extends SourceBase {
             }
             code.write(this.resolveMethodName(method.getName()));
         }
-        if (method.getTypeParameter().length > 0) {
-            let typeParameters: string[] = [];
-            method.getTypeParameter().forEach((parameter) => {
-                typeParameters.push(this.transformer.typeToString(parameter));
+        const genericTypes = method.getGenericTypes();
+        if (genericTypes && genericTypes.length > 0) {
+            let
+                typeParameters: string[] = [];
+            genericTypes.forEach((genericType) => {
+                typeParameters.push(this.transformer.typeToString(genericType));
             });
-            code.write(`<${this.transformer.typeArrayToString(method.getTypeParameter())}>`);
+            code.write(`<${this.transformer.typeArrayToString(genericTypes)}>`);
         }
 
         let parameters: string[] = [];
         method.getParameters().forEach((parameter) => {
             let str: string = parameter.getName();
+            if (parameter.hasDotDotDotToken()) {
+                str = `...${parameter.getName()}`;
+            }
             if (parameter.isOptional()) {
                 str += '?';
             }
@@ -175,8 +185,8 @@ export class SourceMethod extends SourceBase {
     private initInBuilder(): boolean {
         return (
             this.method.hasBuilderDecorator() ||
-            (this.method.getName() == 'build' &&
-                !this.method.containsModifier('StaticKeyword') &&
+            ((this.method.getName() == 'build' || this.method.getName() == 'pageTransition') &&
+                !this.method.isStatic() &&
                 this.method.getDeclaringArkClass().hasViewTree())
         );
     }

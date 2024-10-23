@@ -19,36 +19,33 @@ import { ArkFile } from '../ArkFile';
 import { buildArkMethodFromArkClass } from './ArkMethodBuilder';
 import ts from 'ohos-typescript';
 import { ArkNamespace } from '../ArkNamespace';
-import { buildModifiers } from './builderUtils';
-import Logger from '../../../utils/logger';
+import { buildDecorators, buildModifiers } from './builderUtils';
+import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { buildExportAssignment, buildExportDeclaration, buildExportInfo } from './ArkExportBuilder';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
+import { NamespaceSignature } from '../ArkSignature';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkNamespaceBuilder');
 
 export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance: ArkFile | ArkNamespace, ns: ArkNamespace, sourceFile: ts.SourceFile) {
-    // ns name
-    ns.setName(node.name.text);
-
     // modifiers
     if (node.modifiers) {
-        buildModifiers(node, sourceFile).forEach((modifier) => {
-            ns.addModifier(modifier);
-        });
+        ns.setModifiers(buildModifiers(node));
+        ns.setDecorators(buildDecorators(node, sourceFile));
     }
 
     if (declaringInstance instanceof ArkFile) {
-        ns.setDeclaringType("ArkFile");
         ns.setDeclaringArkFile(declaringInstance);
     } else {
-        ns.setDeclaringType("ArkNamespace");
         ns.setDeclaringArkNamespace(declaringInstance);
         ns.setDeclaringArkFile(declaringInstance.getDeclaringArkFile());
     }
     ns.setDeclaringInstance(declaringInstance);
-
-    ns.genNamespaceSignature();
+    const namespaceName = node.name.text;
+    const namespaceSignature = new NamespaceSignature(namespaceName, ns.getDeclaringArkFile().getFileSignature(),
+        ns.getDeclaringArkNamespace()?.getSignature() || null);
+    ns.setSignature(namespaceSignature);
 
     // TODO: whether needed?
     ns.setCode(node.getText(sourceFile));
@@ -111,9 +108,6 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             ts.isInterfaceDeclaration(child) ||
             ts.isEnumDeclaration(child) ||
             ts.isStructDeclaration(child)
-            //child.kind === ts.SyntaxKind.ClassDeclaration
-            //child.kind === ts.SyntaxKind.InterfaceDeclaration
-            //child.kind === ts.SyntaxKind.EnumDeclaration
         ) {
             let cls: ArkClass = new ArkClass();
 
@@ -131,7 +125,6 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, namespace.getDefaultClass(), mthd, sourceFile);
-            namespace.getDefaultClass().addMethod(mthd);
 
             if (mthd.isExported()) {
                 namespace.addExportInfo(buildExportInfo(mthd, namespace.getDeclaringArkFile(),
@@ -141,7 +134,7 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, namespace.getDefaultClass(), mthd, sourceFile);
-            namespace.getDefaultClass().addMethod(mthd);
+
             if (mthd.isExported()) {
                 namespace.addExportInfo(buildExportInfo(mthd, namespace.getDeclaringArkFile(),
                     LineColPosition.buildFromNode(child, sourceFile)));
@@ -166,35 +159,3 @@ function genDefaultArkClass(ns: ArkNamespace, node: ts.ModuleDeclaration, source
     ns.setDefaultClass(defaultClass);
     ns.addArkClass(defaultClass);
 }
-
-// function findIndicatedChild(node: NodeA, childType: string): NodeA | null {
-//     for (let child of node.children) {
-//         if (child.kind == childType) {
-//             return child;
-//         }
-//     }
-//     return null;
-// }
-
-// function processExportValAndFirstNode(node: NodeA, ns: ArkNamespace, isDefault: boolean): void {
-//     let exportClauseName: string = '';
-//     let exportClauseType: string = node.kind;
-//     let cld = findIndicatedChild(node, 'VariableDeclarationList');
-//     if (cld) {
-//         let c = findIndicatedChild(cld, 'SyntaxList');
-//         if (c) {
-//             let cc = findIndicatedChild(c, 'VariableDeclaration');
-//             if (cc) {
-//                 let ccc = findIndicatedChild(cc, 'Identifier');
-//                 if (ccc) {
-//                     exportClauseName = ccc.text;
-//                 }
-//             }
-//         }
-//     }
-//     let exportInfo = new ExportInfo();
-//     exportInfo.build(exportClauseName, exportClauseType, new LineColPosition(-1, -1));
-//     exportInfo.setDefault(isDefault);
-
-//     ns.addExportInfo(exportInfo);
-// }

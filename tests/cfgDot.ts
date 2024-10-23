@@ -13,11 +13,10 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { ArkBody } from "../src/core/model/ArkBody";
-import { StaticSingleAssignmentFormer } from "../src/transformer/StaticSingleAssignmentFormer";
-import { PrinterBuilder } from "../src/save/PrinterBuilder"
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { ArkBody } from '../src/core/model/ArkBody';
+import { StaticSingleAssignmentFormer } from '../src/transformer/StaticSingleAssignmentFormer';
 
 export class TypeInferenceTest {
     public buildScene(): Scene {

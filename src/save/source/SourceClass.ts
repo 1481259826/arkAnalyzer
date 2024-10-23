@@ -13,14 +13,16 @@
  * limitations under the License.
  */
 
-import { ArkClass } from '../../core/model/ArkClass';
+import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { Dump, SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
-import { Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import { SourceUtils } from './SourceUtils';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../../core/common/Const';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { FieldCategory } from '../../core/model/ArkField';
 
 /**
  * @category save
@@ -35,6 +37,10 @@ export class SourceClass extends SourceBase {
         this.transformer = new SourceTransformer(this);
     }
 
+    public getDeclaringArkNamespace(): ArkNamespace | undefined {
+        return this.cls.getDeclaringArkNamespace();
+    }
+
     public getLine(): number {
         return this.cls.getLine();
     }
@@ -42,27 +48,27 @@ export class SourceClass extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.cls.getOriginType() == Origin_Object) {
+        if (this.cls.getCategory() == ClassCategory.OBJECT) {
             return this.dumpObject();
         }
 
-        if (this.cls.getOriginType() == Origin_TypeLiteral) {
+        if (this.cls.getCategory() == ClassCategory.TYPE_LITERAL) {
             return this.dumpTypeLiteral();
         }
 
-        this.printDecorator(this.cls.getModifiers());
+        this.printDecorator(this.cls.getDecorators());
         // print export class name<> + extends c0 implements x1, x2 {
         this.printer
             .writeIndent()
             .writeSpace(this.modifiersToString(this.cls.getModifiers()))
-            .write(`${this.cls.getOriginType().toLowerCase()} `);
+            .write(`${SourceUtils.classOriginTypeToString.get(this.cls.getCategory())} `);
 
         if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
             this.printer.write(this.cls.getName());
         }
-
-        if (this.cls.getTypeParameter().length > 0) {
-            this.printer.write(`<${this.transformer.typeArrayToString(this.cls.getTypeParameter())}>`);
+        const genericsTypes = this.cls.getGenericsTypes();
+        if (genericsTypes) {
+            this.printer.write(`<${this.transformer.typeArrayToString(genericsTypes)}>`);
         }
         if (this.cls.getSuperClassName() && !this.cls.hasComponentDecorator()) {
             this.printer.write(` extends ${this.cls.getSuperClassName()}`);
@@ -99,7 +105,13 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            this.printer.write(field.getName());
+            let name = SourceUtils.escape(field.getName());
+            if (SourceUtils.isIdentifierText(field.getName())) {
+                this.printer.write(name);
+            } else {
+                this.printer.write(`'${name}'`);
+            }
+
             let instanceInitializer = this.parseFieldInitMethod(INSTANCE_INIT_METHOD_NAME);
             if (instanceInitializer.has(field.getName())) {
                 this.printer.write(`: ${instanceInitializer.get(field.getName())}`);
@@ -117,7 +129,13 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            this.printer.write(`${field.getName()}: ${this.transformer.typeToString(field.getType())}`);
+            let name = SourceUtils.escape(field.getName());
+            if (SourceUtils.isIdentifierText(field.getName())) {
+                this.printer.write(`${name}: ${this.transformer.typeToString(field.getType())}`);
+            } else {
+                this.printer.write(`'${name}': ${this.transformer.typeToString(field.getType())}`);
+            }
+
             if (index != array.length - 1) {
                 this.printer.write(`, `);
             }
@@ -147,10 +165,10 @@ export class SourceClass extends SourceBase {
         let staticInitializer = this.parseFieldInitMethod(STATIC_INIT_METHOD_NAME);
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
-            if (field.getFieldType() == 'GetAccessor') {
+            if (field.getCategory() == FieldCategory.GET_ACCESSOR) {
                 continue;
             }
-            if (field.getModifiers().has('StaticKeyword')) {
+            if (field.isStatic()) {
                 items.push(new SourceField(field, this.printer.getIndent(), staticInitializer));
             } else {
                 items.push(new SourceField(field, this.printer.getIndent(), instanceInitializer));
@@ -198,8 +216,8 @@ export class SourceDefaultClass extends SourceClass {
                         this.printer.writeLine(code);
                     }
                 }
-            } else {
-                this.printer.writeLine(method.getCode());
+            } else if (method.getCode()) {
+                this.printer.writeLine(method.getCode()!);
             }
         }
         return this.printer.toString();

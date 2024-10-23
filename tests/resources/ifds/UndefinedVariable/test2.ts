@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-import { property, x } from "./test";
+import { property } from './test';
+
 class static2 {
     static p: property;
 }

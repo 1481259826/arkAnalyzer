@@ -12,12 +12,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-let func1 = (i: number) => i;
-let func2 = () => {
-    let i = 0;
-    i++;
-};
-let func3 = () => func2();
-let func4 = (i: number) => i++;
-

@@ -25,7 +25,3 @@ export interface Value {
     /** Return the type of this value */
     getType():Type;
 }
-
-export enum ValueTag {
-    TAINT,
-}

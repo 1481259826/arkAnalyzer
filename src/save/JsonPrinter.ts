@@ -44,7 +44,6 @@ import {
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
-    ArkNopStmt,
     ArkReturnStmt,
     ArkReturnVoidStmt,
     ArkSwitchStmt,
@@ -66,7 +65,6 @@ import {
     ArkTypeOfExpr,
     ArkUnopExpr,
     ArkYieldExpr,
-    ArrayLiteralExpr,
 } from '../core/base/Expr';
 import { Constant } from '../core/base/Constant';
 import { MethodParameter } from '../core/model/builder/ArkMethodBuilder';
@@ -122,8 +120,8 @@ export class JsonPrinter extends Printer {
     private serializeClass(cls: ArkClass): any {
         return {
             signature: this.serializeClassSignature(cls.getSignature()),
-            modifiers: Array.from(cls.getModifiers()),
-            typeParameters: cls.getTypeParameter().map((type) => this.serializeType(type)),
+            modifiers: cls.getModifiers(),
+            typeParameters: cls.getGenericsTypes()?.map((type) => this.serializeType(type)),
             superClassName: cls.getSuperClassName(),
             implementedInterfaceNames: cls.getImplementedInterfaceNames(),
             fields: cls.getFields().map((field) => this.serializeField(field)),
@@ -134,19 +132,17 @@ export class JsonPrinter extends Printer {
     private serializeField(field: ArkField): any {
         return {
             signature: this.serializeFieldSignature(field.getSignature()),
-            modifiers: Array.from(field.getModifiers()),
-            typeParameters: field.getTypeParameters().map(type => this.serializeType(type)),
+            modifiers: field.getModifiers(),
             questionToken: field.getQuestionToken(),
             exclamationToken: field.getExclamationToken(),
-            // initializer: this.serializeValue(field.getInitializer()),
         };
     }
 
     private serializeMethod(method: ArkMethod): any {
         return {
             signature: this.serializeMethodSignature(method.getSignature()),
-            modifiers: Array.from(method.getModifiers()),
-            typeParameters: method.getTypeParameter().map(type => this.serializeType(type)),
+            modifiers: method.getModifiers(),
+            typeParameters: method.getGenericTypes()?.map(type => this.serializeType(type)) || [],
             body: this.serializeMethodBody(method.getBody()),
         };
     }
@@ -173,9 +169,9 @@ export class JsonPrinter extends Printer {
         return {
             importClauseName: importInfo.getImportClauseName(),
             importType: importInfo.getImportType(),
-            importFrom: importInfo.getImportFrom(),
+            importFrom: importInfo.getFrom(),
             nameBeforeAs: importInfo.getNameBeforeAs(),
-            modifiers: Array.from(importInfo.getModifiers()),
+            modifiers: importInfo.getModifiers(),
             originTsPosition: this.serializeLineColPosition(importInfo.getOriginTsPosition()),
         };
     }
@@ -184,10 +180,10 @@ export class JsonPrinter extends Printer {
         return {
             exportClauseName: exportInfo.getExportClauseName(),
             exportClauseType: exportInfo.getExportClauseType(),
-            exportFrom: exportInfo.getExportFrom(),
+            exportFrom: exportInfo.getFrom(),
             nameBeforeAs: exportInfo.getNameBeforeAs(),
             isDefault: exportInfo.isDefault(),
-            modifiers: Array.from(exportInfo.getModifiers()),
+            modifiers: exportInfo.getModifiers(),
             originTsPosition: this.serializeLineColPosition(exportInfo.getOriginTsPosition()),
         };
     }
@@ -255,7 +251,7 @@ export class JsonPrinter extends Printer {
         } else if (type instanceof LiteralType) {
             return {
                 "_": "LiteralType",
-                "literal": type.getliteralName(),
+                "literal": type.getLiteralName(),
             };
         } else if (type instanceof PrimitiveType) {
             throw new Error("Unhandled PrimitiveType: " + type.toString());
@@ -341,12 +337,9 @@ export class JsonPrinter extends Printer {
     private serializeBasicBlock(block: BasicBlock): any {
         const successors = block.getSuccessors().map(successor => successor.getId());
         successors.sort((a, b) => a - b);
-        // const predecessors = block.getPredecessors().map(predecessor => predecessor.getId());
-        // predecessors.sort((a, b) => a - b);
         return {
             id: block.getId(),
             successors,
-            // predecessors,
             stmts: block.getStmts().map(stmt => this.serializeStmt(stmt)),
         };
     }
@@ -430,12 +423,6 @@ export class JsonPrinter extends Printer {
                 blocks: args.map(arg => argToBlock.get(arg)!.getId()),
                 type: this.serializeType(value.getType()),
             };
-        } else if (value instanceof ArrayLiteralExpr) {
-            return {
-                _: 'ArrayLiteralExpr',
-                elements: value.getElements().map(arg => this.serializeValue(arg)),
-                type: this.serializeType(value.getType()),
-            };
         } else if (value instanceof ArkConditionExpr) {
             return {
                 _: 'ConditionExpr',
@@ -512,11 +499,7 @@ export class JsonPrinter extends Printer {
     }
 
     private serializeStmt(stmt: Stmt): any {
-        if (stmt instanceof ArkNopStmt) {
-            return {
-                _: 'NopStmt',
-            };
-        } else if (stmt instanceof ArkAssignStmt) {
+        if (stmt instanceof ArkAssignStmt) {
             return {
                 _: 'AssignStmt',
                 left: this.serializeValue(stmt.getLeftOp()),

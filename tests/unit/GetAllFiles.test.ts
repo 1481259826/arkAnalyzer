@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { getAllFiles } from "../../src/utils/getAllFiles";
-import { assert, describe, expect, it } from "vitest";
+import { getAllFiles } from '../../src/utils/getAllFiles';
+import { assert, describe, expect, it } from 'vitest';
 
 describe("getAllFiles Test", () => {
     it('normal case 1', () => {

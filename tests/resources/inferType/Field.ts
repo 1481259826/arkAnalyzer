@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Constants, globalFunction } from "./constants";
+import { Constants, globalFunction } from './constants';
 
 class C1 {
 
@@ -63,4 +63,10 @@ class importClassTest {
         let abc = Constants;
     }
 
+}
+
+class User {
+    roles = ['user'];
+    selectIndex: number = 0;
+    role: string = this.roles[this.selectIndex];
 }

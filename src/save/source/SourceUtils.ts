@@ -30,17 +30,28 @@ import {
     isEtsSystemComponent,
     SPECIAL_CONTAINER_COMPONENT,
 } from '../../core/common/EtsConst';
-import { ArkClass } from '../../core/model/ArkClass';
-import Logger from '../../utils/logger';
+import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
+import { ClassSignature } from '../../core/model/ArkSignature';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
+import ts from 'ohos-typescript';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceUtils');
 
-export const Origin_TypeLiteral = 'TypeLiteral';
-export const Origin_Object = 'Object';
-export const Origin_Component = 'Component';
+export const CLASS_CATEGORY_COMPONENT = 100;
 
 export class SourceUtils {
+    public static classOriginTypeToString = new Map<number, string>([
+        [ClassCategory.CLASS, 'class'],
+        [ClassCategory.STRUCT, 'struct'],
+        [ClassCategory.INTERFACE, 'interface'],
+        [ClassCategory.ENUM, 'enum'],
+        [ClassCategory.TYPE_LITERAL, 'typeliteral'],
+        [ClassCategory.OBJECT, 'object'],
+        [CLASS_CATEGORY_COMPONENT, 'component'],
+    ]);
+
     public static isAnonymousClass(name: string): boolean {
         return name.startsWith(ANONYMOUS_CLASS_PREFIX);
     }
@@ -82,44 +93,11 @@ export class SourceUtils {
         return name.startsWith('$temp');
     }
 
-    public static getOriginType(cls: ArkClass): string {
+    public static getOriginType(cls: ArkClass): number {
         if (cls.hasComponentDecorator()) {
-            return Origin_Component;
+            return CLASS_CATEGORY_COMPONENT;
         }
-        return cls.getOriginType();
-    }
-
-    public static flipOperator(operator: string): string {
-        let newOperater = operator;
-        switch (operator) {
-            case '<':
-                newOperater = '>=';
-                break;
-            case '<=':
-                newOperater = '>';
-                break;
-            case '>':
-                newOperater = '<=';
-                break;
-            case '>=':
-                newOperater = '<';
-                break;
-            case '==':
-                newOperater = '!=';
-                break;
-            case '===':
-                newOperater = '!==';
-                break;
-            case '!=':
-                newOperater = '==';
-                break;
-            case '!==':
-                newOperater = '===';
-                break;
-            default:
-                break;
-        }
-        return newOperater;
+        return cls.getCategory();
     }
 
     public static isComponentPop(invokeExpr: ArkStaticInvokeExpr): boolean {
@@ -201,5 +179,51 @@ export class SourceUtils {
             }
         }
         return false;
+    }
+
+    public static getStaticInvokeClassFullName(
+        classSignature: ClassSignature,
+        namespace: ArkNamespace | undefined
+    ): string {
+        let namespaceName = classSignature.getDeclaringNamespaceSignature()?.getNamespaceName();
+        let className = classSignature.getClassName();
+
+        let code: string[] = [];
+        if (namespaceName && namespaceName.length > 0 && namespaceName != namespace?.getName()) {
+            code.push(namespaceName);
+        }
+
+        if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
+            code.push(className);
+        }
+        return code.join('.');
+    }
+
+    public static isIdentifierText(text: string): boolean {
+        let ch = text.charCodeAt(0);
+        if (!ts.isIdentifierStart(ch, ts.ScriptTarget.Latest)) {
+            return false;
+        }
+
+        for (let i = 1; i < text.length; i++) {
+            if (!ts.isIdentifierPart(text.charCodeAt(i), ts.ScriptTarget.Latest)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static escape(text: string): string {
+        return text
+            .replace(/\\/g, '\\\\')
+            .replace(/\f/g, `\\f`)
+            .replace(/\n/g, `\\n`)
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t')
+            .replace(/\v/g, '\\v')
+            .replace(/\?/g, '\\?')
+            .replace(/\'/g, "\\'")
+            .replace(/\"/g, '\\"');
     }
 }

@@ -16,7 +16,7 @@
 import * as t from './exportSample';
 import hilog from '@ohos.hilog';
 
-export function cc(){
+export function cc() {
     t.testing();
     t.z.cc();
     let dd = new t.d();
@@ -28,10 +28,12 @@ export function cc(){
 }
 
 class test {
-
+    public type() {
+        let a: t.MyType = 'type';
+        type ss = t.MyType;
+    }
 }
 
 let sTest = new test();
 export default sTest as test;
-
 

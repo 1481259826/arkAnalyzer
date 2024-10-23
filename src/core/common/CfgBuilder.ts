@@ -25,7 +25,7 @@ import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
-
+import { AliasType, AliasTypeDeclaration } from '../base/Type';
 
 class StatementBuilder {
     type: string;
@@ -40,7 +40,7 @@ class StatementBuilder {
     column: number; // 列  
     astNode: ts.Node | null;//ast节点对象
     scopeID: number;
-    addressCode3: string[];
+    addressCode3: string[] = [];
     block: Block | null;
     ifExitPass: boolean;
     passTmies: number = 0;
@@ -277,7 +277,7 @@ export class CfgBuilder {
 
         for (let i = 0; i < nodes.length; i++) {
             let c = nodes[i];
-            if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c)) {
+            if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c) || ts.isTypeAliasDeclaration(c)) {
                 let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
                 lastStatement = s;
@@ -288,24 +288,18 @@ export class CfgBuilder {
                 lastStatement = s;
                 break;
             } else if (ts.isBreakStatement(c)) {
-                // let brstm = new StatementBuilder('breakStatement', 'break;', c, scope.id);
-                // judgeLastType(brstm);
                 let p: ts.Node | null = c;
                 while (p) {
                     if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
                         const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
                         judgeLastType(lastLoopNextF);
                         lastLoopNextF.lasts.add(lastStatement);
-                        // brstm.next = this.loopStack[this.loopStack.length - 1].nextF;
-                        // this.loopStack[this.loopStack.length - 1].nextF?.lasts.add(brstm);
                         return;
                     }
                     if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
                         const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
                         judgeLastType(lastSwitchExit);
                         lastSwitchExit.lasts.add(lastStatement);
-                        // brstm.next = this.switchExitStack[this.switchExitStack.length - 1];
-                        // this.switchExitStack[this.switchExitStack.length - 1].lasts.add(brstm.next);
                         return;
                     }
                     p = p.parent;
@@ -447,7 +441,7 @@ export class CfgBuilder {
                     const clause = c.caseBlock.clauses[i];
                     let casestm: StatementBuilder;
                     if (ts.isCaseClause(clause)) {
-                        casestm = new StatementBuilder('statement', 'case ' + clause.expression + ':', clause, scope.id);
+                        casestm = new StatementBuilder('statement', 'case ' + clause.expression.getText(this.sourceFile) + ':', clause, scope.id);
                     } else {
                         casestm = new StatementBuilder('statement', 'default:', clause, scope.id);
                     }
@@ -462,8 +456,13 @@ export class CfgBuilder {
                         switchstm.cases.push(cas);
                     } else {
                         switchstm.default = casestm.next;
-                        casestm.next?.lasts.add(switchstm);
                     }
+                    // case: 之类的代码不会被三地址码识别，可能会导致空block，暂时删除
+                    switchstm.nexts[switchstm.nexts.length - 1] = casestm.next!;
+                    for (const stmt of [...casestm.lasts]) {
+                        casestm.next!.lasts.add(stmt);
+                    }
+                    casestm.next!.lasts.delete(casestm);
 
                     if (lastCaseExit) {
                         lastCaseExit.next = casestm.next;
@@ -508,7 +507,6 @@ export class CfgBuilder {
                     }
                     const catchStatement = new StatementBuilder('statement', catchOrNot.code, c.catchClause, catchOrNot.nextT.scopeID);
                     catchStatement.next = catchOrNot.nextT;
-                    // catchOrNot.nextT.lasts.add(catchStatement);
                     trystm.catchStatement = catchStatement;
                     catchStatement.lasts.add(trystm);
                     if (c.catchClause.variableDeclaration) {
@@ -534,7 +532,7 @@ export class CfgBuilder {
 
         }
         this.scopeLevel--;
-        if (lastStatement.type != 'breakStatement' && lastStatement.type != 'continueStatement') {
+        if (lastStatement.type != 'breakStatement' && lastStatement.type != 'continueStatement' && lastStatement.type != 'returnStatement') {
             lastStatement.next = nextStatement;
             nextStatement.lasts.add(lastStatement);
         }
@@ -583,6 +581,12 @@ export class CfgBuilder {
                 }
             }
         }
+        // 部分语句例如return后面的exit语句的next无法在上面清除
+        for (const exit of this.exits) {
+            if (exit.next && exit.next.lasts.has(exit)) {
+                exit.next.lasts.delete(exit);
+            }
+        }
     }
 
     buildBlocks(): void {
@@ -618,11 +622,8 @@ export class CfgBuilder {
                     }
                     break;
                 } else if (stmt instanceof SwitchStatementBuilder) {
-                    for (const cas of stmt.cases) {
-                        stmtQueue.push(cas.stmt);
-                    }
-                    if (stmt.default) {
-                        stmtQueue.push(stmt.default);
+                    for (let i = stmt.nexts.length - 1; i >= 0; i--) {
+                        stmtQueue.push(stmt.nexts[i]);
                     }
                     break;
                 } else if (stmt instanceof TryStatementBuilder) {
@@ -647,7 +648,8 @@ export class CfgBuilder {
                         }
                         stmt.next.passTmies++;
                         if (stmt.next.passTmies == stmt.next.lasts.size || (stmt.next.type == 'loopStatement') || stmt.next.isDoWhile) {
-                            if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)) {
+                            if (stmt.next.scopeID != stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement)
+                                && !(ts.isCaseClause(stmt.astNode!) || ts.isDefaultClause(stmt.astNode!))) {
                                 stmtQueue.push(stmt.next);
                                 break;
                             }
@@ -675,18 +677,11 @@ export class CfgBuilder {
                         nextF.lasts.push(block);
                     }
                 } else if (originStatement instanceof SwitchStatementBuilder) {
-                    for (const cas of originStatement.cases) {
-                        const next = cas.stmt.block;
-                        if (next && (lastStatement || next != block) && !cas.stmt.type.includes(' exit')) {
-                            block.nexts.push(next);
-                            next.lasts.push(block);
-                        }
-                    }
-                    if (originStatement.default) {
-                        const next = originStatement.default.block;
-                        if (next && (lastStatement || next != block) && !originStatement.default.type.includes(' exit')) {
-                            block.nexts.push(next);
-                            next.lasts.push(block);
+                    for (const next of originStatement.nexts) {
+                        const nextBlock = next.block;
+                        if (nextBlock && (lastStatement || nextBlock != block)) {
+                            block.nexts.push(nextBlock);
+                            nextBlock.lasts.push(block);
                         }
                     }
                 } else {
@@ -744,13 +739,6 @@ export class CfgBuilder {
                         notReturnStmt.nextF = returnStatement;
                         notReturnStmt.block?.nexts.push(returnBlock);
                     }
-                } else if (notReturnStmt instanceof SwitchStatementBuilder) {
-                    for (let i = 0; i < notReturnStmt.cases.length; i++) {
-                        if (notReturnStmt.cases[i].stmt == this.exit) {
-                            notReturnStmt.cases[i].stmt = returnStatement;
-                            notReturnStmt.block?.nexts.splice(i, 0, returnBlock);
-                        }
-                    }
                 } else {
                     notReturnStmt.next = returnStatement;
                     notReturnStmt.block?.nexts.push(returnBlock);
@@ -774,7 +762,7 @@ export class CfgBuilder {
     addStmtBuilderPosition() {
         for (const stmt of this.statementArray) {
             if (stmt.astNode) {
-                const {line, character} = ts.getLineAndCharacterOfPosition(
+                const { line, character } = ts.getLineAndCharacterOfPosition(
                     this.sourceFile,
                     stmt.astNode.getStart(this.sourceFile),
                 );
@@ -865,7 +853,6 @@ export class CfgBuilder {
             mes += this.declaringClass?.getDeclaringArkFile().getName() + '.' + this.declaringClass.getName() + '.' + this.name;
         }
         mes += '\n' + stmt.code;
-        // console.log(mes)
         throw new textError(mes);
     }
 
@@ -1001,9 +988,8 @@ export class CfgBuilder {
 
     public buildCfgAndOriginalCfg(): {
         cfg: Cfg,
-        originalCfg: Cfg,
-        stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1014,69 +1000,59 @@ export class CfgBuilder {
 
     public buildCfgAndOriginalCfgForSimpleArrowFunction(): {
         cfg: Cfg,
-        originalCfg: Cfg,
-        stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         stmts.push(...arkIRTransformer.prebuildStmts());
-
         const expressionBodyNode = (this.astRoot as ts.ArrowFunction).body as ts.Expression;
         const expressionBodyStmts: Stmt[] = [];
         let {
             value: expressionBodyValue,
+            valueOriginalPositions: expressionBodyPositions,
             stmts: tempStmts,
         } = arkIRTransformer.tsNodeToValueAndStmts(expressionBodyNode);
         expressionBodyStmts.push(...tempStmts);
         if (IRUtils.moreThanOneAddress(expressionBodyValue)) {
             ({
                 value: expressionBodyValue,
+                valueOriginalPositions: expressionBodyPositions,
                 stmts: tempStmts,
-            } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue));
+            } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue, expressionBodyPositions));
             expressionBodyStmts.push(...tempStmts);
         }
-        expressionBodyStmts.push(new ArkReturnStmt(expressionBodyValue));
+        const returnStmt = new ArkReturnStmt(expressionBodyValue);
+        returnStmt.setOperandOriginalPositions([expressionBodyPositions[0], ...expressionBodyPositions]);
+        expressionBodyStmts.push(returnStmt);
         arkIRTransformer.mapStmtsToTsStmt(expressionBodyStmts, expressionBodyNode);
         stmts.push(...expressionBodyStmts);
-        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
-
         const cfg = new Cfg();
         const blockInCfg = new BasicBlock();
         blockInCfg.setId(0);
         stmts.forEach(stmt => {
             blockInCfg.addStmt(stmt);
+            stmt.setCfg(cfg);
         });
         cfg.addBlock(blockInCfg);
         cfg.setStartingStmt(stmts[0]);
-
-        const originalCfg = new Cfg();
-        const blockInOriginalCfg = new BasicBlock();
-        blockInOriginalCfg.setId(0);
-        originalCfg.addBlock(blockInOriginalCfg);
-        originalCfg.setStartingStmt(stmtToOriginalStmt.get(stmts[0]) as Stmt);
         return {
             cfg: cfg,
-            originalCfg: originalCfg,
-            stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap()
         };
     }
 
     public buildNormalCfgAndOriginalCfg(): {
         cfg: Cfg,
-        originalCfg: Cfg,
-        stmtToOriginalStmt: Map<Stmt, Stmt>,
-        locals: Set<Local>
+        locals: Set<Local>,
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
     } {
         const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
         let isStartingStmtInCfgBlock = true;
-        const stmtsInOriginalCfg: Stmt[] = [];
-        const stmtSetInOriginalCfg = new Set<Stmt>();
 
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
-        const stmtToOriginalStmt = arkIRTransformer.getStmtToOriginalStmt();
         const blocksContainLoopCondition = new Set<Block>();
         for (let i = 0; i < this.blocks.length; i++) {
             // build block in Cfg
@@ -1102,21 +1078,9 @@ export class CfgBuilder {
                     cfg.setStartingStmt(stmt);
                 }
                 blockInCfg.addStmt(stmt);
-                stmt.setCfg(cfg);
             }
             cfg.addBlock(blockInCfg);
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
-
-            // collect stmts in OriginalCfg
-            for (const stmt of stmtsInBlock) {
-                const originalStmt = stmtToOriginalStmt.get(stmt);
-                if (originalStmt) {
-                    if (!stmtSetInOriginalCfg.has(originalStmt)) {
-                        stmtSetInOriginalCfg.add(originalStmt);
-                        stmtsInOriginalCfg.push(originalStmt);
-                    }
-                }
-            }
         }
         let currBlockId = this.blocks.length;
 
@@ -1233,30 +1197,22 @@ export class CfgBuilder {
                 block.setId(blockBuilder.id);
             }
         }
-
-        const originalCfg = new Cfg();
-        const originalCfgBlock = new BasicBlock();
-        for (let i = 0; i < stmtsInOriginalCfg.length; i++) {
-            if (i === 0) {
-                originalCfg.setStartingStmt(stmtsInOriginalCfg[i]);
-            }
-            originalCfgBlock.addStmt(stmtsInOriginalCfg[i]);
+        for (const stmt of cfg.getStmts()) {
+            stmt.setCfg(cfg);
         }
-        originalCfg.addBlock(originalCfgBlock);
 
         return {
             cfg: cfg,
-            originalCfg: originalCfg,
-            stmtToOriginalStmt: stmtToOriginalStmt,
             locals: arkIRTransformer.getLocals(),
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
         };
     }
 
     private insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock: Map<Block, BasicBlock>,
-                                              conditionBlockBuilder: Block,
-                                              stmtsInsertBeforeCondition: Stmt[],
-                                              collectReenter: Boolean,
-                                              cfg: Cfg): void {
+        conditionBlockBuilder: Block,
+        stmtsInsertBeforeCondition: Stmt[],
+        collectReenter: Boolean,
+        cfg: Cfg): void {
         const blockId = conditionBlockBuilder.id;
         const block = blockBuilderToCfgBlock.get(conditionBlockBuilder) as BasicBlock;
         const blockBuildersBeforeCondition: Block[] = [];

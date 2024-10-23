@@ -15,11 +15,12 @@
 
 import { SceneConfig } from '../../../src/Config';
 import * as ty from '../../../src/core/base/Type';
-import { assert, describe, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../../src/Scene';
 import path from 'path';
 import { SourceClassPrinter } from '../../../src';
 import { SourceTransformer } from '../../../src/save/source/SourceTransformer';
+import { SourceUtils } from '../../../src/save/source/SourceUtils';
 
 describe('SourceUtilsTest', () => {
     let config: SceneConfig = new SceneConfig();
@@ -29,17 +30,6 @@ describe('SourceUtilsTest', () => {
     let arkClass = scene.getClasses().find((cls) => cls.getName() == 'Animal');
     let clsPrinter = new SourceClassPrinter(arkClass!);
     let transformer = new SourceTransformer(clsPrinter);
-
-    it('TypeLiteralType case', () => {
-        if (arkClass == null) {
-            assert.isNotNull(arkClass);
-            return;
-        }
-        let type = new ty.TypeLiteralType();
-        type.setMembers(arkClass.getFields());
-
-        assert.equal(transformer.typeToString(type), '{name:undefined}');
-    });
 
     it('LiteralType case', () => {
         let type = new ty.LiteralType('BooleanKeyword');
@@ -78,8 +68,21 @@ describe('SourceUtilsTest', () => {
         let types = [ty.VoidType.getInstance(), ty.StringType.getInstance()];
         assert.equal(transformer.typeArrayToString(types), 'void, string');
     });
+
     it('typeArrayToString Test2', () => {
         let types = [ty.UnknownType.getInstance(), ty.StringType.getInstance()];
         assert.equal(transformer.typeArrayToString(types, '@'), 'any@string');
     });
+
+    it('isIdentifierText', () => {
+        expect(SourceUtils.isIdentifierText('ab\'')).eq(false);
+        expect(SourceUtils.isIdentifierText('123')).eq(false);
+        expect(SourceUtils.isIdentifierText('abc')).eq(true);
+        expect(SourceUtils.isIdentifierText('+')).eq(false);
+    })
+
+    it('escape', () => {
+        expect(SourceUtils.escape('ab\'')).eq('ab\\\'');
+    })
+
 });

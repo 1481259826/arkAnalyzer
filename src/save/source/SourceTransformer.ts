@@ -24,29 +24,30 @@ import {
     ArkInstanceOfExpr,
     ArkNewArrayExpr,
     ArkNewExpr,
+    ArkNormalBinopExpr,
     ArkStaticInvokeExpr,
     ArkTypeOfExpr,
     ArkUnopExpr,
     ArkYieldExpr,
-    ArrayLiteralExpr,
+    NormalBinaryOperator,
 } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkClass } from '../../core/model/ArkClass';
+import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ArkCodeBuffer } from '../ArkStream';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
     ArrayType,
     ClassType,
     FunctionType,
+    GenericType,
     LiteralType,
     PrimitiveType,
+    StringType,
     Type,
-    TypeLiteralType,
-    TypeParameterType,
     UnclearReferenceType,
     UnionType,
     UnknownType,
@@ -63,11 +64,14 @@ import {
     COMPONENT_POP_FUNCTION,
 } from '../../core/common/EtsConst';
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
+import { ArkAssignStmt } from '../../core/base/Stmt';
+import { ArkNamespace } from '../../core/model/ArkNamespace';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
 export interface TransformerContext {
     getArkFile(): ArkFile;
+    getDeclaringArkNamespace(): ArkNamespace | undefined;
 
     getMethod(signature: MethodSignature): ArkMethod | null;
 
@@ -122,8 +126,9 @@ export class SourceTransformer {
             return this.anonymousMethodToString(method, this.context.getPrinter().getIndent());
         }
 
-        let className = invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName();
-        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        let classSignature = methodSignature.getDeclaringClassSignature();
+        let className = SourceUtils.getStaticInvokeClassFullName(classSignature, this.context.getDeclaringArkNamespace());
+        let methodName = methodSignature.getMethodSubSignature().getMethodName();
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
@@ -164,7 +169,7 @@ export class SourceTransformer {
             }
         }
 
-        if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
+        if (className && className.length > 0) {
             return `${className}.${methodName}(${args.join(', ')})`;
         }
         return `${methodName}(${args.join(', ')})`;
@@ -181,17 +186,13 @@ export class SourceTransformer {
 
     public static constToString(value: Constant): string {
         if (value.getType() == 'string') {
-            if (value.getValue().startsWith("'") || value.getValue().startsWith('"')) {
-                return `${value.getValue()}`;
-            } else {
-                return `'${value.getValue()}'`;
-            }
+            return `'${SourceUtils.escape(value.getValue())}'`;
         } else {
             return value.getValue();
         }
     }
 
-    public exprToString(expr: AbstractExpr): string {
+    private exprToString(expr: AbstractExpr): string {
         if (expr instanceof ArkInstanceInvokeExpr) {
             return `${this.instanceInvokeExprToString(expr)}`;
         }
@@ -217,7 +218,7 @@ export class SourceTransformer {
             let op2: Value = expr.getOp2();
             let operator: string = expr.getOperator();
 
-            return `${this.valueToString(op1)} ${operator} ${this.valueToString(op2)}`;
+            return `${this.valueToString(op1, operator)} ${operator} ${this.valueToString(op2, operator)}`;
         }
 
         if (expr instanceof ArkTypeOfExpr) {
@@ -235,14 +236,6 @@ export class SourceTransformer {
 
         if (expr instanceof ArkUnopExpr) {
             return `${expr.getOperator()}${this.valueToString(expr.getOp())}`;
-        }
-
-        if (expr instanceof ArrayLiteralExpr) {
-            let elements: string[] = [];
-            expr.getElements().forEach((element) => {
-                elements.push(this.valueToString(element));
-            });
-            return `[${elements.join(', ')}]`;
         }
 
         if (expr instanceof ArkAwaitExpr) {
@@ -268,6 +261,14 @@ export class SourceTransformer {
         }
 
         if (value instanceof ArkArrayRef) {
+            let index = value.getIndex();
+            if (
+                index instanceof Constant &&
+                index.getType() instanceof StringType &&
+                SourceUtils.isTemp(index.getValue())
+            ) {
+                return `${this.valueToString(value.getBase())}[${this.valueToString(new Local(index.getValue()))}]`;
+            }
             return `${this.valueToString(value.getBase())}[${this.valueToString(value.getIndex())}]`;
         }
 
@@ -280,7 +281,7 @@ export class SourceTransformer {
         return `${value}`;
     }
 
-    public valueToString(value: Value): string {
+    public valueToString(value: Value, operator?: string): string {
         if (value instanceof AbstractExpr) {
             return this.exprToString(value);
         }
@@ -309,6 +310,19 @@ export class SourceTransformer {
                 }
             }
 
+            if (
+                operator == NormalBinaryOperator.Division ||
+                operator == NormalBinaryOperator.Multiplication ||
+                operator == NormalBinaryOperator.Remainder
+            ) {
+                if (SourceUtils.isTemp(value.getName())) {
+                    let stmt = value.getDeclaringStmt();
+                    if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
+                        return `(${this.context.transTemp2Code(value)})`;
+                    }
+                }
+            }
+
             return this.context.transTemp2Code(value);
         }
 
@@ -316,22 +330,28 @@ export class SourceTransformer {
         return `${value}`;
     }
 
+    public literalObjectToString(type: ClassType): string {
+        let name = type.getClassSignature().getClassName();
+        if (SourceUtils.isAnonymousClass(name)) {
+            let cls = this.context.getClass(type.getClassSignature());
+            if (cls) {
+                return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
+            }
+        }
+        return name;
+    }
+
     public typeToString(type: Type): string {
         if (type instanceof LiteralType) {
-            let literalName = type.getliteralName() as string;
-            return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
+            let literalName = type.getLiteralName();
+            if (typeof literalName === 'string' && literalName.endsWith('Keyword')) {
+                return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
+            }
+            return `${literalName}`;
         }
 
         if (type instanceof PrimitiveType) {
             return type.getName();
-        }
-
-        if (type instanceof TypeLiteralType) {
-            let typesStr: string[] = [];
-            for (const member of type.getMembers()) {
-                typesStr.push(member.getName() + ':' + member.getType());
-            }
-            return `{${typesStr.join(', ')}}`;
         }
 
         if (type instanceof UnionType) {
@@ -357,10 +377,10 @@ export class SourceTransformer {
             }
             if (SourceUtils.isAnonymousClass(name)) {
                 let cls = this.context.getClass(type.getClassSignature());
-                if (cls) {
+                if (cls && cls.getCategory() == ClassCategory.TYPE_LITERAL) {
                     return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
                 }
-                return 'any';
+                return 'Object';
             }
             return name;
         }
@@ -371,6 +391,9 @@ export class SourceTransformer {
             }
 
             let baseType = type.getBaseType();
+            if (baseType instanceof UnionType) {
+                return `(${this.typeToString(baseType)})${dimensions.join('')}`;
+            }
             return `${this.typeToString(baseType)}${dimensions.join('')}`;
         }
 
@@ -385,12 +408,12 @@ export class SourceTransformer {
         if (type instanceof UnclearReferenceType) {
             let genericTypes = type.getGenericTypes();
             if (genericTypes.length > 0) {
-                return `${type.getName()}<${genericTypes.join(', ')}>`
+                return `${type.getName()}<${genericTypes.join(', ')}>`;
             }
             return type.getName();
         }
 
-        if (type instanceof TypeParameterType) {
+        if (type instanceof GenericType) {
             return type.getName();
         }
 

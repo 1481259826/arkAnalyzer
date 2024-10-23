@@ -54,23 +54,7 @@ export class DotMethodPrinter extends Printer {
         return this.printer.toString();
     }
     public dumpOriginal(): string {
-        this.printer.clear();
-        if (this.nesting) {
-            this.printer.writeIndent().writeLine(`subgraph "cluster_Original_${this.method.getSignature()}" {`);
-        } else {
-            this.printer.writeIndent().writeLine(`digraph "${this.method.getSignature()}" {`);
-        }
-        this.printer.incIndent();
-        this.printer.writeIndent().writeLine(`label="${this.method.getSignature()}_original";`);
-
-        let blocks = (this.method.getOriginalCfg() as Cfg).getBlocks();
-        let prefix = `NodeOriginal${this.stringHashCode(this.method.getSignature().toString())}`;
-        this.printBlocks(blocks, prefix);
-
-        this.printer.decIndent();
-        this.printer.writeIndent().writeLine('}');
-
-        return this.printer.toString();
+        return '';
     }
 
     protected stringHashCode(name: string): number {

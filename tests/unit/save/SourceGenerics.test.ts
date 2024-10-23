@@ -20,8 +20,8 @@ import path from 'path';
 const CASE1_EXPECT = `function identity<T>(arg: T): T {
   return arg;
 }
-let myIdentity = identity;
-let output = identity('myString');
+let myIdentity: (arg: T) => T  = identity;
+let output: string = identity('myString');
 class GenericNumber<T> {
   zeroValue: T;
   add: (x: T, y: T) => T ;
@@ -35,26 +35,26 @@ function loggingIdentity<T>(arg: T): T {
   logger.info(arg.length);
   return arg;
 }
-class BeeKeeper {
-  hasMask: boolean;
+declare interface BreakPointTypeOption<T> {
+  sm?: T;
+  md?: T;
+  lg?: T;
 }
-class ZooKeeper {
-  nametag: string;
+export class BreakpointType<T> {
+  options: BreakPointTypeOption;
+  constructor(option: BreakPointTypeOption<T>) {
+    this.options = option;
+  }
+  getValue(currentPoint: string): T {
+    if (currentPoint === 'sm') {
+      return this.options.sm as T;
+    }
+    if (currentPoint === 'md') {
+      return this.options.md as T;
+    }
+    return this.options.lg as T;
+  }
 }
-class Animal1 {
-  numLegs: number;
-}
-class Bee extends Animal1 {
-  keeper: BeeKeeper;
-}
-class Lion extends Animal1 {
-  keeper: ZooKeeper;
-}
-function createInstance<A>(c: ConstructorType): A {
-  return new c();
-}
-let l = new Lion();
-logger.info(l.keeper);
 `;
 
 const CASE2_EXPECT = `class GenericNumber<T> {
@@ -70,6 +70,8 @@ describe('SourceGenericsTest', () => {
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
     let arkfile = scene.getFiles().find((value) => {
         return value.getName().endsWith('generics.ts');
     });

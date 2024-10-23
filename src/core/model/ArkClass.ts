@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Type } from '../base/Type';
+import { ClassType, GenericType } from '../base/Type';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkField } from './ArkField';
 import { ArkFile } from './ArkFile';
@@ -21,29 +21,37 @@ import { ArkMethod } from './ArkMethod';
 import { ArkNamespace } from './ArkNamespace';
 import { ClassSignature, FieldSignature, FileSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
 import { Local } from '../base/Local';
-import { Decorator } from '../base/Decorator';
-import { COMPONENT_DECORATOR, ENTRY_DECORATOR } from '../common/EtsConst';
 import { ArkExport, ExportType } from './ArkExport';
+import { TypeInference } from '../common/TypeInference';
+import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
+import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
+import { ArkBaseModel } from './ArkBaseModel';
+
+export enum ClassCategory {
+    CLASS = 0,
+    STRUCT = 1,
+    INTERFACE = 2,
+    ENUM = 3,
+    TYPE_LITERAL = 4,
+    OBJECT = 5,
+}
 
 /**
  * @category core/model
  */
-export class ArkClass implements ArkExport {
-    private name: string = '';
-    private originType: string = "Class";
-    private code: string;
-    private line: number = -1;
-    private column: number = -1;
+export class ArkClass extends ArkBaseModel implements ArkExport {
+    private category!: ClassCategory;
+    private code?: string;
+    private lineCol: LineCol = 0;
 
-    private declaringArkFile: ArkFile;
+    private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | undefined;
-    private classSignature: ClassSignature;
+    private classSignature!: ClassSignature;
 
     private superClassName: string = '';
-    private superClass: ArkClass;
+    private superClass?: ArkClass | null;
     private implementedInterfaceNames: string[] = [];
-    private modifiers: Set<string | Decorator> = new Set<string | Decorator>();
-    private typeParameters: Type[] = [];
+    private genericsTypes?: GenericType[];
 
     private defaultMethod: ArkMethod | null = null;
 
@@ -60,17 +68,14 @@ export class ArkClass implements ArkExport {
     private anonymousMethodNumber: number = 0;
     private indexSignatureNumber: number = 0;
 
-    private viewTree: ViewTree;
+    private viewTree?: ViewTree;
 
     constructor() {
+        super();
     }
 
     public getName() {
-        return this.name;
-    }
-
-    public setName(name: string) {
-        this.name = name;
+        return this.classSignature.getClassName();
     }
 
     public getCode() {
@@ -82,27 +87,27 @@ export class ArkClass implements ArkExport {
     }
 
     public getLine() {
-        return this.line;
+        return getLineNo(this.lineCol);
     }
 
     public setLine(line: number) {
-        this.line = line;
+        this.lineCol = setLine(this.lineCol, line);
     }
 
     public getColumn() {
-        return this.column;
+        return getColNo(this.lineCol);
     }
 
     public setColumn(column: number) {
-        this.column = column;
+        this.lineCol = setCol(this.lineCol, column);
     }
 
-    public getOriginType() {
-        return this.originType;
+    public getCategory(): ClassCategory {
+        return this.category;
     }
 
-    public setOriginType(originType: string) {
-        this.originType = originType;
+    public setCategory(category: ClassCategory): void {
+        this.category = category;
     }
 
     public getDeclaringArkFile() {
@@ -121,12 +126,12 @@ export class ArkClass implements ArkExport {
         this.declaringArkNamespace = declaringArkNamespace;
     }
 
-    public isExported(): boolean {
-        return this.modifiers.has('ExportKeyword');
+    public isDefaultArkClass(): boolean {
+        return this.getName() === DEFAULT_ARK_CLASS_NAME;
     }
 
-    public isDefaultArkClass(): boolean {
-        return this.getName() === "_DEFAULT_ARK_CLASS";
+    public isAnonymousClass(): boolean {
+        return this.getName().startsWith(ANONYMOUS_CLASS_PREFIX);
     }
 
     public getSignature() {
@@ -137,16 +142,6 @@ export class ArkClass implements ArkExport {
         this.classSignature = classSig;
     }
 
-    public genSignature() {
-        let classSig = new ClassSignature();
-        classSig.setClassName(this.name);
-        classSig.setDeclaringFileSignature(this.declaringArkFile.getFileSignature());
-        if (this.declaringArkNamespace) {
-            classSig.setDeclaringNamespaceSignature(this.declaringArkNamespace.getNamespaceSignature());
-        }
-        this.setSignature(classSig);
-    }
-
     public getSuperClassName() {
         return this.superClassName;
     }
@@ -155,7 +150,19 @@ export class ArkClass implements ArkExport {
         this.superClassName = superClassName;
     }
 
-    public getSuperClass(): ArkClass {
+    public getSuperClass(): ArkClass | null {
+        if (this.superClass === undefined) {
+            const type = TypeInference.inferUnclearReferenceType(this.superClassName, this);
+            if (type instanceof ClassType) {
+                let superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature());
+                if (superClass) {
+                    superClass.addExtendedClass(this);
+                    this.superClass = superClass;
+                    return this.superClass;
+                }
+            }
+            this.superClass = null;
+        }
         return this.superClass;
     }
 
@@ -220,31 +227,15 @@ export class ArkClass implements ArkExport {
         });
     }
 
-    public getModifiers() {
-        return this.modifiers;
+    public getGenericsTypes() {
+        return this.genericsTypes;
     }
 
-    public addModifier(name: string | Decorator) {
-        this.modifiers.add(name);
-    }
-
-    public getTypeParameter() {
-        return this.typeParameters;
-    }
-
-    public addTypeParameter(typeParameter: Type) {
-        this.typeParameters.push(typeParameter);
-    }
-
-    public containsModifier(name: string) {
-        return this.modifiers.has(name);
-    }
-
-    public isStatic(): boolean {
-        if (this.modifiers.has("StaticKeyword")) {
-            return true;
+    public addGenericType(gType: GenericType) {
+        if (!this.genericsTypes) {
+            this.genericsTypes = [];
         }
-        return false;
+        this.genericsTypes.push(gType);
     }
 
     public getMethods(generated?: boolean): ArkMethod[] {
@@ -271,9 +262,8 @@ export class ArkClass implements ArkExport {
         return this.staticMethods.get(methodName) || null;
     }
 
-
     public addMethod(method: ArkMethod) {
-        if (method.getModifiers().has('StaticKeyword')) {
+        if (method.isStatic()) {
             this.staticMethods.set(method.getName(), method);
         } else {
             this.methods.set(method.getName(), method);
@@ -293,7 +283,7 @@ export class ArkClass implements ArkExport {
         this.viewTree = viewTree;
     }
 
-    public getViewTree(): ViewTree {
+    public getViewTree(): ViewTree | undefined {
         return this.viewTree;
     }
 
@@ -324,30 +314,6 @@ export class ArkClass implements ArkExport {
             return globalMap.get(this.declaringArkNamespace.getNamespaceSignature())!;
         }
         return globalMap.get(this.declaringArkFile.getFileSignature())!;
-    }
-
-    public getDecorators(): Decorator[] {
-        return Array.from(this.modifiers).filter((item) => {
-            return item instanceof Decorator;
-        }) as Decorator[];
-    }
-
-    public hasEntryDecorator(): boolean {
-        return this.hasDecorator(ENTRY_DECORATOR);
-    }
-
-    public hasComponentDecorator(): boolean {
-        return this.hasDecorator(COMPONENT_DECORATOR);
-    }
-
-    private hasDecorator(kind: string | Set<string>): boolean {
-        let decorators = this.getDecorators();
-        return decorators.filter((value) => {
-            if (kind instanceof Set) {
-                return kind.has(value.getKind());
-            }
-            return value.getKind() == kind;
-        }).length != 0;
     }
 
     public getAnonymousMethodNumber() {

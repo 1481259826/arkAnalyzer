@@ -21,11 +21,6 @@ export class DominanceTree {
     private blockToIdx = new Map<BasicBlock, number>();
     private children: number[][] = [];
     private parents: number[] = [];
-    private doms: Array<Set<number>> = [];
-    // d dom n && n -> d
-    private backEdges: Set<number[]>;
-    // backEdges headers
-    private headers: Set<number>;
 
     constructor(dominanceFinder: DominanceFinder) {
         this.blocks = dominanceFinder.getBlocks();
@@ -36,22 +31,15 @@ export class DominanceTree {
         let treeSize = this.blocks.length;
         this.children = new Array(treeSize);
         this.parents = new Array(treeSize);
-        this.doms = new Array(treeSize);
         for (let i = 0; i < treeSize; i++) {
             this.children[i] = new Array();
             this.parents[i] = -1;
-            this.doms[i] = new Set<number>();
-            this.doms[i].add(i);
         }
         for (let i = 0; i < treeSize; i++) {
             if (idoms[i] != i) {
                 this.parents[i] = idoms[i];
                 this.children[idoms[i]].push(i);
             }
-
-            this.doms[idoms[i]].forEach((value) => {
-                this.doms[i].add(value);
-            });
         }
     }
 
@@ -83,48 +71,5 @@ export class DominanceTree {
 
     public getRoot(): BasicBlock {
         return this.blocks[0];
-    }
-
-    public getDominators(block: BasicBlock): BasicBlock[] {
-        let dom = new Array<BasicBlock>();
-        let idx = this.blockToIdx.get(block) as number;
-        for (const i of this.doms[idx]) {
-            dom.push(this.blocks[i]);
-        }
-        return dom;
-    }
-
-    public isBackEdgeHeader(block: BasicBlock): boolean {
-        this.buildBackEdges();
-
-        let idx = this.blockToIdx.get(block) as number;
-        return this.headers.has(idx);
-    }
-
-    public getBackEdges(): Set<BasicBlock[]> {
-        this.buildBackEdges();
-
-        let edges = new Set<BasicBlock[]>();
-        for (const edge of this.backEdges) {
-            edges.add([this.blocks[edge[0]], this.blocks[edge[1]]]);
-        }
-        return edges;
-    }
-
-    private buildBackEdges() {
-        if (this.backEdges) {
-            return;
-        }
-        this.backEdges = new Set();
-        this.headers = new Set();
-        for (let i = 0; i < this.blocks.length; i++) {
-            for (const pred of this.blocks[i].getSuccessors()) {
-                let predId = this.blockToIdx.get(pred) as number;
-                if (this.doms[i].has(predId)) {
-                    this.backEdges.add([i, predId]);
-                    this.headers.add(predId);
-                }
-            }
-        }
     }
 }

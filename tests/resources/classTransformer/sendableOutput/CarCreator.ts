@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { BusCreatorVar } from "./BusCreator.ts"
+import { BusCreatorVar } from './BusCreator.ts';
 
 export class CarCreator {
     create(): Car {

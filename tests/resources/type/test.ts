@@ -12,5 +12,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-let func1 = (i: number) => i++;
+console.error(';')

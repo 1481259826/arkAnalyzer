@@ -14,6 +14,7 @@
  */
 
 import { ClassSignature, FileSignature } from '../model/ArkSignature';
+import { ClassType } from '../base/Type';
 
 export class Builtin {
     // built-in classes
@@ -27,8 +28,8 @@ export class Builtin {
     public static BUILT_IN_CLASSES = this.buildBuiltInClasses();
 
     // signature for built-in class
-    public static DUMMY_PROJECT = 'ES2015';
-    public static DUMMY_FILE = 'BuiltinClass';
+    public static DUMMY_PROJECT_NAME = 'ES2015';
+    public static DUMMY_FILE_NAME = 'BuiltinClass';
 
     public static BUILT_IN_CLASSES_FILE_SIGNATURE = Builtin.buildBuiltInClassesFileSignature();
     public static OBJECT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.OBJECT);
@@ -36,6 +37,7 @@ export class Builtin {
     public static SET_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.SET);
     public static MAP_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.MAP);
     public static REGEXP_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.REGEXP);
+    public static REGEXP_CLASS_TYPE = new ClassType(this.REGEXP_CLASS_SIGNATURE);
     public static BUILT_IN_CLASS_SIGNATURE_MAP = this.buildBuiltInClassSignatureMap();
 
     // constants for iterator
@@ -48,7 +50,8 @@ export class Builtin {
 
     public static ITERATOR_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ITERATOR);
     public static ITERATOR_RESULT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ITERATOR_RESULT);
-
+    public static ITERATOR_CLASS_TYPE = new ClassType(this.ITERATOR_CLASS_SIGNATURE);
+    public static ITERATOR_RESULT_CLASS_TYPE = new ClassType(this.ITERATOR_RESULT_CLASS_SIGNATURE);
 
 
     private static buildBuiltInClasses(): Set<string> {
@@ -62,17 +65,11 @@ export class Builtin {
     }
 
     private static buildBuiltInClassesFileSignature(): FileSignature {
-        const builtInClassesFileSignature = new FileSignature();
-        builtInClassesFileSignature.setProjectName(this.DUMMY_PROJECT);
-        builtInClassesFileSignature.setFileName(this.DUMMY_FILE);
-        return builtInClassesFileSignature;
+        return new FileSignature(this.DUMMY_PROJECT_NAME, this.DUMMY_FILE_NAME);
     }
 
     public static buildBuiltInClassSignature(className: string): ClassSignature {
-        const builtInClassSignature = new ClassSignature();
-        builtInClassSignature.setClassName(className);
-        builtInClassSignature.setDeclaringFileSignature(this.BUILT_IN_CLASSES_FILE_SIGNATURE);
-        return builtInClassSignature;
+        return new ClassSignature(className, this.BUILT_IN_CLASSES_FILE_SIGNATURE);
     }
 
     private static buildBuiltInClassSignatureMap(): Map<string, ClassSignature> {

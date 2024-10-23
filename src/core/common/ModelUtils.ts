@@ -18,10 +18,24 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ClassSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
-import { TypeSignature } from '../model/ArkExport';
+import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
+import { ArkExport, ExportInfo, ExportType, FromInfo } from '../model/ArkExport';
+import { ArkField } from '../model/ArkField';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { FileUtils, ModulePath } from '../../utils/FileUtils';
+import path from 'path';
+import { Sdk } from '../../Config';
+import { transfer2UnixPath } from '../../utils/pathTransfer';
+import { ALL, DEFAULT, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
+import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
+import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
+import { ClassType, UnclearReferenceType } from '../base/Type';
+import { Scene } from '../../Scene';
+import { checkAndUpdateMethod } from '../model/builder/ArkClassBuilder';
 
 export class ModelUtils {
+    public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
+
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
         for (const arkMethod of arkClass.getMethods()) {
             if (arkMethod.getName() == methodName) {
@@ -81,7 +95,7 @@ export class ModelUtils {
         }
         let classSearched = thisClass.getDeclaringArkNamespace()?.getClassWithName(className);
         if (!classSearched) {
-            classSearched = thisClass.getDeclaringArkFile().getClassWithName(className)
+            classSearched = thisClass.getDeclaringArkFile().getClassWithName(className);
         }
         return classSearched;
     }
@@ -96,16 +110,16 @@ export class ModelUtils {
     }
 
     public static getClassInImportInfoWithName(className: string, arkFile: ArkFile): ArkClass | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(className, arkFile);
-        if (typeSignature instanceof ClassSignature) {
-            return arkFile.getScene().getClass(typeSignature);
+        let arkExport = this.getArkExportInImportInfoWithName(className, arkFile);
+        if (arkExport instanceof ArkClass) {
+            return arkExport;
         }
         return null;
     }
 
     /** search type within the given file import infos */
-    public static getTypeSignatureInImportInfoWithName(name: string, arkFile: ArkFile): TypeSignature | undefined {
-        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getTypeSignature();
+    public static getArkExportInImportInfoWithName(name: string, arkFile: ArkFile): ArkExport | null {
+        return arkFile.getImportInfoBy(name)?.getLazyExportInfo()?.getArkExport() ?? null;
     }
 
     /** search method within the file that contain the given method */
@@ -172,9 +186,9 @@ export class ModelUtils {
     }
 
     public static getNamespaceInImportInfoWithName(namespaceName: string, arkFile: ArkFile): ArkNamespace | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(namespaceName, arkFile);
-        if (typeSignature instanceof NamespaceSignature) {
-            return arkFile.getScene().getNamespace(typeSignature as NamespaceSignature);
+        let arkExport = this.getArkExportInImportInfoWithName(namespaceName, arkFile);
+        if (arkExport instanceof ArkNamespace) {
+            return arkExport;
         }
         return null;
     }
@@ -206,17 +220,17 @@ export class ModelUtils {
     }
 
     public static getStaticMethodInImportInfoWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(methodName, arkFile);
-        if (typeSignature) {
-            return arkFile.getScene().getMethod(typeSignature as MethodSignature);
+        let arkExport = this.getArkExportInImportInfoWithName(methodName, arkFile);
+        if (arkExport instanceof ArkMethod) {
+            return arkExport;
         }
         return null;
     }
 
     public static getLocalInImportInfoWithName(localName: string, arkFile: ArkFile): Local | null {
-        let typeSignature = this.getTypeSignatureInImportInfoWithName(localName, arkFile);
-        if (typeSignature) {
-            return typeSignature as Local;
+        let arkExport = this.getArkExportInImportInfoWithName(localName, arkFile);
+        if (arkExport instanceof Local) {
+            return arkExport;
         }
         return null;
     }
@@ -255,9 +269,14 @@ export class ModelUtils {
     }
 
     public static isArkUIBuilderMethod(arkMethod: ArkMethod): boolean {
-        let isArkUIBuilderMethod = arkMethod.hasBuilderDecorator();
+        let isArkUIBuilderMethod = arkMethod.hasBuilderDecorator() || this.implicitArkUIBuilderMethods.has(arkMethod);
 
-        if (!isArkUIBuilderMethod && arkMethod.getName() == 'build') {
+        if (
+            !isArkUIBuilderMethod &&
+            arkMethod.getName() == 'build' &&
+            arkMethod.getDeclaringArkClass().hasComponentDecorator() &&
+            !arkMethod.isStatic()
+        ) {
             const fileName = arkMethod.getDeclaringArkClass().getDeclaringArkFile().getName();
             if (fileName.endsWith('.ets')) {
                 isArkUIBuilderMethod = true;
@@ -266,20 +285,30 @@ export class ModelUtils {
         return isArkUIBuilderMethod;
     }
 
+    public static getArkClassInBuild(scene: Scene, classType: ClassType): ArkClass | null {
+        const classSignature = classType.getClassSignature();
+        const file = scene.getFile(classSignature.getDeclaringFileSignature());
+        const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
+        if (namespaceSignature) {
+            return file?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
+        }
+        return file?.getClassWithName(classSignature.getClassName()) || null;
+    }
+
+    public static getDefaultClass(arkClass: ArkClass): ArkClass | null {
+        return arkClass.getDeclaringArkNamespace()?.getDefaultClass() ?? arkClass.getDeclaringArkFile().getDefaultClass();
+    }
 
     public static getClass(method: ArkMethod, signature: ClassSignature): ArkClass | null {
         let cls: ArkClass | undefined | null = method.getDeclaringArkFile().getScene().getClass(signature);
         if (cls) {
             return cls;
         }
-
-        let exportInfo = method.getDeclaringArkFile().getImportInfoBy(signature.getClassName())?.getLazyExportInfo();
-        let typeSignature = exportInfo?.getTypeSignature();
-        if (typeSignature instanceof ClassSignature) {
-            let cls = method.getDeclaringArkFile().getScene().getClass(typeSignature);
-            if (cls) {
-                return cls;
-            }
+        let importInfo = method.getDeclaringArkFile().getImportInfoBy(signature.getClassName());
+        let exportInfo = importInfo ? findExportInfo(importInfo) : null;
+        let arkExport = exportInfo?.getArkExport();
+        if (arkExport instanceof ArkClass) {
+            return arkExport;
         }
 
         cls = method.getDeclaringArkClass().getDeclaringArkNamespace()?.getClassWithName(signature.getClassName());
@@ -297,4 +326,320 @@ export class ModelUtils {
         return method.getDeclaringArkFile().getClassWithName(signature.getClassName());
     }
 
+    public static findPropertyInNamespace(name: string, namespace: ArkNamespace): ArkExport | undefined {
+        return namespace.getDefaultClass()?.getMethodWithName(name)
+            ?? findArkExport(namespace.getExportInfoBy(name))
+            ?? namespace.getClassWithName(name)
+            ?? namespace.getNamespaceWithName(name)
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name)
+            ?? namespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(name);
+    }
+
+    public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
+        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name)
+            ?? arkClass.getSuperClass()?.getMethodWithName(name);
+        if (arkMethod) {
+            return arkMethod;
+        }
+        const arkField = arkClass.getFieldWithName(name) ?? arkClass.getStaticFieldWithName(name);
+        if (arkField) {
+            return arkField;
+        }
+        if (arkClass.isDefaultArkClass()) {
+            return findArkExport(arkClass.getDeclaringArkFile().getExportInfoBy(name));
+        }
+        return null;
+    }
+
+    public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
+        if (file.getFilePath().includes(COMPONENT_PATH) || file.getFilePath().includes(API_INTERNAL)) {
+            this.getAllClassesInFile(file).forEach(cls => {
+                if (!cls.isAnonymousClass()) {
+                    globalMap.set(cls.getName(), cls);
+                    cls.getMethods().forEach(mtd => {
+                        if (!mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod()) {
+                            globalMap.set(mtd.getName(), mtd);
+                        }
+                    });
+                }
+            });
+            file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().forEach(local => {
+                const name = local.getName();
+                if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX) && !name.endsWith(COMPONENT_INSTANCE)) {
+                    const type = local.getType();
+                    let arkExport;
+                    if (type instanceof UnclearReferenceType) {
+                        arkExport = findArkExportInFile(type.getName(), file);
+                    } else if (type instanceof ClassType) {
+                        arkExport = file.getScene().getClass(type.getClassSignature());
+                    }
+                    if (arkExport instanceof ArkClass) {
+                        const signature = new ClassSignature(name, arkExport.getSignature().getDeclaringFileSignature(),
+                            arkExport.getSignature().getDeclaringNamespaceSignature());
+                        let entry = new ArkClass();
+                        entry.setSignature(signature);
+                        arkExport.getMethods().forEach(m => {
+                            const ms = m.getSignature();
+                            m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                            checkAndUpdateMethod(m, entry);
+                            entry.addMethod(m);
+                        });
+                        const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
+                        if (attr instanceof ArkClass) {
+                            attr.getMethods().forEach(m => {
+                                const ms = m.getSignature();
+                                m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                                checkAndUpdateMethod(m, entry);
+                                entry.addMethod(m);
+                            });
+                        }
+                        globalMap.set(name, entry);
+                    }
+                }
+            });
+        }
+    }
+
+}
+
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
+let moduleMap: Map<string, ModulePath> | undefined = undefined;
+const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
+
+/**
+ * find arkFile by from info
+ * export xx from '../xx'
+ * import xx from '@ohos/xx'
+ * import xx from '@ohos.xx'
+ * @param im importInfo or exportInfo
+ */
+export function getArkFile(im: FromInfo): ArkFile | null | undefined {
+    const from = im.getFrom();
+    if (!from) {
+        return null;
+    }
+    if (/^([^@]*\/)([^\/]*)$/.test(from)) { //relative path
+        const parentPath = /^\.{1,2}\//.test(from) ? path.dirname(im.getDeclaringArkFile().getFilePath())
+            : im.getDeclaringArkFile().getProjectDir();
+        const originPath = path.resolve(parentPath, from);
+        return getArkFileFromScene(im, originPath);
+    } else if (/^@[a-z|\-]+?\//.test(from)) { //module path
+        const arkFile = getArkFileFromOtherModule(im);
+        if (arkFile) {
+            return arkFile;
+        }
+    }
+    //sdk path
+    const scene = im.getDeclaringArkFile().getScene();
+    for (const sdk of scene.getProjectSdkMap().values()) {
+        const arkFile = getArkFileFormMap(processSdkPath(sdk, from), scene.getSdkArkFilesMap());
+        if (arkFile) {
+            return arkFile;
+        }
+    }
+}
+
+/**
+ * find from info's export
+ * @param fromInfo importInfo or exportInfo
+ */
+export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
+    let file = getArkFile(fromInfo);
+    if (!file) {
+        logger.warn(`${fromInfo.getOriginName()} ${fromInfo.getFrom()} file not found: 
+        ${fromInfo.getDeclaringArkFile()?.getFileSignature()?.toString()}`);
+        return null;
+    }
+    let exportInfo = findExportInfoInfile(fromInfo, file) || null;
+    if (exportInfo === null) {
+        logger.warn('export info not found, ' + fromInfo.getFrom() + ' in file: '
+            + fromInfo.getDeclaringArkFile().getFileSignature().toString());
+        return null;
+    }
+    const arkExport = findArkExport(exportInfo);
+    exportInfo.setArkExport(arkExport);
+    if (arkExport) {
+        exportInfo.setExportClauseType(arkExport.getExportType());
+    }
+    return exportInfo;
+}
+
+function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
+    if (!exportInfo) {
+        return null;
+    }
+    let arkExport = exportInfo.getArkExport();
+    if (arkExport || arkExport === null) {
+        return arkExport;
+    }
+    if (!exportInfo.getFrom()) {
+        const name = exportInfo.getOriginName();
+        if (exportInfo.getExportClauseType() === ExportType.LOCAL) {
+            arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name) || null;
+        } else if (exportInfo.getExportClauseType() === ExportType.TYPE) {
+            arkExport = exportInfo.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name) || null;
+        } else {
+            arkExport = findArkExportInFile(name, exportInfo.getDeclaringArkFile());
+        }
+    } else if (exportInfo.getExportClauseType() === ExportType.UNKNOWN) {
+        const result = findExportInfo(exportInfo);
+        if (result) {
+            arkExport = result.getArkExport() || null;
+        }
+    }
+    if (!arkExport) {
+        logger.warn(`${exportInfo.getExportClauseName()} get arkExport fail from ${exportInfo.getFrom()} at
+                ${exportInfo.getDeclaringArkFile().getFileSignature().toString()}`);
+    }
+    return arkExport || null;
+}
+
+export function findArkExportInFile(name: string, declaringArkFile: ArkFile): ArkExport | null {
+    let arkExport: ArkExport | undefined | null = declaringArkFile.getClassWithName(name)
+        ?? declaringArkFile.getDefaultClass().getMethodWithName(name)
+        ?? declaringArkFile.getNamespaceWithName(name)
+        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name)
+        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name);
+    if (!arkExport) {
+        const importInfo = declaringArkFile.getImportInfoBy(name);
+        if (importInfo) {
+            const result = findExportInfo(importInfo);
+            if (result) {
+                arkExport = result.getArkExport();
+            }
+        }
+    }
+    return arkExport || null;
+}
+
+function processSdkPath(sdk: Sdk, formPath: string): string {
+    const sdkName = sdk.name;
+    let dir;
+    if (formPath.startsWith('@ohos.') || formPath.startsWith('@hms.') || formPath.startsWith('@system.')) {
+        dir = 'api';
+    } else if (formPath.startsWith('@kit.')) {
+        dir = 'kits';
+    } else if (formPath.startsWith('@arkts.')) {
+        dir = 'arkts';
+    } else {
+        let originPath = path.join(sdk.path, formPath);
+        if (FileUtils.isDirectory(originPath)) {
+            formPath = path.join(formPath, FileUtils.getIndexFileName(originPath));
+        }
+        return `@${sdkName}/${formPath}`;
+    }
+    return `@${sdkName}/${dir}/${formPath}`;
+}
+
+function getArkFileFromScene(im: FromInfo, originPath: string) {
+    if (FileUtils.isDirectory(originPath)) {
+        originPath = path.join(originPath, FileUtils.getIndexFileName(originPath));
+    }
+    const fileName = path.relative(im.getDeclaringArkFile().getProjectDir(), originPath);
+    const scene = im.getDeclaringArkFile().getScene();
+    if (/\.e?ts$/.test(originPath)) {
+        const fromSignature = new FileSignature(im.getDeclaringArkFile().getProjectName(), fileName);
+        return scene.getFile(fromSignature);
+    }
+    const projectName = im.getDeclaringArkFile().getProjectName();
+    const filePath = `@${projectName}/${fileName}`;
+    if (projectName !== scene.getProjectName()) {
+        return getArkFileFormMap(filePath, scene.getSdkArkFilesMap());
+    }
+    return getArkFileFormMap(filePath, scene.getFilesMap());
+}
+
+function getArkFileFormMap(filePath: string, map: Map<string, ArkFile>) {
+    if (/\.e?ts$/.test(filePath)) {
+        return map.get(transfer2UnixPath(filePath) + ': ');
+    }
+    for (const suffix of fileSuffixArray) {
+        const arkFile = map.get(transfer2UnixPath(filePath) + suffix);
+        if (arkFile) {
+            return arkFile;
+        }
+    }
+}
+
+
+function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
+    const exportName = fromInfo.isDefault() ? DEFAULT : fromInfo.getOriginName();
+    let exportInfo = file.getExportInfoBy(exportName);
+    if (exportInfo) {
+        return exportInfo;
+    }
+
+    if (fromInfo.isDefault()) {
+        exportInfo = file.getExportInfos().find(p => p.isDefault());
+        if (exportInfo) {
+            file.addExportInfo(exportInfo, DEFAULT);
+            return exportInfo;
+        }
+    }
+
+    if (fromInfo.getOriginName() === ALL) {
+        exportInfo = buildDefaultExportInfo(fromInfo, file);
+        file.addExportInfo(exportInfo, ALL);
+    } else if (/\.d\.e?ts$/.test(file.getName())) {
+        const declare = findArkExportInFile(fromInfo.getOriginName(), file);
+        if (declare) {
+            exportInfo = buildDefaultExportInfo(fromInfo, file, declare);
+        }
+    }
+
+    return exportInfo;
+}
+
+
+function getArkFileFromOtherModule(fromInfo: FromInfo) {
+    if (moduleMap === undefined) {
+        moduleMap = FileUtils.generateModuleMap(fromInfo.getDeclaringArkFile().getScene().getOhPkgContentMap());
+    }
+    if (!moduleMap || moduleMap.size === 0) {
+        return;
+    }
+    const from = fromInfo.getFrom()!;
+    let index: number;
+    let file;
+    let modulePath;
+    //find file by given from like '@ohos/module/src/xxx' '@ohos/module/index'
+    if ((index = from.indexOf('src')) > 0 || (index = from.indexOf('Index')) > 0 || (index = from.indexOf('index')) > 0) {
+        modulePath = moduleMap.get(from.substring(0, index).replace(/\/*$/, ''));
+        file = findFileInModule(fromInfo, modulePath, from.substring(index));
+    }
+    if (file) {
+        return file;
+    }
+    modulePath = modulePath ?? moduleMap.get(from);
+    if (!modulePath) {
+        return file;
+    }
+    //find file in module json main path
+    if (modulePath.main) {
+        file = getArkFileFromScene(fromInfo, modulePath.main);
+    }
+    //find file in module path Index.ts
+    if (!file && FileUtils.isDirectory(modulePath.path)) {
+        file = findFileInModule(fromInfo, modulePath, FileUtils.getIndexFileName(modulePath.path));
+    }
+    //find file in module path/src/main/ets/TsIndex.ts
+    if (!file) {
+        file = findFileInModule(fromInfo, modulePath, '/src/main/ets/TsIndex.ts');
+    }
+    return file;
+}
+
+function findFileInModule(fromInfo: FromInfo, modulePath: ModulePath | undefined, contentPath: string) {
+    if (!modulePath) {
+        return;
+    }
+    const originPath = path.join(modulePath.path, contentPath);
+    let file;
+    if (originPath !== modulePath.main) {
+        file = getArkFileFromScene(fromInfo, originPath);
+    }
+    if (file && findExportInfoInfile(fromInfo, file)) {
+        return file;
+    }
 }

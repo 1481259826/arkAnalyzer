@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import path from "path";
+
 export const ETS_COMPILER_OPTIONS = {
     ets: {
         emitDecorators: [
@@ -897,6 +899,8 @@ export const COMPONENT_CREATE_FUNCTION: string = 'create';
 export const COMPONENT_POP_FUNCTION: string = 'pop';
 export const COMPONENT_CUSTOMVIEW: string = 'View';
 export const COMPONENT_REPEAT: string = 'Repeat';
+export const COMPONENT_FOR_EACH: string = 'ForEach';
+export const COMPONENT_LAZY_FOR_EACH: string = 'LazyForEach';
 
 export const COMPONENT_IF: string = 'If';
 export const COMPONENT_IF_BRANCH: string = 'IfBranch';
@@ -909,3 +913,10 @@ export const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([
     COMPONENT_CUSTOMVIEW,
     COMPONENT_REPEAT,
 ]);
+
+export const COMPONENT_PATH: string = path.sep + 'component' + path.sep;
+export const COMPONENT_COMMON: string = 'Common';
+export const COMPONENT_INSTANCE: string = 'Instance';
+export const API_INTERNAL: string = path.sep + '@internal' + path.sep;
+
+export const COMPONENT_ATTRIBUTE: string = 'Attribute';

@@ -33,17 +33,23 @@ import {
     ArkThrowStmt,
     Stmt,
 } from '../../core/base/Stmt';
-import { ClassType, Type } from '../../core/base/Type';
+import { AliasType, ClassType, Type } from '../../core/base/Type';
 import { Value } from '../../core/base/Value';
 import { BasicBlock } from '../../core/graph/BasicBlock';
-import Logger from '../../utils/logger';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
-import { Origin_Component, Origin_Object, Origin_TypeLiteral, SourceUtils } from './SourceUtils';
+import {
+    CLASS_CATEGORY_COMPONENT,
+    SourceUtils,
+} from './SourceUtils';
+import { ValueUtil } from '../../core/common/ValueUtil';
+import { ClassCategory } from '../../core/model/ArkClass';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
+const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
 
 export interface StmtPrinterContext extends TransformerContext {
     getStmtReader(): StmtReader;
@@ -69,7 +75,7 @@ export abstract class SourceStmt implements Dump {
     original: Stmt;
     context: StmtPrinterContext;
     line: number;
-    text: string;
+    text: string = '';
     transformer: SourceTransformer;
 
     constructor(context: StmtPrinterContext, original: Stmt) {
@@ -139,14 +145,16 @@ enum AssignStmtDumpType {
 }
 
 export class SourceAssignStmt extends SourceStmt {
-    private leftOp: Value;
-    private rightOp: Value;
-    private leftCode: string;
-    private rightCode: string;
-    private dumpType: AssignStmtDumpType;
+    private leftOp: Value = ValueUtil.getUndefinedConst();
+    private rightOp: Value = ValueUtil.getUndefinedConst();
+    private leftCode: string = '';
+    private rightCode: string = '';
+    private dumpType?: AssignStmtDumpType;
+    private leftTypeCode: string;
 
     constructor(context: StmtPrinterContext, original: ArkAssignStmt) {
         super(context, original);
+        this.leftTypeCode = '';
     }
 
     public transfer2ts(): void {
@@ -195,6 +203,21 @@ export class SourceAssignStmt extends SourceStmt {
             this.setText(`${this.leftCode} = ${this.rightCode}`);
             this.dumpType = AssignStmtDumpType.TEMP_REPLACE;
         }
+
+        let leftOpType = this.leftOp.getType();
+        if (leftOpType instanceof ClassType) {
+            let name = leftOpType.getClassSignature().getClassName();
+            if (SourceUtils.isAnonymousClass(name)) {
+                this.leftTypeCode = 'any';
+            } else {
+                this.leftTypeCode = name;
+            }
+        } else {
+            this.leftTypeCode = this.transformer.typeToString(leftOpType);
+        }
+        if (IGNOR_TYPES.has(this.leftTypeCode)) {
+            this.leftTypeCode = '';
+        }
     }
 
     protected beforeDump(): void {
@@ -215,10 +238,15 @@ export class SourceAssignStmt extends SourceStmt {
                 if (this.context.isLocalDefined(this.leftOp)) {
                     this.setText(`${this.leftCode} = ${this.rightCode};`);
                 } else {
+                    let flag = this.leftOp.getConstFlag() ? 'const': 'let';
                     if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
-                        this.setText(`export let ${this.leftCode} = ${this.rightCode};`);
+                        this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
                     } else {
-                        this.setText(`let ${this.leftCode} = ${this.rightCode};`);
+                        if (this.leftTypeCode.length > 0) {
+                            this.setText(`${flag} ${this.leftCode}: ${this.leftTypeCode} = ${this.rightCode};`);
+                        } else {
+                            this.setText(`${flag} ${this.leftCode} = ${this.rightCode};`);
+                        }
                     }
 
                     this.context.defineLocal(this.leftOp);
@@ -235,7 +263,7 @@ export class SourceAssignStmt extends SourceStmt {
         }
     }
 
-    private getClassOriginType(type: Type): string | undefined {
+    private getClassOriginType(type: Type): number | undefined {
         if (!(type instanceof ClassType)) {
             return undefined;
         }
@@ -268,10 +296,12 @@ export class SourceAssignStmt extends SourceStmt {
                         args.push(this.transformer.valueToString(v));
                     });
 
-                    if (originType == Origin_Component) {
+                    if (originType == CLASS_CATEGORY_COMPONENT) {
                         this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
-                    } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
-                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
+                    } else if (originType == ClassCategory.TYPE_LITERAL || originType == ClassCategory.OBJECT) {
+                        this.rightCode = `${this.transformer.literalObjectToString(
+                            this.rightOp.getType() as ClassType
+                        )}`;
                     } else {
                         this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
                             ', '
@@ -285,9 +315,9 @@ export class SourceAssignStmt extends SourceStmt {
             }
         }
 
-        if (originType == Origin_Component) {
+        if (originType == CLASS_CATEGORY_COMPONENT) {
             this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}()`;
-        } else if (originType == Origin_TypeLiteral || originType == Origin_Object) {
+        } else if (originType == ClassCategory.TYPE_LITERAL || originType == ClassCategory.OBJECT) {
             this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
         } else {
             this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}()`;
@@ -669,7 +699,7 @@ export class SourceDoWhileStmt extends SourceWhileStmt {
 }
 
 export class SourceElseStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkIfStmt) {
+    constructor(context: StmtPrinterContext, original: Stmt) {
         super(context, original);
     }
 
@@ -804,6 +834,18 @@ export class SourceThrowStmt extends SourceStmt {
 
     public transfer2ts(): void {
         this.setText(`throw ${this.transformer.valueToString((this.original as ArkThrowStmt).getOp())};`);
+    }
+}
+
+export class SourceTypeAliasStmt extends SourceStmt {
+    aliasType: AliasType;
+    constructor(context: StmtPrinterContext, original: Stmt, aliasType: AliasType) {
+        super(context, original);
+        this.aliasType = aliasType;
+    }
+
+    public transfer2ts(): void {
+        this.setText(`type ${this.aliasType.getName()} = ${this.transformer.typeToString(this.aliasType.getOriginalType())};`);
     }
 }
 

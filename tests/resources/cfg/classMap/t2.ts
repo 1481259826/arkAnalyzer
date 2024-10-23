@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { A,t } from "./t1";
+import { t } from './t1';
 
 export class C2{
     static n=1;

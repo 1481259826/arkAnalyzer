@@ -13,61 +13,66 @@
  * limitations under the License.
  */
 
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
-import fs from 'fs';
-import * as ts from 'ohos-typescript';
-import { ArkIRTransformer } from '../src/core/common/ArkIRTransformer';
+import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
-import { ArkMethod } from '../src/core/model/ArkMethod';
-import { ArkClass } from '../src/core/model/ArkClass';
-import { ArkInstanceFieldRef, ArkInstanceInvokeExpr, PrinterBuilder } from '../src';
+import { ArkInstanceFieldRef, PrinterBuilder } from '../src';
 import { ModelUtils } from '../src/core/common/ModelUtils';
 import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
 
 const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger();
-Logger.configure(logPath, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
+Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 class ArkIRTransformerTest {
-    public async testSimpleStmt() {
-        logger.info('testSimpleStmt start');
-        const tsFilePath = 'tests/resources/arkIRTransformer/mainModule/main.ts';
-        const tsSourceCode = fs.readFileSync(tsFilePath).toString();
-        const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest);
-
-        const dumpClass = new ArkClass();
-        dumpClass.setName('dumpClass');
-        const dumpMethod = new ArkMethod();
-        dumpMethod.setName('dumpMethod');
-        dumpClass.addMethod(dumpMethod);
-        dumpMethod.setDeclaringArkClass(dumpClass);
-
-        const arkIRTransformer = new ArkIRTransformer(sourceFile, dumpMethod);
-        for (const statement of sourceFile.statements) {
-            const stmts = arkIRTransformer.tsNodeToStmts(statement);
-            logger.info(`ts node text: ${statement.getText(sourceFile)}`);
-            logger.info(`stmts:`);
-            for (const stmt of stmts) {
-                logger.info(`-- ${stmt.toString()}`);
-            }
-        }
-        logger.info('testSimpleStmt end\n');
-    }
+    // public async testSimpleStmt() {
+    //     logger.info('testSimpleStmt start');
+    //     const tsFilePath = 'tests/resources/arkIRTransformer/mainModule/main.ts';
+    //     const tsSourceCode = fs.readFileSync(tsFilePath).toString();
+    //     const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest, true, undefined, ETS_COMPILER_OPTIONS);
+    //
+    //     const dumpArkFile = new ArkFile();
+    //     dumpArkFile.setName('dumpArkFile');
+    //     dumpArkFile.setProjectName('dumpProject');
+    //     dumpArkFile.genFileSignature();
+    //     const dumpArkClass = new ArkClass();
+    //     dumpArkClass.setName('dumpArkClass');
+    //     dumpArkFile.addArkClass(dumpArkClass);
+    //     dumpArkClass.setDeclaringArkFile(dumpArkFile);
+    //     dumpArkClass.genSignature();
+    //     const dumpArkMethod = new ArkMethod();
+    //     dumpArkMethod.setName('dumpArkMethod');
+    //     dumpArkClass.addMethod(dumpArkMethod);
+    //     dumpArkMethod.setDeclaringArkClass(dumpArkClass);
+    //
+    //     const arkIRTransformer = new ArkIRTransformer(sourceFile, dumpArkMethod);
+    //     for (const statement of sourceFile.statements) {
+    //         const stmts = arkIRTransformer.tsNodeToStmts(statement);
+    //         logger.info(`ts node text: ${statement.getText(sourceFile)}`);
+    //         logger.info(`stmts:`);
+    //         for (const stmt of stmts) {
+    //             logger.info(`-- ${stmt.toString()}`);
+    //         }
+    //     }
+    //     logger.info('locals:');
+    //     arkIRTransformer.getLocals().forEach(local => {
+    //         logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+    //     });
+    //
+    //     logger.info('testSimpleStmt end\n');
+    // }
 
     public testStmtsOfSimpleProject() {
         logger.error('testStmtsOfSimpleProject start');
 
-        // const projectDir = 'tests/resources/ArkIRTransformer/mainModuleEts';
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        // const projectDir = 'tests/resources/arkIRTransformer/expression';
-        // const projectDir = 'tests/resources/arkIRTransformer/assignment';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
+        logger.error('\nbafore inferTypes');
         // this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
@@ -89,7 +94,7 @@ class ArkIRTransformerTest {
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
         scene.collectProjectImportInfos();
-        // this.printScene(scene);
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -166,7 +171,7 @@ class ArkIRTransformerTest {
             if (thisLocal1) {
                 logger.log(`thisLocal1 equal to thisLocal2: ${thisLocal1 === thisLocal2}`);
             }
-        }else {
+        } else {
             logger.log(`cfg is undefined`);
         }
 

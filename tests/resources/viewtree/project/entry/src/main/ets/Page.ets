@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {City} from '@hmos/worldclock';
+import { City } from '@hmos/worldclock';
 import Rename from '@hmos/worldclock/src/main/ets/RenameTest';
 
 @Entry

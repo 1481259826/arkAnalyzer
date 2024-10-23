@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-import { getLogger, configure } from 'log4js';
+import { configure, getLogger } from 'log4js';
+
 configure({
     appenders: {
         console: {
@@ -52,22 +53,6 @@ function controlTest() {
         } else {
             logger.info(`${sampleData[i]} 是奇数`);
         }
-
-        // 使用 switch 判断
-        switch (sampleData[i] % 3) {
-            case 0:
-                logger.info(`${sampleData[i]} 可被 3 整除`);
-                break;
-            case 1:
-                logger.info(`${sampleData[i]} 除以 3 余 1`);
-                break;
-            case 2:
-                logger.info(`${sampleData[i]} 除以 3 余 2`);
-                break;
-            default:
-                logger.info('无法判断');
-        }
-
         // 使用 while 循环
         let count = 0;
         while (count < sampleData[i]) {
@@ -203,7 +188,7 @@ function deleteTest() {
     let bbb: number[] = x.b;
     delete x.a;
     delete bbb[0];
-    logger.info(x); // { b: [ undefined, 100 ] }
+    logger.info(x);
     delete x;
 }
 
@@ -228,3 +213,41 @@ export { ExtendedAdder as ExtAdder, ExtendedAdder };
 forLoopTest();
 controlTest();
 deleteTest();
+
+function dealColor(rRGB: number, gRGB: number, bRGB: number) {
+    let max = Math.max(Math.max(rRGB, gRGB), bRGB);
+    let min = Math.min(Math.min(rRGB, gRGB), bRGB);
+    let bHSB = max / 255;
+    let hHSB = 0;
+    if (max === rRGB && gRGB >= bRGB) {
+        hHSB = (60 * (gRGB - bRGB)) / (max - min) + 0;
+    }
+    if (max === rRGB && gRGB < bRGB) {
+        hHSB = (60 * (gRGB - bRGB)) / (max - min) + 360;
+    }
+    if (max === gRGB) {
+        hHSB = (60 * (bRGB - rRGB)) / (max - min) + 120;
+    }
+    if (max === bRGB) {
+        hHSB = (60 * (rRGB - gRGB)) / (max - min) + 240;
+    }
+
+    if (bHSB >= 0.4) {
+        bHSB = 0.3;
+    } else if (bHSB >= 0.2) {
+        bHSB -= 0.1;
+    } else {
+        bHSB = bHSB + 0.2;
+    }
+}
+
+function specialString(text: string) {
+    const lrcLineRegex: RegExp = new RegExp('\\[\\d{2,}:\\d{2}((\\.|:)\\d{2,})\\]', 'g');
+    const lrcTimeRegex1: RegExp = new RegExp('\\[\\d{2,}', 'i');
+    const lrcTimeRegex2: RegExp = new RegExp('\\d{2}\\.\\d{2,}', 'i');
+    let lyric: string[] = text.split('\n');
+}
+
+function dotDotDotTokenTest(...args: string[]): void {
+
+}

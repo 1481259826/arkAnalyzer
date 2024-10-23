@@ -15,10 +15,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import Logger from './logger';
+import Logger, { LOG_MODULE_TYPE } from './logger';
 import { transfer2UnixPath } from './pathTransfer';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'FileUtils');
 
 export class FileUtils {
     public static readonly FILE_FILTER = {

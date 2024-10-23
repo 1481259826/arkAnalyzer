@@ -13,18 +13,16 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { ArkBody } from "../src/core/model/ArkBody";
+import { SceneConfig } from '../src/Config';
+import { Scene } from '../src/Scene';
+import { ArkBody } from '../src/core/model/ArkBody';
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
         let config: SceneConfig = new SceneConfig();
-        // config.buildFromJson(config_path);
         config.buildFromProjectDir("tests/resources/type")
         const scene = new Scene();
         scene.buildBasicInfo(config);
-        // scene.buildScene4HarmonyProject();
         scene.buildSceneFromProjectDir(config);
         scene.collectProjectImportInfos();
         return scene
@@ -33,8 +31,7 @@ export class TypeInferenceTest {
     public testLocalTypes() {
         let scene = this.buildScene();
         scene.inferTypes();
-        scene.getEntryMethodsFromModuleJson5()
-        // scene.inferSimpleTypes();
+        scene.getEntryMethodsFromModuleJson5();
     }
 
     public printStmts(body: ArkBody): void {

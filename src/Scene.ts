@@ -17,10 +17,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { AbstractCallGraph } from './callgraph/AbstractCallGraphAlgorithm';
-import { ClassHierarchyAnalysisAlgorithm } from './callgraph/ClassHierarchyAnalysisAlgorithm';
-import { RapidTypeAnalysisAlgorithm } from './callgraph/RapidTypeAnalysisAlgorithm';
-import { VariablePointerAnalysisAlogorithm } from './callgraph/VariablePointerAnalysisAlgorithm';
 import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
@@ -30,20 +26,19 @@ import { ArkFile } from './core/model/ArkFile';
 import { ArkMethod } from './core/model/ArkMethod';
 import { ArkNamespace } from './core/model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
-import Logger from './utils/logger';
+import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { Local } from './core/base/Local';
 import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
-import { ExportType } from './core/model/ArkExport';
-import { generateDefaultClassField } from './core/model/builder/ArkClassBuilder';
-import { ClassType } from './core/base/Type';
+import { ArkExport, ExportType } from './core/model/ArkExport';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
-import { getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from './utils/entryMethodUtils';
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
+import { CallGraph } from './callgraph/model/CallGraph';
+import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 
-const logger = Logger.getLogger();
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 enum SceneBuildStage {
     BUILD_INIT,
@@ -58,7 +53,7 @@ enum SceneBuildStage {
 export class Scene {
     private projectName: string = '';
     private projectFiles: string[] = [];
-    private realProjectDir: string;
+    private realProjectDir: string = '';
 
     private moduleScenesMap: Map<string, ModuleScene> = new Map();
     private modulePath2NameMap: Map<string, string> = new Map<string, string>();
@@ -78,7 +73,7 @@ export class Scene {
     private methodsMap: Map<string, ArkMethod> = new Map();
     // TODO: type of key should be signature object
     private sdkArkFilesMap: Map<string, ArkFile> = new Map<string, ArkFile>();
-
+    private sdkGlobalMap: Map<string, ArkExport> = new Map<string, ArkExport>();
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
@@ -105,7 +100,14 @@ export class Scene {
 
         const buildProfile = path.join(this.realProjectDir, './build-profile.json5');
         if (fs.existsSync(buildProfile)) {
-            const buildProfileJson = parseJsonText(fs.readFileSync(buildProfile, 'utf-8'));
+            let configurationsText: string;
+            try {
+                configurationsText = fs.readFileSync(buildProfile, 'utf-8');
+            } catch (error) {
+                logger.error(`Error reading file: ${error}`);
+                return;
+            }
+            const buildProfileJson = parseJsonText(configurationsText);
             const modules = buildProfileJson.modules;
             if (modules instanceof Array) {
                 modules.forEach((module) => {
@@ -175,12 +177,10 @@ export class Scene {
             logger.info('=== parse file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
-            arkFile.setProjectName(this.projectName);
-            buildArkFileFromFile(file, this.realProjectDir, arkFile);
+            buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
             this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
         });
         this.buildAllMethodBody();
-        this.genExtendedClasses();
         this.addDefaultConstructors();
     }
 
@@ -190,8 +190,8 @@ export class Scene {
             logger.info('=== parse sdk file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
-            arkFile.setProjectName(sdkName);
-            buildArkFileFromFile(file, path.normalize(sdkPath), arkFile);
+            buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
+            ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
             const fileSig = arkFile.getFileSignature().toString();
             this.sdkArkFilesMap.set(fileSig, arkFile);
         });
@@ -212,7 +212,6 @@ export class Scene {
         });
 
         this.buildAllMethodBody();
-        this.genExtendedClasses();
         this.addDefaultConstructors();
     }
 
@@ -274,6 +273,10 @@ export class Scene {
         return this.projectFiles;
     }
 
+    public getSdkGlobal(globalName: string): ArkExport | null {
+        return this.sdkGlobalMap.get(globalName) || null;
+    }
+
     public getFile(fileSignature: FileSignature): ArkFile | null {
         if (this.projectName === fileSignature.getProjectName()) {
             return this.filesMap.get(fileSignature.toString()) || null;
@@ -326,9 +329,9 @@ export class Scene {
         return Array.from(this.getNamespacesMap().values());
     }
 
-    public getClass(classSignature: ClassSignature): ArkClass | null {
+    public getClass(classSignature: ClassSignature, refresh?: boolean): ArkClass | null {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
-            return this.getClassesMap().get(classSignature.toString()) || null;
+            return this.getClassesMap(refresh).get(classSignature.toString()) || null;
         } else {
             const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
             const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
@@ -341,7 +344,7 @@ export class Scene {
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
         if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
-            this.classesMap.clear()
+            this.classesMap.clear();
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
                     this.classesMap.set(cls.getSignature().toString(), cls);
@@ -356,13 +359,13 @@ export class Scene {
         return this.classesMap;
     }
 
-    public getClasses(): ArkClass[] {
-        return Array.from(this.getClassesMap().values());
+    public getClasses(refresh?: boolean): ArkClass[] {
+        return Array.from(this.getClassesMap(refresh).values());
     }
 
-    public getMethod(methodSignature: MethodSignature): ArkMethod | null {
+    public getMethod(methodSignature: MethodSignature, refresh?: boolean): ArkMethod | null {
         if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
-            return this.getMethodsMap().get(methodSignature.toString()) || null;
+            return this.getMethodsMap(refresh).get(methodSignature.toString()) || null;
         } else {
             return this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature) || null;
         }
@@ -370,7 +373,7 @@ export class Scene {
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
         if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
-            this.methodsMap.clear()
+            this.methodsMap.clear();
             for (const cls of this.getClassesMap().values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toString(), method);
@@ -380,8 +383,12 @@ export class Scene {
         return this.methodsMap;
     }
 
-    public getMethods(): ArkMethod[] {
-        return Array.from(this.getMethodsMap().values());
+    public getMethods(refresh?: boolean): ArkMethod[] {
+        return Array.from(this.getMethodsMap(refresh).values());
+    }
+
+    public addToMethodsMap(method: ArkMethod): void {
+        this.methodsMap.set(method.getSignature().toString(), method);
     }
 
     public hasMainMethod(): boolean {
@@ -410,26 +417,18 @@ export class Scene {
         return this.ohPkgFilePath;
     }
 
-    public makeCallGraphCHA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphCHA: AbstractCallGraph;
-        callGraphCHA = new ClassHierarchyAnalysisAlgorithm(this);
-        callGraphCHA.loadCallGraph(entryPoints);
-        return callGraphCHA;
+    public makeCallGraphCHA(entryPoints: MethodSignature[]): CallGraph {
+        let callGraph = new CallGraph(this);
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this);
+        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints);
+        return callGraph;
     }
 
-    public makeCallGraphRTA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        let callGraphRTA: AbstractCallGraph;
-        callGraphRTA = new RapidTypeAnalysisAlgorithm(this);
-        callGraphRTA.loadCallGraph(entryPoints);
-        return callGraphRTA;
-    }
-
-    public makeCallGraphVPA(entryPoints: MethodSignature[]): AbstractCallGraph {
-        // WIP context-insensitive 上下文不敏感
-        let callGraphVPA: AbstractCallGraph;
-        callGraphVPA = new VariablePointerAnalysisAlogorithm(this);
-        callGraphVPA.loadCallGraph(entryPoints);
-        return callGraphVPA;
+    public makeCallGraphRTA(entryPoints: MethodSignature[]): CallGraph {
+        let callGraph = new CallGraph(this);
+        let callGraphBuilder = new CallGraphBuilder(callGraph, this);
+        callGraphBuilder.buildRapidTypeCallGraph(entryPoints);
+        return callGraph;
     }
 
     /**
@@ -437,20 +436,21 @@ export class Scene {
      * because default and generated method was finished
      */
     public inferTypes() {
-        this.getClassesMap().forEach(arkClass => {
-            if (arkClass.isDefaultArkClass()) {
-                generateDefaultClassField(arkClass);
-            }
-            arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+        this.sdkArkFilesMap.forEach(file => {
+            ModelUtils.buildGlobalMap(file, this.sdkGlobalMap);
         });
-        this.getMethodsMap().forEach(arkMethod => {
-            if (!arkMethod.isDefaultArkMethod() && !arkMethod.isGenerated()) {
-                TypeInference.inferTypeInMethod(arkMethod);
-            }
+        this.filesMap.forEach(file => {
+            ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
+                TypeInference.inferGenericType(arkClass.getGenericsTypes(),arkClass);
+                arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+                const defaultArkMethod = arkClass.getDefaultArkMethod();
+                if (defaultArkMethod) {
+                    TypeInference.inferTypeInMethod(defaultArkMethod);
+                }
+                arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
+            });
         });
-
-        this.getClassesMap(true)
-        this.getMethodsMap(true)
+        this.getMethodsMap(true);
     }
 
     /**
@@ -472,22 +472,6 @@ export class Scene {
             arkFile.getImportInfos().forEach((importInfo) => {
                 this.globalImportInfos.push(importInfo);
             });
-        });
-    }
-
-    private genExtendedClasses() {
-        this.getClassesMap().forEach((cls) => {
-            if (cls.getSuperClassName() !== '') {
-                const type = TypeInference.inferUnclearReferenceType(cls.getSuperClassName(), cls);
-                let superClass;
-                if (type && type instanceof ClassType) {
-                    superClass = cls.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
-                }
-                if (superClass) {
-                    cls.setSuperClass(superClass);
-                    superClass.addExtendedClass(cls);
-                }
-            }
         });
     }
 
@@ -573,7 +557,6 @@ export class Scene {
                         const importNameSpaceClasses = classMap.get(importNameSpace.getNamespaceSignature())!;
                         importClasses.push(...importNameSpaceClasses.filter(c => !importClasses.includes(c) && c.getName() != '_DEFAULT_ARK_CLASS'));
                     } catch {
-                        // logger.log(importNameSpace)
                     }
 
                 }
@@ -640,8 +623,8 @@ export class Scene {
                 const finalNS = finalNamespaces.shift()!;
                 const exportLocal = [];
                 for (const exportInfo of finalNS.getExportInfos()) {
-                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getTypeSignature()) {
-                        exportLocal.push(exportInfo.getTypeSignature() as Local);
+                    if (exportInfo.getExportClauseType() === ExportType.LOCAL && exportInfo.getArkExport()) {
+                        exportLocal.push(exportInfo.getArkExport() as Local);
                     }
                 }
                 const parent = parentMap.get(finalNS)!;
@@ -683,7 +666,6 @@ export class Scene {
                         const importNameSpaceClasses = globalVariableMap.get(importNameSpace.getNamespaceSignature())!;
                         importLocals.push(...importNameSpaceClasses.filter(c => !importLocals.includes(c) && c.getName() != '_DEFAULT_ARK_CLASS'));
                     } catch {
-                        // logger.log(importNameSpace)
                     }
 
                 }
@@ -719,95 +701,6 @@ export class Scene {
         return globalVariableMap;
     }
 
-    public getEntryMethodsFromModuleJson5(): ArkMethod[] {
-        const projectDir = this.getRealProjectDir();
-        const buildProfile = path.join(projectDir, 'build-profile.json5');
-        if (!fs.existsSync(buildProfile)) {
-            logger.error(`${buildProfile} is not exists.`);
-            return [];
-        }
-
-        const abilities: ArkClass[] = [];
-        const buildProfileConfig = fetchDependenciesFromFile(buildProfile);
-        let modules: Array<any> | undefined;
-        if (buildProfileConfig instanceof Object) {
-            Object.entries(buildProfileConfig).forEach(([k, v]) => {
-                if (k == 'modules' && Array.isArray(v)) {
-                    modules = v;
-                    return;
-                }
-            });
-        }
-        if (Array.isArray(modules)) {
-            for (const module of modules) {
-                try {
-                    const moduleProfile = path.join(projectDir, module.srcPath, '/src/main/module.json5');
-                    const config = fetchDependenciesFromFile(moduleProfile);
-                    const configModule = config.module;
-                    if (configModule instanceof Object) {
-                        Object.entries(configModule).forEach(([k, v]) => {
-                            if (k == 'abilities' || k == 'extensionAbilities') {
-                                const moduleAbilities = getAbilities(v, path.join(projectDir, module.srcPath), this);
-                                for (const ability of moduleAbilities) {
-                                    if (!abilities.includes(ability)) {
-                                        abilities.push(ability);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                } catch (err) {
-                    logger.error(err);
-                }
-            }
-        }
-
-        const entryMethods: ArkMethod[] = [];
-        for (const ability of abilities) {
-            const abilityEntryMethods: ArkMethod[] = [];
-            let cls = ability;
-            // 遍历父类，加入子类中没有的method
-            while (cls) {
-                for (const method of cls.getMethods()) {
-                    for (const modifier of method.getModifiers()) {
-                        if (modifier == 'private') {
-                            continue;
-                        }
-                    }
-                    for (const mtd of abilityEntryMethods) {
-                        if (mtd.getName() == method.getName()) {
-                            continue;
-                        }
-                    }
-                    if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
-                        abilityEntryMethods.push(method);
-                    }
-                }
-                cls = cls.getSuperClass();
-            }
-            entryMethods.push(...abilityEntryMethods);
-        }
-        return entryMethods;
-    }
-
-    getCallbackMethods(): ArkMethod[] {
-        const callbackMethods: ArkMethod[] = [];
-        this.getMethods().forEach(method => {
-            if (!method.getCfg()) {
-                return;
-            }
-            method.getCfg()!.getBlocks().forEach(block => {
-                block.getStmts().forEach(stmt => {
-                    const cbMethod = getCallbackMethodFromStmt(stmt, this);
-                    if (cbMethod && !callbackMethods.includes(cbMethod)) {
-                        callbackMethods.push(cbMethod);
-                    }
-                });
-            });
-        });
-        return callbackMethods;
-    }
-
     public getStaticInitMethods(): ArkMethod[] {
         const staticInitMethods: ArkMethod[] = [];
         for (const method of Array.from(this.getMethodsMap(true).values())) {
@@ -832,14 +725,12 @@ export class Scene {
 }
 
 export class ModuleScene {
-    private projectScene: Scene;
+    private projectScene: Scene = new Scene();
     private moduleName: string = '';
     private modulePath: string = '';
 
     private moduleOhPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
-    private filesMap: Map<string, ArkFile> = new Map();
-
 
     constructor() {
     }
@@ -896,10 +787,9 @@ export class ModuleScene {
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this.projectScene);
             arkFile.setModuleScene(this);
-            arkFile.setProjectName(this.projectScene.getProjectName());
-            buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile);
+            buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,
+                this.projectScene.getProjectName());
             const fileSig = arkFile.getFileSignature().toString();
-            this.filesMap.set(fileSig, arkFile);
             this.projectScene.getFilesMap().set(fileSig, arkFile);
         });
     }
