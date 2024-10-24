@@ -60,6 +60,10 @@ export class ArkField extends ArkBaseModel {
         this.declaringClass = declaringClass;
     }
 
+    /**
+     * Returns the codes of field as a **string.**
+     * @returns the codes of field.
+     */
     public getCode() {
         return this.code;
     }
@@ -92,6 +96,10 @@ export class ArkField extends ArkBaseModel {
         this.fieldSignature = fieldSig;
     }
 
+    /**
+     * Returns an array of statements used for initialization.
+     * @returns An array of statements used for initialization.
+     */
     public getInitializer(): Stmt[] {
         return this.initializer;
     }
@@ -120,6 +128,10 @@ export class ArkField extends ArkBaseModel {
         this.originPosition = position;
     }
 
+    /**
+     * Returns the original position of the field at source code.
+     * @returns The original position of the field at source code.
+     */
     public getOriginPosition(): LineColPosition {
         return this.originPosition ?? LineColPosition.DEFAULT;
     }

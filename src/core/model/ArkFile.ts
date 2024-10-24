@@ -54,6 +54,10 @@ export class ArkFile {
     constructor() {
     }
 
+    /**
+     * Returns the **string** name of the file, which also acts as the file's relative path.
+     * @returns The file's name (also means its relative path).
+     */
     public getName() {
         return this.fileSignature.getFileName();
     }
@@ -62,6 +66,12 @@ export class ArkFile {
         this.scene = scene;
     }
 
+    /**
+     * Returns the scene (i.e., {@link Scene}) built for the project. The {@link Scene} is the core class of ArkAnalyzer, 
+     * through which users can access all the information of the analyzed code (project), 
+     * including file list, class list, method list, property list, etc.
+     * @returns The scene of the file.
+     */
     public getScene() {
         return this.scene;
     }
@@ -82,6 +92,16 @@ export class ArkFile {
         return this.projectDir;
     }
 
+    /**
+     * Get a file path.
+     * @returns The absolute file path.
+     * @example
+     * 1. Read source code based on file path.
+
+    ```typescript
+    let str = fs.readFileSync(arkFile.getFilePath(), 'utf8');
+    ```
+     */
     public getFilePath(): string {
         return this.absoluteFilePath;
     }
@@ -94,6 +114,10 @@ export class ArkFile {
         this.code = code;
     }
 
+    /**
+     * Returns the codes of file as a **string.**
+     * @returns the codes of file.
+     */
     public getCode() {
         return this.code;
     }
@@ -123,6 +147,11 @@ export class ArkFile {
         return Array.from(this.namespaces.values());
     }
 
+    /**
+     * Returns the class based on its class signature. If the class could not be found, **null** will be returned.
+     * @param classSignature - the class signature.
+     * @returns A class. If there is no class, the return will be a **null**.
+     */
     public getClass(classSignature: ClassSignature): ArkClass | null {
         const className = classSignature.getClassName();
         return this.getClassWithName(className);
@@ -140,6 +169,11 @@ export class ArkFile {
         this.namespaces.set(namespace.getName(), namespace);
     }
 
+    /**
+     * Returns an **array** of import information. 
+     * The import information includes: clause's name, type, modifiers, location where it is imported from, etc.
+     * @returns An **array** of import information.
+     */
     public getImportInfos(): ImportInfo[] {
         return Array.from(this.importInfoMap.values());
     }
@@ -186,6 +220,10 @@ export class ArkFile {
         return this.ohPackageJson5Path;
     }
 
+    /**
+     * Returns the file signature of this file. A file signature consists of project's name and file's name.
+     * @returns The file signature of this file.
+     */
     public getFileSignature() {
         return this.fileSignature;
     }

@@ -41,7 +41,23 @@ export abstract class Stmt {
         stmtUseReplacer.caseStmt(this);
     }
 
-    /** Return the def which is uesd in this statement */
+    /**
+     * Return the definition which is uesd in this statement. Generally, the definition is the left value of `=` in 3AC. 
+     * For example, the definition in 3AC of `value = parameter0: @project-1/sample-1.ets: AnonymousClass-0` is `value`, 
+     * and the definition in `$temp0 = staticinvoke <@_ProjectName/_FileName: xxx.create()>()` is `\$temp0`.
+     * @returns The definition in 3AC (may be a **null**).
+     * @example
+     * 1. get the def in stmt.
+
+    ```typescript
+    for (const block of this.blocks) {
+    for (const stmt of block.getStmts()) {
+        const defValue = stmt.getDef();
+        ...
+        }
+    }
+    ```
+     */
     public getDef(): Value | null {
         return null;
     }
@@ -56,6 +72,27 @@ export abstract class Stmt {
         return defAndUses;
     }
 
+    /**
+     * Get the CFG (i.e., control flow graph) of an {@link ArkBody} in which the statement is.
+     * A CFG contains a set of basic blocks and statements corresponding to each basic block. 
+     * Note that, "source code" and "three-address" are two types of {@link Stmt} in ArkAnalyzer. 
+     * Source code {@link Stmt} represents the statement of ets/ts source code, while three-address code {@link Stmt} represents the statement after it has been converted into three-address code. 
+     * Since the source code {@link Stmt} does not save its CFG reference, it returns **null**,
+     * while the `getCfg()` of the third address code {@link Stmt} will return its CFG reference.
+     * @returns The CFG (i.e., control flow graph) of an {@link ArkBody} in which the statement is.
+     * @example
+     * 1. get the ArkFile based on stmt.
+
+    ```typescript
+    const arkFile = stmt.getCfg()?.getDeclaringMethod().getDeclaringArkFile();
+    ```
+
+    2. get the ArkMethod based on stmt.
+
+    ```typescript
+    let sourceMethod: ArkMethod = stmt.getCfg()?.getDeclaringMethod();
+    ```
+     */
     public getCfg(): Cfg {
         return this.cfg;
     }
@@ -86,6 +123,17 @@ export abstract class Stmt {
         return false;
     }
 
+    /**
+     * Returns the method's invocation expression (including method signature and its arguments) 
+     * in the current statement. An **undefined** will be returned if there is no method used in this statement.
+     * @returns  the method's invocation expression from the statement. An **undefined** will be returned if there is no method can be found in this statement.
+     * @example
+     * 1. get invoke expr based on stmt.
+
+    ```typescript
+    let invoke = stmt.getInvokeExpr();
+    ```
+     */
     public getInvokeExpr(): AbstractInvokeExpr | undefined {
         for (const use of this.getUses()) {
             if (use instanceof AbstractInvokeExpr) {
@@ -95,6 +143,18 @@ export abstract class Stmt {
         return undefined;
     }
 
+    /**
+     * Returns an array of expressions in the statement.
+     * @returns An array of expressions in the statement.
+     * @example
+     * 1. Traverse expression of statement.
+
+    ```typescript
+    for (const expr of stmt.getExprs()) {
+        ...
+    }
+    ```
+     */
     public getExprs(): AbstractExpr[] {
         let exprs: AbstractExpr[] = [];
         for (const use of this.getUses()) {
@@ -160,6 +220,25 @@ export abstract class Stmt {
         this.originalPosition = originPositionInfo;
     }
 
+    /**
+     * Returns the original position of the statement. 
+     * The position consists of two parts: line number and column number. 
+     * In the source file, the former (i.e., line number) indicates which line the statement is in, 
+     * and the latter (i.e., column number) indicates the position of the statement in the line. 
+     * The position is described as `LineColPosition(lineNo,colNum)` in ArkAnalyzer, 
+     * and its default value is LineColPosition(-1,-1).
+     * @returns The original location of the statement.
+     * @example
+     * 1. Get the stmt position info to make some condition judgements.
+    ```typescript
+    for (const stmt of stmts) {
+        if (stmt.getOriginPositionInfo().getLineNo() === -1) {
+            stmt.setOriginPositionInfo(originalStmt.getOriginPositionInfo());
+            this.stmtToOriginalStmt.set(stmt, originalStmt);
+        }
+    }
+    ```
+     */
     public getOriginPositionInfo(): LineColPosition {
         return this.originalPosition;
     }
@@ -213,6 +292,12 @@ export class ArkAssignStmt extends Stmt {
         this.rightOp = rightOp;
     }
 
+    /**
+     * Returns the left operand of the assigning statement. 
+     * @returns The left operand of the assigning statement.
+     * @example
+     * 1. If the statement is `a=b;`, the right operand is `a`; if the statement is `dd = cc + 5;`, the right operand is `cc`.
+     */
     public getLeftOp(): Value {
         return this.leftOp;
     }
@@ -221,6 +306,17 @@ export class ArkAssignStmt extends Stmt {
         this.leftOp = newLeftOp;
     }
 
+    /**
+     * Returns the right operand of the assigning statement. 
+     * @returns The right operand of the assigning statement.
+     * @example
+     * 1. If the statement is `a=b;`, the right operand is `b`; if the statement is `dd = cc + 5;`, the right operand is `cc + 5`.
+     * 2. Get the rightOp from stmt.
+
+    ```typescript
+    const rightOp = stmt.getRightOp();
+    ```
+     */
     public getRightOp(): Value {
         return this.rightOp;
     }
@@ -284,6 +380,18 @@ export class ArkIfStmt extends Stmt {
         this.conditionExpr = conditionExpr;
     }
 
+    /**
+     * The condition expression consisit of two values as operands and one binary operator as operator. 
+     * The operator can indicate the relation between the two values, e.g., `<`, `<=`,`>`, `>=`, `==`, `!=`, `===`, `!==`. 
+     * @returns a condition expression.
+     * @example
+     * 1. When a statement is `if (a > b)`, the operands are `a` and `b`, the operator is `<`. Therefore, the condition expression is `a > b`.
+     * 2. get a conditon expr from a condition statement.
+
+    ```typescript
+    let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+    ```
+     */
     public getConditionExprExpr() {
         return this.conditionExpr;
     }
@@ -367,6 +475,10 @@ export class ArkSwitchStmt extends Stmt {
         this.cases = cases;
     }
 
+    /**
+     * Returns the key in a switch statement.
+     * @returns The key in a switch statement.
+     */
     public getKey(): Value {
         return this.key;
     }

@@ -110,14 +110,26 @@ export class ClassSignature {
         this.declaringNamespaceSignature = declaringNamespaceSignature;
     }
 
+    /**
+     * Returns the declaring file signature.
+     * @returns The declaring file signature.
+     */
     public getDeclaringFileSignature() {
         return this.declaringFileSignature;
     }
 
+    /**
+     * Get the declaring namespace's signature.
+     * @returns the declaring namespace's signature.
+     */
     public getDeclaringNamespaceSignature() {
         return this.declaringNamespaceSignature;
     }
 
+    /**
+     * Get the **string** name of class from the the class signature. The default value is `""`.
+     * @returns The name of this class.
+     */
     public getClassName() {
         return this.className;
     }
@@ -267,10 +279,32 @@ export class MethodSignature {
         this.methodSubSignature = methodSubSignature;
     }
 
+    /**
+     * Return the declaring class signature.
+     * A {@link ClassSignature} includes:
+     * - File Signature: including the **string** names of the project and file, respectively. The default value of project's name is "_UnknownProjectName" and the default value of file's name is "_UnknownFileName".
+     * - Namespace Signature | **null**:  it may be a namespace signature or **null**. A namespace signature can indicate its **string** name of namespace and its file signature.
+     * - Class Name: the **string** name of this class.
+     * @returns The declaring class signature.
+     * @example
+     * 1. get class signature from ArkMethod.
+
+    ```typescript
+    let methodSignature = expr.getMethodSignature();
+    let name = methodSignature.getDeclaringClassSignature().getClassName();
+    ```
+     * 
+     */
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
     }
 
+    /**
+     * Returns the sub-signature of this method signature. 
+     * The sub-signature is part of the method signature, which is used to 
+     * identify the name of the method, its parameters and the return value type.
+     * @returns The sub-signature of this method signature.
+     */
     public getMethodSubSignature() {
         return this.methodSubSignature;
     }
