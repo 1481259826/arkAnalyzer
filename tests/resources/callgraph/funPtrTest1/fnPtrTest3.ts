@@ -75,6 +75,4 @@ namespace FnPtrTest3 {
         let fp7: (t: number) => number = (t: number) => m.gen(t)
         let a = fp7(3)
     }
-
-    main();
 }

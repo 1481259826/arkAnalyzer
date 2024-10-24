@@ -429,28 +429,8 @@ export class PointerAnalysis extends AbstractAnalysis {
             if (processedNodes.has(valueNodeID)) {
                 continue;
             }
-
-            let valueNode = this.pag.getNode(valueNodeID) as PagNode;
-
-            let inCopyEdges = valueNode.getIncomingCopyEdges() ?? new Set();
-
-            inCopyEdges.forEach(edge => {
-                let srcID = edge.getSrcID();
-                if (!processedNodes.has(srcID)) {
-                    workListNodes.push(srcID);
-                }
-            });
-
-            let outCopyEdges = valueNode.getOutgoingCopyEdges() ?? new Set();
-
-            outCopyEdges.forEach(edge => {
-                let dstID = edge.getDstID();
-                if (!processedNodes.has(dstID)) {
-                    workListNodes.push(dstID);
-                }
-            });
-
-            processedNodes.add(valueNodeID);
+    
+            this.processRelatedNode(valueNodeID, workListNodes, processedNodes);
         }
 
         processedNodes.forEach(nodeID => {
@@ -459,6 +439,39 @@ export class PointerAnalysis extends AbstractAnalysis {
         })
 
         return relatedAllNodes;
+    }
+
+    private processRelatedNode(valueNodeID: NodeID, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
+        let valueNode = this.pag.getNode(valueNodeID) as PagNode;
+    
+        this.addIncomingEdgesToWorkList(valueNode, workListNodes, processedNodes);
+        this.addOutgoingEdgesToWorkList(valueNode, workListNodes, processedNodes);
+    
+        processedNodes.add(valueNodeID);
+    }
+
+    private addIncomingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
+        let inCopyEdges = valueNode.getIncomingCopyEdges();
+        if (inCopyEdges) {
+            inCopyEdges.forEach(edge => {
+                let srcID = edge.getSrcID();
+                if (!processedNodes.has(srcID)) {
+                    workListNodes.push(srcID);
+                }
+            });
+        }
+    }
+    
+    private addOutgoingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
+        let outCopyEdges = valueNode.getOutgoingCopyEdges();
+        if (outCopyEdges) {
+            outCopyEdges.forEach(edge => {
+                let dstID = edge.getDstID();
+                if (!processedNodes.has(dstID)) {
+                    workListNodes.push(dstID);
+                }
+            });
+        }
     }
 
     private detectTypeDiff(nodeId: NodeID): void {
