@@ -35,8 +35,8 @@ let config: SceneConfig = new SceneConfig()
 //     [etsSdk], [
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
-// config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
+config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
+// config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
 // config.buildFromProjectDir('./tests/resources/callgraph/test2');
 // config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
 // config.buildFromProjectDir('./tests/resources/callgraph/temp');
@@ -47,25 +47,33 @@ config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
 
 function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
-    projectScene.buildSceneFromProjectDir(config);
-    // projectScene.buildBasicInfo(config);
-    // projectScene.buildScene4HarmonyProject()
-    // projectScene.collectProjectImportInfos();
+    // projectScene.buildSceneFromProjectDir(config);
+    projectScene.buildBasicInfo(config);
+    projectScene.buildScene4HarmonyProject()
+    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
+    // let values = projectScene.getFiles().filter(file => file.getName() === 'entry/src/main/ets/entryability/EntryAbility.ets')
+    // .flatMap(file => file.getClassWithName('EntryAbility'))
+    // .flatMap(cls => cls?.getMethodWithName('onCreate'))
+    // .flatMap(me => me?.getBody()?.getLocals().get('$temp3')!);
     let cg = new CallGraph(projectScene);
     let cgBuilder = new CallGraphBuilder(cg, projectScene)
     cgBuilder.buildDirectCallGraphForScene();
 
     let pag = new Pag();
+    pag;
 
-    let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
-    let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries([entry[2]]);
-    pta.start();
-    // PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
-    cg.dump(output+"/subcg.dot", entry[2])
+    // let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
+    // pta.setEntries([entry[2]]);
+    // pta.start();
+    let ptaOH = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
+    ptaOH;
+    // let temp = ptaOH.getRelatedNodes(values[0]);
+    // temp;
+    // cg.dump(output+"/subcg.dot", entry[2])
     console.log("fin")
 }
 runScene(config, "./out/applications_camera");
