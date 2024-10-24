@@ -16,8 +16,8 @@
 import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../model/CallGraph';
 import { Scene } from '../../Scene'
 import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
-import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
-import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkPtrInvokeExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { AbstractFieldRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
@@ -29,7 +29,7 @@ import { ClassType, FunctionType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS, StorageType, StorageLinkEdgeType } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS, PagFuncNode, StorageType, StorageLinkEdgeType } from './Pag';
 import { PtsSet } from './PtsDS';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -162,8 +162,8 @@ export class PagBuilder {
                 }
 
                 // handle call
-                let inkExpr = stmt.getInvokeExpr();
-                if (inkExpr instanceof ArkStaticInvokeExpr) {
+                let ivkExpr = stmt.getInvokeExpr();
+                if (ivkExpr instanceof ArkStaticInvokeExpr) {
                     let cs = this.cg.getCallSiteByStmt(stmt);
                     if (cs) {
                         // direct call is already existing in CG
@@ -171,7 +171,7 @@ export class PagBuilder {
                     } else {
                         throw new Error( 'Can not find static callsite');
                     }
-                } else if (inkExpr instanceof ArkInstanceInvokeExpr) {
+                } else if (ivkExpr instanceof ArkInstanceInvokeExpr || ivkExpr instanceof ArkPtrInvokeExpr) {
                     let ptcs = this.cg.getDynCallsiteByStmt(stmt);
                     if (ptcs) {
                         this.addToDynamicCallSite(fpag, ptcs);
@@ -246,7 +246,7 @@ export class PagBuilder {
         for (let cs of funcPag.getNormalCallSites()) {
             let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-            let ivkExpr = cs.callStmt.getInvokeExpr()
+            let ivkExpr = cs.callStmt.getInvokeExpr();
 
             // process the Storage API(Static)
             if (!this.processStorage(cs, calleeCGNode, cid)) {
@@ -264,7 +264,7 @@ export class PagBuilder {
                     
                     this.addThisRefCallEdge(baseNodeID, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
                 } else {
-                    logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`)
+                    logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`);
                 }
             }
         }
@@ -375,70 +375,44 @@ export class PagBuilder {
     public addDynamicCallSite(funcPag: FuncPag) {
         // add dyn callsite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
-            let base = (cs.callStmt.getInvokeExpr()! as ArkInstanceInvokeExpr).getBase()
+            let invokeExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
+            let base!: Local;
+            if (invokeExpr instanceof ArkInstanceInvokeExpr) {
+                base = invokeExpr.getBase();
+            } else if (invokeExpr instanceof ArkPtrInvokeExpr) {
+                base = invokeExpr.getFuncPtrLocal();
+            }
             // TODO: check base under different cid
-            let baseNodeIDs = this.pag.getNodesByValue(base)
+            let baseNodeIDs = this.pag.getNodesByValue(base);
             if (!baseNodeIDs) {
-                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`)
-                continue
+                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
+                continue;
             }
             for (let nodeID of baseNodeIDs!.values()) {
-                let node = this.pag.getNode(nodeID)
+                let node = this.pag.getNode(nodeID);
                 if (!(node instanceof PagLocalNode)) {
-                    continue
+                    continue;
                 }
 
-                node.addRelatedDynCallSite(cs)
+                node.addRelatedDynCallSite(cs);
             }
         }
     }
 
     public addDynamicCallEdge(cs: DynCallSite, baseClassPTNode: NodeID, cid: ContextID): NodeID[] {
         let srcNodes: NodeID[] = [];
-        let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
-        let calleeName = ivkExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        let ivkExpr = cs.callStmt.getInvokeExpr();
 
-        let ptNode = this.pag.getNode(baseClassPTNode);
+        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
         let value = (ptNode as PagNode).getValue();
-        if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
+        let callee: ArkMethod | null = this.getDynamicCallee(ptNode, value, ivkExpr!, cs);
+
+        if (!callee) {
             return srcNodes;
         }
 
-        let callee: ArkMethod | null = null;
-        if (value instanceof ArkNewExpr) {
-            // get class signature
-            let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
-            let cls;
-
-            cls = this.scene.getClass(clsSig) as ArkClass;
-
-            while (!callee && cls) {
-                callee = cls.getMethodWithName(calleeName);
-                cls = cls.getSuperClass();
-            }
-
-            if (!callee) {
-                callee = this.scene.getMethod(ivkExpr.getMethodSignature());
-            }
-        }
-
-        // anonymous method
-        if (!callee) {
-            // try to change callee to param anonymous method
-            // TODO: anonymous method param and return value pointer pass
-            let args = cs.args
-            if (args?.length == 1 && args[0].getType() instanceof FunctionType) {
-                callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature())
-            }
-        }
-
-        if (!callee) {
-            // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
-            // return empty node when {o_2} come in
-            return []
-        }
-
-        let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
+        // get caller and callee CG node, add param and return value PAG edge
+        let dstCGNode = this.cg.getCallGraphNodeByMethod(callee!.getSignature());
         let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
         if (!callerNode) {
             throw new Error("Can not get caller method node");
@@ -453,8 +427,8 @@ export class PagBuilder {
             srcNodes.push(...staticSrcNodes);
 
             // Pass base's pts to callee's this pointer
-            if (!dstCGNode.getIsSdkMethod()) {
-                let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee, calleeCid, cs.callerFuncID);
+            if (!dstCGNode.getIsSdkMethod() && ivkExpr instanceof ArkInstanceInvokeExpr) {
+                let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr, callee!, calleeCid, cs.callerFuncID);
                 srcNodes.push(srcBaseNode);
             }
         }
@@ -462,18 +436,73 @@ export class PagBuilder {
         return srcNodes;
     }
 
+    private getDynamicCallee(ptNode: PagNode, value: Value, ivkExpr: AbstractInvokeExpr, cs: DynCallSite): ArkMethod | null {
+        let callee: ArkMethod | null = null;
+        let calleeName = ivkExpr!.getMethodSignature().getMethodSubSignature().getMethodName();
+
+        if (ptNode instanceof PagFuncNode) {
+            // function ptr invoke
+            callee = this.scene.getMethod(ptNode.getMethod());
+
+            if (!callee) {
+                return null;
+            }
+        } else {
+            // instance method invoke
+            if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
+                return null;
+            }
+    
+            // try to get callee by MethodSignature
+            if (value instanceof ArkNewExpr) {
+                // get class signature
+                let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
+                let cls;
+    
+                cls = this.scene.getClass(clsSig) as ArkClass;
+    
+                while (!callee && cls) {
+                    callee = cls.getMethodWithName(calleeName);
+                    cls = cls.getSuperClass();
+                }
+    
+                if (!callee) {
+                    callee = this.scene.getMethod(ivkExpr!.getMethodSignature());
+                }
+            }
+    
+            // try to get callee by anonymous method in param
+            if (!callee) {
+                // try to change callee to param anonymous method
+                // TODO: anonymous method param and return value pointer pass
+                let args = cs.args;
+                if (args?.length === 1 && args[0].getType() instanceof FunctionType) {
+                    callee = this.scene.getMethod((args[0].getType() as FunctionType).getMethodSignature());
+                }
+            }
+    
+            if (!callee) {
+                // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
+                // return empty node when {o_2} come in
+                return null;
+            }
+        }
+
+        return callee;
+    }
+
     public addUpdatedNode(nodeID: NodeID, diffPT: PtsSet<NodeID>) {
-        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new PtsSet()
-        updatedNode.union(diffPT)
-        this.updatedNodesThisRound.set(nodeID, updatedNode)
+        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new PtsSet();
+        updatedNode.union(diffPT);
+        this.updatedNodesThisRound.set(nodeID, updatedNode);
     }
 
     public getUpdatedNodes() {
-        return this.updatedNodesThisRound
+        return this.updatedNodesThisRound;
     }
 
     public resetUpdatedNodes() {
-        this.updatedNodesThisRound.clear()
+        this.updatedNodesThisRound.clear();
     }
 
     public handleUnkownDynamicCall(cs: DynCallSite, cid: ContextID): NodeID[] {
@@ -541,17 +570,22 @@ export class PagBuilder {
 
             const diffCallSites = new Set(Array.from(callSites).filter(item => !processedCallSites.has(item)))
             diffCallSites.forEach((cs) => {
-                let ivkExpr = cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+                let ivkExpr = cs.callStmt.getInvokeExpr();
+                if (!(ivkExpr instanceof ArkInstanceInvokeExpr)) {
+                    return;
+                }
                 // Get local of base class
                 let base = ivkExpr.getBase();
                 // TODO: remove this after multiple this local fixed
                 base = this.getRealThisLocal(base, cs.callerFuncID)
                 // Get PAG nodes for this base's local
                 let ctx2NdMap = this.pag.getNodesByValue(base);
-                if (ctx2NdMap) {
-                    for (let [cid] of ctx2NdMap.entries()) {
-                        reAnalyzeNodes.push(...this.handleUnkownDynamicCall(cs, cid));
-                    }
+                if (!ctx2NdMap) {
+                    return;
+                }
+
+                for (let [cid] of ctx2NdMap.entries()) {
+                    reAnalyzeNodes.push(...this.handleUnkownDynamicCall(cs, cid));
                 }
             })
         }
@@ -1039,10 +1073,11 @@ export class PagBuilder {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
         if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || 
-            (lhOp instanceof Local && rhOp instanceof Local && 
-            rhOp.getType() instanceof FunctionType && 
-            rhOp.getDeclaringStmt() === null || 
-            (rhOp instanceof Local && rhOp.getName() == GLOBAL_THIS && rhOp.getDeclaringStmt() == null))
+            (lhOp instanceof Local && (
+                (rhOp instanceof Local && rhOp.getType() instanceof FunctionType &&
+                    rhOp.getDeclaringStmt() === null) ||
+                (rhOp instanceof AbstractFieldRef && rhOp.getType() instanceof FunctionType))) || 
+            (rhOp instanceof Local && rhOp.getName() == GLOBAL_THIS && rhOp.getDeclaringStmt() == null)
         ) {
             return true;
         }
