@@ -147,6 +147,8 @@ export function buildNormalArkClass(clsNode: ClassLikeNode, cls: ArkClass, sourc
         case ts.SyntaxKind.ObjectLiteralExpression:
             buildObjectLiteralExpression2ArkClass(clsNode, cls, sourceFile, declaringMethod);
             break;
+        default:
+            ;
     }
 }
 
@@ -197,7 +199,7 @@ function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sour
 
     if (clsNode.heritageClauses) {
         for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-            if (value == 'ExtendsKeyword') {
+            if (value === 'ExtendsKeyword') {
                 cls.setSuperClassName(key);
             } else {
                 cls.addImplementedInterfaceName(key);
@@ -233,7 +235,7 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
 
     if (clsNode.heritageClauses) {
         for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-            if (value == 'ExtendsKeyword') {
+            if (value === 'ExtendsKeyword') {
                 cls.setSuperClassName(key);
             } else {
                 cls.addImplementedInterfaceName(key);
@@ -269,7 +271,7 @@ function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass
 
     if (clsNode.heritageClauses) {
         for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-            if (value == 'ExtendsKeyword') {
+            if (value === 'ExtendsKeyword') {
                 cls.setSuperClassName(key);
             } else {
                 cls.addImplementedInterfaceName(key);

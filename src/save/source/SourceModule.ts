@@ -33,7 +33,7 @@ export class SourceExportInfo extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.info.getArkExport()?.containsModifier(ModifierType.EXPORT) || this.info.getExportClauseType() == ExportType.LOCAL) {
+        if (this.info.getArkExport()?.containsModifier(ModifierType.EXPORT) || this.info.getExportClauseType() === ExportType.LOCAL) {
             return this.printer.toString();
         }
 
@@ -41,7 +41,7 @@ export class SourceExportInfo extends SourceBase {
             // just like: export * as xx from './yy'
             if (
                 this.info.getNameBeforeAs() &&
-                this.info.getNameBeforeAs() != '*'
+                this.info.getNameBeforeAs() !== '*'
             ) {
                 this.printer
                     .writeIndent()
@@ -129,7 +129,7 @@ export class SourceImportInfo extends SourceBase {
                         this.info.getFrom() as string
                     }';`
                 );
-        } else if (this.info.getImportType() == 'EqualsImport') {
+        } else if (this.info.getImportType() === 'EqualsImport') {
             // sample: import mmmm = require('./xxx')
             this.printer
                 .writeIndent()

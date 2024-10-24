@@ -66,7 +66,7 @@ export class StaticSingleAssignmentFormer {
             localToPhiBlock.set(local, new Set());
             let phiBlocks = localToPhiBlock.get(local) as Set<BasicBlock>;
             let blocks = Array.from(localToBlocks.get(local) as Set<BasicBlock>);
-            while (blocks.length != 0) {
+            while (blocks.length !== 0) {
                 let block = blocks.splice(0, 1).at(0) as BasicBlock;
                 let dfs = dominanceFinder.getDominanceFrontiers(block);
                 for (const df of dfs) {
@@ -242,7 +242,7 @@ export class StaticSingleAssignmentFormer {
         let hashPos = local.getName().indexOf('#');
         let oriName = local.getName().substring(0, hashPos);
         for (const oriLocal of locals) {
-            if (oriLocal.getName() == oriName) {
+            if (oriLocal.getName() === oriName) {
                 return oriLocal;
             }
         }

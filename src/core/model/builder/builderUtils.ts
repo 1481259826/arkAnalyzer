@@ -58,7 +58,7 @@ export function handleQualifiedName(node: ts.QualifiedName): string {
 export function handlePropertyAccessExpression(node: ts.PropertyAccessExpression): string {
     let right = (node.name as ts.Identifier).text;
     let left: string = '';
-    if (ts.SyntaxKind[node.expression.kind] == 'Identifier') {
+    if (ts.SyntaxKind[node.expression.kind] === 'Identifier') {
         left = (node.expression as ts.Identifier).text;
     } else if (ts.isStringLiteral(node.expression)) {
         left = node.expression.text;

@@ -39,15 +39,15 @@ export class RefUseReplacer {
     }
 
     private caseFieldRef(ref: ArkInstanceFieldRef): void {
-        if (ref.getBase() == this.oldUse) {
+        if (ref.getBase() === this.oldUse) {
             ref.setBase(<Local>this.newUse);
         }
     }
 
     private caseArrayRef(ref: ArkArrayRef): void {
-        if (ref.getBase() == this.oldUse) {
+        if (ref.getBase() === this.oldUse) {
             ref.setBase(<Local>this.newUse);
-        } else if (ref.getIndex() == this.oldUse) {
+        } else if (ref.getIndex() === this.oldUse) {
             ref.setIndex(this.newUse);
         }
     }

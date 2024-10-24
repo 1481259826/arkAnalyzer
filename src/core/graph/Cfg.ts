@@ -122,13 +122,13 @@ export class Cfg {
                     // 判断本block之前有无对应def
                     for (let i = stmtIndex - 1; i >= 0; i--) {
                         const beforeStmt = block.getStmts()[i];
-                        if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() == name) {
+                        if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() === name) {
                             defStmts.push(beforeStmt);
                             break;
                         }
                     }
                     // 本block有对应def直接结束,否则找所有的前序block
-                    if (defStmts.length != 0) {
+                    if (defStmts.length !== 0) {
                         this.defUseChains.push(new DefUseChain(value, defStmts[0], stmt));
                     }
                     else {
@@ -146,7 +146,7 @@ export class Cfg {
                             let predecessorHasDef = false;
                             for (let i = predecessorStmts.length - 1; i >= 0; i--) {
                                 const beforeStmt = predecessorStmts[i];
-                                if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() == name) {
+                                if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() === name) {
                                     defStmts.push(beforeStmt);
                                     predecessorHasDef = true;
                                     break;

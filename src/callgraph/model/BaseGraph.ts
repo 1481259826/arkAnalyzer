@@ -84,11 +84,11 @@ export abstract class BaseNode {
     }
 
     public hasIncomingEdges(): boolean {
-        return (this.inEdges.size != 0);
+        return (this.inEdges.size !== 0);
     }
 
     public hasOutgoingEdges(): boolean {
-        return (this.outEdges.size == 0);
+        return (this.outEdges.size === 0);
     }
 
     public hasIncomingEdge(e: BaseEdge): boolean {

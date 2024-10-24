@@ -62,7 +62,7 @@ export class SourceField extends SourceBase {
             this.printer.write(` = ${this.initializer.get(this.field.getName())}`);
         }
 
-        if (this.field.getCategory() == FieldCategory.ENUM_MEMBER) {
+        if (this.field.getCategory() === FieldCategory.ENUM_MEMBER) {
             this.printer.writeLine(',');
         } else {
             this.printer.writeLine(';');

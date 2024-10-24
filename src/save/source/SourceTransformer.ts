@@ -104,7 +104,7 @@ export class SourceTransformer {
 
     public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr): string {
         let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
-        if (methodName == INSTANCE_INIT_METHOD_NAME) {
+        if (methodName === INSTANCE_INIT_METHOD_NAME) {
             return '';
         }
         let args: string[] = [];
@@ -135,21 +135,21 @@ export class SourceTransformer {
         });
 
         if (this.context.isInBuilderMethod()) {
-            if (className == COMPONENT_CUSTOMVIEW) {
-                if (methodName == COMPONENT_CREATE_FUNCTION) {
+            if (className === COMPONENT_CUSTOMVIEW) {
+                if (methodName === COMPONENT_CREATE_FUNCTION) {
                     // Anonymous @Builder method
                     if (args.length > 1) {
                         args[1] = args[1].substring('() => '.length);
                     }
                     return `${args.join(' ')}`;
                 }
-                if (methodName == COMPONENT_POP_FUNCTION) {
+                if (methodName === COMPONENT_POP_FUNCTION) {
                     return '';
                 }
             }
 
             if (SourceUtils.isComponentCreate(invokeExpr)) {
-                if (className == COMPONENT_IF) {
+                if (className === COMPONENT_IF) {
                     return `if (${args.join(', ')})`;
                 }
                 return `${className}(${args.join(', ')})`;
@@ -157,7 +157,7 @@ export class SourceTransformer {
 
             if (SourceUtils.isComponentIfBranchInvoke(invokeExpr)) {
                 let arg0 = invokeExpr.getArg(0) as Constant;
-                if (arg0.getValue() == '0') {
+                if (arg0.getValue() === '0') {
                     return ``;
                 } else {
                     return '} else {';
@@ -185,7 +185,7 @@ export class SourceTransformer {
     }
 
     public static constToString(value: Constant): string {
-        if (value.getType() == 'string') {
+        if (value.getType().toString() === 'string') {
             return `'${SourceUtils.escape(value.getValue())}'`;
         } else {
             return value.getValue();
@@ -311,9 +311,9 @@ export class SourceTransformer {
             }
 
             if (
-                operator == NormalBinaryOperator.Division ||
-                operator == NormalBinaryOperator.Multiplication ||
-                operator == NormalBinaryOperator.Remainder
+                operator === NormalBinaryOperator.Division ||
+                operator === NormalBinaryOperator.Multiplication ||
+                operator === NormalBinaryOperator.Remainder
             ) {
                 if (SourceUtils.isTemp(value.getName())) {
                     let stmt = value.getDeclaringStmt();
@@ -377,7 +377,7 @@ export class SourceTransformer {
             }
             if (SourceUtils.isAnonymousClass(name)) {
                 let cls = this.context.getClass(type.getClassSignature());
-                if (cls && cls.getCategory() == ClassCategory.TYPE_LITERAL) {
+                if (cls && cls.getCategory() === ClassCategory.TYPE_LITERAL) {
                     return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
                 }
                 return 'Object';

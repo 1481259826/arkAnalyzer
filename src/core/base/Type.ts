@@ -65,33 +65,6 @@ export class UnknownType extends Type {
     }
 }
 
-// /**
-//  * typeParameter type
-//  * @category core/base/type
-//  */
-// export class TypeParameterType extends Type {
-//     private name: string;
-//     private type: Type;
-//
-//     constructor(name: string, type: Type = UnknownType.getInstance()) {
-//         super();
-//         this.name = name;
-//         this.type = type;
-//     }
-//
-//     public getName() {
-//         return this.name;
-//     }
-//
-//     public getType() {
-//         return this.type;
-//     }
-//
-//     public toString() {
-//         return this.name;
-//     }
-// }
-
 /**
  * unclear type
  * @category core/base/type
@@ -263,7 +236,7 @@ export class UnionType extends Type {
 
     public toString(): string {
         let typeStr = this.types.join('|');
-        if (!(this.currType instanceof UnknownType) && this.currType != this) {
+        if (!(this.currType instanceof UnknownType) && this.currType !== this) {
             typeStr += '-' + this.currType;
         }
         return typeStr;

@@ -44,7 +44,7 @@ export class BasicBlock {
     }
 
     public getHead(): Stmt | null {
-        if (this.stmts.length == 0) {
+        if (this.stmts.length === 0) {
             return null;
         }
         return this.stmts[0];
@@ -52,7 +52,7 @@ export class BasicBlock {
 
     public getTail(): Stmt | null {
         let size = this.stmts.length;
-        if (size == 0) {
+        if (size === 0) {
             return null;
         }
         return this.stmts[size - 1];

@@ -193,7 +193,7 @@ export class PointerAnalysis extends AbstractAnalysis {
     private handleLoadWrite(nodeID: NodeID): boolean {
         let node = this.pag.getNode(nodeID) as PagNode;
         let diffPts = this.ptd.getDiffPts(nodeID);
-        if (!diffPts || diffPts.count() == 0) {
+        if (!diffPts || diffPts.count() === 0) {
             return false;
         }
 
@@ -206,7 +206,7 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         instanceFieldNodeMap.forEach((nodeIDs, cid) => {
             // TODO: check cid
-            if (cid != node.getCid()) {
+            if (cid !== node.getCid()) {
                 return;
             }
             nodeIDs.forEach((nodeID) => {
@@ -225,7 +225,6 @@ export class PointerAnalysis extends AbstractAnalysis {
         fieldNode.getIncomingEdge().forEach((edge) => {
             if (edge.getKind() !== PagEdgeKind.Write) {
                 return;
-                //throw new Error ("field node in edge is not write edge")
             }
             let srcNode = edge.getSrcNode() as PagNode;
             this.ptaStat.numProcessedWrite++;
@@ -291,7 +290,7 @@ export class PointerAnalysis extends AbstractAnalysis {
     private handlePt(nodeID: NodeID) {
         let realDiff = this.ptd.calculateDiff(nodeID, nodeID);
 
-        if (realDiff.count() != 0) {
+        if (realDiff.count() !== 0) {
             // record the updated nodes
             this.pagBuilder.addUpdatedNode(nodeID, realDiff);
         }
@@ -378,7 +377,8 @@ export class PointerAnalysis extends AbstractAnalysis {
         let leftValueNodes = this.pag.getNodesByValue(leftValue)?.values()!;
         let rightValueNodes = this.pag.getNodesByValue(rightValue)?.values()!;
 
-        let leftValuePts: Set<NodeID> = new Set(), rightValuePts: Set<NodeID> = new Set();
+        let leftValuePts: Set<NodeID> = new Set();
+        let rightValuePts: Set<NodeID> = new Set();
 
         for (let nodeID of leftValueNodes) {
             let node = this.pag.getNode(nodeID) as PagNode;
@@ -462,7 +462,7 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     private detectTypeDiff(nodeId: NodeID): void {
-        if (this.config.detectTypeDiff == false) {
+        if (this.config.detectTypeDiff === false) {
             return;
         }
 
@@ -478,14 +478,14 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         let findSameType = false;
         let pts = node.getPointTo();
-        if (pts.size == 0) {
+        if (pts.size === 0) {
             return;
         }
 
         pts.forEach(pt => {
             let ptNode = this.pag.getNode(pt) as PagNode;
             let type = ptNode.getValue().getType();
-            if (type.toString() != origType.toString()) {
+            if (type.toString() !== origType.toString()) {
                 let diffSet = this.typeDiffMap.get(value) ?? new Set();
                 this.typeDiffMap.set(value, diffSet);
                 if (!diffSet.has(type)) {

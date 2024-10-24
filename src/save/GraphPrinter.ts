@@ -54,6 +54,8 @@ function escapeStr(input: string): string {
                 str = str.substring(0, i) + '\\' + str[i] + str.substring(i + 1);
                 ++i;
                 break;
+            default:
+                ;
         }
     }
     return str;
@@ -112,7 +114,7 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
 
         for(let node of itor) {
             let nodeAttr = node.getDotAttr();
-            if (nodeAttr == '') {
+            if (nodeAttr === '') {
                 continue;
             }
             let nodeLabel = escapeStr(node.getDotLabel());
@@ -129,7 +131,7 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
 
     public writeEdge(edge: BaseEdge): void {
         let edgeAttr = edge.getDotAttr();
-        if (edgeAttr == '') {
+        if (edgeAttr === '') {
             return
         }
         this.printer.writeLine(`\tNode${edge.getSrcID()} -> Node${edge.getDstID()}[${edgeAttr}]`);

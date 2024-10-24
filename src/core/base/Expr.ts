@@ -778,6 +778,8 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
                     type = op1Type;
                 }
                 break;
+            default:
+                ;
         }
         this.type = type;
     }
@@ -798,7 +800,7 @@ export class ArkConditionExpr extends AbstractBinopExpr {
     public inferType(arkClass: ArkClass): ArkConditionExpr {
         this.inferOpType(this.op1, arkClass);
         const op1Type = this.op1.getType();
-        if (this.operator == RelationalBinaryOperator.InEquality && this.op2 == ValueUtil.getOrCreateNumberConst(0)) {
+        if (this.operator === RelationalBinaryOperator.InEquality && this.op2 === ValueUtil.getOrCreateNumberConst(0)) {
             if (op1Type instanceof StringType) {
                 this.op2 = ValueUtil.createStringConst(EMPTY_STRING);
             } else if (op1Type instanceof BooleanType) {

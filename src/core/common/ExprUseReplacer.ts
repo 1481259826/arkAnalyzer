@@ -56,10 +56,10 @@ export class ExprUseReplacer {
     }
 
     private caseBinopExpr(expr: AbstractBinopExpr): void {
-        if (expr.getOp1() == this.oldUse) {
+        if (expr.getOp1() === this.oldUse) {
             expr.setOp1(this.newUse);
         }
-        if (expr.getOp2() == this.oldUse) {
+        if (expr.getOp2() === this.oldUse) {
             expr.setOp2(this.newUse);
         }
     }
@@ -67,36 +67,36 @@ export class ExprUseReplacer {
     private caseInvokeExpr(expr: AbstractInvokeExpr): void {
         let args = expr.getArgs();
         for (let i = 0; i < args.length; i++) {
-            if (args[i] == this.oldUse) {
+            if (args[i] === this.oldUse) {
                 args[i] = this.newUse;
             }
         }
 
-        if (expr instanceof ArkInstanceInvokeExpr && expr.getBase() == this.oldUse) {
+        if (expr instanceof ArkInstanceInvokeExpr && expr.getBase() === this.oldUse) {
             expr.setBase(<Local>this.newUse);
         }
     }
 
     private caseNewArrayExpr(expr: ArkNewArrayExpr): void {
-        if (expr.getSize() == this.oldUse) {
+        if (expr.getSize() === this.oldUse) {
             expr.setSize(this.newUse);
         }
     }
 
     private caseTypeOfExpr(expr: ArkTypeOfExpr): void {
-        if (expr.getOp() == this.oldUse) {
+        if (expr.getOp() === this.oldUse) {
             expr.setOp(this.newUse);
         }
     }
 
     private caseInstanceOfExpr(expr: ArkInstanceOfExpr): void {
-        if (expr.getOp() == this.oldUse) {
+        if (expr.getOp() === this.oldUse) {
             expr.setOp(this.newUse);
         }
     }
 
     private caseCastExpr(expr: ArkCastExpr): void {
-        if (expr.getOp() == this.oldUse) {
+        if (expr.getOp() === this.oldUse) {
             expr.setOp(this.newUse);
         }
     }

@@ -35,7 +35,7 @@ export class ArkCodeBuffer {
     }
 
     public writeSpace(s: string): this {
-        if (s.length == 0) {
+        if (s.length === 0) {
             return this;
         }
         this.write(s);

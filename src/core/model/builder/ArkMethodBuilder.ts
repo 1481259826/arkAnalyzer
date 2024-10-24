@@ -76,7 +76,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     mtd.setDeclaringArkClass(declaringClass);
 
     if (ts.isFunctionDeclaration(methodNode)) {
-        mtd.setAsteriskToken(methodNode.asteriskToken != undefined);
+        mtd.setAsteriskToken(methodNode.asteriskToken !== undefined);
     }
 
     mtd.setCode(methodNode.getText(sourceFile));
@@ -114,7 +114,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     if (mtd.hasBuilderDecorator()) {
         mtd.setViewTree(buildViewTree(mtd));
     } else if (declaringClass.hasComponentDecorator() &&
-        mtd.getSubSignature().toString() == 'build()' &&
+        mtd.getSubSignature().toString() === 'build()' &&
         !mtd.isStatic()) {
         declaringClass.setViewTree(buildViewTree(mtd));
     }
@@ -315,8 +315,8 @@ export class MethodParameter {
 function needDefaultConstructorInClass(arkClass: ArkClass): boolean {
     const originClassType = arkClass.getCategory();
     return arkClass.getMethodWithName(CONSTRUCTOR_NAME) == null &&
-        (originClassType == ClassCategory.CLASS || originClassType == ClassCategory.OBJECT) &&
-        arkClass.getName() != DEFAULT_ARK_CLASS_NAME &&
+        (originClassType === ClassCategory.CLASS || originClassType === ClassCategory.OBJECT) &&
+        arkClass.getName() !== DEFAULT_ARK_CLASS_NAME &&
         !arkClass.isDeclare();
 }
 
@@ -438,7 +438,7 @@ export function buildInitMethod(initMethod: ArkMethod, fieldInitializerStmts: St
 
 export function addInitInConstructor(arkClass: ArkClass) {
     for (const method of arkClass.getMethods(true)) {
-        if (method.getName() == CONSTRUCTOR_NAME) {
+        if (method.getName() === CONSTRUCTOR_NAME) {
             const thisLocal = method.getBody()?.getLocals().get(THIS_NAME);
             if (!thisLocal) {
                 continue;
@@ -450,7 +450,7 @@ export function addInitInConstructor(arkClass: ArkClass) {
             }
             const firstBlockStmts = [...blocks][0].getStmts();
             let index = 0;
-            if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() == THIS_NAME) {
+            if (firstBlockStmts[0].getDef() instanceof Local && (firstBlockStmts[0].getDef() as Local).getName() === THIS_NAME) {
                 index = 1;
             }
             firstBlockStmts.splice(index, 0, initInvokeStmt);

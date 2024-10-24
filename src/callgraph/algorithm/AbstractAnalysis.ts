@@ -60,7 +60,6 @@ export abstract class AbstractAnalysis {
         // TODO: remove abstract class
         let classWorkList: ArkClass[] = [arkClass];
         // TODO: check class with no super Class
-        // let classHierarchy: ArkClass[] = [arkClass.getSuperClass()]
         let classHierarchy: ArkClass[] = [];
 
         while (classWorkList.length > 0) {
@@ -75,7 +74,7 @@ export abstract class AbstractAnalysis {
 
     public start(displayGeneratedMethod: Boolean): void {
         this.init();
-        while (this.workList.length != 0) {
+        while (this.workList.length !== 0) {
             const method = this.workList.shift() as FuncID;
             const cgNode = this.cg.getNode(method) as CallGraphNode;
 

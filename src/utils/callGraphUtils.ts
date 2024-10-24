@@ -97,10 +97,10 @@ export class SceneManager {
             // 支持SDK调用解析
             let sdkMap = this.scene.getSdkArkFilesMap()
             for (let file of sdkMap.values()) {
-                if (file.getFileSignature().toString() == method.getDeclaringClassSignature().getDeclaringFileSignature().toString()) {
+                if (file.getFileSignature().toString() === method.getDeclaringClassSignature().getDeclaringFileSignature().toString()) {
                     const methods = ModelUtils.getAllMethodsInFile(file);
                     for (let methodUnderFile of methods) {
-                        if (method.toString() == methodUnderFile.getSignature().toString()) {
+                        if (method.toString() === methodUnderFile.getSignature().toString()) {
                             return methodUnderFile;
                         }
                     }

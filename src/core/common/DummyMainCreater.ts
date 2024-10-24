@@ -51,16 +51,16 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 ...
 count = 0
 while (true) {
-    if (count == 1) {
+    if (count === 1) {
         temp1 = new ability
         temp2 = new want
         temp1.onCreate(temp2)
     }
-    if (count == 2) {
+    if (count === 2) {
         onDestroy()
     }
     ...
-    if (count == *) {
+    if (count === *) {
         callbackMethod1()
     }
     ...
@@ -90,7 +90,7 @@ export class DummyMainCreater {
 
     private buildBuiltInClass() {
         for (const sdkFile of this.scene.getSdkArkFilesMap().values()) {
-            if (sdkFile.getName() == 'api\\@ohos.app.ability.Want.d.ts') {
+            if (sdkFile.getName() === 'api\\@ohos.app.ability.Want.d.ts') {
                 const arkClass = sdkFile.getClassWithName('Want')!;
                 this.builtInClass.set('Want', arkClass);
             }
@@ -130,7 +130,7 @@ export class DummyMainCreater {
                 const declaringArkClass = method.getDeclaringArkClass();
                 let newLocal: Local | null = null;
                 for (const local of this.classLocalMap.values()) {
-                    if ((local?.getType() as ClassType).getClassSignature() == declaringArkClass.getSignature()) {
+                    if ((local?.getType() as ClassType).getClassSignature() === declaringArkClass.getSignature()) {
                         newLocal = local;
                         break;
                     }

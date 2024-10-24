@@ -48,11 +48,11 @@ export class SourceClass extends SourceBase {
     public dump(): string {
         this.printer.clear();
 
-        if (this.cls.getCategory() == ClassCategory.OBJECT) {
+        if (this.cls.getCategory() === ClassCategory.OBJECT) {
             return this.dumpObject();
         }
 
-        if (this.cls.getCategory() == ClassCategory.TYPE_LITERAL) {
+        if (this.cls.getCategory() === ClassCategory.TYPE_LITERAL) {
             return this.dumpTypeLiteral();
         }
 
@@ -117,7 +117,7 @@ export class SourceClass extends SourceBase {
                 this.printer.write(`: ${instanceInitializer.get(field.getName())}`);
             }
 
-            if (index != array.length - 1) {
+            if (index !== array.length - 1) {
                 this.printer.write(`, `);
             }
         });
@@ -136,7 +136,7 @@ export class SourceClass extends SourceBase {
                 this.printer.write(`'${name}': ${this.transformer.typeToString(field.getType())}`);
             }
 
-            if (index != array.length - 1) {
+            if (index !== array.length - 1) {
                 this.printer.write(`, `);
             }
         });
@@ -165,7 +165,7 @@ export class SourceClass extends SourceBase {
         let staticInitializer = this.parseFieldInitMethod(STATIC_INIT_METHOD_NAME);
         let items: Dump[] = [];
         for (let field of this.cls.getFields()) {
-            if (field.getCategory() == FieldCategory.GET_ACCESSOR) {
+            if (field.getCategory() === FieldCategory.GET_ACCESSOR) {
                 continue;
             }
             if (field.isStatic()) {
@@ -179,7 +179,7 @@ export class SourceClass extends SourceBase {
 
     private parseFieldInitMethod(name: string): Map<string, string> {
         let method = this.cls.getMethodWithName(name);
-        if (!method || method?.getBody() == undefined) {
+        if (!method || method?.getBody() === undefined) {
             return new Map<string, string>();
         }
 
