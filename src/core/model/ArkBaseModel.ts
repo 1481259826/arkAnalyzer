@@ -53,6 +53,8 @@ export enum ModifierType {
     DECLARE = 1 << 14,
 }
 
+const MODIFIER_TYPE_MASK = 0xFFFF;
+
 const MODIFIER_TYPE_STRINGS = [
     'private',
     'protected',
@@ -125,6 +127,13 @@ export abstract class ArkBaseModel {
         this.modifiers = this.getModifiers() | modifier;
     }
 
+    public removeModifier(modifier: ModifierType): void {
+        if (!this.modifiers) {
+            return ;
+        }
+        this.modifiers &= MODIFIER_TYPE_MASK ^ modifier;
+    }
+
     public isStatic(): boolean {
         return this.containsModifier(ModifierType.STATIC);
     }
@@ -188,6 +197,14 @@ export abstract class ArkBaseModel {
             this.decorators = new Set();
         }
         this.decorators.add(decorator);
+    }
+
+    public removeDecorator(kind: string): void {
+        this.decorators?.forEach((value) => {
+            if (value.getKind() === kind) {
+                this.decorators?.delete(value);
+            }
+        });
     }
 
     public hasBuilderDecorator(): boolean {
