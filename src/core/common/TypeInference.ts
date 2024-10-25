@@ -69,7 +69,7 @@ export class TypeInference {
         const arkClass = arkField.getDeclaringArkClass();
         const stmts = arkField.getInitializer();
         let rightType: Type | undefined;
-        let fieldRef: AbstractFieldRef | undefined = undefined;
+        let fieldRef: AbstractFieldRef | undefined;
         if (stmts) {
             for (const stmt of stmts) {
                 this.resolveExprsInStmt(stmt, arkClass);

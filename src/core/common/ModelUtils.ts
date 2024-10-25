@@ -404,7 +404,7 @@ export class ModelUtils {
 
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
-let moduleMap: Map<string, ModulePath> | undefined = undefined;
+let moduleMap: Map<string, ModulePath> | undefined;
 const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
 
 /**

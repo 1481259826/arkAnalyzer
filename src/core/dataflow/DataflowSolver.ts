@@ -271,7 +271,7 @@ export abstract class DataflowSolver<D> {
                 let startEdgePoint: PathEdgePoint<D> = new PathEdgePoint(firstStmt, fact);
                 this.propagate(new PathEdge<D>(startEdgePoint, startEdgePoint));
                 //add callEdgePoint in inComing.get(startEdgePoint)
-                let coming: Set<PathEdgePoint<D>> | undefined = undefined;
+                let coming: Set<PathEdgePoint<D>> | undefined;
                 for (const incoming of this.inComing.keys()) {
                     if (incoming.fact === startEdgePoint.fact && incoming.node === startEdgePoint.node) {
                         coming = this.inComing.get(incoming);

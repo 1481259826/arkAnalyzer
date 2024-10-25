@@ -820,7 +820,7 @@ export class ArkIRTransformer {
     private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
         const componentName = (etsComponentExpression.expression as ts.Identifier).text;
-        let builderMethodIndexes: Set<number> | undefined = undefined;
+        let builderMethodIndexes: Set<number> | undefined;
         if (componentName === COMPONENT_FOR_EACH || componentName === COMPONENT_LAZY_FOR_EACH) {
             builderMethodIndexes = new Set<number>([1]);
         }
@@ -1007,7 +1007,7 @@ export class ArkIRTransformer {
     }
 
     private callExpressionToValueAndStmts(callExpression: ts.CallExpression): ValueAndStmts {
-        let realGenericTypes: Type[] | undefined = undefined;
+        let realGenericTypes: Type[] | undefined;
         if (callExpression.typeArguments) {
             realGenericTypes = [];
             callExpression.typeArguments.forEach(typeArgument => {
@@ -1115,7 +1115,7 @@ export class ArkIRTransformer {
             return this.newArrayExpressionToValueAndStmts(newExpression);
         }
         const stmts: Stmt[] = [];
-        let realGenericTypes: Type[] | undefined = undefined;
+        let realGenericTypes: Type[] | undefined;
         if (newExpression.typeArguments) {
             realGenericTypes = [];
             newExpression.typeArguments.forEach(typeArgument => {
