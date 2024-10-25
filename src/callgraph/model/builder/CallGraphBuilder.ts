@@ -80,7 +80,7 @@ export class CallGraphBuilder {
         }
     }
 
-    public buildClassHierarchyCallGraph(entries: Method[], displayGeneratedMethod: Boolean = false): void {
+    public buildClassHierarchyCallGraph(entries: Method[], displayGeneratedMethod: boolean = false): void {
         let cgEntries: NodeID[] = [];
         entries.forEach((entry: Method) => {
             cgEntries.push(this.cg.getCallGraphNodeByMethod(entry).getID());
@@ -91,7 +91,7 @@ export class CallGraphBuilder {
         classHierarchyAnalysis.start(displayGeneratedMethod);
     }
 
-    public buildRapidTypeCallGraph(entries: Method[], displayGeneratedMethod: Boolean = false): void {
+    public buildRapidTypeCallGraph(entries: Method[], displayGeneratedMethod: boolean = false): void {
         let cgEntries: NodeID[] = [];
         entries.forEach((entry: Method) => {
             cgEntries.push(this.cg.getCallGraphNodeByMethod(entry).getID());
