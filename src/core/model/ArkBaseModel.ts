@@ -129,7 +129,7 @@ export abstract class ArkBaseModel {
 
     public removeModifier(modifier: ModifierType): void {
         if (!this.modifiers) {
-            return ;
+            return;
         }
         this.modifiers &= MODIFIER_TYPE_MASK ^ modifier;
     }
