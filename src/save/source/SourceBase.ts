@@ -88,7 +88,7 @@ export abstract class SourceBase
         let types: string[] = [];
         for (let keyword of keywordStr.split('|')) {
             keyword = keyword.trim();
-            if (keyword.length == 0) {
+            if (keyword.length === 0) {
                 continue;
             }
             if (keyword.endsWith('Keyword')) {

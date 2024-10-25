@@ -23,13 +23,13 @@ export abstract class DataflowProblem<D> {
     public transferEdge(srcStmt: Stmt, tgtStmt: Stmt) {
         let edgeKind: number = Edge.getKind(srcStmt, tgtStmt);
 
-        if (0 == edgeKind) {
+        if (0 === edgeKind) {
             //normal
-        } else if (1 == edgeKind) { //Call-Edge
+        } else if (1 === edgeKind) { //Call-Edge
 
-        } else if (2 == edgeKind) { //Return-Edge
+        } else if (2 === edgeKind) { //Return-Edge
 
-        } else if (3 == edgeKind) { //Call-To-Return-Edge
+        } else if (3 === edgeKind) { //Call-To-Return-Edge
 
         }
     }

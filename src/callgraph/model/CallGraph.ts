@@ -78,7 +78,6 @@ export class CallGraphEdge extends BaseEdge {
 
     constructor(src: CallGraphNode, dst: CallGraphNode) {
         super(src, dst, 0);
-        //this.callSiteID = csID;
     }
 
     public addDirectCallSite(stmt: Stmt) {
@@ -101,11 +100,11 @@ export class CallGraphEdge extends BaseEdge {
             return ''
         }
 
-        if (indirectCallNums != 0 && directCallNums == 0) {
+        if (indirectCallNums !== 0 && directCallNums === 0) {
             return "color=red";
-        } else if (specialCallNums != 0) {
+        } else if (specialCallNums !== 0) {
             return "color=yellow";
-        } else if (indirectCallNums == 0 && directCallNums != 0) {
+        } else if (indirectCallNums === 0 && directCallNums !== 0) {
             return "color=black";
         } else {
             return "color=black";
@@ -220,7 +219,7 @@ export class CallGraph extends BaseGraph {
             throw new Error();
         }
         let n = this.methodToCGNodeMap.get(method.toString());
-        if (n == undefined) {
+        if (n === undefined) {
             // The method can't be found
             // means the method has no implementation, or base type is unclear to find it
             // Create a virtual CG Node
@@ -252,7 +251,7 @@ export class CallGraph extends BaseGraph {
 
         // TODO: check if edge exists 
         let callEdge = this.getCallEdgeByPair(callerNode.getID(), calleeNode.getID());
-        if (callEdge == undefined) {
+        if (callEdge === undefined) {
             callEdge = new CallGraphEdge(callerNode, calleeNode);
             callEdge.getSrcNode().addOutgoingEdge(callEdge);
             callEdge.getDstNode().addIncomingEdge(callEdge);
@@ -294,7 +293,7 @@ export class CallGraph extends BaseGraph {
         let calleeNode = this.getNode(calleeID) as CallGraphNode;
 
         let callEdge = this.getCallEdgeByPair(callerNode.getID(), calleeNode.getID());
-        if (callEdge == undefined) {
+        if (callEdge === undefined) {
             callEdge = new CallGraphEdge(callerNode, calleeNode);
             callEdge.getSrcNode().addOutgoingEdge(callEdge);
             callEdge.getDstNode().addIncomingEdge(callEdge);
@@ -339,7 +338,7 @@ export class CallGraph extends BaseGraph {
 
     public getMethodByFuncID(id: FuncID): Method | null {
         let node = this.getNode(id);
-        if (node != undefined) {
+        if (node !== undefined) {
             return (node as CallGraphNode).getMethod();
         }
         //return undefined;

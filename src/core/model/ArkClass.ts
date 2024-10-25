@@ -386,7 +386,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     ```
      */
     public hasViewTree(): boolean {
-        return this.viewTree != undefined;
+        return this.viewTree !== undefined;
     }
 
     public getStaticFields(classMap: Map<FileSignature | NamespaceSignature, ArkClass[]>): ArkField[] {

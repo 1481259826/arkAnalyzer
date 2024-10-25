@@ -62,7 +62,7 @@ export class CallGraphBuilder {
             let stmts = cfg.getStmts();
             for (const stmt of stmts) {
                 let invokeExpr = stmt.getInvokeExpr();
-                if (invokeExpr == undefined) {
+                if (invokeExpr === undefined) {
                     continue;
                 }
 
@@ -114,7 +114,7 @@ export class CallGraphBuilder {
     public setEntries(): void {
         let nodesIter = this.cg.getNodesIter();
         let entries = Array.from(nodesIter)
-            .filter(node => !node.hasIncomingEdges() && node.getKind() == CallGraphNodeKind.real
+            .filter(node => !node.hasIncomingEdges() && node.getKind() === CallGraphNodeKind.real
                 && !(node as CallGraphNode).isBlankMethod)
             .map(node => node.getID());
         this.cg.setEntries(entries);

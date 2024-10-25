@@ -65,7 +65,7 @@ export class PagEdge extends BaseEdge {
             case PagEdgeKind.Address:
                 return "color=green";
             case PagEdgeKind.Copy:
-                if (this.stmt?.getInvokeExpr() != undefined || this.stmt instanceof ArkReturnStmt) {
+                if (this.stmt?.getInvokeExpr() !== undefined || this.stmt instanceof ArkReturnStmt) {
                     return "color=black,style=dotted";
                 }
                 return "color=black";
@@ -154,7 +154,7 @@ export class PagNode extends BaseNode {
     }
 
     public getCid(): ContextID {
-        if (this.cid == undefined) {
+        if (this.cid === undefined) {
             throw new Error('cid is undefine')
         }
         return this.cid;
@@ -205,38 +205,38 @@ export class PagNode extends BaseNode {
     }
 
     public addAddressInEdge(e: AddrPagEdge): void {
-        this.addressInEdges == undefined ? this.addressInEdges = new Set() : undefined;
+        this.addressInEdges === undefined ? this.addressInEdges = new Set() : undefined;
         this.addressInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
     public addAddressOutEdge(e: AddrPagEdge): void {
-        this.addressOutEdges == undefined ? this.addressOutEdges = new Set() : undefined;
+        this.addressOutEdges === undefined ? this.addressOutEdges = new Set() : undefined;
         this.addressOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
     public addCopyInEdge(e: CopyPagEdge): void {
-        this.copyInEdges == undefined ? this.copyInEdges = new Set() : undefined;
+        this.copyInEdges === undefined ? this.copyInEdges = new Set() : undefined;
         this.copyInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
     public addCopyOutEdge(e: CopyPagEdge): void {
-        this.copyOutEdges == undefined ? this.copyOutEdges = new Set() : undefined;
+        this.copyOutEdges === undefined ? this.copyOutEdges = new Set() : undefined;
 
         this.copyOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
 
     public addLoadInEdge(e: LoadPagEdge): void {
-        this.loadInEdges == undefined ? this.loadInEdges = new Set() : undefined;
+        this.loadInEdges === undefined ? this.loadInEdges = new Set() : undefined;
         this.loadInEdges.add(e);
         this.addIncomingEdge(e);
     }
 
     public addLoadOutEdge(e: LoadPagEdge): void {
-        this.loadOutEdges == undefined ? this.loadOutEdges = new Set() : undefined;
+        this.loadOutEdges === undefined ? this.loadOutEdges = new Set() : undefined;
         this.loadOutEdges.add(e);
         this.addOutgoingEdge(e);
     }
@@ -326,12 +326,12 @@ export class PagNode extends BaseNode {
         }
         label = label + ` pts:{${Array.from(this.pointTo).join(',')}}`
 
-        if (this.getKind() == PagNodeKind.Param) {
+        if (this.getKind() === PagNodeKind.Param) {
             param = this.value as ArkParameterRef;
             label = label + `\nParam#${param.getIndex()} ${param.toString()}`;
         }
 
-        if (this.getKind() == PagNodeKind.ThisRef) {
+        if (this.getKind() === PagNodeKind.ThisRef) {
             label = label + `\n${(this.value as ArkThisRef).toString()}`
         }
 
@@ -559,7 +559,7 @@ export class Pag extends BaseGraph {
      * but different Node ID
      */
     public getOrClonePagNode(src: PagNode, basePt: NodeID): PagNode {
-        if (src.getBasePt() != undefined) {
+        if (src.getBasePt() !== undefined) {
             throw new Error('This is a cloned ref node, can not be cloned again');
         }
 
@@ -609,7 +609,6 @@ export class Pag extends BaseGraph {
                 return this.getNode(existedNode) as PagInstanceFieldNode;
             }
 
-            // let arrayBase: Local = (src.getValue() as ArkArrayRef).getBase()
             let fieldNode = this.getOrClonePagNode(src, basePt);
             baseNode.addElementNode(fieldNode.getID());
             fieldNode.setBasePt(basePt);
@@ -631,7 +630,7 @@ export class Pag extends BaseGraph {
             } else {
                 // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
                 // value has been replaced in param
-                if (value.getName() == GLOBAL_THIS && value.getDeclaringStmt() == null) {
+                if (value.getName() === GLOBAL_THIS && value.getDeclaringStmt() == null) {
                     pagNode = new PagGlobalThisNode(id, 0, value)
                 } else {
                     pagNode = new PagLocalNode(id, cid, value, stmt);
@@ -739,7 +738,7 @@ export class Pag extends BaseGraph {
     }
 
     public getOrNewThisRefNode(thisRefNodeID: NodeID, value: ArkThisRef): PagNode {
-        if (thisRefNodeID != -1) {
+        if (thisRefNodeID !== -1) {
             return this.getNode(thisRefNodeID) as PagNode
         }
 
@@ -748,7 +747,7 @@ export class Pag extends BaseGraph {
     }
 
     public getOrNewThisLocalNode(cid: ContextID, ptNode: NodeID, value: Local, s?: Stmt): PagNode {
-        if (ptNode != -1) {
+        if (ptNode !== -1) {
             return this.getNode(ptNode) as PagNode;
         } else {
             return this.getOrNewNode(cid, value, s);
@@ -784,7 +783,7 @@ export class Pag extends BaseGraph {
     }
     public getOrNewNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
         let nodeId = this.hasCtxNode(cid, v);
-        if (nodeId != undefined) {
+        if (nodeId !== undefined) {
             return this.getNode(nodeId) as PagNode;
         }
 
@@ -806,8 +805,6 @@ export class Pag extends BaseGraph {
             return false;
         }
 
-        //src.addOutgoingEdge(edge);
-        //dst.addIncomingEdge(edge);
         switch (kind) {
             case PagEdgeKind.Copy:
                 src.addCopyOutEdge(edge);
@@ -828,8 +825,9 @@ export class Pag extends BaseGraph {
                 dst.addLoadInEdge(edge);
                 break;
             case PagEdgeKind.This:
-                src.addThisOutEdge(edge)
-                dst.addThisInEdge(edge)
+                src.addThisOutEdge(edge);
+                dst.addThisInEdge(edge);
+                break;
             default:
                 ;
         }
@@ -886,7 +884,7 @@ export class FuncPag {
     }
 
     public addInternalEdge(stmt: ArkAssignStmt, k: PagEdgeKind): boolean {
-        this.internalEdges == undefined ? this.internalEdges = new Set() : undefined;
+        this.internalEdges === undefined ? this.internalEdges = new Set() : undefined;
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
 

@@ -171,7 +171,6 @@ export class KLimitedContextSensitive {
             const calleeAsTopCtx = Context.newKLimitedContext(Context.sEmptyCtx, calleeFuncId, this.k);
             let topID = this.ctxCache.getContextID(calleeAsTopCtx);
             if (topID) {
-                // let ctx = this.ctxCache.getContext(topID);
                 this.ctxCache.updateContext(topID, calleeNewCtx, calleeAsTopCtx);
                 return topID;
             }

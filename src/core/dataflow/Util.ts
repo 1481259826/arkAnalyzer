@@ -42,7 +42,9 @@ export function Json2ArkMethod(str: string, scene: Scene): ArkMethod | null {
     if (otherMes.length < 3) {
         return null;
     }
-    const namespaceName = otherMes[0], className = otherMes[1], methodName = otherMes[2].split('(')[0];
+    const namespaceName = otherMes[0];
+    const className = otherMes[1];
+    const methodName = otherMes[2].split('(')[0];
     let paramNames: string[] = [];
     if (otherMes[2]) {
         if (!otherMes[2].match(/\((.*?)\)/)) {
@@ -53,16 +55,15 @@ export function Json2ArkMethod(str: string, scene: Scene): ArkMethod | null {
     
     const file = scene.getSdkArkFilesMap().get(fileName);
     if (!file) {
-        // console.log("no file: " + fileName);
         return null;
     }
     let arkClass: ArkClass | null = null;
-    if (namespaceName == "_") {
-        if (className == '_') {
+    if (namespaceName === "_") {
+        if (className === '_') {
             arkClass = file.getDefaultClass();
         } else {
             for (const clas of file.getClasses()) {
-                if (clas.getName() == className) {
+                if (clas.getName() === className) {
                     arkClass = clas;
                     break;
                 }
@@ -71,43 +72,41 @@ export function Json2ArkMethod(str: string, scene: Scene): ArkMethod | null {
     } else {
         let arkNamespace: ArkNamespace | null = null;
         for (const ns of file.getNamespaces()) {
-            if (ns.getName() == namespaceName) {
+            if (ns.getName() === namespaceName) {
                 arkNamespace = ns;
                 break;
             }
         }
         if (arkNamespace) {
-            if (className == '_') {
+            if (className === '_') {
                 arkClass = arkNamespace.getDefaultClass()
             } else {
                 for (const clas of arkNamespace.getClasses()) {
-                    if (clas.getName() == className) {
+                    if (clas.getName() === className) {
                         arkClass = clas;
                         break;
                     }
                 }
             }
         } else {
-            // console.log("no namespace: " + namespaceName);
             return null;
         }
     }
     if (!arkClass) {
-        // console.log("no class: " + className);
         return null;
     } else {
         let arkMethod: ArkMethod | null = null;
         for (const method of arkClass.getMethods()) {
-            if (method.getName() == methodName) {
+            if (method.getName() === methodName) {
                 arkMethod = method;
                 break;
             }
         }
-        if (arkMethod && arkMethod.getParameters().length == paramNames.length) {
+        if (arkMethod && arkMethod.getParameters().length === paramNames.length) {
             let paramEqual = true;
             for (let i = 0; i < arkMethod.getParameters().length; i++) {
                 const param = arkMethod.getParameters()[i]
-                if (param.getName() + ':' + param.getType().toString() != paramNames[i]) {
+                if (param.getName() + ':' + param.getType().toString() !== paramNames[i]) {
                     paramEqual = false;
                     break;
                 }
@@ -116,7 +115,6 @@ export function Json2ArkMethod(str: string, scene: Scene): ArkMethod | null {
                 return arkMethod;
             }
         } else {
-            // console.log("no method: " + methodName);
             return null;
         }
     }

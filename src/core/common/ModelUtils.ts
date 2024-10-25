@@ -38,7 +38,7 @@ export class ModelUtils {
 
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
         for (const arkMethod of arkClass.getMethods()) {
-            if (arkMethod.getName() == methodName) {
+            if (arkMethod.getName() === methodName) {
                 return arkMethod.getSignature();
             }
         }
@@ -46,7 +46,7 @@ export class ModelUtils {
     }
 
     public static getClassWithNameInNamespaceRecursively(className: string, ns: ArkNamespace): ArkClass | null {
-        if (className == '') {
+        if (className === '') {
             return null;
         }
         let res: ArkClass | null = null;
@@ -90,7 +90,7 @@ export class ModelUtils {
      *  search class within the file that contain the given method
      */
     public static getClassWithName(className: string, thisClass: ArkClass): ArkClass | null {
-        if (thisClass.getName() == className) {
+        if (thisClass.getName() === className) {
             return thisClass;
         }
         let classSearched = thisClass.getDeclaringArkNamespace()?.getClassWithName(className);
@@ -125,7 +125,7 @@ export class ModelUtils {
     /** search method within the file that contain the given method */
     public static getMethodWithName(methodName: string, startFrom: ArkMethod): ArkMethod | null {
         if (!methodName.includes('.')) {
-            if (startFrom.getName() == methodName) {
+            if (startFrom.getName() === methodName) {
                 return startFrom;
             }
 
@@ -209,7 +209,7 @@ export class ModelUtils {
     }
 
     public static getStaticMethodInFileWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
-        const defaultClass = arkFile.getClasses().find(cls => cls.getName() == '_DEFAULT_ARK_CLASS') || null;
+        const defaultClass = arkFile.getClasses().find(cls => cls.getName() === '_DEFAULT_ARK_CLASS') || null;
         if (defaultClass) {
             let method = defaultClass.getMethodWithName(methodName);
             if (method) {
@@ -273,7 +273,7 @@ export class ModelUtils {
 
         if (
             !isArkUIBuilderMethod &&
-            arkMethod.getName() == 'build' &&
+            arkMethod.getName() === 'build' &&
             arkMethod.getDeclaringArkClass().hasComponentDecorator() &&
             !arkMethod.isStatic()
         ) {
@@ -404,7 +404,7 @@ export class ModelUtils {
 
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
-let moduleMap: Map<string, ModulePath> | undefined = undefined;
+let moduleMap: Map<string, ModulePath> | undefined;
 const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
 
 /**

@@ -166,7 +166,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public isGenericsMethod(): boolean {
-        return this.genericTypes != undefined;
+        return this.genericTypes !== undefined;
     }
 
     public setGenericTypes(genericTypes: GenericType[]): void {
@@ -263,7 +263,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                     results.push((stmt as ArkAssignStmt).getLeftOp());
                 }
             }
-            if (results.length == this.getParameters().length) {
+            if (results.length === this.getParameters().length) {
                 return results;
             }
         }
@@ -316,7 +316,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public hasViewTree(): boolean {
-        return this.viewTree != undefined;
+        return this.viewTree !== undefined;
     }
 
     public setBodyBuilder(bodyBuilder: BodyBuilder) {

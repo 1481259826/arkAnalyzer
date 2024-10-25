@@ -68,7 +68,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 let ret: Set<Value> = new Set();
-                if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
+                if (checkerInstance.getEntryPoint() === srcStmt && checkerInstance.getZeroValue() === dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
                     const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0;i < parameters.length;i++) {
@@ -82,7 +82,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                     const staticFields = entryMethod.getDeclaringArkClass().getStaticFields(checkerInstance.classMap);
                     for (const field of staticFields) {
                         const initializer = field.getInitializer()
-                        if (initializer.length == 1 && initializer[0] instanceof ArkAssignStmt && initializer[0].getRightOp() == undefined) {
+                        if (initializer.length === 1 && initializer[0] instanceof ArkAssignStmt && initializer[0].getRightOp() === undefined) {
                             ret.add(new ArkStaticFieldRef(field.getSignature()));
                         }
                     }
@@ -92,14 +92,14 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                     return ret;
                 }
                 if (!factEqual(srcStmt.getDef(), dataFact)) {
-                    if (!(dataFact instanceof Local && dataFact.getName() == srcStmt.getDef()!.toString()))
+                    if (!(dataFact instanceof Local && dataFact.getName() === srcStmt.getDef()!.toString()))
                         ret.add(dataFact);
                 }
                 if (srcStmt instanceof ArkAssignStmt ) {
                     let ass: ArkAssignStmt = (srcStmt as ArkAssignStmt);
                     let assigned: Value = ass.getLeftOp();
                     let rightOp: Value = ass.getRightOp();
-                    if (checkerInstance.getZeroValue() == dataFact) {
+                    if (checkerInstance.getZeroValue() === dataFact) {
                         if (checkerInstance.isUndefined(rightOp)) {
                             ret.add(assigned);
                         }
@@ -107,12 +107,12 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                         ret.add(assigned);
                     } else if (rightOp instanceof ArkInstanceFieldRef) {
                         const base = rightOp.getBase();
-                        if (base == dataFact || !base.getDeclaringStmt() && base.getName() == dataFact.toString()){
+                        if (base === dataFact || !base.getDeclaringStmt() && base.getName() === dataFact.toString()){
                             console.log("undefined base")
                             console.log(srcStmt.toString());
                             console.log(srcStmt.getOriginPositionInfo().toString());
                         }
-                    } else if (dataFact instanceof ArkInstanceFieldRef && rightOp == dataFact.getBase()) {
+                    } else if (dataFact instanceof ArkInstanceFieldRef && rightOp === dataFact.getBase()) {
                         const field = new ArkInstanceFieldRef(srcStmt.getLeftOp() as Local, dataFact.getFieldSignature());
                         ret.add(field);
                     }
@@ -128,11 +128,11 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 const ret:Set<Value> = new Set();
-                if (checkerInstance.getZeroValue() == dataFact) {
+                if (checkerInstance.getZeroValue() === dataFact) {
                     ret.add(checkerInstance.getZeroValue());
                     // 加上调用函数能访问到的所有静态变量，如果不考虑多线程，加上所有变量，考虑则要统计之前已经处理过的变量并排除
                     for (const field of method.getDeclaringArkClass().getStaticFields(checkerInstance.classMap)) {
-                        if (field.getInitializer() == undefined) {
+                        if (field.getInitializer() === undefined) {
                             ret.add(new ArkStaticFieldRef(field.getSignature()));
                         }
                     }
@@ -141,7 +141,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                     }
                 } else {
                     const callExpr = srcStmt.getExprs()[0];
-                    if (callExpr instanceof ArkInstanceInvokeExpr && dataFact instanceof ArkInstanceFieldRef && callExpr.getBase().getName() == dataFact.getBase().getName()){
+                    if (callExpr instanceof ArkInstanceInvokeExpr && dataFact instanceof ArkInstanceFieldRef && callExpr.getBase().getName() === dataFact.getBase().getName()){
                         // todo:base转this
                         const baseType = callExpr.getBase().getType() as ClassType;
                         const arkClass = checkerInstance.scene.getClass(baseType.getClassSignature());
@@ -149,23 +149,23 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                         const block = [...constructor!.getCfg()!.getBlocks()][0];
                         for (const stmt of block.getStmts()){
                             const def = stmt.getDef()
-                            if (def && def instanceof ArkInstanceFieldRef && def.getBase().getName() == "this" && def.getFieldName() == dataFact.getFieldName()){
+                            if (def && def instanceof ArkInstanceFieldRef && def.getBase().getName() === "this" && def.getFieldName() === dataFact.getFieldName()){
                                 ret.add(def);
                                 break;
                             }
                         }
-                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringSignature()) {
+                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() === dataFact.getFieldSignature().getDeclaringSignature()) {
                         ret.add(dataFact);
                     }
                 }
                 const callStmt = srcStmt as ArkInvokeStmt;
                 const args = callStmt.getInvokeExpr().getArgs();
                 for (let i = 0; i < args.length; i++){
-                    if (args[i] == dataFact || checkerInstance.isUndefined(args[i]) && checkerInstance.getZeroValue() == dataFact){
+                    if (args[i] === dataFact || checkerInstance.isUndefined(args[i]) && checkerInstance.getZeroValue() === dataFact){
                         const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter)
                             ret.add(realParameter);
-                    } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == args[i].toString()){
+                    } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() === args[i].toString()){
                         const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter) {
                             const retRef = new ArkInstanceFieldRef(realParameter as Local, dataFact.getFieldSignature());
@@ -185,10 +185,10 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 let ret: Set<Value> = new Set<Value>();
-                if (dataFact == checkerInstance.getZeroValue()) {
+                if (dataFact === checkerInstance.getZeroValue()) {
                     ret.add(checkerInstance.getZeroValue());
                 }
-                if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == "this"){
+                if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() === "this"){
                     // todo:this转base。
                     const expr = callStmt.getExprs()[0];
                     if (expr instanceof ArkInstanceInvokeExpr){
@@ -203,13 +203,13 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                     let ass: ArkAssignStmt = callStmt as ArkAssignStmt;
                     let leftOp: Value = ass.getLeftOp();
                     let retVal: Value = (srcStmt as ArkReturnStmt).getOp();
-                    if (dataFact == checkerInstance.getZeroValue()) {
+                    if (dataFact === checkerInstance.getZeroValue()) {
                         ret.add(checkerInstance.getZeroValue());
                         if (checkerInstance.isUndefined(retVal)) {
                             ret.add(leftOp);
                         }
 
-                    } else if (retVal == dataFact) {
+                    } else if (retVal === dataFact) {
                         ret.add(leftOp);
                     }
                 }
@@ -224,11 +224,11 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 const ret:Set<Value> = new Set();
-                if (checkerInstance.getZeroValue() == dataFact) {
+                if (checkerInstance.getZeroValue() === dataFact) {
                     ret.add(checkerInstance.getZeroValue());
                 }
                 const defValue = srcStmt.getDef();
-                if (!(defValue && defValue ==dataFact)){
+                if (!(defValue && defValue === dataFact)){
                     ret.add(dataFact);
                 }
                 return ret;

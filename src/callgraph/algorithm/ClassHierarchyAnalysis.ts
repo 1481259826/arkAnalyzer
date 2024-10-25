@@ -51,7 +51,6 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         }
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
-            // resolveResult.push(calleeMethod.getSignature())
             resolveResult.push(new CallSite(invokeStmt, undefined,
                 this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(),
                 callerMethod!));

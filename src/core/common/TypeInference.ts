@@ -69,7 +69,7 @@ export class TypeInference {
         const arkClass = arkField.getDeclaringArkClass();
         const stmts = arkField.getInitializer();
         let rightType: Type | undefined;
-        let fieldRef: AbstractFieldRef | undefined = undefined;
+        let fieldRef: AbstractFieldRef | undefined;
         if (stmts) {
             for (const stmt of stmts) {
                 this.resolveExprsInStmt(stmt, arkClass);
@@ -121,7 +121,7 @@ export class TypeInference {
                 } else {
                     newType = optionType;
                 }
-                if (newType && newType != optionType) {
+                if (newType && newType !== optionType) {
                     types[i] = newType;
                 }
                 if (rightType && newType && newType === rightType) {
@@ -350,9 +350,10 @@ export class TypeInference {
                 return VoidType.getInstance();
             case 'never':
                 return NeverType.getInstance();
-            case 'RegularExpression':
+            case 'RegularExpression': {
                 const classSignature = Builtin.REGEXP_CLASS_SIGNATURE;
                 return new ClassType(classSignature);
+            }
             default:
                 return new UnclearReferenceType(typeStr);
         }
@@ -420,7 +421,7 @@ export class TypeInference {
         let type = null;
         for (let i = 0; i < singleNames.length; i++) {
             let genericName: string = EMPTY_STRING;
-            const name = singleNames[i].replace(/<(\w+)>/, function (match, group1) {
+            const name = singleNames[i].replace(/<(\w+)>/, (match, group1) => {
                 genericName = group1;
                 return EMPTY_STRING;
             });

@@ -492,7 +492,7 @@ class TreeNodeStack {
         }
 
         let node = this.stack[this.stack.length - 1];
-        if (name != node.name && !this.isContainer(node.name)) {
+        if (name !== node.name && !this.isContainer(node.name)) {
             this.stack.pop();
         }
     }
@@ -502,7 +502,7 @@ class TreeNodeStack {
      */
     public popComponentExpect(name: string): TreeNodeStack {
         for (let i = this.stack.length - 1; i >= 0; i--) {
-            if (this.stack[i].name != name) {
+            if (this.stack[i].name !== name) {
                 this.stack.pop();
             } else {
                 break;

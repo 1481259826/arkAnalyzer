@@ -347,7 +347,7 @@ export class LocalSignature {
 //TODO, reconstruct
 export function fieldSignatureCompare(leftSig: FieldSignature, rightSig: FieldSignature): boolean {
     if (leftSig.getDeclaringSignature().toString() === rightSig.getDeclaringSignature().toString() &&
-        (leftSig.getFieldName() == rightSig.getFieldName())) {
+        (leftSig.getFieldName() === rightSig.getFieldName())) {
         return true;
     }
     return false;
@@ -362,8 +362,8 @@ export function methodSignatureCompare(leftSig: MethodSignature, rightSig: Metho
 }
 
 export function methodSubSignatureCompare(leftSig: MethodSubSignature, rightSig: MethodSubSignature): boolean {
-    if ((leftSig.getMethodName() == rightSig.getMethodName()) && arrayCompare(leftSig.getParameterTypes(),
-        rightSig.getParameterTypes()) && leftSig.getReturnType() == rightSig.getReturnType()) {
+    if ((leftSig.getMethodName() === rightSig.getMethodName()) && arrayCompare(leftSig.getParameterTypes(),
+        rightSig.getParameterTypes()) && leftSig.getReturnType() === rightSig.getReturnType()) {
         return true;
     }
     return false;
@@ -371,25 +371,25 @@ export function methodSubSignatureCompare(leftSig: MethodSubSignature, rightSig:
 
 export function classSignatureCompare(leftSig: ClassSignature, rightSig: ClassSignature): boolean {
     if ((fileSignatureCompare(leftSig.getDeclaringFileSignature(), rightSig.getDeclaringFileSignature())) &&
-        (leftSig.getClassName() == rightSig.getClassName())) {
+        (leftSig.getClassName() === rightSig.getClassName())) {
         return true;
     }
     return false;
 }
 
 export function fileSignatureCompare(leftSig: FileSignature, rightSig: FileSignature): boolean {
-    if ((leftSig.getFileName() == rightSig.getFileName()) && (leftSig.getProjectName() == rightSig.getProjectName())) {
+    if ((leftSig.getFileName() === rightSig.getFileName()) && (leftSig.getProjectName() === rightSig.getProjectName())) {
         return true;
     }
     return false;
 }
 
 function arrayCompare(leftArray: any[], rightArray: any[]) {
-    if (leftArray.length != rightArray.length) {
+    if (leftArray.length !== rightArray.length) {
         return false;
     }
     for (let i = 0; i < leftArray.length; i++) {
-        if (leftArray[i] != rightArray[i]) {
+        if (leftArray[i] !== rightArray[i]) {
             return false;
         }
     }

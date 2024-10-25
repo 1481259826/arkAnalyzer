@@ -185,7 +185,7 @@ export class SourceMethod extends SourceBase {
     private initInBuilder(): boolean {
         return (
             this.method.hasBuilderDecorator() ||
-            ((this.method.getName() == 'build' || this.method.getName() == 'pageTransition') &&
+            ((this.method.getName() === 'build' || this.method.getName() === 'pageTransition') &&
                 !this.method.isStatic() &&
                 this.method.getDeclaringArkClass().hasViewTree())
         );

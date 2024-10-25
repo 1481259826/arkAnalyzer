@@ -169,6 +169,8 @@ function mapSyntaxKindToFieldOriginType(syntaxKind: ts.SyntaxKind): FieldCategor
         case ts.SyntaxKind.GetAccessor:
             fieldOriginType = FieldCategory.GET_ACCESSOR;
             break;
+        default:
+            ;
     }
     return fieldOriginType;
 }

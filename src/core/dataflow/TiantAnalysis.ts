@@ -58,7 +58,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
     private callSource(val: Value): boolean {
         if (val instanceof AbstractInvokeExpr) {
             for (const source of this.sources) {
-                if (source.getSignature() == val.getMethodSignature()) {
+                if (source.getSignature() === val.getMethodSignature()) {
                     return true;
                 }
             }
@@ -79,7 +79,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 let ret: Set<Value> = new Set();
-                if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
+                if (checkerInstance.getEntryPoint() === srcStmt && checkerInstance.getZeroValue() === dataFact) {
                     let entryMethod = checkerInstance.getEntryMethod();
                     const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                     for (let i = 0; i < parameters.length;i++) {
@@ -92,7 +92,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     // 加入所有的全局变量和静态属性（may analysis）
                     const staticFields = entryMethod.getDeclaringArkClass().getStaticFields(checkerInstance.classMap);
                     for (const field of staticFields) {
-                        if (field.getInitializer() == undefined) {
+                        if (field.getInitializer() === undefined) {
                             ret.add(new ArkStaticFieldRef(field.getSignature()));
                         }
                     }
@@ -102,14 +102,14 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     return ret;
                 } 
                 if (!factEqual(srcStmt.getDef(), dataFact)) {
-                    if (!(dataFact instanceof Local && dataFact.getName() == srcStmt.getDef()!.toString()))
+                    if (!(dataFact instanceof Local && dataFact.getName() === srcStmt.getDef()!.toString()))
                         ret.add(dataFact);
                 }
                 if (srcStmt instanceof ArkAssignStmt ) {
                     let stmt: ArkAssignStmt = (srcStmt as ArkAssignStmt);
                     let assigned: Value = stmt.getLeftOp();
                     let rightOp: Value = stmt.getRightOp();
-                    if (checkerInstance.getZeroValue() == dataFact) {
+                    if (checkerInstance.getZeroValue() === dataFact) {
                         if (checkerInstance.callSource(rightOp)) {
                             ret.add(assigned);
                         }
@@ -117,7 +117,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                         ret.add(assigned);
                         if (assigned instanceof ArkInstanceFieldRef) {
                         }
-                    } else if (dataFact instanceof ArkInstanceFieldRef && rightOp == dataFact.getBase()) {
+                    } else if (dataFact instanceof ArkInstanceFieldRef && rightOp === dataFact.getBase()) {
                         const field = new ArkInstanceFieldRef(srcStmt.getLeftOp() as Local, dataFact.getFieldSignature());
                         ret.add(field);
                     }
@@ -133,11 +133,11 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 const ret:Set<Value> = new Set();
-                if (checkerInstance.getZeroValue() == dataFact) {
+                if (checkerInstance.getZeroValue() === dataFact) {
                     ret.add(checkerInstance.getZeroValue());
                     // 加上调用函数能访问到的所有静态变量，如果不考虑多线程，加上所有变量，考虑则要统计之前已经处理过的变量并排除
                     for (const field of method.getDeclaringArkClass().getStaticFields(checkerInstance.classMap)) {
-                        if (field.getInitializer() == undefined) {
+                        if (field.getInitializer() === undefined) {
                             ret.add(new ArkStaticFieldRef(field.getSignature()));
                         }
                     }
@@ -146,16 +146,16 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     }
                 } else {
                     const callExpr = srcStmt.getExprs()[0] as AbstractInvokeExpr;
-                    if (callExpr instanceof ArkInstanceInvokeExpr && dataFact instanceof ArkInstanceFieldRef && callExpr.getBase().getName() == dataFact.getBase().getName()){
+                    if (callExpr instanceof ArkInstanceInvokeExpr && dataFact instanceof ArkInstanceFieldRef && callExpr.getBase().getName() === dataFact.getBase().getName()){
                         // todo:base转this
                         const _this = [...srcStmt.getCfg()!.getBlocks()][0].getStmts()[0].getDef();
                         const thisRef = new ArkInstanceFieldRef(_this as Local, dataFact.getFieldSignature());
                         ret.add(thisRef);
-                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() == dataFact.getFieldSignature().getDeclaringSignature()) {
+                    } else if (callExpr instanceof ArkStaticInvokeExpr && dataFact instanceof ArkStaticFieldRef && callExpr.getMethodSignature().getDeclaringClassSignature() === dataFact.getFieldSignature().getDeclaringSignature()) {
                         ret.add(dataFact);
                     }
                     for (const sink of checkerInstance.sinks) {
-                        if (callExpr.getMethodSignature() == sink.getSignature()) {
+                        if (callExpr.getMethodSignature() === sink.getSignature()) {
                             for (const param of callExpr.getArgs()) {
                                 if (factEqual(param, dataFact)) {
                                     console.log("source: " + dataFact);
@@ -168,11 +168,11 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                 const callStmt = srcStmt as ArkInvokeStmt;
                 const args = callStmt.getInvokeExpr().getArgs();
                 for (let i = 0; i < args.length; i++){
-                    if (args[i] == dataFact || checkerInstance.callSource(args[i]) && checkerInstance.getZeroValue() == dataFact){
+                    if (args[i] === dataFact || checkerInstance.callSource(args[i]) && checkerInstance.getZeroValue() === dataFact){
                         const realParameter = [...(method.getCfg() as Cfg).getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter)
                             ret.add(realParameter);
-                    } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == args[i].toString()){
+                    } else if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() === args[i].toString()){
                         const realParameter = [...(method.getCfg() as Cfg).getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter) {
                             const retRef = new ArkInstanceFieldRef(realParameter as Local, dataFact.getFieldSignature());
@@ -192,10 +192,10 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 let ret: Set<Value> = new Set<Value>();
-                if (dataFact == checkerInstance.getZeroValue()) {
+                if (dataFact === checkerInstance.getZeroValue()) {
                     ret.add(checkerInstance.getZeroValue());
                 }
-                if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() == "this"){
+                if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() === "this"){
                     // todo:this转base。
                     const expr = callStmt.getExprs()[0];
                     if (expr instanceof ArkInstanceInvokeExpr){
@@ -210,12 +210,12 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     let ass: ArkAssignStmt = callStmt as ArkAssignStmt;
                     let leftOp: Value = ass.getLeftOp();
                     let retVal: Value = (srcStmt as ArkReturnStmt).getOp();
-                    if (dataFact == checkerInstance.getZeroValue()) {
+                    if (dataFact === checkerInstance.getZeroValue()) {
                         ret.add(checkerInstance.getZeroValue());
                         if (checkerInstance.callSource(retVal) || checkerInstance.callSource(ass.getRightOp())) {
                             ret.add(leftOp);
                         }
-                    } else if (retVal == dataFact) {
+                    } else if (retVal === dataFact) {
                         ret.add(leftOp);
                     }
                 }
@@ -230,11 +230,11 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
         return new class implements FlowFunction<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 const ret:Set<Value> = new Set();
-                if (checkerInstance.getZeroValue() == dataFact) {
+                if (checkerInstance.getZeroValue() === dataFact) {
                     ret.add(checkerInstance.getZeroValue());
                 }
                 const defValue = srcStmt.getDef();
-                if (!(defValue && defValue ==dataFact)){
+                if (!(defValue && defValue === dataFact)){
                     ret.add(dataFact);
                 }
                 return ret;
@@ -263,9 +263,9 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                 continue;
             }
             let arkClass: ArkClass | null = null;
-            if (object.namespace == "_") {
+            if (object.namespace === "_") {
                 for (const clas of file.getClasses()) {
-                    if (clas.getName() == object.class) {
+                    if (clas.getName() === object.class) {
                         arkClass = clas;
                         break;
                     }
@@ -273,14 +273,14 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
             } else {
                 let arkNamespace: ArkNamespace | null = null;
                 for (const ns of file.getNamespaces()) {
-                    if (ns.getName() == object.namespace) {
+                    if (ns.getName() === object.namespace) {
                         arkNamespace = ns;
                         break;
                     }
                 }
                 if (arkNamespace) {
                     for (const clas of arkNamespace.getClasses()) {
-                        if (clas.getName() == object.class) {
+                        if (clas.getName() === object.class) {
                             arkClass = clas;
                             break;
                         }
@@ -296,7 +296,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
             } else {
                 let arkMethod: ArkMethod | null = null;
                 for (const method of arkClass.getMethods()) {
-                    if (method.getName() == object.method) {
+                    if (method.getName() === object.method) {
                         arkMethod = method;
                         break;
                     }

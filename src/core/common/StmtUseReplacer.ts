@@ -48,21 +48,21 @@ export class StmtUseReplacer {
 
     private caseAssignStmt(stmt: ArkAssignStmt): void {
         let rValue = stmt.getRightOp();
-        if (rValue == this.oldUse) {
+        if (rValue === this.oldUse) {
             stmt.setRightOp(this.newUse);
         } else if (rValue instanceof Local) {
-            if (rValue == this.oldUse) {
+            if (rValue === this.oldUse) {
                 stmt.setRightOp(this.newUse);
             }
         } else if (rValue instanceof AbstractRef) {
-            if (rValue == this.oldUse) {
+            if (rValue === this.oldUse) {
                 stmt.setRightOp(this.newUse);
             } else {
                 let refUseReplacer = new RefUseReplacer(this.oldUse, this.newUse);
                 refUseReplacer.caseRef(rValue);
             }
         } else if (rValue instanceof AbstractExpr) {
-            if (rValue == this.oldUse) {
+            if (rValue === this.oldUse) {
                 stmt.setRightOp(this.newUse);
             } else {
                 let exprUseReplacer = new ExprUseReplacer(this.oldUse, this.newUse);

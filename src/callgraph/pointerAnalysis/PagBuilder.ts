@@ -108,7 +108,7 @@ export class PagBuilder {
     }
 
     public handleReachable(): boolean {
-        if (this.worklist.length == 0) {
+        if (this.worklist.length === 0) {
             return false;
         }
         this.funcHandledThisRound.clear();
@@ -141,7 +141,6 @@ export class PagBuilder {
 
         let arkMethod = this.cg.getArkMethodByFuncID(funcID);
         if (arkMethod == null) {
-            //throw new Error("function ID");
             return false;
         }
         
@@ -156,7 +155,7 @@ export class PagBuilder {
             if (stmt instanceof ArkAssignStmt) {
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
-                if (kind != PagEdgeKind.Unknown) {
+                if (kind !== PagEdgeKind.Unknown) {
                     fpag.addInternalEdge(stmt, kind);
                     continue;
                 }
@@ -205,8 +204,7 @@ export class PagBuilder {
 
     public buildPagFromFuncPag(funcID: FuncID, cid: ContextID) {
         let funcPag = this.funcPags.get(funcID);
-        if (funcPag == undefined) {
-            //throw new Error("No Func PAG is found for #" + funcID);
+        if (funcPag === undefined) {
             return;
         }
         if (this.handledFunc.has(`${cid}-${funcID}`)) {
@@ -222,7 +220,7 @@ export class PagBuilder {
     /// Add Pag Nodes and Edges in function
     public addEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
         let inEdges = funcPag.getInternalEdges();
-        if (inEdges == undefined) {
+        if (inEdges === undefined) {
             return false;
         }
 
@@ -255,8 +253,8 @@ export class PagBuilder {
             }
 
             // Add edge to thisRef for special calls
-            if(calleeCGNode.getKind() == CallGraphNodeKind.constructor ||
-                calleeCGNode.getKind() == CallGraphNodeKind.intrinsic) { 
+            if(calleeCGNode.getKind() === CallGraphNodeKind.constructor ||
+                calleeCGNode.getKind() === CallGraphNodeKind.intrinsic) {
                 let callee = this.scene.getMethod(this.cg.getMethodByFuncID(cs.calleeFuncID)!)!
                 if (ivkExpr instanceof ArkInstanceInvokeExpr) {
                     let baseNode = this.getOrNewPagNode(cid, ivkExpr.getBase())
@@ -528,7 +526,7 @@ export class PagBuilder {
             callees.push(callee);
         }
 
-        if (callees.length == 0) {
+        if (callees.length === 0) {
             return srcNodes;
         }
 
@@ -539,7 +537,7 @@ export class PagBuilder {
             }
 
             if (this.processStorage(cs, dstCGNode, cid)) {
-                if (ivkExpr.getArgs().length != 0) {
+                if (ivkExpr.getArgs().length !== 0) {
                     // for AppStorage.set() instance invoke, add obj to reanalyze list
                     let argsNode = this.pag.getOrNewNode(cid, cs.args![0]);
                     srcNodes.push(argsNode.getID());
@@ -595,8 +593,6 @@ export class PagBuilder {
 
     private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
         ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID, callerFunID: FuncID): NodeID {
-        //let thisPtr = callee.getThisInstance();
-
         if(!callee || !callee.getCfg()) {
             console.log("callee is null")
             return -1;
@@ -640,7 +636,6 @@ export class PagBuilder {
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
         if (!calleeMethod) {
             // TODO: check if nodes need to delete
-            // this.cg.removeCallGraphNode(cs.calleeFuncID)
             return srcNodes;
         }
         if (calleeNode.getIsSdkMethod()) {
@@ -662,7 +657,6 @@ export class PagBuilder {
                 }
                 // } else if (returnType instanceof ArrayType) {
                     // TODO: check how to transform array type 2 newArrayExpr
-                    // newExpr = new ArkNewArrayExpr(returnType.getBaseType(), )
                 // }
             }
             cidMap.set(calleeCid, newExpr!)
@@ -753,9 +747,9 @@ export class PagBuilder {
 
         // globalThis process can not be removed while all `globalThis` ref is the same Value
         if (v instanceof Local) {
-            if (v.getName() == "this") {
+            if (v.getName() === "this") {
                 return this.getOrNewThisLoalNode(cid, v as Local, s);
-            } else if (v.getName() == GLOBAL_THIS && v.getDeclaringStmt() == null) {
+            } else if (v.getName() === GLOBAL_THIS && v.getDeclaringStmt() == null) {
                 // globalThis node has no cid
                 return this.getOrNewGlobalThisNode(0)
             }
@@ -823,7 +817,7 @@ export class PagBuilder {
 
     public getPropertyNode(storage: StorageType, propertyName: string, stmt: Stmt): PagNode | undefined {
         let storageMap = this.storagePropertyMap.get(storage);
-        let propertyLocal: Local | undefined = undefined;
+        let propertyLocal: Local | undefined;
 
         if (!storageMap) {
             storageMap = new Map();
@@ -888,7 +882,7 @@ export class PagBuilder {
 
         if (v instanceof ArkInstanceFieldRef) {
             base = (v as ArkInstanceFieldRef).getBase()
-            if (base instanceof Local && base.getName() == GLOBAL_THIS && base.getDeclaringStmt() == null) {
+            if (base instanceof Local && base.getName() === GLOBAL_THIS && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
                 base = this.getGlobalThisValue();
                 (v as ArkInstanceFieldRef).setBase(base as Local)
@@ -931,7 +925,7 @@ export class PagBuilder {
 
         let funcPag = this.funcPags.get(funcID)!;
         let heapObjects = [...funcPag.getInternalEdges()!]
-            .filter(edge => edge.kind == PagEdgeKind.Address)
+            .filter(edge => edge.kind === PagEdgeKind.Address)
             .map(edge => edge.dst);
 
         let returnValues = arkMethod.getReturnValues();
@@ -1053,7 +1047,7 @@ export class PagBuilder {
         switch (storageName) {
             case 'AppStorage':
                 return StorageType.APP_STORAGE;
-            case 'SubscribedAbstractProperty':
+            case 'SubscribedAbstractProperty': {
                 let calleeBaseLocal = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
                 let calleeBaseLocalNode = this.pag.getOrNewNode(cid, calleeBaseLocal) as PagLocalNode;
                 if (calleeBaseLocalNode.isStorageLinked()) {
@@ -1061,6 +1055,8 @@ export class PagBuilder {
 
                     return storage.StorageType!;
                 }
+                return StorageType.Undefined;
+            }
             default:
                 return StorageType.Undefined;
         }
@@ -1077,7 +1073,7 @@ export class PagBuilder {
                 (rhOp instanceof Local && rhOp.getType() instanceof FunctionType &&
                     rhOp.getDeclaringStmt() === null) ||
                 (rhOp instanceof AbstractFieldRef && rhOp.getType() instanceof FunctionType))) || 
-            (rhOp instanceof Local && rhOp.getName() == GLOBAL_THIS && rhOp.getDeclaringStmt() == null)
+            (rhOp instanceof Local && rhOp.getName() === GLOBAL_THIS && rhOp.getDeclaringStmt() == null)
         ) {
             return true;
         }
@@ -1141,7 +1137,7 @@ export class PagBuilder {
     }
 
     public getRealThisLocal(input: Local, funcId: FuncID): Local {
-        if (input.getName() != 'this')
+        if (input.getName() !== 'this')
             return input;
         let real = input;
 

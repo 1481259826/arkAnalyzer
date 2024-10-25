@@ -40,7 +40,7 @@ export class ValueUtil {
 
     public static getOrCreateNumberConst(n: number): Constant {
         let constant = this.NumberConstantCache.get(n);
-        if (constant == undefined) {
+        if (constant === undefined) {
             constant = new Constant(n.toString(), NumberType.getInstance());
             this.NumberConstantCache.set(n, constant);
         }
@@ -48,7 +48,7 @@ export class ValueUtil {
     }
 
     public static createStringConst(str: string): Constant {
-        if (str == EMPTY_STRING) {
+        if (str === EMPTY_STRING) {
             return this.EMPTY_STRING_CONSTANT;
         }
         return new Constant(str, StringType.getInstance());

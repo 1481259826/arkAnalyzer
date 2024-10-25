@@ -427,7 +427,7 @@ export class ArkIRTransformer {
         const castExprPositions = [yieldValuePositions[0], ...yieldValuePositions];
         if (ts.isVariableDeclarationList(forOfStatement.initializer)) {
             const variableDeclarationList = forOfStatement.initializer as ts.VariableDeclarationList;
-            const isConst = (variableDeclarationList.flags & ts.NodeFlags.Const) != 0;
+            const isConst = (variableDeclarationList.flags & ts.NodeFlags.Const) !== 0;
             const variableDeclaration = variableDeclarationList.declarations[0];
             if (ts.isArrayBindingPattern(variableDeclaration.name)) {
                 const {
@@ -820,7 +820,7 @@ export class ArkIRTransformer {
     private etsComponentExpressionToValueAndStmts(etsComponentExpression: ts.EtsComponentExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
         const componentName = (etsComponentExpression.expression as ts.Identifier).text;
-        let builderMethodIndexes: Set<number> | undefined = undefined;
+        let builderMethodIndexes: Set<number> | undefined;
         if (componentName === COMPONENT_FOR_EACH || componentName === COMPONENT_LAZY_FOR_EACH) {
             builderMethodIndexes = new Set<number>([1]);
         }
@@ -937,7 +937,7 @@ export class ArkIRTransformer {
         // TODO: handle global variable
         let identifierValue: Value;
         let identifierPositions = [FullPosition.buildFromNode(identifier, this.sourceFile)];
-        if (identifier.text == UndefinedType.getInstance().getName()) {
+        if (identifier.text === UndefinedType.getInstance().getName()) {
             identifierValue = ValueUtil.getUndefinedConst();
         } else {
             identifierValue = this.getOrCreatLocal(identifier.text);
@@ -1007,7 +1007,7 @@ export class ArkIRTransformer {
     }
 
     private callExpressionToValueAndStmts(callExpression: ts.CallExpression): ValueAndStmts {
-        let realGenericTypes: Type[] | undefined = undefined;
+        let realGenericTypes: Type[] | undefined;
         if (callExpression.typeArguments) {
             realGenericTypes = [];
             callExpression.typeArguments.forEach(typeArgument => {
@@ -1115,7 +1115,7 @@ export class ArkIRTransformer {
             return this.newArrayExpressionToValueAndStmts(newExpression);
         }
         const stmts: Stmt[] = [];
-        let realGenericTypes: Type[] | undefined = undefined;
+        let realGenericTypes: Type[] | undefined;
         if (newExpression.typeArguments) {
             realGenericTypes = [];
             newExpression.typeArguments.forEach(typeArgument => {
@@ -1222,7 +1222,7 @@ export class ArkIRTransformer {
         }
 
         let baseType: Type = AnyType.getInstance();
-        if (elementTypes.size == 1) {
+        if (elementTypes.size === 1) {
             baseType = elementTypes.keys().next().value as Type;
         } else if (elementTypes.size > 1) {
             baseType = new UnionType(Array.from(elementTypes));
@@ -1452,7 +1452,7 @@ export class ArkIRTransformer {
             rightPositions = tempRightPositions;
         }
 
-        const isConst = (nodeFlag & ts.NodeFlags.Const) != 0;
+        const isConst = (nodeFlag & ts.NodeFlags.Const) !== 0;
         if (leftValue instanceof Local) {
             leftValue.setConstFlag(isConst);
             if (variableDeclaration.type) {
@@ -1689,6 +1689,8 @@ export class ArkIRTransformer {
                 return NormalBinaryOperator.LogicalAnd;
             case ts.SyntaxKind.BarBarEqualsToken:
                 return NormalBinaryOperator.LogicalOr;
+            default:
+                ;
         }
         return null;
     }
@@ -1791,14 +1793,14 @@ export class ArkIRTransformer {
     }
 
     private isRelationalOperator(operator: BinaryOperator): boolean {
-        return operator == RelationalBinaryOperator.LessThan ||
-            operator == RelationalBinaryOperator.LessThanOrEqual ||
-            operator == RelationalBinaryOperator.GreaterThan ||
-            operator == RelationalBinaryOperator.GreaterThanOrEqual ||
-            operator == RelationalBinaryOperator.Equality ||
-            operator == RelationalBinaryOperator.InEquality ||
-            operator == RelationalBinaryOperator.StrictEquality ||
-            operator == RelationalBinaryOperator.StrictInequality;
+        return operator === RelationalBinaryOperator.LessThan ||
+            operator === RelationalBinaryOperator.LessThanOrEqual ||
+            operator === RelationalBinaryOperator.GreaterThan ||
+            operator === RelationalBinaryOperator.GreaterThanOrEqual ||
+            operator === RelationalBinaryOperator.Equality ||
+            operator === RelationalBinaryOperator.InEquality ||
+            operator === RelationalBinaryOperator.StrictEquality ||
+            operator === RelationalBinaryOperator.StrictInequality;
     }
 
     private resolveTypeNode(type: ts.TypeNode): Type {
@@ -1822,17 +1824,19 @@ export class ArkIRTransformer {
                 return this.resolveTypeReferenceNode(type as ts.TypeReferenceNode);
             case ts.SyntaxKind.ArrayType:
                 return new ArrayType(this.resolveTypeNode((type as ts.ArrayTypeNode).elementType), 1);
-            case ts.SyntaxKind.UnionType:
+            case ts.SyntaxKind.UnionType: {
                 const cur = type as ts.UnionTypeNode;
                 const mayTypes: Type[] = [];
                 cur.types.forEach(t => mayTypes.push(this.resolveTypeNode(t)));
                 return new UnionType(mayTypes);
-            case ts.SyntaxKind.TupleType:
+            }
+            case ts.SyntaxKind.TupleType: {
                 const types: Type[] = [];
                 (type as ts.TupleTypeNode).elements.forEach(element => {
                     types.push(this.resolveTypeNode(element));
                 });
                 return new TupleType(types);
+            }
             case ts.SyntaxKind.NamedTupleMember:
                 return this.resolveTypeNode((type as ts.NamedTupleMember).type);
             case ts.SyntaxKind.LiteralType:
@@ -1843,6 +1847,8 @@ export class ArkIRTransformer {
                 return this.resolveTypeLiteralNode(type as ts.TypeLiteralNode);
             case ts.SyntaxKind.FunctionType:
                 return this.resolveFunctionTypeNode(type as ts.FunctionTypeNode);
+            default:
+                ;
         }
         return UnknownType.getInstance();
     }
@@ -1861,6 +1867,8 @@ export class ArkIRTransformer {
                 return new LiteralType(parseFloat((literal as ts.NumericLiteral).text));
             case ts.SyntaxKind.PrefixUnaryExpression:
                 return new LiteralType(parseFloat(literal.getText(this.sourceFile)));
+            default:
+                ;
         }
         return new LiteralType(literal.getText(this.sourceFile));
     }
@@ -1980,6 +1988,8 @@ export class ArkIRTransformer {
                 return UnaryOperator.BitwiseNot;
             case ts.SyntaxKind.ExclamationToken:
                 return UnaryOperator.LogicalNot;
+            default:
+                ;
         }
         return null;
     }
@@ -2032,6 +2042,8 @@ export class ArkIRTransformer {
                 return RelationalBinaryOperator.StrictEquality;
             case ts.SyntaxKind.ExclamationEqualsEqualsToken:
                 return RelationalBinaryOperator.StrictInequality;
+            default:
+                ;
         }
         return null;
     }
