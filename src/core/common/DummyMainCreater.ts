@@ -331,7 +331,7 @@ export class DummyMainCreater {
     }
 
     public getMethodsFromAllAbilities(): ArkMethod[] {
-        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility'];
+        const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility', 'UIAbility', 'BackupExtensionAbility'];
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
             .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))

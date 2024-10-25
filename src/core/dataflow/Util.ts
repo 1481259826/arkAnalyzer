@@ -19,6 +19,8 @@ import { ArkClass } from "../model/ArkClass";
 import { ArkMethod } from "../model/ArkMethod";
 import { ArkNamespace } from "../model/ArkNamespace";
 import { Scene } from "../../Scene";
+import { Local } from "../base/Local";
+import { AbstractRef, ArkStaticFieldRef, ArkInstanceFieldRef } from "../base/Ref";
 
 
 export const INTERNAL_PARAMETER_SOURCE: string[] = [
@@ -135,4 +137,21 @@ export function getRecallMethodInParam(stmt: ArkInvokeStmt): ArkMethod | null {
         }
     }
     return null;
+}
+
+
+export function LocalEqual(local1: Local, local2: Local): boolean {
+    if (local1.getName() == 'this' && local1.getName() == 'this') {
+        return true;
+    }
+    return local1.getDeclaringStmt()?.getCfg()?.getDeclaringMethod() == local2.getDeclaringStmt()?.getCfg()?.getDeclaringMethod() && local1.getName() == local2.getName();
+}
+
+export function RefEqual(ref1: AbstractRef, ref2: AbstractRef): boolean {
+    if (ref1 instanceof ArkStaticFieldRef && ref2 instanceof ArkStaticFieldRef) {
+        return ref1.getFieldSignature().toString() == ref2.getFieldSignature().toString();
+    } else if (ref1 instanceof ArkInstanceFieldRef && ref2 instanceof ArkInstanceFieldRef) {
+        return LocalEqual(ref1.getBase(), ref2.getBase()) && ref1.getFieldSignature().toString() == ref2.getFieldSignature().toString()
+    }
+    return false;
 }
