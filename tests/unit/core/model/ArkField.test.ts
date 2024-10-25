@@ -22,8 +22,12 @@ describe("ArkField Test", () => {
     it('test getDecorators', async () => {
         let field = new ArkField();
         field.addDecorator(new Decorator('State'));
+        field.addDecorator(new Decorator('Link'));
         field.addModifier(ModifierType.STATIC);
         field.addModifier(ModifierType.PUBLIC);
+        field.removeModifier(ModifierType.PUBLIC);
+        field.removeDecorator('Link');
+        expect(field.getModifiers()).eq(ModifierType.STATIC);
         expect(field.getDecorators().length).eq(1);
     })
 })
