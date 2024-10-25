@@ -378,6 +378,10 @@ export class ArrayType extends Type {
         this.dimension = dimension;
     }
 
+    /**
+     * Returns the base type of this array, such as `Any`, `Unknown`, `TypeParameter`, etc.
+     * @returns The base type of array.
+     */
     public getBaseType(): Type {
         return this.baseType;
     }

@@ -64,6 +64,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.getSignature().getMethodSubSignature().getMethodName();
     }
 
+    /**
+     * Returns the codes of method as a **string.**
+     * @returns the codes of method.
+     */
     public getCode() {
         return this.code;
     }
@@ -88,6 +92,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.lineCol = setCol(this.lineCol, column);
     }
 
+    /**
+     * Returns the declaring class of the method.
+     * @returns The declaring class of the method.
+     */
     public getDeclaringArkClass() {
         return this.declaringArkClass;
     }
@@ -116,6 +124,23 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.getSignature().getType();
     }
 
+    /**
+     * <font color="red">?建议明确返回类型？</font>
+     * Get the method signature. It includes two fields. one is ClassSignature, 
+     * the other is MethodSubSignature. The former indicates what class this method belong to, 
+     * the latter indicates the detail info of this method, 
+     * such as method name, parameters, returnType, etc.
+     * @returns The method signature.
+     * @example
+     * 1. New a body.
+
+    ```typescript
+    let mtd = new ArkMethod();
+    // ... ...
+    let mtd = mtd.getSignature();
+    // ... ...
+    ```
+     */
     public getSignature(): MethodSignature {
         return this.methodSignature[0];
     }
@@ -152,6 +177,27 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.bodyBuilder;
     }
 
+    /**
+     * Get {@link ArkBody} of a Method.
+     * A {@link ArkBody} contains the CFG and actual instructions or operations to be executed for a method. 
+     * It is analogous to the body of a function or method in high-level programming languages, 
+     * which contains the statements and expressions that define what the function does.
+     * @returns The {@link ArkBody} of a method.
+     * @example
+     * 1. Get cfg or stmt through ArkBody.
+
+    ```typescript
+    let cfg = this.scene.getMethod()?.getBody().getCfg();
+    const body = arkMethod.getBody()
+    ```
+
+    2. Get local variable through ArkBody.
+
+    ```typescript
+    arkClass.getDefaultArkMethod()?.getBody().getLocals.forEach(local=>{...})
+    let locals = arkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
+    ```
+     */
     public getBody(): ArkBody | undefined {
         return this.body;
     }
@@ -160,6 +206,41 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.body = body;
     }
 
+    /**
+     * Get the CFG (i.e., control flow graph) of a method. 
+     * The CFG is a graphical representation of all possible control flow paths within a method's body.
+     * A CFG consists of blocks, statements and goto control jumps.
+     * @returns The CFG (i.e., control flow graph) of a method. 
+     * @example
+     * 1. get stmt through ArkBody cfg.
+
+    ```typescript
+    body = arkMethod.getBody();
+    const cfg = body.getCfg();
+    for (const threeAddressStmt of cfg.getStmts()) {
+    ... ...
+    }
+    ```
+
+    2. get blocks through ArkBody cfg.
+
+    ```typescript
+    const body = arkMethod.getBody();
+    const blocks = [...body.getCfg().getBlocks()];
+    for (let i=0; i<blocks.length; i++) {
+    const block = blocks[i];
+    ... ...
+    for (const stmt of block.getStmts()) {
+        ... ...
+    }
+    let text = "next;"
+    for (const next of block.getSuccessors()) {
+        text += blocks.indexOf(next) + ' ';
+    }
+    // ... ...
+    }
+    ```
+     */
     public getCfg(): Cfg | undefined {
         return this.body?.getCfg();
     }

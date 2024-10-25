@@ -79,6 +79,20 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
         this.realGenericTypes = realGenericTypes;
     }
 
+    /**
+     * Get method Signature. The method signature is consist of ClassSignature and MethodSubSignature. 
+     * It is the unique flag of a method. It is usually used to compose a expression string in ArkIRTransformer.
+     * @returns The class method signature, such as ArkStaticInvokeExpr.
+     * @example
+     * 1. 3AC information composed of getMethodSignature ().
+
+    ```typescript
+    let strs: string[] = [];
+    strs.push('staticinvoke <');
+    strs.push(this.getMethodSignature().toString());
+    strs.push('>(');
+    ```
+     */
     public getMethodSignature(): MethodSignature {
         return this.methodSignature;
     }
@@ -87,10 +101,37 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
         this.methodSignature = newMethodSignature;
     }
 
+    /**
+     * Returns an argument used in the expression according to its index.
+     * @param index - the index of the argument.
+     * @returns An argument used in the expression.
+     */
     public getArg(index: number): Value {
         return this.args[index];
     }
 
+    /**
+     * Returns an **array** of arguments used in the expression.
+     * @returns An **array** of arguments used in the expression.
+     * @example
+     * 1. get args number.
+
+    ```typescript
+    const argsNum = expr.getArgs().length;
+    if (argsNum < 5) {
+        ... ...
+    }
+    ```
+
+    2. iterate arg based on expression
+
+    ```typescript
+    for (const arg of this.getArgs()) {
+        strs.push(arg.toString());
+        strs.push(', ');
+    }
+    ```
+     */
     public getArgs(): Value[] {
         return this.args;
     }
@@ -145,6 +186,10 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         this.base = base;
     }
 
+    /**
+     * Returns the local of the instance of invoke expression.
+     * @returns The local of the invoke expression's instance..
+     */
     public getBase(): Local {
         return this.base;
     }
@@ -153,6 +198,12 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         this.base = newBase;
     }
 
+    /**
+     * Returns an **array** of values used in this invoke expression, 
+     * including all arguments and values each arguments used. 
+     * For {@link ArkInstanceInvokeExpr}, the return also contains the caller base and uses of base.
+     * @returns An **array** of arguments used in the invoke expression. 
+     */
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(this.base);
@@ -675,6 +726,11 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
         this.operator = operator;
     }
 
+    /**
+     * Returns the first operand in the binary operation expression. 
+     * For example, the first operand in `a + b;` is `a`.
+     * @returns The first operand in the binary operation expression.
+     */
     public getOp1(): Value {
         return this.op1;
     }
@@ -683,6 +739,11 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
         this.op1 = newOp1;
     }
 
+    /**
+     * Returns the second operand in the binary operation expression. 
+     * For example, the second operand in `a + b;` is `b`.
+     * @returns The second operand in the binary operation expression.
+     */
     public getOp2(): Value {
         return this.op2;
     }
@@ -691,6 +752,21 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
         this.op2 = newOp2;
     }
 
+    /**
+     * Get the binary operator from the statement. 
+     * The binary operator can be divided into two categories, 
+     * one is the normal binary operator and the other is relational binary operator.
+     * @returns The binary operator from the statement. 
+     * @example
+    ```typescript
+    if (expr instanceof AbstractBinopExpr) {
+        let op1: Value = expr.getOp1();
+        let op2: Value = expr.getOp2();
+        let operator: string = expr.getOperator();
+        ... ...
+    }
+    ```
+     */
     public getOperator(): BinaryOperator {
         return this.operator;
     }
@@ -1016,6 +1092,10 @@ export class ArkUnopExpr extends AbstractExpr {
         return this.op.getType();
     }
 
+    /**
+     * Get the unary operator from the statement, such as `-`,`~`,`!`.
+     * @returns the unary operator of a statement.
+     */
     public getOperator(): UnaryOperator {
         return this.operator;
     }
