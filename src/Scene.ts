@@ -37,6 +37,7 @@ import { addInitInConstructor, buildDefaultConstructor } from './core/model/buil
 import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
+import { CryptoUtils } from './utils/crypto_utils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -202,7 +203,7 @@ export class Scene {
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
             buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
-            this.filesMap.set(arkFile.getFileSignature().toString(), arkFile);
+            this.filesMap.set(CryptoUtils.md5(arkFile.getFileSignature().toString()), arkFile);
         });
         this.buildAllMethodBody();
         this.addDefaultConstructors();
@@ -217,7 +218,7 @@ export class Scene {
             buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
             ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
             const fileSig = arkFile.getFileSignature().toString();
-            this.sdkArkFilesMap.set(fileSig, arkFile);
+            this.sdkArkFilesMap.set(CryptoUtils.md5(fileSig), arkFile);
         });
     }
 
@@ -339,10 +340,18 @@ export class Scene {
      */
     public getFile(fileSignature: FileSignature): ArkFile | null {
         if (this.projectName === fileSignature.getProjectName()) {
-            return this.filesMap.get(fileSignature.toString()) || null;
+            return this.filesMap.get(CryptoUtils.md5(fileSignature.toString())) || null;
         } else {
-            return this.sdkArkFilesMap.get(fileSignature.toString()) || null;
+            return this.sdkArkFilesMap.get(CryptoUtils.md5(fileSignature.toString())) || null;
         }
+    }
+
+    public setFile(file: ArkFile): void {
+        this.filesMap.set(CryptoUtils.md5(file.getFileSignature().toString()), file);
+    }
+
+    public hasSdkFile(fileSignature: FileSignature): boolean {
+        return this.sdkArkFilesMap.has(CryptoUtils.md5(fileSignature.toString()));
     }
 
     /**
@@ -376,8 +385,8 @@ export class Scene {
         return Array.from(this.filesMap.values());
     }
 
-    public getSdkArkFilesMap() {
-        return this.sdkArkFilesMap;
+    public getSdkArkFiles(): ArkFile[] {
+        return Array.from(this.sdkArkFilesMap.values());
     }
 
     public getModuleSdkMap() {
@@ -388,15 +397,11 @@ export class Scene {
         return this.projectSdkMap;
     }
 
-    public getFilesMap() {
-        return this.filesMap;
-    }
-
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
         if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getNamespacesMap().get(namespaceSignature.toString()) || null;
         } else {
-            const arkFile = this.sdkArkFilesMap.get(namespaceSignature.getDeclaringFileSignature().toString());
+            const arkFile = this.getFile(namespaceSignature.getDeclaringFileSignature());
             return arkFile?.getNamespace(namespaceSignature) || null;
         }
     }
@@ -425,7 +430,7 @@ export class Scene {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getClassesMap(refresh).get(classSignature.toString()) || null;
         } else {
-            const arkFile = this.sdkArkFilesMap.get(classSignature.getDeclaringFileSignature().toString());
+            const arkFile = this.getFile(classSignature.getDeclaringFileSignature());
             const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
             if (namespaceSignature) {
                 return arkFile?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
@@ -925,8 +930,7 @@ export class ModuleScene {
             arkFile.setModuleScene(this);
             buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,
                 this.projectScene.getProjectName());
-            const fileSig = arkFile.getFileSignature().toString();
-            this.projectScene.getFilesMap().set(fileSig, arkFile);
+            this.projectScene.setFile(arkFile);
         });
     }
 }

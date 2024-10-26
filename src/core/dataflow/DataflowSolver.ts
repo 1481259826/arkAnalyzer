@@ -252,7 +252,7 @@ export abstract class DataflowSolver<D> {
         let callEdgePoint: PathEdgePoint<D> = edge.edgeEnd;
         const invokeStmt = callEdgePoint.node as ArkInvokeStmt;
         let callees: Set<ArkMethod>;
-        if (this.scene.getFilesMap().get(invokeStmt.getInvokeExpr().getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature().toString())) {
+        if (this.scene.getFile(invokeStmt.getInvokeExpr().getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature())) {
             callees = this.getAllCalleeMethods(callEdgePoint.node as ArkInvokeStmt);
         } else {
             callees = new Set([getRecallMethodInParam(invokeStmt)!]);
@@ -330,7 +330,7 @@ export abstract class DataflowSolver<D> {
     protected isCallStatement(stmt: Stmt): boolean {
         for (const expr of stmt.getExprs()) {
             if (expr instanceof AbstractInvokeExpr) {
-                if (this.scene.getFilesMap().get(expr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature().toString())) {
+                if (this.scene.getFile(expr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature())) {
                     return true;
                 }
                 if (stmt instanceof ArkInvokeStmt && getRecallMethodInParam(stmt)) {

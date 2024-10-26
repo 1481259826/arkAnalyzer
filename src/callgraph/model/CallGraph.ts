@@ -190,8 +190,8 @@ export class CallGraph extends BaseGraph {
         let id: NodeID = this.nodeNum;
         let cgNode = new CallGraphNode(id, method, kind);
         // check if sdk method
-        cgNode.setSdkMethod(this.scene.getSdkArkFilesMap().has(
-            method.getDeclaringClassSignature().getDeclaringFileSignature().toString()
+        cgNode.setSdkMethod(this.scene.hasSdkFile(
+            method.getDeclaringClassSignature().getDeclaringFileSignature()
         ));
 
         let arkMethod = this.scene.getMethod(method);
