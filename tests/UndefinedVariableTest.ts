@@ -32,7 +32,9 @@ if(method){
     const solver = new UndefinedVariableSolver(problem, scene);
     solver.solve();
     for (const outcome of problem.getOutcomes()) {
-        console.log(outcome.stmt.getPositionInfo())
+        let position = outcome.stmt.getOriginPositionInfo()
+        console.log('undefined error in line'+position.getLineNo())
+        // console.log(outcome.stmt.getOperandOriginalPosition(outcome.value))
     }
     debugger
 }
