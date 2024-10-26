@@ -19,20 +19,16 @@ abstract class Animal {
 
 class Dog extends Animal {
     public sound(): void {
-        let cat = new Cat()
-        cat.sound()
     }
 }
 
 class Cat extends Animal {
     public sound(): void {
-        
     }
 }
 
 class Pig extends Animal {
     public sound(): void {
-        
     }
 }
 
@@ -42,6 +38,7 @@ function makeSound(animal: Animal) {
 
 function main() {
     // let dog = new Dog()
+    let cat = new Cat();
     // dog.sound()
-    makeSound(new Dog())
+    makeSound(new Dog());
 }

@@ -45,9 +45,9 @@ function runScene(config: SceneConfig) {
 
     let callGraph = new CallGraph(projectScene)
     let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
-    callGraphBuilder.buildClassHierarchyCallGraph(entryPoints)
-    // callGraphBuilder.buildRapidTypeCallGraph(entryPoints)
-    // callGraph.dump("out/cg/cg.dot")
+    callGraphBuilder.buildClassHierarchyCallGraph(entryPoints, false)
+    // callGraphBuilder.buildRapidTypeCallGraph(entryPoints, false)
+    callGraph.dump("out/cg/cg.dot")
     // debugger;
 }
 runScene(config);

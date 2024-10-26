@@ -72,7 +72,7 @@ export abstract class AbstractAnalysis {
         return classHierarchy;
     }
 
-    public start(displayGeneratedMethod: Boolean): void {
+    public start(displayGeneratedMethod: boolean): void {
         this.init();
         while (this.workList.length !== 0) {
             const method = this.workList.shift() as FuncID;
@@ -90,10 +90,7 @@ export abstract class AbstractAnalysis {
             this.processMethod(method).forEach((cs: CallSite) => {
                 let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
 
-                // check if need to display generated method
-                if (displayGeneratedMethod || me?.isGenerated()) {
-                    this.cg.addDynamicCallEdge(method, cs.calleeFuncID, cs.callStmt);
-                }
+                this.addCallGraphEdge(method, me, cs, displayGeneratedMethod);
 
                 if (!this.processedMethod.has(cs.calleeFuncID)) {
                     this.workList.push(cs.calleeFuncID);
@@ -145,5 +142,16 @@ export abstract class AbstractAnalysis {
         });
 
         return paramMethod;
+    }
+
+    protected addCallGraphEdge(caller: FuncID, callee: ArkMethod | null, cs: CallSite, displayGeneratedMethod: boolean): void {
+        // check if need to display generated method
+        if (!callee) {
+            logger.error(`FuncID has no method ${cs.calleeFuncID}`);
+        } else {
+            if (displayGeneratedMethod || !(callee?.isGenerated())) {
+                this.cg.addDynamicCallEdge(caller, cs.calleeFuncID, cs.callStmt);
+            }
+        }
     }
 }
