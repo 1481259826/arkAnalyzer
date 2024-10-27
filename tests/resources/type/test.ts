@@ -12,28 +12,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class NoLeak {
-    info: string;
-    constructor(i: string) {
-      this.info = i;
-    }
-    getInfo(): string {
-      return this.info;
-    }
-    log() {
-      console.log(this.info)
-    }
-  }
-  
-  class Leak extends NoLeak {
-    constructor(i: string) {
-      super(i);
-    }
-    log() {
-        console.log(super.getInfo())
-    }
-  }
-
-
-let a = new NoLeak('1'), b = new Leak('2')
-b.log()

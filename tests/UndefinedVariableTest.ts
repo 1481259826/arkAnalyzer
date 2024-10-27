@@ -20,7 +20,7 @@ import { UndefinedVariableChecker, UndefinedVariableSolver } from '../src/core/d
 
 // const config_path = "tests\\resources\\ifds\\UndefinedVariable\\ifdsTestConfig.json";
 let config: SceneConfig = new SceneConfig();
-config.buildFromProjectDir("tests/resources/ifds/UndefinedVariable")
+config.buildFromProjectDir("tests/resources/ifds/UndefinedVariable");
 const scene = new Scene();
 scene.buildBasicInfo(config);
 scene.buildSceneFromProjectDir(config);
@@ -32,8 +32,8 @@ if(method){
     const solver = new UndefinedVariableSolver(problem, scene);
     solver.solve();
     for (const outcome of problem.getOutcomes()) {
-        let position = outcome.stmt.getOriginPositionInfo()
-        console.log('undefined error in line '+position.getLineNo())
+        let position = outcome.stmt.getOriginPositionInfo();
+        console.log('undefined error in line ' + position.getLineNo());
     }
-    debugger
+    debugger;
 }
