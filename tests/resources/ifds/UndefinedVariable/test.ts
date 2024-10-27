@@ -29,7 +29,7 @@ class t{
     }
     method(){
         console.log(t.s)
-        console.log(x)
+        // console.log(x)
     }
     print(){
         console.log(this.p.pp)
@@ -50,34 +50,34 @@ function print(tp:t){
     console.log(tp.p.pp);
 }
 
-function U4(){
-    console.log(t.s.pp)
-}
+// function U4(){
+//     console.log(t.s.pp)
+// }
 
-function U5(){
-    t.sm()
-}
+// function U5(){
+//     t.sm()
+// }
 
-function U6() {
-    im();
-}
+// function U6() {
+//     im();
+// }
 
-function U7() {
-    console.log(x.pp);
-}
-export let x:property;
-U7();
+// function U7() {
+//     console.log(x.pp);
+// }
+// export let x:property;
+// U7();
 
-namespace n{
-    x = new property();
-    export let y = 1;
-    namespace nn{
-        export let xnn=1;
-    }
-    nn.xnn
-}
+// namespace n{
+//     x = new property();
+//     export let y = 1;
+//     namespace nn{
+//         export let xnn=1;
+//     }
+//     nn.xnn
+// }
 
-namespace n2{
-    n.y=4;
-}
-console.log(n.y);
+// namespace n2{
+//     n.y=4;
+// }
+// console.log(n.y);
