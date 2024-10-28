@@ -20,8 +20,8 @@ import { Value } from '../base/Value';
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import { ArkMethod } from '../model/ArkMethod';
 import { Constant } from '../base/Constant';
-import { ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
-import { DataflowSolver, factEqual } from './DataflowSolver';
+import { AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
+import { DataflowSolver} from './DataflowSolver';
 import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { UndefinedType } from '../base/Type';
 import { FileSignature, NamespaceSignature } from '../model/ArkSignature';
@@ -29,6 +29,7 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkNamespace } from '../model/ArkNamespace';
 import * as fs from 'fs';
 import { Cfg } from '../graph/Cfg';
+import { LocalEqual, RefEqual } from './Util';
 
 export class TiantAnalysisChecker extends DataflowProblem<Value> {
     zeroValue: Constant = new Constant('zeroValue', UndefinedType.getInstance());
@@ -101,7 +102,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     }
                     return ret;
                 } 
-                if (!factEqual(srcStmt.getDef(), dataFact)) {
+                if (!checkerInstance.factEqual(srcStmt.getDef()!, dataFact)) {
                     if (!(dataFact instanceof Local && dataFact.getName() === srcStmt.getDef()!.toString()))
                         ret.add(dataFact);
                 }
@@ -113,7 +114,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                         if (checkerInstance.callSource(rightOp)) {
                             ret.add(assigned);
                         }
-                    } else if (factEqual(rightOp, dataFact) || rightOp.getType() instanceof UndefinedType) {
+                    } else if (checkerInstance.factEqual(rightOp, dataFact) || rightOp.getType() instanceof UndefinedType) {
                         ret.add(assigned);
                         if (assigned instanceof ArkInstanceFieldRef) {
                         }
@@ -157,7 +158,7 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
                     for (const sink of checkerInstance.sinks) {
                         if (callExpr.getMethodSignature() === sink.getSignature()) {
                             for (const param of callExpr.getArgs()) {
-                                if (factEqual(param, dataFact)) {
+                                if (checkerInstance.factEqual(param, dataFact)) {
                                     console.log("source: " + dataFact);
                                     console.log("sink: "+ srcStmt.getOriginPositionInfo().toString() + ", " + srcStmt.toString());
                                 }
@@ -310,6 +311,17 @@ export class TiantAnalysisChecker extends DataflowProblem<Value> {
             }
         }
         return arkMethods;
+    }
+    
+    factEqual(d1: Value, d2: Value): boolean {
+        if (d1 instanceof Constant && d2 instanceof Constant) {
+            return d1 === d2;
+        } else if (d1 instanceof Local && d2 instanceof Local) {
+            return LocalEqual(d1, d2);
+        } else if (d1 instanceof AbstractRef && d2 instanceof AbstractRef) {
+            return RefEqual(d1, d2);
+        }
+        return false;
     }
 }
 

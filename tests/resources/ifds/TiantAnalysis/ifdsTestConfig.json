@@ -1,6 +1,6 @@
 {
     "targetProjectName": "TiantTest",    
-    "targetProjectDirectory": "D:/11study/ArkDroidBench/CallbackInSource",
+    "targetProjectDirectory": "D:/11study/ArkDroidBench/Lifecycle/ActivityLifecycle4",
 
     "logPath": "out/ArkAnalyzer.log",
     "logLevel": "INFO",

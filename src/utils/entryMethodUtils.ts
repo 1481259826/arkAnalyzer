@@ -45,7 +45,8 @@ export const LIFECYCLE_METHOD_NAME: string[] = [
     'onFormEvent',
     'onRemoveForm',
     'onConfigurationUpdate',
-    'onAcquireFormState'
+    'onAcquireFormState',
+    'onWindowStageWillDestroy',
   ];
 export const CALLBACK_METHOD_NAME: string[] = [
     "onClick", // 点击事件，当用户点击组件时触发

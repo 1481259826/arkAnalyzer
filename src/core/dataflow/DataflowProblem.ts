@@ -62,6 +62,8 @@ export abstract class DataflowProblem<D> {
     abstract getEntryPoint() : Stmt;
 
     abstract getEntryMethod() : ArkMethod;
+
+    abstract factEqual(d1: D, d2: D): boolean;
 }
 
 export interface FlowFunction<D>  {
