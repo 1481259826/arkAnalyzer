@@ -408,4 +408,16 @@ export class CallGraph extends BaseGraph {
     public getDummyMainFuncID(): FuncID | undefined {
         return this.dummyMainMethodID;
     }
+
+    public isUnknownMethod(funcID: FuncID): boolean {
+        let method = this.getMethodByFuncID(funcID);
+
+        if (method) {
+            if (!(method.getDeclaringClassSignature().getDeclaringFileSignature().getFileName() === '_UnknownFileName')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

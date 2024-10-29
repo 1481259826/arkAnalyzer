@@ -351,6 +351,7 @@ export class PagNode extends BaseNode {
 
 export class PagLocalNode extends PagNode {
     private relatedDynamicCallSite!: Set<DynCallSite>;
+    private relatedUnknownCallSite!: Set<CallSite>;
     private storageLinked: boolean = false;
     private storageType?: StorageType;
     private propertyName?: string;
@@ -367,6 +368,16 @@ export class PagLocalNode extends PagNode {
 
     public getRelatedDynCallSites(): Set<DynCallSite> {
         return this.relatedDynamicCallSite
+    }
+
+    public addRelatedUnknownCallSite(cs: CallSite) {
+        this.relatedUnknownCallSite = this.relatedUnknownCallSite ?? new Set();
+
+        this.relatedUnknownCallSite.add(cs);
+    }
+
+    public getRelatedUnknownCallSites(): Set<CallSite> {
+        return this.relatedUnknownCallSite;
     }
 
     public setStorageLink(storageType: StorageType, propertyName: string): void {
@@ -809,12 +820,20 @@ export class Pag extends BaseGraph {
             case PagEdgeKind.Copy:
                 src.addCopyOutEdge(edge);
                 dst.addCopyInEdge(edge);
+                if (src instanceof PagFuncNode ||
+                    src instanceof PagGlobalThisNode ||
+                    src instanceof PagNewExprNode ||
+                    src instanceof PagNewArrayExprNode
+                ) {
+                    this.addrEdge.add(edge);
+                    this.stashAddrEdge.add(edge);
+                }
                 break;
             case PagEdgeKind.Address:
                 src.addAddressOutEdge(edge);
                 dst.addAddressInEdge(edge);
                 this.addrEdge.add(edge);
-                this.stashAddrEdge.add(edge)
+                this.stashAddrEdge.add(edge);
                 break;
             case PagEdgeKind.Write:
                 src.addWriteOutEdge(edge);
@@ -858,6 +877,7 @@ export class FuncPag {
     private internalEdges!: Set<InternalEdge>;
     private normalCallSites!: Set<CallSite>;
     private dynamicCallSites!: Set<DynCallSite>;
+    private unknownCallSites!: Set<CallSite>;
 
     public getInternalEdges(): Set<InternalEdge> | undefined {
         return this.internalEdges;
@@ -881,6 +901,16 @@ export class FuncPag {
     public getDynamicCallSites(): Set<DynCallSite> {
         this.dynamicCallSites = this.dynamicCallSites ?? new Set();
         return this.dynamicCallSites;
+    }
+
+    public addUnknownCallSite(cs: CallSite): void {
+        this.unknownCallSites = this.unknownCallSites ?? new Set();
+        this.unknownCallSites.add(cs);
+    }
+
+    public getUnknownCallSites(): Set<CallSite> {
+        this.unknownCallSites = this.unknownCallSites ?? new Set();
+        return this.unknownCallSites;
     }
 
     public addInternalEdge(stmt: ArkAssignStmt, k: PagEdgeKind): boolean {

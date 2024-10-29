@@ -334,21 +334,24 @@ export class PointerAnalysis extends AbstractAnalysis {
                 return;
             }
 
-            let dynCallSites = node.getRelatedDynCallSites();
+            changed = this.processDynCallSite(node, pts, processedCallSites) || changed;
+            changed = this.processUnknownCallSite(node, pts) || changed;
 
-            if (!dynCallSites) {
-                logger.warn(`node ${nodeID} has no related dynamic call site`);
-                return;
-            }
+            // let dynCallSites = node.getRelatedDynCallSites();
 
-            logger.info(`[process dynamic callsite] node ${nodeID}`);
-            dynCallSites.forEach((dynCallsite) => {
-                for (let pt of pts) {
-                    let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
-                    changed = this.addToReanalyze(srcNodes) || changed;
-                }
-                processedCallSites.add(dynCallsite);
-            })
+            // if (!dynCallSites) {
+            //     logger.warn(`node ${nodeID} has no related dynamic call site`);
+            //     return;
+            // }
+
+            // logger.info(`[process dynamic callsite] node ${nodeID}`);
+            // dynCallSites.forEach((dynCallsite) => {
+            //     for (let pt of pts) {
+            //         let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
+            //         changed = this.addToReanalyze(srcNodes) || changed;
+            //     }
+            //     processedCallSites.add(dynCallsite);
+            // })
         })
         this.pagBuilder.resetUpdatedNodes();
         let srcNodes = this.pagBuilder.handleUnprocessedCallSites(processedCallSites);
@@ -356,6 +359,47 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         changed = this.pagBuilder.handleReachable() || changed;
         this.initWorklist();
+        return changed;
+    }
+
+    private processDynCallSite(node: PagLocalNode, pts: PtsSet<NodeID>, processedCallSites: Set<DynCallSite>): boolean {
+        let changed: boolean = false;
+        let dynCallSites = node.getRelatedDynCallSites();
+
+        if (!dynCallSites) {
+            logger.warn(`node ${node.getID()} has no related dynamic call site`);
+            return changed;
+        }
+
+        logger.info(`[process dynamic callsite] node ${node.getID()}`);
+        dynCallSites.forEach((dynCallsite) => {
+            for (let pt of pts) {
+                let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
+                changed = this.addToReanalyze(srcNodes) || changed;
+            }
+            processedCallSites.add(dynCallsite);
+        })
+
+        return changed;
+    }
+
+    private processUnknownCallSite(node: PagLocalNode, pts: PtsSet<NodeID>): boolean {
+        let changed: boolean = false;
+        let unknownCallSites = node.getRelatedUnknownCallSites();
+
+        if (!unknownCallSites) {
+            logger.warn(`node ${node.getID()} has no related unknown call site`);
+            return changed;
+        }
+
+        logger.info(`[process unknown callsite] node ${node.getID()}`);
+        unknownCallSites.forEach((unknownCallSite) => {
+            for (let pt of pts) {
+                let srcNodes = this.pagBuilder.addDynamicCallEdge(unknownCallSite, pt, node.getCid());
+                changed = this.addToReanalyze(srcNodes) || changed;
+            }
+        })
+
         return changed;
     }
 
