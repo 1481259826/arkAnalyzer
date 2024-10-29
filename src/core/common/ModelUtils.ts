@@ -25,7 +25,6 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FileUtils, ModulePath } from '../../utils/FileUtils';
 import path from 'path';
 import { Sdk } from '../../Config';
-import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ALL, DEFAULT, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
 import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
@@ -547,10 +546,10 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
 
 function getArkFileFormMap(projectName: string, filePath: string, scene: Scene): ArkFile | null {
     if (/\.e?ts$/.test(filePath)) {
-        return scene.getFile(new FileSignature(projectName, transfer2UnixPath(filePath)));
+        return scene.getFile(new FileSignature(projectName, filePath));
     }
     for (const suffix of fileSuffixArray) {
-        const arkFile = scene.getFile(new FileSignature(projectName, transfer2UnixPath(filePath) + suffix));
+        const arkFile = scene.getFile(new FileSignature(projectName, filePath + suffix));
         if (arkFile) {
             return arkFile;
         }

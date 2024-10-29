@@ -16,19 +16,20 @@
 import * as crypto from 'crypto';
 
 export class CryptoUtils {
-    public static md5(content: string): string {
-        return this.hash(content, 'md5');
-    }
 
     public static sha256(content: string): string {
         return this.hash(content, 'sha256');
     }
 
-    public static sha1(content: string): string {
-        return this.hash(content, 'sha1');
-    }
-
     public static hash(content: string, algorithm: string): string {
         return crypto.createHash(algorithm).update(content).digest('base64url');
+    }
+
+    public static hashcode(content: string): number {
+        let h = 0;
+        for (let i = 0; i < content.length; i++) {
+            h = Math.imul(31, h) + content.charCodeAt(i) | 0;
+        }
+        return h;
     }
 }

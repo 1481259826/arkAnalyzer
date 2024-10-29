@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
+import path from 'path';
 import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ClassType, Type } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 import { UNKNOWN_CLASS_NAME, UNKNOWN_FILE_NAME, UNKNOWN_NAMESPACE_NAME, UNKNOWN_PROJECT_NAME } from '../common/Const';
+import { CryptoUtils } from '../../utils/crypto_utils';
 
 export type Signature =
     FileSignature
@@ -41,7 +43,7 @@ export class FileSignature {
 
     constructor(projectName: string, fileName: string) {
         this.projectName = projectName;
-        this.fileName = fileName;
+        this.fileName = transfer2UnixPath(fileName);
     }
 
     public getProjectName() {
@@ -53,9 +55,11 @@ export class FileSignature {
     }
 
     public toString(): string {
-        let tmpSig = transfer2UnixPath(this.fileName);
-        tmpSig = '@' + this.projectName + '/' + tmpSig + ': ';
-        return tmpSig;
+        return `@${this.projectName}/${this.fileName}: `;
+    }
+
+    public toMapKey(): string {
+        return `${CryptoUtils.hashcode(this.toString())}${path.basename(this.fileName)}`;
     }
 }
 
@@ -91,6 +95,14 @@ export class NamespaceSignature {
             return this.declaringNamespaceSignature.toString() + '.' + this.namespaceName;
         } else {
             return this.declaringFileSignature.toString() + this.namespaceName;
+        }
+    }
+
+    public toMapKey(): string {
+        if (this.declaringNamespaceSignature) {
+            return this.declaringNamespaceSignature.toMapKey() + '.' + this.namespaceName;
+        } else {
+            return this.declaringFileSignature.toMapKey() + this.namespaceName;
         }
     }
 }
@@ -147,6 +159,14 @@ export class ClassSignature {
             return this.declaringNamespaceSignature.toString() + '.' + this.className;
         } else {
             return this.declaringFileSignature.toString() + this.className;
+        }
+    }
+
+    public toMapKey(): string {
+        if (this.declaringNamespaceSignature) {
+            return this.declaringNamespaceSignature.toMapKey() + '.' + this.className;
+        } else {
+            return this.declaringFileSignature.toMapKey() + this.className;
         }
     }
 }
@@ -315,6 +335,10 @@ export class MethodSignature {
 
     public toString(): string {
         return this.declaringClassSignature.toString() + '.' + this.methodSubSignature.toString();
+    }
+
+    public toMapKey(): string {
+        return this.declaringClassSignature.toMapKey() + '.' + this.methodSubSignature.toString();
     }
 
     public isMatch(signature: MethodSignature): boolean {
