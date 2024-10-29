@@ -204,6 +204,14 @@ export class ArkFile {
         this.exportInfoMap.set(key ?? exportInfo.getExportClauseName(), exportInfo);
     }
 
+    public removeExportInfo(exportInfo: ExportInfo, key?: string): void {
+        if (key) {
+            this.exportInfoMap.delete(key);
+            return;
+        }
+        this.exportInfoMap.delete(exportInfo.getExportClauseName());
+    }
+
     public getProjectName() {
         return this.fileSignature.getProjectName();
     }
