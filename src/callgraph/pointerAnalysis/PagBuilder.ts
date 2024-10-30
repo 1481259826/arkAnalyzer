@@ -167,6 +167,8 @@ export class PagBuilder {
                     cs = this.cg.getCallSiteByStmt(stmt);
                     if (cs) {
                         // direct call is already existing in CG
+                        // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
+                        // static API may call instance anonymous method...
                         fpag.addNormalCallSite(cs);
                         if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
                             .getDeclaringFileSignature().getFileName() === '_UnknownFileName') {
@@ -188,9 +190,7 @@ export class PagBuilder {
                 let cs = this.cg.getCallSiteByStmt(stmt);
                 if (cs) {
                     // direct call or constructor call is already existing in CG
-                    /**
-                     * TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
-                     */
+                    // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
                     if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
                         fpag.addUnknownCallSite(cs);
                     } else {
