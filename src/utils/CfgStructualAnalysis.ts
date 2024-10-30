@@ -255,13 +255,13 @@ export class AbstractFlowGraph {
         let inPred = false;
 
         for (const pred of node.getPred()) {
-            if (pred == node) {
+            if (pred === node) {
                 inPred = true;
             }
         }
 
         for (const succ of node.getSucc()) {
-            if (succ == node) {
+            if (succ === node) {
                 inSucc = true;
             }
         }
@@ -947,7 +947,7 @@ class WhileLoopRegion extends NaturalLoopRegion {
 
     public traversal(callback: TraversalCallback) {
         this.header.traversal(callback, CodeBlockType.WHILE);
-        if (this.header != this.back) {
+        if (this.header !== this.back) {
             this.back.traversal(callback, CodeBlockType.NORMAL);
         }
         callback(undefined, CodeBlockType.COMPOUND_END);
@@ -967,7 +967,7 @@ class DoWhileLoopRegion extends NaturalLoopRegion {
 
     public traversal(callback: TraversalCallback) {
         callback(undefined, CodeBlockType.DO);
-        if (this.header != this.back) {
+        if (this.header !== this.back) {
             this.header.traversal(callback, CodeBlockType.NORMAL);
         }
         this.back.traversal(callback, CodeBlockType.DO_WHILE);
