@@ -72,6 +72,21 @@ const CASE1_EXPECT = `namespace Case1 {
   }
 }
 `;
+const CASE2_EXPECT = `namespace Case2 {
+  function dowhileTest(): void {
+    let i: number = 0;
+    for (; i < 10; i = i + 1) {
+      let x: number = 10;
+      while (x > 10) {
+        let y: number = 20;
+        do {
+          console.log('x');
+        } while (y < 10)
+      }
+    }
+  }
+}
+`;
 
 describe('SourceControlFlowTest', () => {
     let config: SceneConfig = new SceneConfig();
@@ -93,7 +108,15 @@ describe('SourceControlFlowTest', () => {
 
         let source = printer.dump();
         expect(source).eq(CASE1_EXPECT);
-
-        
     });
+
+    it('case2', () => {
+      let ns = arkfile!.getNamespaceWithName('Case2');
+      let printer = new SourceNamespacePrinter(ns!);
+      let dot = new PrinterBuilder('output');
+      dot.dumpToDot(arkfile!);
+
+      let source = printer.dump();
+      expect(source).eq(CASE2_EXPECT);
+  });
 });
