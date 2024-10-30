@@ -38,12 +38,14 @@ export interface ArkSignature {
 export class FileSignature {
     private projectName: string;
     private fileName: string;
+    private hashcode: number;
 
     public static readonly DEFAULT: FileSignature = new FileSignature(UNKNOWN_PROJECT_NAME, UNKNOWN_FILE_NAME);
 
     constructor(projectName: string, fileName: string) {
         this.projectName = projectName;
         this.fileName = transfer2UnixPath(fileName);
+        this.hashcode = CryptoUtils.hashcode(this.toString());
     }
 
     public getProjectName() {
@@ -59,7 +61,7 @@ export class FileSignature {
     }
 
     public toMapKey(): string {
-        return `${CryptoUtils.hashcode(this.toString())}${path.basename(this.fileName)}`;
+        return `${this.hashcode}${path.basename(this.fileName)}`;
     }
 }
 
