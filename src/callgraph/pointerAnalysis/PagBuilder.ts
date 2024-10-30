@@ -367,6 +367,9 @@ export class PagBuilder {
     }
 
     private processStorageGet(cs: CallSite | DynCallSite, cid: ContextID): void {
+        if (!(cs.callStmt instanceof ArkAssignStmt)) {
+            return;
+        }
         let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
         let ivkExpr = cs.callStmt.getInvokeExpr();
         let propertyName!: string;
