@@ -716,7 +716,6 @@ export class PagBuilder {
         calleeCid = calleeCS.cid
 
         // TODO: getParameterInstances's performance is not good. Need to refactor 
-        //let params = calleeMethod.getParameterInstances();
         let params = calleeMethod.getCfg()!.getStmts()
             .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
             .map(stmt => (stmt as ArkAssignStmt).getRightOp());
@@ -728,7 +727,6 @@ export class PagBuilder {
                 let arg = cs.args?.at(i);
                 let param = params.at(i);
                 // TODO: param type should be ArkParameterRef?
-                //if (arg && param && param instanceof ArkParameterRef) {
                 if (arg && param) {
                     if (arg instanceof Constant) {
                         continue
