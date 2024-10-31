@@ -17,6 +17,7 @@ import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
 import { StaticSingleAssignmentFormer } from '../src/transformer/StaticSingleAssignmentFormer';
+import { DEFAULT_ARK_METHOD_NAME } from '../src';
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
@@ -50,7 +51,7 @@ export class TypeInferenceTest {
             console.log('=============== arkFile:', arkFile.getName(), ' ================');
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
-                    if (arkMethod.getName() == '_DEFAULT_ARK_METHOD') {
+                    if (arkMethod.getName() == DEFAULT_ARK_METHOD_NAME) {
                         continue;
                     }
 

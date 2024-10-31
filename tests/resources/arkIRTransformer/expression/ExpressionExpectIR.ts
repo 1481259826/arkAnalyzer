@@ -16,7 +16,7 @@
 export const BinaryExpression_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @expression/BinaryExpressionTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @expression/BinaryExpressionTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
@@ -217,7 +217,7 @@ export const BinaryExpression_Expect_IR = {
 export const UnaryExpression_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @expression/UnaryExpressionTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @expression/UnaryExpressionTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
@@ -257,7 +257,7 @@ export const UnaryExpression_Expect_IR = {
 export const NewExpression_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @expression/NewExpressionTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @expression/NewExpressionTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
@@ -394,7 +394,7 @@ export const NewExpression_Expect_IR = {
 export const LiteralExpression_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @expression/LiteralExpressionTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @expression/LiteralExpressionTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
@@ -481,19 +481,19 @@ export const LiteralExpression_Expect_IR = {
 export const Operator_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @expression/OperatorTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @expression/OperatorTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
         },
         {
-            text: '%0 = new @_UnknownProjectName/_UnknownFileName: Point',
+            text: '%0 = new @%unk/%unk: Point',
             operandOriginalPositions: [
                 [17, 9, 17, 20], [17, 9, 17, 20],
             ],
         },
         {
-            text: 'instanceinvoke %0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
+            text: 'instanceinvoke %0.<@%unk/%unk: Point.constructor()>()',
             operandOriginalPositions: [
                 [17, 9, 17, 20], [17, 9, 17, 20],
             ],
@@ -505,7 +505,7 @@ export const Operator_Expect_IR = {
             ],
         },
         {
-            text: '%1 = delete p.<@_UnknownProjectName/_UnknownFileName: .y>',
+            text: '%1 = delete p.<@%unk/%unk: .y>',
             operandOriginalPositions: [
                 [18, 1, 18, 11], [18, 1, 18, 11], [18, 8, 18, 11], [18, 8, 18, 9],
             ],
@@ -574,55 +574,55 @@ export const Operator_Expect_IR = {
 export const CallExpression_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @expression/CallExpressionTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @expression/CallExpressionTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
         },
         {
-            text: 'instanceinvoke a1.<@_UnknownProjectName/_UnknownFileName: .call1()>()',
+            text: 'instanceinvoke a1.<@%unk/%unk: .call1()>()',
             operandOriginalPositions: [
                 [17, 1, 17, 11], [17, 1, 17, 3],
             ],
         },
         {
-            text: 'a2 = instanceinvoke a3.<@_UnknownProjectName/_UnknownFileName: .call2()>()',
+            text: 'a2 = instanceinvoke a3.<@%unk/%unk: .call2()>()',
             operandOriginalPositions: [
                 [18, 5, 18, 7], [18, 10, 18, 20], [18, 10, 18, 12],
             ],
         },
         {
-            text: 'a4 = instanceinvoke a3.<@_UnknownProjectName/_UnknownFileName: .call3()>(para1, para2)',
+            text: 'a4 = instanceinvoke a3.<@%unk/%unk: .call3()>(para1, para2)',
             operandOriginalPositions: [
                 [19, 5, 19, 7], [19, 10, 19, 32], [19, 10, 19, 12], [19, 19, 19, 24], [19, 26, 19, 31],
             ],
         },
         {
-            text: 'staticinvoke <@_UnknownProjectName/_UnknownFileName: .call10()>()',
+            text: 'staticinvoke <@%unk/%unk: .call10()>()',
             operandOriginalPositions: [
                 [22, 1, 22, 9],
             ],
         },
         {
-            text: 'a20 = staticinvoke <@_UnknownProjectName/_UnknownFileName: .call20()>()',
+            text: 'a20 = staticinvoke <@%unk/%unk: .call20()>()',
             operandOriginalPositions: [
                 [23, 5, 23, 8], [23, 11, 23, 19],
             ],
         },
         {
-            text: 'a40 = staticinvoke <@_UnknownProjectName/_UnknownFileName: .call30()>(para10, para20)',
+            text: 'a40 = staticinvoke <@%unk/%unk: .call30()>(para10, para20)',
             operandOriginalPositions: [
                 [24, 5, 24, 8], [24, 11, 24, 33], [24, 18, 24, 24], [24, 26, 24, 32],
             ],
         },
         {
-            text: '%0 = staticinvoke <@_UnknownProjectName/_UnknownFileName: .call200()>()',
+            text: '%0 = staticinvoke <@%unk/%unk: .call200()>()',
             operandOriginalPositions: [
                 [27, 12, 27, 21], [27, 12, 27, 21],
             ],
         },
         {
-            text: 'a200 = instanceinvoke %0.<@_UnknownProjectName/_UnknownFileName: .call300()>(para100, para200)',
+            text: 'a200 = instanceinvoke %0.<@%unk/%unk: .call300()>(para100, para200)',
             operandOriginalPositions: [
                 [27, 5, 27, 9], [27, 12, 27, 47], [27, 12, 27, 21], [27, 30, 27, 37], [27, 39, 27, 46],
             ],

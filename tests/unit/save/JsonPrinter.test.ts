@@ -76,7 +76,7 @@ describe('JsonPrinterTest', () => {
 const JsonPrinter_simpleFunction_EXPECTED = {
     "signature": {
         "enclosingClass": {
-            "name": "_DEFAULT_ARK_CLASS"
+            "name": "%dflt"
         },
         "name": "simpleFunction",
         "parameters": [
@@ -108,7 +108,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                 "type": {
                     "_": "ClassType",
                     "signature": {
-                        "name": "_DEFAULT_ARK_CLASS"
+                        "name": "%dflt"
                     }
                 }
             },
@@ -218,7 +218,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             },
@@ -227,7 +227,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             }
@@ -561,7 +561,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
 const JsonPrinter_complexFunction_EXPECTED = {
     "signature": {
         "enclosingClass": {
-            "name": "_DEFAULT_ARK_CLASS"
+            "name": "%dflt"
         },
         "name": "complexFunction",
         "parameters": [
@@ -600,7 +600,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                 "type": {
                     "_": "ClassType",
                     "signature": {
-                        "name": "_DEFAULT_ARK_CLASS"
+                        "name": "%dflt"
                     }
                 }
             },
@@ -721,7 +721,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             },
@@ -730,7 +730,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             }
@@ -1113,7 +1113,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "enclosingClass": {
                     "name": "Shape"
                 },
-                "name": "@instance_init",
+                "name": "%instInit",
                 "parameters": [],
                 "returnType": {
                     "_": "UnknownType"
@@ -1165,7 +1165,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "enclosingClass": {
                     "name": "Shape"
                 },
-                "name": "@static_init",
+                "name": "%statInit",
                 "parameters": [],
                 "returnType": {
                     "_": "UnknownType"
@@ -1556,7 +1556,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                             "enclosingClass": {
                                                 "name": "Shape"
                                             },
-                                            "name": "@instance_init",
+                                            "name": "%instInit",
                                             "parameters": [],
                                             "returnType": {
                                                 "_": "UnknownType"
@@ -1579,7 +1579,7 @@ const JsonPrinter_Shape_EXPECTED = {
 
 const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
     signature: {
-        name: "_DEFAULT_ARK_CLASS",
+        name: "%dflt",
     },
     modifiers: 0,
     superClassName: "",
@@ -1590,7 +1590,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: DEFAULT_ARK_METHOD_NAME,
                 parameters: [
@@ -1609,7 +1609,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -1654,7 +1654,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -1663,7 +1663,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -1858,7 +1858,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: "simpleFunction",
                 parameters: [
@@ -1891,7 +1891,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -2001,7 +2001,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2010,7 +2010,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2344,7 +2344,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: "complexFunction",
                 parameters: [
@@ -2384,7 +2384,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -2505,7 +2505,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2514,7 +2514,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2886,7 +2886,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: "processInput",
                 parameters: [
@@ -2920,7 +2920,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -3001,7 +3001,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -3010,7 +3010,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },

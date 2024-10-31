@@ -29,11 +29,11 @@ export const INTERNAL_PARAMETER_SOURCE: string[] = [
 ]
 
 export const INTERNAL_SINK_METHOD: string[] = [
-    'console.<@_UnknownProjectName/_UnknownFileName: .log()>',
-    'console.<@_UnknownProjectName/_UnknownFileName: .error()>',
-    'console.<@_UnknownProjectName/_UnknownFileName: .info()>',
-    'console.<@_UnknownProjectName/_UnknownFileName: .warn()>',
-    'console.<@_UnknownProjectName/_UnknownFileName: .assert()>'
+    'console.<@%unk/%unk: .log()>',
+    'console.<@%unk/%unk: .error()>',
+    'console.<@%unk/%unk: .info()>',
+    'console.<@%unk/%unk: .warn()>',
+    'console.<@%unk/%unk: .assert()>'
 ]
 
 const filenamePrefix = '@etsSdk/api/'

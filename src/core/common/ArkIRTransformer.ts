@@ -106,7 +106,8 @@ import {
 import { FullPosition, LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
-import { CONSTRUCTOR_NAME, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
+import { TEMP_LOCAL_PREFIX } from './Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
 

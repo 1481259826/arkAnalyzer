@@ -22,10 +22,3 @@ export const DEFAULT = 'default';
 export const ALL = '*';
 
 export const IMPORT = 'import';
-
-// ast const
-export const DECLARE_KEYWORD = 'DeclareKeyword';
-export const ABSTRACT_KEYWORD = 'AbstractKeyword';
-export const STATIC_KEYWORD = 'StaticKeyword';
-
-export const TEMP_LOCAL_PREFIX = '%';

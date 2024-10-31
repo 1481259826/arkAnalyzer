@@ -16,7 +16,7 @@
 export const Declaration_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @assignment/DeclarationTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @assignment/DeclarationTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
@@ -73,7 +73,7 @@ export const Declaration_Expect_IR = {
 export const CompoundAssignment_Expect_IR = {
     stmts: [
         {
-            text: 'this = this: @assignment/CompoundAssignmentTest.ts: _DEFAULT_ARK_CLASS',
+            text: 'this = this: @assignment/CompoundAssignmentTest.ts: %dflt',
             operandOriginalPositions: [
                 null, null,
             ],
