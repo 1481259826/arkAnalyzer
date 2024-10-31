@@ -16,13 +16,13 @@
 // ArkClass const
 export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
 export const DEFAULT_ARK_METHOD_NAME = '_DEFAULT_ARK_METHOD';
-export const ANONYMOUS_CLASS_PREFIX = 'AnonymousClass';
+export const ANONYMOUS_CLASS_PREFIX = '%AC';
 export const ANONYMOUS_CLASS_DELIMITER = '-';
 
 // ArkMethod const
 export const INSTANCE_INIT_METHOD_NAME = '@instance_init';
 export const STATIC_INIT_METHOD_NAME = '@static_init';
-export const ANONYMOUS_METHOD_PREFIX = 'AnonymousMethod-';
+export const ANONYMOUS_METHOD_PREFIX = '%AM';
 export const CALL_SIGNATURE_NAME = 'create';
 
 // ArkSignature const

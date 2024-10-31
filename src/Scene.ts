@@ -34,7 +34,7 @@ import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
 import { ArkExport, ExportType } from './core/model/ArkExport';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
-import { STATIC_INIT_METHOD_NAME } from './core/common/Const';
+import { DEFAULT_ARK_CLASS_NAME, STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 
@@ -695,7 +695,7 @@ export class Scene {
                     try {
                         // 遗留问题：只统计了项目文件的namespace，没统计sdk文件内部的引入
                         const importNameSpaceClasses = classMap.get(importNameSpace.getNamespaceSignature())!;
-                        importClasses.push(...importNameSpaceClasses.filter(c => !importClasses.includes(c) && c.getName() !== '_DEFAULT_ARK_CLASS'));
+                        importClasses.push(...importNameSpaceClasses.filter(c => !importClasses.includes(c) && c.getName() !== DEFAULT_ARK_CLASS_NAME));
                     } catch {
                     }
 
@@ -707,14 +707,14 @@ export class Scene {
             const namespaceStack = [...file.getNamespaces()];
             for (const ns of namespaceStack) {
                 const nsClasses = classMap.get(ns.getNamespaceSignature())!;
-                nsClasses.push(...fileClasses.filter(c => !nsClasses.includes(c) && c.getName() !== '_DEFAULT_ARK_CLASS'));
+                nsClasses.push(...fileClasses.filter(c => !nsClasses.includes(c) && c.getName() !== DEFAULT_ARK_CLASS_NAME));
             }
             while (namespaceStack.length > 0) {
                 const ns = namespaceStack.shift()!;
                 const nsClasses = classMap.get(ns.getNamespaceSignature())!;
                 for (const nsns of ns.getNamespaces()) {
                     const nsnsClasses = classMap.get(nsns.getNamespaceSignature())!;
-                    nsnsClasses.push(...nsClasses.filter(c => !nsnsClasses.includes(c) && c.getName() !== '_DEFAULT_ARK_CLASS'));
+                    nsnsClasses.push(...nsClasses.filter(c => !nsnsClasses.includes(c) && c.getName() !== DEFAULT_ARK_CLASS_NAME));
                     namespaceStack.push(nsns);
                 }
             }
@@ -804,7 +804,7 @@ export class Scene {
                     try {
                         // 遗留问题：只统计了项目文件，没统计sdk文件内部的引入
                         const importNameSpaceClasses = globalVariableMap.get(importNameSpace.getNamespaceSignature())!;
-                        importLocals.push(...importNameSpaceClasses.filter(c => !importLocals.includes(c) && c.getName() !== '_DEFAULT_ARK_CLASS'));
+                        importLocals.push(...importNameSpaceClasses.filter(c => !importLocals.includes(c) && c.getName() !== DEFAULT_ARK_CLASS_NAME));
                     } catch {
                     }
 

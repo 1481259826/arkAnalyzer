@@ -52,6 +52,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
 import { ModelUtils } from '../../common/ModelUtils';
 import { Scene } from '../../../Scene';
+import { TEMP_LOCAL_PREFIX } from '../../common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ViewTreeBuilder');
 const COMPONENT_CREATE_FUNCTIONS: Set<string> = new Set([COMPONENT_CREATE_FUNCTION, COMPONENT_BRANCH_FUNCTION]);
@@ -62,7 +63,7 @@ function backtraceLocalInitValue(value: Local): Local | Value {
         let rightOp = stmt.getRightOp();
         if (rightOp instanceof Local) {
             return backtraceLocalInitValue(rightOp);
-        } else if (rightOp instanceof ArkInstanceFieldRef && rightOp.getBase().getName().startsWith('$temp')) {
+        } else if (rightOp instanceof ArkInstanceFieldRef && rightOp.getBase().getName().startsWith(TEMP_LOCAL_PREFIX)) {
             return backtraceLocalInitValue(rightOp.getBase());
         }
         return rightOp;
@@ -1136,7 +1137,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
 
         let name = expr.getBase().getName();
-        if (name.startsWith('$temp')) {
+        if (name.startsWith(TEMP_LOCAL_PREFIX)) {
             let initValue = backtraceLocalInitValue(expr.getBase());
             if (initValue instanceof ArkThisRef) {
                 name = 'this';

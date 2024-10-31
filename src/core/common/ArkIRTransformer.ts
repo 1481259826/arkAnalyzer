@@ -106,7 +106,7 @@ import {
 import { FullPosition, LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
-import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
 
@@ -130,7 +130,6 @@ export class DummyStmt extends Stmt {
 }
 
 export class ArkIRTransformer {
-    private readonly tempLocalPrefix = '$temp';
     private tempLocalIndex: number = 0;
     private locals: Map<string, Local> = new Map();
     private sourceFile: ts.SourceFile;
@@ -1775,7 +1774,7 @@ export class ArkIRTransformer {
     }
 
     private generateTempLocal(localType: Type = UnknownType.getInstance()): Local {
-        const tempLocalName = this.tempLocalPrefix + this.tempLocalIndex;
+        const tempLocalName = TEMP_LOCAL_PREFIX + this.tempLocalIndex;
         this.tempLocalIndex++;
         const tempLocal: Local = new Local(tempLocalName, localType);
         this.locals.set(tempLocalName, tempLocal);

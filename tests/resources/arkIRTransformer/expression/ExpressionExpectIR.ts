@@ -34,19 +34,19 @@ export const BinaryExpression_Expect_IR = {
             ],
         },
         {
-            text: '$temp0 = a + b',
+            text: '%0 = a + b',
             operandOriginalPositions: [
                 [19, 10, 19, 15], [19, 10, 19, 15], [19, 10, 19, 11], [19, 14, 19, 15],
             ],
         },
         {
-            text: '$temp1 = a - b',
+            text: '%1 = a - b',
             operandOriginalPositions: [
                 [19, 20, 19, 25], [19, 20, 19, 25], [19, 20, 19, 21], [19, 24, 19, 25],
             ],
         },
         {
-            text: 'c = $temp0 / $temp1',
+            text: 'c = %0 / %1',
             operandOriginalPositions: [
                 [19, 5, 19, 6], [19, 9, 19, 26], [19, 10, 19, 15], [19, 20, 19, 25],
             ],
@@ -58,13 +58,13 @@ export const BinaryExpression_Expect_IR = {
             ],
         },
         {
-            text: '$temp2 = a || b',
+            text: '%2 = a || b',
             operandOriginalPositions: [
                 [21, 10, 21, 16], [21, 10, 21, 16], [21, 10, 21, 11], [21, 15, 21, 16],
             ],
         },
         {
-            text: 'e = $temp2 && a',
+            text: 'e = %2 && a',
             operandOriginalPositions: [
                 [21, 5, 21, 6], [21, 9, 21, 22], [21, 10, 21, 16], [21, 21, 21, 22],
             ],
@@ -269,117 +269,117 @@ export const NewExpression_Expect_IR = {
             ],
         },
         {
-            text: '$temp0 = newarray (any)[sz1]',
+            text: '%0 = newarray (any)[sz1]',
             operandOriginalPositions: [
                 [17, 14, 17, 28], [17, 14, 17, 28], [17, 24, 17, 27],
             ],
         },
         {
-            text: 'arr1 = $temp0',
+            text: 'arr1 = %0',
             operandOriginalPositions: [
                 [17, 7, 17, 11], [17, 14, 17, 28],
             ],
         },
         {
-            text: '$temp1 = newarray (any)[10]',
+            text: '%1 = newarray (any)[10]',
             operandOriginalPositions: [
                 [18, 14, 18, 27], [18, 14, 18, 27], [18, 24, 18, 26],
             ],
         },
         {
-            text: 'arr2 = $temp1',
+            text: 'arr2 = %1',
             operandOriginalPositions: [
                 [18, 7, 18, 11], [18, 14, 18, 27],
             ],
         },
         {
-            text: '$temp2 = newarray (number)[3]',
+            text: '%2 = newarray (number)[3]',
             operandOriginalPositions: [
                 [19, 14, 19, 32], [19, 14, 19, 32], [-1, -1, -1, -1],
             ],
         }, {
-            text: '$temp2[0] = 1',
+            text: '%2[0] = 1',
             operandOriginalPositions: [
                 [19, 14, 19, 32], [19, 14, 19, 32], [-1, -1, -1, -1], [19, 24, 19, 25],
             ],
         }, {
-            text: '$temp2[1] = 2',
+            text: '%2[1] = 2',
             operandOriginalPositions: [
                 [19, 14, 19, 32], [19, 14, 19, 32], [-1, -1, -1, -1], [19, 27, 19, 28],
             ],
         }, {
-            text: '$temp2[2] = 3',
+            text: '%2[2] = 3',
             operandOriginalPositions: [
                 [19, 14, 19, 32], [19, 14, 19, 32], [-1, -1, -1, -1], [19, 30, 19, 31],
             ],
         },
         {
-            text: 'arr3 = $temp2',
+            text: 'arr3 = %2',
             operandOriginalPositions: [
                 [19, 7, 19, 11], [19, 14, 19, 32],
             ],
         },
         {
-            text: '$temp3 = newarray (any)[0]',
+            text: '%3 = newarray (any)[0]',
             operandOriginalPositions: [
                 [20, 14, 20, 25], [20, 14, 20, 25], [-1, -1, -1, -1],
             ],
         }, {
-            text: 'arr4 = $temp3',
+            text: 'arr4 = %3',
             operandOriginalPositions: [
                 [20, 7, 20, 11], [20, 14, 20, 25],
             ],
         },
         {
-            text: '$temp4 = newarray (any)[1]',
+            text: '%4 = newarray (any)[1]',
             operandOriginalPositions: [
                 [21, 12, 21, 28], [21, 12, 21, 28], [-1, -1, -1, -1],
             ],
         },
         {
-            text: '$temp4[0] = \'str\'',
+            text: '%4[0] = \'str\'',
             operandOriginalPositions: [
                 [21, 12, 21, 28], [21, 12, 21, 28], [-1, -1, -1, -1], [21, 22, 21, 27],
             ],
         },
         {
-            text: 'arr5 = $temp4',
+            text: 'arr5 = %4',
             operandOriginalPositions: [
                 [21, 5, 21, 9], [21, 12, 21, 28],
             ],
         },
         {
-            text: '$temp5 = newarray (any)[unkownValue]',
+            text: '%5 = newarray (any)[unkownValue]',
             operandOriginalPositions: [
                 [22, 12, 22, 34], [22, 12, 22, 34], [22, 22, 22, 33],
             ],
         },
         {
-            text: 'arr6 = $temp5',
+            text: 'arr6 = %5',
             operandOriginalPositions: [
                 [22, 5, 22, 9], [22, 12, 22, 34],
             ],
         },
         {
-            text: '$temp6 = newarray (number)[2]',
+            text: '%6 = newarray (number)[2]',
             operandOriginalPositions: [
                 [24, 24, 24, 30], [24, 24, 24, 30], [-1, -1, -1, -1],
             ],
         },
         {
-            text: '$temp6[0] = 4',
+            text: '%6[0] = 4',
             operandOriginalPositions: [
                 [24, 24, 24, 30], [24, 24, 24, 30], [-1, -1, -1, -1], [24, 25, 24, 26],
             ],
         },
         {
-            text: '$temp6[1] = 5',
+            text: '%6[1] = 5',
             operandOriginalPositions: [
                 [24, 24, 24, 30], [24, 24, 24, 30], [-1, -1, -1, -1], [24, 28, 24, 29],
             ],
         },
         {
-            text: 'arrFromLiteral = $temp6',
+            text: 'arrFromLiteral = %6',
             operandOriginalPositions: [
                 [24, 7, 24, 21], [24, 24, 24, 30],
             ],
@@ -400,73 +400,73 @@ export const LiteralExpression_Expect_IR = {
             ],
         },
         {
-            text: '$temp0 = newarray (number)[3]',
+            text: '%0 = newarray (number)[3]',
             operandOriginalPositions: [
                 [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1],
             ],
         },
         {
-            text: '$temp0[0] = 1',
+            text: '%0[0] = 1',
             operandOriginalPositions: [
                 [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 15, 16, 16],
             ],
         },
         {
-            text: '$temp0[1] = 2',
+            text: '%0[1] = 2',
             operandOriginalPositions: [
                 [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 18, 16, 19],
             ],
         },
         {
-            text: '$temp0[2] = 3',
+            text: '%0[2] = 3',
             operandOriginalPositions: [
                 [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 21, 16, 22],
             ],
         },
         {
-            text: 'arr1 = $temp0',
+            text: 'arr1 = %0',
             operandOriginalPositions: [
                 [16, 7, 16, 11], [16, 14, 16, 23],
             ],
         },
         {
-            text: '$temp1 = newarray (any)[0]',
+            text: '%1 = newarray (any)[0]',
             operandOriginalPositions: [
                 [17, 14, 17, 16], [17, 14, 17, 16], [-1, -1, -1, -1],
             ],
         },
         {
-            text: 'arr2 = $temp1',
+            text: 'arr2 = %1',
             operandOriginalPositions: [
                 [17, 7, 17, 11], [17, 14, 17, 16],
             ],
         },
         {
-            text: '$temp2 = newarray (number|string)[3]',
+            text: '%2 = newarray (number|string)[3]',
             operandOriginalPositions: [
                 [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1],
             ],
         },
         {
-            text: '$temp2[0] = 1',
+            text: '%2[0] = 1',
             operandOriginalPositions: [
                 [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 13, 18, 14],
             ],
         },
         {
-            text: '$temp2[1] = 2',
+            text: '%2[1] = 2',
             operandOriginalPositions: [
                 [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 16, 18, 17],
             ],
         },
         {
-            text: '$temp2[2] = \'3\'',
+            text: '%2[2] = \'3\'',
             operandOriginalPositions: [
                 [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 19, 18, 22],
             ],
         },
         {
-            text: 'arr3 = $temp2',
+            text: 'arr3 = %2',
             operandOriginalPositions: [
                 [18, 5, 18, 9], [18, 12, 18, 23],
             ],
@@ -487,25 +487,25 @@ export const Operator_Expect_IR = {
             ],
         },
         {
-            text: '$temp0 = new @_UnknownProjectName/_UnknownFileName: Point',
+            text: '%0 = new @_UnknownProjectName/_UnknownFileName: Point',
             operandOriginalPositions: [
                 [17, 9, 17, 20], [17, 9, 17, 20],
             ],
         },
         {
-            text: 'instanceinvoke $temp0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
+            text: 'instanceinvoke %0.<@_UnknownProjectName/_UnknownFileName: Point.constructor()>()',
             operandOriginalPositions: [
                 [17, 9, 17, 20], [17, 9, 17, 20],
             ],
         },
         {
-            text: 'p = $temp0',
+            text: 'p = %0',
             operandOriginalPositions: [
                 [17, 5, 17, 6], [17, 9, 17, 20],
             ],
         },
         {
-            text: '$temp1 = delete p.<@_UnknownProjectName/_UnknownFileName: .y>',
+            text: '%1 = delete p.<@_UnknownProjectName/_UnknownFileName: .y>',
             operandOriginalPositions: [
                 [18, 1, 18, 11], [18, 1, 18, 11], [18, 8, 18, 11], [18, 8, 18, 9],
             ],
@@ -523,13 +523,13 @@ export const Operator_Expect_IR = {
             ],
         },
         {
-            text: '$temp2 = a + b',
+            text: '%2 = a + b',
             operandOriginalPositions: [
                 [24, 7, 24, 12], [24, 7, 24, 12], [24, 7, 24, 8], [24, 11, 24, 12],
             ],
         },
         {
-            text: '$temp3 = await 10',
+            text: '%3 = await 10',
             operandOriginalPositions: [
                 [27, 1, 27, 9], [27, 1, 27, 9], [27, 7, 27, 9],
             ],
@@ -541,7 +541,7 @@ export const Operator_Expect_IR = {
             ],
         },
         {
-            text: '$temp4 = yield 20',
+            text: '%4 = yield 20',
             operandOriginalPositions: [
                 [31, 1, 31, 9], [31, 1, 31, 9], [31, 7, 31, 9],
             ],
@@ -616,13 +616,13 @@ export const CallExpression_Expect_IR = {
             ],
         },
         {
-            text: '$temp0 = staticinvoke <@_UnknownProjectName/_UnknownFileName: .call200()>()',
+            text: '%0 = staticinvoke <@_UnknownProjectName/_UnknownFileName: .call200()>()',
             operandOriginalPositions: [
                 [27, 12, 27, 21], [27, 12, 27, 21],
             ],
         },
         {
-            text: 'a200 = instanceinvoke $temp0.<@_UnknownProjectName/_UnknownFileName: .call300()>(para100, para200)',
+            text: 'a200 = instanceinvoke %0.<@_UnknownProjectName/_UnknownFileName: .call300()>(para100, para200)',
             operandOriginalPositions: [
                 [27, 5, 27, 9], [27, 12, 27, 47], [27, 12, 27, 21], [27, 30, 27, 37], [27, 39, 27, 46],
             ],
