@@ -171,6 +171,10 @@ export class AbstractFlowGraph {
                 continue;
             }
 
+            if (this.isSelfLoopNode(header)) {
+                loops.push(new Set<AbstractNode>([header]));
+            }
+
             for (const start of backEdges) {
                 let loop = this.naturalLoop(start, header);
                 if (!innermost || loop.size > longest) {
@@ -244,6 +248,25 @@ export class AbstractFlowGraph {
         }
 
         return loop;
+    }
+
+    private isSelfLoopNode(node: AbstractNode): boolean {
+        let inSucc = false;
+        let inPred = false;
+
+        for (const pred of node.getPred()) {
+            if (pred === node) {
+                inPred = true;
+            }
+        }
+
+        for (const succ of node.getSucc()) {
+            if (succ === node) {
+                inSucc = true;
+            }
+        }
+
+        return inSucc && inPred;
     }
 
     private isForLoopIncNode(node: AbstractNode): boolean {
@@ -461,6 +484,9 @@ export class AbstractFlowGraph {
 
         if (new Set(node.getPred()).has(node) && new Set(node.getSucc()).has(node)) {
             nodeSet.add(node);
+            if (inLoop) {
+                return region?.getType();
+            }
             return RegionType.SELF_LOOP_REGION;
         }
 
@@ -512,7 +538,11 @@ export class AbstractFlowGraph {
         let nodes = Array.from(nodeSet);
         let header = nodes[0];
         if (nodeSet.size === 1) {
-            return RegionType.SELF_LOOP_REGION;
+            let tail = nodes[0].getBlock()?.getTail();
+            if (tail instanceof ArkIfStmt) {
+                return RegionType.DO_WHILE_LOOP_REGION;
+            }
+            return RegionType.WHILE_LOOP_REGION;
         }
 
         let back = nodes[1];
@@ -820,7 +850,11 @@ abstract class NaturalLoopRegion extends Region {
         super(nset, type);
         let nodes = Array.from(nset);
         this.header = nodes[0];
-        this.back = nodes[1];
+        if (nset.size > 1) {
+            this.back = nodes[1];
+        } else {
+            this.back = nodes[0];
+        }
         this.control = new Set([this.header]);
     }
 
@@ -913,7 +947,9 @@ class WhileLoopRegion extends NaturalLoopRegion {
 
     public traversal(callback: TraversalCallback) {
         this.header.traversal(callback, CodeBlockType.WHILE);
-        this.back.traversal(callback, CodeBlockType.NORMAL);
+        if (this.header !== this.back) {
+            this.back.traversal(callback, CodeBlockType.NORMAL);
+        }
         callback(undefined, CodeBlockType.COMPOUND_END);
     }
 
@@ -931,7 +967,9 @@ class DoWhileLoopRegion extends NaturalLoopRegion {
 
     public traversal(callback: TraversalCallback) {
         callback(undefined, CodeBlockType.DO);
-        this.header.traversal(callback, CodeBlockType.NORMAL);
+        if (this.header !== this.back) {
+            this.header.traversal(callback, CodeBlockType.NORMAL);
+        }
         this.back.traversal(callback, CodeBlockType.DO_WHILE);
     }
 

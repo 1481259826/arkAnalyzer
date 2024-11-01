@@ -68,3 +68,17 @@ namespace Case1 {
         return lrc;
     }
 }
+
+namespace Case2 {
+    function dowhileTest(): void {
+        for (let i = 0; i < 10; i++) {
+            let x = 10;
+            while (x > 10) {
+                let y = 20;
+                do {
+                    console.log('x');
+                } while (y < 10);
+            }
+        }
+    }
+}

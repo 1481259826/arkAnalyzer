@@ -87,7 +87,7 @@ describe('CfgStructualAnalysisTest', () => {
                 order.push(block?.getId());
             }
         })
-        expect(order.join(',')).eq('0,1,3,4,5,6,7,8');
+        expect(order.join(',')).eq('0,1,2,3,4,5,6,7,8');
     });
 
     it('case2: structual analysis while', () => {
