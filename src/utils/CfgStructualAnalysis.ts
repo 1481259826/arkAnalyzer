@@ -163,7 +163,7 @@ export class AbstractFlowGraph {
         let dom = this.buildDominator();
         let loops: Set<AbstractNode>[] = [];
         for (const header of this.nodes) {
-            let innermost: Set<AbstractNode> | undefined = undefined;
+            let innermost: Set<AbstractNode> | undefined;
             let longest: number = 0;
 
             let backEdges = this.getBackEdges(dom, header);

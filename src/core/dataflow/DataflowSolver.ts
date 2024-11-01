@@ -89,8 +89,6 @@ export abstract class DataflowSolver<D> {
 
         // build CHA
         let cg = new CallGraph(this.scene)
-        // let cgBuilder = new CallGraphBuilder(cg, this.scene)
-        // cgBuilder.buildClassHierarchyCallGraph([this.problem.getEntryMethod().getSignature()])
         this.CHA = new ClassHierarchyAnalysis(this.scene, cg)
         this.buildStmtMapInClass();
         this.setCfg4AllStmt();

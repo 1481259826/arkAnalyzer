@@ -787,9 +787,9 @@ export class ArkIRTransformer {
         const createViewArgPositionsAll = [newExprPositions];
         if (ts.isEtsComponentExpression(componentExpression) && componentExpression.body) {
             const anonymous = ts.factory.createArrowFunction([], [], [], undefined, undefined, componentExpression.body);
-            // @ts-ignore
+            // @ts-expect-error: add pos info for the created ArrowFunction
             anonymous.pos = componentExpression.body.pos;
-            // @ts-ignore
+            // @ts-expect-error: add end info for the created ArrowFunction
             anonymous.end = componentExpression.body.end;
 
             const {
@@ -1011,8 +1011,7 @@ export class ArkIRTransformer {
         if (callExpression.typeArguments) {
             realGenericTypes = [];
             callExpression.typeArguments.forEach(typeArgument => {
-                // @ts-ignore
-                realGenericTypes.push(this.resolveTypeNode(typeArgument));
+                realGenericTypes!.push(this.resolveTypeNode(typeArgument));
             });
         }
         const stmts: Stmt[] = [];
@@ -1119,8 +1118,7 @@ export class ArkIRTransformer {
         if (newExpression.typeArguments) {
             realGenericTypes = [];
             newExpression.typeArguments.forEach(typeArgument => {
-                // @ts-ignore
-                realGenericTypes.push(this.resolveTypeNode(typeArgument));
+                realGenericTypes!.push(this.resolveTypeNode(typeArgument));
             });
         }
 

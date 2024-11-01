@@ -241,16 +241,6 @@ export class MethodSubSignature {
         return this.staticFlag;
     }
 
-    // // temp for being compatible with existing type inference
-    // public setReturnType(returnType: Type): void {
-    //     this.returnType = returnType;
-    // }
-    //
-    // // temp for being compatible with existing type inference
-    // public setStaticFlag(flag: boolean): void {
-    //     this.staticFlag = flag;
-    // }
-
     public toString(): string {
         let paraStr = "";
         this.getParameterTypes().forEach((parameterType) => {
