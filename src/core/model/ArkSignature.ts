@@ -41,7 +41,7 @@ export class FileSignature {
 
     constructor(projectName: string, fileName: string) {
         this.projectName = projectName;
-        this.fileName = fileName;
+        this.fileName = transfer2UnixPath(fileName);
     }
 
     public getProjectName() {
@@ -53,9 +53,7 @@ export class FileSignature {
     }
 
     public toString(): string {
-        let tmpSig = transfer2UnixPath(this.fileName);
-        tmpSig = '@' + this.projectName + '/' + tmpSig + ': ';
-        return tmpSig;
+        return `@${this.projectName}/${this.fileName}: `;
     }
 }
 
