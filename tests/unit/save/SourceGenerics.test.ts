@@ -21,7 +21,7 @@ const CASE1_EXPECT = `function identity<T>(arg: T): T {
   return arg;
 }
 let myIdentity: (arg: T) => T  = identity;
-let output: string = identity('myString');
+let output: string = identity<string>('myString');
 class GenericNumber<T> {
   zeroValue: T;
   add: (x: T, y: T) => T ;
@@ -41,7 +41,7 @@ declare interface BreakPointTypeOption<T> {
   lg?: T;
 }
 export class BreakpointType<T> {
-  options: BreakPointTypeOption;
+  options: BreakPointTypeOption<T>;
   constructor(option: BreakPointTypeOption<T>) {
     this.options = option;
   }
