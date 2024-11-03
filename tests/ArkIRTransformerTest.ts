@@ -93,7 +93,6 @@ class ArkIRTransformerTest {
         const scene = new Scene();
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
-        scene.collectProjectImportInfos();
         this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');

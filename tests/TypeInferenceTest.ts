@@ -31,7 +31,6 @@ export class TypeInferenceTest {
         const scene = new Scene();
         scene.buildBasicInfo(config);
         scene.buildScene4HarmonyProject();
-        scene.collectProjectImportInfos();
         const creater = new DummyMainCreater(scene);
         creater.createDummyMain();
         const dummyMain = creater.getDummyMain();

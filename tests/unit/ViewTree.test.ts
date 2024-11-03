@@ -387,7 +387,6 @@ describe('project Test', () => {
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     scene.buildScene4HarmonyProject();
-    scene.collectProjectImportInfos();
     scene.inferTypes();
 
     it('test alias', async () => {

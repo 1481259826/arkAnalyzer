@@ -24,7 +24,6 @@ function runScene4Json(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject();
-    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 }
 runScene4Json(config);

@@ -23,7 +23,6 @@ let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../../../resources/model/method"))
 let projectScene: Scene = new Scene();
 projectScene.buildSceneFromProjectDir(config);
-projectScene.collectProjectImportInfos();
 projectScene.inferTypes();
 
 let arkFile = projectScene.getFiles().find((file) => file.getName() == 'method.ts');

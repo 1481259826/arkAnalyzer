@@ -39,7 +39,6 @@ function runScene(config: SceneConfig, output: string) {
     // projectScene.buildSceneFromProjectDir(config);
     projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject();
-    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
     let classSigs: ClassSignature[] = [];

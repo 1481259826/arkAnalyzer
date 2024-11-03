@@ -50,7 +50,6 @@ function runScene(config: SceneConfig, output: string) {
     // projectScene.buildSceneFromProjectDir(config);
     projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject()
-    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
     // let values = projectScene.getFiles().filter(file => file.getName() === 'entry/src/main/ets/entryability/EntryAbility.ets')

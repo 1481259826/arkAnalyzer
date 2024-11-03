@@ -51,7 +51,6 @@ function getScene4Json(config: SceneConfig) : Scene {
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     scene.buildScene4HarmonyProject();
-    scene.collectProjectImportInfos();
     scene.inferTypes();
 
     return scene;

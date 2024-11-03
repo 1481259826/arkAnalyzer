@@ -27,7 +27,6 @@ const scene = new Scene();
 scene.buildBasicInfo(config);
 scene.buildScene4HarmonyProject();
 // scene.buildSceneFromProjectDir(config);
-scene.collectProjectImportInfos();
 scene.inferTypes()
 const creater = new DummyMainCreater(scene);
 creater.createDummyMain();

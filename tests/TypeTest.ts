@@ -24,7 +24,6 @@ export class TypeInferenceTest {
         const scene = new Scene();
         scene.buildBasicInfo(config);
         scene.buildSceneFromProjectDir(config);
-        scene.collectProjectImportInfos();
         return scene
     }
 
