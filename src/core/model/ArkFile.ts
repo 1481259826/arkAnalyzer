@@ -168,7 +168,7 @@ export class ArkFile {
     public addNamespace(namespace: ArkNamespace) {
         this.namespaces.set(namespace.getName(), namespace);
     }
-
+    
     /**
      * Returns an **array** of import information. 
      * The import information includes: clause's name, type, modifiers, location where it is imported from, etc.
@@ -184,6 +184,22 @@ export class ArkFile {
 
     public addImportInfo(importInfo: ImportInfo) {
         this.importInfoMap.set(importInfo.getImportClauseName(), importInfo);
+    }
+
+    public removeImportInfo(importInfo: ImportInfo): boolean {
+        return this.importInfoMap.delete(importInfo.getImportClauseName());
+    }
+
+    public removeNamespace(namespace: ArkNamespace): boolean {
+        let rtn = this.namespaces.delete(namespace.getName());
+        rtn &&= this.getScene().removeNamespace(namespace);
+        return rtn;
+    }
+
+    public removeArkClass(arkClass: ArkClass): boolean {
+        let rtn = this.classes.delete(arkClass.getName());
+        rtn &&= this.getScene().removeClass(arkClass);
+        return rtn;
     }
 
     public getExportInfos(): ExportInfo[] {

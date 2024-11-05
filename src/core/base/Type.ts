@@ -16,7 +16,7 @@
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { LineColPosition } from './Position';
-import { ModifierType } from '../model/ArkBaseModel';
+import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 
 /**
  * @category core/base/type
@@ -402,6 +402,7 @@ export class AliasType extends Type implements ArkExport {
     private originalType: Type;
     private name: string;
     private signature: LocalSignature;
+    protected modifiers?: number;
 
     constructor(name: string, originalType: Type, signature: LocalSignature) {
         super();
@@ -431,11 +432,35 @@ export class AliasType extends Type implements ArkExport {
     }
 
     public getModifiers(): number {
-        return 0;
+        if (!this.modifiers) {
+            return 0;
+        }
+        return this.modifiers;
     }
 
     public containsModifier(modifierType: ModifierType): boolean {
-        return false;
+        if (!this.modifiers) {
+            return false;
+        }
+
+        return (this.modifiers & modifierType) === modifierType;
+    }
+
+    public setModifiers(modifiers: number): void {
+        if (modifiers !== 0) {
+            this.modifiers = modifiers;
+        }
+    }
+
+    public addModifier(modifier: ModifierType | number): void {
+        this.modifiers = this.getModifiers() | modifier;
+    }
+
+    public removeModifier(modifier: ModifierType): void {
+        if (!this.modifiers) {
+            return;
+        }
+        this.modifiers &= MODIFIER_TYPE_MASK ^ modifier;
     }
 
     public getSignature(): LocalSignature {

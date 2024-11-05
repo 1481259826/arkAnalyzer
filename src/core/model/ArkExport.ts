@@ -18,6 +18,7 @@ import { ArkFile } from './ArkFile';
 import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
 import { DEFAULT } from "../common/TSConst";
 import { ArkBaseModel, ModifierType } from './ArkBaseModel';
+import { ArkError } from '../common/ArkError';
 
 
 export type ExportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
@@ -180,4 +181,7 @@ export class ExportInfo extends ArkBaseModel implements FromInfo {
         }
     };
 
+    public validate(): ArkError {
+        return this.validateFields(['declaringArkFile']);
+    }
 }

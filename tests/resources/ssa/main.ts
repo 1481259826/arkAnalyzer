@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-function test() {
-    let i = 1;
-    if (i < 2) {
-        i = 3;
+function ssa(): number {
+    let v = 3;
+    let a;
+    if (v > 0) {
+        a = 10;
     } else {
-        i = 4;
+        a = -10;
     }
-    let j = i;
+    return a;
 }

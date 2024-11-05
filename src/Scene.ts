@@ -512,6 +512,22 @@ export class Scene {
         this.methodsMap.set(method.getSignature().toMapKey(), method);
     }
 
+    public removeMethod(method: ArkMethod): boolean {
+        return this.methodsMap.delete(method.getSignature().toMapKey());
+    }
+
+    public removeClass(arkClass: ArkClass): boolean {
+        return this.classesMap.delete(arkClass.getSignature().toMapKey());
+    }
+
+    public removeNamespace(namespace: ArkNamespace): boolean {
+        return this.namespacesMap.delete(namespace.getSignature().toMapKey());
+    }
+
+    public removeFile(file: ArkFile): boolean {
+        return this.filesMap.delete(file.getFileSignature().toMapKey());
+    }
+
     public hasMainMethod(): boolean {
         return false;
     }

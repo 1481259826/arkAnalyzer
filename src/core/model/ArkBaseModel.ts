@@ -16,6 +16,9 @@
 import ts from 'ohos-typescript';
 import { Decorator } from '../base/Decorator';
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR, BUILDER_PARAM_DECORATOR, BUILDER_DECORATOR } from '../common/EtsConst';
+import { ArkError, ArkErrorCode } from '../common/ArkError';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkBaseModel');
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
     'State',
@@ -53,7 +56,7 @@ export enum ModifierType {
     DECLARE = 1 << 14,
 }
 
-const MODIFIER_TYPE_MASK = 0xFFFF;
+export const MODIFIER_TYPE_MASK = 0xffff;
 
 const MODIFIER_TYPE_STRINGS = [
     'private',
@@ -243,4 +246,21 @@ export abstract class ArkBaseModel {
             }).length !== 0
         );
     }
+
+    protected validateFields(fields: string[]): ArkError {
+        let errs: string[] = [];
+        for (const field of fields) {
+            let value = Reflect.get(this, field);
+            if (!value) {
+                errs.push(field);
+            }
+        }
+        if (errs.length === 0) {
+            return { errCode: ArkErrorCode.OK };
+        }
+        logger.error(`class fields: ${errs.join(',')} is undefined.`);
+        return { errCode: ArkErrorCode.CLASS_INSTANCE_FIELD_UNDEFINDED, errMsg: `${errs.join(',')} is undefined.` };
+    }
+
+    public abstract validate(): ArkError;
 }

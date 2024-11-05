@@ -27,6 +27,7 @@ import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
+import { ArkError } from '../common/ArkError';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -352,5 +353,9 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     public setAsteriskToken(asteriskToken: boolean) {
         this.asteriskToken = asteriskToken;
+    }
+
+    public validate(): ArkError {
+        return this.validateFields(['declaringArkClass', 'methodSignature']);
     }
 }
