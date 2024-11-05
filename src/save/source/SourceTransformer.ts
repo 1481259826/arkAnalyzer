@@ -71,6 +71,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer'
 
 export interface TransformerContext {
     getArkFile(): ArkFile;
+
     getDeclaringArkNamespace(): ArkNamespace | undefined;
 
     getMethod(signature: MethodSignature): ArkMethod | null;
@@ -381,6 +382,10 @@ export class SourceTransformer {
                     return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
                 }
                 return 'Object';
+            }
+            let genericTypes = type.getRealGenericTypes();
+            if (genericTypes && genericTypes.length > 0) {
+                return `${name}<${genericTypes.join(', ')}>`;
             }
             return name;
         }
