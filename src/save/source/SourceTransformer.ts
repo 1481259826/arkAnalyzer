@@ -111,12 +111,13 @@ export class SourceTransformer {
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
         });
+        let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
 
         if (SourceUtils.isComponentAttributeInvoke(invokeExpr) && this.context.isInBuilderMethod()) {
-            return `.${methodName}(${args.join(', ')})`;
+            return `.${methodName}${genericCode}(${args.join(', ')})`;
         }
 
-        return `${this.valueToString(invokeExpr.getBase())}.${methodName}(${args.join(', ')})`;
+        return `${this.valueToString(invokeExpr.getBase())}.${methodName}${genericCode}(${args.join(', ')})`;
     }
 
     public staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr): string {
@@ -133,6 +134,8 @@ export class SourceTransformer {
         invokeExpr.getArgs().forEach((v) => {
             args.push(this.valueToString(v));
         });
+
+        let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
 
         if (this.context.isInBuilderMethod()) {
             if (className === COMPONENT_CUSTOMVIEW) {
@@ -152,7 +155,7 @@ export class SourceTransformer {
                 if (className === COMPONENT_IF) {
                     return `if (${args.join(', ')})`;
                 }
-                return `${className}(${args.join(', ')})`;
+                return `${className}${genericCode}(${args.join(', ')})`;
             }
 
             if (SourceUtils.isComponentIfBranchInvoke(invokeExpr)) {
@@ -170,9 +173,21 @@ export class SourceTransformer {
         }
 
         if (className && className.length > 0) {
-            return `${className}.${methodName}(${args.join(', ')})`;
+            return `${className}.${methodName}${genericCode}(${args.join(', ')})`;
         }
-        return `${methodName}(${args.join(', ')})`;
+        return `${methodName}${genericCode}(${args.join(', ')})`;
+    }
+    
+    private genericTypesToString(types: Type[] | undefined): string {
+        if (!types) {
+            return '';
+        }
+
+        let code = this.typeArrayToString(types);
+        if (code.length > 0) {
+            return `<${code}>`;
+        }
+        return '';
     }
 
     public typeArrayToString(types: Type[], split: string = ', '): string {
