@@ -131,7 +131,7 @@ export class StaticSingleAssignmentFormer {
             }
 
             for (const phi of phis) {
-                cfg.insertBefore(block.getHead() as Stmt, phi);
+                cfg.insertBefore(phi, block.getHead() as Stmt);
             }
         }
     }

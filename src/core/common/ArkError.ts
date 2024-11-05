@@ -13,10 +13,16 @@
  * limitations under the License.
  */
 
-export type Location = {
-    x: number;
-    y: number;
-};
+export enum ArkErrorCode {
+    OK = 0,
+    CLASS_INSTANCE_FIELD_UNDEFINDED = -1,
+    BB_MORE_THAN_ONE_BRANCH_RET_STMT = -2,
+    BB_BRANCH_RET_STMT_NOT_AT_END = -3,
+    CFG_NOT_FOUND_START_BLOCK = -4,
+    CFG_HAS_UNREACHABLE_BLOCK = -5,
+}
 
-type FileNotFound = 404;
-export type TextInput = string;
+export interface ArkError {
+    errCode: ArkErrorCode;
+    errMsg?: string;
+}

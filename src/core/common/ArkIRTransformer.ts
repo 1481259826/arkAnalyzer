@@ -107,6 +107,7 @@ import { FullPosition, LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
+import { buildModifiers } from '../model/builder/builderUtils';
 import { TEMP_LOCAL_PREFIX } from './Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
@@ -291,6 +292,8 @@ export class ArkIRTransformer {
         const originalType = this.resolveTypeNode(typeAliasDeclaration.type);
         const aliasType = new AliasType(aliasName, originalType,
             new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        const modifiers = typeAliasDeclaration.modifiers ? buildModifiers(typeAliasDeclaration) : 0;
+        aliasType.setModifiers(modifiers);
         const sourceCode = typeAliasDeclaration.getText(this.sourceFile);
         const aliasTypePosition = LineColPosition.buildFromNode(typeAliasDeclaration, this.sourceFile);
         const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition)

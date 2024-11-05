@@ -13,7 +13,10 @@
  * limitations under the License.
  */
 
-import { Stmt } from '../base/Stmt';
+import { ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, Stmt } from '../base/Stmt';
+import { ArkError, ArkErrorCode } from '../common/ArkError';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
 
 /**
  * @category core/graph
@@ -29,8 +32,7 @@ export class BasicBlock {
     private predecessorBlocks: BasicBlock[] = [];
     private successorBlocks: BasicBlock[] = [];
 
-    constructor() {
-    }
+    constructor() {}
 
     public getId(): number {
         return this.id;
@@ -50,6 +52,85 @@ export class BasicBlock {
 
     public addStmt(stmt: Stmt): void {
         this.stmts.push(stmt);
+    }
+
+    /**
+     * Adds the given stmt at the beginning of the basic block.
+     * @param stmt
+     */
+    public addHead(stmt: Stmt | Stmt[]): void {
+        if (stmt instanceof Stmt) {
+            this.stmts.unshift(stmt);
+        } else {
+            this.stmts.unshift(...stmt);
+        }
+    }
+
+    /**
+     * Adds the given stmt at the end of the basic block.
+     * @param stmt
+     */
+    public addTail(stmt: Stmt | Stmt[]): void {
+        if (stmt instanceof Stmt) {
+            this.stmts.push(stmt);
+        } else {
+            this.stmts.push(...stmt);
+        }
+    }
+
+    /**
+     * Inserts toInsert in the basic block after point.
+     * @param toInsert
+     * @param point
+     * @returns The number of successfully inserted statements
+     */
+    public insertAfter(toInsert: Stmt | Stmt[], point: Stmt): number {
+        let index = this.stmts.indexOf(point);
+        if (index < 0) {
+            return 0;
+        }
+        return this.insertPos(index + 1, toInsert);
+    }
+
+    /**
+     * Inserts toInsert in the basic block befor point.
+     * @param toInsert
+     * @param point
+     * @returns The number of successfully inserted statements
+     */
+    public insertBefore(toInsert: Stmt | Stmt[], point: Stmt): number {
+        let index = this.stmts.indexOf(point);
+        if (index < 0) {
+            return 0;
+        }
+        return this.insertPos(index, toInsert);
+    }
+
+    /**
+     * Removes the given stmt from this basic block.
+     * @param stmt
+     * @returns
+     */
+    public remove(stmt: Stmt): void {
+        let index = this.stmts.indexOf(stmt);
+        if (index < 0) {
+            return;
+        }
+        this.stmts.splice(index, 1);
+    }
+
+    /**
+     * Removes the first stmt from this basic block.
+     */
+    public removeHead(): void {
+        this.stmts.splice(0, 1);
+    }
+
+    /**
+     * Removes the last stmt from this basic block.
+     */
+    public removeTail(): void {
+        this.stmts.splice(this.stmts.length - 1, 1);
     }
 
     public getHead(): Stmt | null {
@@ -119,7 +200,7 @@ export class BasicBlock {
 
     // Temp just for SSA
     public addStmtToFirst(stmt: Stmt) {
-        this.stmts.splice(0, 0, stmt);
+        this.addHead(stmt);
     }
 
     // Temp just for SSA
@@ -133,5 +214,42 @@ export class BasicBlock {
             strs.push(stmt.toString() + '\n');
         }
         return strs.join('');
+    }
+
+    public validate(): ArkError {
+        let branchStmts: Stmt[] = [];
+        for (const stmt of this.stmts) {
+            if (
+                stmt instanceof ArkIfStmt ||
+                stmt instanceof ArkReturnStmt ||
+                stmt instanceof ArkReturnVoidStmt ||
+                stmt instanceof ArkSwitchStmt
+            ) {
+                branchStmts.push(stmt);
+            }
+        }
+
+        if (branchStmts.length > 1) {
+            let errMsg = `More than one branch or return stmts in the block: ${branchStmts.map((value) => value.toString()).join('\n')}`;
+            logger.error(errMsg);
+            return {errCode: ArkErrorCode.BB_MORE_THAN_ONE_BRANCH_RET_STMT, errMsg: errMsg };
+        }
+
+        if (branchStmts.length === 1 && branchStmts[0] !== this.stmts[this.stmts.length - 1]) {
+            let errMsg = `${branchStmts[0].toString()} not at the end of block.`;
+            logger.error(errMsg);
+            return {errCode: ArkErrorCode.BB_BRANCH_RET_STMT_NOT_AT_END, errMsg: errMsg};
+        }
+
+        return {errCode: ArkErrorCode.OK};
+    }
+
+    private insertPos(index: number, toInsert: Stmt | Stmt[]): number {
+        if (toInsert instanceof Stmt) {
+            this.stmts.splice(index, 0, toInsert);
+            return 1;
+        }
+        this.stmts.splice(index, 0, ...toInsert);
+        return toInsert.length;
     }
 }

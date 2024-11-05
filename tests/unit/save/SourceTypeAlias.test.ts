@@ -17,9 +17,9 @@ import { Scene, SceneConfig, SourceFilePrinter } from '../../../src/index';
 import { describe, expect, it } from 'vitest';
 import path from 'path';
 
-const SourceTypeAliasTest_CASE1_EXPECT = `type Location = {x: number, y: number};
+const SourceTypeAliasTest_CASE1_EXPECT = `export type Location = {x: number, y: number};
 type FileNotFound = 404;
-type TextInput = string;
+export type TextInput = string;
 `;
 
 

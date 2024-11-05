@@ -47,6 +47,7 @@ import {
 } from './SourceUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
 import { ClassCategory } from '../../core/model/ArkClass';
+import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
@@ -845,7 +846,12 @@ export class SourceTypeAliasStmt extends SourceStmt {
     }
 
     public transfer2ts(): void {
-        this.setText(`type ${this.aliasType.getName()} = ${this.transformer.typeToString(this.aliasType.getOriginalType())};`);
+        let modifier = '';
+        let modifiersArray: string[] = modifiers2stringArray(this.aliasType.getModifiers());
+        if (modifiersArray.length > 0) {
+            modifier = `${modifiersArray.join(' ')} `;
+        }
+        this.setText(`${modifier}type ${this.aliasType.getName()} = ${this.transformer.typeToString(this.aliasType.getOriginalType())};`);
     }
 }
 

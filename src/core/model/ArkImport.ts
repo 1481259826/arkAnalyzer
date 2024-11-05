@@ -18,6 +18,7 @@ import { LineColPosition } from '../base/Position';
 import { ExportInfo, FromInfo } from './ArkExport';
 import { findExportInfo } from "../common/ModelUtils";
 import { ArkBaseModel } from './ArkBaseModel';
+import { ArkError } from '../common/ArkError';
 
 /**
  * @category core/model
@@ -125,5 +126,9 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
             return true;
         }
         return this.importType === 'Identifier';
+    }
+
+    public validate(): ArkError {
+        return this.validateFields(['declaringArkFile']);
     }
 }

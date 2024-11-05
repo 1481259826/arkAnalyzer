@@ -19,6 +19,7 @@ import { ArkClass } from './ArkClass';
 import { FieldSignature } from './ArkSignature';
 import { Type } from '../base/Type';
 import { ArkBaseModel } from './ArkBaseModel';
+import { ArkError } from '../common/ArkError';
 
 
 export enum FieldCategory {
@@ -134,5 +135,9 @@ export class ArkField extends ArkBaseModel {
      */
     public getOriginPosition(): LineColPosition {
         return this.originPosition ?? LineColPosition.DEFAULT;
+    }
+
+    public validate(): ArkError {
+        return this.validateFields(['category', 'declaringClass', 'fieldSignature']);
     }
 }

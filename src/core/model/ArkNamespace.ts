@@ -21,6 +21,7 @@ import { ClassSignature, NamespaceSignature } from './ArkSignature';
 import { ALL } from "../common/TSConst";
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
+import { ArkError } from '../common/ArkError';
 
 /**
  * @category core/model
@@ -209,6 +210,22 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
 
     getExportType(): ExportType {
         return ExportType.NAME_SPACE;
+    }
+
+    public removeArkClass(arkClass: ArkClass): boolean {
+        let rtn = this.classes.delete(arkClass.getName());
+        rtn &&= this.getDeclaringArkFile().getScene().removeClass(arkClass);
+        return rtn;
+    }
+
+    public removeNamespace(namespace: ArkNamespace): boolean {
+        let rtn = this.namespaces.delete(namespace.getName());
+        rtn &&= this.getDeclaringArkFile().getScene().removeNamespace(namespace);
+        return rtn;
+    }
+
+    public validate(): ArkError {
+        return this.validateFields(['declaringArkFile', 'declaringInstance', 'namespaceSignature', 'defaultClass']);
     }
 }
 

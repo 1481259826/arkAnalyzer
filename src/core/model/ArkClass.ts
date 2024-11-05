@@ -26,6 +26,7 @@ import { TypeInference } from '../common/TypeInference';
 import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
+import { ArkError } from '../common/ArkError';
 
 export enum ClassCategory {
     CLASS = 0,
@@ -440,5 +441,27 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     public setStaticInitMethod(arkMethod: ArkMethod): void {
         this.staticInitMethod = arkMethod;
+    }
+
+    public removeField(field: ArkField): boolean {
+        if (field.isStatic()) {
+            return this.staticFields.delete(field.getName());
+        } 
+        return this.fields.delete(field.getName());
+    }
+
+    public removeMethod(method: ArkMethod): boolean {
+        let rtn: boolean = false;
+        if (method.isStatic()) {
+            rtn = this.staticMethods.delete(method.getName());
+        } else {
+            rtn = this.methods.delete(method.getName());
+        }
+        rtn &&= this.getDeclaringArkFile().getScene().removeMethod(method);
+        return rtn;
+    }
+
+    public validate(): ArkError {
+        return this.validateFields(['declaringArkFile', 'category', 'classSignature']);
     }
 }
