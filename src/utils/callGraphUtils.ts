@@ -95,19 +95,17 @@ export class SceneManager {
         let targetMethod = this._scene.getMethod(method);
         if (targetMethod == null) {
             // 支持SDK调用解析
-            let sdkMap = this.scene.getSdkArkFilesMap()
-            for (let file of sdkMap.values()) {
-                if (file.getFileSignature().toString() === method.getDeclaringClassSignature().getDeclaringFileSignature().toString()) {
-                    const methods = ModelUtils.getAllMethodsInFile(file);
-                    for (let methodUnderFile of methods) {
-                        if (method.toString() === methodUnderFile.getSignature().toString()) {
-                            return methodUnderFile;
-                        }
+            let file = this._scene.getFile(method.getDeclaringClassSignature().getDeclaringFileSignature());
+            if (file) {
+                const methods = ModelUtils.getAllMethodsInFile(file);
+                for (let methodUnderFile of methods) {
+                    if (method.toString() === methodUnderFile.getSignature().toString()) {
+                        return methodUnderFile;
                     }
                 }
             }
         }
-        return targetMethod
+        return targetMethod;
     }
 
     public getClass(arkClass: ClassSignature): ArkClass | null {
@@ -115,8 +113,7 @@ export class SceneManager {
             return null
         let classInstance = this._scene.getClass(arkClass)
         if (classInstance == null) {
-            let sdkOrTargetProjectFile = this._scene.getSdkArkFilesMap()
-                .get(arkClass.getDeclaringFileSignature().toString())
+            let sdkOrTargetProjectFile = this._scene.getFile(arkClass.getDeclaringFileSignature());
             // TODO: support get sdk class, targetProject class waiting to be supported
             if (sdkOrTargetProjectFile != null) {
                 for (let classUnderFile of ModelUtils.getAllClassesInFile(sdkOrTargetProjectFile)) {

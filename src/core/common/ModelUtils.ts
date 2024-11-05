@@ -25,7 +25,6 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FileUtils, ModulePath } from '../../utils/FileUtils';
 import path from 'path';
 import { Sdk } from '../../Config';
-import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ALL, DEFAULT, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
 import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
@@ -405,7 +404,7 @@ export class ModelUtils {
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
 let moduleMap: Map<string, ModulePath> | undefined;
-const fileSuffixArray = ['.ets: ', '.ts: ', '.d.ets: ', '.d.ts: '];
+const fileSuffixArray = ['.ets', '.ts', '.d.ets', '.d.ts'];
 
 /**
  * find arkFile by from info
@@ -433,7 +432,7 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
     //sdk path
     const scene = im.getDeclaringArkFile().getScene();
     for (const sdk of scene.getProjectSdkMap().values()) {
-        const arkFile = getArkFileFormMap(processSdkPath(sdk, from), scene.getSdkArkFilesMap());
+        const arkFile = getArkFileFormMap(sdk.name, processSdkPath(sdk, from), scene);
         if (arkFile) {
             return arkFile;
         }
@@ -514,7 +513,6 @@ export function findArkExportInFile(name: string, declaringArkFile: ArkFile): Ar
 }
 
 function processSdkPath(sdk: Sdk, formPath: string): string {
-    const sdkName = sdk.name;
     let dir;
     if (formPath.startsWith('@ohos.') || formPath.startsWith('@hms.') || formPath.startsWith('@system.')) {
         dir = 'api';
@@ -527,9 +525,9 @@ function processSdkPath(sdk: Sdk, formPath: string): string {
         if (FileUtils.isDirectory(originPath)) {
             formPath = path.join(formPath, FileUtils.getIndexFileName(originPath));
         }
-        return `@${sdkName}/${formPath}`;
+        return `${formPath}`;
     }
-    return `@${sdkName}/${dir}/${formPath}`;
+    return `${dir}/${formPath}`;
 }
 
 function getArkFileFromScene(im: FromInfo, originPath: string) {
@@ -543,23 +541,20 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
         return scene.getFile(fromSignature);
     }
     const projectName = im.getDeclaringArkFile().getProjectName();
-    const filePath = `@${projectName}/${fileName}`;
-    if (projectName !== scene.getProjectName()) {
-        return getArkFileFormMap(filePath, scene.getSdkArkFilesMap());
-    }
-    return getArkFileFormMap(filePath, scene.getFilesMap());
+    return getArkFileFormMap(projectName, fileName, scene);
 }
 
-function getArkFileFormMap(filePath: string, map: Map<string, ArkFile>) {
+function getArkFileFormMap(projectName: string, filePath: string, scene: Scene): ArkFile | null {
     if (/\.e?ts$/.test(filePath)) {
-        return map.get(transfer2UnixPath(filePath) + ': ');
+        return scene.getFile(new FileSignature(projectName, filePath));
     }
     for (const suffix of fileSuffixArray) {
-        const arkFile = map.get(transfer2UnixPath(filePath) + suffix);
+        const arkFile = scene.getFile(new FileSignature(projectName, filePath + suffix));
         if (arkFile) {
             return arkFile;
         }
     }
+    return null;
 }
 
 

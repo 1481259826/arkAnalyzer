@@ -19,6 +19,7 @@ import { ArkClass } from "../model/ArkClass";
 import { ArkMethod } from "../model/ArkMethod";
 import { ArkNamespace } from "../model/ArkNamespace";
 import { Scene } from "../../Scene";
+import { FileSignature } from '../model/ArkSignature';
 import { Local } from "../base/Local";
 import { AbstractRef, ArkStaticFieldRef, ArkInstanceFieldRef } from "../base/Ref";
 
@@ -37,7 +38,7 @@ export const INTERNAL_SINK_METHOD: string[] = [
 
 const filenamePrefix = '@etsSdk/api/'
 
-export function Json2ArkMethod(str: string, scene: Scene): ArkMethod | null {
+export function Json2ArkMethod(sdkName:string, str: string, scene: Scene): ArkMethod | null {
     const mes = str.split(': ');
     const fileName = filenamePrefix + mes[0] + ': ';
     const otherMes = mes.slice(1).join(': ').split('.');
@@ -55,7 +56,7 @@ export function Json2ArkMethod(str: string, scene: Scene): ArkMethod | null {
         paramNames = otherMes[2].match(/\((.*?)\)/)![1].split(',').map((item: string) => item.replace(/\s/g, '')).filter((item: string) => item !== '');
     }
     
-    const file = scene.getSdkArkFilesMap().get(fileName);
+    const file = scene.getFile(new FileSignature(sdkName, fileName));
     if (!file) {
         return null;
     }

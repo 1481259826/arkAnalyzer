@@ -89,7 +89,7 @@ export class DummyMainCreater {
     }
 
     private buildBuiltInClass() {
-        for (const sdkFile of this.scene.getSdkArkFilesMap().values()) {
+        for (const sdkFile of this.scene.getSdkArkFiles()) {
             if (sdkFile.getName() === 'api\\@ohos.app.ability.Want.d.ts') {
                 const arkClass = sdkFile.getClassWithName('Want')!;
                 this.builtInClass.set('Want', arkClass);
@@ -106,7 +106,7 @@ export class DummyMainCreater {
         dummyMainFile.setScene(this.scene);
         const dummyMainFileSignature = new FileSignature(this.scene.getProjectName(), '@dummyFile')
         dummyMainFile.setFileSignature(dummyMainFileSignature)
-        this.scene.getFilesMap().set(dummyMainFile.getFileSignature().toString(), dummyMainFile);
+        this.scene.setFile(dummyMainFile);
         const dummyMainClass = new ArkClass();
         dummyMainClass.setDeclaringArkFile(dummyMainFile);
         const dummyMainClassSignature = new ClassSignature('@dummyClass',
