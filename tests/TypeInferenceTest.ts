@@ -18,6 +18,7 @@ import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
 import Logger, { LOG_LEVEL, LOG_MODULE_TYPE} from '../src/utils/logger';
 import { DummyMainCreater } from '../src/core/common/DummyMainCreater';
+import { DEFAULT_ARK_METHOD_NAME } from '../src';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'TypeInferenceTest');
 Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN, LOG_LEVEL.WARN);
@@ -67,7 +68,7 @@ export class TypeInferenceTest {
             logger.error('=============== arkFile:', arkFile.getName(), ' ================');
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
-                    if (arkMethod.getName() == '_DEFAULT_ARK_METHOD') {
+                    if (arkMethod.getName() == DEFAULT_ARK_METHOD_NAME) {
                         continue;
                     }
 

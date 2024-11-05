@@ -13,22 +13,31 @@
  * limitations under the License.
  */
 
+// names
+export const NAME_DELIMITER = '$';
+export const NAME_PREFIX = '%';
+export const UNKNOWN_NAME = 'unk';
+export const DEFAULT_NAME = 'dflt';
+
 // ArkClass const
-export const DEFAULT_ARK_CLASS_NAME = '_DEFAULT_ARK_CLASS';
-export const DEFAULT_ARK_METHOD_NAME = '_DEFAULT_ARK_METHOD';
-export const ANONYMOUS_CLASS_PREFIX = 'AnonymousClass';
-export const ANONYMOUS_CLASS_DELIMITER = '-';
+export const DEFAULT_ARK_CLASS_NAME = NAME_PREFIX + DEFAULT_NAME;
+export const DEFAULT_ARK_METHOD_NAME = NAME_PREFIX + DEFAULT_NAME;
+export const ANONYMOUS_CLASS_PREFIX = NAME_PREFIX + 'AC';
+export const ANONYMOUS_CLASS_DELIMITER = NAME_DELIMITER;
 
 // ArkMethod const
-export const INSTANCE_INIT_METHOD_NAME = '@instance_init';
-export const STATIC_INIT_METHOD_NAME = '@static_init';
-export const ANONYMOUS_METHOD_PREFIX = 'AnonymousMethod-';
+export const INSTANCE_INIT_METHOD_NAME = NAME_PREFIX + 'instInit';
+export const STATIC_INIT_METHOD_NAME = NAME_PREFIX + 'statInit';
+export const ANONYMOUS_METHOD_PREFIX = NAME_PREFIX + 'AM';
 export const CALL_SIGNATURE_NAME = 'create';
 
 // ArkSignature const
-export const UNKNOWN_PROJECT_NAME = '_UnknownProjectName';
-export const UNKNOWN_FILE_NAME = '_UnknownFileName';
-export const UNKNOWN_NAMESPACE_NAME = '_UnknownNamespaceName';
+export const UNKNOWN_PROJECT_NAME = NAME_PREFIX + UNKNOWN_NAME;
+export const UNKNOWN_FILE_NAME = NAME_PREFIX + UNKNOWN_NAME;
+export const UNKNOWN_NAMESPACE_NAME = NAME_PREFIX + UNKNOWN_NAME;
 export const UNKNOWN_CLASS_NAME = ''; // temp for being compatible with existing type inference
 export const UNKNOWN_FIELD_NAME = ''; // temp for being compatible with existing type inference
 export const UNKNOWN_METHOD_NAME = ''; // temp for being compatible with existing type inference
+
+// IR const
+export const TEMP_LOCAL_PREFIX = NAME_PREFIX;

@@ -39,7 +39,7 @@ import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
-import { CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
+import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { checkAndUpdateMethod } from './ArkClassBuilder';
 
@@ -128,14 +128,14 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
         if (node.name) {
             name = node.name.text;
         } else {
-            name = buildAnonymousMethodName(node, declaringClass, declaringMethod);
+            name = buildAnonymousMethodName(node, declaringClass);
         }
     } else if (ts.isFunctionTypeNode(node)) {
         if (node.name) {
             //TODO: check name type
             name = node.name.getText(sourceFile);
         } else {
-            name = buildAnonymousMethodName(node, declaringClass, declaringMethod);
+            name = buildAnonymousMethodName(node, declaringClass);
         }
     } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
         if (ts.isIdentifier(node.name)) {
@@ -164,18 +164,13 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     } else if (ts.isSetAccessor(node) && ts.isIdentifier(node.name)) {
         name = 'Set-' + node.name.text;
     } else if (ts.isArrowFunction(node)) {
-        name = buildAnonymousMethodName(node, declaringClass, declaringMethod);
+        name = buildAnonymousMethodName(node, declaringClass);
     }
     return name;
 }
 
-function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass, declaringMethod?: ArkMethod) {
-    let declaringMethodName = '';
-    if (declaringMethod) {
-        declaringMethodName = declaringMethod.getName() + '-';
-    }
-    const mtdName = 'AnonymousMethod-' + declaringMethodName + declaringClass.getAnonymousMethodNumber();
-    return mtdName;
+function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass) {
+    return `${ANONYMOUS_METHOD_PREFIX}${declaringClass.getAnonymousMethodNumber()}`;
 }
 
 export class ObjectBindingPatternParameter {

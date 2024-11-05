@@ -18,6 +18,7 @@ import { Scene } from "../src/Scene";
 import { MethodSignature } from "../src/core/model/ArkSignature";
 import { CallGraph } from '../src/callgraph/model/CallGraph';
 import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
+import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../src';
 
 let config: SceneConfig = new SceneConfig()
 // config.buildFromProjectDir('tests/resources/callgraph/test1')
@@ -37,7 +38,7 @@ function runScene(config: SceneConfig) {
         projectScene.getFiles()
             .filter(arkFile => arkFile.getName() === "main.ts")
             .flatMap(arkFile => arkFile.getClasses())
-            .filter(arkClass => arkClass.getName() === "_DEFAULT_ARK_CLASS")
+            .filter(arkClass => arkClass.getName() === DEFAULT_ARK_CLASS_NAME)
             .flatMap(arkClass => arkClass.getMethods())
             .filter(arkMethod => arkMethod.getName() === "main")
             .map(arkMethod => arkMethod.getSignature())

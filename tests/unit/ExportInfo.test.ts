@@ -45,9 +45,9 @@ describe("export Test", () => {
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
         if (stmts) {
-            assert.equal(stmts[10].toString(), 'staticinvoke <@exports/exportSample.ts: _DEFAULT_ARK_CLASS.write()>()');
-            assert.equal(stmts[2].toString(), '$temp0 = @exports/exportSample.ts: _DEFAULT_ARK_CLASS.[static]z');
-            assert.equal(stmts[9].toString(), '$temp2 = @exports/exportSample.ts: _DEFAULT_ARK_CLASS.[static]MyNameSpace');
+            assert.equal(stmts[10].toString(), 'staticinvoke <@exports/exportSample.ts: %dflt.write()>()');
+            assert.equal(stmts[2].toString(), '%0 = @exports/exportSample.ts: %dflt.[static]z');
+            assert.equal(stmts[9].toString(), '%2 = @exports/exportSample.ts: %dflt.[static]MyNameSpace');
         }
     })
 
@@ -74,7 +74,7 @@ describe("export Test", () => {
         if (stmts) {
             assert.equal(stmts[2].toString(), 'staticinvoke <@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.[static]setWebDebuggingAccess(boolean)>(false)');
             assert.equal(stmts[6].toString(), 'instanceinvoke controller.<@etsSdk/api/@ohos.web.webview.d.ts: webview.WebviewController.loadUrl(string|Resource, Array<WebHeader>)>(\'\')')
-            assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog._DEFAULT_ARK_CLASS.info(number, string, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
+            assert.equal(stmts[7].toString(), 'staticinvoke <@etsSdk/api/@ohos.hilog.d.ts: hilog.%dflt.info(number, string, string, any[])>(0, \'func\', \'%{public}\', \'Ability onCreate\')')
         }
     })
 

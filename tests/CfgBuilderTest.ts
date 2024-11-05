@@ -15,6 +15,7 @@
 
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
+import { DEFAULT_ARK_METHOD_NAME } from '../src';
 
 export class Test {
     public buildScene(): Scene {
@@ -31,7 +32,7 @@ export class Test {
         for (const arkFile of scene.getFiles()) {
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
-                    if (arkMethod.getName() == '_DEFAULT_ARK_METHOD') {
+                    if (arkMethod.getName() == DEFAULT_ARK_METHOD_NAME) {
                         continue;
                     }
                     console.log('*** arkMethod: ', arkMethod.getName());

@@ -17,6 +17,7 @@ import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { Value } from '../src/core/base/Value';
 import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
+import { DEFAULT_ARK_CLASS_NAME } from '../src';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'VisibleValueTest');
 const logPath = 'out/ArkAnalyzer.log';
@@ -40,7 +41,7 @@ export class VisibleValueTest {
             visibleValue.updateIntoScope(arkFile);
             this.printVisibleValues(visibleValue.getCurrVisibleValues());
             for (const arkClass of arkFile.getClasses()) {
-                if (arkClass.getName() == '_DEFAULT_ARK_CLASS') {
+                if (arkClass.getName() == DEFAULT_ARK_CLASS_NAME) {
                     continue;
                 }
 

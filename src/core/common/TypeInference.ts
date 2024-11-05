@@ -57,7 +57,7 @@ import { CONSTRUCTOR_NAME, SUPER_NAME } from './TSConst';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
-import { UNKNOWN_FILE_NAME } from './Const';
+import { INSTANCE_INIT_METHOD_NAME, UNKNOWN_FILE_NAME } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
@@ -73,7 +73,7 @@ export class TypeInference {
         if (stmts) {
             for (const stmt of stmts) {
                 this.resolveExprsInStmt(stmt, arkClass);
-                this.resolveFieldRefsInStmt(stmt, arkClass, arkClass.getMethodWithName('@instance_init'));
+                this.resolveFieldRefsInStmt(stmt, arkClass, arkClass.getMethodWithName(INSTANCE_INIT_METHOD_NAME));
                 this.resolveArkAssignStmt(stmt, arkClass);
             }
             const lastStmt = stmts[stmts.length - 1];
@@ -312,7 +312,7 @@ export class TypeInference {
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType) {
             return true;
         } else if (type instanceof ClassType
-            && type.getClassSignature().getDeclaringFileSignature().getFileName() === '_UnknownFileName') {
+            && type.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             return true;
         }
         return false;

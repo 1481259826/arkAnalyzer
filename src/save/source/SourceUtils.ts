@@ -32,10 +32,11 @@ import {
 } from '../../core/common/EtsConst';
 import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
+import { ANONYMOUS_CLASS_PREFIX, ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../../core/common/Const';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import ts from 'ohos-typescript';
+import { TEMP_LOCAL_PREFIX } from '../../core/common/Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceUtils');
 
@@ -61,7 +62,7 @@ export class SourceUtils {
     }
 
     public static isAnonymousMethod(name: string): boolean {
-        return name.startsWith('AnonymousMethod-');
+        return name.startsWith(ANONYMOUS_METHOD_PREFIX);
     }
 
     public static isConstructorMethod(name: string): boolean {
@@ -90,7 +91,7 @@ export class SourceUtils {
     }
 
     public static isTemp(name: string): boolean {
-        return name.startsWith('$temp');
+        return name.startsWith(TEMP_LOCAL_PREFIX);
     }
 
     public static getOriginType(cls: ArkClass): number {

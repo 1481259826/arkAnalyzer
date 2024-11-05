@@ -14,7 +14,7 @@
  */
 
 import { describe, it } from 'vitest';
-import { Scene, SceneConfig } from '../../src';
+import { DEFAULT_ARK_METHOD_NAME, Scene, SceneConfig } from '../../src';
 import path from 'path';
 import { StaticSingleAssignmentFormer } from '../../src/transformer/StaticSingleAssignmentFormer';
 import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../../src/utils/logger';
@@ -36,7 +36,7 @@ describe('StaticSingleAssignmentFormer Test', () => {
         for (const arkFile of projectScene.getFiles()) {
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
-                    if (arkMethod.getName() == '_DEFAULT_ARK_METHOD') {
+                    if (arkMethod.getName() == DEFAULT_ARK_METHOD_NAME) {
                         continue;
                     }
 

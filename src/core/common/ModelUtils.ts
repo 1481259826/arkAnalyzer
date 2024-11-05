@@ -25,12 +25,13 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FileUtils, ModulePath } from '../../utils/FileUtils';
 import path from 'path';
 import { Sdk } from '../../Config';
-import { ALL, DEFAULT, TEMP_LOCAL_PREFIX, THIS_NAME } from './TSConst';
+import { ALL, DEFAULT, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
 import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
 import { ClassType, UnclearReferenceType } from '../base/Type';
 import { Scene } from '../../Scene';
 import { checkAndUpdateMethod } from '../model/builder/ArkClassBuilder';
+import { DEFAULT_ARK_CLASS_NAME, TEMP_LOCAL_PREFIX } from './Const';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -196,7 +197,7 @@ export class ModelUtils {
 
         const thisNamespace = thisClass.getDeclaringArkNamespace();
         if (thisNamespace) {
-            const defaultClass = thisNamespace.getClassWithName('_DEFAULT_ARK_CLASS');
+            const defaultClass = thisNamespace.getClassWithName(DEFAULT_ARK_CLASS_NAME);
             if (defaultClass) {
                 const method = defaultClass.getMethodWithName(methodName);
                 if (method) {
@@ -208,7 +209,7 @@ export class ModelUtils {
     }
 
     public static getStaticMethodInFileWithName(methodName: string, arkFile: ArkFile): ArkMethod | null {
-        const defaultClass = arkFile.getClasses().find(cls => cls.getName() === '_DEFAULT_ARK_CLASS') || null;
+        const defaultClass = arkFile.getClasses().find(cls => cls.getName() === DEFAULT_ARK_CLASS_NAME) || null;
         if (defaultClass) {
             let method = defaultClass.getMethodWithName(methodName);
             if (method) {

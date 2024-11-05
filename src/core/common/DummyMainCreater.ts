@@ -47,7 +47,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：
-@static_init()
+%statInit()
 ...
 count = 0
 while (true) {

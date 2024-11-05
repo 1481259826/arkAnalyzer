@@ -15,7 +15,7 @@
 
 import path from 'path';
 import { describe, expect, it } from 'vitest';
-import { ArkFile, Scene, SceneConfig } from '../../../src/index';
+import { ArkFile, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, Scene, SceneConfig } from '../../../src/index';
 import { JsonPrinter } from '../../../src/save/JsonPrinter';
 
 describe('JsonPrinterTest', () => {
@@ -35,7 +35,7 @@ describe('JsonPrinterTest', () => {
     it('function simpleFunction', () => {
         let x = ir.classes
             .find((clazz: any) =>
-                clazz.signature.name === "_DEFAULT_ARK_CLASS"
+                clazz.signature.name === DEFAULT_ARK_CLASS_NAME
             )
             .methods
             .find((method: any) =>
@@ -47,7 +47,7 @@ describe('JsonPrinterTest', () => {
     it('function complexFunction', () => {
         let x = ir.classes
             .find((clazz: any) =>
-                clazz.signature.name === "_DEFAULT_ARK_CLASS"
+                clazz.signature.name === DEFAULT_ARK_CLASS_NAME
             )
             .methods
             .find((method: any) =>
@@ -67,7 +67,7 @@ describe('JsonPrinterTest', () => {
     it('default class', () => {
         let x = ir.classes
             .find((clazz: any) =>
-                clazz.signature.name === "_DEFAULT_ARK_CLASS"
+                clazz.signature.name === DEFAULT_ARK_CLASS_NAME
             );
         expect(x).toEqual(JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED);
     });
@@ -76,7 +76,7 @@ describe('JsonPrinterTest', () => {
 const JsonPrinter_simpleFunction_EXPECTED = {
     "signature": {
         "enclosingClass": {
-            "name": "_DEFAULT_ARK_CLASS"
+            "name": "%dflt"
         },
         "name": "simpleFunction",
         "parameters": [
@@ -108,7 +108,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                 "type": {
                     "_": "ClassType",
                     "signature": {
-                        "name": "_DEFAULT_ARK_CLASS"
+                        "name": "%dflt"
                     }
                 }
             },
@@ -155,13 +155,13 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                 }
             },
             {
-                "name": "$temp0",
+                "name": "%0",
                 "type": {
                     "_": "NumberType"
                 }
             },
             {
-                "name": "$temp1",
+                "name": "%1",
                 "type": {
                     "_": "NumberType"
                 }
@@ -218,7 +218,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             },
@@ -227,7 +227,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             }
@@ -411,7 +411,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                             "_": "AssignStmt",
                             "left": {
                                 "_": "Local",
-                                "name": "$temp0",
+                                "name": "%0",
                                 "type": {
                                     "_": "NumberType"
                                 }
@@ -439,7 +439,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                             "_": "AssignStmt",
                             "left": {
                                 "_": "Local",
-                                "name": "$temp1",
+                                "name": "%1",
                                 "type": {
                                     "_": "NumberType"
                                 }
@@ -449,7 +449,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "op": "+",
                                 "left": {
                                     "_": "Local",
-                                    "name": "$temp0",
+                                    "name": "%0",
                                     "type": {
                                         "_": "NumberType"
                                     }
@@ -477,7 +477,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
                                 "op": "-",
                                 "left": {
                                     "_": "Local",
-                                    "name": "$temp1",
+                                    "name": "%1",
                                     "type": {
                                         "_": "NumberType"
                                     }
@@ -561,7 +561,7 @@ const JsonPrinter_simpleFunction_EXPECTED = {
 const JsonPrinter_complexFunction_EXPECTED = {
     "signature": {
         "enclosingClass": {
-            "name": "_DEFAULT_ARK_CLASS"
+            "name": "%dflt"
         },
         "name": "complexFunction",
         "parameters": [
@@ -600,7 +600,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                 "type": {
                     "_": "ClassType",
                     "signature": {
-                        "name": "_DEFAULT_ARK_CLASS"
+                        "name": "%dflt"
                     }
                 }
             },
@@ -629,25 +629,25 @@ const JsonPrinter_complexFunction_EXPECTED = {
                 }
             },
             {
-                "name": "$temp0",
+                "name": "%0",
                 "type": {
                     "_": "NumberType"
                 }
             },
             {
-                "name": "$temp1",
+                "name": "%1",
                 "type": {
                     "_": "NumberType"
                 }
             },
             {
-                "name": "$temp2",
+                "name": "%2",
                 "type": {
                     "_": "NumberType"
                 }
             },
             {
-                "name": "$temp3",
+                "name": "%3",
                 "type": {
                     "_": "NumberType"
                 }
@@ -721,7 +721,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             },
@@ -730,7 +730,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "type": {
                                     "_": "ClassType",
                                     "signature": {
-                                        "name": "_DEFAULT_ARK_CLASS"
+                                        "name": "%dflt"
                                     }
                                 }
                             }
@@ -788,7 +788,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "AssignStmt",
                             "left": {
                                 "_": "Local",
-                                "name": "$temp2",
+                                "name": "%2",
                                 "type": {
                                     "_": "NumberType"
                                 }
@@ -816,7 +816,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "AssignStmt",
                             "left": {
                                 "_": "Local",
-                                "name": "$temp3",
+                                "name": "%3",
                                 "type": {
                                     "_": "NumberType"
                                 }
@@ -854,14 +854,14 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "op": "-",
                                 "left": {
                                     "_": "Local",
-                                    "name": "$temp2",
+                                    "name": "%2",
                                     "type": {
                                         "_": "NumberType"
                                     }
                                 },
                                 "right": {
                                     "_": "Local",
-                                    "name": "$temp3",
+                                    "name": "%3",
                                     "type": {
                                         "_": "NumberType"
                                     }
@@ -1012,7 +1012,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "AssignStmt",
                             "left": {
                                 "_": "Local",
-                                "name": "$temp0",
+                                "name": "%0",
                                 "type": {
                                     "_": "NumberType"
                                 }
@@ -1040,7 +1040,7 @@ const JsonPrinter_complexFunction_EXPECTED = {
                             "_": "AssignStmt",
                             "left": {
                                 "_": "Local",
-                                "name": "$temp1",
+                                "name": "%1",
                                 "type": {
                                     "_": "NumberType"
                                 }
@@ -1078,14 +1078,14 @@ const JsonPrinter_complexFunction_EXPECTED = {
                                 "op": "+",
                                 "left": {
                                     "_": "Local",
-                                    "name": "$temp0",
+                                    "name": "%0",
                                     "type": {
                                         "_": "NumberType"
                                     }
                                 },
                                 "right": {
                                     "_": "Local",
-                                    "name": "$temp1",
+                                    "name": "%1",
                                     "type": {
                                         "_": "NumberType"
                                     }
@@ -1113,7 +1113,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "enclosingClass": {
                     "name": "Shape"
                 },
-                "name": "@instance_init",
+                "name": "%instInit",
                 "parameters": [],
                 "returnType": {
                     "_": "UnknownType"
@@ -1165,7 +1165,7 @@ const JsonPrinter_Shape_EXPECTED = {
                 "enclosingClass": {
                     "name": "Shape"
                 },
-                "name": "@static_init",
+                "name": "%statInit",
                 "parameters": [],
                 "returnType": {
                     "_": "UnknownType"
@@ -1267,31 +1267,31 @@ const JsonPrinter_Shape_EXPECTED = {
                         }
                     },
                     {
-                        "name": "$temp0",
+                        "name": "%0",
                         "type": {
                             "_": "NumberType"
                         }
                     },
                     {
-                        "name": "$temp1",
+                        "name": "%1",
                         "type": {
                             "_": "NumberType"
                         }
                     },
                     {
-                        "name": "$temp2",
+                        "name": "%2",
                         "type": {
                             "_": "StringType"
                         }
                     },
                     {
-                        "name": "$temp3",
+                        "name": "%3",
                         "type": {
                             "_": "StringType"
                         }
                     },     
                     {
-                        "name": "$temp4",
+                        "name": "%4",
                         "type": {
                             "_": "StringType"
                         }
@@ -1329,7 +1329,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "AssignStmt",
                                     "left": {
                                         "_": "Local",
-                                        "name": "$temp0",
+                                        "name": "%0",
                                         "type": {
                                             "_": "NumberType"
                                         }
@@ -1363,7 +1363,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "AssignStmt",
                                     "left": {
                                         "_": "Local",
-                                        "name": "$temp1",
+                                        "name": "%1",
                                         "type": {
                                             "_": "NumberType"
                                         }
@@ -1397,7 +1397,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "AssignStmt",
                                     "left": {
                                         "_": "Local",
-                                        "name": "$temp2",
+                                        "name": "%2",
                                         "type": {
                                             "_": "StringType"
                                         }
@@ -1415,7 +1415,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         },
                                         "right": {
                                             "_": "Local",
-                                            "name": "$temp0",
+                                            "name": "%0",
                                             "type": {
                                                 "_": "NumberType"
                                             }
@@ -1426,7 +1426,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "AssignStmt",
                                     "left": {
                                         "_": "Local",
-                                        "name": "$temp3",
+                                        "name": "%3",
                                         "type": {
                                             "_": "StringType"
                                         }
@@ -1436,7 +1436,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "op": "+",
                                         "left": {
                                             "_": "Local",
-                                            "name": "$temp2",
+                                            "name": "%2",
                                             "type": {
                                                 "_": "StringType"
                                             }
@@ -1454,7 +1454,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "AssignStmt",
                                     "left": {
                                         "_": "Local",
-                                        "name": "$temp4",
+                                        "name": "%4",
                                         "type": {
                                             "_": "StringType"
                                         }
@@ -1464,14 +1464,14 @@ const JsonPrinter_Shape_EXPECTED = {
                                         "op": "+",
                                         "left": {
                                             "_": "Local",
-                                            "name": "$temp3",
+                                            "name": "%3",
                                             "type": {
                                                 "_": "StringType"
                                             }
                                         },
                                         "right": {
                                             "_": "Local",
-                                            "name": "$temp1",
+                                            "name": "%1",
                                             "type": {
                                                 "_": "NumberType"
                                             }
@@ -1482,7 +1482,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                     "_": "ReturnStmt",
                                     "arg": {
                                         "_": "Local",
-                                        "name": "$temp4",
+                                        "name": "%4",
                                         "type": {
                                             "_": "StringType"
                                         }
@@ -1556,7 +1556,7 @@ const JsonPrinter_Shape_EXPECTED = {
                                             "enclosingClass": {
                                                 "name": "Shape"
                                             },
-                                            "name": "@instance_init",
+                                            "name": "%instInit",
                                             "parameters": [],
                                             "returnType": {
                                                 "_": "UnknownType"
@@ -1579,7 +1579,7 @@ const JsonPrinter_Shape_EXPECTED = {
 
 const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
     signature: {
-        name: "_DEFAULT_ARK_CLASS",
+        name: "%dflt",
     },
     modifiers: 0,
     superClassName: "",
@@ -1590,9 +1590,9 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
-                name: "_DEFAULT_ARK_METHOD",
+                name: DEFAULT_ARK_METHOD_NAME,
                 parameters: [
                 ],
                 returnType: {
@@ -1609,7 +1609,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -1654,7 +1654,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -1663,7 +1663,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -1858,7 +1858,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: "simpleFunction",
                 parameters: [
@@ -1891,7 +1891,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -1938,13 +1938,13 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         },
                     },
                     {
-                        name: "$temp0",
+                        name: "%0",
                         type: {
                             _: "NumberType",
                         },
                     },
                     {
-                        name: "$temp1",
+                        name: "%1",
                         type: {
                             _: "NumberType",
                         },
@@ -2001,7 +2001,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2010,7 +2010,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2195,7 +2195,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp0",
+                                        name: "%0",
                                         type: {
                                             _: "NumberType",
                                         },
@@ -2223,7 +2223,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp1",
+                                        name: "%1",
                                         type: {
                                             _: "NumberType",
                                         },
@@ -2233,7 +2233,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         op: "+",
                                         left: {
                                             _: "Local",
-                                            name: "$temp0",
+                                            name: "%0",
                                             type: {
                                                 _: "NumberType",
                                             },
@@ -2261,7 +2261,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         op: "-",
                                         left: {
                                             _: "Local",
-                                            name: "$temp1",
+                                            name: "%1",
                                             type: {
                                                 _: "NumberType",
                                             },
@@ -2344,7 +2344,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: "complexFunction",
                 parameters: [
@@ -2384,7 +2384,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -2413,25 +2413,25 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         },
                     },
                     {
-                        name: "$temp0",
+                        name: "%0",
                         type: {
                             _: "NumberType",
                         },
                     },
                     {
-                        name: "$temp1",
+                        name: "%1",
                         type: {
                             _: "NumberType",
                         },
                     },
                     {
-                        name: "$temp2",
+                        name: "%2",
                         type: {
                             _: "NumberType",
                         },
                     },
                     {
-                        name: "$temp3",
+                        name: "%3",
                         type: {
                             _: "NumberType",
                         },
@@ -2505,7 +2505,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2514,7 +2514,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -2572,7 +2572,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp2",
+                                        name: "%2",
                                         type: {
                                             _: "NumberType",
                                         },
@@ -2600,7 +2600,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp3",
+                                        name: "%3",
                                         type: {
                                             _: "NumberType",
                                         },
@@ -2638,14 +2638,14 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         op: "-",
                                         left: {
                                             _: "Local",
-                                            name: "$temp2",
+                                            name: "%2",
                                             type: {
                                                 _: "NumberType",
                                             },
                                         },
                                         right: {
                                             _: "Local",
-                                            name: "$temp3",
+                                            name: "%3",
                                             type: {
                                                 _: "NumberType",
                                             },
@@ -2797,7 +2797,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp0",
+                                        name: "%0",
                                         type: {
                                             _: "NumberType",
                                         },
@@ -2825,7 +2825,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp1",
+                                        name: "%1",
                                         type: {
                                             _: "NumberType",
                                         },
@@ -2863,14 +2863,14 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         op: "+",
                                         left: {
                                             _: "Local",
-                                            name: "$temp0",
+                                            name: "%0",
                                             type: {
                                                 _: "NumberType",
                                             },
                                         },
                                         right: {
                                             _: "Local",
-                                            name: "$temp1",
+                                            name: "%1",
                                             type: {
                                                 _: "NumberType",
                                             },
@@ -2886,7 +2886,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
         {
             signature: {
                 enclosingClass: {
-                    name: "_DEFAULT_ARK_CLASS",
+                    name: "%dflt",
                 },
                 name: "processInput",
                 parameters: [
@@ -2920,7 +2920,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         type: {
                             _: "ClassType",
                             signature: {
-                                name: "_DEFAULT_ARK_CLASS",
+                                name: "%dflt",
                             },
                         },
                     },
@@ -2939,13 +2939,13 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                         },
                     },
                     {
-                        name: "$temp0",
+                        name: "%0",
                         type: {
                             _: "StringType",
                         },
                     },
                     {
-                        name: "$temp1",
+                        name: "%1",
                         type: {
                             _: "StringType",
                         },
@@ -3001,7 +3001,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -3010,7 +3010,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                         type: {
                                             _: "ClassType",
                                             signature: {
-                                                name: "_DEFAULT_ARK_CLASS",
+                                                name: "%dflt",
                                             },
                                         },
                                     },
@@ -3122,7 +3122,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp1",
+                                        name: "%1",
                                         type: {
                                             _: "StringType",
                                         },
@@ -3158,7 +3158,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "ReturnStmt",
                                     arg: {
                                         _: "Local",
-                                        name: "$temp1",
+                                        name: "%1",
                                         type: {
                                             _: "StringType",
                                         },
@@ -3175,7 +3175,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "AssignStmt",
                                     left: {
                                         _: "Local",
-                                        name: "$temp0",
+                                        name: "%0",
                                         type: {
                                             _: "StringType",
                                         },
@@ -3211,7 +3211,7 @@ const JsonPrinter_DEFAULT_ARK_CLASS_EXPECTED = {
                                     _: "ReturnStmt",
                                     arg: {
                                         _: "Local",
-                                        name: "$temp0",
+                                        name: "%0",
                                         type: {
                                             _: "StringType",
                                         },

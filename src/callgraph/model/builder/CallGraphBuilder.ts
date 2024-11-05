@@ -43,7 +43,7 @@ export class CallGraphBuilder {
         for (const method of methods) {
             let m = method.getSignature();
             let kind = CallGraphNodeKind.real;
-            if (method.isGenerated()) {// || method.getName() === '_DEFAULT_ARK_METHOD') {
+            if (method.isGenerated()) {
                 kind = CallGraphNodeKind.intrinsic;
             }
             if (method.getName() === 'constructor') {

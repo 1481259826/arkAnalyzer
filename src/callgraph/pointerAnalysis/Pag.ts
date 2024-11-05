@@ -689,7 +689,7 @@ export class Pag extends BaseGraph {
 
         if (value instanceof ArkInstanceFieldRef || value instanceof ArkArrayRef) {
             let base = value.getBase();
-            //TODO: remove below once this Local is not uniq in @instance_init is fix
+            //TODO: remove below once this Local is not uniq in %instInit is fix
             if (base instanceof Local && base.getName() === 'this') {
                 stmt?.getCfg()?.getStmts().forEach(s => {
                     if (s instanceof ArkAssignStmt &&

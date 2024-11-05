@@ -2,7 +2,7 @@
     {
         "file": "@etsSdk/api/@ohos.taskpool: ",
         "namespace": "taskpool",
-        "class": "_DEFAULT_ARK_CLASS",
+        "class": "%dflt",
         "method": "execute"
     }
 ]

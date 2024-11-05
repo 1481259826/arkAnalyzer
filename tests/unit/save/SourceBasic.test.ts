@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Scene, SceneConfig, SourceClassPrinter, SourceMethodPrinter } from '../../../src/index';
+import { DEFAULT_ARK_METHOD_NAME, Scene, SceneConfig, SourceClassPrinter, SourceMethodPrinter } from '../../../src/index';
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
@@ -220,7 +220,7 @@ describe('SourceBasicTest', () => {
     });
 
     it('case4: default method', () => {
-        let method = defaultClass?.getMethodWithName('_DEFAULT_ARK_METHOD');
+        let method = defaultClass?.getMethodWithName(DEFAULT_ARK_METHOD_NAME);
         if (!method) {
             assert.isDefined(method);
             return;
