@@ -293,7 +293,7 @@ export class CfgBuilder {
                 break;
             } else if (ts.isBreakStatement(c)) {
                 let p: ts.Node | null = c;
-                while (p) {
+                while (p && p !== this.astRoot) {
                     if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
                         const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
                         judgeLastType(lastLoopNextF);
@@ -526,7 +526,7 @@ export class CfgBuilder {
                     this.exits.push(finalExit);
                     this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
                     trystm.finallyStatement = final.next;
-                    tryExit.next = final;
+                    tryExit.next = final.next;
                     final.next?.lasts.add(tryExit);
                     lastStatement = finalExit;
                 } else {
@@ -643,8 +643,7 @@ export class CfgBuilder {
                         stmtQueue.push(stmt.catchStatement);
                     }
                     if (stmt.tryFirst) {
-                        stmt = stmt.tryFirst;
-                        continue;
+                        stmtQueue.push(stmt.tryFirst);
                     }
                     break;
                 } else {
@@ -718,11 +717,13 @@ export class CfgBuilder {
         const returnStatement = new StatementBuilder('returnStatement', 'return;', null, this.exit.scopeID);
         let tryExit = false;
         if (notReturnStmts.length === 1 && notReturnStmts[0].block) {
-            for (const stmt of notReturnStmts[0].block.stmts) {
-                if (stmt instanceof TryStatementBuilder) {
+            let p: ts.Node | null = notReturnStmts[0].astNode;
+            while (p && p !== this.astRoot) {
+                if (ts.isTryStatement(p)) {
                     tryExit = true;
                     break;
                 }
+                p = p.parent;
             }
         }
         if (notReturnStmts.length === 1 && !(notReturnStmts[0] instanceof ConditionStatementBuilder) && !tryExit) {

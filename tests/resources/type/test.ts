@@ -12,3 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+try {
+    let result = 10 / 0;
+} catch (error) {
+    console.error(2);
+} finally {
+    console.log(3);
+}
