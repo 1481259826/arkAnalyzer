@@ -83,6 +83,28 @@ export class Scene {
     constructor() {
     }
 
+    public clear(): void {
+        this.projectFiles = [];
+
+        this.moduleScenesMap.clear();
+        this.modulePath2NameMap.clear();
+
+        this.globalImportInfos = [];
+
+        this.moduleSdkMap.clear();
+        this.projectSdkMap.clear();
+
+        this.filesMap.clear();
+        this.namespacesMap.clear();
+        this.classesMap.clear();
+        this.methodsMap.clear();
+
+        this.sdkArkFilesMap.clear();
+        this.sdkGlobalMap.clear();
+        this.ohPkgContentMap.clear();
+        this.ohPkgContent = {};
+    }
+
     public getStage(): SceneBuildStage {
         return this.buildStage;
     }
