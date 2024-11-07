@@ -444,8 +444,7 @@ export class ArkIRTransformer {
                 const elements = variableDeclaration.name.elements;
                 let index = 0;
                 for (const element of elements) {
-                    const arrayRef = new ArkArrayRef(arrayItem as Local,
-                        new Constant(index.toString(), NumberType.getInstance()));
+                    const arrayRef = new ArkArrayRef(arrayItem as Local, ValueUtil.getOrCreateNumberConst(index));
                     const arrayRefPositions = [arrayItemPositions[0], ...arrayItemPositions, FullPosition.DEFAULT];
                     const item = new Local(element.getText(this.sourceFile));
                     const itemPosition = FullPosition.buildFromNode(element, this.sourceFile);
@@ -1472,8 +1471,7 @@ export class ArkIRTransformer {
             const elements = leftOpNode.elements;
             let index = 0;
             for (const element of elements) {
-                const arrayRef = new ArkArrayRef(leftValue as Local,
-                    new Constant(index.toString(), NumberType.getInstance()));
+                const arrayRef = new ArkArrayRef(leftValue as Local, ValueUtil.getOrCreateNumberConst(index));
                 const arrayRefPositions = [leftPositions[0], ...leftPositions, FullPosition.DEFAULT];
                 const item = new Local(element.getText(this.sourceFile));
                 const itemPosition = FullPosition.buildFromNode(element, this.sourceFile);

@@ -16,7 +16,12 @@
 import fs from 'fs';
 import path from 'path';
 import { Scene } from '../../Scene';
-import { COMPONENT_LIFECYCLE_METHOD_NAME, getAbilities, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from '../../utils/entryMethodUtils';
+import {
+    COMPONENT_LIFECYCLE_METHOD_NAME,
+    getAbilities,
+    getCallbackMethodFromStmt,
+    LIFECYCLE_METHOD_NAME,
+} from '../../utils/entryMethodUtils';
 import { Constant } from '../base/Constant';
 import {
     AbstractInvokeExpr,
@@ -28,7 +33,7 @@ import {
 } from '../base/Expr';
 import { Local } from '../base/Local';
 import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt } from '../base/Stmt';
-import { BooleanType, ClassType, NumberType, Type, UnclearReferenceType } from '../base/Type';
+import { ClassType, NumberType, Type, UnclearReferenceType } from '../base/Type';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkBody } from '../model/ArkBody';
@@ -42,6 +47,7 @@ import { CONSTRUCTOR_NAME } from './TSConst';
 import { fetchDependenciesFromFile } from '../../utils/json5parser';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { checkAndUpdateMethod } from '../model/builder/ArkClassBuilder';
+import { ValueUtil } from './ValueUtil';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -188,11 +194,10 @@ export class DummyMainCreater {
         }
 
         const countLocal = new Local('count', NumberType.getInstance());
-        const zero = new Constant('0', NumberType.getInstance());
+        const zero = ValueUtil.getOrCreateNumberConst(0);
         const countAssignStmt = new ArkAssignStmt(countLocal, zero);
 
-
-        const truE = new Constant('true', BooleanType.getInstance());
+        const truE = ValueUtil.getBooleanConstant(true);
         const conditionTrue = new ArkConditionExpr(truE, zero, RelationalBinaryOperator.Equality);
         const whileStmt = new ArkIfStmt(conditionTrue);
         firstBlock.addStmt(countAssignStmt);

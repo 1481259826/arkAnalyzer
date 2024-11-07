@@ -17,6 +17,14 @@ import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } f
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { LineColPosition } from './Position';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
+import {
+    ANY_KEYWORD,
+    BOOLEAN_KEYWORD, NEVER_KEYWORD,
+    NULL_KEYWORD,
+    NUMBER_KEYWORD,
+    STRING_KEYWORD, UNDEFINED_KEYWORD,
+    UNKNOWN_KEYWORD, VOID_KEYWORD,
+} from '../common/TSConst';
 
 /**
  * @category core/base/type
@@ -41,7 +49,7 @@ export class AnyType extends Type {
     }
 
     public toString(): string {
-        return 'any';
+        return ANY_KEYWORD;
     }
 }
 
@@ -61,7 +69,7 @@ export class UnknownType extends Type {
     }
 
     public toString(): string {
-        return 'unknown';
+        return UNKNOWN_KEYWORD;
     }
 }
 
@@ -121,7 +129,7 @@ export class BooleanType extends PrimitiveType {
     private static readonly INSTANCE = new BooleanType();
 
     constructor() {
-        super('boolean');
+        super(BOOLEAN_KEYWORD);
     }
 
     public static getInstance() {
@@ -133,7 +141,7 @@ export class NumberType extends PrimitiveType {
     private static readonly INSTANCE = new NumberType();
 
     constructor() {
-        super('number');
+        super(NUMBER_KEYWORD);
     }
 
     public static getInstance() {
@@ -145,7 +153,7 @@ export class StringType extends PrimitiveType {
     private static readonly INSTANCE = new StringType();
 
     constructor() {
-        super('string');
+        super(STRING_KEYWORD);
     }
 
     public static getInstance() {
@@ -165,7 +173,7 @@ export class NullType extends PrimitiveType {
     }
 
     constructor() {
-        super('null');
+        super(NULL_KEYWORD);
     }
 }
 
@@ -181,7 +189,7 @@ export class UndefinedType extends PrimitiveType {
     }
 
     constructor() {
-        super('undefined');
+        super(UNDEFINED_KEYWORD);
     }
 }
 
@@ -259,7 +267,7 @@ export class VoidType extends Type {
     }
 
     public toString(): string {
-        return 'void';
+        return VOID_KEYWORD;
     }
 }
 
@@ -275,7 +283,7 @@ export class NeverType extends Type {
     }
 
     public toString(): string {
-        return 'never';
+        return NEVER_KEYWORD;
     }
 }
 

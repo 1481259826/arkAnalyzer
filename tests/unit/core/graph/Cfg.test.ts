@@ -20,10 +20,10 @@ import {
     ArkReturnVoidStmt,
     BasicBlock,
     Cfg,
-    Constant,
     Local,
     RelationalBinaryOperator,
     Stmt,
+    ValueUtil,
 } from '../../../../src/index';
 import { describe, expect, it } from 'vitest';
 
@@ -38,7 +38,8 @@ describe('CfgTest', () => {
 
         cfg.addBlock(bb);
         let stmt0 = new ArkIfStmt(
-            new ArkConditionExpr(new Local('%0'), new Constant('0'), RelationalBinaryOperator.Equality)
+            new ArkConditionExpr(new Local('%0'), ValueUtil.getOrCreateNumberConst(0),
+                RelationalBinaryOperator.Equality),
         );
         let ans = cfg.insertAfter(stmt0, startingStmt);
         expect(ans).eq(1);
@@ -47,10 +48,12 @@ describe('CfgTest', () => {
         expect(err0.errCode).eq(ArkErrorCode.BB_MORE_THAN_ONE_BRANCH_RET_STMT);
 
         let stmt1 = new ArkIfStmt(
-            new ArkConditionExpr(new Local('%1'), new Constant('1'), RelationalBinaryOperator.Equality)
+            new ArkConditionExpr(new Local('%1'), ValueUtil.getOrCreateNumberConst(1),
+                RelationalBinaryOperator.Equality),
         );
         let stmt2 = new ArkIfStmt(
-            new ArkConditionExpr(new Local('%2'), new Constant('2'), RelationalBinaryOperator.Equality)
+            new ArkConditionExpr(new Local('%2'), ValueUtil.getOrCreateNumberConst(2),
+                RelationalBinaryOperator.Equality),
         );
         ans = cfg.insertAfter([stmt1, stmt2], startingStmt);
         expect(ans).eq(2);
@@ -62,10 +65,12 @@ describe('CfgTest', () => {
         ).eq([startingStmt, stmt1, stmt2, stmt0].map((stmt) => stmt.toString()).join('\n'));
 
         let stmt3 = new ArkIfStmt(
-            new ArkConditionExpr(new Local('%3'), new Constant('1'), RelationalBinaryOperator.Equality)
+            new ArkConditionExpr(new Local('%3'), ValueUtil.getOrCreateNumberConst(1),
+                RelationalBinaryOperator.Equality),
         );
         let stmt4 = new ArkIfStmt(
-            new ArkConditionExpr(new Local('%4'), new Constant('2'), RelationalBinaryOperator.Equality)
+            new ArkConditionExpr(new Local('%4'), ValueUtil.getOrCreateNumberConst(2),
+                RelationalBinaryOperator.Equality),
         );
 
         ans = cfg.insertBefore([stmt3, stmt4], startingStmt);
