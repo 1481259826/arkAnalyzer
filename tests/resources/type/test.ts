@@ -17,6 +17,4 @@ try {
     let result = 10 / 0;
 } catch (error) {
     console.error(2);
-} finally {
-    console.log(3);
 }

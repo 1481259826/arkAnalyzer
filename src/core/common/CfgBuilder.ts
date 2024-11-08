@@ -520,10 +520,10 @@ export class CfgBuilder {
                     }
 
                 }
+                let final = new StatementBuilder('statement', 'finally', c, scope.id);
+                let finalExit = new StatementBuilder('finallyExit', '', c, scope.id);
+                this.exits.push(finalExit);
                 if (c.finallyBlock && c.finallyBlock.statements.length > 0) {
-                    let final = new StatementBuilder('statement', 'finally', c, scope.id);
-                    let finalExit = new StatementBuilder('finallyExit', '', c, scope.id);
-                    this.exits.push(finalExit);
                     this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
                     trystm.finallyStatement = final.next;
                     tryExit.next = final.next;
