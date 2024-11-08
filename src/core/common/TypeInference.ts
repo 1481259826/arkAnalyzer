@@ -105,7 +105,7 @@ export class TypeInference {
     public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type) {
         let type;
         if (leftOpType instanceof UnclearReferenceType) {
-            type = this.inferUnclearReferenceType(leftOpType.getName(), declaringArkClass);
+            type = this.inferUnclearRefType(leftOpType, declaringArkClass);
         } else if (leftOpType instanceof ClassType
             && leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             type = TypeInference.inferUnclearReferenceType(leftOpType.getClassSignature().getClassName(), declaringArkClass);
@@ -410,6 +410,25 @@ export class TypeInference {
                 }
             }
         });
+    }
+
+    public static inferUnclearRefType(urType: UnclearReferenceType, arkClass: ArkClass): Type | null {
+        const realTypes = urType.getGenericTypes();
+        this.inferRealGenericTypes(realTypes, arkClass);
+        if (urType.getName() === Builtin.ARRAY) {
+            return new ArrayType(realTypes[0] ?? AnyType, 1);
+        }
+        const type = this.inferUnclearReferenceType(urType.getName(), arkClass);
+        if (realTypes.length === 0) {
+            return type;
+        }
+        if (type instanceof ClassType) {
+            return new ClassType(type.getClassSignature(), realTypes);
+        } else if (type instanceof FunctionType) {
+            return new FunctionType(type.getMethodSignature(), realTypes);
+        } else {
+            return new UnclearReferenceType(urType.getName(), realTypes);
+        }
     }
 
     public static inferUnclearReferenceType(refName: string, arkClass: ArkClass): Type | null {

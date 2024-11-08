@@ -71,6 +71,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer'
 
 export interface TransformerContext {
     getArkFile(): ArkFile;
+
     getDeclaringArkNamespace(): ArkNamespace | undefined;
 
     getMethod(signature: MethodSignature): ArkMethod | null;
@@ -358,11 +359,7 @@ export class SourceTransformer {
 
     public typeToString(type: Type): string {
         if (type instanceof LiteralType) {
-            let literalName = type.getLiteralName();
-            if (typeof literalName === 'string' && literalName.endsWith('Keyword')) {
-                return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
-            }
-            return `${literalName}`;
+            return this.literalType2string(type);
         }
 
         if (type instanceof PrimitiveType) {
@@ -370,11 +367,7 @@ export class SourceTransformer {
         }
 
         if (type instanceof UnionType) {
-            let typesStr: string[] = [];
-            for (const member of type.getTypes()) {
-                typesStr.push(this.typeToString(member));
-            }
-            return typesStr.join(' | ');
+            return this.unionType2string(type);
         }
 
         if (type instanceof UnknownType) {
@@ -386,30 +379,10 @@ export class SourceTransformer {
         }
 
         if (type instanceof ClassType) {
-            let name = type.getClassSignature().getClassName();
-            if (SourceUtils.isDefaultClass(name)) {
-                return 'any';
-            }
-            if (SourceUtils.isAnonymousClass(name)) {
-                let cls = this.context.getClass(type.getClassSignature());
-                if (cls && cls.getCategory() === ClassCategory.TYPE_LITERAL) {
-                    return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
-                }
-                return 'Object';
-            }
-            return name;
+            return this.classType2string(type);
         }
         if (type instanceof ArrayType) {
-            const dimensions: string[] = [];
-            for (let i = 0; i < type.getDimension(); i++) {
-                dimensions.push('[]');
-            }
-
-            let baseType = type.getBaseType();
-            if (baseType instanceof UnionType) {
-                return `(${this.typeToString(baseType)})${dimensions.join('')}`;
-            }
-            return `${this.typeToString(baseType)}${dimensions.join('')}`;
+            return this.arrayType2string(type);
         }
 
         if (type instanceof FunctionType) {
@@ -421,11 +394,7 @@ export class SourceTransformer {
         }
 
         if (type instanceof UnclearReferenceType) {
-            let genericTypes = type.getGenericTypes();
-            if (genericTypes.length > 0) {
-                return `${type.getName()}<${genericTypes.join(', ')}>`;
-            }
-            return type.getName();
+            return this.unclearReferenceType2string(type);
         }
 
         if (type instanceof GenericType) {
@@ -438,5 +407,61 @@ export class SourceTransformer {
 
         logger.info(`valueToString ${type.constructor} not support.`);
         return type.toString();
+    }
+
+    private literalType2string(type: LiteralType): string {
+        let literalName = type.getLiteralName();
+        if (typeof literalName === 'string' && literalName.endsWith('Keyword')) {
+            return literalName.substring(0, literalName.length - 'Keyword'.length).toLowerCase();
+        }
+        return `${literalName}`;
+    }
+
+    private unionType2string(type: UnionType): string {
+        let typesStr: string[] = [];
+        for (const member of type.getTypes()) {
+            typesStr.push(this.typeToString(member));
+        }
+        return typesStr.join(' | ');
+    }
+
+    private arrayType2string(type: ArrayType): string {
+        const dimensions: string[] = [];
+        for (let i = 0; i < type.getDimension(); i++) {
+            dimensions.push('[]');
+        }
+
+        let baseType = type.getBaseType();
+        if (baseType instanceof UnionType) {
+            return `(${this.typeToString(baseType)})${dimensions.join('')}`;
+        }
+        return `${this.typeToString(baseType)}${dimensions.join('')}`;
+    }
+
+    private unclearReferenceType2string(type: UnclearReferenceType): string {
+        let genericTypes = type.getGenericTypes();
+        if (genericTypes.length > 0) {
+            return `${type.getName()}<${genericTypes.join(', ')}>`;
+        }
+        return type.getName();
+    }
+
+    private classType2string(type: ClassType): string {
+        let name = type.getClassSignature().getClassName();
+        if (SourceUtils.isDefaultClass(name)) {
+            return 'any';
+        }
+        if (SourceUtils.isAnonymousClass(name)) {
+            let cls = this.context.getClass(type.getClassSignature());
+            if (cls && cls.getCategory() === ClassCategory.TYPE_LITERAL) {
+                return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
+            }
+            return 'Object';
+        }
+        let genericTypes = type.getRealGenericTypes();
+        if (genericTypes && genericTypes.length > 0) {
+            return `${name}<${genericTypes.join(', ')}>`;
+        }
+        return name;
     }
 }

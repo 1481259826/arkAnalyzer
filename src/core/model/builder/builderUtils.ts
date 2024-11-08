@@ -270,7 +270,17 @@ export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField):
         if (!gType) {
             gType = arkInstance.getDeclaringArkClass().getGenericsTypes()?.find(f => f.getName() === typeName);
         }
-        return gType ?? urType;
+        if (gType) {
+            return gType;
+        }
+        const types = urType.getGenericTypes();
+        for (let i = 0; i < types.length; i++) {
+            const mayType = types[i];
+            if (mayType instanceof UnclearReferenceType) {
+                types[i] = replace(mayType);
+            }
+        }
+        return urType;
     }
 
     if (type instanceof UnclearReferenceType) {
