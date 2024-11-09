@@ -50,7 +50,7 @@ export enum StorageLinkEdgeType {
     TwoWay
 }
 
-export const GLOBAL_THIS: string = 'globaThis'
+export const GLOBAL_THIS: string = 'globalThis'
 
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
@@ -356,6 +356,8 @@ export class PagLocalNode extends PagNode {
     private storageType?: StorageType;
     private propertyName?: string;
 
+    private sdkParam: boolean = false;
+
     constructor(id: NodeID, cid: ContextID | undefined = undefined, value: Local, stmt?: Stmt) {
         super(id, cid, value, PagNodeKind.LocalVar, stmt)
     }
@@ -395,6 +397,14 @@ export class PagLocalNode extends PagNode {
 
     public isStorageLinked(): boolean {
         return this.storageLinked;
+    }
+
+    public setSdkParam(): void {
+        this.sdkParam = true;
+    }
+
+    public isSdkParam(): boolean {
+        return this.sdkParam;
     }
 }
 
@@ -642,7 +652,7 @@ export class Pag extends BaseGraph {
                 // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
                 // value has been replaced in param
                 if (value.getName() === GLOBAL_THIS && value.getDeclaringStmt() == null) {
-                    pagNode = new PagGlobalThisNode(id, 0, value)
+                    pagNode = new PagGlobalThisNode(id, -1, value)
                 } else {
                     pagNode = new PagLocalNode(id, cid, value, stmt);
                 }

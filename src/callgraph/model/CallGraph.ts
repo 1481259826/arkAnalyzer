@@ -114,7 +114,7 @@ export class CallGraphEdge extends BaseEdge {
 
 export class CallGraphNode extends BaseNode {
     private method: Method;
-    private isSdkMethod: boolean = false;
+    private ifSdkMethod: boolean = false;
     private isBlank: boolean = false;
 
     constructor(id: number, m: Method, k: CallGraphNodeKind = CallGraphNodeKind.real) {
@@ -127,11 +127,11 @@ export class CallGraphNode extends BaseNode {
     }
 
     public setSdkMethod(v: boolean): void {
-        this.isSdkMethod = v;
+        this.ifSdkMethod = v;
     }
 
-    public getIsSdkMethod(): boolean {
-        return this.isSdkMethod
+    public isSdkMethod(): boolean {
+        return this.ifSdkMethod
     }
 
     public get isBlankMethod(): boolean {

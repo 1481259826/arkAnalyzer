@@ -206,7 +206,9 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         instanceFieldNodeMap.forEach((nodeIDs, cid) => {
             // TODO: check cid
-            if (cid !== node.getCid()) {
+            // cid === -1 will escape the check, mainly for globalThis
+            let baseCid = node.getCid();
+            if (baseCid !== -1 && cid !== baseCid) {
                 return;
             }
             nodeIDs.forEach((nodeID) => {
@@ -336,22 +338,6 @@ export class PointerAnalysis extends AbstractAnalysis {
 
             changed = this.processDynCallSite(node, pts, processedCallSites) || changed;
             changed = this.processUnknownCallSite(node, pts) || changed;
-
-            // let dynCallSites = node.getRelatedDynCallSites();
-
-            // if (!dynCallSites) {
-            //     logger.warn(`node ${nodeID} has no related dynamic call site`);
-            //     return;
-            // }
-
-            // logger.info(`[process dynamic callsite] node ${nodeID}`);
-            // dynCallSites.forEach((dynCallsite) => {
-            //     for (let pt of pts) {
-            //         let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
-            //         changed = this.addToReanalyze(srcNodes) || changed;
-            //     }
-            //     processedCallSites.add(dynCallsite);
-            // })
         })
         this.pagBuilder.resetUpdatedNodes();
         let srcNodes = this.pagBuilder.handleUnprocessedCallSites(processedCallSites);
@@ -366,7 +352,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         let changed: boolean = false;
         let dynCallSites = node.getRelatedDynCallSites();
 
-        if (!dynCallSites) {
+        if (!dynCallSites && !node.isSdkParam()) {
             logger.warn(`node ${node.getID()} has no related dynamic call site`);
             return changed;
         }
@@ -595,7 +581,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             let updatedContent: string = '';
             this.getUnhandledFuncs().forEach(funcID => {
                 let cgNode = this.cg.getNode(funcID);
-                if ((cgNode as CallGraphNode).getIsSdkMethod()) {
+                if ((cgNode as CallGraphNode).isSdkMethod()) {
                     return;
                 }
 
