@@ -349,8 +349,8 @@ export class PagNode extends BaseNode {
 }
 
 export class PagLocalNode extends PagNode {
-    private relatedDynamicCallSite!: Set<DynCallSite>;
-    private relatedUnknownCallSite!: Set<CallSite>;
+    private relatedDynamicCallSite?: Set<DynCallSite>;
+    private relatedUnknownCallSite?: Set<CallSite>;
     private storageLinked: boolean = false;
     private storageType?: StorageType;
     private propertyName?: string;
@@ -368,7 +368,7 @@ export class PagLocalNode extends PagNode {
     }
 
     public getRelatedDynCallSites(): Set<DynCallSite> {
-        return this.relatedDynamicCallSite
+        return this.relatedDynamicCallSite ?? new Set();
     }
 
     public addRelatedUnknownCallSite(cs: CallSite) {
@@ -378,7 +378,7 @@ export class PagLocalNode extends PagNode {
     }
 
     public getRelatedUnknownCallSites(): Set<CallSite> {
-        return this.relatedUnknownCallSite;
+        return this.relatedUnknownCallSite ?? new Set();
     }
 
     public setStorageLink(storageType: StorageType, propertyName: string): void {

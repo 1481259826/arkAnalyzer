@@ -1,6 +1,8 @@
 {
     "targetProjectName": "applications_camera",
     "targetProjectDirectory": "/Users/yangyizhuo/DevEcoStudioProjects/applications_camera",
+    "targetProjectName2": "Before",
+    "targetProjectDirectory2": "/Users/yangyizhuo/Desktop/test/testApp/Before",
 
     "logPath": "./out/ArkAnalyzer.log",
     "logLevel": "INFO",

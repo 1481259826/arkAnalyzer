@@ -62,8 +62,8 @@ export class PagBuilder {
     private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     // record the SDK API param, and create fake Values
-    private sdkMethodParamValueMap: Map<FuncID, Map<number, Value>> = new Map();
-    private fakeSdkMethodParamDeclaringStmt: Stmt = new ArkAssignStmt(new Constant(""), new Constant(""));
+    private sdkMethodParamValueMap: Map<FuncID, Value[]> = new Map();
+    private fakeSdkMethodParamDeclaringStmt: Stmt = new ArkAssignStmt(new Local(""), new Local(""));
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
@@ -172,8 +172,7 @@ export class PagBuilder {
                 // handle call
                 let ivkExpr = stmt.getInvokeExpr();
                 if (ivkExpr instanceof ArkStaticInvokeExpr) {
-                    let cs;
-                    cs = this.cg.getCallSiteByStmt(stmt);
+                    let cs = this.cg.getCallSiteByStmt(stmt);
                     if (cs) {
                         // direct call is already existing in CG
                         // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
@@ -241,17 +240,15 @@ export class PagBuilder {
             return;
         }
 
-        let paramMap = new Map();
-        let position = 0;
+        let paramArr: Value[] = [];
 
         args.forEach((arg) => {
             let argInstance: Local = new Local(arg.getName(), arg.getType());
             argInstance.setDeclaringStmt(this.fakeSdkMethodParamDeclaringStmt);
-            paramMap.set(position, argInstance);
-            position ++;
+            paramArr.push(argInstance);
         })
 
-        this.sdkMethodParamValueMap.set(funcID, paramMap);
+        this.sdkMethodParamValueMap.set(funcID, paramArr);
     }
 
     public buildPagFromFuncPag(funcID: FuncID, cid: ContextID) {
@@ -893,7 +890,7 @@ export class PagBuilder {
 
                 if (arg instanceof Local && arg.getType() instanceof FunctionType) {
                     // TODO: cannot find value
-                    paramValue = this.sdkMethodParamValueMap.get(funcID)?.get(i);   
+                    paramValue = this.sdkMethodParamValueMap.get(funcID)![i];   
                 } else {
                     continue;
                 }
