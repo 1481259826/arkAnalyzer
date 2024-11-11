@@ -138,13 +138,9 @@ class Variable {
 
 class Scope {
     id: number;
-    level: number;
-    parent: Scope | null;
 
-    constructor(id: number, variable: Set<String>, level: number) {
+    constructor(id: number) {
         this.id = id;
-        this.level = level;
-        this.parent = null;
     }
 }
 
@@ -197,7 +193,6 @@ export class CfgBuilder {
     statementArray: StatementBuilder[];
     dotEdges: number[][];
     scopes: Scope[];
-    scopeLevel: number;
     tempVariableNum: number;
     current3ACstm: StatementBuilder;
     blocks: Block[];
@@ -227,7 +222,6 @@ export class CfgBuilder {
         this.dotEdges = [];
         this.exit = new StatementBuilder('exit', 'return;', null, 0);
         this.scopes = [];
-        this.scopeLevel = 0;
         this.tempVariableNum = 0;
         this.current3ACstm = this.entry;
         this.blocks = [];
@@ -239,308 +233,319 @@ export class CfgBuilder {
         this.arrowFunctionWithoutBlock = true;
     }
 
-    walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
-        function judgeLastType(s: StatementBuilder) {
-            if (lastStatement.type === 'ifStatement') {
-                let lastIf = lastStatement as ConditionStatementBuilder;
-                if (lastIf.nextT == null) {
-                    lastIf.nextT = s;
-                    s.lasts.add(lastIf);
-                } else {
-                    lastIf.nextF = s;
-                    s.lasts.add(lastIf);
-                }
-            } else if (lastStatement.type === 'loopStatement') {
-                let lastLoop = lastStatement as ConditionStatementBuilder;
-                lastLoop.nextT = s;
-                s.lasts.add(lastLoop);
-            } else if (lastStatement.type === 'catchOrNot') {
-                let lastLoop = lastStatement as ConditionStatementBuilder;
-                lastLoop.nextT = s;
-                s.lasts.add(lastLoop);
+    
+    judgeLastType(s: StatementBuilder, lastStatement: StatementBuilder) {
+        if (lastStatement.type === 'ifStatement') {
+            let lastIf = lastStatement as ConditionStatementBuilder;
+            if (lastIf.nextT == null) {
+                lastIf.nextT = s;
+                s.lasts.add(lastIf);
             } else {
-                lastStatement.next = s;
-                s.lasts.add(lastStatement);
+                lastIf.nextF = s;
+                s.lasts.add(lastIf);
+            }
+        } else if (lastStatement.type === 'loopStatement') {
+            let lastLoop = lastStatement as ConditionStatementBuilder;
+            lastLoop.nextT = s;
+            s.lasts.add(lastLoop);
+        } else if (lastStatement.type === 'catchOrNot') {
+            let lastLoop = lastStatement as ConditionStatementBuilder;
+            lastLoop.nextT = s;
+            s.lasts.add(lastLoop);
+        } else {
+            lastStatement.next = s;
+            s.lasts.add(lastStatement);
+        }
+
+    }
+
+    ASTNodeBreakStatement(c: ts.Node, lastStatement: StatementBuilder): void {
+        let p: ts.Node | null = c;
+        while (p && p !== this.astRoot) {
+            if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
+                const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
+                this.judgeLastType(lastLoopNextF, lastStatement);
+                lastLoopNextF.lasts.add(lastStatement);
+                return;
+            }
+            if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
+                const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
+                this.judgeLastType(lastSwitchExit, lastStatement);
+                lastSwitchExit.lasts.add(lastStatement);
+                return;
+            }
+            p = p.parent;
+        }
+    }
+
+    ASTNodeIfStatement(c: ts.IfStatement, lastStatement: StatementBuilder, scopeID: number): StatementBuilder {
+        let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder('ifStatement', '', c, scopeID);
+        this.judgeLastType(ifstm, lastStatement);
+        let ifexit: StatementBuilder = new StatementBuilder('ifExit', '', c, scopeID);
+        this.exits.push(ifexit);
+        ifstm.condition = c.expression.getText(this.sourceFile);
+        ifstm.code = 'if (' + ifstm.condition + ')';
+        if (ts.isBlock(c.thenStatement)) {
+            this.walkAST(ifstm, ifexit, [...c.thenStatement.statements]);
+        } else {
+            this.walkAST(ifstm, ifexit, [c.thenStatement]);
+        }
+        if (c.elseStatement) {
+            if (ts.isBlock(c.elseStatement)) {
+                this.walkAST(ifstm, ifexit, [...c.elseStatement.statements]);
+            } else {
+                this.walkAST(ifstm, ifexit, [c.elseStatement]);
+            }
+        }
+        if (!ifstm.nextT) {
+            ifstm.nextT = ifexit;
+            ifexit.lasts.add(ifstm);
+        }
+        if (!ifstm.nextF) {
+            ifstm.nextF = ifexit;
+            ifexit.lasts.add(ifstm);
+        }
+        return ifexit;
+    }    
+
+    ASTNodeWhileStatement(c: ts.WhileStatement, lastStatement: StatementBuilder, scopeID: number): StatementBuilder {
+        this.breakin = 'loop';
+        let loopstm = new ConditionStatementBuilder('loopStatement', '', c, scopeID);
+        this.loopStack.push(loopstm);
+        this.judgeLastType(loopstm, lastStatement);
+        let loopExit = new StatementBuilder('loopExit', '', c, scopeID);
+        this.exits.push(loopExit);
+        loopstm.nextF = loopExit;
+        loopExit.lasts.add(loopstm);
+        loopstm.condition = c.expression.getText(this.sourceFile);
+        loopstm.code = 'while (' + loopstm.condition + ')';
+        if (ts.isBlock(c.statement)) {
+            this.walkAST(loopstm, loopstm, [...c.statement.statements]);
+        } else {
+            this.walkAST(loopstm, loopstm, [c.statement]);
+        }
+        if (!loopstm.nextF) {
+            loopstm.nextF = loopExit;
+            loopExit.lasts.add(loopstm);
+        }
+        if (!loopstm.nextT) {
+            loopstm.nextT = loopExit;
+            loopExit.lasts.add(loopstm);
+        }
+        this.loopStack.pop();
+        return loopExit;
+    }
+
+    ASTNodeForStatement(c: ts.ForInOrOfStatement | ts.ForStatement, lastStatement: StatementBuilder, scopeID: number): StatementBuilder {
+        this.breakin = 'loop';
+        let loopstm = new ConditionStatementBuilder('loopStatement', '', c, scopeID);
+        this.loopStack.push(loopstm);
+        this.judgeLastType(loopstm, lastStatement);
+        let loopExit = new StatementBuilder('loopExit', '', c, scopeID);
+        this.exits.push(loopExit);
+        loopstm.nextF = loopExit;
+        loopExit.lasts.add(loopstm);
+        loopstm.code = 'for (';
+        if (ts.isForStatement(c)) {
+            loopstm.code += c.initializer?.getText(this.sourceFile) + '; ' + c.condition?.getText(this.sourceFile) + '; ' + c.incrementor?.getText(this.sourceFile);
+        } else if (ts.isForOfStatement(c)) {
+            loopstm.code += c.initializer?.getText(this.sourceFile) + ' of ' + c.expression.getText(this.sourceFile);
+        } else {
+            loopstm.code += c.initializer?.getText(this.sourceFile) + ' in ' + c.expression.getText(this.sourceFile);
+        }
+        loopstm.code += ')';
+        if (ts.isBlock(c.statement)) {
+            this.walkAST(loopstm, loopstm, [...c.statement.statements]);
+        } else {
+            this.walkAST(loopstm, loopstm, [c.statement]);
+        }
+        if (!loopstm.nextF) {
+            loopstm.nextF = loopExit;
+            loopExit.lasts.add(loopstm);
+        }
+        if (!loopstm.nextT) {
+            loopstm.nextT = loopExit;
+            loopExit.lasts.add(loopstm);
+        }
+        this.loopStack.pop();
+        return loopExit;
+    }
+
+    ASTNodeDoStatement(c: ts.DoStatement, lastStatement: StatementBuilder, scopeID: number): StatementBuilder {
+        this.breakin = 'loop';
+        let loopstm = new ConditionStatementBuilder('loopStatement', '', c, scopeID);
+        this.loopStack.push(loopstm);
+        let loopExit = new StatementBuilder('loopExit', '', c, scopeID);
+        this.exits.push(loopExit);
+        loopstm.nextF = loopExit;
+        loopExit.lasts.add(loopstm);
+        loopstm.condition = c.expression.getText(this.sourceFile);
+        loopstm.code = 'while (' + loopstm.condition + ')';
+        loopstm.isDoWhile = true;
+        if (ts.isBlock(c.statement)) {
+            this.walkAST(lastStatement, loopstm, [...c.statement.statements]);
+        } else {
+            this.walkAST(lastStatement, loopstm, [c.statement]);
+        }
+        let lastType = lastStatement.type;
+        if (lastType === 'ifStatement' || lastType === 'loopStatement') {
+            let lastCondition = lastStatement as ConditionStatementBuilder;
+            loopstm.nextT = lastCondition.nextT;
+            lastCondition.nextT?.lasts.add(loopstm);
+        } else {
+            loopstm.nextT = lastStatement.next;
+            lastStatement.next?.lasts.add(loopstm);
+        }
+        if (loopstm.nextT && loopstm.nextT !== loopstm) {
+            loopstm.nextT.isDoWhile = true;
+            loopstm.doStatement = loopstm.nextT;
+        }
+        this.loopStack.pop();
+        return loopExit;
+    }
+
+    ASTNodeSwitchStatement(c: ts.SwitchStatement, lastStatement: StatementBuilder, scopeID: number): StatementBuilder {
+        this.breakin = 'switch';
+        let switchstm = new SwitchStatementBuilder('switchStatement', '', c, scopeID);
+        this.judgeLastType(switchstm, lastStatement);
+        let switchExit = new StatementBuilder('switchExit', '', null, scopeID);
+        this.exits.push(switchExit);
+        this.switchExitStack.push(switchExit);
+        switchstm.code = 'switch (' + c.expression + ')';
+        let lastCaseExit: StatementBuilder | null = null;
+        for (let i = 0; i < c.caseBlock.clauses.length; i++) {
+            const clause = c.caseBlock.clauses[i];
+            let casestm: StatementBuilder;
+            if (ts.isCaseClause(clause)) {
+                casestm = new StatementBuilder('statement', 'case ' + clause.expression.getText(this.sourceFile) + ':', clause, scopeID);
+            } else {
+                casestm = new StatementBuilder('statement', 'default:', clause, scopeID);
+            }
+            switchstm.nexts.push(casestm);
+            casestm.lasts.add(switchstm);
+            let caseExit = new StatementBuilder('caseExit', '', null, scopeID);
+            this.exits.push(caseExit);
+            this.walkAST(casestm, caseExit, [...clause.statements]);
+            if (ts.isCaseClause(clause)) {
+                const cas = new Case(casestm.code, casestm.next!);
+                switchstm.cases.push(cas);
+            } else {
+                switchstm.default = casestm.next;
+            }
+            switchstm.nexts[switchstm.nexts.length - 1] = casestm.next!;
+            for (const stmt of [...casestm.lasts]) {
+                casestm.next!.lasts.add(stmt);
+            }
+            casestm.next!.lasts.delete(casestm);
+
+            if (lastCaseExit) {
+                lastCaseExit.next = casestm.next;
+                casestm.next?.lasts.add(lastCaseExit);
+            }
+            lastCaseExit = caseExit;
+            if (i === c.caseBlock.clauses.length - 1) {
+                caseExit.next = switchExit;
+                switchExit.lasts.add(caseExit);
+            }
+        }
+        this.switchExitStack.pop();
+        return switchExit;
+    }
+
+    ASTNodeTryStatement(c: ts.TryStatement, lastStatement: StatementBuilder, scopeID: number): StatementBuilder {
+        let trystm = new TryStatementBuilder('tryStatement', 'try', c, scopeID);
+        this.judgeLastType(trystm, lastStatement);
+        let tryExit = new StatementBuilder('tryExit', '', c, scopeID);
+        this.exits.push(tryExit);
+        trystm.tryExit = tryExit;
+        this.walkAST(trystm, tryExit, [...c.tryBlock.statements]);
+        trystm.tryFirst = trystm.next;
+        trystm.next?.lasts.add(trystm);
+        if (c.catchClause) {
+            let text = 'catch';
+            if (c.catchClause.variableDeclaration) {
+                text += '(' + c.catchClause.variableDeclaration.getText(this.sourceFile) + ')';
+            }
+            let catchOrNot = new ConditionStatementBuilder('catchOrNot', text, c, scopeID);
+            let catchExit = new StatementBuilder('catch exit', '', c, scopeID);
+            catchOrNot.nextF = catchExit;
+            catchExit.lasts.add(catchOrNot);
+            this.walkAST(catchOrNot, catchExit, [...c.catchClause.block.statements]);
+            if (!catchOrNot.nextT) {
+                catchOrNot.nextT = catchExit;
+                catchExit.lasts.add(catchOrNot);
+            }
+            const catchStatement = new StatementBuilder('statement', catchOrNot.code, c.catchClause, catchOrNot.nextT.scopeID);
+            catchStatement.next = catchOrNot.nextT;
+            trystm.catchStatement = catchStatement;
+            catchStatement.lasts.add(trystm);
+            if (c.catchClause.variableDeclaration) {
+                trystm.catchError = c.catchClause.variableDeclaration.getText(this.sourceFile);
+            } else {
+                trystm.catchError = 'Error';
             }
 
         }
-
-        this.scopeLevel++;
-        let scope = new Scope(this.scopes.length, new Set(), this.scopeLevel);
-        for (let i = this.scopes.length - 1; i >= 0; i--) {
-            if (this.scopes[i].level === this.scopeLevel - 1) {
-                scope.parent = this.scopes[i];
-                break;
-            }
+        let final = new StatementBuilder('statement', 'finally', c, scopeID);
+        let finalExit = new StatementBuilder('finallyExit', '', c, scopeID);
+        this.exits.push(finalExit);
+        if (c.finallyBlock && c.finallyBlock.statements.length > 0) {
+            this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
+        } else {
+            let dummyFinally = new StatementBuilder('statement', 'dummyFinally', c, scopeID);
+            final.next = dummyFinally;
+            dummyFinally.lasts.add(final);
+            dummyFinally.next = finalExit;
+            finalExit.lasts.add(dummyFinally);
         }
+        trystm.finallyStatement = final.next;
+        tryExit.next = final.next;
+        final.next?.lasts.add(tryExit);
+        return finalExit;
+    }
+
+    walkAST(lastStatement: StatementBuilder, nextStatement: StatementBuilder, nodes: ts.Node[]) {
+        let scope = new Scope(this.scopes.length);
         this.scopes.push(scope);
-
         for (let i = 0; i < nodes.length; i++) {
             let c = nodes[i];
             if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c) || ts.isTypeAliasDeclaration(c)) {
                 let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
-                judgeLastType(s);
-                lastStatement = s;
-            } else if (!this.declaringMethod.isDefaultArkMethod() && ts.isFunctionDeclaration(c)) {
-                let s = new StatementBuilder('functionDeclarationStatement', c.getText(this.sourceFile), c, scope.id);
-                judgeLastType(s);
+                this.judgeLastType(s, lastStatement);
                 lastStatement = s;
             } else if (ts.isReturnStatement(c)) {
                 let s = new StatementBuilder('returnStatement', c.getText(this.sourceFile), c, scope.id);
-                judgeLastType(s);
-                s.astNode = c;
+                this.judgeLastType(s, lastStatement);
                 lastStatement = s;
                 break;
             } else if (ts.isBreakStatement(c)) {
-                let p: ts.Node | null = c;
-                while (p && p !== this.astRoot) {
-                    if (ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p) || ts.isForInStatement(p) || ts.isForOfStatement(p)) {
-                        const lastLoopNextF = this.loopStack[this.loopStack.length - 1].nextF!;
-                        judgeLastType(lastLoopNextF);
-                        lastLoopNextF.lasts.add(lastStatement);
-                        return;
-                    }
-                    if (ts.isCaseClause(p) || ts.isDefaultClause(p)) {
-                        const lastSwitchExit = this.switchExitStack[this.switchExitStack.length - 1];
-                        judgeLastType(lastSwitchExit);
-                        lastSwitchExit.lasts.add(lastStatement);
-                        return;
-                    }
-                    p = p.parent;
-                }
+                this.ASTNodeBreakStatement(c, lastStatement);
+                return;
             } else if (ts.isContinueStatement(c)) {
                 const lastLoop = this.loopStack[this.loopStack.length - 1];
-                judgeLastType(lastLoop);
+                this.judgeLastType(lastLoop, lastStatement);
                 lastLoop.lasts.add(lastStatement);
                 return;
             } else if (ts.isIfStatement(c)) {
-                let ifstm: ConditionStatementBuilder = new ConditionStatementBuilder('ifStatement', '', c, scope.id);
-                judgeLastType(ifstm);
-                let ifexit: StatementBuilder = new StatementBuilder('ifExit', '', c, scope.id);
-                this.exits.push(ifexit);
-                ifstm.condition = c.expression.getText(this.sourceFile);
-                ifstm.code = 'if (' + ifstm.condition + ')';
-                if (ts.isBlock(c.thenStatement)) {
-                    this.walkAST(ifstm, ifexit, [...c.thenStatement.statements]);
-                } else {
-                    this.walkAST(ifstm, ifexit, [c.thenStatement]);
-                }
-                if (c.elseStatement) {
-                    if (ts.isBlock(c.elseStatement)) {
-                        this.walkAST(ifstm, ifexit, [...c.elseStatement.statements]);
-                    } else {
-                        this.walkAST(ifstm, ifexit, [c.elseStatement]);
-                    }
-                }
-                if (!ifstm.nextT) {
-                    ifstm.nextT = ifexit;
-                    ifexit.lasts.add(ifstm);
-                }
-                if (!ifstm.nextF) {
-                    ifstm.nextF = ifexit;
-                    ifexit.lasts.add(ifstm);
-                }
-                lastStatement = ifexit;
+                lastStatement = this.ASTNodeIfStatement(c, lastStatement, scope.id);
             } else if (ts.isWhileStatement(c)) {
-                this.breakin = 'loop';
-                let loopstm = new ConditionStatementBuilder('loopStatement', '', c, scope.id);
-                this.loopStack.push(loopstm);
-                judgeLastType(loopstm);
-                let loopExit = new StatementBuilder('loopExit', '', c, scope.id);
-                this.exits.push(loopExit);
-                loopstm.nextF = loopExit;
-                loopExit.lasts.add(loopstm);
-                loopstm.condition = c.expression.getText(this.sourceFile);
-                loopstm.code = 'while (' + loopstm.condition + ')';
-                if (ts.isBlock(c.statement)) {
-                    this.walkAST(loopstm, loopstm, [...c.statement.statements]);
-                } else {
-                    this.walkAST(loopstm, loopstm, [c.statement]);
-                }
-                if (!loopstm.nextF) {
-                    loopstm.nextF = loopExit;
-                    loopExit.lasts.add(loopstm);
-                }
-                if (!loopstm.nextT) {
-                    loopstm.nextT = loopExit;
-                    loopExit.lasts.add(loopstm);
-                }
-                lastStatement = loopExit;
-                this.loopStack.pop();
+                lastStatement = this.ASTNodeWhileStatement(c, lastStatement, scope.id);
             }
             if (ts.isForStatement(c) || ts.isForInStatement(c) || ts.isForOfStatement(c)) {
-                this.breakin = 'loop';
-                let loopstm = new ConditionStatementBuilder('loopStatement', '', c, scope.id);
-                this.loopStack.push(loopstm);
-                judgeLastType(loopstm);
-                let loopExit = new StatementBuilder('loopExit', '', c, scope.id);
-                this.exits.push(loopExit);
-                loopstm.nextF = loopExit;
-                loopExit.lasts.add(loopstm);
-                loopstm.code = 'for (';
-                if (ts.isForStatement(c)) {
-                    loopstm.code += c.initializer?.getText(this.sourceFile) + '; ' + c.condition?.getText(this.sourceFile) + '; ' + c.incrementor?.getText(this.sourceFile);
-                } else if (ts.isForOfStatement(c)) {
-                    loopstm.code += c.initializer?.getText(this.sourceFile) + ' of ' + c.expression.getText(this.sourceFile);
-                } else {
-                    loopstm.code += c.initializer?.getText(this.sourceFile) + ' in ' + c.expression.getText(this.sourceFile);
-                }
-                loopstm.code += ')';
-                if (ts.isBlock(c.statement)) {
-                    this.walkAST(loopstm, loopstm, [...c.statement.statements]);
-                } else {
-                    this.walkAST(loopstm, loopstm, [c.statement]);
-                }
-                if (!loopstm.nextF) {
-                    loopstm.nextF = loopExit;
-                    loopExit.lasts.add(loopstm);
-                }
-                if (!loopstm.nextT) {
-                    loopstm.nextT = loopExit;
-                    loopExit.lasts.add(loopstm);
-                }
-                lastStatement = loopExit;
-                this.loopStack.pop();
+                lastStatement = this.ASTNodeForStatement(c, lastStatement, scope.id);
             } else if (ts.isDoStatement(c)) {
-                this.breakin = 'loop';
-                let loopstm = new ConditionStatementBuilder('loopStatement', '', c, scope.id);
-                this.loopStack.push(loopstm);
-                let loopExit = new StatementBuilder('loopExit', '', c, scope.id);
-                this.exits.push(loopExit);
-                loopstm.nextF = loopExit;
-                loopExit.lasts.add(loopstm);
-                loopstm.condition = c.expression.getText(this.sourceFile);
-                loopstm.code = 'while (' + loopstm.condition + ')';
-                loopstm.isDoWhile = true;
-                if (ts.isBlock(c.statement)) {
-                    this.walkAST(lastStatement, loopstm, [...c.statement.statements]);
-                } else {
-                    this.walkAST(lastStatement, loopstm, [c.statement]);
-                }
-                let lastType = lastStatement.type;
-                if (lastType === 'ifStatement' || lastType === 'loopStatement') {
-                    let lastCondition = lastStatement as ConditionStatementBuilder;
-                    loopstm.nextT = lastCondition.nextT;
-                    lastCondition.nextT?.lasts.add(loopstm);
-                } else {
-                    loopstm.nextT = lastStatement.next;
-                    lastStatement.next?.lasts.add(loopstm);
-                }
-                if (loopstm.nextT && loopstm.nextT !== loopstm) {
-                    loopstm.nextT.isDoWhile = true;
-                    loopstm.doStatement = loopstm.nextT;
-                }
-                lastStatement = loopExit;
-                this.loopStack.pop();
+                lastStatement = this.ASTNodeDoStatement(c, lastStatement, scope.id);
             } else if (ts.isSwitchStatement(c)) {
-                this.breakin = 'switch';
-                let switchstm = new SwitchStatementBuilder('switchStatement', '', c, scope.id);
-                judgeLastType(switchstm);
-                let switchExit = new StatementBuilder('switchExit', '', null, scope.id);
-                this.exits.push(switchExit);
-                this.switchExitStack.push(switchExit);
-                switchstm.code = 'switch (' + c.expression + ')';
-                let lastCaseExit: StatementBuilder | null = null;
-                for (let i = 0; i < c.caseBlock.clauses.length; i++) {
-                    const clause = c.caseBlock.clauses[i];
-                    let casestm: StatementBuilder;
-                    if (ts.isCaseClause(clause)) {
-                        casestm = new StatementBuilder('statement', 'case ' + clause.expression.getText(this.sourceFile) + ':', clause, scope.id);
-                    } else {
-                        casestm = new StatementBuilder('statement', 'default:', clause, scope.id);
-                    }
-
-                    switchstm.nexts.push(casestm);
-                    casestm.lasts.add(switchstm);
-                    let caseExit = new StatementBuilder('caseExit', '', null, scope.id);
-                    this.exits.push(caseExit);
-                    this.walkAST(casestm, caseExit, [...clause.statements]);
-                    if (ts.isCaseClause(clause)) {
-                        const cas = new Case(casestm.code, casestm.next!);
-                        switchstm.cases.push(cas);
-                    } else {
-                        switchstm.default = casestm.next;
-                    }
-                    // case: 之类的代码不会被三地址码识别，可能会导致空block，暂时删除
-                    switchstm.nexts[switchstm.nexts.length - 1] = casestm.next!;
-                    for (const stmt of [...casestm.lasts]) {
-                        casestm.next!.lasts.add(stmt);
-                    }
-                    casestm.next!.lasts.delete(casestm);
-
-                    if (lastCaseExit) {
-                        lastCaseExit.next = casestm.next;
-                        casestm.next?.lasts.add(lastCaseExit);
-                    }
-                    lastCaseExit = caseExit;
-                    if (i === c.caseBlock.clauses.length - 1) {
-                        caseExit.next = switchExit;
-                        switchExit.lasts.add(caseExit);
-                    }
-                }
-
-                lastStatement = switchExit;
-                this.switchExitStack.pop();
+                lastStatement = this.ASTNodeSwitchStatement(c, lastStatement, scope.id);
             } else if (ts.isBlock(c)) {
                 let blockExit = new StatementBuilder('blockExit', '', c, scope.id);
                 this.exits.push(blockExit);
                 this.walkAST(lastStatement, blockExit, c.getChildren(this.sourceFile)[1].getChildren(this.sourceFile));
                 lastStatement = blockExit;
             } else if (ts.isTryStatement(c)) {
-                let trystm = new TryStatementBuilder('tryStatement', 'try', c, scope.id);
-                judgeLastType(trystm);
-                let tryExit = new StatementBuilder('tryExit', '', c, scope.id);
-                this.exits.push(tryExit);
-                trystm.tryExit = tryExit;
-                this.walkAST(trystm, tryExit, [...c.tryBlock.statements]);
-                trystm.tryFirst = trystm.next;
-                trystm.next?.lasts.add(trystm);
-                if (c.catchClause) {
-                    let text = 'catch';
-                    if (c.catchClause.variableDeclaration) {
-                        text += '(' + c.catchClause.variableDeclaration.getText(this.sourceFile) + ')';
-                    }
-                    let catchOrNot = new ConditionStatementBuilder('catchOrNot', text, c, scope.id);
-                    let catchExit = new StatementBuilder('catch exit', '', c, scope.id);
-                    catchOrNot.nextF = catchExit;
-                    catchExit.lasts.add(catchOrNot);
-                    this.walkAST(catchOrNot, catchExit, [...c.catchClause.block.statements]);
-                    if (!catchOrNot.nextT) {
-                        catchOrNot.nextT = catchExit;
-                        catchExit.lasts.add(catchOrNot);
-                    }
-                    const catchStatement = new StatementBuilder('statement', catchOrNot.code, c.catchClause, catchOrNot.nextT.scopeID);
-                    catchStatement.next = catchOrNot.nextT;
-                    trystm.catchStatement = catchStatement;
-                    catchStatement.lasts.add(trystm);
-                    if (c.catchClause.variableDeclaration) {
-                        trystm.catchError = c.catchClause.variableDeclaration.getText(this.sourceFile);
-                    } else {
-                        trystm.catchError = 'Error';
-                    }
-
-                }
-                let final = new StatementBuilder('statement', 'finally', c, scope.id);
-                let finalExit = new StatementBuilder('finallyExit', '', c, scope.id);
-                this.exits.push(finalExit);
-                if (c.finallyBlock && c.finallyBlock.statements.length > 0) {
-                    this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
-                    trystm.finallyStatement = final.next;
-                    tryExit.next = final.next;
-                    final.next?.lasts.add(tryExit);
-                    lastStatement = finalExit;
-                } else {
-                    lastStatement = tryExit;
-                }
-            } else if (ts.isExportAssignment(c)) {
-                if (ts.isNewExpression(c.expression) || ts.isObjectLiteralExpression(c.expression)) {
-                    let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
-                    judgeLastType(s);
-                    lastStatement = s;
-                }
+                lastStatement = this.ASTNodeTryStatement(c, lastStatement, scope.id);
             }
         }
-        this.scopeLevel--;
         if (lastStatement.type !== 'breakStatement' && lastStatement.type !== 'continueStatement' && lastStatement.type !== 'returnStatement') {
             lastStatement.next = nextStatement;
             nextStatement.lasts.add(lastStatement);
@@ -704,7 +709,33 @@ export class CfgBuilder {
         }
     }
 
-    addReturnBlock() {
+    addReturnBlock(returnStatement: StatementBuilder, notReturnStmts: StatementBuilder[]) {
+        let returnBlock = new Block(this.blocks.length, [returnStatement]);
+        returnStatement.block = returnBlock;
+        this.blocks.push(returnBlock);
+        for (const notReturnStmt of notReturnStmts) {
+            if (notReturnStmt instanceof ConditionStatementBuilder) {
+                if (this.exit === notReturnStmt.nextT) {
+                    notReturnStmt.nextT = returnStatement;
+                    notReturnStmt.block?.nexts.splice(0, 0, returnBlock);
+                } else if (this.exit === notReturnStmt.nextF) {
+                    notReturnStmt.nextF = returnStatement;
+                    notReturnStmt.block?.nexts.push(returnBlock);
+                }
+            } else {
+                notReturnStmt.next = returnStatement;
+                notReturnStmt.block?.nexts.push(returnBlock);
+            }
+            returnStatement.lasts.add(notReturnStmt);
+            returnStatement.next = this.exit;
+            const lasts = [...this.exit.lasts];
+            lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
+            this.exit.lasts = new Set(lasts);
+            returnBlock.lasts.push(notReturnStmt.block!);
+        }
+    }
+
+    addReturnStmt() {
         let notReturnStmts: StatementBuilder[] = [];
         for (let stmt of [...this.exit.lasts]) {
             if (stmt.type !== 'returnStatement') {
@@ -737,29 +768,7 @@ export class CfgBuilder {
             notReturnStmt.block?.stmts.push(returnStatement);
             returnStatement.block = notReturnStmt.block;
         } else {
-            let returnBlock = new Block(this.blocks.length, [returnStatement]);
-            returnStatement.block = returnBlock;
-            this.blocks.push(returnBlock);
-            for (const notReturnStmt of notReturnStmts) {
-                if (notReturnStmt instanceof ConditionStatementBuilder) {
-                    if (this.exit === notReturnStmt.nextT) {
-                        notReturnStmt.nextT = returnStatement;
-                        notReturnStmt.block?.nexts.splice(0, 0, returnBlock);
-                    } else if (this.exit === notReturnStmt.nextF) {
-                        notReturnStmt.nextF = returnStatement;
-                        notReturnStmt.block?.nexts.push(returnBlock);
-                    }
-                } else {
-                    notReturnStmt.next = returnStatement;
-                    notReturnStmt.block?.nexts.push(returnBlock);
-                }
-                returnStatement.lasts.add(notReturnStmt);
-                returnStatement.next = this.exit;
-                const lasts = [...this.exit.lasts];
-                lasts[lasts.indexOf(notReturnStmt)] = returnStatement;
-                this.exit.lasts = new Set(lasts);
-                returnBlock.lasts.push(notReturnStmt.block!);
-            }
+            this.addReturnBlock(returnStatement, notReturnStmts);
         }
     }
 
@@ -977,7 +986,7 @@ export class CfgBuilder {
         this.buildBlocks();
         this.blocks = this.blocks.filter((b) => b.stmts.length !== 0);
         this.buildBlocksNextLast();
-        this.addReturnBlock();
+        this.addReturnStmt();
     }
 
     private handleBuilder(stmts: ts.Node[]): void {

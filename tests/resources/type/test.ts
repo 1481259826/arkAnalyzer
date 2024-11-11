@@ -12,9 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-try {
-    let result = 10 / 0;
-} catch (error) {
-    console.error(2);
+let list = []
+let i: number = 0;
+for (; i < list.length; i = i + 1) {
+  if (i == 0) {
+    console.log('continue');
+  } else {
+    if (i == 2) {
+      console.log('break');
+      break;
+    }
+    console.info(list[i]);
+  }
 }
