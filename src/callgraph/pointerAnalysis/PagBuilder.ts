@@ -29,8 +29,10 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, GLOBAL_THIS, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode } from './Pag';
 import { PtsSet } from './PtsDS';
+import { GLOBAL_THIS } from '../../core/common/TSConst';
+import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -61,6 +63,7 @@ export class PagBuilder {
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     // record the SDK API param, and create fake Values
     private sdkMethodParamValueMap: Map<FuncID, Map<number, Value>> = new Map();
+    private fakeSdkMethodParamDeclaringStmt: Stmt = new ArkAssignStmt(new Constant(""), new Constant(""));
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
@@ -177,7 +180,7 @@ export class PagBuilder {
                         // static API may call instance anonymous method...
                         fpag.addNormalCallSite(cs);
                         if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
-                            .getDeclaringFileSignature().getFileName() === '_UnknownFileName') {
+                            .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
                             fpag.addUnknownCallSite(cs);
                             continue;
                         }
@@ -197,6 +200,7 @@ export class PagBuilder {
                 if (cs) {
                     // direct call or constructor call is already existing in CG
                     // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
+                    // TODO: instance invoke(ptr invoke)
                     if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
                         fpag.addUnknownCallSite(cs);
                     } else {
@@ -241,7 +245,8 @@ export class PagBuilder {
         let position = 0;
 
         args.forEach((arg) => {
-            let argInstance: Value = new Local(arg.getName(), arg.getType());
+            let argInstance: Local = new Local(arg.getName(), arg.getType());
+            argInstance.setDeclaringStmt(this.fakeSdkMethodParamDeclaringStmt);
             paramMap.set(position, argInstance);
             position ++;
         })
@@ -527,8 +532,11 @@ export class PagBuilder {
         let callees: ArkMethod[] = this.getDynamicCallee(ptNode, value, ivkExpr!, cs);
 
         for (let callee of callees) {
+            if (!callee) {
+                continue;
+            }
             // get caller and callee CG node, add param and return value PAG edge
-            let dstCGNode = this.cg.getCallGraphNodeByMethod(callee!.getSignature());
+            let dstCGNode = this.cg.getCallGraphNodeByMethod(callee.getSignature());
             let callerNode = this.cg.getNode(cs.callerFuncID) as CallGraphNode;
             if (!callerNode) {
                 throw new Error("Can not get caller method node");
@@ -590,16 +598,10 @@ export class PagBuilder {
                 }
             }
     
-            if (!tempCallee) {
+            if (!tempCallee && cs.args) {
                 // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
                 // return empty node when {o_2} come in
-                return callee;
-            } else {
-                callee.push(tempCallee);
-            }
-
-            // try to get callee by anonymous method in param
-            if (cs.args) {
+                // try to get callee by anonymous method in param
                 for (let arg of cs.args) {
                     // TODO: anonymous method param and return value pointer pass
                     let argType = arg.getType();
@@ -607,6 +609,8 @@ export class PagBuilder {
                         callee.push(this.scene.getMethod(argType.getMethodSignature())!);
                     }
                 }
+            } else if (tempCallee) {
+                callee.push(tempCallee);
             }
         }
 
@@ -719,7 +723,7 @@ export class PagBuilder {
         ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID, callerFunID: FuncID): NodeID {
 
         if (!callee || !callee.getCfg()) {
-            console.log("callee is null")
+            logger.error(`callee is null`);
             return -1;
         }
         let thisAssignStmt = callee.getCfg()?.getStmts().filter(s =>

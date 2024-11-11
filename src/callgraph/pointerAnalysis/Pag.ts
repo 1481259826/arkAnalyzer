@@ -27,6 +27,7 @@ import { FunctionType } from '../../core/base/Type';
 import { MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { GLOBAL_THIS } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -49,8 +50,6 @@ export enum StorageLinkEdgeType {
     Local2Property,
     TwoWay
 }
-
-export const GLOBAL_THIS: string = 'globalThis'
 
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;

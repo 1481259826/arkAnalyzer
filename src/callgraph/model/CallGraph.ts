@@ -23,6 +23,7 @@ import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { BaseEdge, BaseNode, BaseGraph, NodeID } from './BaseGraph';
 import { CGStat } from '../common/Statistics';
 import { ContextID } from '../pointerAnalysis/Context';
+import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
 
 export type Method = MethodSignature;
 export type CallSiteID = number;
@@ -413,7 +414,7 @@ export class CallGraph extends BaseGraph {
         let method = this.getMethodByFuncID(funcID);
 
         if (method) {
-            if (!(method.getDeclaringClassSignature().getDeclaringFileSignature().getFileName() === '_UnknownFileName')) {
+            if (!(method.getDeclaringClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME)) {
                 return false;
             }
         }
