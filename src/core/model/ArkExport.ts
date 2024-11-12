@@ -19,6 +19,7 @@ import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, Namespac
 import { DEFAULT } from "../common/TSConst";
 import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
+import { ArkMetadataKind } from './ArkMetadata';
 
 
 export type ExportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
@@ -172,6 +173,13 @@ export class ExportInfo extends ArkBaseModel implements FromInfo {
         public exportFrom(exportFrom: string): ArkExportBuilder {
             if (exportFrom !== '') {
                 this.exportInfo.exportFrom = exportFrom;
+            }
+            return this;
+        }
+
+        public setLeadingComments(comments: string[]): ArkExportBuilder {
+            if (comments.length > 0) {
+                this.exportInfo.setMetadata(ArkMetadataKind.LEADING_COMMENTS, comments);
             }
             return this;
         }

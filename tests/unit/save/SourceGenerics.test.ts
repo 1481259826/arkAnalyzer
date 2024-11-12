@@ -17,10 +17,25 @@ import { Scene, SceneConfig, SourceClassPrinter, SourceFilePrinter } from '../..
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
-const CASE1_EXPECT = `function identity<T>(arg: T): T {
+const CASE1_EXPECT = `/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function identity<T>(arg: T): T {
   return arg;
 }
 let myIdentity: (arg: T) => T  = identity;
+// TODO: <string> lost
 let output: string = identity<string>('myString');
 class GenericNumber<T> {
   zeroValue: T;
@@ -33,6 +48,7 @@ interface Lengthwise {
 }
 function loggingIdentity<T>(arg: T): T {
   logger.info(arg.length);
+  // Now we know it has a .length property, so no more error
   return arg;
 }
 declare interface BreakPointTypeOption<T> {
@@ -66,7 +82,7 @@ const CASE2_EXPECT = `class GenericNumber<T> {
 `;
 
 describe('SourceGenericsTest', () => {
-    let config: SceneConfig = new SceneConfig();
+    let config: SceneConfig = new SceneConfig({enableLeadingComments: true});
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);

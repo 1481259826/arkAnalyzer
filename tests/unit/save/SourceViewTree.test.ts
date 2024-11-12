@@ -66,9 +66,11 @@ const CASE2_EXPECT = `namespace Case2 {
     label: string = 'Hello';
     build() {
       Column() {
+        // Pass the this.label reference to the overBuilder component when the overBuilder component is called in the Parent component.
         overBuilder({paramA1: this.label});
         Button('Click me')
         .onClick(() => {
+        // After Click me is clicked, the UI text changes from Hello to ArkUI.
         this.label = 'ArkUI';
       })
       }
@@ -129,7 +131,21 @@ struct LazyForEachTest {
 }
 `;
 
-const CASE5_EXPECT = `@Entry
+const CASE5_EXPECT = `/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+@Entry
 @Component
 struct IfElseTest1 {
   @State
@@ -244,7 +260,21 @@ const CASE7_EXPECT = `namespace Case2 {
 }
 `;
 
-const CASE8_EXPECT = `import {common} from '@kit.AbilityKit';
+const CASE8_EXPECT = `/*
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {common} from '@kit.AbilityKit';
 import {resourceManager} from '@kit.LocalizationKit';
 import {BusinessError} from '@kit.BasicServicesKit';
 import {SongItem} from '../viewmodel/SongData';
@@ -283,7 +313,7 @@ export default class SongItemBuilder {
 `;
 
 describe('SourceViewTreeTest', () => {
-    let config: SceneConfig = new SceneConfig();
+    let config: SceneConfig = new SceneConfig({enableLeadingComments: true});
     config.buildFromProjectDir(path.join(__dirname, '../../resources/viewtree'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);

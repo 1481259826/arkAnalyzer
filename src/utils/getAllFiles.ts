@@ -29,9 +29,11 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'getAllFiles');
 export function getAllFiles(
   srcPath: string,
   exts: string[],
+  ignore: string[] = [],
   filenameArr: string[] = [],
   visited: Set<string> = new Set<string>()
 ): string[] {
+  let ignoreFiles: Set<string> = new Set(ignore);
   // 如果源目录不存在，直接结束程序
   if (!fs.existsSync(srcPath)) {
     logger.error(`Input directory is not exist, please check!`);
@@ -47,11 +49,7 @@ export function getAllFiles(
 
   // 遍历src，判断文件类型
   fs.readdirSync(realSrc).forEach(filename => {
-    if (
-      filename === 'oh_modules' ||
-      filename === 'node_modules' ||
-      filename === 'hvigorfile.ts'
-    ) {
+    if (ignoreFiles.has(filename)) {
       return;
     }
     // 拼接文件的绝对路径
@@ -61,7 +59,7 @@ export function getAllFiles(
 
     // 如果是目录，递归提取
     if (fs.statSync(realFile).isDirectory()) {
-      getAllFiles(realFile, exts, filenameArr, visited);
+      getAllFiles(realFile, exts, ignore, filenameArr, visited);
     } else {
       // 如果是文件，则判断其扩展名是否在给定的扩展名数组中
       if (exts.includes(path.extname(filename))) {

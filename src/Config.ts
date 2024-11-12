@@ -26,11 +26,20 @@ export interface Sdk {
     moduleName: string;
 }
 
-export class SceneConfig {
-    private targetProjectName: string = "";
-    private targetProjectDirectory: string = "";
+export type SceneOptionsValue = string | number | boolean | (string | number)[] | string[] | null | undefined;
+export interface SceneOptions {
+    ignoreFileNames?: string[];
+    enableLeadingComments?: boolean;
+    [option: string]: SceneOptionsValue;
+}
+const CONFIG_FILENAME = 'arkanalyzer.json';
+const DEFAULT_CONFIG_FILE = path.join(__dirname, '../config', CONFIG_FILENAME);
 
-    private etsSdkPath: string = "";
+export class SceneConfig {
+    private targetProjectName: string = '';
+    private targetProjectDirectory: string = '';
+
+    private etsSdkPath: string = '';
     private sdksObj: Sdk[] = [];
 
     private sdkFiles: string[] = [];
@@ -38,11 +47,25 @@ export class SceneConfig {
 
     private projectFiles: string[] = [];
 
-    constructor() {
+    private options: SceneOptions;
+
+    constructor(options?: SceneOptions) {
+        try {
+            this.options = JSON.parse(fs.readFileSync(DEFAULT_CONFIG_FILE, 'utf-8'));
+        } catch (error) {
+            this.options = {};
+        }
+        if (options) {
+            this.options = { ...this.options, ...options };
+        }
+    }
+
+    public getOptions(): SceneOptions {
+        return this.options;
     }
 
     /**
-     * Set the scene's config, 
+     * Set the scene's config,
      * such as  the target project's name, the used sdks and the full path.
      * @param targetProjectName - the target project's name.
      * @param targetProjectDirectory - the target project's directory.
@@ -78,7 +101,7 @@ export class SceneConfig {
     public buildFromProjectDir(targetProjectDirectory: string) {
         this.targetProjectDirectory = targetProjectDirectory;
         this.targetProjectName = path.basename(targetProjectDirectory);
-        this.projectFiles = getAllFiles(targetProjectDirectory, ['.ets', '.ts']);
+        this.projectFiles = getAllFiles(targetProjectDirectory, ['.ets', '.ts'], this.options.ignoreFileNames);
     }
 
     public buildFromJson(configJsonPath: string) {
@@ -100,21 +123,17 @@ export class SceneConfig {
                 return;
             }
 
-            const targetProjectName: string = configurations.targetProjectName
-                ? configurations.targetProjectName
-                : '';
+            const targetProjectName: string = configurations.targetProjectName ? configurations.targetProjectName : '';
             const targetProjectDirectory: string = configurations.targetProjectDirectory
                 ? configurations.targetProjectDirectory
                 : '';
-            const sdks: Sdk[] = configurations.sdks
-                ? configurations.sdks
-                : [];
+            const sdks: Sdk[] = configurations.sdks ? configurations.sdks : [];
 
-            this.buildConfig(
-                targetProjectName,
-                targetProjectDirectory,
-                sdks
-            );
+            if (configurations.options) {
+                this.options = { ...this.options, ...configurations.options };
+            }
+
+            this.buildConfig(targetProjectName, targetProjectDirectory, sdks);
         } else {
             logger.error(`Your configJsonPath: "${configJsonPath}" is not exist.`);
         }

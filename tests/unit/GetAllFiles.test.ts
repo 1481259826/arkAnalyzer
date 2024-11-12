@@ -24,7 +24,7 @@ describe("getAllFiles Test", () => {
     })
     it('normal case 2', () => {
         let files = ["test"];
-        getAllFiles(".vscode.sample", [".json"], files);
+        getAllFiles(".vscode.sample", [".json"], [], files);
         expect(files.length).toBe(2);
         assert.isTrue(files[1].includes("launch.json"));
     })

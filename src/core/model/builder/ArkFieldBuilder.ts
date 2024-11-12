@@ -23,6 +23,7 @@ import { FieldSignature } from '../ArkSignature';
 import { ClassType, Type, UnknownType } from '../../base/Type';
 import { LineColPosition } from '../../base/Position';
 import { ModifierType } from '../ArkBaseModel';
+import { IRUtils } from '../../common/IRUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFieldBuilder');
 
@@ -81,7 +82,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
         field.setExclamationToken(true);
     }
-
+    IRUtils.setLeadingComments(field, member, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
     cls.addField(field);
     return field;
 }
@@ -103,7 +104,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     const fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, field), field);
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, true);
     field.setSignature(fieldSignature);
-
+    IRUtils.setLeadingComments(field, member, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
     cls.addField(field);
 }
 

@@ -17,7 +17,21 @@ import { Scene, SceneConfig, SourceClassPrinter, SourceFilePrinter } from '../..
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 
-const SourceClassesTest_CASE1_EXPECT = `const TAG: string = 'ClassTest';
+const SourceClassesTest_CASE1_EXPECT = `/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const TAG: string = 'ClassTest';
 class Animal {
   protected _name: string | undefined;
   public constructor(theName: string) {
@@ -117,13 +131,28 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
 `;
 
 // TODO: index not support
-const SourceClassesTest_CASE4_EXPECT = `interface Updatable {
+const SourceClassesTest_CASE4_EXPECT = `/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// Common Syntax
+interface Updatable {
   [key: string]: number;
 }
 `;
 
 describe('SourceClassesTest', () => {
-    let config: SceneConfig = new SceneConfig();
+    let config: SceneConfig = new SceneConfig({enableLeadingComments: true});
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);

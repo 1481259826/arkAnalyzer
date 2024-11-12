@@ -19,6 +19,7 @@ import { AbstractExpr, AbstractInvokeExpr, ArkConditionExpr } from './Expr';
 import { AbstractFieldRef, ArkArrayRef } from './Ref';
 import { Value } from './Value';
 import { FullPosition, LineColPosition } from './Position';
+import { ArkMetadata, ArkMetadataKind, ArkMetadataType } from '../model/ArkMetadata';
 
 /**
  * @category core/base/stmt
@@ -30,7 +31,19 @@ export abstract class Stmt {
     protected cfg!: Cfg;
     protected operandOriginalPositions?: FullPosition[]; // operandOriginalPositions correspond with
                                                                       // def and uses one by one
+    metadata?: ArkMetadata;
 
+    public getMetadata(kind: ArkMetadataKind): ArkMetadataType | undefined {
+        return this.metadata?.getMetadata(kind);
+    }
+
+    public setMetadata(kind: ArkMetadataKind, value: ArkMetadataType): void {
+        if (!this.metadata) {
+            this.metadata = new ArkMetadata();
+        }
+        return this.metadata?.setMetadata(kind, value);
+    }
+    
     /** Return a list of values which are uesd in this statement */
     public getUses(): Value[] {
         return [];

@@ -17,11 +17,22 @@ import { AbstractBinopExpr, AbstractInvokeExpr, ArkCastExpr, ArkUnopExpr } from 
 import { AbstractFieldRef, ArkArrayRef } from '../base/Ref';
 import { Value } from '../base/Value';
 import { Scene } from '../../Scene';
+import ts from 'ohos-typescript';
+import { SceneOptions } from '../../Config';
+import { ArkMetadataKind } from '../model/ArkMetadata';
+import { Stmt } from '../base/Stmt';
+import { ArkBaseModel } from '../model/ArkBaseModel';
 
 export class IRUtils {
     static moreThanOneAddress(value: Value): boolean {
-        if (value instanceof AbstractBinopExpr || value instanceof AbstractInvokeExpr || value instanceof AbstractFieldRef ||
-            value instanceof ArkArrayRef || value instanceof ArkCastExpr || value instanceof ArkUnopExpr) {
+        if (
+            value instanceof AbstractBinopExpr ||
+            value instanceof AbstractInvokeExpr ||
+            value instanceof AbstractFieldRef ||
+            value instanceof ArkArrayRef ||
+            value instanceof ArkCastExpr ||
+            value instanceof ArkUnopExpr
+        ) {
             return true;
         }
         return false;
@@ -36,5 +47,30 @@ export class IRUtils {
                 }
             }
         }
+    }
+
+    static setLeadingComments(
+        metadata: Stmt | ArkBaseModel,
+        node: ts.Node,
+        sourceFile: ts.SourceFile,
+        options: SceneOptions
+    ): void {
+        let comments = this.getLeadingComments(node, sourceFile, options);
+        if (comments.length > 0) {
+            metadata.setMetadata(ArkMetadataKind.LEADING_COMMENTS, comments);
+        }
+    }
+
+    static getLeadingComments(node: ts.Node, sourceFile: ts.SourceFile, options: SceneOptions): string[] {
+        let comments: string[] = [];
+        if (!options.enableLeadingComments) {
+            return comments;
+        }
+        const commentRanges = ts.getLeadingCommentRanges(node.getFullText(sourceFile), 0) || [];
+        for (const range of commentRanges) {
+            const comment = node.getFullText(sourceFile).slice(range.pos, range.end);
+            comments.push(comment);
+        }
+        return comments;
     }
 }
