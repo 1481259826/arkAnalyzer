@@ -30,7 +30,6 @@ function testAppProjectSave() {
     scene.buildBasicInfo(config);
     logger.error('start ... ');
     scene.buildScene4HarmonyProject();
-    scene.collectProjectImportInfos();
     scene.inferTypes();
     logger.error('end inferTypes ... ');
 

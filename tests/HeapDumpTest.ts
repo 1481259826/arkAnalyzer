@@ -47,8 +47,6 @@ function testAppProject(): void {
         scene.buildScene4HarmonyProject();
     }
     snapshot('buildScene');
-
-    scene.collectProjectImportInfos();
     scene.inferTypes();
     snapshot('inferTypes');
     logger.error('end inferTypes ... ');

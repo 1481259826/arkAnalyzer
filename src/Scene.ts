@@ -17,7 +17,6 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, Sdk } from './Config';
-import { ImportInfo } from './core/model/ArkImport';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
@@ -58,8 +57,6 @@ export class Scene {
     private moduleScenesMap: Map<string, ModuleScene> = new Map();
     private modulePath2NameMap: Map<string, string> = new Map<string, string>();
 
-    private globalImportInfos: ImportInfo[] = [];
-
     private moduleSdkMap: Map<string, Sdk[]> = new Map();
     private projectSdkMap: Map<string, Sdk> = new Map();
 
@@ -88,8 +85,6 @@ export class Scene {
 
         this.moduleScenesMap.clear();
         this.modulePath2NameMap.clear();
-
-        this.globalImportInfos = [];
 
         this.moduleSdkMap.clear();
         this.projectSdkMap.clear();
@@ -131,7 +126,6 @@ export class Scene {
     public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
         this.buildBasicInfo(sceneConfig);
         this.genArkFiles();
-        this.collectProjectImportInfos();
     }
 
     /**
@@ -643,14 +637,6 @@ export class Scene {
                 }
             }
         }
-    }
-
-    public collectProjectImportInfos() {
-        this.getFiles().forEach((arkFile) => {
-            arkFile.getImportInfos().forEach((importInfo) => {
-                this.globalImportInfos.push(importInfo);
-            });
-        });
     }
 
     public getClassMap(): Map<FileSignature | NamespaceSignature, ArkClass[]> {

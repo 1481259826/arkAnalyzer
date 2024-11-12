@@ -38,7 +38,6 @@ describe('StaticSingleAssignmentFormer Test', () => {
     config.buildFromProjectDir(path.join(__dirname, '../resources/ssa'));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
-    projectScene.collectProjectImportInfos();
 
     it('debug case', () => {
         let staticSingleAssignmentFormer = new StaticSingleAssignmentFormer();

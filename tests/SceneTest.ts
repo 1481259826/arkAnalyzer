@@ -140,7 +140,6 @@ class SceneTest {
         const scene = new Scene();
         scene.buildBasicInfo(sceneConfig);
         scene.buildScene4HarmonyProject();
-        scene.collectProjectImportInfos();
 
         logger.debug('testEtsProject end\n');
     }

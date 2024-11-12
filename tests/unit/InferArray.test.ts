@@ -42,7 +42,6 @@ describe("Infer Array Test", () => {
     config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
-    projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     it('normal case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');

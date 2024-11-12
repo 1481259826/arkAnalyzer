@@ -24,7 +24,6 @@ config.buildFromProjectDir("tests/resources/ifds/UndefinedVariable");
 const scene = new Scene();
 scene.buildBasicInfo(config);
 scene.buildSceneFromProjectDir(config);
-scene.collectProjectImportInfos();
 const defaultMethod = scene.getFiles()[0].getDefaultClass().getDefaultArkMethod();
 let method = ModelUtils.getMethodWithName("U2",defaultMethod!);
 if(method){
