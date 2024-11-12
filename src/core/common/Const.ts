@@ -30,6 +30,7 @@ export const INSTANCE_INIT_METHOD_NAME = NAME_PREFIX + 'instInit';
 export const STATIC_INIT_METHOD_NAME = NAME_PREFIX + 'statInit';
 export const ANONYMOUS_METHOD_PREFIX = NAME_PREFIX + 'AM';
 export const CALL_SIGNATURE_NAME = 'create';
+export const NESTED_METHOD_SEPARATOR = '-';
 
 // ArkSignature const
 export const UNKNOWN_PROJECT_NAME = NAME_PREFIX + UNKNOWN_NAME;

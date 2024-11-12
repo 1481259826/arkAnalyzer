@@ -20,3 +20,55 @@ function testDotDotDotToken(arr1: number[], ...arr2: number[]) {
 function testObjectTypeParam(obj: object) {
     console.log("This is a function for testing parameter of object type.");
 }
+
+function outerFunction1(): void {
+    innerFunction1();
+    function innerFunction1(): void {
+        console.log('This is nested function with function declaration.');
+        function innerInnerFunction1(): void {
+            console.log('This is nested function in nested function with function declaration.');
+        }
+        innerInnerFunction1();
+    }
+}
+
+function outerFunction2(): (param: string) => void {
+    let innerFunction2 = 2;
+    return function innerFunction2(param: string): void {
+        console.log(`This is nested function with return statement. param ${param}`);
+    }
+}
+
+function outerFunction3(): void {
+    const innerFunction3 = function() {
+        console.log('This is nested function with function expression.');
+    }
+    innerFunction3();
+}
+
+function outerFunction4(): void {
+    const innerFunction4 = () => {
+        console.log('This is nested function with arrow function.');
+    }
+    innerFunction4();
+}
+
+class NestedTestClass {
+    public outerMethod(): () => void {
+        innerFunction1();
+        function innerFunction1() {
+            console.log('innerFunction1');
+        }
+        const innerFunction2 = function(): void {
+            console.log('innerFunction2');
+        };
+        const innerFunction3 = () => {
+            console.log('innerFunction3');
+        }
+        innerFunction2();
+        innerFunction3();
+        return () => {
+            console.log('innerFunction4');
+        }
+    }
+}

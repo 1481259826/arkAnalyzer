@@ -39,7 +39,7 @@ import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
-import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
+import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NESTED_METHOD_SEPARATOR } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { checkAndUpdateMethod } from './ArkClassBuilder';
 
@@ -166,11 +166,19 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     } else if (ts.isArrowFunction(node)) {
         name = buildAnonymousMethodName(node, declaringClass);
     }
+
+    if (declaringMethod !== undefined && !declaringMethod.isDefaultArkMethod()) {
+        name = buildNestedMethodName(name, declaringMethod.getName());
+    }
     return name;
 }
 
 function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass) {
     return `${ANONYMOUS_METHOD_PREFIX}${declaringClass.getAnonymousMethodNumber()}`;
+}
+
+function buildNestedMethodName(originName: string, declaringMethodName: string): string {
+    return `${originName}${NESTED_METHOD_SEPARATOR}${declaringMethodName}`;
 }
 
 export class ObjectBindingPatternParameter {
