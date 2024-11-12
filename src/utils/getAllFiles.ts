@@ -50,7 +50,7 @@ export function getAllFiles(
     if (
       filename === 'oh_modules' ||
       filename === 'node_modules' ||
-      filename === 'hviforfile.ts'
+      filename === 'hvigorfile.ts'
     ) {
       return;
     }
