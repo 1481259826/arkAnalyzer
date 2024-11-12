@@ -27,6 +27,7 @@ import { FunctionType } from '../../core/base/Type';
 import { MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { GLOBAL_THIS } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -49,8 +50,6 @@ export enum StorageLinkEdgeType {
     Local2Property,
     TwoWay
 }
-
-export const GLOBAL_THIS: string = 'globaThis'
 
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
@@ -350,10 +349,13 @@ export class PagNode extends BaseNode {
 }
 
 export class PagLocalNode extends PagNode {
-    private relatedDynamicCallSite!: Set<DynCallSite>;
+    private relatedDynamicCallSite?: Set<DynCallSite>;
+    private relatedUnknownCallSite?: Set<CallSite>;
     private storageLinked: boolean = false;
     private storageType?: StorageType;
     private propertyName?: string;
+
+    private sdkParam: boolean = false;
 
     constructor(id: NodeID, cid: ContextID | undefined = undefined, value: Local, stmt?: Stmt) {
         super(id, cid, value, PagNodeKind.LocalVar, stmt)
@@ -366,7 +368,17 @@ export class PagLocalNode extends PagNode {
     }
 
     public getRelatedDynCallSites(): Set<DynCallSite> {
-        return this.relatedDynamicCallSite
+        return this.relatedDynamicCallSite ?? new Set();
+    }
+
+    public addRelatedUnknownCallSite(cs: CallSite) {
+        this.relatedUnknownCallSite = this.relatedUnknownCallSite ?? new Set();
+
+        this.relatedUnknownCallSite.add(cs);
+    }
+
+    public getRelatedUnknownCallSites(): Set<CallSite> {
+        return this.relatedUnknownCallSite ?? new Set();
     }
 
     public setStorageLink(storageType: StorageType, propertyName: string): void {
@@ -384,6 +396,14 @@ export class PagLocalNode extends PagNode {
 
     public isStorageLinked(): boolean {
         return this.storageLinked;
+    }
+
+    public setSdkParam(): void {
+        this.sdkParam = true;
+    }
+
+    public isSdkParam(): boolean {
+        return this.sdkParam;
     }
 }
 
@@ -631,7 +651,7 @@ export class Pag extends BaseGraph {
                 // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
                 // value has been replaced in param
                 if (value.getName() === GLOBAL_THIS && value.getDeclaringStmt() == null) {
-                    pagNode = new PagGlobalThisNode(id, 0, value)
+                    pagNode = new PagGlobalThisNode(id, -1, value)
                 } else {
                     pagNode = new PagLocalNode(id, cid, value, stmt);
                 }
@@ -809,12 +829,20 @@ export class Pag extends BaseGraph {
             case PagEdgeKind.Copy:
                 src.addCopyOutEdge(edge);
                 dst.addCopyInEdge(edge);
+                if (src instanceof PagFuncNode ||
+                    src instanceof PagGlobalThisNode ||
+                    src instanceof PagNewExprNode ||
+                    src instanceof PagNewArrayExprNode
+                ) {
+                    this.addrEdge.add(edge);
+                    this.stashAddrEdge.add(edge);
+                }
                 break;
             case PagEdgeKind.Address:
                 src.addAddressOutEdge(edge);
                 dst.addAddressInEdge(edge);
                 this.addrEdge.add(edge);
-                this.stashAddrEdge.add(edge)
+                this.stashAddrEdge.add(edge);
                 break;
             case PagEdgeKind.Write:
                 src.addWriteOutEdge(edge);
@@ -858,6 +886,7 @@ export class FuncPag {
     private internalEdges!: Set<InternalEdge>;
     private normalCallSites!: Set<CallSite>;
     private dynamicCallSites!: Set<DynCallSite>;
+    private unknownCallSites!: Set<CallSite>;
 
     public getInternalEdges(): Set<InternalEdge> | undefined {
         return this.internalEdges;
@@ -881,6 +910,16 @@ export class FuncPag {
     public getDynamicCallSites(): Set<DynCallSite> {
         this.dynamicCallSites = this.dynamicCallSites ?? new Set();
         return this.dynamicCallSites;
+    }
+
+    public addUnknownCallSite(cs: CallSite): void {
+        this.unknownCallSites = this.unknownCallSites ?? new Set();
+        this.unknownCallSites.add(cs);
+    }
+
+    public getUnknownCallSites(): Set<CallSite> {
+        this.unknownCallSites = this.unknownCallSites ?? new Set();
+        return this.unknownCallSites;
     }
 
     public addInternalEdge(stmt: ArkAssignStmt, k: PagEdgeKind): boolean {

@@ -23,6 +23,7 @@ import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { BaseEdge, BaseNode, BaseGraph, NodeID } from './BaseGraph';
 import { CGStat } from '../common/Statistics';
 import { ContextID } from '../pointerAnalysis/Context';
+import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
 
 export type Method = MethodSignature;
 export type CallSiteID = number;
@@ -114,7 +115,7 @@ export class CallGraphEdge extends BaseEdge {
 
 export class CallGraphNode extends BaseNode {
     private method: Method;
-    private isSdkMethod: boolean = false;
+    private ifSdkMethod: boolean = false;
     private isBlank: boolean = false;
 
     constructor(id: number, m: Method, k: CallGraphNodeKind = CallGraphNodeKind.real) {
@@ -127,11 +128,11 @@ export class CallGraphNode extends BaseNode {
     }
 
     public setSdkMethod(v: boolean): void {
-        this.isSdkMethod = v;
+        this.ifSdkMethod = v;
     }
 
-    public getIsSdkMethod(): boolean {
-        return this.isSdkMethod
+    public isSdkMethod(): boolean {
+        return this.ifSdkMethod
     }
 
     public get isBlankMethod(): boolean {
@@ -407,5 +408,17 @@ export class CallGraph extends BaseGraph {
 
     public getDummyMainFuncID(): FuncID | undefined {
         return this.dummyMainMethodID;
+    }
+
+    public isUnknownMethod(funcID: FuncID): boolean {
+        let method = this.getMethodByFuncID(funcID);
+
+        if (method) {
+            if (!(method.getDeclaringClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -78,7 +78,7 @@ export abstract class AbstractAnalysis {
             const method = this.workList.shift() as FuncID;
             const cgNode = this.cg.getNode(method) as CallGraphNode;
 
-            if (this.processedMethod.has(method) || cgNode.getIsSdkMethod()) {
+            if (this.processedMethod.has(method) || cgNode.isSdkMethod()) {
                 continue;
             }
 

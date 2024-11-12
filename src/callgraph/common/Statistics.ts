@@ -124,7 +124,7 @@ export class PTAStat implements StatTraits {
         let cg = this.pta.getCallGraph();
         this.pta.getUnhandledFuncs().forEach(funcID => {
             let cgNode = cg.getNode(funcID);
-            if ((cgNode as CallGraphNode).getIsSdkMethod()) {
+            if ((cgNode as CallGraphNode).isSdkMethod()) {
                 return;
             }
 
