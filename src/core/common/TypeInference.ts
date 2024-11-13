@@ -376,7 +376,7 @@ export class TypeInference {
             const newReturnType = new ClassType(method.getDeclaringArkClass().getSignature());
             const newMethodSubSignature = new MethodSubSignature(oldMethodSubSignature.getMethodName(),
                 oldMethodSubSignature.getParameters(), newReturnType, oldMethodSubSignature.isStatic());
-            method.setSignature(
+            method.setImplementationSignature(
                 new MethodSignature(oldMethodSignature.getDeclaringClassSignature(), newMethodSubSignature));
             return;
         }
@@ -388,7 +388,8 @@ export class TypeInference {
         if (inferType) {
             const newMethodSubSignature = new MethodSubSignature(oldMethodSubSignature.getMethodName(),
                 oldMethodSubSignature.getParameters(), inferType, oldMethodSubSignature.isStatic());
-            method.setSignature(
+            // TODO: Need to check declare or implementation
+            method.setImplementationSignature(
                 new MethodSignature(oldMethodSignature.getDeclaringClassSignature(), newMethodSubSignature));
         }
     }

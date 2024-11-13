@@ -41,7 +41,6 @@ import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
-import { checkAndUpdateMethod } from './ArkClassBuilder';
 import { IRUtils } from '../../common/IRUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkMethodBuilder');
@@ -64,7 +63,7 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
 
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(DEFAULT_ARK_METHOD_NAME, true);
     const methodSignature = new MethodSignature(mtd.getDeclaringArkClass().getSignature(), methodSubSignature);
-    mtd.setSignature(methodSignature);
+    mtd.setImplementationSignature(methodSignature);
 
     const defaultMethodNode = node ? node : sourceFile;
 
@@ -81,12 +80,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     }
 
     mtd.setCode(methodNode.getText(sourceFile));
-    const { line, character } = ts.getLineAndCharacterOfPosition(
-        sourceFile,
-        methodNode.getStart(sourceFile),
-    );
-    mtd.setLine(line + 1);
-    mtd.setColumn(character + 1);
+
 
     mtd.setModifiers(buildModifiers(methodNode));
     mtd.setDecorators(buildDecorators(methodNode, sourceFile));
@@ -95,7 +89,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         mtd.setGenericTypes(buildTypeParameters(methodNode.typeParameters, sourceFile, mtd));
     }
 
-    // build MethodSignature
+    // build methodDeclareSignatures and methodSignature as well as corresponding positions
     const methodName = buildMethodName(methodNode, declaringClass, sourceFile, declaringMethod);
     const methodParameters: MethodParameter[] = [];
     buildParameters(methodNode.parameters, mtd, sourceFile).forEach((parameter) => {
@@ -107,7 +101,18 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     }
     const methodSubSignature = new MethodSubSignature(methodName, methodParameters, returnType, mtd.isStatic());
     const methodSignature = new MethodSignature(mtd.getDeclaringArkClass().getSignature(), methodSubSignature);
-    mtd.setSignature(methodSignature);
+    const { line, character } = ts.getLineAndCharacterOfPosition(
+        sourceFile,
+        methodNode.getStart(sourceFile),
+    );
+    if (isMethodImplementation(methodNode)) {
+        mtd.setImplementationSignature(methodSignature);
+        mtd.setLine(line + 1);
+        mtd.setColumn(character + 1);
+    } else {
+        mtd.setDeclarationSignatures(methodSignature);
+        mtd.setDeclareLinesAndCols([line + 1], [character + 1]);
+    }
 
     let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd, sourceFile);
     mtd.setBodyBuilder(bodyBuilder);
@@ -352,7 +357,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
             defaultConstructor.isStatic());
         const methodSignature = new MethodSignature(defaultConstructor.getDeclaringArkClass().getSignature(),
             methodSubSignature);
-        defaultConstructor.setSignature(methodSignature);
+        defaultConstructor.setImplementationSignature(methodSignature);
 
         const stmts: Stmt[] = [];
         let index = 0;
@@ -379,7 +384,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(CONSTRUCTOR_NAME);
         const methodSignature = new MethodSignature(defaultConstructor.getDeclaringArkClass().getSignature(),
             methodSubSignature);
-        defaultConstructor.setSignature(methodSignature);
+        defaultConstructor.setImplementationSignature(methodSignature);
 
         if (arkClass.getSuperClass()) {
             const superClass = arkClass.getSuperClass() as ArkClass;
@@ -455,19 +460,81 @@ export function addInitInConstructor(arkClass: ArkClass) {
     }
 }
 
-export function getMethodAstBody(arkMethod: ArkMethod): ts.Block | undefined {
-    let astNode = arkMethod.getBodyBuilder()?.getCfgBuilder().astRoot;
-    if (astNode === undefined) {
-        return undefined;
+export function isMethodImplementation(node: MethodLikeNode): boolean {
+    if (ts.isFunctionDeclaration(node) ||
+        ts.isMethodDeclaration(node) ||
+        ts.isConstructorDeclaration(node) ||
+        ts.isGetAccessorDeclaration(node) ||
+        ts.isSetAccessorDeclaration(node) ||
+        ts.isFunctionExpression(node)) {
+        if (node.body !== undefined) {
+            return true;
+        }
     }
-    if (ts.isFunctionDeclaration(astNode) ||
-        ts.isMethodDeclaration(astNode) ||
-        ts.isConstructorDeclaration(astNode) ||
-        ts.isGetAccessorDeclaration(astNode) ||
-        ts.isSetAccessorDeclaration(astNode) ||
-        ts.isFunctionExpression(astNode)) {
-        return astNode.body;
+    return false;
+}
+
+export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
+    let presentMethod: ArkMethod | null;
+    if (method.isStatic()) {
+        presentMethod = cls.getStaticMethodWithName(method.getName());
     } else {
-        return undefined;
+        presentMethod = cls.getMethodWithName(method.getName());
     }
+    if (presentMethod === null) {
+        return;
+    }
+
+    if (!validMethod(method) || !validMethod(presentMethod)) {
+        return;
+    }
+    const presentDeclareSignatures = presentMethod.getDeclareSignatures();
+    const presentDeclareLineCols = presentMethod.getDeclareLineCols();
+    const presentImplSignature = presentMethod.getImplementationSignature();
+    const newDeclareSignature = method.getDeclareSignatures();
+    const newDeclareLineCols = method.getDeclareLineCols();
+    const newImplSignature = method.getImplementationSignature();
+
+    if (presentDeclareSignatures !== null && presentImplSignature === null) {
+        if (newDeclareSignature === null || presentMethod.getDeclareSignatureIndex(newDeclareSignature[0]) >= 0) {
+            method.setDeclarationSignatures(presentDeclareSignatures);
+            method.setDeclareLineCols((presentDeclareLineCols as number[]));
+        } else {
+            method.setDeclarationSignatures(presentDeclareSignatures.concat(newDeclareSignature));
+            method.setDeclareLineCols((presentDeclareLineCols as number[]).concat(newDeclareLineCols as number[]));
+        }
+        return;
+    }
+    if (presentDeclareSignatures === null && presentImplSignature !== null) {
+        if (newImplSignature === null) {
+            method.setImplementationSignature(presentImplSignature);
+            method.setLineCol(presentMethod.getLineCol() as number);
+        }
+        return;
+    }
+}
+
+export function validMethod(method: ArkMethod): boolean {
+    const declareSignatures = method.getDeclareSignatures();
+    const declareLineCols = method.getDeclareLineCols();
+    const signature = method.getImplementationSignature();
+    const lineCol = method.getLineCol();
+
+    if (declareSignatures === null && signature === null) {
+        logger.error(`ArkMethod of ${method.getName()} is invalid, methodDeclareSignatures and methodSignature could not be undefined at the same time.`);
+        return false;
+    }
+    if ((declareSignatures === null) !== (declareLineCols === null)) {
+        logger.error(`ArkMethod of ${method.getName()} is invalid, length of methodDeclareSignatures and methodDeclareLineCols must be the same.`);
+        return false;
+    }
+    if (declareSignatures !== null && declareLineCols !== null && declareSignatures.length !== declareLineCols.length) {
+        logger.error(`ArkMethod of ${method.getName()} is invalid, length of methodDeclareSignatures and methodDeclareLineCols must be the same.`);
+        return false;
+    }
+    if ((signature === null) !== (lineCol === null)) {
+        logger.error(`ArkMethod of ${method.getName()} is invalid, length of methodSignature and lineCol must be the same.`);
+        return false;
+    }
+    return true;
 }

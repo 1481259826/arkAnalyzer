@@ -37,13 +37,15 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
  */
 export class ArkMethod extends ArkBaseModel implements ArkExport {
     private code?: string;
-    private lineCol: LineCol = 0;
-
     private declaringArkClass!: ArkClass;
 
     private genericTypes?: GenericType[];
 
-    private methodSignature!: MethodSignature[];
+    private methodDeclareSignatures?: MethodSignature[];
+    private methodDeclareLineCols?: LineCol[];
+
+    private methodSignature?: MethodSignature;
+    private lineCol?: LineCol;
 
     private body?: ArkBody;
     private viewTree?: ViewTree;
@@ -77,20 +79,179 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.code = code;
     }
 
-    public getLine() {
+    public getDeclareLines(): number[] | null {
+        if (this.methodDeclareLineCols === undefined) {
+            return null;
+        }
+        let lines: number[] = [];
+        this.methodDeclareLineCols.forEach(lineCol => {
+            lines.push(getLineNo(lineCol));
+        })
+        return lines;
+    }
+
+    public getDeclareLine(methodSignature: MethodSignature): number | null {
+        const lineCols = this.methodDeclareLineCols;
+        const signatures = this.methodDeclareSignatures;
+        if (lineCols === undefined || signatures === undefined) {
+            return null;
+        }
+        const index = this.getDeclareSignatureIndex(methodSignature);
+        if (index < 0) {
+            return null;
+        }
+        return getLineNo(lineCols[index]);
+    }
+
+    public getDeclareColumns(): number[] | null {
+        if (this.methodDeclareLineCols === undefined) {
+            return null;
+        }
+        let columns: number[] = [];
+        this.methodDeclareLineCols.forEach(lineCol => {
+            columns.push(getColNo(lineCol));
+        })
+        return columns;
+    }
+
+    public getDeclareColumn(methodSignature: MethodSignature): number | null {
+        const lineCols = this.methodDeclareLineCols;
+        const signatures = this.methodDeclareSignatures;
+        if (lineCols === undefined || signatures === undefined) {
+            return null;
+        }
+        const index = this.getDeclareSignatureIndex(methodSignature);
+        if (index < 0) {
+            return null;
+        }
+        return getColNo(lineCols[index]);
+    }
+
+    public setDeclareLinesAndCols(lines: number[], columns: number[]): void {
+        if (lines?.length !== columns?.length) {
+            return;
+        }
+        this.methodDeclareLineCols = [];
+        lines.forEach((line, index) => {
+            let lineCol: LineCol = 0
+            lineCol = setLine(lineCol, line);
+            lineCol = setCol(lineCol, columns[index]);
+            (this.methodDeclareLineCols as LineCol[]).push(lineCol);
+        });
+    }
+
+    public setDeclareLineCols(lineCols: LineCol[]): void {
+        this.methodDeclareLineCols = lineCols;
+    }
+
+    public getDeclareLineCols(): LineCol[] | null {
+        if (this.methodDeclareLineCols === undefined) {
+            return null;
+        } else {
+            return this.methodDeclareLineCols;
+        }
+    }
+
+    public addDeclareLineCol(line: number, column: number): void {
+        if (this.methodDeclareLineCols === undefined) {
+            this.methodDeclareLineCols = [];
+        }
+        let lineCol: LineCol = 0
+        lineCol = setLine(lineCol, line);
+        lineCol = setCol(lineCol, column);
+        this.methodDeclareLineCols.push(lineCol);
+    }
+
+    public updateDeclareLine(line: number, methodSignature: MethodSignature): void {
+        const lineCols = this.methodDeclareLineCols;
+        const signatures = this.methodDeclareSignatures;
+        if (lineCols === undefined || signatures === undefined) {
+            return;
+        }
+        if (lineCols.length !== signatures.length) {
+            return;
+        }
+        const index = this.getDeclareSignatureIndex(methodSignature);
+        if (index >= 0) {
+            let lineCol: LineCol = lineCols[index];
+            lineCol = setLine(lineCol, line);
+            (this.methodDeclareLineCols as LineCol[])[index] = lineCol;
+        }
+    }
+
+    public updateDeclareColumn(column: number, methodSignature: MethodSignature): void {
+        const lineCols = this.methodDeclareLineCols;
+        const signatures = this.methodDeclareSignatures;
+        if (lineCols === undefined || signatures === undefined) {
+            return;
+        }
+        if (lineCols.length !== signatures.length) {
+            return;
+        }
+        const index = this.getDeclareSignatureIndex(methodSignature);
+        if (index >= 0) {
+            let lineCol: LineCol = lineCols[index];
+            lineCol = setCol(lineCol, column);
+            (this.methodDeclareLineCols as LineCol[])[index] = lineCol;
+        }
+    }
+
+    public updateDeclareLineAndCol(line: number, column: number, methodSignature: MethodSignature): void {
+        const lineCols = this.methodDeclareLineCols;
+        const signatures = this.methodDeclareSignatures;
+        if (lineCols === undefined || signatures === undefined) {
+            return;
+        }
+        if (lineCols.length !== signatures.length) {
+            return;
+        }
+        const index = this.getDeclareSignatureIndex(methodSignature);
+        if (index >= 0) {
+            let lineCol: LineCol = lineCols[index];
+            lineCol = setLine(lineCol, line);
+            lineCol = setCol(lineCol, column);
+            (this.methodDeclareLineCols as LineCol[])[index] = lineCol;
+        }
+    }
+
+    public getLine(): number | null {
+        if (this.lineCol === undefined) {
+            return null;
+        }
         return getLineNo(this.lineCol);
     }
 
-    public setLine(line: number) {
+    public setLine(line: number): void {
+        if (this.lineCol === undefined) {
+            this.lineCol = 0;
+        }
         this.lineCol = setLine(this.lineCol, line);
     }
 
-    public getColumn() {
+    public getColumn(): number | null {
+        if (this.lineCol === undefined) {
+            return null;
+        }
         return getColNo(this.lineCol);
     }
 
-    public setColumn(column: number) {
+    public setColumn(column: number): void {
+        if (this.lineCol === undefined) {
+            this.lineCol = 0;
+        }
         this.lineCol = setCol(this.lineCol, column);
+    }
+
+    public getLineCol(): LineCol | null {
+        if (this.lineCol === undefined) {
+            return null;
+        } else {
+            return this.lineCol;
+        }
+    }
+
+    public setLineCol(lineCol: LineCol): void {
+        this.lineCol = lineCol;
     }
 
     /**
@@ -125,10 +286,38 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.getSignature().getType();
     }
 
+    public getDeclareSignatures(): MethodSignature[] | null {
+        if (this.methodDeclareSignatures === undefined) {
+            return null;
+        }
+        return this.methodDeclareSignatures;
+    }
+
+    public getDeclareSignatureIndex(targetSignature: MethodSignature): number {
+        let declareSignatures = this.methodDeclareSignatures;
+        if (declareSignatures === undefined) {
+            return -1;
+        }
+        for (let i = 0; i < declareSignatures.length; i++) {
+            if (declareSignatures[i].isMatch(targetSignature)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public getImplementationSignature(): MethodSignature | null {
+        if (this.methodSignature == undefined) {
+            return null;
+        }
+        return this.methodSignature;
+    }
+
     /**
      * <font color="red">?建议明确返回类型？</font>
-     * Get the method signature. It includes two fields. one is ClassSignature, 
-     * the other is MethodSubSignature. The former indicates what class this method belong to, 
+     * Get the method signature of the implementation or first declaration if there is no implementation.
+     * It includes two fields. one is ClassSignature, the other is MethodSubSignature.
+     * The former indicates which class this method belong to,
      * the latter indicates the detail info of this method, 
      * such as method name, parameters, returnType, etc.
      * @returns The method signature.
@@ -138,24 +327,48 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     ```typescript
     let mtd = new ArkMethod();
     // ... ...
-    let mtd = mtd.getSignature();
+    let signature = mtd.getSignature();
     // ... ...
     ```
      */
     public getSignature(): MethodSignature {
-        return this.methodSignature[0];
-    }
-
-    public getAllSignature(): MethodSignature[] {
-        return this.methodSignature;
-    }
-
-    public setSignature(methodSignature: MethodSignature | MethodSignature[]) {
-        if (Array.isArray(methodSignature)) {
-            this.methodSignature = methodSignature;
-        } else {
-            this.methodSignature = [methodSignature];
+        if (this.methodSignature !== undefined) {
+            return this.methodSignature;
         }
+        return (this.methodDeclareSignatures as MethodSignature[])[0];
+    }
+
+    public setDeclarationSignatures(signatures: MethodSignature | MethodSignature[]): void {
+        if (Array.isArray(signatures)) {
+            this.methodDeclareSignatures = signatures;
+        } else {
+            this.methodDeclareSignatures = [signatures];
+        }
+    }
+
+    public addDeclarationSignature(signature: MethodSignature): void {
+        if (this.methodDeclareSignatures === undefined) {
+            this.methodDeclareSignatures = [signature];
+        } else if (this.getDeclareSignatureIndex(signature) < 0) {
+            (this.methodDeclareSignatures as MethodSignature[]).push(signature);
+        }
+    }
+
+    public updateDeclarationSignature(oldSignature: MethodSignature, newSignature: MethodSignature): void {
+        let declareSignatures = this.methodDeclareSignatures;
+        if (declareSignatures === undefined) {
+            return;
+        }
+        declareSignatures.forEach((signature, index) => {
+            if (signature.isMatch(oldSignature)) {
+                (this.methodDeclareSignatures as MethodSignature[])[index] = newSignature;
+                return;
+            }
+        });
+    }
+
+    public setImplementationSignature(methodSignature: MethodSignature): void {
+        this.methodSignature = methodSignature;
     }
 
     public getSubSignature() {

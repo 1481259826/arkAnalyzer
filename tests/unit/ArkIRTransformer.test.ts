@@ -30,8 +30,14 @@ import {
 import { ModelUtils } from '../../src/core/common/ModelUtils';
 import { DEFAULT_ARK_METHOD_NAME } from '../../src/core/common/Const';
 import {
-    ArrowFunction_Expect_IR, NoOverloadMethod_Expect_IR, NoOverloadMethodWithBody_Expect_IR, OverloadClassMethod_Expect_IR, OverloadInterfaceMethod_Expect_IR,
-    OverloadMethod_Expect_IR, OverloadNamespaceMethod_Expect_IR,
+    ArrowFunction_Expect_IR,
+    NoOverloadMethod_Expect_IR,
+    NoOverloadMethodWithBody2_Expect_IR,
+    NoOverloadMethodWithBody_Expect_IR,
+    OverloadClassMethod_Expect_IR,
+    OverloadInterfaceMethod_Expect_IR,
+    OverloadMethod_Expect_IR,
+    OverloadNamespaceMethod_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
@@ -167,7 +173,27 @@ function testNoMethodOverloadWithBody(scene: Scene, filePath: string, methodName
 }
 
 function assertMethodLineEqual(method: ArkMethod, expectMethod: any): void {
-    expect(method.getLine()).toEqual(expectMethod.line);
+    const declareLines = method.getDeclareLines();
+    const expectDeclareLines = expectMethod.methodDeclareLines;
+    if (expectDeclareLines !== undefined) {
+        if (expectDeclareLines === null) {
+            assert.isNull(declareLines);
+        } else {
+            assert.isNotNull(declareLines);
+            expect(declareLines?.length).toEqual(expectDeclareLines.length);
+            declareLines?.forEach((line, index) => {
+                expect(line).toEqual(expectDeclareLines[index]);
+            })
+        }
+    }
+
+    if (expectMethod.line !== undefined) {
+        if (expectMethod.line === null) {
+            assert.isNull(method.getLine());
+        } else {
+            expect(method.getLine()).toEqual(expectMethod.line);
+        }
+    }
 }
 
 function assertMethodBodyEqual(method: ArkMethod, expectBodyDefined: boolean, expectMethod?: any): void {
@@ -180,12 +206,32 @@ function assertMethodBodyEqual(method: ArkMethod, expectBodyDefined: boolean, ex
 }
 
 function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void {
-    const signatures = method.getAllSignature();
-    expect(signatures.length).toEqual(expectMethod.methodSignature.length);
-    signatures.find((signature, index) => {
-        expect(signature.toString()).toEqual(expectMethod.methodSignature[index].toString);
-        expect(signature.getMethodSubSignature().getReturnType().toString()).toEqual(expectMethod.methodSignature[index].methodSubSignature.returnType);
-    });
+    const declareSignatures = method.getDeclareSignatures();
+    const expectDeclareSignatures = expectMethod.methodDeclareSignatures;
+    if (expectDeclareSignatures !== undefined) {
+        if (expectDeclareSignatures === null) {
+            assert.isNull(declareSignatures);
+        } else {
+            assert.isNotNull(declareSignatures);
+            expect(declareSignatures?.length).toEqual(expectDeclareSignatures.length);
+            declareSignatures?.find((signature, index) => {
+                expect(signature.toString()).toEqual(expectDeclareSignatures[index].toString);
+                expect(signature.getMethodSubSignature().getReturnType().toString()).toEqual(expectDeclareSignatures[index].methodSubSignature.returnType);
+            });
+        }
+    }
+
+    const implementationSignature = method.getImplementationSignature();
+    const expectImplSignature = expectMethod.methodSignature;
+    if (expectImplSignature !== undefined) {
+        if (expectImplSignature === null) {
+            assert.isNull(implementationSignature);
+        } else {
+            assert.isNotNull(implementationSignature);
+            expect(implementationSignature?.toString()).toEqual(expectImplSignature.toString);
+            expect(implementationSignature?.getMethodSubSignature().getReturnType().toString()).toEqual(expectImplSignature.methodSubSignature.returnType);
+        }
+    }
 }
 
 function buildScene(folderName: string) {
@@ -265,5 +311,9 @@ describe('function Test', () => {
 
     it('test no overload function with body', async () => {
         testNoMethodOverloadWithBody(scene, 'OverloadFunctionTest.ts', 'function6', NoOverloadMethodWithBody_Expect_IR);
+    });
+
+    it('test no overload function with body 2', async () => {
+        testNoMethodOverloadWithBody(scene, 'OverloadFunctionTest.ts', 'function7', NoOverloadMethodWithBody2_Expect_IR);
     });
 });

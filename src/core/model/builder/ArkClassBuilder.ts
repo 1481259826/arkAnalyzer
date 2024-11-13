@@ -20,7 +20,7 @@ import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import ts from 'ohos-typescript';
 import { ArkClass, ClassCategory } from '../ArkClass';
-import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod, getMethodAstBody } from './ArkMethodBuilder';
+import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod, checkAndUpdateMethod } from './ArkMethodBuilder';
 import { buildDecorators, buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
@@ -160,7 +160,7 @@ function init4InstanceInitMethod(cls: ArkClass) {
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(INSTANCE_INIT_METHOD_NAME);
     const methodSignature = new MethodSignature(instanceInit.getDeclaringArkClass().getSignature(),
         methodSubSignature);
-    instanceInit.setSignature(methodSignature);
+    instanceInit.setImplementationSignature(methodSignature);
 
     checkAndUpdateMethod(instanceInit, cls);
     cls.addMethod(instanceInit);
@@ -174,7 +174,7 @@ function init4StaticInitMethod(cls: ArkClass) {
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(STATIC_INIT_METHOD_NAME);
     const methodSignature = new MethodSignature(staticInit.getDeclaringArkClass().getSignature(),
         methodSubSignature);
-    staticInit.setSignature(methodSignature);
+    staticInit.setImplementationSignature(methodSignature);
 
     checkAndUpdateMethod(staticInit, cls);
     cls.addMethod(staticInit);
@@ -474,32 +474,5 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?:
             stmt.setOriginalText(fieldSourceCode);
         }
         field.setInitializer(stmts);
-    }
-}
-
-export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
-    let presentMethod: ArkMethod | null;
-    if (method.isStatic()) {
-        presentMethod = cls.getStaticMethodWithName(method.getName());
-    } else {
-        presentMethod = cls.getMethodWithName(method.getName());
-    }
-    if (presentMethod !== null) {
-        method.setSignature(genMethodSignature(method, presentMethod));
-    }
-}
-
-function genMethodSignature(method: ArkMethod, presentMethod: ArkMethod): MethodSignature[] {
-    let astBody = getMethodAstBody(method);
-    if (astBody === undefined) {
-        for (let signature of presentMethod.getAllSignature()) {
-            if (signature.isMatch(method.getSignature())) {
-                logger.warn(`Ignore duplicated signature of method: ${method.getSignature().toString()} with return type ${method.getReturnType()}`);
-                return presentMethod.getAllSignature();
-            }
-        }
-        return presentMethod.getAllSignature().concat(method.getSignature());
-    } else {
-        return presentMethod.getAllSignature();
     }
 }
