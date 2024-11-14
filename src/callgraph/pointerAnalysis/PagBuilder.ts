@@ -29,10 +29,11 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, InternalEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, InterProceduralSrcType, PagNodeTy } from './Pag';
 import { PtsSet } from './PtsDS';
 import { GLOBAL_THIS } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
+import { ExportInfo } from '../../core/model/ArkExport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -49,6 +50,7 @@ export class PagBuilder {
     private pag: Pag;
     private cg: CallGraph;
     private funcPags: Map<FuncID, FuncPag>;
+    private interFuncPags?: Map<FuncID, InterFuncPag>;
     private handledFunc: Set<string> = new Set()
     private ctx: KLimitedContextSensitive;
     private scene: Scene;
@@ -107,7 +109,7 @@ export class PagBuilder {
         funcIDs.forEach(funcID => {
             let cid = this.ctx.getNewContextID(funcID);
             let csFuncID = new CSFuncID(cid, funcID);
-            this.buildFuncPagAndAddToWorklist(csFuncID)
+            this.buildFuncPagAndAddToWorklist(csFuncID);
         });
 
         this.handleReachable();
@@ -145,8 +147,6 @@ export class PagBuilder {
             return false;
         }
 
-        let fpag = new FuncPag();
-
         let arkMethod = this.cg.getArkMethodByFuncID(funcID);
         if (arkMethod == null) {
             return false;
@@ -160,8 +160,10 @@ export class PagBuilder {
 
         logger.trace(`[build FuncPag] ${arkMethod.getSignature().toString()}`)
 
+        let fpag = new FuncPag();
         for (let stmt of cfg.getStmts()) {
             if (stmt instanceof ArkAssignStmt) {
+                this.handleValueFromExternalScope(stmt.getRightOp(), funcID);
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
                 if (kind !== PagEdgeKind.Unknown) {
@@ -261,6 +263,11 @@ export class PagBuilder {
         }
 
         this.addEdgesFromFuncPag(funcPag, cid);
+        let interFuncPag = this.interFuncPags?.get(funcID);
+        if (interFuncPag) {
+            this.addEdgesFromInterFuncPag(interFuncPag, cid);
+        }
+
         this.addCallsEdgesFromFuncPag(funcPag, cid);
         this.addDynamicCallSite(funcPag);
         this.addUnknownCallSite(funcPag, funcID);
@@ -934,7 +941,7 @@ export class PagBuilder {
         return srcNodes;
     }
 
-    public getOrNewPagNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
+    public getOrNewPagNode(cid: ContextID, v: PagNodeTy, s?: Stmt): PagNode {
         if (v instanceof ArkThisRef) {
             return this.getOrNewThisRefNode(cid, v as ArkThisRef);
         }
@@ -952,7 +959,10 @@ export class PagBuilder {
             }
         }
 
-        v = this.getRealInstanceRef(v);
+        if (v instanceof ArkInstanceFieldRef || v instanceof ArkStaticFieldRef) {
+            v = this.getRealInstanceRef(v);
+        }
+
         return this.pag.getOrNewNode(cid, v, s);
     }
 
@@ -1135,7 +1145,7 @@ export class PagBuilder {
         return result;
     }
 
-    private isValueConnected(edges: InternalEdge[], leftNodes: Value[], targetNodes: Value[]): boolean {
+    private isValueConnected(edges: IntraProceduralEdge[], leftNodes: Value[], targetNodes: Value[]): boolean {
         // build funcPag graph
         const graph = new Map<Value, Value[]>();
         let hasStaticFieldOrGlobalVar: boolean = false;
@@ -1368,5 +1378,93 @@ export class PagBuilder {
 
     public getHandledFuncs(): FuncID[] {
         return Array.from(this.funcPags.keys());
+    }
+
+    private handleValueFromExternalScope(v: Value, funcID: FuncID): void {
+        if (v instanceof Local) {
+            let def = v.getDeclaringStmt();
+            if (def) {
+                // not from external scope
+                return;
+            }
+
+            let type = v.getType();
+            if (!type) {
+                return;
+            }
+
+            console.log(type);
+            let curMtd = this.cg.getArkMethodByFuncID(funcID);
+            if (!curMtd) {
+                return;
+            }
+
+            let curFile = curMtd.getDeclaringArkFile();
+            let impInfo = curFile.getImportInfoBy(v.getName());
+            console.log(impInfo);
+            if (!impInfo) {
+                return;
+            }
+
+            let exp = impInfo.getLazyExportInfo();
+            if (exp) {
+                this.addInterFuncEdge(impInfo.getLazyExportInfo()!, v, funcID);
+            }
+        } else if (v instanceof ArkInstanceFieldRef) {
+            let base = v.getBase();
+            if (base) {
+                
+            }
+        }
+    }
+
+    private addInterFuncEdge(src: InterProceduralSrcType, dst: Value, funcID: FuncID): void {
+        this.interFuncPags = this.interFuncPags ?? new Map();
+        let interFuncPag = this.interFuncPags.get(funcID) ?? new InterFuncPag();
+        // Export a local
+        if (src instanceof ExportInfo && src.getArkExport() instanceof Local) {
+            // Add a InterProcedural edge
+            let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
+            interFuncPag.addToInterProceduralEdgeSet(e);
+            this.interFuncPags.set(funcID, interFuncPag);
+
+            // Put the function which the src belongs to to worklist
+            let exportLocal = src.getArkExport() as Local;
+            let srcFunc = exportLocal.getDeclaringStmt()?.getCfg().getDeclaringMethod();
+            if (srcFunc) {
+                let srcFuncID = this.cg.getCallGraphNodeByMethod(srcFunc.getSignature()).getID();
+                let cid = this.ctx.getNewContextID(srcFuncID);
+                let csFuncID = new CSFuncID(cid, srcFuncID);
+                this.buildFuncPagAndAddToWorklist(csFuncID);
+            }
+        }
+        // Extend other types of src here
+    }
+
+    /// Add inter-procedural Pag Nodes and Edges
+    public addEdgesFromInterFuncPag(interFuncPag: InterFuncPag, cid: ContextID): boolean {
+        let edges = interFuncPag.getInterProceduralEdges();
+        if (edges.size === 0) {
+            return false;
+        }
+
+        for (let e of edges) {
+            // ExportNode -> local imported
+            let srcPagNode = this.getOrNewPagNode(cid, e.src);
+            let dstPagNode = this.getOrNewPagNode(cid, e.dst);
+
+            this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind);
+
+            // Existing local exported nodes -> ExportNode
+            if (e.src instanceof ExportInfo && e.src.getArkExport() as Local) {
+                let exportLocal = e.src.getArkExport() as Local
+                let existingNodes = this.pag.getNodesByValue(exportLocal);
+                existingNodes?.forEach(n => {
+                    this.pag.addPagEdge(this.pag.getNode(n)! as PagNode, srcPagNode, e.kind);
+                })
+            }
+        }
+
+        return true;
     }
 }

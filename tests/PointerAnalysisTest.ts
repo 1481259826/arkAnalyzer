@@ -20,59 +20,115 @@ import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilde
 import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
 import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
 import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
+import { Local } from "../src/core/base/Local";
+import { ArkThisRef } from "../src/core/base/Ref";
+import { ArkAssignStmt } from "../src/core/base/Stmt";
 import Logger, {LOG_LEVEL} from "../src/utils/logger"
+
  
 Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.TRACE)
-
-// let etsSdk: Sdk = {
-//     name: "ohos",
-//     path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
-//     moduleName: ""
-// }
-
 let config: SceneConfig = new SceneConfig()
-// config.buildConfig("uiTest", "/Users/yangyizhuo/Desktop/code/arkanalyzer/tests/resources/pta/uiTest",
-//     [etsSdk], [
-//         "./tests/resources/pta/uiTest/ui_test.ts"
-//     ])
-config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-// config.buildFromProjectDir('./tests/resources/callgraph/funPtrTest1');
-// config.buildFromProjectDir('./tests/resources/callgraph/test2');
-// config.buildFromProjectDir('/Users/yangyizhuo/Desktop/code/arkanalyzer/src');
-// config.buildFromProjectDir('./tests/resources/callgraph/temp');
-// config.buildFromProjectDir('./tests/resources/callgraph/calltest');
-// config.buildFromProjectDir('./tests/resources/callgraph/globalVarTest1');
-//config.buildFromProjectDir('./tests/resources/callgraph/swap');
-// Logger.setLogLevel(LOG_LEVEL.DEBUG)
 
-function runScene(config: SceneConfig, output: string) {
+function dumpIR(scene: Scene) {
+    scene.getMethods().forEach(fun => {
+        console.log("\n---\n" + fun.getSignature().toString())
+        if(!fun.getCfg())
+            return;
+
+        console.log("{");
+        let i = 0;
+        fun.getCfg()?.getBlocks().forEach(bb => {
+            
+            console.log(`  bb${i++}:`)
+            bb.getStmts().forEach(stmt => {
+                console.log("    " +stmt.toString());
+            })
+        })
+        console.log("}")
+    });
+} 
+
+function printTypeDiff(pta: PointerAnalysis) {
+    let dm = pta.getTypeDiffMap();
+    for (let [v, types] of dm) {
+        console.log('=======')
+         if (v instanceof Local) {
+            if (v.getName() == 'this') {
+                continue;
+            }
+
+            let s = v.getDeclaringStmt()
+            if (s instanceof ArkAssignStmt) {
+                if (s.getLeftOp() instanceof Local && (s.getLeftOp() as Local).getName() === 'this'
+                    && s.getRightOp() instanceof ArkThisRef)
+                    continue;
+
+            }
+            if (s) {
+                console.log('Method: ' + s?.getCfg()?.getDeclaringMethod().getSignature().toString());
+                console.log('Declare: ' + s);
+            }
+        }
+        
+        console.log(v)
+        console.log("----\n" + v.getType().toString());
+        for (let t of types) {
+            console.log("  " + t.toString());
+        }
+
+    }
+}
+function runProject(output: string) {
+    config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
     let projectScene: Scene = new Scene();
-    // projectScene.buildSceneFromProjectDir(config);
     projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject()
+    // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
+    console.log(projectScene);
+ 
+    let ptaConfig = new PointerAnalysisConfig(2, output, true, true, true)
+    let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
 
-    // let values = projectScene.getFiles().filter(file => file.getName() === 'entry/src/main/ets/entryability/EntryAbility.ets')
-    // .flatMap(file => file.getClassWithName('EntryAbility'))
-    // .flatMap(cls => cls?.getMethodWithName('onCreate'))
-    // .flatMap(me => me?.getBody()?.getLocals().get('$temp3')!);
+    printTypeDiff(pta);
+}
+
+
+function runDir(output: string) {
+    config.buildFromProjectDir('./tests/resources/pta/ExportNew');
+
+    let projectScene: Scene = new Scene();
+    projectScene.buildSceneFromProjectDir(config);
+    projectScene.inferTypes();
+    console.log(projectScene)
+
     let cg = new CallGraph(projectScene);
-    let cgBuilder = new CallGraphBuilder(cg, projectScene)
+    let cgBuilder = new CallGraphBuilder(cg, projectScene);
     cgBuilder.buildDirectCallGraphForScene();
 
     let pag = new Pag();
-    pag;
+    let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    console.log(debugfunc);
 
-    // let entry = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+    let entry = cg.getEntries();
+    console.log(entry.length)
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
-    // let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    // pta.setEntries([entry[2]]);
-    // pta.start();
-    let ptaOH = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
-    ptaOH;
-    // let temp = ptaOH.getRelatedNodes(values[0]);
-    // temp;
-    // cg.dump(output+"/subcg.dot", entry[2])
+    let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
+    pta.setEntries(entry);
+    pta.start();
+    //cg.dump(output + "/subcg.dot", debugfunc[0]);
+
+    cg.dump(output+"/subcg.dot", debugfunc[0])
+    cgBuilder.setEntries()
+    entry = cg.getEntries();
+    console.log(entry.length)
+
+    dumpIR(projectScene)
+    printTypeDiff(pta);
     console.log("fin")
 }
-runScene(config, "./out/applications_camera");
+if (false)
+{
+    runProject("./out");
+}
+runDir('./out')

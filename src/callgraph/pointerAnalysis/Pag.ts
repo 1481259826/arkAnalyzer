@@ -28,8 +28,10 @@ import { MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS } from '../../core/common/TSConst';
+import { ExportInfo } from '../../core/model/ArkExport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
+export type PagNodeTy = Value | ExportInfo
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -38,7 +40,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 const DUMMY_PAG_NODE_ID = -1
 
 export enum PagEdgeKind {
-    Address, Copy, Load, Write, This, Unknown
+    Address, Copy, Load, Write, This, Unknown, InterProceduralCopy
 };
 
 export enum StorageType {
@@ -74,6 +76,8 @@ export class PagEdge extends BaseEdge {
                 return "color=blue"
             case PagEdgeKind.This:
                 return "color=orange"
+            case PagEdgeKind.InterProceduralCopy:
+                return "color=purple,style=dashed";
             default:
                 return "color=black";
         }
@@ -112,7 +116,7 @@ export class ThisPagEdge extends PagEdge {
 
 type PagEdgeSet = Set<PagEdge>;
 
-export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, Function, GlobalThis }
+export enum PagNodeKind { HeapObj, LocalVar, RefVar, Param, ThisRef, Function, GlobalThis, ExportInfo }
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -309,6 +313,10 @@ export class PagNode extends BaseNode {
                 return 'shape=component';
             case PagNodeKind.Param:
                 return 'shape=box';
+            case PagNodeKind.ExportInfo:
+                return 'shape=tab,color=purple';
+            case PagNodeKind.ThisRef:
+                return 'shape=box,color=orange'
             default:
                 return 'shape=box';
         }
@@ -331,7 +339,12 @@ export class PagNode extends BaseNode {
         }
 
         if (this.getKind() === PagNodeKind.ThisRef) {
-            label = label + `\n${(this.value as ArkThisRef).toString()}`
+            label = label + `\n${(this.value as ArkThisRef).toString()}`;
+        }
+
+        if (this.getKind() === PagNodeKind.ExportInfo) {
+            let node: PagNode = this;
+            label = label + `\n${(node as PagExportNode).getExportStatement()}`;
         }
 
         if (this.stmt) {
@@ -558,10 +571,31 @@ export class PagGlobalThisNode extends PagNode {
     }
 }
 
+export class PagExportNode extends PagNode {
+    private exportStatement: string; 
+    // TODO: may add obj interface
+
+    constructor(id: NodeID, r: ExportInfo) {
+        // Export object SHOULD be a Local currently
+        let v = r.getArkExport();
+        if (!(v instanceof Local)) {
+            throw new Error("PagExportNode should always be Local");
+        }
+
+        super(id, -1, v, PagNodeKind.ExportInfo)
+        this.exportStatement = r.getTsSourceCode();
+    }
+
+    public getExportStatement(): string {
+        return this.exportStatement;
+    }
+}
+
 export class Pag extends BaseGraph {
 
     private cg!: CallGraph;
     private contextValueToIdMap: Map<Value, Map<ContextID, NodeID>> = new Map();
+    private ExportInfoToIdMap?: Map<ExportInfo, NodeID>;
     // contextBaseToIdMap will only be used in instance field
     // Value: instance field base value, NodeID: abstract nodes
     private contextBaseToIdMap: Map<Value, Map<ContextID, NodeID[]>> = new Map();
@@ -638,7 +672,7 @@ export class Pag extends BaseGraph {
         }
     }
 
-    public addPagNode(cid: ContextID, value: Value, stmt?: Stmt, refresh: boolean = true): PagNode {
+    public addPagNode(cid: ContextID, value: PagNodeTy, stmt?: Stmt, refresh: boolean = true): PagNode {
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
@@ -682,6 +716,8 @@ export class Pag extends BaseGraph {
             pagNode = new PagNewArrayExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
+        } else if (value instanceof ExportInfo) {
+            pagNode = new PagExportNode(id, value);
         } else if (value instanceof ArkThisRef) {
             throw new Error('This Node need use addThisNode method');
         } else {
@@ -690,9 +726,20 @@ export class Pag extends BaseGraph {
 
         this.addNode(pagNode!);
 
-        this.addContextMap(refresh, cid, id, value, stmt!, pagNode!);
+        // Value
+        if (!(value instanceof ExportInfo)) {
+            this.addContextMap(refresh, cid, id, value, stmt!, pagNode!);
+        } else {
+            // ExportInfo
+            this.addExportInfoMap(id, value);
+        }
 
         return pagNode!;
+    }
+    
+    private addExportInfoMap(id: NodeID, v: ExportInfo): void {
+        this.ExportInfoToIdMap = this.ExportInfoToIdMap ?? new Map();
+        this.ExportInfoToIdMap.set(v, id);
     }
 
     private addContextMap(refresh: boolean, cid: ContextID, id: NodeID, value: Value, stmt: Stmt, pagNode: PagNode): void {
@@ -774,6 +821,11 @@ export class Pag extends BaseGraph {
         }
     }
 
+    public hasExportNode(v: ExportInfo): NodeID | undefined {
+        this.ExportInfoToIdMap = this.ExportInfoToIdMap ?? new Map();
+        return this.ExportInfoToIdMap.get(v);
+    }
+
     public hasCtxNode(cid: ContextID, v: Value): NodeID | undefined {
         let ctx2nd = this.contextValueToIdMap.get(v);
         if (!ctx2nd) {
@@ -801,8 +853,16 @@ export class Pag extends BaseGraph {
 
         return ndId;
     }
-    public getOrNewNode(cid: ContextID, v: Value, s?: Stmt): PagNode {
-        let nodeId = this.hasCtxNode(cid, v);
+    public getOrNewNode(cid: ContextID, v: PagNodeTy, s?: Stmt): PagNode {
+        let nodeId = undefined;
+        // Value
+        if (!(v instanceof ExportInfo)) {
+            nodeId = this.hasCtxNode(cid, v);
+        } else {
+            // ExportInfo
+            nodeId = this.hasExportNode(v);
+        }
+
         if (nodeId !== undefined) {
             return this.getNode(nodeId) as PagNode;
         }
@@ -827,6 +887,7 @@ export class Pag extends BaseGraph {
 
         switch (kind) {
             case PagEdgeKind.Copy:
+            case PagEdgeKind.InterProceduralCopy:
                 src.addCopyOutEdge(edge);
                 dst.addCopyInEdge(edge);
                 if (src instanceof PagFuncNode ||
@@ -880,15 +941,17 @@ export class Pag extends BaseGraph {
     }
 }
 
-export type InternalEdge = { src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt }
+export type InterProceduralSrcType = ExportInfo | Local;
+export type IntraProceduralEdge = { src: Value, dst: Value, kind: PagEdgeKind, stmt: Stmt }
+export type InterProceduralEdge = { src: InterProceduralSrcType, dst: Value, kind: PagEdgeKind }
 
 export class FuncPag {
-    private internalEdges!: Set<InternalEdge>;
+    private internalEdges!: Set<IntraProceduralEdge>;
     private normalCallSites!: Set<CallSite>;
     private dynamicCallSites!: Set<DynCallSite>;
     private unknownCallSites!: Set<CallSite>;
 
-    public getInternalEdges(): Set<InternalEdge> | undefined {
+    public getInternalEdges(): Set<IntraProceduralEdge> | undefined {
         return this.internalEdges;
     }
 
@@ -931,9 +994,25 @@ export class FuncPag {
             return false;
         }
 
-        let iEdge: InternalEdge = { src: rhOp, dst: lhOp, kind: k, stmt: stmt };
+        let iEdge: IntraProceduralEdge = { src: rhOp, dst: lhOp, kind: k, stmt: stmt };
         this.internalEdges.add(iEdge);
 
         return true;
+    }
+}
+
+export class InterFuncPag {
+    private interFuncEdges: Set<InterProceduralEdge>;
+    
+    constructor() {
+        this.interFuncEdges = new Set();
+    }
+
+    public getInterProceduralEdges(): Set<InterProceduralEdge> {
+        return this.interFuncEdges;
+    }
+
+    public addToInterProceduralEdgeSet(e: InterProceduralEdge): void {
+        this.interFuncEdges.add(e);
     }
 }
