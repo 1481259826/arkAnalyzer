@@ -20,6 +20,7 @@ import { buildModifiers } from './builderUtils';
 import { ArkFile } from '../ArkFile';
 import { ALL, DEFAULT } from "../../common/TSConst";
 import { ModifierType } from '../ArkBaseModel';
+import { IRUtils } from '../../common/IRUtils';
 
 export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 
@@ -63,6 +64,7 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
                 .exportFrom(exportFrom)
                 .originTsPosition(originTsPosition)
                 .declaringArkFile(arkFile)
+                .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
                 .modifiers(modifiers);
             if (element.propertyName && ts.isIdentifier(element.propertyName)) {
                 builder.nameBeforeAs(element.propertyName.text);
@@ -79,6 +81,7 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
         .tsSourceCode(tsSourceCode)
         .exportFrom(exportFrom)
         .declaringArkFile(arkFile)
+        .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
         .originTsPosition(originTsPosition);
     if (node.exportClause && ts.isNamespaceExport(node.exportClause) && ts.isIdentifier(node.exportClause.name)) { // just like: export * as xx from './yy'
         exportInfos.push(builder1.exportClauseName(node.exportClause.name.text).build());
@@ -110,6 +113,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
                     .tsSourceCode(tsSourceCode)
                     .originTsPosition(originTsPosition)
                     .declaringArkFile(arkFile)
+                    .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
                     .build();
                 exportInfos.push(exportInfo);
             }
@@ -122,6 +126,7 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
             .originTsPosition(originTsPosition)
             .declaringArkFile(arkFile)
             .exportClauseName(DEFAULT)
+            .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
         if (ts.isIdentifier(node.expression)) { // just like: export default xx
             exportInfo.nameBeforeAs(node.expression.text);
         } else if (ts.isAsExpression(node.expression)) { // just like: export default xx as YY

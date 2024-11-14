@@ -1,9 +1,10 @@
 {
   "name": "arkanalyzer",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "files": [
     "docs",
-    "lib"
+    "lib",
+    "config"
   ],
   "main": "lib/index.js",
   "scripts": {

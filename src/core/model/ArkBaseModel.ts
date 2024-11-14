@@ -18,6 +18,7 @@ import { Decorator } from '../base/Decorator';
 import { COMPONENT_DECORATOR, ENTRY_DECORATOR, BUILDER_PARAM_DECORATOR, BUILDER_DECORATOR } from '../common/EtsConst';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { ArkMetadata, ArkMetadataKind, ArkMetadataType } from './ArkMetadata';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkBaseModel');
 
 const COMPONENT_MEMBER_DECORATORS: Set<string> = new Set([
@@ -112,6 +113,18 @@ export function modifiers2stringArray(modifiers: number): string[] {
 export abstract class ArkBaseModel {
     protected modifiers?: number;
     protected decorators?: Set<Decorator>;
+    protected metadata?: ArkMetadata;
+
+    public getMetadata(kind: ArkMetadataKind): ArkMetadataType | undefined {
+        return this.metadata?.getMetadata(kind);
+    }
+
+    public setMetadata(kind: ArkMetadataKind, value: ArkMetadataType): void {
+        if (!this.metadata) {
+            this.metadata = new ArkMetadata();
+        }
+        return this.metadata?.setMetadata(kind, value);
+    }
 
     public getModifiers(): number {
         if (!this.modifiers) {

@@ -48,6 +48,7 @@ import {
 import { ValueUtil } from '../../core/common/ValueUtil';
 import { ClassCategory } from '../../core/model/ArkClass';
 import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
+import { ArkMetadataKind } from '../../core/model/ArkMetadata';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
@@ -106,10 +107,15 @@ export abstract class SourceStmt implements Dump {
     protected afterDump(): void {}
 
     protected dumpTs(): string {
+        let content: string[] = [];
+        let comments = this.original.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || [];
+        comments.forEach((v) => {
+            content.push(`${this.printer.getIndent()}${v}\n`);
+        });
         if (this.text.length > 0) {
-            return `${this.printer.getIndent()}${this.text}\n`;
+            content.push( `${this.printer.getIndent()}${this.text}\n`);
         }
-        return ``;
+        return content.join('');
     }
 
     protected get printer(): ArkCodeBuffer {

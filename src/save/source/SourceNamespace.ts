@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { ArkMetadataKind } from '../../core/model/ArkMetadata';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { Dump, SourceBase } from './SourceBase';
 import { SourceClass } from './SourceClass';
@@ -36,6 +37,9 @@ export class SourceNamespace extends SourceBase {
     }
 
     public dump(): string {
+        (this.ns.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || []).forEach((comment) => {
+            this.printer.writeIndent().writeLine(comment);
+        });
         this.printer
             .writeIndent()
             .writeSpace(this.modifiersToString(this.ns.getModifiers()))

@@ -133,7 +133,7 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             ts.isImportEqualsDeclaration(child) ||
             ts.isImportDeclaration(child)
         ) {
-            let importInfos = buildImportInfo(child, astRoot);
+            let importInfos = buildImportInfo(child, astRoot, arkFile);
             importInfos?.forEach((element) => {
                 element.setDeclaringArkFile(arkFile);
                 arkFile.addImportInfo(element);

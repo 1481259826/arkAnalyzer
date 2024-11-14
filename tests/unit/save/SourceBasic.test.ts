@@ -80,7 +80,9 @@ deleteTest();
 `;
 
 const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
+  // Create a copy of parent before creating our own
   private superAdd = this.add;
+  // Now create our override
   add = (b: string): string => {
     return this.superAdd(b);
   };
@@ -139,16 +141,19 @@ const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
   const sampleData: number[] = [1, 2, 3, 4, 5];
   let i: number = 0;
   for (; i < sampleData.length; i = i + 1) {
+    // 使用 if 判断
     if (sampleData[i] % 2 === 0) {
       logger.info(sampleData[i] + ' 是偶数');
     } else {
       logger.info(sampleData[i] + ' 是奇数');
     }
+    // 使用 while 循环
     let count: number = 0;
     while (count < sampleData[i]) {
       logger.info('当前计数: ' + count);
       count = count + 1;
     }
+    // 使用 for 循环和 continue
     let j: number = 0;
     for (; j < 5; j = j + 1) {
       if (j === 2) {
@@ -156,6 +161,7 @@ const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
       }
       logger.info('当前内层循环计数: ' + j);
     }
+    // 使用 break 终止循环
     let k: number = 0;
     while (k < 3) {
       logger.info('外层循环计数: ' + k);
@@ -170,7 +176,7 @@ const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
 `;
 
 describe('SourceBasicTest', () => {
-    let config: SceneConfig = new SceneConfig();
+    let config: SceneConfig = new SceneConfig({enableLeadingComments: true});
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);

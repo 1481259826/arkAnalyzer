@@ -17,6 +17,7 @@ import { ArkField, FieldCategory } from '../../core/model/ArkField';
 import { SourceBase } from './SourceBase';
 import { SourceTransformer } from './SourceTransformer';
 import { UnknownType } from '../../core/base/Type';
+import { ArkMetadataKind } from '../../core/model/ArkMetadata';
 
 /**
  * @category save
@@ -38,6 +39,9 @@ export class SourceField extends SourceBase {
     }
     public dump(): string {
         this.printer.clear();
+        (this.field.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || []).forEach((comment) => {
+            this.printer.writeIndent().writeLine(comment);
+        });
         this.printDecorator(this.field.getDecorators());
         this.printer.writeIndent();
         if (this.field.getCategory() !== FieldCategory.ENUM_MEMBER) {

@@ -40,7 +40,7 @@ function testAppProjectSave() {
     }
     logger.error('end build viewtree ... ');
 
-    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out'));
+    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out/project'));
     for (let f of scene.getFiles()) {
         printer.dumpToTs(f);
     }
@@ -51,10 +51,11 @@ function testSimpleSave() {
     config.buildFromProjectDir(join(__dirname, 'resources', 'save'));
     let scene: Scene = new Scene();
     scene.buildSceneFromProjectDir(config);
-    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out'));
+    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out/save'));
     for (let f of scene.getFiles()) {
         printer.dumpToTs(f);
     }
 }
 
+testAppProjectSave();
 testSimpleSave();

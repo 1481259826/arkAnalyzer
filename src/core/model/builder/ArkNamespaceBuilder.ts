@@ -25,6 +25,7 @@ import { buildExportAssignment, buildExportDeclaration, buildExportInfo } from '
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { NamespaceSignature } from '../ArkSignature';
+import { IRUtils } from '../../common/IRUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkNamespaceBuilder');
 
@@ -82,6 +83,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
     else {
         logger.warn("JSDocNamespaceDeclaration found.");
     }
+    IRUtils.setLeadingComments(ns, node, sourceFile, ns.getDeclaringArkFile().getScene().getOptions());
 }
 
 // TODO: check and update

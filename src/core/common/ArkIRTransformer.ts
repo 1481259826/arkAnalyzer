@@ -213,6 +213,9 @@ export class ArkIRTransformer {
         }
 
         this.mapStmtsToTsStmt(stmts, node);
+        if (stmts.length > 0) {
+            IRUtils.setLeadingComments(stmts[0], node, this.sourceFile, this.declaringMethod.getDeclaringArkFile().getScene().getOptions());
+        }
         return stmts;
     }
 

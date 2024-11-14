@@ -16,7 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { SceneConfig, Sdk } from './Config';
+import { SceneConfig, SceneOptions, Sdk } from './Config';
 import { ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
@@ -76,8 +76,12 @@ export class Scene {
     private ohPkgContent: { [k: string]: unknown } = {};
 
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
+    private options!: SceneOptions;
 
-    constructor() {
+    constructor() {}
+
+    public getOptions(): SceneOptions {
+        return this.options;
     }
 
     public clear(): void {
@@ -134,6 +138,7 @@ export class Scene {
      * @param sceneConfig - the config used to set the basic information of scene.
      */
     public buildBasicInfo(sceneConfig: SceneConfig) {
+        this.options = sceneConfig.getOptions();
         this.projectName = sceneConfig.getTargetProjectName();
         this.realProjectDir = fs.realpathSync(sceneConfig.getTargetProjectDirectory());
         this.projectFiles = sceneConfig.getProjectFiles();
@@ -225,7 +230,7 @@ export class Scene {
     }
 
     private buildSdk(sdkName: string, sdkPath: string) {
-        const allFiles = getAllFiles(sdkPath, ['.ets', '.ts']);
+        const allFiles = getAllFiles(sdkPath, ['.ets', '.ts'], this.options.ignoreFileNames);
         allFiles.forEach((file) => {
             logger.info('=== parse sdk file:', file);
             let arkFile: ArkFile = new ArkFile();
@@ -250,8 +255,8 @@ export class Scene {
             }
         });
         this.modulePath2NameMap.forEach((value, key) => {
-            let moduleScene = new ModuleScene();
-            moduleScene.ModuleScenBuilder(value, key, this);
+            let moduleScene = new ModuleScene(this);
+            moduleScene.ModuleSceneBuilder(value, key);
             this.moduleScenesMap.set(value, moduleScene);
         });
 
@@ -298,8 +303,8 @@ export class Scene {
             }
         }
 
-        let moduleScene = new ModuleScene();
-        moduleScene.ModuleScenBuilder(moduleName, modulePath, this);
+        let moduleScene = new ModuleScene(this);
+        moduleScene.ModuleSceneBuilder(moduleName, modulePath);
         this.moduleScenesMap.set(moduleName, moduleScene);
 
         this.buildAllMethodBody();
@@ -889,20 +894,20 @@ export class Scene {
 }
 
 export class ModuleScene {
-    private projectScene: Scene = new Scene();
+    private projectScene: Scene;
     private moduleName: string = '';
     private modulePath: string = '';
 
     private moduleOhPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
 
-    constructor() {
+    constructor(projectScene: Scene) {
+        this.projectScene = projectScene;
     }
 
-    public ModuleScenBuilder(moduleName: string, modulePath: string, projectScene: Scene, recursively: boolean = false) {
+    public ModuleSceneBuilder(moduleName: string, modulePath: string, recursively: boolean = false): void {
         this.moduleName = moduleName;
         this.modulePath = modulePath;
-        this.projectScene = projectScene;
 
         this.getModuleOhPkgFilePath();
 
@@ -946,7 +951,7 @@ export class ModuleScene {
     }
 
     private genArkFiles() {
-        getAllFiles(this.modulePath, ['.ets', '.ts']).forEach((file) => {
+        getAllFiles(this.modulePath, ['.ets', '.ts'], this.projectScene.getOptions().ignoreFileNames).forEach((file) => {
             logger.info('=== parse file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this.projectScene);
