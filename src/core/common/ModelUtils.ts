@@ -380,7 +380,7 @@ export class ModelUtils {
                         entry.setSignature(signature);
                         arkExport.getMethods().forEach(m => {
                             const ms = m.getSignature();
-                            m.setDeclarationSignatures(new MethodSignature(signature, ms.getMethodSubSignature()));
+                            m.setDeclareSignatures(new MethodSignature(signature, ms.getMethodSubSignature()));
                             checkAndUpdateMethod(m, entry);
                             entry.addMethod(m);
                         });
@@ -388,7 +388,7 @@ export class ModelUtils {
                         if (attr instanceof ArkClass) {
                             attr.getMethods().forEach(m => {
                                 const ms = m.getSignature();
-                                m.setDeclarationSignatures(new MethodSignature(signature, ms.getMethodSubSignature()));
+                                m.setDeclareSignatures(new MethodSignature(signature, ms.getMethodSubSignature()));
                                 checkAndUpdateMethod(m, entry);
                                 entry.addMethod(m);
                             });

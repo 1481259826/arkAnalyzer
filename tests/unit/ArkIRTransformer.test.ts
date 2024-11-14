@@ -183,7 +183,7 @@ function assertMethodLineEqual(method: ArkMethod, expectMethod: any): void {
             expect(declareLines?.length).toEqual(expectDeclareLines.length);
             declareLines?.forEach((line, index) => {
                 expect(line).toEqual(expectDeclareLines[index]);
-            })
+            });
         }
     }
 
@@ -239,6 +239,7 @@ function buildScene(folderName: string) {
     config.buildFromProjectDir(path.join(BASE_DIR, folderName));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
     return scene;
 }
 

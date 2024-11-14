@@ -313,11 +313,23 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
         const methodName = methodSignature.getMethodSubSignature().getMethodName();
-        let methodSearched: ArkMethod | null = this.getMethodWithName(methodName);
-        if (!methodSearched) {
-            methodSearched = this.getStaticMethodWithName(methodName);
+        const methodSearched = this.getMethodWithName(methodName) ?? this.getStaticMethodWithName(methodName);
+        if (methodSearched === null) {
+            return null;
         }
-        return methodSearched;
+        const implSignature = methodSearched.getImplementationSignature();
+        if (implSignature !== null && implSignature.isMatch(methodSignature)) {
+            return methodSearched;
+        }
+        const declareSignatures = methodSearched.getDeclareSignatures();
+        if (declareSignatures !== null) {
+            for (let i = 0; i < declareSignatures.length; i++) {
+                if (declareSignatures[i].isMatch(methodSignature)) {
+                    return methodSearched;
+                }
+            }
+        }
+        return null;
     }
 
     public getMethodWithName(methodName: string): ArkMethod | null {

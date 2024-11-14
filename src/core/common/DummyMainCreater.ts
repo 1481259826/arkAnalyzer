@@ -126,6 +126,7 @@ export class DummyMainCreater {
         const methodSignature = new MethodSignature(this.dummyMain.getDeclaringArkClass().getSignature(),
             methodSubSignature);
         this.dummyMain.setImplementationSignature(methodSignature);
+        this.dummyMain.setLineCol(0);
         checkAndUpdateMethod(this.dummyMain, dummyMainClass);
         dummyMainClass.addMethod(this.dummyMain);
 

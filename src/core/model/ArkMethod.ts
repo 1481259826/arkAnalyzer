@@ -27,7 +27,7 @@ import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
-import { ArkError } from '../common/ArkError';
+import { ArkError, ArkErrorCode } from '../common/ArkError';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -79,6 +79,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.code = code;
     }
 
+    /**
+     * Get all lines of the method's declarations or null if the method has no seperated declaration.
+     * @returns null or the lines of the method's declarations with number type.
+     */
     public getDeclareLines(): number[] | null {
         if (this.methodDeclareLineCols === undefined) {
             return null;
@@ -86,23 +90,14 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         let lines: number[] = [];
         this.methodDeclareLineCols.forEach(lineCol => {
             lines.push(getLineNo(lineCol));
-        })
+        });
         return lines;
     }
 
-    public getDeclareLine(methodSignature: MethodSignature): number | null {
-        const lineCols = this.methodDeclareLineCols;
-        const signatures = this.methodDeclareSignatures;
-        if (lineCols === undefined || signatures === undefined) {
-            return null;
-        }
-        const index = this.getDeclareSignatureIndex(methodSignature);
-        if (index < 0) {
-            return null;
-        }
-        return getLineNo(lineCols[index]);
-    }
-
+    /**
+     * Get all columns of the method's declarations or null if the method has no seperated declaration.
+     * @returns null or the columns of the method's declarations with number type.
+     */
     public getDeclareColumns(): number[] | null {
         if (this.methodDeclareLineCols === undefined) {
             return null;
@@ -110,110 +105,51 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         let columns: number[] = [];
         this.methodDeclareLineCols.forEach(lineCol => {
             columns.push(getColNo(lineCol));
-        })
+        });
         return columns;
     }
 
-    public getDeclareColumn(methodSignature: MethodSignature): number | null {
-        const lineCols = this.methodDeclareLineCols;
-        const signatures = this.methodDeclareSignatures;
-        if (lineCols === undefined || signatures === undefined) {
-            return null;
-        }
-        const index = this.getDeclareSignatureIndex(methodSignature);
-        if (index < 0) {
-            return null;
-        }
-        return getColNo(lineCols[index]);
-    }
-
+    /**
+     * Set lines and columns of the declarations with number type inputs and then encoded them to LineCol type.
+     * The length of lines and columns should be the same otherwise they cannot be encoded together.
+     * @param lines - the number of lines.
+     * @param columns - the number of columns.
+     * @returns
+     */
     public setDeclareLinesAndCols(lines: number[], columns: number[]): void {
         if (lines?.length !== columns?.length) {
             return;
         }
         this.methodDeclareLineCols = [];
         lines.forEach((line, index) => {
-            let lineCol: LineCol = 0
+            let lineCol: LineCol = 0;
             lineCol = setLine(lineCol, line);
             lineCol = setCol(lineCol, columns[index]);
             (this.methodDeclareLineCols as LineCol[]).push(lineCol);
         });
     }
 
+    /**
+     * Set lineCols of the declarations directly with LineCol type input.
+     * @param lineCols - the encoded lines and columns with LineCol type.
+     * @returns
+     */
     public setDeclareLineCols(lineCols: LineCol[]): void {
         this.methodDeclareLineCols = lineCols;
     }
 
+    /**
+     * Get encoded lines and columns of the method's declarations or null if the method has no seperated declaration.
+     * @returns null or the encoded lines and columns of the method's declarations with LineCol type.
+     */
     public getDeclareLineCols(): LineCol[] | null {
-        if (this.methodDeclareLineCols === undefined) {
-            return null;
-        } else {
-            return this.methodDeclareLineCols;
-        }
+        return this.methodDeclareLineCols ?? null;
     }
 
-    public addDeclareLineCol(line: number, column: number): void {
-        if (this.methodDeclareLineCols === undefined) {
-            this.methodDeclareLineCols = [];
-        }
-        let lineCol: LineCol = 0
-        lineCol = setLine(lineCol, line);
-        lineCol = setCol(lineCol, column);
-        this.methodDeclareLineCols.push(lineCol);
-    }
-
-    public updateDeclareLine(line: number, methodSignature: MethodSignature): void {
-        const lineCols = this.methodDeclareLineCols;
-        const signatures = this.methodDeclareSignatures;
-        if (lineCols === undefined || signatures === undefined) {
-            return;
-        }
-        if (lineCols.length !== signatures.length) {
-            return;
-        }
-        const index = this.getDeclareSignatureIndex(methodSignature);
-        if (index >= 0) {
-            let lineCol: LineCol = lineCols[index];
-            lineCol = setLine(lineCol, line);
-            (this.methodDeclareLineCols as LineCol[])[index] = lineCol;
-        }
-    }
-
-    public updateDeclareColumn(column: number, methodSignature: MethodSignature): void {
-        const lineCols = this.methodDeclareLineCols;
-        const signatures = this.methodDeclareSignatures;
-        if (lineCols === undefined || signatures === undefined) {
-            return;
-        }
-        if (lineCols.length !== signatures.length) {
-            return;
-        }
-        const index = this.getDeclareSignatureIndex(methodSignature);
-        if (index >= 0) {
-            let lineCol: LineCol = lineCols[index];
-            lineCol = setCol(lineCol, column);
-            (this.methodDeclareLineCols as LineCol[])[index] = lineCol;
-        }
-    }
-
-    public updateDeclareLineAndCol(line: number, column: number, methodSignature: MethodSignature): void {
-        const lineCols = this.methodDeclareLineCols;
-        const signatures = this.methodDeclareSignatures;
-        if (lineCols === undefined || signatures === undefined) {
-            return;
-        }
-        if (lineCols.length !== signatures.length) {
-            return;
-        }
-        const index = this.getDeclareSignatureIndex(methodSignature);
-        if (index >= 0) {
-            let lineCol: LineCol = lineCols[index];
-            lineCol = setLine(lineCol, line);
-            lineCol = setCol(lineCol, column);
-            (this.methodDeclareLineCols as LineCol[])[index] = lineCol;
-        }
-    }
-
+    /**
+     * Get line of the method's implementation or null if the method has no implementation.
+     * @returns null or the number of the line.
+     */
     public getLine(): number | null {
         if (this.lineCol === undefined) {
             return null;
@@ -221,6 +157,12 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return getLineNo(this.lineCol);
     }
 
+    /**
+     * Set line of the implementation with line number input.
+     * The line number will be encoded together with the original column number.
+     * @param line - the line number of the method implementation.
+     * @returns
+     */
     public setLine(line: number): void {
         if (this.lineCol === undefined) {
             this.lineCol = 0;
@@ -228,6 +170,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.lineCol = setLine(this.lineCol, line);
     }
 
+    /**
+     * Get column of the method's implementation or null if the method has no implementation.
+     * @returns null or the number of the column.
+     */
     public getColumn(): number | null {
         if (this.lineCol === undefined) {
             return null;
@@ -235,6 +181,12 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return getColNo(this.lineCol);
     }
 
+    /**
+     * Set column of the implementation with column number input.
+     * The column number will be encoded together with the original line number.
+     * @param column - the column number of the method implementation.
+     * @returns
+     */
     public setColumn(column: number): void {
         if (this.lineCol === undefined) {
             this.lineCol = 0;
@@ -242,14 +194,19 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.lineCol = setCol(this.lineCol, column);
     }
 
+    /**
+     * Get encoded line and column of the method's implementation or null if the method has no implementation.
+     * @returns null or the encoded line and column of the method's implementation with LineCol type.
+     */
     public getLineCol(): LineCol | null {
-        if (this.lineCol === undefined) {
-            return null;
-        } else {
-            return this.lineCol;
-        }
+        return this.lineCol ?? null;
     }
 
+    /**
+     * Set lineCol of the implementation directly with LineCol type input.
+     * @param lineCol - the encoded line and column with LineCol type.
+     * @returns
+     */
     public setLineCol(lineCol: LineCol): void {
         this.lineCol = lineCol;
     }
@@ -286,13 +243,21 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.getSignature().getType();
     }
 
+    /**
+     * Get all declare signatures.
+     * The results could be null if there is no seperated declaration of the method.
+     * @returns null or the method declare signatures.
+     */
     public getDeclareSignatures(): MethodSignature[] | null {
-        if (this.methodDeclareSignatures === undefined) {
-            return null;
-        }
-        return this.methodDeclareSignatures;
+        return this.methodDeclareSignatures ?? null;
     }
 
+    /**
+     * Get the index of the matched method declare signature among all declare signatures.
+     * The index will be -1 if there is no matched signature found.
+     * @param targetSignature - the target declare signature want to search.
+     * @returns -1 or the index of the matched signature.
+     */
     public getDeclareSignatureIndex(targetSignature: MethodSignature): number {
         let declareSignatures = this.methodDeclareSignatures;
         if (declareSignatures === undefined) {
@@ -306,39 +271,41 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return -1;
     }
 
+    /**
+     * Get the method signature of the implementation.
+     * The signature could be null if the method is only a declaration which body is undefined.
+     * @returns null or the method implementation signature.
+     */
     public getImplementationSignature(): MethodSignature | null {
-        if (this.methodSignature == undefined) {
-            return null;
-        }
-        return this.methodSignature;
+        return this.methodSignature ?? null;
     }
 
     /**
-     * <font color="red">?建议明确返回类型？</font>
-     * Get the method signature of the implementation or first declaration if there is no implementation.
-     * It includes two fields. one is ClassSignature, the other is MethodSubSignature.
-     * The former indicates which class this method belong to,
-     * the latter indicates the detail info of this method, 
-     * such as method name, parameters, returnType, etc.
+     * Get the method signature of the implementation or the first declaration if there is no implementation.
+     * For a method, the implementation and declaration signatures must not be undefined at the same time.
+     * A {@link MethodSignature} includes:
+     * - Class Signature: indicates which class this method belong to.
+     * - Method SubSignature: indicates the detail info of this method such as method name, parameters, returnType, etc.
      * @returns The method signature.
      * @example
-     * 1. New a body.
+     * 1. Get the signature of method mtd.
 
     ```typescript
-    let mtd = new ArkMethod();
-    // ... ...
     let signature = mtd.getSignature();
     // ... ...
     ```
      */
     public getSignature(): MethodSignature {
-        if (this.methodSignature !== undefined) {
-            return this.methodSignature;
-        }
-        return (this.methodDeclareSignatures as MethodSignature[])[0];
+        return this.methodSignature ?? (this.methodDeclareSignatures as MethodSignature[])[0];
     }
 
-    public setDeclarationSignatures(signatures: MethodSignature | MethodSignature[]): void {
+    /**
+     * Set signatures of all declarations.
+     * It will reset the declaration signatures if they are already defined before.
+     * @param signatures - one signature or a list of signatures.
+     * @returns
+     */
+    public setDeclareSignatures(signatures: MethodSignature | MethodSignature[]): void {
         if (Array.isArray(signatures)) {
             this.methodDeclareSignatures = signatures;
         } else {
@@ -346,29 +313,28 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         }
     }
 
-    public addDeclarationSignature(signature: MethodSignature): void {
-        if (this.methodDeclareSignatures === undefined) {
-            this.methodDeclareSignatures = [signature];
-        } else if (this.getDeclareSignatureIndex(signature) < 0) {
-            (this.methodDeclareSignatures as MethodSignature[]).push(signature);
-        }
-    }
-
-    public updateDeclarationSignature(oldSignature: MethodSignature, newSignature: MethodSignature): void {
-        let declareSignatures = this.methodDeclareSignatures;
-        if (declareSignatures === undefined) {
+    /**
+     * Reset signature of one declaration with the specified index.
+     * Will do nothing if the index doesn't exist.
+     * @param signature - new signature want to set.
+     * @param index - index of signature want to set.
+     * @returns
+     */
+    public setDeclareSignatureWithIndex(signature: MethodSignature, index: number): void {
+        if (this.methodDeclareSignatures === undefined || this.methodDeclareSignatures.length <= index) {
             return;
         }
-        declareSignatures.forEach((signature, index) => {
-            if (signature.isMatch(oldSignature)) {
-                (this.methodDeclareSignatures as MethodSignature[])[index] = newSignature;
-                return;
-            }
-        });
+        this.methodDeclareSignatures[index] = signature;
     }
 
-    public setImplementationSignature(methodSignature: MethodSignature): void {
-        this.methodSignature = methodSignature;
+    /**
+     * Set signature of implementation.
+     * It will reset the implementation signature if it is already defined before.
+     * @param signature - signature of implementation.
+     * @returns
+     */
+    public setImplementationSignature(signature: MethodSignature): void {
+        this.methodSignature = signature;
     }
 
     public getSubSignature() {
@@ -569,6 +535,23 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     public validate(): ArkError {
-        return this.validateFields(['declaringArkClass', 'methodSignature']);
+        const declareSignatures = this.getDeclareSignatures();
+        const declareLineCols = this.getDeclareLineCols();
+        const signature = this.getImplementationSignature();
+        const lineCol = this.getLineCol();
+
+        if (declareSignatures === null && signature === null) {
+            return { errCode: ArkErrorCode.METHOD_SIGNATURE_UNDEFINED, errMsg: 'methodDeclareSignatures and methodSignature are both undefined.' };
+        }
+        if ((declareSignatures === null) !== (declareLineCols === null)) {
+            return { errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED, errMsg: 'methodDeclareSignatures and methodDeclareLineCols are not matched.' };
+        }
+        if (declareSignatures !== null && declareLineCols !== null && declareSignatures.length !== declareLineCols.length) {
+            return { errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED, errMsg: 'methodDeclareSignatures and methodDeclareLineCols are not matched.' };
+        }
+        if ((signature === null) !== (lineCol === null)) {
+            return { errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED, errMsg: 'methodSignature and lineCol are not matched.' };
+        }
+        return this.validateFields(['declaringArkClass']);
     }
 }

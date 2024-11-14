@@ -42,6 +42,7 @@ import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
 import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { IRUtils } from '../../common/IRUtils';
+import { ArkErrorCode } from '../../common/ArkError';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkMethodBuilder');
 
@@ -64,6 +65,7 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(DEFAULT_ARK_METHOD_NAME, true);
     const methodSignature = new MethodSignature(mtd.getDeclaringArkClass().getSignature(), methodSubSignature);
     mtd.setImplementationSignature(methodSignature);
+    mtd.setLineCol(0);
 
     const defaultMethodNode = node ? node : sourceFile;
 
@@ -110,7 +112,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
         mtd.setLine(line + 1);
         mtd.setColumn(character + 1);
     } else {
-        mtd.setDeclarationSignatures(methodSignature);
+        mtd.setDeclareSignatures(methodSignature);
         mtd.setDeclareLinesAndCols([line + 1], [character + 1]);
     }
 
@@ -358,6 +360,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         const methodSignature = new MethodSignature(defaultConstructor.getDeclaringArkClass().getSignature(),
             methodSubSignature);
         defaultConstructor.setImplementationSignature(methodSignature);
+        defaultConstructor.setLineCol(0);
 
         const stmts: Stmt[] = [];
         let index = 0;
@@ -385,6 +388,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
         const methodSignature = new MethodSignature(defaultConstructor.getDeclaringArkClass().getSignature(),
             methodSubSignature);
         defaultConstructor.setImplementationSignature(methodSignature);
+        defaultConstructor.setLineCol(0);
 
         if (arkClass.getSuperClass()) {
             const superClass = arkClass.getSuperClass() as ArkClass;
@@ -485,7 +489,7 @@ export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
         return;
     }
 
-    if (!validMethod(method) || !validMethod(presentMethod)) {
+    if (method.validate().errCode !== ArkErrorCode.OK || presentMethod.validate().errCode !== ArkErrorCode.OK) {
         return;
     }
     const presentDeclareSignatures = presentMethod.getDeclareSignatures();
@@ -497,10 +501,10 @@ export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
 
     if (presentDeclareSignatures !== null && presentImplSignature === null) {
         if (newDeclareSignature === null || presentMethod.getDeclareSignatureIndex(newDeclareSignature[0]) >= 0) {
-            method.setDeclarationSignatures(presentDeclareSignatures);
+            method.setDeclareSignatures(presentDeclareSignatures);
             method.setDeclareLineCols((presentDeclareLineCols as number[]));
         } else {
-            method.setDeclarationSignatures(presentDeclareSignatures.concat(newDeclareSignature));
+            method.setDeclareSignatures(presentDeclareSignatures.concat(newDeclareSignature));
             method.setDeclareLineCols((presentDeclareLineCols as number[]).concat(newDeclareLineCols as number[]));
         }
         return;
@@ -514,27 +518,3 @@ export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
     }
 }
 
-export function validMethod(method: ArkMethod): boolean {
-    const declareSignatures = method.getDeclareSignatures();
-    const declareLineCols = method.getDeclareLineCols();
-    const signature = method.getImplementationSignature();
-    const lineCol = method.getLineCol();
-
-    if (declareSignatures === null && signature === null) {
-        logger.error(`ArkMethod of ${method.getName()} is invalid, methodDeclareSignatures and methodSignature could not be undefined at the same time.`);
-        return false;
-    }
-    if ((declareSignatures === null) !== (declareLineCols === null)) {
-        logger.error(`ArkMethod of ${method.getName()} is invalid, length of methodDeclareSignatures and methodDeclareLineCols must be the same.`);
-        return false;
-    }
-    if (declareSignatures !== null && declareLineCols !== null && declareSignatures.length !== declareLineCols.length) {
-        logger.error(`ArkMethod of ${method.getName()} is invalid, length of methodDeclareSignatures and methodDeclareLineCols must be the same.`);
-        return false;
-    }
-    if ((signature === null) !== (lineCol === null)) {
-        logger.error(`ArkMethod of ${method.getName()} is invalid, length of methodSignature and lineCol must be the same.`);
-        return false;
-    }
-    return true;
-}

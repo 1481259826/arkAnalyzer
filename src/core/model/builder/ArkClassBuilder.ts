@@ -161,6 +161,7 @@ function init4InstanceInitMethod(cls: ArkClass) {
     const methodSignature = new MethodSignature(instanceInit.getDeclaringArkClass().getSignature(),
         methodSubSignature);
     instanceInit.setImplementationSignature(methodSignature);
+    instanceInit.setLineCol(0);
 
     checkAndUpdateMethod(instanceInit, cls);
     cls.addMethod(instanceInit);
@@ -175,6 +176,7 @@ function init4StaticInitMethod(cls: ArkClass) {
     const methodSignature = new MethodSignature(staticInit.getDeclaringArkClass().getSignature(),
         methodSubSignature);
     staticInit.setImplementationSignature(methodSignature);
+    staticInit.setLineCol(0);
 
     checkAndUpdateMethod(staticInit, cls);
     cls.addMethod(staticInit);
