@@ -68,7 +68,7 @@ export class IRUtils {
         }
         const commentRanges = ts.getLeadingCommentRanges(node.getFullText(sourceFile), 0) || [];
         for (const range of commentRanges) {
-            const comment = node.getFullText(sourceFile).slice(range.pos, range.end);
+            const comment = node.getFullText(sourceFile).slice(range.pos, range.end).replace(/\r\n/g, '\n');
             comments.push(comment);
         }
         return comments;
