@@ -31,7 +31,7 @@ import { GLOBAL_THIS } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
-export type PagNodeTy = Value | ExportInfo
+export type PagNodeType = Value | ExportInfo
 
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
@@ -672,7 +672,7 @@ export class Pag extends BaseGraph {
         }
     }
 
-    public addPagNode(cid: ContextID, value: PagNodeTy, stmt?: Stmt, refresh: boolean = true): PagNode {
+    public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode
         if (value instanceof Local) {
@@ -853,7 +853,7 @@ export class Pag extends BaseGraph {
 
         return ndId;
     }
-    public getOrNewNode(cid: ContextID, v: PagNodeTy, s?: Stmt): PagNode {
+    public getOrNewNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
         let nodeId = undefined;
         // Value
         if (!(v instanceof ExportInfo)) {

@@ -29,7 +29,7 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, InterProceduralSrcType, PagNodeTy } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, InterProceduralSrcType, PagNodeType } from './Pag';
 import { PtsSet } from './PtsDS';
 import { GLOBAL_THIS } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
@@ -178,7 +178,6 @@ export class PagBuilder {
                     if (cs) {
                         // direct call is already existing in CG
                         // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
-                        // static API may call instance anonymous method...
                         fpag.addNormalCallSite(cs);
                         if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
                             .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
@@ -941,7 +940,7 @@ export class PagBuilder {
         return srcNodes;
     }
 
-    public getOrNewPagNode(cid: ContextID, v: PagNodeTy, s?: Stmt): PagNode {
+    public getOrNewPagNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
         if (v instanceof ArkThisRef) {
             return this.getOrNewThisRefNode(cid, v as ArkThisRef);
         }
@@ -1380,40 +1379,37 @@ export class PagBuilder {
         return Array.from(this.funcPags.keys());
     }
 
-    private handleValueFromExternalScope(v: Value, funcID: FuncID): void {
-        if (v instanceof Local) {
-            let def = v.getDeclaringStmt();
-            if (def) {
+    private handleValueFromExternalScope(value: Value, funcID: FuncID, originValue?: Value): void {
+        if (value instanceof Local) {
+            if (value.getDeclaringStmt()) {
                 // not from external scope
                 return;
             }
 
-            let type = v.getType();
+            let type = value.getType();
             if (!type) {
                 return;
             }
 
-            console.log(type);
-            let curMtd = this.cg.getArkMethodByFuncID(funcID);
-            if (!curMtd) {
+            let curMethod = this.cg.getArkMethodByFuncID(funcID);
+            if (!curMethod) {
                 return;
             }
 
-            let curFile = curMtd.getDeclaringArkFile();
-            let impInfo = curFile.getImportInfoBy(v.getName());
-            console.log(impInfo);
+            let curFile = curMethod.getDeclaringArkFile();
+            let impInfo = curFile.getImportInfoBy(value.getName());
             if (!impInfo) {
                 return;
             }
 
             let exp = impInfo.getLazyExportInfo();
             if (exp) {
-                this.addInterFuncEdge(impInfo.getLazyExportInfo()!, v, funcID);
+                this.addInterFuncEdge(impInfo.getLazyExportInfo()!, originValue ?? value, funcID);
             }
-        } else if (v instanceof ArkInstanceFieldRef) {
-            let base = v.getBase();
+        } else if (value instanceof ArkInstanceFieldRef) {
+            let base = value.getBase();
             if (base) {
-
+                this.handleValueFromExternalScope(base, funcID, value);
             }
         }
     }
@@ -1423,14 +1419,18 @@ export class PagBuilder {
         let interFuncPag = this.interFuncPags.get(funcID) ?? new InterFuncPag();
         // Export a local
         if (src instanceof ExportInfo && src.getArkExport() instanceof Local) {
+            let srcExportLoal = src.getArkExport() as Local;
             // Add a InterProcedural edge
+            if (dst instanceof ArkInstanceFieldRef) {
+                dst.setBase(srcExportLoal);
+            }
+
             let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
             interFuncPag.addToInterProceduralEdgeSet(e);
             this.interFuncPags.set(funcID, interFuncPag);
 
             // Put the function which the src belongs to to worklist
-            let exportLocal = src.getArkExport() as Local;
-            let srcFunc = exportLocal.getDeclaringStmt()?.getCfg().getDeclaringMethod();
+            let srcFunc = srcExportLoal.getDeclaringStmt()?.getCfg().getDeclaringMethod();
             if (srcFunc) {
                 let srcFuncID = this.cg.getCallGraphNodeByMethod(srcFunc.getSignature()).getID();
                 let cid = this.ctx.getNewContextID(srcFuncID);
