@@ -1457,7 +1457,7 @@ export class PagBuilder {
 
             // Existing local exported nodes -> ExportNode
             if (e.src instanceof ExportInfo && e.src.getArkExport() as Local) {
-                let exportLocal = e.src.getArkExport() as Local
+                let exportLocal = e.src.getArkExport() as Local;
                 let existingNodes = this.pag.getNodesByValue(exportLocal);
                 existingNodes?.forEach(n => {
                     this.pag.addPagEdge(this.pag.getNode(n)! as PagNode, srcPagNode, e.kind);
