@@ -1413,7 +1413,7 @@ export class PagBuilder {
         } else if (v instanceof ArkInstanceFieldRef) {
             let base = v.getBase();
             if (base) {
-                
+
             }
         }
     }
@@ -1461,7 +1461,7 @@ export class PagBuilder {
                 let existingNodes = this.pag.getNodesByValue(exportLocal);
                 existingNodes?.forEach(n => {
                     this.pag.addPagEdge(this.pag.getNode(n)! as PagNode, srcPagNode, e.kind);
-                })
+                });
             }
         }
 

@@ -579,7 +579,7 @@ export class PagExportNode extends PagNode {
         // Export object SHOULD be a Local currently
         let v = r.getArkExport();
         if (!(v instanceof Local)) {
-            throw new Error("PagExportNode should always be Local");
+            throw new Error('PagExportNode should always be Local');
         }
 
         super(id, -1, v, PagNodeKind.ExportInfo)

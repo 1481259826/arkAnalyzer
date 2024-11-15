@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-export class Du{}
+export class Du { }
 
-export class ExpTest{
+export class ExpTest {
     obj: Du = new Du();
     public foo() {
 
@@ -24,3 +24,4 @@ export class ExpTest{
 
 let p = new ExpTest();
 export default p;
+// export default new ExpTest();

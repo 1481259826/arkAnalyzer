@@ -16,10 +16,9 @@
 import et from './exp'
 import { Du } from './exp'
 
-class ImportTest{
+class ImportTest {
     obj: Du = et.obj;
 }
-
 
 function main() {
     let lo = et;
@@ -27,11 +26,11 @@ function main() {
     et.foo();
 }
 
-function Test2() {
+function test2() {
     let lo2 = new ImportTest()
     let x = lo2.obj;
 }
 
-function Test3() {
-    et.foo;
+function test3() {
+    et.foo();
 }

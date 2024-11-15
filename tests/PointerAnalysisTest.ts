@@ -23,36 +23,36 @@ import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerA
 import { Local } from "../src/core/base/Local";
 import { ArkThisRef } from "../src/core/base/Ref";
 import { ArkAssignStmt } from "../src/core/base/Stmt";
-import Logger, {LOG_LEVEL} from "../src/utils/logger"
+import Logger, { LOG_LEVEL } from "../src/utils/logger"
 
- 
+
 Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.TRACE)
 let config: SceneConfig = new SceneConfig()
 
 function dumpIR(scene: Scene) {
     scene.getMethods().forEach(fun => {
         console.log("\n---\n" + fun.getSignature().toString())
-        if(!fun.getCfg())
+        if (!fun.getCfg())
             return;
 
         console.log("{");
         let i = 0;
         fun.getCfg()?.getBlocks().forEach(bb => {
-            
+
             console.log(`  bb${i++}:`)
             bb.getStmts().forEach(stmt => {
-                console.log("    " +stmt.toString());
+                console.log("    " + stmt.toString());
             })
         })
         console.log("}")
     });
-} 
+}
 
 function printTypeDiff(pta: PointerAnalysis) {
     let dm = pta.getTypeDiffMap();
     for (let [v, types] of dm) {
         console.log('=======')
-         if (v instanceof Local) {
+        if (v instanceof Local) {
             if (v.getName() == 'this') {
                 continue;
             }
@@ -69,7 +69,7 @@ function printTypeDiff(pta: PointerAnalysis) {
                 console.log('Declare: ' + s);
             }
         }
-        
+
         console.log(v)
         console.log("----\n" + v.getType().toString());
         for (let t of types) {
@@ -86,7 +86,7 @@ function runProject(output: string) {
     // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
     console.log(projectScene);
- 
+
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true, true)
     let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
 
@@ -118,7 +118,7 @@ function runDir(output: string) {
     pta.start();
     //cg.dump(output + "/subcg.dot", debugfunc[0]);
 
-    cg.dump(output+"/subcg.dot", debugfunc[0])
+    cg.dump(output + "/subcg.dot", debugfunc[0])
     cgBuilder.setEntries()
     entry = cg.getEntries();
     console.log(entry.length)
@@ -127,8 +127,7 @@ function runDir(output: string) {
     printTypeDiff(pta);
     console.log("fin")
 }
-if (false)
-{
+if (false) {
     runProject("./out");
 }
 runDir('./out')
