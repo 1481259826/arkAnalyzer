@@ -160,7 +160,6 @@ export class DummyMainCreater {
         dummyCfg.setDeclaringMethod(this.dummyMain);
 
         const firstBlock = new BasicBlock();
-        dummyCfg.addBlock(firstBlock);
 
         let isStartingStmt = true;
         for (const method of this.scene.getStaticInitMethods()) {
@@ -201,9 +200,13 @@ export class DummyMainCreater {
         const conditionTrue = new ArkConditionExpr(truE, zero, RelationalBinaryOperator.Equality);
         const whileStmt = new ArkIfStmt(conditionTrue);
         firstBlock.addStmt(countAssignStmt);
+
+        dummyCfg.addBlock(firstBlock);
+        dummyCfg.setStartingStmt(firstBlock.getStmts()[0]);
+
         const whileBlock = new BasicBlock();
-        dummyCfg.addBlock(whileBlock);
         whileBlock.addStmt(whileStmt);
+        dummyCfg.addBlock(whileBlock);
         firstBlock.addSuccessorBlock(whileBlock);
         whileBlock.addPredecessorBlock(firstBlock);
         let lastBlocks: BasicBlock[] = [whileBlock];
@@ -214,8 +217,8 @@ export class DummyMainCreater {
             const condition = new ArkConditionExpr(countLocal, new Constant(count.toString(), NumberType.getInstance()), RelationalBinaryOperator.Equality);
             const ifStmt = new ArkIfStmt(condition);
             const ifBlock = new BasicBlock();
-            dummyCfg.addBlock(ifBlock);
             ifBlock.addStmt(ifStmt);
+            dummyCfg.addBlock(ifBlock);
             for (const block of lastBlocks) {
                 ifBlock.addPredecessorBlock(block);
                 block.addSuccessorBlock(ifBlock);
@@ -262,8 +265,8 @@ export class DummyMainCreater {
                 invokeExpr = new ArkStaticInvokeExpr(method.getSignature(), paramLocals);
             }
             const invokeStmt = new ArkInvokeStmt(invokeExpr);
-            dummyCfg.addBlock(invokeBlock);
             invokeBlock.addStmt(invokeStmt);
+            dummyCfg.addBlock(invokeBlock);
             ifBlock.addSuccessorBlock(invokeBlock);
             invokeBlock.addPredecessorBlock(ifBlock);
             lastBlocks = [ifBlock, invokeBlock];
@@ -274,8 +277,8 @@ export class DummyMainCreater {
         }
         const returnStmt = new ArkReturnVoidStmt();
         const returnBlock = new BasicBlock();
-        dummyCfg.addBlock(returnBlock);
         returnBlock.addStmt(returnStmt);
+        dummyCfg.addBlock(returnBlock);
         whileBlock.addSuccessorBlock(returnBlock);
         returnBlock.addPredecessorBlock(whileBlock);
 
