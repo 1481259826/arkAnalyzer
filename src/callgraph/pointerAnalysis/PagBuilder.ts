@@ -72,6 +72,7 @@ export class PagBuilder {
     private globalThisValue: Value = new Local(GLOBAL_THIS);
     private globalThisPagNode?: PagGlobalThisNode;
     private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
+    private exportVariableMap: Map<Local, Local[]> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -268,7 +269,7 @@ export class PagBuilder {
         }
 
         this.addCallsEdgesFromFuncPag(funcPag, cid);
-        this.addDynamicCallSite(funcPag);
+        this.addDynamicCallSite(funcPag, funcID);
         this.addUnknownCallSite(funcPag, funcID);
         this.handledFunc.add(`${cid}-${funcID}`)
     }
@@ -466,7 +467,7 @@ export class PagBuilder {
         return undefined;
     }
 
-    public addDynamicCallSite(funcPag: FuncPag) {
+    public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID) {
         // add dyn callsite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
             let invokeExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
@@ -479,8 +480,13 @@ export class PagBuilder {
             // TODO: check base under different cid
             let baseNodeIDs = this.pag.getNodesByValue(base);
             if (!baseNodeIDs) {
-                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
-                continue;
+                let exportInfo = this.cg.getArkMethodByFuncID(funcID)?.getDeclaringArkFile().getImportInfoBy(base.getName());
+                if (exportInfo) {
+                    baseNodeIDs = this.pag.getNodesByValue(exportInfo.getLazyExportInfo()?.getArkExport() as Local);
+                } else {
+                    logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
+                    continue;
+                }
             }
             for (let nodeID of baseNodeIDs!.values()) {
                 let node = this.pag.getNode(nodeID);
@@ -743,6 +749,13 @@ export class PagBuilder {
         let srcBaseLocal = ivkExpr.getBase();
         srcBaseLocal = this.getRealThisLocal(srcBaseLocal, callerFunID);
         let srcNodeId = this.pag.hasCtxNode(cid, srcBaseLocal);
+        if (!srcNodeId) {
+            let exportInfo = this.cg.getArkMethodByFuncID(callerFunID)?.getDeclaringArkFile().getImportInfoBy(srcBaseLocal.getName());
+            if (exportInfo) {
+                srcNodeId = this.pag.hasCtxNode(cid, exportInfo.getLazyExportInfo()?.getArkExport() as Local);
+            }
+        }
+
         if (!srcNodeId) {
             throw new Error('Can not get base node');
         }
@@ -1421,12 +1434,14 @@ export class PagBuilder {
         if (src instanceof ExportInfo && src.getArkExport() instanceof Local) {
             let srcExportLoal = src.getArkExport() as Local;
             // Add a InterProcedural edge
-            if (dst instanceof ArkInstanceFieldRef) {
-                dst.setBase(srcExportLoal);
+            if (dst instanceof Local) {
+                let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
+                interFuncPag.addToInterProceduralEdgeSet(e);
+                this.addExportVariableMap(srcExportLoal, dst as Local);
+            } else if (dst instanceof ArkInstanceFieldRef) {
+                // dst.setBase(srcExportLoal);
+                this.addExportVariableMap(srcExportLoal, dst.getBase());
             }
-
-            let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
-            interFuncPag.addToInterProceduralEdgeSet(e);
             this.interFuncPags.set(funcID, interFuncPag);
 
             // Put the function which the src belongs to to worklist
@@ -1439,6 +1454,18 @@ export class PagBuilder {
             }
         }
         // Extend other types of src here
+    }
+
+    private addExportVariableMap(src: Local, dst: Local): void {
+        let exportMap: Local[] = this.exportVariableMap.get(src) ?? [];
+        if (!exportMap.includes(dst)) {
+            exportMap.push(dst);
+            this.exportVariableMap.set(src, exportMap);
+        }
+    }
+
+    public getExportVariableMap(src: Local): Local[] {
+        return this.exportVariableMap.get(src) ?? [];
     }
 
     /// Add inter-procedural Pag Nodes and Edges
