@@ -202,10 +202,13 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         // get related field node with current node's value
         let instanceFieldNodeMap = this.pag.getNodesByBaseValue(nodeValue) ?? new Map();
+        // intra procedural field node pass node
+        let intraProceduralFieldNodeMap = new Map();
+
         if (nodeValue instanceof Local) {
             this.pagBuilder.getExportVariableMap(nodeValue).forEach((dst) => {
                 let temp = this.pag.getNodesByBaseValue(dst) ?? new Map();
-                instanceFieldNodeMap = this.mergeInstanceFieldMap(instanceFieldNodeMap, temp);
+                intraProceduralFieldNodeMap = this.mergeInstanceFieldMap(instanceFieldNodeMap, temp);
             })
         }
 
@@ -216,6 +219,17 @@ export class PointerAnalysis extends AbstractAnalysis {
             if (baseCid !== -1 && cid !== baseCid) {
                 return;
             }
+            nodeIDs.forEach((nodeID: number) => {
+                // get abstract field node
+                let fieldNode = this.pag.getNode(nodeID) as PagNode;
+
+                this.handleFieldInEdges(fieldNode, diffPts!);
+                this.handleFieldOutEdges(fieldNode, diffPts!);
+            })
+        })
+
+        // without cid check, because closure and export is under different cid
+        intraProceduralFieldNodeMap!.forEach((nodeIDs) => {
             nodeIDs.forEach((nodeID: number) => {
                 // get abstract field node
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;

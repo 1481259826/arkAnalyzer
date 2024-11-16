@@ -29,7 +29,7 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, InterProceduralSrcType, PagNodeType } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType } from './Pag';
 import { PtsSet } from './PtsDS';
 import { GLOBAL_THIS } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
@@ -480,14 +480,18 @@ export class PagBuilder {
             // TODO: check base under different cid
             let baseNodeIDs = this.pag.getNodesByValue(base);
             if (!baseNodeIDs) {
-                let exportInfo = this.cg.getArkMethodByFuncID(funcID)?.getDeclaringArkFile().getImportInfoBy(base.getName());
-                if (exportInfo) {
-                    baseNodeIDs = this.pag.getNodesByValue(exportInfo.getLazyExportInfo()?.getArkExport() as Local);
-                } else {
-                    logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
-                    continue;
+                // bind the call site to export base
+                let exportBaseLocal = this.getExportLocal(base, funcID);
+                if (exportBaseLocal) {
+                    baseNodeIDs = this.pag.getNodesByValue(exportBaseLocal);
                 }
             }
+
+            if (!baseNodeIDs) {
+                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
+                continue;
+            }
+
             for (let nodeID of baseNodeIDs!.values()) {
                 let node = this.pag.getNode(nodeID);
                 if (!(node instanceof PagLocalNode)) {
@@ -750,9 +754,11 @@ export class PagBuilder {
         srcBaseLocal = this.getRealThisLocal(srcBaseLocal, callerFunID);
         let srcNodeId = this.pag.hasCtxNode(cid, srcBaseLocal);
         if (!srcNodeId) {
-            let exportInfo = this.cg.getArkMethodByFuncID(callerFunID)?.getDeclaringArkFile().getImportInfoBy(srcBaseLocal.getName());
-            if (exportInfo) {
-                srcNodeId = this.pag.hasCtxNode(cid, exportInfo.getLazyExportInfo()?.getArkExport() as Local);
+            // this check is for export local and closure use
+            // replace the invoke base, because its origin base has no pag node
+            let exportBaseLocal = this.getExportLocal(srcBaseLocal, callerFunID);
+            if (exportBaseLocal) {
+                srcNodeId = this.pag.hasCtxNode(cid, exportBaseLocal);
             }
         }
 
@@ -1427,7 +1433,7 @@ export class PagBuilder {
         }
     }
 
-    private addInterFuncEdge(src: InterProceduralSrcType, dst: Value, funcID: FuncID): void {
+    private addInterFuncEdge(src: ExportInfo, dst: Value, funcID: FuncID): void {
         this.interFuncPags = this.interFuncPags ?? new Map();
         let interFuncPag = this.interFuncPags.get(funcID) ?? new InterFuncPag();
         // Export a local
@@ -1435,11 +1441,11 @@ export class PagBuilder {
             let srcExportLoal = src.getArkExport() as Local;
             // Add a InterProcedural edge
             if (dst instanceof Local) {
-                let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
+                let e: InterProceduralEdge = {src: srcExportLoal, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
                 interFuncPag.addToInterProceduralEdgeSet(e);
                 this.addExportVariableMap(srcExportLoal, dst as Local);
             } else if (dst instanceof ArkInstanceFieldRef) {
-                // dst.setBase(srcExportLoal);
+                // record the export base use
                 this.addExportVariableMap(srcExportLoal, dst.getBase());
             }
             this.interFuncPags.set(funcID, interFuncPag);
@@ -1476,22 +1482,24 @@ export class PagBuilder {
         }
 
         for (let e of edges) {
-            // ExportNode -> local imported
-            let srcPagNode = this.getOrNewPagNode(cid, e.src);
+            // Existing local exported nodes -> ExportNode
+            let exportLocal = e.src;
             let dstPagNode = this.getOrNewPagNode(cid, e.dst);
 
-            this.pag.addPagEdge(srcPagNode, dstPagNode, e.kind);
-
-            // Existing local exported nodes -> ExportNode
-            if (e.src instanceof ExportInfo && e.src.getArkExport() as Local) {
-                let exportLocal = e.src.getArkExport() as Local;
-                let existingNodes = this.pag.getNodesByValue(exportLocal);
-                existingNodes?.forEach(n => {
-                    this.pag.addPagEdge(this.pag.getNode(n)! as PagNode, srcPagNode, e.kind);
-                });
-            }
+            // get export local node in all cid
+            let existingNodes = this.pag.getNodesByValue(exportLocal);
+            existingNodes?.forEach(n => {
+                this.pag.addPagEdge(this.pag.getNode(n)! as PagNode, dstPagNode, e.kind);
+            });
         }
 
         return true;
+    }
+
+    private getExportLocal(base: Local, funcID: FuncID): Local | undefined {
+        let exportInfo = this.cg.getArkMethodByFuncID(funcID)?.getDeclaringArkFile().getImportInfoBy(base.getName());
+        if (exportInfo) {
+            return (exportInfo.getLazyExportInfo()?.getArkExport() as Local);
+        }
     }
 }
