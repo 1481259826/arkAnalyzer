@@ -1398,6 +1398,12 @@ export class PagBuilder {
         return Array.from(this.funcPags.keys());
     }
 
+    /**
+     * build export edge in internal func pag
+     * @param value: Value that need to check if it is from import/export
+     * @param originValue: if Value if InstanceFieldRef, the base will be passed to `value` recursively, 
+     *                      fieldRef will be passed to `originValue`
+     */
     private handleValueFromExternalScope(value: Value, funcID: FuncID, originValue?: Value): void {
         if (value instanceof Local) {
             if (value.getDeclaringStmt()) {
@@ -1423,6 +1429,7 @@ export class PagBuilder {
 
             let exp = impInfo.getLazyExportInfo();
             if (exp) {
+                // if `value` is from field base, use origin value instead
                 this.addInterFuncEdge(impInfo.getLazyExportInfo()!, originValue ?? value, funcID);
             }
         } else if (value instanceof ArkInstanceFieldRef) {

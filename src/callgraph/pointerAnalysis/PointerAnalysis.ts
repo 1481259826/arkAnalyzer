@@ -182,7 +182,6 @@ export class PointerAnalysis extends AbstractAnalysis {
     }
 
     private handleCopy(nodeID: NodeID): boolean {
-        // TODO: maybe export local pass can also be done here
         let node = this.pag.getNode(nodeID) as PagNode;
         node.getOutgoingCopyEdges()?.forEach(copyEdge => {
             this.propagate(copyEdge);
@@ -202,7 +201,7 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         // get related field node with current node's value
         let instanceFieldNodeMap = this.pag.getNodesByBaseValue(nodeValue) ?? new Map();
-        // intra procedural field node pass node
+        // get intra procedural field node by exportMap
         let intraProceduralFieldNodeMap = new Map();
 
         if (nodeValue instanceof Local) {
