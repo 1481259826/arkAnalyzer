@@ -210,6 +210,8 @@ export class ArkIRTransformer {
             stmts = this.catchClauseToStmts(node);
         } else if (ts.isReturnStatement(node)) {
             stmts = this.returnStatementToStmts(node);
+        } else if (ts.isFunctionDeclaration(node)) {
+            stmts = this.functionDeclarationToStmts(node);
         }
 
         this.mapStmtsToTsStmt(stmts, node);
@@ -217,6 +219,16 @@ export class ArkIRTransformer {
             IRUtils.setLeadingComments(stmts[0], node, this.sourceFile, this.declaringMethod.getDeclaringArkFile().getScene().getOptions());
         }
         return stmts;
+    }
+
+    private functionDeclarationToStmts(functionDeclarationNode: ts.FunctionDeclaration): Stmt[] {
+        const declaringClass = this.declaringMethod.getDeclaringArkClass();
+        const arkMethod = new ArkMethod();
+        if (this.builderMethodContextFlag) {
+            ModelUtils.implicitArkUIBuilderMethods.add(arkMethod);
+        }
+        buildArkMethodFromArkClass(functionDeclarationNode, declaringClass, arkMethod, this.sourceFile, this.declaringMethod);
+        return [];
     }
 
     private returnStatementToStmts(returnStatement: ts.ReturnStatement): Stmt[] {

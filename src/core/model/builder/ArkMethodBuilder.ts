@@ -39,7 +39,14 @@ import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
-import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../../common/Const';
+import {
+    ANONYMOUS_METHOD_PREFIX,
+    CALL_SIGNATURE_NAME,
+    DEFAULT_ARK_CLASS_NAME,
+    DEFAULT_ARK_METHOD_NAME,
+    NAME_DELIMITER,
+    NAME_PREFIX,
+} from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { checkAndUpdateMethod } from './ArkClassBuilder';
 import { IRUtils } from '../../common/IRUtils';
@@ -127,18 +134,10 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod): string {
     let name: string = '';
     if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) {
-        if (node.name) {
-            name = node.name.text;
-        } else {
-            name = buildAnonymousMethodName(node, declaringClass);
-        }
+        name = node.name ? node.name.text : buildAnonymousMethodName(node, declaringClass);
     } else if (ts.isFunctionTypeNode(node)) {
-        if (node.name) {
-            //TODO: check name type
-            name = node.name.getText(sourceFile);
-        } else {
-            name = buildAnonymousMethodName(node, declaringClass);
-        }
+        //TODO: check name type
+        name = node.name ? node.name.getText(sourceFile) : buildAnonymousMethodName(node, declaringClass);
     } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
         if (ts.isIdentifier(node.name)) {
             name = (node.name as ts.Identifier).text;
@@ -168,11 +167,22 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     } else if (ts.isArrowFunction(node)) {
         name = buildAnonymousMethodName(node, declaringClass);
     }
+
+    if (declaringMethod !== undefined && !declaringMethod.isDefaultArkMethod()) {
+        name = buildNestedMethodName(name, declaringMethod.getName());
+    }
     return name;
 }
 
 function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass) {
     return `${ANONYMOUS_METHOD_PREFIX}${declaringClass.getAnonymousMethodNumber()}`;
+}
+
+function buildNestedMethodName(originName: string, declaringMethodName: string): string {
+    if (originName.startsWith(NAME_PREFIX)) {
+        return `${originName}${NAME_DELIMITER}${declaringMethodName}`;
+    }
+    return `${NAME_PREFIX}${originName}${NAME_DELIMITER}${declaringMethodName}`;
 }
 
 export class ObjectBindingPatternParameter {

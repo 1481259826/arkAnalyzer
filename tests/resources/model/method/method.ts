@@ -13,10 +13,72 @@
  * limitations under the License.
  */
 
-function testDotDotDotToken(arr1: number[], ...arr2: number[]) {
-    console.log("This is a function for testing dotDotDotToken.");
+function testDotDotDotToken(arr1: number[], ...arr2: number[]): void {
+    console.log('This is a function for testing dotDotDotToken.');
 }
 
-function testObjectTypeParam(obj: object) {
-    console.log("This is a function for testing parameter of object type.");
+function testObjectTypeParam(obj: object): void {
+    console.log('This is a function for testing parameter of object type.');
+}
+
+function outerFunction1(): void {
+    innerFunction1();
+    function innerFunction1(): void {
+        console.log('This is nested function with function declaration.');
+        function innerInnerFunction1(): void {
+            console.log('This is nested function in nested function with function declaration.');
+        }
+        innerInnerFunction1();
+    }
+}
+
+function outerFunction2(): (param: string) => void {
+    let innerFunction2 = 2;
+    return function innerFunction2(param: string): void {
+        console.log(`This is nested function with return statement. param ${param}`);
+    };
+}
+
+function outerFunction3(): void {
+    const innerFunction3 = function(): void {
+        console.log('This is nested function with function expression.');
+    };
+    innerFunction3();
+}
+
+function outerFunction4(): void {
+    const innerFunction4 = (): void => {
+        console.log('This is nested function with arrow function.');
+    };
+    innerFunction4();
+}
+
+function outerFunction5(n: number): number {
+    function factorial(n: number): number {
+        if (n === 0 || n === 1) {
+            return 1;
+        }
+        return n * factorial(n - 1);
+    }
+    return factorial(n);
+}
+
+class NestedTestClass {
+    public outerMethod(): () => void {
+        innerFunction1();
+        function innerFunction1(): void {
+            console.log('innerFunction1');
+        }
+        const innerFunction2 = function(): void {
+            console.log('innerFunction2');
+        };
+        const innerFunction3 = (): void => {
+            console.log('innerFunction3');
+        };
+        innerFunction2();
+        innerFunction3();
+        return () => {
+            console.log('innerFunction4');
+        };
+    }
 }
