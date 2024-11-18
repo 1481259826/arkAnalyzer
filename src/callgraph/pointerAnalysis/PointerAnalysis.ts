@@ -30,6 +30,7 @@ import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode, Pa
 import { PagBuilder } from './PagBuilder';
 import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 import { DiffPTData, PtsSet } from './PtsDS';
+import { Local } from '../../core/base/Local';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -192,26 +193,43 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private handleLoadWrite(nodeID: NodeID): boolean {
         let node = this.pag.getNode(nodeID) as PagNode;
+        let nodeValue = node.getValue();
         let diffPts = this.ptd.getDiffPts(nodeID);
         if (!diffPts || diffPts.count() === 0) {
             return false;
         }
 
         // get related field node with current node's value
-        let instanceFieldNodeMap = this.pag.getNodesByBaseValue(node.getValue());
+        let instanceFieldNodeMap = this.pag.getNodesByBaseValue(nodeValue) ?? new Map();
+        // get intra procedural field node by exportMap
+        let intraProceduralFieldNodeMap = new Map();
 
-        if (instanceFieldNodeMap === undefined) {
-            return true;
+        if (nodeValue instanceof Local) {
+            this.pagBuilder.getExportVariableMap(nodeValue).forEach((dst) => {
+                let temp = this.pag.getNodesByBaseValue(dst) ?? new Map();
+                intraProceduralFieldNodeMap = this.mergeInstanceFieldMap(instanceFieldNodeMap, temp);
+            })
         }
 
-        instanceFieldNodeMap.forEach((nodeIDs, cid) => {
+        instanceFieldNodeMap!.forEach((nodeIDs, cid) => {
             // TODO: check cid
             // cid === -1 will escape the check, mainly for globalThis
             let baseCid = node.getCid();
             if (baseCid !== -1 && cid !== baseCid) {
                 return;
             }
-            nodeIDs.forEach((nodeID) => {
+            nodeIDs.forEach((nodeID: number) => {
+                // get abstract field node
+                let fieldNode = this.pag.getNode(nodeID) as PagNode;
+
+                this.handleFieldInEdges(fieldNode, diffPts!);
+                this.handleFieldOutEdges(fieldNode, diffPts!);
+            })
+        })
+
+        // without cid check, because closure and export is under different cid
+        intraProceduralFieldNodeMap!.forEach((nodeIDs) => {
+            nodeIDs.forEach((nodeID: number) => {
                 // get abstract field node
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
 
@@ -597,5 +615,16 @@ export class PointerAnalysis extends AbstractAnalysis {
                 }
             });
         });
+    }
+
+    public mergeInstanceFieldMap(src: Map<number, number[]>, dst: Map<number, number[]>): Map<number, number[]> {
+        dst.forEach((value, key) => {
+            if (src.has(key)) {
+              src.set(key, [...src.get(key)!, ...value]);
+            } else {
+              src.set(key, value);
+            }
+        });
+        return src;
     }
 }
