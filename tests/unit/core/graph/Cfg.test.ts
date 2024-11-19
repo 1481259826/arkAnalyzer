@@ -22,10 +22,23 @@ import {
     Cfg,
     Local,
     RelationalBinaryOperator,
+    Scene,
+    SceneConfig,
     Stmt,
     ValueUtil,
 } from '../../../../src/index';
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
+import path from 'path';
+import {
+    CONDITIONAL_OPERATOR_EXPECT_CASE1,
+    CONDITIONAL_OPERATOR_EXPECT_CASE2,
+    CONDITIONAL_OPERATOR_EXPECT_CASE3,
+    CONDITIONAL_OPERATOR_EXPECT_CASE4,
+    CONDITIONAL_OPERATOR_EXPECT_CASE5,
+    CONDITIONAL_OPERATOR_EXPECT_CASE6,
+    CONDITIONAL_OPERATOR_EXPECT_CASE7,
+} from '../../../resources/cfg/conditionalOperator/ConditionalOperatorExpect';
+import { assertBlocksEqual } from '../../common';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
@@ -61,7 +74,7 @@ describe('CfgTest', () => {
             cfg
                 .getStmts()
                 .map((stmt) => stmt.toString())
-                .join('\n')
+                .join('\n'),
         ).eq([startingStmt, stmt1, stmt2, stmt0].map((stmt) => stmt.toString()).join('\n'));
 
         let stmt3 = new ArkIfStmt(
@@ -79,7 +92,7 @@ describe('CfgTest', () => {
             cfg
                 .getStmts()
                 .map((stmt) => stmt.toString())
-                .join('\n')
+                .join('\n'),
         ).eq([stmt3, stmt4, startingStmt, stmt1, stmt2, stmt0].map((stmt) => stmt.toString()).join('\n'));
 
         cfg.remove(stmt4);
@@ -87,7 +100,7 @@ describe('CfgTest', () => {
             cfg
                 .getStmts()
                 .map((stmt) => stmt.toString())
-                .join('\n')
+                .join('\n'),
         ).eq([stmt3, startingStmt, stmt1, stmt2, stmt0].map((stmt) => stmt.toString()).join('\n'));
 
         ans = cfg.insertAfter(stmt3, stmt4);
@@ -96,4 +109,38 @@ describe('CfgTest', () => {
         let err = cfg.validate();
         expect(err.errCode).eq(ArkErrorCode.OK);
     });
+
+    it('case2: conditional operator', () => {
+        const scene = buildScene('conditionalOperator');
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case1', CONDITIONAL_OPERATOR_EXPECT_CASE1.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case2', CONDITIONAL_OPERATOR_EXPECT_CASE2.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case3', CONDITIONAL_OPERATOR_EXPECT_CASE3.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case4', CONDITIONAL_OPERATOR_EXPECT_CASE4.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case5', CONDITIONAL_OPERATOR_EXPECT_CASE5.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case6', CONDITIONAL_OPERATOR_EXPECT_CASE6.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case7', CONDITIONAL_OPERATOR_EXPECT_CASE7.blocks);
+    });
 });
+
+const BASE_DIR = 'tests/resources/cfg';
+
+function buildScene(folderName: string): Scene {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(BASE_DIR, folderName));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    return scene;
+}
+
+function testBlocks(scene: Scene, filePath: string, methodName: string, expectBlocks: any[]): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkMethod = arkFile?.getDefaultClass().getMethods()
+        .find((method) => (method.getName() === methodName));
+    const blocks = arkMethod?.getCfg()?.getBlocks();
+    if (!blocks) {
+        assert.isDefined(blocks);
+        return;
+    }
+    assertBlocksEqual(blocks, expectBlocks);
+}
+

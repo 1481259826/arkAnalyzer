@@ -14,7 +14,7 @@
  */
 
 import path from 'path';
-import { BasicBlock, Scene, SceneConfig } from '../../../../src';
+import { Scene, SceneConfig } from '../../../../src';
 import { assert, describe, expect, it } from 'vitest';
 import { Trap } from '../../../../src/core/base/Trap';
 import {
@@ -22,8 +22,10 @@ import {
     TRAP_EXPECT_CASE2,
     TRAP_EXPECT_CASE3,
     TRAP_EXPECT_CASE4,
-    TRAP_EXPECT_CASE5, TRAP_EXPECT_CASE6,
+    TRAP_EXPECT_CASE5,
+    TRAP_EXPECT_CASE6,
 } from '../../../resources/model/body/trap/TrapExpect';
+import { assertBlocksEqual } from '../../common';
 
 const BASE_DIR = path.join(__dirname, '../../../../tests/resources/model/body');
 
@@ -116,39 +118,4 @@ function generateExpectTrapHashCode(trap: any): string {
         blockIds.push(tryBlock.id);
     }
     return blockIds.sort().join(',');
-}
-
-function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]): void {
-    expect(blocks.size).toEqual(expectBlocks.length);
-
-    const blockMap = new Map<number, BasicBlock>();
-    for (const block of blocks) {
-        blockMap.set(block.getId(), block);
-    }
-    for (let i = 0; i < expectBlocks.length; i++) {
-        const blockId = expectBlocks[i].id;
-        const block = blockMap.get(blockId);
-        if (!block) {
-            assert.isDefined(block);
-            return;
-        }
-
-        const stmts: string[] = [];
-        for (const stmt of block.getStmts()) {
-            stmts.push(stmt.toString());
-        }
-        expect(stmts).toEqual(expectBlocks[i].stmts);
-
-        const preds: number[] = [];
-        block.getPredecessors().forEach(predBlock => {
-            preds.push(predBlock.getId());
-        });
-        expect(preds).toEqual(expectBlocks[i].preds);
-
-        const succes: number[] = [];
-        block.getSuccessors().forEach(succBlock => {
-            succes.push(succBlock.getId());
-        });
-        expect(succes).toEqual(expectBlocks[i].succes);
-    }
 }
