@@ -20,3 +20,11 @@ function testDotDotDotToken(arr1: number[], ...arr2: number[]) {
 function testObjectTypeParam(obj: object) {
     console.log("This is a function for testing parameter of object type.");
 }
+
+class tet {
+    private a: string = '';
+
+    public a() {
+
+    }
+}

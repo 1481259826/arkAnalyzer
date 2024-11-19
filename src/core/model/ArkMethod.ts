@@ -15,12 +15,12 @@
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { GenericType } from '../base/Type';
+import { ClassType, FunctionType, GenericType, NumberType, Type } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkBody } from './ArkBody';
-import { ArkClass } from './ArkClass';
+import { ArkClass, ClassCategory } from './ArkClass';
 import { MethodSignature } from './ArkSignature';
 import { BodyBuilder } from '../common/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
@@ -28,6 +28,7 @@ import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Cons
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
+import { CALL_BACK } from "../common/EtsConst";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -127,20 +128,20 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     /**
      * <font color="red">?建议明确返回类型？</font>
-     * Get the method signature. It includes two fields. one is ClassSignature, 
-     * the other is MethodSubSignature. The former indicates what class this method belong to, 
-     * the latter indicates the detail info of this method, 
+     * Get the method signature. It includes two fields. one is ClassSignature,
+     * the other is MethodSubSignature. The former indicates what class this method belong to,
+     * the latter indicates the detail info of this method,
      * such as method name, parameters, returnType, etc.
      * @returns The method signature.
      * @example
      * 1. New a body.
 
-    ```typescript
-    let mtd = new ArkMethod();
-    // ... ...
-    let mtd = mtd.getSignature();
-    // ... ...
-    ```
+     ```typescript
+     let mtd = new ArkMethod();
+     // ... ...
+     let mtd = mtd.getSignature();
+     // ... ...
+     ```
      */
     public getSignature(): MethodSignature {
         return this.methodSignature[0];
@@ -180,24 +181,24 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     /**
      * Get {@link ArkBody} of a Method.
-     * A {@link ArkBody} contains the CFG and actual instructions or operations to be executed for a method. 
-     * It is analogous to the body of a function or method in high-level programming languages, 
+     * A {@link ArkBody} contains the CFG and actual instructions or operations to be executed for a method.
+     * It is analogous to the body of a function or method in high-level programming languages,
      * which contains the statements and expressions that define what the function does.
      * @returns The {@link ArkBody} of a method.
      * @example
      * 1. Get cfg or stmt through ArkBody.
 
-    ```typescript
-    let cfg = this.scene.getMethod()?.getBody().getCfg();
-    const body = arkMethod.getBody()
-    ```
+     ```typescript
+     let cfg = this.scene.getMethod()?.getBody().getCfg();
+     const body = arkMethod.getBody()
+     ```
 
-    2. Get local variable through ArkBody.
+     2. Get local variable through ArkBody.
 
-    ```typescript
-    arkClass.getDefaultArkMethod()?.getBody().getLocals.forEach(local=>{...})
-    let locals = arkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
-    ```
+     ```typescript
+     arkClass.getDefaultArkMethod()?.getBody().getLocals.forEach(local=>{...})
+     let locals = arkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
+     ```
      */
     public getBody(): ArkBody | undefined {
         return this.body;
@@ -208,39 +209,39 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     /**
-     * Get the CFG (i.e., control flow graph) of a method. 
+     * Get the CFG (i.e., control flow graph) of a method.
      * The CFG is a graphical representation of all possible control flow paths within a method's body.
      * A CFG consists of blocks, statements and goto control jumps.
-     * @returns The CFG (i.e., control flow graph) of a method. 
+     * @returns The CFG (i.e., control flow graph) of a method.
      * @example
      * 1. get stmt through ArkBody cfg.
 
-    ```typescript
-    body = arkMethod.getBody();
-    const cfg = body.getCfg();
-    for (const threeAddressStmt of cfg.getStmts()) {
-    ... ...
-    }
-    ```
+     ```typescript
+     body = arkMethod.getBody();
+     const cfg = body.getCfg();
+     for (const threeAddressStmt of cfg.getStmts()) {
+     ... ...
+     }
+     ```
 
-    2. get blocks through ArkBody cfg.
+     2. get blocks through ArkBody cfg.
 
-    ```typescript
-    const body = arkMethod.getBody();
-    const blocks = [...body.getCfg().getBlocks()];
-    for (let i=0; i<blocks.length; i++) {
-    const block = blocks[i];
-    ... ...
-    for (const stmt of block.getStmts()) {
-        ... ...
-    }
-    let text = "next;"
-    for (const next of block.getSuccessors()) {
-        text += blocks.indexOf(next) + ' ';
-    }
-    // ... ...
-    }
-    ```
+     ```typescript
+     const body = arkMethod.getBody();
+     const blocks = [...body.getCfg().getBlocks()];
+     for (let i=0; i<blocks.length; i++) {
+     const block = blocks[i];
+     ... ...
+     for (const stmt of block.getStmts()) {
+     ... ...
+     }
+     let text = "next;"
+     for (const next of block.getSuccessors()) {
+     text += blocks.indexOf(next) + ' ';
+     }
+     // ... ...
+     }
+     ```
      */
     public getCfg(): Cfg | undefined {
         return this.body?.getCfg();
@@ -358,4 +359,40 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     public validate(): ArkError {
         return this.validateFields(['declaringArkClass', 'methodSignature']);
     }
+
+    public matchMethodSignature(args: Type[]) {
+        const signatures = this.methodSignature.filter(f => {
+            const parameters = f.getMethodSubSignature().getParameters();
+            const max = parameters.length;
+            let idx = 0;
+            while (idx < max && !parameters[idx].isOptional()) {
+                idx++;
+            }
+            const min = idx < max ? idx + 1 : idx;
+            return args.length >= min && args.length <= max;
+        });
+        return signatures.find(p => {
+            const parameters = p.getMethodSubSignature().getParameters();
+            for (let i = 0; i < parameters.length; i++) {
+                if (!args[i]) {
+                    return parameters[i].isOptional();
+                }
+                const paramType = parameters[i].getType();
+                const argType = args[i];
+                if (argType instanceof FunctionType && paramType instanceof ClassType &&
+                    paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
+                    continue;
+                }
+                if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
+                    this.getDeclaringArkFile().getScene().getClass(argType.getClassSignature())?.getCategory()) {
+                    continue;
+                }
+                if (argType.constructor !== paramType.constructor) {
+                    return false;
+                }
+            }
+            return true;
+        }) ?? signatures[0] ?? this.getSignature();
+    }
+
 }

@@ -35,18 +35,7 @@ describe("StaticSingleAssignmentFormer Test", () => {
 
         const spy = vi.spyOn(method, "getBody");
         TypeInference.inferTypeInMethod(method);
-        expect(spy).toHaveBeenCalledTimes(5);
+        expect(spy).toHaveBeenCalledTimes(6);
     })
-    it('inferSimpleTypeInMethod case', () => {
-        if (methods == null) {
-            assert.isNotNull(methods);
-            return;
-        }
 
-        for (const method of methods) {
-            const spy = vi.spyOn(method, "getBody");
-            TypeInference.inferSimpleTypeInMethod(method);
-            expect(spy).toHaveBeenCalledTimes(1);
-        }
-    })
 })
