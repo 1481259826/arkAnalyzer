@@ -176,8 +176,8 @@ export const ArrowFunction_Expect_IR = {
 };
 
 export const OverloadMethod_Expect_IR = {
-    line: 18,
-    methodSignature: [
+    methodDeclareLines: [16, 17],
+    methodDeclareSignatures: [
         {
             toString: '@function/OverloadFunctionTest.ts: %dflt.overloadedFunction1(number)',
             methodSubSignature: {
@@ -192,6 +192,13 @@ export const OverloadMethod_Expect_IR = {
         }
 
     ],
+    line: 18,
+    methodSignature: {
+        toString: '@function/OverloadFunctionTest.ts: %dflt.overloadedFunction1(any)',
+        methodSubSignature: {
+            returnType: 'any'
+        }
+    },
     body: {
         locals: {
             x: {
@@ -202,8 +209,8 @@ export const OverloadMethod_Expect_IR = {
 };
 
 export const OverloadClassMethod_Expect_IR = {
-    line: 33,
-    methodSignature: [
+    methodDeclareLines: [29, 30, 31],
+    methodDeclareSignatures: [
         {
             toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(number, number)',
             methodSubSignature: {
@@ -223,6 +230,13 @@ export const OverloadClassMethod_Expect_IR = {
             }
         }
     ],
+    line: 33,
+    methodSignature: {
+        toString: '@function/OverloadFunctionTest.ts: OverloadClass.overloadedFunction2(number|string, number|string)',
+        methodSubSignature: {
+            returnType: 'string|number'
+        }
+    },
     body: {
         locals: {
             x: {
@@ -233,8 +247,8 @@ export const OverloadClassMethod_Expect_IR = {
 };
 
 export const OverloadNamespaceMethod_Expect_IR = {
-    line: 47,
-    methodSignature: [
+    methodDeclareLines: [45, 46, 47],
+    methodDeclareSignatures: [
         {
             toString: '@function/OverloadFunctionTest.ts: overloadNamespace.%dflt.overloadedFunction3(number)',
             methodSubSignature: {
@@ -253,12 +267,14 @@ export const OverloadNamespaceMethod_Expect_IR = {
                 returnType: 'boolean'
             }
         }
-    ]
+    ],
+    line: null,
+    methodSignature: null
 };
 
 export const OverloadInterfaceMethod_Expect_IR = {
-    line: 52,
-    methodSignature: [
+    methodDeclareLines: [51, 52],
+    methodDeclareSignatures: [
         {
             toString: '@function/OverloadFunctionTest.ts: OverloadInterface.overloadedFunction4(number)',
             methodSubSignature: {
@@ -271,24 +287,28 @@ export const OverloadInterfaceMethod_Expect_IR = {
                 returnType: 'string'
             }
         }
-    ]
+    ],
+    line: null,
+    methodSignature: null,
 };
 
 export const NoOverloadMethod_Expect_IR = {
-    line: 55,
-    methodSignature: [
+    methodDeclareLines: [55],
+    methodDeclareSignatures: [
         {
             toString: '@function/OverloadFunctionTest.ts: %dflt.function5(string)',
             methodSubSignature: {
                 returnType: 'number'
             }
         }
-    ]
+    ],
+    line: null,
+    methodSignature: null
 };
 
 export const NoOverloadMethodWithBody_Expect_IR = {
-    line: 58,
-    methodSignature: [
+    methodDeclareLines: [57],
+    methodDeclareSignatures: [
         {
             toString: '@function/OverloadFunctionTest.ts: %dflt.function6(number)',
             methodSubSignature: {
@@ -296,6 +316,32 @@ export const NoOverloadMethodWithBody_Expect_IR = {
             }
         }
     ],
+    line: 58,
+    methodSignature: {
+        toString: '@function/OverloadFunctionTest.ts: %dflt.function6(number)',
+        methodSubSignature: {
+            returnType: 'number'
+        }
+    },
+    body: {
+        locals: {
+            x: {
+                name: 'x'
+            }
+        }
+    }
+};
+
+export const NoOverloadMethodWithBody2_Expect_IR = {
+    methodDeclareLines: null,
+    methodDeclareSignatures: null,
+    line: 62,
+    methodSignature: {
+        toString: '@function/OverloadFunctionTest.ts: %dflt.function7(number)',
+        methodSubSignature: {
+            returnType: 'number'
+        }
+    },
     body: {
         locals: {
             x: {

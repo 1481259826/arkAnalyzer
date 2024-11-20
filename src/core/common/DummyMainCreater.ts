@@ -46,7 +46,7 @@ import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { CONSTRUCTOR_NAME } from './TSConst';
 import { fetchDependenciesFromFile } from '../../utils/json5parser';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { checkAndUpdateMethod } from '../model/builder/ArkClassBuilder';
+import { checkAndUpdateMethod } from '../model/builder/ArkMethodBuilder';
 import { ValueUtil } from './ValueUtil';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
@@ -125,7 +125,8 @@ export class DummyMainCreater {
         const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName('@dummyMain');
         const methodSignature = new MethodSignature(this.dummyMain.getDeclaringArkClass().getSignature(),
             methodSubSignature);
-        this.dummyMain.setSignature(methodSignature);
+        this.dummyMain.setImplementationSignature(methodSignature);
+        this.dummyMain.setLineCol(0);
         checkAndUpdateMethod(this.dummyMain, dummyMainClass);
         dummyMainClass.addMethod(this.dummyMain);
 

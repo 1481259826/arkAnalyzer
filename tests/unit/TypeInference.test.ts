@@ -13,15 +13,22 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../../src/Config';
-import { TypeInference } from '../../src/core/common/TypeInference';
 import { assert, describe, expect, it, vi } from 'vitest';
-import { Scene } from '../../src/Scene';
 import path from 'path';
+import {
+    ArkClass,
+    ArkMethod,
+    ClassType,
+    CONSTRUCTOR_NAME,
+    MethodSignature,
+    Scene,
+    SceneConfig,
+    TypeInference
+} from '../../src';
 
-describe("StaticSingleAssignmentFormer Test", () => {
+describe('StaticSingleAssignmentFormer Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, "../resources/save"));
+    config.buildFromProjectDir(path.join(__dirname, '../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     let methods = scene.getMethods();
@@ -33,10 +40,11 @@ describe("StaticSingleAssignmentFormer Test", () => {
             return;
         }
 
-        const spy = vi.spyOn(method, "getBody");
+        const spy = vi.spyOn(method, 'getBody');
         TypeInference.inferTypeInMethod(method);
         expect(spy).toHaveBeenCalledTimes(5);
-    })
+    });
+
     it('inferSimpleTypeInMethod case', () => {
         if (methods == null) {
             assert.isNotNull(methods);
@@ -48,5 +56,54 @@ describe("StaticSingleAssignmentFormer Test", () => {
             TypeInference.inferSimpleTypeInMethod(method);
             expect(spy).toHaveBeenCalledTimes(1);
         }
-    })
-})
+    });
+});
+
+describe('Infer Method Return Type', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../resources/inferType'));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    let sampleClass = scene.getFiles().find(file => file.getName() === 'inferSample.ts')?.getClassWithName('Sample');
+
+    it('constructor method return type infer case', () => {
+        assert.isDefined(sampleClass);
+        assert.isNotNull(sampleClass);
+
+        let method = (sampleClass as ArkClass).getMethodWithName(CONSTRUCTOR_NAME);
+        assert.isNotNull(method);
+        TypeInference.inferMethodReturnType(method as ArkMethod);
+        let signature = method?.getImplementationSignature();
+        assert.isDefined(signature);
+        assert.isNotNull(signature);
+        expect(signature?.toString()).toEqual('@inferType/inferSample.ts: Sample.constructor()');
+        assert.isTrue(signature?.getType() instanceof ClassType);
+        expect(signature?.getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
+    });
+
+    it('declare method return type infer case', () => {
+        assert.isDefined(sampleClass);
+        assert.isNotNull(sampleClass);
+
+        let method = (sampleClass as ArkClass).getMethodWithName('sampleMethod');
+        assert.isNotNull(method);
+        TypeInference.inferMethodReturnType(method as ArkMethod);
+
+        let signatures = method?.getDeclareSignatures();
+        assert.isDefined(signatures);
+        assert.isNotNull(signatures);
+        expect((signatures as MethodSignature[])[0].toString()).toEqual('@inferType/inferSample.ts: Sample.sampleMethod()');
+        assert.isTrue((signatures as MethodSignature[])[0].getType() instanceof ClassType);
+        expect((signatures as MethodSignature[])[0].getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
+        expect((signatures as MethodSignature[])[1].toString()).toEqual('@inferType/inferSample.ts: Sample.sampleMethod(number)');
+        assert.isTrue((signatures as MethodSignature[])[1].getType() instanceof ClassType);
+        expect((signatures as MethodSignature[])[1].getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
+
+        let signature = method?.getImplementationSignature();
+        assert.isDefined(signature);
+        assert.isNotNull(signature);
+        expect(signature?.toString()).toEqual('@inferType/inferSample.ts: Sample.sampleMethod(number)');
+        assert.isTrue(signature?.getType() instanceof ClassType);
+        expect(signature?.getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
+    });
+});

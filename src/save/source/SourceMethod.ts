@@ -66,6 +66,9 @@ export class SourceMethod extends SourceBase {
 
     public getLine(): number {
         let line = this.method.getLine();
+        if (line === null) {
+            line = 0;
+        }
         if (line > 0) {
             return line;
         }

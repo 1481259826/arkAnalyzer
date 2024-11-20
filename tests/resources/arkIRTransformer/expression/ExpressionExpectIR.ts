@@ -505,7 +505,7 @@ export const Operator_Expect_IR = {
             ],
         },
         {
-            text: '%1 = delete p.<@%unk/%unk: .y>',
+            text: '%1 = delete p.<@%unk/%unk: Point.y>',
             operandOriginalPositions: [
                 [18, 1, 18, 11], [18, 1, 18, 11], [18, 8, 18, 11], [18, 8, 18, 9],
             ],
