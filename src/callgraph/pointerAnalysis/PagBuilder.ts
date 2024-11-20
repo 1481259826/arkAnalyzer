@@ -1487,11 +1487,11 @@ export class PagBuilder {
         let declaringFile = arkMethod.getDeclaringArkFile();
         let fileLocals = declaringFile.getDefaultClass()
             .getDefaultArkMethod()?.getBody()?.getLocals() ?? new Map();
-        if (fileLocals.has(value.getName())) {
-            return fileLocals.get(value.getName());
+        if (!fileLocals.has(value.getName())) {
+            return;
         }
 
-        return undefined;
+        return fileLocals.get(value.getName());
     }
 
     private getExportSourceValue(value: Local, funcID: FuncID): Local | undefined {
@@ -1507,8 +1507,13 @@ export class PagBuilder {
         }
 
         let exportSource = impInfo.getLazyExportInfo();
-        if (exportSource) {
-            return exportSource.getArkExport() as Local;
+        if (!exportSource) {
+            return;
+        }
+
+        let exportSouceValue = exportSource.getArkExport();
+        if (exportSouceValue instanceof Local) {
+            return exportSouceValue;
         }
     }
 

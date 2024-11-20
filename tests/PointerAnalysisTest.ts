@@ -91,12 +91,12 @@ function runProject(output: string) {
     projectScene.buildScene4HarmonyProject()
     // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
-    console.log(projectScene);
 
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true, true)
-    let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
+    let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
+    pta;
 
-    printTypeDiff(pta);
+    // printTypeDiff(pta);
 }
 
 
