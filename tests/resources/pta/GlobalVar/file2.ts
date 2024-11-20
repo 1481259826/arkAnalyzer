@@ -33,21 +33,15 @@ namespace temp {
     let d = new D(2) //
 
     export function main() {
-        let a = new C(3)
-        let b = new B(4)
-        let c = new C(5)
-        let d = new D(6)
-        console.log(a.getID())
-        console.log(b.getID())
-        console.log(c.getID())
-        console.log(d.getID()) //
+        let c2 = c;
+        let c3 = c;
+        let d2 = d;
+        main2();
     }
-
+    
     export function main2() {
-        console.log(a.getID())
-        // console.log(b_2.getID())
-        console.log(c.getID())
-        console.log(d.getID()) //
+        let a = c.getID();
+        let b = d.getID();
     }
 }
 
