@@ -13,30 +13,14 @@
  * limitations under the License.
  */
 
-import et from './exp'
-import et2 from './exp2'
-import { Du } from './exp'
-
-class ImportTest {
-    obj: Du = et.obj;
-    obj2: Du = et2.obj;
-}
-
-function main() {
-    let lo = et;
-    let lo2 = et2;
-    lo.foo();
-    lo2.foo();
-    test2();
-}
-
-function test2() {
-    let lo2 = new ImportTest()
-    let x = lo2.obj;
-    let y = lo2.obj2;
-}
-
-function test3() {
-    et.foo();
-    et2.foo();
+class TestClass {
+    public testMethod(a: string): string;
+    public testMethod(b: number): number;
+    public testMethod(x: string | number): string | number {
+        if (typeof x === 'number') {
+            return x + 1;
+        } else {
+            return `${x}-1`;
+        }
+    }
 }

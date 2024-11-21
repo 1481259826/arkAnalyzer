@@ -20,6 +20,8 @@ export enum ArkErrorCode {
     BB_BRANCH_RET_STMT_NOT_AT_END = -3,
     CFG_NOT_FOUND_START_BLOCK = -4,
     CFG_HAS_UNREACHABLE_BLOCK = -5,
+    METHOD_SIGNATURE_UNDEFINED = -6,
+    METHOD_SIGNATURE_LINE_UNMATCHED = -7,
 }
 
 export interface ArkError {

@@ -16,6 +16,11 @@
 import { Constants } from './constants';
 
 class Sample {
+    public sampleMethod(): Sample;
+    public sampleMethod(input: number): Sample;
+    public sampleMethod(input?: number): Sample {
+        return new Sample();
+    }
 
 }
 

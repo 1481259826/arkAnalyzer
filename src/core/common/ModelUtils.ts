@@ -30,7 +30,7 @@ import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
 import { API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
 import { ClassType, UnclearReferenceType } from '../base/Type';
 import { Scene } from '../../Scene';
-import { checkAndUpdateMethod } from '../model/builder/ArkClassBuilder';
+import { checkAndUpdateMethod } from '../model/builder/ArkMethodBuilder';
 import { DEFAULT_ARK_CLASS_NAME, TEMP_LOCAL_PREFIX } from './Const';
 
 export class ModelUtils {
@@ -383,7 +383,7 @@ export class ModelUtils {
                         entry.setSignature(signature);
                         arkExport.getMethods().forEach(m => {
                             const ms = m.getSignature();
-                            m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                            m.setDeclareSignatures(new MethodSignature(signature, ms.getMethodSubSignature()));
                             checkAndUpdateMethod(m, entry);
                             entry.addMethod(m);
                         });
@@ -391,7 +391,7 @@ export class ModelUtils {
                         if (attr instanceof ArkClass) {
                             attr.getMethods().forEach(m => {
                                 const ms = m.getSignature();
-                                m.setSignature(new MethodSignature(signature, ms.getMethodSubSignature()));
+                                m.setDeclareSignatures(new MethodSignature(signature, ms.getMethodSubSignature()));
                                 checkAndUpdateMethod(m, entry);
                                 entry.addMethod(m);
                             });

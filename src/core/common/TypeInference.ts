@@ -383,28 +383,54 @@ export class TypeInference {
         return value.getType();
     }
 
-    public static inferMethodReturnType(method: ArkMethod) {
-        const oldMethodSignature = method.getSignature();
-        const oldMethodSubSignature = oldMethodSignature.getMethodSubSignature();
+    public static inferMethodReturnType(method: ArkMethod): void {
         if (method.getName() === CONSTRUCTOR_NAME) {
+            const oldMethodSignature = method.getSignature();
+            const oldMethodSubSignature = oldMethodSignature.getMethodSubSignature();
             const newReturnType = new ClassType(method.getDeclaringArkClass().getSignature());
-            const newMethodSubSignature = new MethodSubSignature(oldMethodSubSignature.getMethodName(),
-                oldMethodSubSignature.getParameters(), newReturnType, oldMethodSubSignature.isStatic());
-            method.setSignature(
-                new MethodSignature(oldMethodSignature.getDeclaringClassSignature(), newMethodSubSignature));
+            const newMethodSubSignature = new MethodSubSignature(
+                oldMethodSubSignature.getMethodName(),
+                oldMethodSubSignature.getParameters(),
+                newReturnType,
+                oldMethodSubSignature.isStatic()
+            );
+            method.setImplementationSignature(new MethodSignature(oldMethodSignature.getDeclaringClassSignature(), newMethodSubSignature));
             return;
         }
-        const returnType = method.getReturnType();
-        let inferType;
-        if (returnType instanceof UnclearReferenceType) {
-            inferType = this.inferUnclearReferenceType(returnType.getName(), method.getDeclaringArkClass());
+
+        let implSignature = method.getImplementationSignature();
+        if (implSignature !== null) {
+            const newSignature = this.inferSignatureReturnType(implSignature, method.getDeclaringArkClass());
+            if (newSignature !== null) {
+                method.setImplementationSignature(newSignature);
+            }
         }
-        if (inferType) {
-            const newMethodSubSignature = new MethodSubSignature(oldMethodSubSignature.getMethodName(),
-                oldMethodSubSignature.getParameters(), inferType, oldMethodSubSignature.isStatic());
-            method.setSignature(
-                new MethodSignature(oldMethodSignature.getDeclaringClassSignature(), newMethodSubSignature));
+
+        let declareSignatures = method.getDeclareSignatures();
+        declareSignatures?.forEach((signature, index) => {
+            const newSignature = this.inferSignatureReturnType(signature, method.getDeclaringArkClass());
+            if (newSignature !== null) {
+                method.setDeclareSignatureWithIndex(newSignature, index);
+            }
+        });
+    }
+
+    private static inferSignatureReturnType(oldSignature: MethodSignature, declaringClass: ArkClass): MethodSignature | null {
+        const currReturnType = oldSignature.getType();
+        if (currReturnType instanceof UnclearReferenceType) {
+            const newReturnType = this.inferUnclearReferenceType(currReturnType.getName(), declaringClass);
+            if (newReturnType !== null) {
+                const oldSubSignature = oldSignature.getMethodSubSignature();
+                const newMethodSubSignature = new MethodSubSignature(
+                    oldSubSignature.getMethodName(),
+                    oldSubSignature.getParameters(),
+                    newReturnType,
+                    oldSubSignature.isStatic()
+                );
+                return new MethodSignature(oldSignature.getDeclaringClassSignature(), newMethodSubSignature);
+            }
         }
+        return null;
     }
 
     public static inferGenericType(types: GenericType[] | undefined, arkClass: ArkClass) {

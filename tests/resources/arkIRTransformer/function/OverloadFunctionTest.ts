@@ -58,3 +58,7 @@ function function6(x: number): number;
 function function6(x: number): number {
     return x;
 }
+
+function function7(x: number): number {
+    return x;
+}

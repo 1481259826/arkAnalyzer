@@ -281,6 +281,10 @@ export class CfgBuilder {
                 let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
                 lastStatement = s;
+            } else if (!this.declaringMethod.isDefaultArkMethod() && ts.isFunctionDeclaration(c)) {
+                let s = new StatementBuilder('functionDeclarationStatement', c.getText(this.sourceFile), c, scope.id);
+                judgeLastType(s);
+                lastStatement = s;
             } else if (ts.isReturnStatement(c)) {
                 let s = new StatementBuilder('returnStatement', c.getText(this.sourceFile), c, scope.id);
                 judgeLastType(s);
