@@ -336,13 +336,13 @@ export class ModelUtils {
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
-        let property = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name)
-            ?? arkClass.getFieldWithName(name) ?? arkClass.getStaticFieldWithName(name);
-        let superClass = arkClass.getSuperClass();
-        while (!property && superClass) {
-            property = superClass.getMethodWithName(name) ?? superClass.getFieldWithName(name);
-            superClass = superClass.getSuperClass();
-        }
+        let property;
+        let currentClass: ArkClass | null = arkClass;
+        do {
+            property = currentClass.getMethodWithName(name) ?? currentClass.getStaticMethodWithName(name)
+                ?? currentClass.getFieldWithName(name) ?? currentClass.getStaticFieldWithName(name);
+            currentClass = currentClass.getSuperClass();
+        } while (!property && currentClass);
         if (property) {
             return property;
         }
@@ -403,6 +403,17 @@ export class ModelUtils {
         }
     }
 
+    public static getArkClassFromSdkArkFilesByName(arkClass:ArkClass,name:string):ArkClass|null{
+        const sdkArkFiles = arkClass.getDeclaringArkFile().getScene().getSdkArkFiles();
+        for (const sdkFile of sdkArkFiles) {
+            for (const arkClass of sdkFile.getClasses()) {
+                if(arkClass.getName()===name){
+                    return arkClass;
+                }
+            }
+        }
+        return null;
+    }
 }
 
 
@@ -468,7 +479,7 @@ export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
     return exportInfo;
 }
 
-function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
+export function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
     if (!exportInfo) {
         return null;
     }

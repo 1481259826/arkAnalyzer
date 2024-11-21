@@ -35,7 +35,7 @@ import { ValueUtil } from '../common/ValueUtil';
 import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
 import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
-import { THIS_NAME } from "../common/TSConst";
+import { THIS_NAME } from '../common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
@@ -265,7 +265,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
                     continue;
                 }
                 newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
-                if (newFieldSignature) {
+                if (!TypeInference.isUnclearType(newFieldSignature)) {
                     break;
                 }
             }
@@ -291,9 +291,6 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
                 propertyType = newType;
             }
         }
-        if (!propertyType) {
-            return null;
-        }
         let staticFlag: boolean;
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
@@ -307,7 +304,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         } else {
             return null;
         }
-        return new FieldSignature(fieldName, signature, propertyType, staticFlag);
+        return new FieldSignature(fieldName, signature, propertyType ?? this.getType(), staticFlag);
     }
 }
 

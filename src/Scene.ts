@@ -190,7 +190,6 @@ export class Scene {
 
         this.sdkArkFilesMap.forEach(file => {
             this.inferFile(file);
-            ModelUtils.buildGlobalMap(file, this.sdkGlobalMap);
         });
     }
 
@@ -245,6 +244,7 @@ export class Scene {
             ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
             const fileSig = arkFile.getFileSignature().toMapKey();
             this.sdkArkFilesMap.set(fileSig, arkFile);
+            ModelUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
         });
     }
 
@@ -617,7 +617,7 @@ export class Scene {
         this.getMethodsMap(true);
     }
 
-    private inferFile(file: ArkFile) {
+    private inferFile(file: ArkFile): void {
         ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
             TypeInference.inferGenericType(arkClass.getGenericsTypes(), arkClass);
             const defaultArkMethod = arkClass.getDefaultArkMethod();

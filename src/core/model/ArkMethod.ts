@@ -291,10 +291,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
      * @example
      * 1. Get the signature of method mtd.
 
-    ```typescript
-    let signature = mtd.getSignature();
-    // ... ...
-    ```
+     ```typescript
+     let signature = mtd.getSignature();
+     // ... ...
+     ```
      */
     public getSignature(): MethodSignature {
         return this.methodSignature ?? (this.methodDeclareSignatures as MethodSignature[])[0];
@@ -360,24 +360,24 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     /**
      * Get {@link ArkBody} of a Method.
-     * A {@link ArkBody} contains the CFG and actual instructions or operations to be executed for a method. 
-     * It is analogous to the body of a function or method in high-level programming languages, 
+     * A {@link ArkBody} contains the CFG and actual instructions or operations to be executed for a method.
+     * It is analogous to the body of a function or method in high-level programming languages,
      * which contains the statements and expressions that define what the function does.
      * @returns The {@link ArkBody} of a method.
      * @example
      * 1. Get cfg or stmt through ArkBody.
 
-    ```typescript
-    let cfg = this.scene.getMethod()?.getBody().getCfg();
-    const body = arkMethod.getBody()
-    ```
+     ```typescript
+     let cfg = this.scene.getMethod()?.getBody().getCfg();
+     const body = arkMethod.getBody()
+     ```
 
-    2. Get local variable through ArkBody.
+     2. Get local variable through ArkBody.
 
-    ```typescript
-    arkClass.getDefaultArkMethod()?.getBody().getLocals.forEach(local=>{...})
-    let locals = arkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
-    ```
+     ```typescript
+     arkClass.getDefaultArkMethod()?.getBody().getLocals.forEach(local=>{...})
+     let locals = arkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals();
+     ```
      */
     public getBody(): ArkBody | undefined {
         return this.body;
@@ -388,39 +388,39 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     }
 
     /**
-     * Get the CFG (i.e., control flow graph) of a method. 
+     * Get the CFG (i.e., control flow graph) of a method.
      * The CFG is a graphical representation of all possible control flow paths within a method's body.
      * A CFG consists of blocks, statements and goto control jumps.
-     * @returns The CFG (i.e., control flow graph) of a method. 
+     * @returns The CFG (i.e., control flow graph) of a method.
      * @example
      * 1. get stmt through ArkBody cfg.
 
-    ```typescript
-    body = arkMethod.getBody();
-    const cfg = body.getCfg();
-    for (const threeAddressStmt of cfg.getStmts()) {
-    ... ...
-    }
-    ```
+     ```typescript
+     body = arkMethod.getBody();
+     const cfg = body.getCfg();
+     for (const threeAddressStmt of cfg.getStmts()) {
+     ... ...
+     }
+     ```
 
-    2. get blocks through ArkBody cfg.
+     2. get blocks through ArkBody cfg.
 
-    ```typescript
-    const body = arkMethod.getBody();
-    const blocks = [...body.getCfg().getBlocks()];
-    for (let i=0; i<blocks.length; i++) {
-    const block = blocks[i];
-    ... ...
-    for (const stmt of block.getStmts()) {
-        ... ...
-    }
-    let text = "next;"
-    for (const next of block.getSuccessors()) {
-        text += blocks.indexOf(next) + ' ';
-    }
-    // ... ...
-    }
-    ```
+     ```typescript
+     const body = arkMethod.getBody();
+     const blocks = [...body.getCfg().getBlocks()];
+     for (let i=0; i<blocks.length; i++) {
+     const block = blocks[i];
+     ... ...
+     for (const stmt of block.getStmts()) {
+     ... ...
+     }
+     let text = "next;"
+     for (const next of block.getSuccessors()) {
+     text += blocks.indexOf(next) + ' ';
+     }
+     // ... ...
+     }
+     ```
      */
     public getCfg(): Cfg | undefined {
         return this.body?.getCfg();
@@ -542,21 +542,33 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         const lineCol = this.getLineCol();
 
         if (declareSignatures === null && signature === null) {
-            return { errCode: ArkErrorCode.METHOD_SIGNATURE_UNDEFINED, errMsg: 'methodDeclareSignatures and methodSignature are both undefined.' };
+            return {
+                errCode: ArkErrorCode.METHOD_SIGNATURE_UNDEFINED,
+                errMsg: 'methodDeclareSignatures and methodSignature are both undefined.'
+            };
         }
         if ((declareSignatures === null) !== (declareLineCols === null)) {
-            return { errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED, errMsg: 'methodDeclareSignatures and methodDeclareLineCols are not matched.' };
+            return {
+                errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED,
+                errMsg: 'methodDeclareSignatures and methodDeclareLineCols are not matched.'
+            };
         }
         if (declareSignatures !== null && declareLineCols !== null && declareSignatures.length !== declareLineCols.length) {
-            return { errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED, errMsg: 'methodDeclareSignatures and methodDeclareLineCols are not matched.' };
+            return {
+                errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED,
+                errMsg: 'methodDeclareSignatures and methodDeclareLineCols are not matched.'
+            };
         }
         if ((signature === null) !== (lineCol === null)) {
-            return { errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED, errMsg: 'methodSignature and lineCol are not matched.' };
+            return {
+                errCode: ArkErrorCode.METHOD_SIGNATURE_LINE_UNMATCHED,
+                errMsg: 'methodSignature and lineCol are not matched.'
+            };
         }
         return this.validateFields(['declaringArkClass']);
     }
 
-    public matchMethodSignature(args: Type[]) {
+    public matchMethodSignature(args: Type[]): MethodSignature {
         const signatures = this.methodDeclareSignatures?.filter(f => {
             const parameters = f.getMethodSubSignature().getParameters();
             const max = parameters.length;

@@ -344,7 +344,12 @@ export class ClassType extends Type {
     }
 
     public toString(): string {
-        return this.classSignature.toString();
+        let temp = this.classSignature.toString();
+        let generic = this.realGenericTypes?.join(',');
+        if (generic) {
+            temp += `<${generic}>`;
+        }
+        return temp;
     }
 }
 

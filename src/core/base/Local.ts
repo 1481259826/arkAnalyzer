@@ -22,7 +22,7 @@ import { ClassSignature, LocalSignature, MethodSignature } from '../model/ArkSig
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { UNKNOWN_METHOD_NAME } from '../common/Const';
 import { ModifierType } from '../model/ArkBaseModel';
-import { ArkMethod } from "../model/ArkMethod";
+import { ArkMethod } from '../model/ArkMethod';
 
 /**
  * @category core/base

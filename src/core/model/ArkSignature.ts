@@ -261,7 +261,7 @@ export class MethodSubSignature {
         return this.returnType;
     }
 
-    public setReturnType(returnType: Type) {
+    public setReturnType(returnType: Type): void {
         this.returnType = returnType;
     }
 

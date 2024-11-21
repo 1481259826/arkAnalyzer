@@ -15,16 +15,10 @@
 
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
-import {
-    Scene,
-    SceneConfig,
-    MethodSignature,
-    ArkMethod,
-    ArkClass,
-} from '../../src';
+import { ArkClass, ArkMethod, MethodSignature, Scene, SceneConfig, } from '../../src';
 import { Sdk } from '../../src/Config';
 
-const SDK_DIR = path.join(__dirname, '../../tests/resources/Sdk/api');
+const SDK_DIR = path.join(__dirname, '../../tests/resources/Sdk');
 
 function buildScene(sdks: Sdk[]): Scene {
     let config: SceneConfig = new SceneConfig();
@@ -61,20 +55,20 @@ describe('SDK Global Map Test', () => {
                 expect(declareSigs?.length).toEqual(2);
                 expect(method?.getDeclareLines()).toEqual([190, 191]);
                 expect(method?.getDeclareColumns()).toEqual([9, 9]);
-                expect((declareSigs as MethodSignature[])[0].toString()).toEqual(`@/${apiFile}: ${apiNS}.${apiCls}.[static]${apiName}()`);
-                expect((declareSigs as MethodSignature[])[0].getType().toString()).toEqual('Promise<Array<WebStorageOrigin>>');
+                expect((declareSigs as MethodSignature[])[0].toString()).toEqual(`@/api/${apiFile}: ${apiNS}.${apiCls}.[static]${apiName}()`);
+                expect((declareSigs as MethodSignature[])[0].getType().toString()).toEqual('@/api/@internal/Promise.d.ts: Promise<@/api/@ohos.web.webview.d.ts: webview.WebStorageOrigin[]>');
                 expect((declareSigs as MethodSignature[])[1].toString())
-                    .toEqual(`@/${apiFile}: ${apiNS}.${apiCls}.[static]${apiName}(AsyncCallback<Array<WebStorageOrigin>>)`);
+                    .toEqual(`@/api/${apiFile}: ${apiNS}.${apiCls}.[static]${apiName}(AsyncCallback<@/api/@ohos.web.webview.d.ts: webview.WebStorageOrigin[]>)`);
                 expect((declareSigs as MethodSignature[])[1].getType().toString()).toEqual('void');
             }
         });
     });
 
     it('test internal sdk', async () => {
-        const key = 'onClick';
+        const key = 'wrapBuilder';
         const apiFile = '@internal/component/ets/common.d.ts';
-        const apiCls = 'CommonMethod';
-        const apiName = 'onClick';
+        const apiCls = '%dflt';
+        const apiName = 'wrapBuilder';
         const arkMethod = scene.getSdkGlobal(key);
         assert.isTrue(arkMethod instanceof ArkMethod);
         assert.isNull((arkMethod as ArkMethod).getImplementationSignature());
@@ -83,14 +77,12 @@ describe('SDK Global Map Test', () => {
         const declareLines = (arkMethod as ArkMethod).getDeclareLines();
         const declareColumns = (arkMethod as ArkMethod).getDeclareColumns();
         assert.isNotNull(declareSignatures);
-        expect(declareSignatures?.length).toEqual(2);
+        expect(declareSignatures?.length).toEqual(1);
         expect((declareSignatures as MethodSignature[])[0].toString())
-            .toEqual(`@/${apiFile}: ${apiCls}.${apiName}(@/${apiFile}: CommonMethod.%AM1(ClickEvent))`);
-        expect((declareSignatures as MethodSignature[])[1].toString()).toEqual(`@/${apiFile}: ${apiCls}.${apiName}(Callback<ClickEvent>, number)`);
-        expect((declareSignatures as MethodSignature[])[0].getType().toString()).toEqual('T');
-        expect((declareSignatures as MethodSignature[])[1].getType().toString()).toEqual('T');
-        expect(declareLines).toEqual([2542, 2545]);
-        expect(declareColumns).toEqual([5, 5]);
+            .toEqual(`@/api/${apiFile}: ${apiCls}.${apiName}(@/api/${apiFile}: ${apiCls}.%AM2(Args))`);
+        expect((declareSignatures as MethodSignature[])[0].getType().toString()).toEqual(`@/api/${apiFile}: WrappedBuilder<Args extends Object[]>`);
+        expect(declareLines).toEqual([3503]);
+        expect(declareColumns).toEqual([1]);
     });
 
     it('test local value default Method', async () => {
@@ -110,8 +102,8 @@ describe('SDK Global Map Test', () => {
         assert.isNotNull(declareSignatures);
         expect(declareSignatures?.length).toEqual(1);
         expect((declareSignatures as MethodSignature[])[0].toString())
-            .toEqual(`@/${apiFile}: ${key}.${apiMethod}(ColumnOptions)`);
-        expect((declareSignatures as MethodSignature[])[0].getType().toString()).toEqual('ColumnAttribute');
+            .toEqual(`@/api/${apiFile}: ${key}.${apiMethod}(@/api/@internal/component/ets/column.d.ts: ColumnOptions)`);
+        expect((declareSignatures as MethodSignature[])[0].getType().toString()).toEqual('@/api/@internal/component/ets/column.d.ts: ColumnAttribute');
         expect(declareLines).toEqual([26]);
         expect(declareColumns).toEqual([5]);
     });

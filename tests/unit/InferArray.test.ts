@@ -22,6 +22,7 @@ import {
     AliasType,
     ArkAssignStmt,
     ArkInstanceFieldRef,
+    ArkInvokeStmt,
     ArkNewArrayExpr,
     ArkStaticFieldRef,
     ArrayType,
@@ -220,5 +221,48 @@ describe("Infer Array Test", () => {
         if (stmts) {
             assert.equal(stmts[2].toString(), '%3 = %1[%2]');
         }
+    })
+})
+
+describe("function Test", () => {
+    let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
+    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"));
+    let scene: Scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+    it('generic case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'test2.ets');
+        const file = scene.getFile(fileId);
+        const actual = file?.getClassWithName('SCBSceneSessionManager')
+            ?.getFieldWithName('property1')?.getSignature().getType().toString();
+        assert.equal(actual, '@etsSdk/arkts/@arkts.collections.d.ets: collections.Array<number>');
+    })
+
+    it('overload case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'test2.ets');
+        const file = scene.getFile(fileId);
+        const actual = file?.getDefaultClass()?.getMethodWithName('demoCallBack')
+            ?.getCfg()?.getStmts();
+        assert.equal((actual?.[1] as ArkInvokeStmt).getInvokeExpr().getMethodSignature().toString(),
+            '@etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.createAVPlayer(AsyncCallback<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer>)');
+        assert.equal((actual?.[2] as ArkAssignStmt).getInvokeExpr()?.getMethodSignature().toString(),
+            '@etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.createAVPlayer()');
+    })
+
+    it('callback case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'test2.ets');
+        const file = scene.getFile(fileId);
+        const actual = file?.getDefaultClass()?.getMethodWithName('%AM0$demoCallBack')
+            ?.getCfg()?.getStmts().find(s => s instanceof ArkInvokeStmt)?.toString();
+        assert.equal(actual, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(string, Callback<drm.MediaKeySystemInfo[]>)>(\'audioInterrupt\', %AM1$%AM0$demoCallBack)');
+    })
+
+    it('promise case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'test2.ets');
+        const file = scene.getFile(fileId);
+        const actual2 = file?.getDefaultClass()?.getMethodWithName('%AM3$demoCallBack')
+            ?.getCfg()?.getStmts().find(s => s instanceof ArkInvokeStmt)?.toString();
+        assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(string, Callback<drm.MediaKeySystemInfo[]>)>(\'audioInterrupt\', %AM4$%AM3$demoCallBack)');
     })
 })
