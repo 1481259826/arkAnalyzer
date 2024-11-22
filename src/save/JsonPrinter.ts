@@ -284,7 +284,7 @@ export class JsonPrinter extends Printer {
                 literal: type.getLiteralName(),
             };
         } else if (type instanceof PrimitiveType) {
-            throw new Error('Unhandled PrimitiveType: ' + util.inspect(type));
+            throw new Error('Unhandled PrimitiveType: ' + util.inspect(type, { showHidden: true, depth: null }));
         } else if (type instanceof ClassType) {
             return {
                 _: 'ClassType',
@@ -338,9 +338,9 @@ export class JsonPrinter extends Printer {
                 originType: type.getOriginType(),
             };
         } else if (type instanceof AnnotationType) {
-            throw new Error('Unhandled AnnotationType: ' + util.inspect(type));
+            throw new Error('Unhandled AnnotationType: ' + util.inspect(type, { showHidden: true, depth: null }));
         } else {
-            throw new Error('Unhandled Type: ' + util.inspect(type));
+            throw new Error('Unhandled Type: ' + util.inspect(type, { showHidden: true, depth: null }));
             // return {
             //     _: 'UNKNOWN_TYPE',
             //     type: type.toString(),
@@ -539,7 +539,7 @@ export class JsonPrinter extends Printer {
                 right: this.serializeValue(value.getOp2()),
             };
         } else if (value instanceof AbstractBinopExpr) {
-            return new Error('Unhandled BinopExpr: ' + util.inspect(value));
+            return new Error('Unhandled BinopExpr: ' + util.inspect(value, { showHidden: true, depth: null }));
         } else if (value instanceof ArkUnopExpr) {
             return {
                 _: 'UnopExpr',
@@ -567,7 +567,7 @@ export class JsonPrinter extends Printer {
                 args: value.getArgs().map((arg) => this.serializeValue(arg)),
             };
         } else if (value instanceof AbstractInvokeExpr) {
-            throw new Error('Unhandled CallExpr: ' + util.inspect(value));
+            throw new Error('Unhandled CallExpr: ' + util.inspect(value, { showHidden: true, depth: null }));
         } else if (value instanceof ArkThisRef) {
             return {
                 _: 'ThisRef',
@@ -598,13 +598,13 @@ export class JsonPrinter extends Printer {
                 field: this.serializeFieldSignature(value.getFieldSignature()),
             };
         } else if (value instanceof AbstractFieldRef) {
-            throw new Error('Unhandled FieldRef: ' + util.inspect(value));
+            throw new Error('Unhandled FieldRef: ' + util.inspect(value, { showHidden: true, depth: null }));
         } else if (value instanceof AbstractRef) {
-            throw new Error('Unhandled Ref: ' + util.inspect(value));
+            throw new Error('Unhandled Ref: ' + util.inspect(value, { showHidden: true, depth: null }));
         } else if (value instanceof AbstractExpr) {
-            throw new Error('Unhandled Expr: ' + util.inspect(value));
+            throw new Error('Unhandled Expr: ' + util.inspect(value, { showHidden: true, depth: null }));
         } else {
-            throw new Error('Unhandled Value: ' + util.inspect(value));
+            throw new Error('Unhandled Value: ' + util.inspect(value, { showHidden: true, depth: null }));
             // return {
             //     _: 'UNKNOWN_VALUE',
             //     // TODO: add simple 'value' field here to be able to see the "unknown" value
@@ -654,7 +654,7 @@ export class JsonPrinter extends Printer {
                 cases: stmt.getCases().map((value) => this.serializeValue(value)),
             };
         } else {
-            throw new Error('Unhandled Stmt: ' + util.inspect(stmt));
+            throw new Error('Unhandled Stmt: ' + util.inspect(stmt, { showHidden: true, depth: null }));
             // return {
             //     _: 'UNKNOWN_STMT',
             //     stmt: stmt.toString(),
