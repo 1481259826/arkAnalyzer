@@ -21,6 +21,9 @@ import { ArkClass } from '../core/model/ArkClass';
 import { ArkField } from '../core/model/ArkField';
 import {
     AliasType,
+    AnnotationNamespaceType,
+    AnnotationType,
+    AnnotationTypeQueryType,
     AnyType,
     ArrayType,
     BooleanType,
@@ -323,6 +326,19 @@ export class JsonPrinter extends Printer {
                 originalType: this.serializeType(type.getOriginalType()),
                 signature: this.serializeLocalSignature(type.getSignature()),
             };
+        } else if (type instanceof AnnotationNamespaceType) {
+            return {
+                _: 'AnnotationNamespaceType',
+                originType: type.getOriginType(),
+                namespaceSignature: this.serializeNamespaceSignature(type.getNamespaceSignature()),
+            };
+        } else if (type instanceof AnnotationTypeQueryType) {
+            return {
+                _: 'AnnotationTypeQueryType',
+                originType: type.getOriginType(),
+            };
+        } else if (type instanceof AnnotationType) {
+            throw new Error('Unhandled AnnotationType: ' + util.inspect(type));
         } else {
             throw new Error('Unhandled Type: ' + util.inspect(type));
             // return {
