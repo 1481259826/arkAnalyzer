@@ -322,6 +322,7 @@ export class JsonPrinter extends Printer {
             };
         } else if (type instanceof AliasType) {
             return {
+                _: 'AliasType',
                 name: type.getName(),
                 originalType: this.serializeType(type.getOriginalType()),
                 signature: this.serializeLocalSignature(type.getSignature()),
