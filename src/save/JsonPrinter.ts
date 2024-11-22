@@ -20,6 +20,7 @@ import { ArkNamespace } from '../core/model/ArkNamespace';
 import { ArkClass } from '../core/model/ArkClass';
 import { ArkField } from '../core/model/ArkField';
 import {
+    AliasType,
     AnyType,
     ArrayType,
     BooleanType,
@@ -78,6 +79,7 @@ import {
     ClassSignature,
     FieldSignature,
     FileSignature,
+    LocalSignature,
     MethodSignature,
     NamespaceSignature,
 } from '../core/model/ArkSignature';
@@ -313,6 +315,12 @@ export class JsonPrinter extends Printer {
                 // TODO: we do not serialize 'index' field since it is not used
                 // index: type.getIndex(),
             };
+        } else if (type instanceof AliasType) {
+            return {
+                name: type.getName(),
+                originalType: this.serializeType(type.getOriginalType()),
+                signature: this.serializeLocalSignature(type.getSignature()),
+            };
         } else {
             throw new Error('Unhandled Type: ' + type.toString());
             // return {
@@ -376,6 +384,13 @@ export class JsonPrinter extends Printer {
                 .getParameters()
                 .map((param) => this.serializeMethodParameter(param)),
             returnType: this.serializeType(method.getType()),
+        };
+    }
+
+    private serializeLocalSignature(signature: LocalSignature): object {
+        return {
+            name: signature.getName(),
+            method: this.serializeMethodSignature(signature.getDeclaringMethodSubSignature()),
         };
     }
 
