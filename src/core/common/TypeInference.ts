@@ -162,7 +162,7 @@ export class TypeInference {
                 if (type) {
                     p.setType(type);
                 }
-            })
+            });
             const type = TypeInference.inferUnclearedType(s.getMethodSubSignature().getReturnType(), arkClass);
             if (type) {
                 s.getMethodSubSignature().setReturnType(type);
@@ -313,7 +313,10 @@ export class TypeInference {
         }
         if (type instanceof UnionType &&
             !this.isUnclearType(rightOp.getType()) && !(leftOp instanceof ArkArrayRef)) {
-            type.setCurrType(rightOp.getType());
+            const cur = type.getTypes().find(t => rightOp.getType().constructor === t.constructor);
+            if (cur) {
+                type.setCurrType(cur);
+            }
         }
         if (this.isUnclearType(type) && !this.isUnclearType(rightOp.getType())) {
             type = rightOp.getType();

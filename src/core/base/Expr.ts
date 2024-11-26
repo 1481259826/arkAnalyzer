@@ -219,13 +219,20 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
 
     public inferMethod(baseType: Type, methodName: string, scene: Scene): AbstractInvokeExpr | null {
         if (baseType instanceof ClassType) {
-            const arkClass = scene.getClass(baseType.getClassSignature());
+            let arkClass = scene.getClass(baseType.getClassSignature());
+            if (!arkClass) {
+                const globalClass = scene.getSdkGlobal(baseType.getClassSignature().getClassName());
+                if (globalClass instanceof ArkClass) {
+                    arkClass = globalClass;
+                }
+            }
             const method = arkClass ? ModelUtils.findPropertyInClass(methodName, arkClass) : null;
             if (method instanceof ArkMethod) {
                 TypeInference.inferMethodReturnType(method);
                 const methodSignature = method.matchMethodSignature(this.args);
                 this.setMethodSignature(methodSignature);
-                this.realGenericTypes = baseType.getRealGenericTypes();
+                this.realGenericTypes = method.getDeclaringArkClass() === arkClass ? baseType.getRealGenericTypes() :
+                    arkClass?.getRealTypes();
                 if (method.isStatic()) {
                     return new ArkStaticInvokeExpr(methodSignature, this.getArgs(), this.getRealGenericTypes());
                 }

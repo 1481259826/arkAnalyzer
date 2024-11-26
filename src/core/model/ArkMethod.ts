@@ -15,7 +15,7 @@
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ClassType, FunctionType, GenericType, NumberType, Type } from '../base/Type';
+import { ClassType, FunctionType, GenericType, NumberType, Type, UnionType } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
@@ -572,11 +572,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         const signatures = this.methodDeclareSignatures?.filter(f => {
             const parameters = f.getMethodSubSignature().getParameters();
             const max = parameters.length;
-            let idx = 0;
-            while (idx < max && !parameters[idx].isOptional()) {
-                idx++;
+            let min = 0;
+            while (min < max && !parameters[min].isOptional()) {
+                min++;
             }
-            const min = idx < max ? idx + 1 : idx;
             return args.length >= min && args.length <= max;
         });
         return signatures?.find(p => {
@@ -587,6 +586,20 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 }
                 const paramType = parameters[i].getType();
                 const argType = args[i];
+                if (paramType instanceof UnionType) {
+                    let matched = false;
+                    for (const e of paramType.getTypes()) {
+                        if (argType.constructor === e.constructor) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (matched) {
+                        continue;
+                    } else {
+                        return false;
+                    }
+                }
                 if (argType instanceof FunctionType && paramType instanceof ClassType &&
                     paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
                     continue;

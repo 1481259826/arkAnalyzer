@@ -295,9 +295,12 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
             const property = propertyAndType?.[0];
+            if (property instanceof ArkField) {
+                return property.getSignature();
+            }
             staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
-                ((property instanceof ArkMethod || property instanceof ArkField) && property.isStatic());
-            signature = property instanceof ArkField ? property.getSignature().getDeclaringSignature() : baseType.getClassSignature();
+                (property instanceof ArkMethod && property.isStatic());
+            signature = property instanceof ArkMethod ? property.getSignature().getDeclaringClassSignature() : baseType.getClassSignature();
         } else if (baseType instanceof AnnotationNamespaceType) {
             staticFlag = true;
             signature = baseType.getNamespaceSignature();
