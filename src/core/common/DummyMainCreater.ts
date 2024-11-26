@@ -345,6 +345,9 @@ export class DummyMainCreater {
 
     private classInheritsAbility(arkClass: ArkClass): boolean {
         const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility', 'UIAbility', 'BackupExtensionAbility'];
+        if (ABILITY_BASE_CLASSES.includes(arkClass.getSuperClassName())) {
+            return true;
+        }
         let superClass = arkClass.getSuperClass();
         while (superClass) {
             if (ABILITY_BASE_CLASSES.includes(superClass.getName())) {

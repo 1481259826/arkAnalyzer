@@ -18,7 +18,7 @@ import { DummyMainCreater } from "../src/core/common/DummyMainCreater";
 import { Scene } from "../src/Scene";
 
 
-const config_path = "tests\\resources\\ifds\\TiantAnalysis\\ifdsTestConfig.json";
+const config_path = "tests\\resources\\ifds\\TaintAnalysis\\ifdsTestConfig.json";
 // const config_path = "tests\\resources\\typeInference\\ohapps.json";
 let config: SceneConfig = new SceneConfig();
 config.buildFromJson(config_path);

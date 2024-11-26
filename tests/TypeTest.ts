@@ -15,6 +15,7 @@
 
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
+import { DummyMainCreater } from '../src/core/common/DummyMainCreater';
 import { ArkBody } from '../src/core/model/ArkBody';
 
 export class TypeInferenceTest {
@@ -30,7 +31,11 @@ export class TypeInferenceTest {
 
     public testLocalTypes() {
         let scene = this.buildScene();
-        console.log(scene);
+        scene.inferTypes();
+        const creater = new DummyMainCreater(scene);
+        creater.createDummyMain();
+        let d = creater.getDummyMain();
+        console.log(d);
     }
 
     public printStmts(body: ArkBody): void {

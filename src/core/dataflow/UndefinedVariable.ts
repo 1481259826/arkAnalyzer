@@ -30,7 +30,9 @@ import { Cfg } from '../graph/Cfg';
 import { LocalEqual, RefEqual } from './Util';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../common/Const';
 import { ArkField } from '../model/ArkField';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 export class UndefinedVariableChecker extends DataflowProblem<Value> {
     zeroValue: Constant = new Constant('undefined', UndefinedType.getInstance());
@@ -122,9 +124,9 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
             const base = rightOp.getBase();
             if (base === dataFact || !base.getDeclaringStmt() && base.getName() === dataFact.toString()) {
                 this.outcomes.push(new Outcome(rightOp, ass));
-                console.log('undefined base');
-                console.log(srcStmt.toString());
-                console.log(srcStmt.getOriginPositionInfo().toString());
+                logger.info('undefined base');
+                logger.info(srcStmt.toString());
+                logger.info(srcStmt.getOriginPositionInfo().toString());
             }
         } else if (dataFact instanceof ArkInstanceFieldRef && rightOp === dataFact.getBase()) {
             const field = new ArkInstanceFieldRef(srcStmt.getLeftOp() as Local, dataFact.getFieldSignature());

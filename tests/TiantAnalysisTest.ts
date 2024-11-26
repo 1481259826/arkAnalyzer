@@ -16,9 +16,9 @@
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ModelUtils } from '../src/core/common/ModelUtils';
-import { TiantAnalysisChecker, TiantAnalysisSolver } from '../src/core/dataflow/TiantAnalysis';
+import { TaintAnalysisChecker, TaintAnalysisSolver } from '../src/core/dataflow/TaintAnalysis';
 
-const config_path = "tests\\resources\\ifds\\TiantAnalysis\\ifdsTestConfig.json";
+const config_path = "tests\\resources\\ifds\\TaintAnalysis\\ifdsTestConfig.json";
 let config: SceneConfig = new SceneConfig();
 config.buildFromJson2(config_path);
 const scene = new Scene(config);
@@ -28,9 +28,9 @@ let method = ModelUtils.getMethodWithName("T1",defaultMethod!);
 let source = ModelUtils.getMethodWithName("source",defaultMethod!);
 let sink = ModelUtils.getMethodWithName("sink",defaultMethod!);
 if(method){
-    const problem = new TiantAnalysisChecker([...method.getCfg().getBlocks()][0].getStmts()[method.getParameters().length],method);
+    const problem = new TaintAnalysisChecker([...method.getCfg().getBlocks()][0].getStmts()[method.getParameters().length],method);
     problem.setSinks([sink!]);
     problem.setSources([source!]);
-    const solver = new TiantAnalysisSolver(problem, scene);
+    const solver = new TaintAnalysisSolver(problem, scene);
     solver.solve();
 }
