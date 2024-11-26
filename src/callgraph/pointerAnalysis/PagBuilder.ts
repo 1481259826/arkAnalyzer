@@ -480,9 +480,9 @@ export class PagBuilder {
             let baseNodeIDs = this.pag.getNodesByValue(base);
             if (!baseNodeIDs) {
                 // bind the call site to export base
-                let intraProceduralLocal = this.getSourceValueFromExternalScope(base, funcID);
-                if (intraProceduralLocal) {
-                    baseNodeIDs = this.pag.getNodesByValue(intraProceduralLocal);
+                let interProceduralLocal = this.getSourceValueFromExternalScope(base, funcID);
+                if (interProceduralLocal) {
+                    baseNodeIDs = this.pag.getNodesByValue(interProceduralLocal);
                 }
             }
 
@@ -755,9 +755,9 @@ export class PagBuilder {
         if (!srcNodeId) {
             // this check is for export local and closure use
             // replace the invoke base, because its origin base has no pag node
-            let intraProceduralLocal = this.getSourceValueFromExternalScope(srcBaseLocal, callerFunID);
-            if (intraProceduralLocal) {
-                srcNodeId = this.pag.hasCtxNode(cid, intraProceduralLocal);
+            let interProceduralLocal = this.getSourceValueFromExternalScope(srcBaseLocal, callerFunID);
+            if (interProceduralLocal) {
+                srcNodeId = this.pag.hasCtxNode(cid, interProceduralLocal);
             }
         }
 
