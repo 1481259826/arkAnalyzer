@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
+import { SceneConfig, Sdk } from "../src/Config";
 import { Scene } from "../src/Scene";
 import { CallGraph } from '../src/callgraph/model/CallGraph';
 import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
@@ -28,6 +28,12 @@ import Logger, { LOG_LEVEL } from "../src/utils/logger"
 
 Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.TRACE)
 let config: SceneConfig = new SceneConfig()
+let sdk: Sdk = {
+    name: "ohos",
+    path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
+    moduleName: ""
+};
+sdk;
 
 function dumpIR(scene: Scene) {
     scene.getMethods().forEach(fun => {
@@ -85,17 +91,25 @@ function runProject(output: string) {
     projectScene.buildScene4HarmonyProject()
     // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
-    console.log(projectScene);
 
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true, true)
-    let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig)
+    let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
+    pta;
 
-    printTypeDiff(pta);
+    // printTypeDiff(pta);
 }
 
 
 function runDir(output: string) {
-    config.buildFromProjectDir('./tests/resources/pta/ExportNew');
+    config.buildFromProjectDir('./tests/resources/pta/GlobalVar');
+    // config.buildConfig(
+    //     'Dir',
+    //     './tests/resources/pta/Container',
+    //     [sdk],
+    //     [
+    //         'tests/resources/pta/Container/container.ts'
+    //     ]
+    // )
 
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
@@ -114,14 +128,14 @@ function runDir(output: string) {
     console.log(entry.length)
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
-    pta.setEntries(entry);
+    pta.setEntries(debugfunc);
     pta.start();
     //cg.dump(output + "/subcg.dot", debugfunc[0]);
 
     cg.dump(output + "/subcg.dot", debugfunc[0])
     cgBuilder.setEntries()
-    entry = cg.getEntries();
-    console.log(entry.length)
+    // entry = cg.getEntries();
+    // console.log(entry.length)
 
     dumpIR(projectScene)
     printTypeDiff(pta);
@@ -129,5 +143,6 @@ function runDir(output: string) {
 }
 if (false) {
     runProject("./out");
+} else {
+    runDir('./out')
 }
-runDir('./out')

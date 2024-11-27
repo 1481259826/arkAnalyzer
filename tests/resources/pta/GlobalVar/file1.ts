@@ -14,13 +14,21 @@
  */
 
 export abstract class name {
-    id: number
+    id: Base
     constructor(num: number) {
-        this.id = num
+        this.id = new Base(num);
     }
 
-    public getID(): number {
+    public getID(): Base {
         return this.id
+    }
+}
+
+class Base {
+    id: number
+
+    constructor(id: number) {
+        this.id = id;
     }
 }
 
