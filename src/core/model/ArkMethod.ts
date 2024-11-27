@@ -580,7 +580,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             return args.length >= min && args.length <= max;
         });
 
-        function match(paramType: Type, argType: Type, scene: Scene) {
+        function match(paramType: Type, argType: Type, scene: Scene): boolean {
             if (paramType instanceof UnionType) {
                 let matched = false;
                 for (const e of paramType.getTypes()) {
@@ -611,9 +611,9 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 const argType = args[i];
                 const isMatched = match(paramType, argType, scene);
                 if (!isMatched) {
-                        return false;
-                    }
+                    return false;
                 }
+            }
             return true;
         }) ?? signatures?.[0] ?? this.getSignature();
     }

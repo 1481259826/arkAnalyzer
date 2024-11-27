@@ -499,7 +499,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         return this;
     }
 
-    private processDynamicImport(arkClass: ArkClass, methodName: string, oldMethodSignature: MethodSignature) {
+    private processDynamicImport(arkClass: ArkClass, methodName: string, oldMethodSignature: MethodSignature): void {
         const importInfo = new ImportInfo();
         importInfo.setNameBeforeAs(ALL);
         importInfo.setImportClauseName(ALL);
