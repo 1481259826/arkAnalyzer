@@ -1310,8 +1310,7 @@ export class CfgBuilder {
         for (let i = stmtsCnt - 1; i >= 0; i--) {
             const stmt = stmts[i];
             if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() === tempResultLocal) {
-                if (IRUtils.isTempLocal(
-                    stmt.getRightOp()) && this.isNewDefLocal(stmt.getRightOp() as Local, stmts, i)) {
+                if (IRUtils.isTempLocal(stmt.getRightOp())) {
                     tempResultReassignStmt = stmt;
                 } else {
                     stmt.setLeftOp(targetLocal);
@@ -1345,16 +1344,6 @@ export class CfgBuilder {
             newBottomBlocks = [currBottomBlock];
         }
         return newBottomBlocks;
-    }
-
-    private isNewDefLocal(local: Local, stmts: Stmt[], pos: number): boolean {
-        for (let i = pos - 1; i >= 0; i++) {
-            const stmt = stmts[i];
-            if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() === local) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private rebuildBlocksInLoop(blockBuilderToCfgBlock: Map<Block, BasicBlock>,
