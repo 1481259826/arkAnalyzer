@@ -125,11 +125,6 @@ export class JsonPrinter extends Printer {
             signature: this.serializeNamespaceSignature(namespace.getSignature()),
             classes: namespace.getClasses().map((cls) => this.serializeClass(cls)),
             namespaces: namespace.getNamespaces().map((ns) => this.serializeNamespace(ns)),
-            // TODO: we do not serialize 'modifiers' since they are not currently supported in EtsIR model
-            // modifiers: namespace.getModifiers(),
-            // TODO: we do not serialize 'decorators' on ArkNamespace,
-            //       since they do not make sense, and are not used anyway
-            // decorators: namespace.getDecorators().map((decorator) => this.serializeDecorator(decorator)),
         };
     }
 
@@ -189,9 +184,6 @@ export class JsonPrinter extends Printer {
             importFrom: importInfo.getFrom(),
             nameBeforeAs: importInfo.getNameBeforeAs(),
             modifiers: importInfo.getModifiers(),
-            // TODO: we do not serialize 'decorators' on ImportInfo since
-            //       they do not make sense, and are not used anyway
-            // decorators: importInfo.getDecorators().map((decorator) => this.serializeDecorator(decorator)),
             originTsPosition: this.serializeLineColPosition(importInfo.getOriginTsPosition()),
         };
     }
@@ -204,19 +196,13 @@ export class JsonPrinter extends Printer {
             nameBeforeAs: exportInfo.getNameBeforeAs(),
             isDefault: exportInfo.isDefault(),
             modifiers: exportInfo.getModifiers(),
-            // TODO: we do not serialize 'decorators' on ExportInfo since
-            //       they do not make sense, and are not used anyway
-            // decorators: exportInfo.getDecorators().map((decorator) => this.serializeDecorator(decorator)),
             originTsPosition: this.serializeLineColPosition(exportInfo.getOriginTsPosition()),
         };
     }
 
     private serializeDecorator(decorator: Decorator): object {
-        // TODO: currently, we only serialize 'kind' of the decorator since other fields are not used
         return {
             kind: decorator.getKind(),
-            // TODO: content: decorator.getContent(),
-            // TODO: param: decorator.getParam(),
         };
     }
 
@@ -317,8 +303,6 @@ export class JsonPrinter extends Printer {
                 name: type.getName(),
                 defaultType: defaultType && this.serializeType(defaultType),
                 constraint: constraint && this.serializeType(constraint),
-                // TODO: we do not serialize 'index' field since it is not used
-                // index: type.getIndex(),
             };
         } else if (type instanceof AliasType) {
             return {
@@ -342,10 +326,6 @@ export class JsonPrinter extends Printer {
             throw new Error('Unhandled AnnotationType: ' + util.inspect(type, { showHidden: true, depth: null }));
         } else {
             throw new Error('Unhandled Type: ' + util.inspect(type, { showHidden: true, depth: null }));
-            // return {
-            //     _: 'UNKNOWN_TYPE',
-            //     type: type.toString(),
-            // };
         }
     }
 
@@ -353,10 +333,6 @@ export class JsonPrinter extends Printer {
         return {
             projectName: file.getProjectName(),
             fileName: file.getFileName(),
-            // TODO: we do not serialize 'filePath' and 'projectDir' since they
-            //       can be inconsistent in AST/ABC, and are not used anyway
-            // filePath: file.getFilePath(),
-            // projectDir: file.getProjectDir(),
         };
     }
 
@@ -384,7 +360,6 @@ export class JsonPrinter extends Printer {
         if (declaringSignature instanceof ClassSignature) {
             declaringClass = this.serializeClassSignature(declaringSignature);
         } else {
-            // TODO: declaringNamespace / declaringSignature
             declaringClass = this.serializeNamespaceSignature(declaringSignature);
         }
         return {
@@ -414,7 +389,6 @@ export class JsonPrinter extends Printer {
     }
 
     private serializeCfg(cfg: Cfg): object {
-        // Traverse CFG basic blocks and fill their `id` fields in topological order:
         const visited = new Set<BasicBlock>();
         const stack: BasicBlock[] = [];
         const startingBlock = cfg.getStartingBlock();
@@ -520,7 +494,7 @@ export class JsonPrinter extends Printer {
             const argToBlock = value.getArgToBlock();
             return {
                 _: 'PhiExpr',
-                args: args.map((arg) => this.serializeValue(arg)), // TODO: serializeLocal
+                args: args.map((arg) => this.serializeValue(arg)),
                 blocks: args.map((arg) => argToBlock.get(arg)!.getId()),
                 type: this.serializeType(value.getType()),
             };
@@ -550,7 +524,7 @@ export class JsonPrinter extends Printer {
         } else if (value instanceof ArkInstanceInvokeExpr) {
             return {
                 _: 'InstanceCallExpr',
-                instance: this.serializeValue(value.getBase()), // TODO: serializeLocal
+                instance: this.serializeValue(value.getBase()),
                 method: this.serializeMethodSignature(value.getMethodSignature()),
                 args: value.getArgs().map((arg) => this.serializeValue(arg)),
             };
@@ -563,7 +537,7 @@ export class JsonPrinter extends Printer {
         } else if (value instanceof ArkPtrInvokeExpr) {
             return {
                 _: 'PtrCallExpr',
-                ptr: this.serializeValue(value.getFuncPtrLocal()), // TODO: serializeLocal
+                ptr: this.serializeValue(value.getFuncPtrLocal()),
                 method: this.serializeMethodSignature(value.getMethodSignature()),
                 args: value.getArgs().map((arg) => this.serializeValue(arg)),
             };
@@ -583,14 +557,14 @@ export class JsonPrinter extends Printer {
         } else if (value instanceof ArkArrayRef) {
             return {
                 _: 'ArrayRef',
-                array: this.serializeValue(value.getBase()), // TODO: serializeLocal, TODO: rename to base
+                array: this.serializeValue(value.getBase()),
                 index: this.serializeValue(value.getIndex()),
                 type: this.serializeType(value.getType()),
             };
         } else if (value instanceof ArkInstanceFieldRef) {
             return {
                 _: 'InstanceFieldRef',
-                instance: this.serializeValue(value.getBase()), // TODO: serializeLocal
+                instance: this.serializeValue(value.getBase()),
                 field: this.serializeFieldSignature(value.getFieldSignature()),
             };
         } else if (value instanceof ArkStaticFieldRef) {
@@ -606,14 +580,6 @@ export class JsonPrinter extends Printer {
             throw new Error('Unhandled Expr: ' + util.inspect(value, { showHidden: true, depth: null }));
         } else {
             throw new Error('Unhandled Value: ' + util.inspect(value, { showHidden: true, depth: null }));
-            // return {
-            //     _: 'UNKNOWN_VALUE',
-            //     // TODO: add simple 'value' field here to be able to see the "unknown" value
-            //     //       currently not possible due to circular structure
-            //     //       which cannot be serialized via `JSON.stringify`
-            //     // value,
-            //     value: value.toString(),
-            // };
         }
     }
 
@@ -656,10 +622,6 @@ export class JsonPrinter extends Printer {
             };
         } else {
             throw new Error('Unhandled Stmt: ' + util.inspect(stmt, { showHidden: true, depth: null }));
-            // return {
-            //     _: 'UNKNOWN_STMT',
-            //     stmt: stmt.toString(),
-            // };
         }
     }
 }
