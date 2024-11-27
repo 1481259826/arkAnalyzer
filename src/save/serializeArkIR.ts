@@ -25,11 +25,11 @@ import { Printer } from './Printer';
 import { PointerAnalysis } from '../callgraph/pointerAnalysis/PointerAnalysis';
 
 export function buildSceneFromSingleFile(filename: string, verbose: boolean = false): Scene {
-    if (verbose) console.log("Building scene...");
+    if (verbose) console.log('Building scene...');
     const filepath = path.resolve(filename);
     const projectDir = path.dirname(filepath);
     const config = new SceneConfig();
-    config.buildConfig("single-file", projectDir, []);
+    config.buildConfig('single-file', projectDir, []);
     config.getProjectFiles().push(filepath);
     const scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -37,7 +37,7 @@ export function buildSceneFromSingleFile(filename: string, verbose: boolean = fa
 }
 
 export function buildSceneFromProjectDir(inputDir: string, verbose: boolean = false): Scene {
-    if (verbose) console.log("Building scene...");
+    if (verbose) console.log('Building scene...');
     const config = new SceneConfig();
     config.buildFromProjectDir(inputDir);
     const scene = new Scene();
@@ -53,7 +53,7 @@ function dumpToJson(arkFile: ArkFile, output?: string): void {
     }
     fs.mkdirSync(path.dirname(filename), { recursive: true });
     let printer: Printer = new JsonPrinter(arkFile);
-    const fd = fs.openSync(filename, "w");
+    const fd = fs.openSync(filename, 'w');
     fs.writeFileSync(fd, printer.dump());
     fs.closeSync(fd);
 }
@@ -91,7 +91,7 @@ function serializeSingleTsFile(
     }
 
     if (options.inferTypes) {
-        if (options.verbose) console.log("Inferring types...");
+        if (options.verbose) console.log('Inferring types...');
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
@@ -122,7 +122,7 @@ function serializeSingleTsFile(
     let outPath: string;
     if (fs.existsSync(output) && fs.statSync(output).isDirectory()) {
         outPath = path.join(output, arkFile.getName() + '.json');
-    } else if (!fs.existsSync(output) && output.endsWith("/")) {
+    } else if (!fs.existsSync(output) && output.endsWith('/')) {
         outPath = path.join(output, arkFile.getName() + '.json');
     } else {
         outPath = output;
@@ -137,7 +137,7 @@ function serializeSingleTsFile(
         let outPath: string;
         if (fs.existsSync(output) && fs.statSync(output).isDirectory()) {
             outPath = path.join(output, arkFile.getName() + '.json');
-        } else if (!fs.existsSync(output) && output.endsWith("/")) {
+        } else if (!fs.existsSync(output) && output.endsWith('/')) {
             outPath = path.join(output, arkFile.getName() + '.json');
         } else {
             outPath = path.join(path.dirname(output), arkFile.getName() + '.json');
@@ -146,7 +146,7 @@ function serializeSingleTsFile(
         printer.dumpToJson(arkFile, outPath);
     }
 
-    if (options.verbose) console.log("All done!");
+    if (options.verbose) console.log('All done!');
 }
 
 function serializeMultipleTsFiles(
@@ -161,7 +161,7 @@ function serializeMultipleTsFiles(
         process.exit(1);
     }
 
-    if (options.verbose) console.log("Building scene...");
+    if (options.verbose) console.log('Building scene...');
     let config = new SceneConfig();
     config.buildFromProjectDir(inputDir);
     let scene = new Scene();
@@ -176,7 +176,7 @@ function serializeMultipleTsFiles(
     }
 
     if (options.inferTypes) {
-        if (options.verbose) console.log("Inferring types...");
+        if (options.verbose) console.log('Inferring types...');
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
@@ -192,7 +192,7 @@ function serializeMultipleTsFiles(
         files = scene.getFiles();
     }
 
-    if (options.verbose) console.log("Serializing...");
+    if (options.verbose) console.log('Serializing...');
     let printer = new PrinterBuilder();
     for (let f of files) {
         let filepath = f.getName();
@@ -201,7 +201,7 @@ function serializeMultipleTsFiles(
         printer.dumpToJson(f, outPath);
     }
 
-    if (options.verbose) console.log("All done!");
+    if (options.verbose) console.log('All done!');
 }
 
 function serializeTsProject(
@@ -219,7 +219,7 @@ function serializeTsProject(
     const scene = buildSceneFromProjectDir(inputDir, options.verbose);
 
     if (options.inferTypes) {
-        if (options.verbose) console.log("Inferring types...");
+        if (options.verbose) console.log('Inferring types...');
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
@@ -236,16 +236,16 @@ function serializeTsProject(
 
     serializeScene(scene, outDir, options.verbose);
 
-    if (options.verbose) console.log("All done!");
+    if (options.verbose) console.log('All done!');
 }
 
 function myParseInt(value: string, _previous: number): number {
     const parsedValue = parseInt(value, 10);
     if (isNaN(parsedValue)) {
-        throw new InvalidArgumentError("Must be a number.");
+        throw new InvalidArgumentError('Must be a number.');
     }
     if (parsedValue < 1) {
-        throw new InvalidArgumentError("Must be greater than 0.");
+        throw new InvalidArgumentError('Must be greater than 0.');
     }
     return parsedValue;
 }
