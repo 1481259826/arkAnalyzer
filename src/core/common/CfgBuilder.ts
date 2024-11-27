@@ -20,7 +20,7 @@ import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
 import { ArkMethod } from '../model/ArkMethod';
-import { ArkIRTransformer, DUMMY_INITIALIZER_STMT } from './ArkIRTransformer';
+import { ArkIRTransformer, DummyStmt } from './ArkIRTransformer';
 import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
@@ -1087,8 +1087,33 @@ export class CfgBuilder {
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
         }
         let currBlockId = this.blocks.length;
+        this.linkBasicBlocks(blockBuilderToCfgBlock);
+        this.rebuildBlocksInLoop(blockBuilderToCfgBlock, blocksContainLoopCondition, cfg);
+        this.rebuildBlocksInConditionalOperator(cfg);
+        for (const blockBuilder of this.blocks) {
+            if (blockBuilder.id === -1) {
+                blockBuilder.id = currBlockId++;
+                const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
+                block.setId(blockBuilder.id);
+            }
+        }
+        for (const block of cfg.getBlocks()) {
+            if (block.getId() === -1) {
+                block.setId(currBlockId++);
+            }
+        }
+        for (const stmt of cfg.getStmts()) {
+            stmt.setCfg(cfg);
+        }
 
-        // link blocks
+        return {
+            cfg: cfg,
+            locals: arkIRTransformer.getLocals(),
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
+        };
+    }
+
+    private linkBasicBlocks(blockBuilderToCfgBlock: Map<Block, BasicBlock>): void {
         for (const [blockBuilder, cfgBlock] of blockBuilderToCfgBlock) {
             for (const successorBlockBuilder of blockBuilder.nexts) {
                 if (!blockBuilderToCfgBlock.get(successorBlockBuilder)) {
@@ -1105,8 +1130,236 @@ export class CfgBuilder {
                 cfgBlock.addPredecessorBlock(predecessorBlock);
             }
         }
+    }
 
-        // put statements within loop in right position
+    private rebuildBlocksInConditionalOperator(cfg: Cfg): void {
+        for (const basicBlock of cfg.getBlocks()) {
+            const stmts = Array.from(basicBlock.getStmts());
+            const stmtCnt = stmts.length;
+            let endPos = -1;
+            for (let i = stmtCnt - 1; i >= 0; i--) {
+                const stmt = stmts[i];
+                if (stmt instanceof DummyStmt && stmt.toString()
+                    ?.startsWith(ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_END_STMT)) {
+                    endPos = i;
+                    break;
+                }
+            }
+            if (endPos === -1) {
+                continue;
+            }
+
+            const {
+                topBlock, bottomBlocks, allBlocks,
+            } = this.traverseAndRebuildConditionalOperator(stmts, 0, endPos);
+            basicBlock.getStmts().splice(topBlock.getStmts().length);
+            const succBlocksOfIfBlock = topBlock.getSuccessors();
+            succBlocksOfIfBlock.forEach((block: BasicBlock) => {
+                block.setPredecessorBlock(0, basicBlock);
+            });
+
+            const conditionalOperatorBlockSet = new Set<BasicBlock>(allBlocks);
+            this.adjustSuccessorOfConditionalOperator(basicBlock, succBlocksOfIfBlock, stmts, bottomBlocks, endPos,
+                conditionalOperatorBlockSet);
+            conditionalOperatorBlockSet.forEach((block: BasicBlock) => {
+                if (block !== topBlock) {
+                    cfg.addBlock(block);
+                }
+            });
+        }
+    }
+
+    private traverseAndRebuildConditionalOperator(stmts: Stmt[], beginPos: number, endPos: number): {
+        topBlock: BasicBlock,
+        bottomBlocks: BasicBlock[],
+        allBlocks: BasicBlock[],
+    } {
+        const { ifTruePos, ifFalsePos, conditionalOperatorEndPos } = this.findConditionalOperator(stmts, beginPos,
+            endPos);
+        if (ifTruePos === -1) {
+            const block = new BasicBlock();
+            block.getStmts().push(...stmts.slice(beginPos, endPos + 1));
+            return { topBlock: block, bottomBlocks: [], allBlocks: [block] };
+        }
+        const allBlocks: BasicBlock[] = [];
+        const topBlock = new BasicBlock();
+        topBlock.getStmts().push(...stmts.slice(beginPos, ifTruePos));
+        allBlocks.push(topBlock);
+        const {
+            topBlock: ifTrueTopBlock, bottomBlocks: ifTrueBottomBlocks, allBlocks: ifTrueAllBlocks,
+        } = this.traverseAndRebuildConditionalOperator(stmts, ifTruePos + 1, ifFalsePos - 1);
+        allBlocks.push(...ifTrueAllBlocks);
+        const {
+            topBlock: ifFalseTopBlock, bottomBlocks: ifFalseBottomBlocks, allBlocks: ifFalseAllBlocks,
+        } = this.traverseAndRebuildConditionalOperator(
+            stmts, ifFalsePos + 1, conditionalOperatorEndPos - 1);
+        allBlocks.push(...ifFalseAllBlocks);
+        topBlock.addSuccessorBlock(ifTrueTopBlock);
+        topBlock.addSuccessorBlock(ifFalseTopBlock);
+        ifTrueTopBlock.addPredecessorBlock(topBlock);
+        ifFalseTopBlock.addPredecessorBlock(topBlock);
+        let bottomBlocks: BasicBlock[] = [];
+        bottomBlocks.push(...(ifTrueBottomBlocks.length > 0 ? ifTrueBottomBlocks : [ifTrueTopBlock]));
+        bottomBlocks.push(...(ifFalseBottomBlocks.length > 0 ? ifFalseBottomBlocks : [ifFalseTopBlock]));
+        if (conditionalOperatorEndPos !== endPos) {
+            const bottomBlock = new BasicBlock();
+            bottomBlock.getStmts().push(...stmts.slice(conditionalOperatorEndPos + 1, endPos + 1));
+            bottomBlocks.forEach(block => {
+                block.addSuccessorBlock(bottomBlock);
+                bottomBlock.addPredecessorBlock(block);
+            });
+            bottomBlocks = [bottomBlock];
+            allBlocks.push(bottomBlock);
+        }
+        return { topBlock: topBlock, bottomBlocks: bottomBlocks, allBlocks: allBlocks };
+    }
+
+    private findConditionalOperator(stmts: Stmt[], beginPos: number, endPos: number): {
+        ifTruePos: number, ifFalsePos: number, conditionalOperatorEndPos: number,
+    } {
+        let ifTruePos = -1;
+        let ifFalsePos = -1;
+        let conditionalOperatorEndPos = -1;
+        let currConditionalOperatorNo = '';
+        for (let i = beginPos; i <= endPos; i++) {
+            const stmt = stmts[i];
+            if (stmt instanceof DummyStmt) {
+                if (stmt.toString()
+                    .startsWith(ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_IF_TRUE_STMT) && ifTruePos === -1) {
+                    ifTruePos = i;
+                    currConditionalOperatorNo =
+                        stmt.toString().replace(ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_IF_TRUE_STMT, '');
+                } else if (stmt.toString() === ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_IF_FALSE_STMT + currConditionalOperatorNo) {
+                    ifFalsePos = i;
+                } else if (stmt.toString() === ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_END_STMT + currConditionalOperatorNo) {
+                    conditionalOperatorEndPos = i;
+                }
+            }
+        }
+        return { ifTruePos: ifTruePos, ifFalsePos: ifFalsePos, conditionalOperatorEndPos: conditionalOperatorEndPos };
+    }
+
+    private adjustSuccessorOfConditionalOperator(currBasicBlock: BasicBlock, succBlocksOfIfBlock: BasicBlock[],
+                                                 stmts: Stmt[], bottomBlocks: BasicBlock[],
+                                                 conditionalOperatorEndPos: number,
+                                                 conditionalOperatorBlockSet: Set<BasicBlock>): void {
+        const oldSuccBlocks = Array.from(currBasicBlock.getSuccessors());
+        currBasicBlock.getSuccessors().splice(0, oldSuccBlocks.length, ...succBlocksOfIfBlock);
+        oldSuccBlocks.forEach((succBlock: BasicBlock) => {
+            const originalPreds = succBlock.getPredecessors();
+            for (let i = 0; i < originalPreds.length; i++) {
+                if (originalPreds[i] === currBasicBlock) {
+                    succBlock.getPredecessors().splice(i, 1);
+                    break;
+                }
+            }
+        });
+        if (conditionalOperatorEndPos === stmts.length - 1) {
+            oldSuccBlocks.forEach((oldSuccBlock: BasicBlock) => {
+                bottomBlocks.forEach((bottomBlock: BasicBlock) => {
+                    bottomBlock.addSuccessorBlock(oldSuccBlock);
+                    oldSuccBlock.addSuccessorBlock(bottomBlock);
+                });
+            });
+        } else {
+            const insertSuccBlock = new BasicBlock();
+            insertSuccBlock.getStmts().push(...stmts.slice(conditionalOperatorEndPos + 1, stmts.length));
+            oldSuccBlocks.forEach((oldSuccBlock: BasicBlock) => {
+                insertSuccBlock.addSuccessorBlock(oldSuccBlock);
+                oldSuccBlock.addPredecessorBlock(insertSuccBlock);
+            });
+            bottomBlocks.forEach((bottomBlock: BasicBlock) => {
+                bottomBlock.addSuccessorBlock(insertSuccBlock);
+                insertSuccBlock.addPredecessorBlock(bottomBlock);
+            });
+            conditionalOperatorBlockSet.add(insertSuccBlock);
+            this.removeUnnecessaryBlocksInConditionalOperator(insertSuccBlock, conditionalOperatorBlockSet);
+        }
+    }
+
+    private removeUnnecessaryBlocksInConditionalOperator(bottomBlock: BasicBlock, allBlocks: Set<BasicBlock>): void {
+        const firstStmtInBottom = bottomBlock.getStmts()[0];
+        if (!(firstStmtInBottom instanceof ArkAssignStmt)) {
+            return;
+        }
+
+        const targetValue = firstStmtInBottom.getLeftOp();
+        const tempResultValue = firstStmtInBottom.getRightOp();
+        if (!(targetValue instanceof Local && IRUtils.isTempLocal(tempResultValue))) {
+            return;
+        }
+        bottomBlock.remove(firstStmtInBottom);
+        const oldPredecessors = bottomBlock.getPredecessors();
+        const newPredecessors: BasicBlock[] = [];
+        for (const predecessor of oldPredecessors) {
+            newPredecessors.push(
+                ...this.replaceTempResultcursively(predecessor, targetValue as Local, tempResultValue as Local,
+                    allBlocks));
+        }
+        bottomBlock.getPredecessors().splice(0, oldPredecessors.length, ...newPredecessors);
+        newPredecessors.forEach((newPredecessor) => {
+            newPredecessor.setSuccessorBlock(0, bottomBlock);
+        });
+    }
+
+    private replaceTempResultcursively(currBottomBlock: BasicBlock, targetLocal: Local,
+                                              tempResultLocal: Local, allBlocks: Set<BasicBlock>): BasicBlock[] {
+        const stmts = currBottomBlock.getStmts();
+        const stmtsCnt = stmts.length;
+        let tempResultReassignStmt: Stmt | null = null;
+        for (let i = stmtsCnt - 1; i >= 0; i--) {
+            const stmt = stmts[i];
+            if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() === tempResultLocal) {
+                if (IRUtils.isTempLocal(
+                    stmt.getRightOp()) && this.isNewDefLocal(stmt.getRightOp() as Local, stmts, i)) {
+                    tempResultReassignStmt = stmt;
+                } else {
+                    stmt.setLeftOp(targetLocal);
+                }
+            }
+        }
+
+        let newBottomBlocks: BasicBlock[] = [];
+        if (tempResultReassignStmt) {
+            const oldPredecessors = currBottomBlock.getPredecessors();
+            const newPredecessors: BasicBlock[] = [];
+            const prevTempResultLocal = (tempResultReassignStmt as ArkAssignStmt).getRightOp() as Local;
+            for (const predecessor of oldPredecessors) {
+                newPredecessors.push(
+                    ...this.replaceTempResultcursively(predecessor, targetLocal, prevTempResultLocal, allBlocks));
+            }
+
+            currBottomBlock.remove(tempResultReassignStmt);
+            if (currBottomBlock.getStmts().length === 0) {
+                // remove this block
+                newBottomBlocks = newPredecessors;
+                allBlocks.delete(currBottomBlock);
+            } else {
+                currBottomBlock.getPredecessors().splice(0, oldPredecessors.length, ...newPredecessors);
+                newPredecessors.forEach((newPredecessor) => {
+                    newPredecessor.setSuccessorBlock(0, currBottomBlock);
+                });
+                newBottomBlocks = [currBottomBlock];
+            }
+        } else {
+            newBottomBlocks = [currBottomBlock];
+        }
+        return newBottomBlocks;
+    }
+
+    private isNewDefLocal(local: Local, stmts: Stmt[], pos: number): boolean {
+        for (let i = pos - 1; i >= 0; i++) {
+            const stmt = stmts[i];
+            if (stmt instanceof ArkAssignStmt && stmt.getLeftOp() === local) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private rebuildBlocksInLoop(blockBuilderToCfgBlock: Map<Block, BasicBlock>,
+                                blocksContainLoopCondition: Set<Block>,
+                                cfg: Cfg): void {
         for (const blockBuilder of blocksContainLoopCondition) {
             if (!blockBuilderToCfgBlock.get(blockBuilder)) {
                 continue;
@@ -1115,108 +1368,56 @@ export class CfgBuilder {
             const blockId = block.getId();
             const stmts = block.getStmts();
             const stmtsCnt = stmts.length;
-            let ifStmtIdx = -1;
-            let iteratorNextStmtIdx = -1;
-            let dummyInitializerStmtIdx = -1;
-            for (let i = 0; i < stmtsCnt; i++) {
-                const stmt = stmts[i];
-                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof AbstractInvokeExpr) {
-                    const invokeExpr = stmt.getRightOp() as AbstractInvokeExpr;
-                    if (invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() === Builtin.ITERATOR_NEXT) {
-                        iteratorNextStmtIdx = i;
-                        continue;
-                    }
-                }
-                if (stmt.toString() === DUMMY_INITIALIZER_STMT) {
-                    dummyInitializerStmtIdx = i;
-                    continue;
-                }
-                if (stmt instanceof ArkIfStmt) {
-                    ifStmtIdx = i;
-                    break;
-                }
-            }
-
+            const { ifStmtIdx, iteratorNextStmtIdx, dummyInitializerStmtIdx } = this.findIteratorIdx(stmts);
             if (iteratorNextStmtIdx !== -1 || dummyInitializerStmtIdx !== -1) {
-                // put statements into block before condition
                 const lastStmtIdxBeforeCondition = iteratorNextStmtIdx !== -1 ? iteratorNextStmtIdx : dummyInitializerStmtIdx;
                 const stmtsInsertBeforeCondition = stmts.slice(0, lastStmtIdxBeforeCondition);
 
-                let prevBlockBuilderContainsLoop = false;
-                for (const prevBlockBuilder of blockBuilder.lasts) {
-                    if (prevBlockBuilder.id < blockId && blocksContainLoopCondition.has(prevBlockBuilder)) {
-                        prevBlockBuilderContainsLoop = true;
-                        break;
-                    }
-                }
-
+                let prevBlockBuilderContainsLoop = this.doesPrevBlockBuilderContainLoop(blockBuilder, blockId,
+                    blocksContainLoopCondition);
                 if (prevBlockBuilderContainsLoop) {
                     // should create an extra block when previous block contains loop condition
-                    this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder, stmtsInsertBeforeCondition, false, cfg);
+                    this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder,
+                        stmtsInsertBeforeCondition, false, cfg);
                 } else {
                     const blockBuilderBeforeCondition = blockBuilder.lasts[0];
                     const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
                     blockBeforeCondition?.getStmts().push(...stmtsInsertBeforeCondition);
                 }
-
                 if (dummyInitializerStmtIdx !== -1 && ifStmtIdx !== stmtsCnt - 1) {
                     // put incrementor statements into block which reenters condition
-                    const stmtsReenterCondition = stmts.slice(ifStmtIdx + 1);
-                    const blockBuildersReenterCondition: Block[] = [];
-                    for (const prevBlockBuilder of blockBuilder.lasts) {
-                        const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
-                        if (prevBlock.getId() > blockId) {
-                            blockBuildersReenterCondition.push(prevBlockBuilder);
-                        }
-                    }
-
-                    if (blockBuildersReenterCondition.length > 1 || blocksContainLoopCondition.has(blockBuildersReenterCondition[0])) {
-                        // put incrementor statements into an extra block
-                        this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder, stmtsReenterCondition, true, cfg);
-                    } else {
-                        // put incrementor statements into prev reenter block
-                        const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuildersReenterCondition[0]) as BasicBlock;
-                        blockReenterCondition?.getStmts().push(...stmtsReenterCondition);
-                    }
+                    this.adjustIncrementorStmts(stmts, ifStmtIdx, blockBuilder, blockId, blockBuilderToCfgBlock,
+                        blocksContainLoopCondition, cfg);
                 } else if (iteratorNextStmtIdx !== -1) {
                     // put statements which get value of iterator into block after condition
                     const blockBuilderAfterCondition = blockBuilder.nexts[0];
                     const blockAfterCondition = blockBuilderToCfgBlock.get(blockBuilderAfterCondition) as BasicBlock;
-
                     const stmtsAfterCondition = stmts.slice(ifStmtIdx + 1);
                     blockAfterCondition?.getStmts().splice(0, 0, ...stmtsAfterCondition);
                 }
-
                 // remove statements which should not in condition
                 const firstStmtIdxInCondition = iteratorNextStmtIdx !== -1 ? iteratorNextStmtIdx : dummyInitializerStmtIdx + 1;
                 stmts.splice(0, firstStmtIdxInCondition);
                 stmts.splice(ifStmtIdx - firstStmtIdxInCondition + 1);
             }
         }
+    }
 
-        for (const blockBuilder of this.blocks) {
-            if (blockBuilder.id === -1) {
-                blockBuilder.id = currBlockId++;
-                const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
-                block.setId(blockBuilder.id);
+    private doesPrevBlockBuilderContainLoop(currBlockBuilder: Block, currBlockId: number,
+                                            blocksContainLoopCondition: Set<Block>): boolean {
+        let prevBlockBuilderContainsLoop = false;
+        for (const prevBlockBuilder of currBlockBuilder.lasts) {
+            if (prevBlockBuilder.id < currBlockId && blocksContainLoopCondition.has(prevBlockBuilder)) {
+                prevBlockBuilderContainsLoop = true;
+                break;
             }
         }
-        for (const stmt of cfg.getStmts()) {
-            stmt.setCfg(cfg);
-        }
-
-        return {
-            cfg: cfg,
-            locals: arkIRTransformer.getLocals(),
-            aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
-        };
+        return prevBlockBuilderContainsLoop;
     }
 
     private insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock: Map<Block, BasicBlock>,
-        conditionBlockBuilder: Block,
-        stmtsInsertBeforeCondition: Stmt[],
-        collectReenter: Boolean,
-        cfg: Cfg): void {
+                                              conditionBlockBuilder: Block, stmtsInsertBeforeCondition: Stmt[],
+                                              collectReenter: Boolean, cfg: Cfg): void {
         const blockId = conditionBlockBuilder.id;
         const block = blockBuilderToCfgBlock.get(conditionBlockBuilder) as BasicBlock;
         const blockBuildersBeforeCondition: Block[] = [];
@@ -1280,5 +1481,63 @@ export class CfgBuilder {
         this.blocks.push(blockBuilderInsertBeforeCondition);
         cfg.addBlock(blockInsertBeforeCondition);
         blockBuilderToCfgBlock.set(blockBuilderInsertBeforeCondition, blockInsertBeforeCondition);
+    }
+
+    private findIteratorIdx(stmts: Stmt[]): {
+        ifStmtIdx: number, iteratorNextStmtIdx: number, dummyInitializerStmtIdx: number
+    } {
+        let ifStmtIdx = -1;
+        let iteratorNextStmtIdx = -1;
+        let dummyInitializerStmtIdx = -1;
+        const stmtsCnt = stmts.length;
+        for (let i = 0; i < stmtsCnt; i++) {
+            const stmt = stmts[i];
+            if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof AbstractInvokeExpr) {
+                const invokeExpr = stmt.getRightOp() as AbstractInvokeExpr;
+                if (invokeExpr.getMethodSignature().getMethodSubSignature()
+                    .getMethodName() === Builtin.ITERATOR_NEXT) {
+                    iteratorNextStmtIdx = i;
+                    continue;
+                }
+            }
+            if (stmt.toString() === ArkIRTransformer.DUMMY_LOOP_INITIALIZER_STMT) {
+                dummyInitializerStmtIdx = i;
+                continue;
+            }
+            if (stmt instanceof ArkIfStmt) {
+                ifStmtIdx = i;
+                break;
+            }
+        }
+        return {
+            ifStmtIdx: ifStmtIdx,
+            iteratorNextStmtIdx: iteratorNextStmtIdx,
+            dummyInitializerStmtIdx: dummyInitializerStmtIdx,
+        };
+    }
+
+    private adjustIncrementorStmts(stmts: Stmt[], ifStmtIdx: number, currBlockBuilder: Block, currBlockId: number,
+                                   blockBuilderToCfgBlock: Map<Block, BasicBlock>,
+                                   blocksContainLoopCondition: Set<Block>, cfg: Cfg): void {
+        const stmtsReenterCondition = stmts.slice(ifStmtIdx + 1);
+        const blockBuildersReenterCondition: Block[] = [];
+        for (const prevBlockBuilder of currBlockBuilder.lasts) {
+            const prevBlock = blockBuilderToCfgBlock.get(prevBlockBuilder) as BasicBlock;
+            if (prevBlock.getId() > currBlockId) {
+                blockBuildersReenterCondition.push(prevBlockBuilder);
+            }
+        }
+
+        if (blockBuildersReenterCondition.length > 1 || blocksContainLoopCondition.has(
+            blockBuildersReenterCondition[0])) {
+            // put incrementor statements into an extra block
+            this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, currBlockBuilder,
+                stmtsReenterCondition, true, cfg);
+        } else {
+            // put incrementor statements into prev reenter block
+            const blockReenterCondition = blockBuilderToCfgBlock.get(
+                blockBuildersReenterCondition[0]) as BasicBlock;
+            blockReenterCondition?.getStmts().push(...stmtsReenterCondition);
+        }
     }
 }

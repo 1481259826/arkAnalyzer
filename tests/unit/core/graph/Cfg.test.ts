@@ -22,10 +22,19 @@ import {
     Cfg,
     Local,
     RelationalBinaryOperator,
+    Scene,
+    SceneConfig,
     Stmt,
     ValueUtil,
 } from '../../../../src/index';
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
+import path from 'path';
+import {
+    CONDITIONAL_OPERATOR_EXPECT_CASE1,
+    CONDITIONAL_OPERATOR_EXPECT_CASE2,
+    CONDITIONAL_OPERATOR_EXPECT_CASE3,
+    CONDITIONAL_OPERATOR_EXPECT_CASE4, CONDITIONAL_OPERATOR_EXPECT_CASE5,
+} from '../../../resources/cfg/conditionalOperator/ConditionalOperatorExpect';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
@@ -96,4 +105,69 @@ describe('CfgTest', () => {
         let err = cfg.validate();
         expect(err.errCode).eq(ArkErrorCode.OK);
     });
+
+    it('case2: conditional operator', () => {
+        const scene = buildScene('conditionalOperator');
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case1', CONDITIONAL_OPERATOR_EXPECT_CASE1.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case2', CONDITIONAL_OPERATOR_EXPECT_CASE2.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case3', CONDITIONAL_OPERATOR_EXPECT_CASE3.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case4', CONDITIONAL_OPERATOR_EXPECT_CASE4.blocks);
+        testBlocks(scene, 'ConditionalOperatorSample.ts', 'case5', CONDITIONAL_OPERATOR_EXPECT_CASE5.blocks);
+    });
 });
+
+const BASE_DIR = 'tests/resources/cfg';
+
+function buildScene(folderName: string): Scene {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(BASE_DIR, folderName));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    return scene;
+}
+
+function testBlocks(scene: Scene, filePath: string, methodName: string, expectBlocks: any[]): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkMethod = arkFile?.getDefaultClass().getMethods()
+        .find((method) => (method.getName() === methodName));
+    const blocks = arkMethod?.getCfg()?.getBlocks();
+    if (!blocks) {
+        assert.isDefined(blocks);
+        return;
+    }
+    assertBlocksEqual(blocks, expectBlocks);
+}
+
+function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]): void {
+    expect(blocks.size).toEqual(expectBlocks.length);
+
+    const blockMap = new Map<number, BasicBlock>();
+    for (const block of blocks) {
+        blockMap.set(block.getId(), block);
+    }
+    for (let i = 0; i < expectBlocks.length; i++) {
+        const block = blockMap.get(i);
+        if (!block) {
+            assert.isDefined(block);
+            return;
+        }
+
+        const stmts: string[] = [];
+        for (const stmt of block.getStmts()) {
+            stmts.push(stmt.toString());
+        }
+        expect(stmts).toEqual(expectBlocks[i].stmts);
+
+        const preds: number[] = [];
+        block.getPredecessors().forEach(predBlock => {
+            preds.push(predBlock.getId());
+        });
+        expect(preds).toEqual(expectBlocks[i].preds);
+
+        const succes: number[] = [];
+        block.getSuccessors().forEach(succBlock => {
+            succes.push(succBlock.getId());
+        });
+        expect(succes).toEqual(expectBlocks[i].succes);
+    }
+}
