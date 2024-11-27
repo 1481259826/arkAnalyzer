@@ -193,17 +193,16 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     public getSuperClass(): ArkClass | null {
         if (this.superClass === undefined) {
             const type = TypeInference.inferUnclearReferenceType(this.superClassName, this);
-            if (type instanceof ClassType) {
-                let superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature());
-                if (superClass) {
-                    superClass.addExtendedClass(this);
-                    this.superClass = superClass;
-                    const realGenericTypes = type.getRealGenericTypes();
-                    if (realGenericTypes) {
-                        this.realTypes = realGenericTypes;
-                    }
-                    return this.superClass;
+            let superClass;
+            if (type instanceof ClassType &&
+                (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
+                superClass.addExtendedClass(this);
+                this.superClass = superClass;
+                const realGenericTypes = type.getRealGenericTypes();
+                if (realGenericTypes) {
+                    this.realTypes = realGenericTypes;
                 }
+                return this.superClass;
             }
             this.superClass = null;
         }
@@ -281,7 +280,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         });
     }
 
-    public getRealTypes() {
+    public getRealTypes(): Type[] | undefined {
         return this.realTypes;
     }
 

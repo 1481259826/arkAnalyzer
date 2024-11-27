@@ -28,7 +28,8 @@ import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Cons
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
-import { CALL_BACK } from "../common/EtsConst";
+import { CALL_BACK } from '../common/EtsConst';
+import { Scene } from '../../Scene';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -578,6 +579,28 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             }
             return args.length >= min && args.length <= max;
         });
+
+        function match(paramType: Type, argType: Type, scene: Scene) {
+            if (paramType instanceof UnionType) {
+                let matched = false;
+                for (const e of paramType.getTypes()) {
+                    if (argType.constructor === e.constructor) {
+                        matched = true;
+                        break;
+                    }
+                }
+                return matched;
+            } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
+                paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
+                return true;
+            } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
+                scene.getClass(argType.getClassSignature())?.getCategory()) {
+                return true;
+            }
+            return argType.constructor === paramType.constructor;
+        }
+
+        const scene = this.getDeclaringArkFile().getScene();
         return signatures?.find(p => {
             const parameters = p.getMethodSubSignature().getParameters();
             for (let i = 0; i < parameters.length; i++) {
@@ -586,32 +609,11 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 }
                 const paramType = parameters[i].getType();
                 const argType = args[i];
-                if (paramType instanceof UnionType) {
-                    let matched = false;
-                    for (const e of paramType.getTypes()) {
-                        if (argType.constructor === e.constructor) {
-                            matched = true;
-                            break;
-                        }
-                    }
-                    if (matched) {
-                        continue;
-                    } else {
+                const isMatched = match(paramType, argType, scene);
+                if (!isMatched) {
                         return false;
                     }
                 }
-                if (argType instanceof FunctionType && paramType instanceof ClassType &&
-                    paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
-                    continue;
-                }
-                if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
-                    this.getDeclaringArkFile().getScene().getClass(argType.getClassSignature())?.getCategory()) {
-                    continue;
-                }
-                if (argType.constructor !== paramType.constructor) {
-                    return false;
-                }
-            }
             return true;
         }) ?? signatures?.[0] ?? this.getSignature();
     }

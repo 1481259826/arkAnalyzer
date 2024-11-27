@@ -402,18 +402,6 @@ export class ModelUtils {
             });
         }
     }
-
-    public static getArkClassFromSdkArkFilesByName(arkClass:ArkClass,name:string):ArkClass|null{
-        const sdkArkFiles = arkClass.getDeclaringArkFile().getScene().getSdkArkFiles();
-        for (const sdkFile of sdkArkFiles) {
-            for (const arkClass of sdkFile.getClasses()) {
-                if(arkClass.getName()===name){
-                    return arkClass;
-                }
-            }
-        }
-        return null;
-    }
 }
 
 

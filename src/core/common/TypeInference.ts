@@ -225,31 +225,9 @@ export class TypeInference {
      * infer type for fieldRefs in stmt.
      */
     private static resolveFieldRefsInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
-        function processRef(use: AbstractRef | ArkInstanceFieldRef) {
-            const fieldRef = use.inferType(arkMethod);
-            if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
-                if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
-                    stmt.setRightOp(fieldRef);
-                } else {
-                    stmt.replaceUse(use, fieldRef);
-                    stmt.setRightOp(stmt.getRightOp());
-                }
-            } else if (use instanceof ArkInstanceFieldRef && fieldRef instanceof ArkArrayRef && stmt instanceof ArkAssignStmt) {
-                const index = fieldRef.getIndex();
-                if (index instanceof Constant && index.getType() instanceof StringType) {
-                    const local = arkMethod?.getBody()?.getLocals().get(index.getValue());
-                    if (local) {
-                        fieldRef.setIndex(local);
-                    }
-                }
-                stmt.replaceUse(use, fieldRef);
-                stmt.setRightOp(stmt.getRightOp());
-            }
-        }
-
         for (const use of stmt.getUses()) {
             if (use instanceof AbstractRef) {
-                processRef(use);
+                this.processRef(use, stmt, arkMethod);
             }
         }
         const stmtDef = stmt.getDef();
@@ -258,6 +236,28 @@ export class TypeInference {
             if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
                 stmt.setLeftOp(fieldRef);
             }
+        }
+    }
+
+    private static processRef(use: AbstractRef | ArkInstanceFieldRef, stmt: Stmt, arkMethod: ArkMethod): void {
+        const fieldRef = use.inferType(arkMethod);
+        if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
+            if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
+                stmt.setRightOp(fieldRef);
+            } else {
+                stmt.replaceUse(use, fieldRef);
+                stmt.setRightOp(stmt.getRightOp());
+            }
+        } else if (use instanceof ArkInstanceFieldRef && fieldRef instanceof ArkArrayRef && stmt instanceof ArkAssignStmt) {
+            const index = fieldRef.getIndex();
+            if (index instanceof Constant && index.getType() instanceof StringType) {
+                const local = arkMethod?.getBody()?.getLocals().get(index.getValue());
+                if (local) {
+                    fieldRef.setIndex(local);
+                }
+            }
+            stmt.replaceUse(use, fieldRef);
+            stmt.setRightOp(stmt.getRightOp());
         }
     }
 

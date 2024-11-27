@@ -230,8 +230,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         return this.base.toString() + '.<' + this.getFieldSignature() + '>';
     }
 
-    public inferType(arkMethod: ArkMethod): AbstractRef {
-        const arkClass = arkMethod.getDeclaringArkClass();
+    private getBaseType(arkClass: ArkClass): Type | null {
         let baseType: Type | null = this.base.getType();
         if (this.base instanceof Local && baseType instanceof UnknownType) {
             baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
@@ -244,16 +243,25 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         }
         if (!baseType) {
             logger.warn('infer field ref base type fail: ' + this.toString());
-            return this;
+            return null;
         }
         if (this.base instanceof Local) {
             if (this.base.getName() === THIS_NAME && arkClass.isAnonymousClass()) {
-                return this;
+                return null;
             }
             this.base.setType(baseType);
         }
         if (baseType instanceof AliasType) {
             baseType = baseType.getOriginalType();
+        }
+        return baseType;
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractRef {
+        const arkClass = arkMethod.getDeclaringArkClass();
+        const baseType: Type | null = this.getBaseType(arkClass);
+        if (!baseType) {
+            return this;
         }
         if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
             return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));

@@ -19,9 +19,9 @@ import { SceneConfig } from '../../src/Config';
 import { Scene } from '../../src/Scene';
 import { ClassType } from '../../src';
 
-describe("Promise Test", () => {
+describe('Promise Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, '../resources/Promise'))
+    config.buildFromProjectDir(path.join(__dirname, '../resources/Promise'));
     config.getSdksObj().push({ moduleName: '', name: 'es2015', path: path.join(__dirname, '../resources/Sdk') });
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
