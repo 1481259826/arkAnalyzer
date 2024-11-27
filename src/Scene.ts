@@ -78,7 +78,8 @@ export class Scene {
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
     private options!: SceneOptions;
 
-    constructor() {}
+    constructor() {
+    }
 
     public getOptions(): SceneOptions {
         return this.options;
@@ -109,31 +110,31 @@ export class Scene {
     }
 
     /**
-     * Build scene object according to the {@link SceneConfig}. This API implements 3 functions. 
-     * First is to build scene object from {@link SceneConfig}, second is to generate {@link ArkFile}s, 
+     * Build scene object according to the {@link SceneConfig}. This API implements 3 functions.
+     * First is to build scene object from {@link SceneConfig}, second is to generate {@link ArkFile}s,
      * and the last is to collect project import infomation.
      * @param sceneConfig - a sceneConfig object, which is usally defined by user or Json file.
      * @example
      * 1. Build Scene object from scene config
 
-    ```typescript
-    // build config
-    const projectDir = ... ...;
-    const sceneConfig = new SceneConfig();
-    sceneConfig.buildFromProjectDir(projectDir);
+     ```typescript
+     // build config
+     const projectDir = ... ...;
+     const sceneConfig = new SceneConfig();
+     sceneConfig.buildFromProjectDir(projectDir);
 
-    // build scene
-    const scene = new Scene();
-    scene.buildSceneFromProjectDir(sceneConfig);
-    ```
-    */
+     // build scene
+     const scene = new Scene();
+     scene.buildSceneFromProjectDir(sceneConfig);
+     ```
+     */
     public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
         this.buildBasicInfo(sceneConfig);
         this.genArkFiles();
     }
 
     /**
-     * Set the basic information of the scene using a config, 
+     * Set the basic information of the scene using a config,
      * such as the project's name, real path and files.
      * @param sceneConfig - the config used to set the basic information of scene.
      */
@@ -185,6 +186,10 @@ export class Scene {
                     this.moduleSdkMap.set(sdk.moduleName, [sdk]);
                 }
             }
+        });
+
+        this.sdkArkFilesMap.forEach(file => {
+            this.inferFile(file);
         });
     }
 
@@ -239,6 +244,7 @@ export class Scene {
             ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
             const fileSig = arkFile.getFileSignature().toMapKey();
             this.sdkArkFilesMap.set(fileSig, arkFile);
+            ModelUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
         });
     }
 
@@ -340,23 +346,23 @@ export class Scene {
     }
 
     /**
-     * Returns the file based on its signature. 
+     * Returns the file based on its signature.
      * If no file can be found according to the input signature, **null** will be returned.
-     * A typical {@link ArkFile} contains: file's name (i.e., its relative path), project's name, 
+     * A typical {@link ArkFile} contains: file's name (i.e., its relative path), project's name,
      * project's dir, file's signature etc.
      * @param fileSignature - the signature of file.
      * @returns a file defined by ArkAnalyzer. **null** will be returned if no file could be found.
      * @example
      * 1. get ArkFile based on file signature.
 
-    ```typescript
-    if (...) {
-        const fromSignature = new FileSignature();
-        fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
-        fromSignature.setFileName(fileName);
-        return scene.getFile(fromSignature);
-    }
-    ```
+     ```typescript
+     if (...) {
+     const fromSignature = new FileSignature();
+     fromSignature.setProjectName(im.getDeclaringArkFile().getProjectName());
+     fromSignature.setFileName(fileName);
+     return scene.getFile(fromSignature);
+     }
+     ```
      */
     public getFile(fileSignature: FileSignature): ArkFile | null {
         if (this.projectName === fileSignature.getProjectName()) {
@@ -422,6 +428,10 @@ export class Scene {
             return this.getNamespacesMap().get(namespaceSignature.toMapKey()) || null;
         } else {
             const arkFile = this.getFile(namespaceSignature.getDeclaringFileSignature());
+            const parentNs = namespaceSignature.getDeclaringNamespaceSignature();
+            if (parentNs) {
+                return arkFile?.getNamespace(parentNs)?.getNamespace(namespaceSignature) || null;
+            }
             return arkFile?.getNamespace(namespaceSignature) || null;
         }
     }
@@ -501,7 +511,7 @@ export class Scene {
     }
 
     /**
-     * Returns the method associated with the method signature. 
+     * Returns the method associated with the method signature.
      * If no method is associated with this signature, **null** will be returned.
      * An {@link ArkMethod} includes:
      * - Name: the **string** name of method.
@@ -511,19 +521,19 @@ export class Scene {
      * - Parameters & Types of parameters: the parameters of method and their types.
      * - View tree: the view tree of the method.
      * - ...
-     * 
+     *
      * @param methodSignature - the signature of method.
      * @returns The method associated with the method signature.
      * @example
      * 1. get method from getMethod.
 
-    ```typescript
-    const methodSignatures = this.CHA.resolveCall(xxx, yyy);
-    for (const methodSignature of methodSignatures) {
-        const method = this.scene.getMethod(methodSignature);
-        ... ...
-    }
-    ```
+     ```typescript
+     const methodSignatures = this.CHA.resolveCall(xxx, yyy);
+     for (const methodSignature of methodSignatures) {
+     const method = this.scene.getMethod(methodSignature);
+     ... ...
+     }
+     ```
      */
     public getMethods(refresh?: boolean): ArkMethod[] {
         return Array.from(this.getMethodsMap(refresh).values());
@@ -590,48 +600,48 @@ export class Scene {
     }
 
     /**
-     * Infer type for each non-default method. It infers the type of each field/local/reference. 
+     * Infer type for each non-default method. It infers the type of each field/local/reference.
      * For example, the statement `let b = 5;`, the type of local `b` is `NumberType`; and for the statement `let s = 'hello';`, the type of local `s` is `StringType`. The detailed types are defined in the Type.ts file.
      * @example
      * 1. Infer the type of each class field and method field.
 
-    ```typescript
-    const scene = new Scene();
-    scene.buildSceneFromProjectDir(sceneConfig);
-    scene.inferTypes();
-    ```
+     ```typescript
+     const scene = new Scene();
+     scene.buildSceneFromProjectDir(sceneConfig);
+     scene.inferTypes();
+     ```
      */
     public inferTypes() {
-        this.sdkArkFilesMap.forEach(file => {
-            ModelUtils.buildGlobalMap(file, this.sdkGlobalMap);
-        });
-        this.filesMap.forEach(file => {
-            ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
-                TypeInference.inferGenericType(arkClass.getGenericsTypes(),arkClass);
-                arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
-                const defaultArkMethod = arkClass.getDefaultArkMethod();
-                if (defaultArkMethod) {
-                    TypeInference.inferTypeInMethod(defaultArkMethod);
-                }
-                arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
-            });
-        });
+        this.filesMap.forEach(file => this.inferFile(file));
+        this.getClasses(true);
         this.getMethodsMap(true);
     }
 
+    private inferFile(file: ArkFile): void {
+        ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
+            TypeInference.inferGenericType(arkClass.getGenericsTypes(), arkClass);
+            const defaultArkMethod = arkClass.getDefaultArkMethod();
+            if (defaultArkMethod) {
+                TypeInference.inferTypeInMethod(defaultArkMethod);
+            }
+            arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
+            arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
+        });
+    }
+
     /**
-     * Iterate all assignment statements in methods, 
-     * and set the type of left operand based on the type of right operand 
+     * Iterate all assignment statements in methods,
+     * and set the type of left operand based on the type of right operand
      * if the left operand is a local variable as well as an unknown.
      * @Deprecated
      * @example
      * 1. Infer simple type when scene building.
 
-    ```typescript
-    let scene = new Scene();
-    scene.buildSceneFromProjectDir(config);
-    scene.inferSimpleTypes();
-    ```
+     ```typescript
+     let scene = new Scene();
+     scene.buildSceneFromProjectDir(config);
+     scene.inferSimpleTypes();
+     ```
      */
     public inferSimpleTypes() {
 

@@ -89,20 +89,20 @@ function parseDecorator(node: ts.Decorator): Decorator | undefined {
     let expression = node.expression;
     if (ts.isIdentifier(expression)) {
         return new Decorator(expression.text);
-    } 
+    }
     if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) {
         return undefined;
     }
- 
+
     let decorator = new Decorator(expression.expression.text);
-    
+
     if (expression.arguments.length > 0) {
         const arg = expression.arguments[0];
         if (ts.isArrowFunction(arg) && ts.isIdentifier(arg.body)) {
             decorator.setParam(arg.body.text);
-        }   
+        }
     }
-    
+
     return decorator;
 }
 
@@ -122,7 +122,17 @@ export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClaus
     let heritageClausesMap: Map<string, string> = new Map<string, string>();
     heritageClauses?.forEach((heritageClause) => {
         heritageClause.types.forEach((type) => {
-            heritageClausesMap.set(type.getText(), ts.SyntaxKind[heritageClause.token]);
+            let heritageClauseName: string = '';
+            if (type.typeArguments) {
+                heritageClauseName = type.getText();
+            } else if (ts.isIdentifier(type.expression)) {
+                heritageClauseName = (type.expression as ts.Identifier).text;
+            } else if (ts.isPropertyAccessExpression(type.expression)) {
+                heritageClauseName = handlePropertyAccessExpression(type.expression);
+            } else {
+                heritageClauseName = type.getText();
+            }
+            heritageClausesMap.set(heritageClauseName, ts.SyntaxKind[heritageClause.token]);
         });
     });
     return heritageClausesMap;

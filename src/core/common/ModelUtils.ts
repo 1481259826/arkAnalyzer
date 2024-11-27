@@ -336,14 +336,15 @@ export class ModelUtils {
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
-        let arkMethod = arkClass.getMethodWithName(name) ?? arkClass.getStaticMethodWithName(name)
-            ?? arkClass.getSuperClass()?.getMethodWithName(name);
-        if (arkMethod) {
-            return arkMethod;
-        }
-        const arkField = arkClass.getFieldWithName(name) ?? arkClass.getStaticFieldWithName(name);
-        if (arkField) {
-            return arkField;
+        let property;
+        let currentClass: ArkClass | null = arkClass;
+        do {
+            property = currentClass.getMethodWithName(name) ?? currentClass.getStaticMethodWithName(name)
+                ?? currentClass.getFieldWithName(name) ?? currentClass.getStaticFieldWithName(name);
+            currentClass = currentClass.getSuperClass();
+        } while (!property && currentClass);
+        if (property) {
+            return property;
         }
         if (arkClass.isDefaultArkClass()) {
             return findArkExport(arkClass.getDeclaringArkFile().getExportInfoBy(name));
@@ -354,8 +355,10 @@ export class ModelUtils {
     public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
         if (file.getFilePath().includes(COMPONENT_PATH) || file.getFilePath().includes(API_INTERNAL)) {
             this.getAllClassesInFile(file).forEach(cls => {
-                if (!cls.isAnonymousClass()) {
+                if (!cls.isAnonymousClass() && !cls.isDefaultArkClass()) {
                     globalMap.set(cls.getName(), cls);
+                }
+                if (cls.isDefaultArkClass()) {
                     cls.getMethods().forEach(mtd => {
                         if (!mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod()) {
                             globalMap.set(mtd.getName(), mtd);
@@ -399,7 +402,6 @@ export class ModelUtils {
             });
         }
     }
-
 }
 
 
@@ -465,7 +467,7 @@ export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
     return exportInfo;
 }
 
-function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
+export function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | null {
     if (!exportInfo) {
         return null;
     }

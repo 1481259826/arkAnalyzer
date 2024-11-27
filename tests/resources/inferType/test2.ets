@@ -14,8 +14,12 @@
  */
 import type { SCBUnlockTransitionController } from './test1';
 import { SCBTransitionManager } from './test1';
+import { media } from '@kit.MediaKit';
+import { collections } from '@kit.ArkTS';
 
 export class SCBSceneSessionManager {
+  private property1:collections.Array<number> = new collections.Array();
+
   private unLockTransitionController: SCBUnlockTransitionController = {
     name: '123',
     onLock: this.onLockReceived.bind(this),
@@ -41,4 +45,14 @@ export class SCBSceneSessionManager {
   private onUnLockReceived(): void {
     return;
   }
+}
+
+function demoCallBack(){
+    media.createAVPlayer((error:BusinessError, player: media.AVPlayer) =>{
+        player.on('audioInterrupt',() => console.error('createAVPlayer audioInterrupt'));
+    })
+
+    media.createAVPlayer().then((player: media.AVPlayer) =>{
+        player.on('audioInterrupt',() => console.error('createAVPlayer audioInterrupt2'));
+    }).catch((error:BusinessError)=>{console.error('createAVPlayer error')})
 }

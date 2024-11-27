@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ClassType, GenericType } from '../base/Type';
+import { ClassType, GenericType, Type } from '../base/Type';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkField } from './ArkField';
 import { ArkFile } from './ArkFile';
@@ -53,7 +53,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private superClass?: ArkClass | null;
     private implementedInterfaceNames: string[] = [];
     private genericsTypes?: GenericType[];
-
+    private realTypes?: Type[];
     private defaultMethod: ArkMethod | null = null;
 
     // name to model
@@ -133,9 +133,9 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      * @example
      * 1. Get the {@link ArkFile} which the ArkClass is in.
 
-    ```typescript
-    const arkFile = arkClass.getDeclaringArkFile();
-    ```
+     ```typescript
+     const arkFile = arkClass.getDeclaringArkFile();
+     ```
      */
     public getDeclaringArkFile() {
         return this.declaringArkFile;
@@ -166,7 +166,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     /**
-     * Returns the signature of current class (i.e., {@link ClassSignature}). 
+     * Returns the signature of current class (i.e., {@link ClassSignature}).
      * The {@link ClassSignature} can uniquely identify a class, according to which we can find the class from the scene.
      * @returns The class signature.
      */
@@ -193,13 +193,16 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     public getSuperClass(): ArkClass | null {
         if (this.superClass === undefined) {
             const type = TypeInference.inferUnclearReferenceType(this.superClassName, this);
-            if (type instanceof ClassType) {
-                let superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature());
-                if (superClass) {
-                    superClass.addExtendedClass(this);
-                    this.superClass = superClass;
-                    return this.superClass;
+            let superClass;
+            if (type instanceof ClassType &&
+                (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
+                superClass.addExtendedClass(this);
+                this.superClass = superClass;
+                const realGenericTypes = type.getRealGenericTypes();
+                if (realGenericTypes) {
+                    this.realTypes = realGenericTypes;
                 }
+                return this.superClass;
             }
             this.superClass = null;
         }
@@ -231,7 +234,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     /**
-     * Get the field according to its field signature. 
+     * Get the field according to its field signature.
      * If no field cound be found, **null**will be returned.
      * @param fieldSignature - the field's signature.
      * @returns A field. If there is no field in this class, the return will be a **null**.
@@ -255,7 +258,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     /**
      * Returns an **array** of fields in the class.
-     * @returns an **array** of fields in the class. 
+     * @returns an **array** of fields in the class.
      */
     public getFields(): ArkField[] {
         const allFields: ArkField[] = Array.from(this.fields.values());
@@ -277,6 +280,10 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         });
     }
 
+    public getRealTypes(): Type[] | undefined {
+        return this.realTypes;
+    }
+
     public getGenericsTypes() {
         return this.genericsTypes;
     }
@@ -290,19 +297,19 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     /**
      * Returns all methods defined in the specific class in the form of an array.
-     * @param generated - indicating whether this API returns the methods that are dynamically 
+     * @param generated - indicating whether this API returns the methods that are dynamically
      * generated at runtime. If it is not specified as true or false, the return will not include the generated method.
      * @returns An array of all methods in this class.
      * @example
      * 1. Get methods defined in class `BookService`.
-     
-    ```typescript
-    let classes: ArkClass[] = scene.getClasses();
-    let serviceClass : ArkClass = classes[1];
-    let methods: ArkMethod[] = serviceClass.getMethods();
-    let methodNames: string[] = methods.map(mthd => mthd.name);
-    console.log(methodNames);
-    ```
+
+     ```typescript
+     let classes: ArkClass[] = scene.getClasses();
+     let serviceClass : ArkClass = classes[1];
+     let methods: ArkMethod[] = serviceClass.getMethods();
+     let methodNames: string[] = methods.map(mthd => mthd.name);
+     console.log(methodNames);
+     ```
      */
     public getMethods(generated?: boolean): ArkMethod[] {
         const allMethods = Array.from(this.methods.values())
@@ -367,36 +374,36 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      * @example
      * 1. get viewTree of ArkClass.
 
-    ```typescript
-    for (let arkFiles of scene.getFiles()) {
-    for (let arkClasss of arkFiles.getClasses()) {
-        if (arkClasss.hasViewTree()) {
-        arkClasss.getViewTree();
-        }
-    }
-    }
-    ```
+     ```typescript
+     for (let arkFiles of scene.getFiles()) {
+     for (let arkClasss of arkFiles.getClasses()) {
+     if (arkClasss.hasViewTree()) {
+     arkClasss.getViewTree();
+     }
+     }
+     }
+     ```
      */
     public getViewTree(): ViewTree | undefined {
         return this.viewTree;
     }
 
     /**
-     * Check whether the view tree is defined. 
-     * If it is defined, the return value is true, otherwise it is false. 
+     * Check whether the view tree is defined.
+     * If it is defined, the return value is true, otherwise it is false.
      * @returns True if the view tree is defined; false otherwise.
      * @example
      * 1. Judge viewTree of ArkClass.
 
-    ```typescript
-    for (let arkFiles of scene.getFiles()) {
-    for (let arkClasss of arkFiles.getClasses()) {
-        if (arkClasss.hasViewTree()) {
-        arkClasss.getViewTree();
-        }
-    }
-    }
-    ```
+     ```typescript
+     for (let arkFiles of scene.getFiles()) {
+     for (let arkClasss of arkFiles.getClasses()) {
+     if (arkClasss.hasViewTree()) {
+     arkClasss.getViewTree();
+     }
+     }
+     }
+     ```
      */
     public hasViewTree(): boolean {
         return this.viewTree !== undefined;
@@ -458,7 +465,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     public removeField(field: ArkField): boolean {
         if (field.isStatic()) {
             return this.staticFields.delete(field.getName());
-        } 
+        }
         return this.fields.delete(field.getName());
     }
 

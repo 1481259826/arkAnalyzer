@@ -16,13 +16,13 @@
 import { Stmt } from './Stmt';
 import { Type, UnknownType } from './Type';
 import { Value } from './Value';
-import { ArkClass } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { ClassSignature, LocalSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { UNKNOWN_METHOD_NAME } from '../common/Const';
 import { ModifierType } from '../model/ArkBaseModel';
+import { ArkMethod } from '../model/ArkMethod';
 
 /**
  * @category core/base
@@ -47,9 +47,9 @@ export class Local implements Value, ArkExport {
         this.usedStmts = [];
     }
 
-    public inferType(arkClass: ArkClass): Local {
+    public inferType(arkMethod: ArkMethod): Local {
         if (TypeInference.isUnclearType(this.type)) {
-            const type = TypeInference.inferUnclearReferenceType(this.name, arkClass);
+            const type = TypeInference.inferUnclearReferenceType(this.name, arkMethod.getDeclaringArkClass());
             if (type) {
                 this.type = type;
             }

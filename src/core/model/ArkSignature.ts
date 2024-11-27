@@ -261,6 +261,10 @@ export class MethodSubSignature {
         return this.returnType;
     }
 
+    public setReturnType(returnType: Type): void {
+        this.returnType = returnType;
+    }
+
     public isStatic(): boolean {
         return this.staticFlag;
     }
@@ -301,19 +305,19 @@ export class MethodSignature {
      * @example
      * 1. get class signature from ArkMethod.
 
-    ```typescript
-    let methodSignature = expr.getMethodSignature();
-    let name = methodSignature.getDeclaringClassSignature().getClassName();
-    ```
-     * 
+     ```typescript
+     let methodSignature = expr.getMethodSignature();
+     let name = methodSignature.getDeclaringClassSignature().getClassName();
+     ```
+     *
      */
     public getDeclaringClassSignature() {
         return this.declaringClassSignature;
     }
 
     /**
-     * Returns the sub-signature of this method signature. 
-     * The sub-signature is part of the method signature, which is used to 
+     * Returns the sub-signature of this method signature.
+     * The sub-signature is part of the method signature, which is used to
      * identify the name of the method, its parameters and the return value type.
      * @returns The sub-signature of this method signature.
      */
