@@ -25,7 +25,9 @@ import { Printer } from './Printer';
 import { PointerAnalysis } from '../callgraph/pointerAnalysis/PointerAnalysis';
 
 export function buildSceneFromSingleFile(filename: string, verbose: boolean = false): Scene {
-    if (verbose) console.log('Building scene...');
+    if (verbose) {
+        console.log('Building scene...');
+    }
     const filepath = path.resolve(filename);
     const projectDir = path.dirname(filepath);
     const config = new SceneConfig();
@@ -37,7 +39,9 @@ export function buildSceneFromSingleFile(filename: string, verbose: boolean = fa
 }
 
 export function buildSceneFromProjectDir(inputDir: string, verbose: boolean = false): Scene {
-    if (verbose) console.log('Building scene...');
+    if (verbose) {
+        console.log('Building scene...');
+    }
     const config = new SceneConfig();
     config.buildFromProjectDir(inputDir);
     const scene = new Scene();
@@ -58,24 +62,34 @@ function dumpToJson(arkFile: ArkFile, output?: string): void {
     fs.closeSync(fd);
 }
 
-export function serializeScene(scene: Scene, outDir: string, verbose: boolean = false) {
+export function serializeScene(
+    scene: Scene,
+    outDir: string,
+    verbose: boolean = false,
+): void {
     let files = scene.getFiles();
     console.log(`Serializing Scene with ${files.length} files to '${outDir}'...`);
     for (let f of files) {
         let filepath = f.getName();
         let outPath = path.join(outDir, filepath + '.json');
-        if (verbose) console.log(`Serializing ArkIR for '${filepath}' to '${outPath}'...`);
+        if (verbose) {
+            console.log(`Serializing ArkIR for '${filepath}' to '${outPath}'...`);
+        }
         dumpToJson(f, outPath);
     }
-    if (verbose) console.log(`All ${files.length} files in scene are serialized`);
+    if (verbose) {
+        console.log(`All ${files.length} files in scene are serialized`);
+    }
 }
 
 function serializeSingleTsFile(
     input: string,
     output: string,
     options: any,
-) {
-    if (options.verbose) console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
+): void {
+    if (options.verbose) {
+        console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
+    }
 
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
@@ -84,29 +98,37 @@ function serializeSingleTsFile(
 
     let files = scene.getFiles();
     if (options.verbose) {
-        console.log(`Scene contains ${files.length} files:`);
+        console.log(`Scene contains ${files.length} files`);
         for (let f of files) {
             console.log(`- '${f.getName()}'`);
         }
     }
 
     if (options.inferTypes) {
-        if (options.verbose) console.log('Inferring types...');
+        if (options.verbose) {
+            console.log('Inferring types...');
+        }
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
+                if (options.verbose) {
+                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
+                }
                 scene.inferTypes();
             }
         }
     }
 
     if (options.entrypoint) {
-        if (options.verbose) console.log('Generating entrypoint...');
+        if (options.verbose) {
+            console.log('Generating entrypoint...');
+        }
         PointerAnalysis.pointerAnalysisForWholeProject(scene);
     }
 
-    if (options.verbose) console.log('Extracting single ArkFile...');
+    if (options.verbose) {
+        console.log('Extracting single ArkFile...');
+    }
     if (files.length === 0) {
         console.error(`ERROR: No files found in the project directory '${projectDir}'.`);
         process.exit(1);
@@ -146,14 +168,16 @@ function serializeSingleTsFile(
         printer.dumpToJson(arkFile, outPath);
     }
 
-    if (options.verbose) console.log('All done!');
+    if (options.verbose) {
+        console.log('All done!');
+    }
 }
 
 function serializeMultipleTsFiles(
     inputDir: string,
     outDir: string,
     options: any,
-) {
+): void {
     console.log(`Serializing multiple TS files to JSON: '${inputDir}' -> '${outDir}'`);
 
     if (fs.existsSync(outDir) && !fs.statSync(outDir).isDirectory()) {
@@ -161,7 +185,9 @@ function serializeMultipleTsFiles(
         process.exit(1);
     }
 
-    if (options.verbose) console.log('Building scene...');
+    if (options.verbose) {
+        console.log('Building scene...');
+    }
     let config = new SceneConfig();
     config.buildFromProjectDir(inputDir);
     let scene = new Scene();
@@ -169,30 +195,38 @@ function serializeMultipleTsFiles(
 
     let files = scene.getFiles();
     if (options.verbose) {
-        console.log(`Scene contains ${files.length} files:`);
+        console.log(`Scene contains ${files.length} files`);
         for (let f of files) {
             console.log(`- '${f.getName()}'`);
         }
     }
 
     if (options.inferTypes) {
-        if (options.verbose) console.log('Inferring types...');
+        if (options.verbose) {
+            console.log('Inferring types...');
+        }
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
+                if (options.verbose) {
+                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
+                }
                 scene.inferTypes();
             }
         }
     }
 
     if (options.entrypoint) {
-        if (options.verbose) console.log('Generating entrypoint...');
+        if (options.verbose) {
+            console.log('Generating entrypoint...');
+        }
         PointerAnalysis.pointerAnalysisForWholeProject(scene);
         files = scene.getFiles();
     }
 
-    if (options.verbose) console.log('Serializing...');
+    if (options.verbose) {
+        console.log('Serializing...');
+    }
     let printer = new PrinterBuilder();
     for (let f of files) {
         let filepath = f.getName();
@@ -201,14 +235,16 @@ function serializeMultipleTsFiles(
         printer.dumpToJson(f, outPath);
     }
 
-    if (options.verbose) console.log('All done!');
+    if (options.verbose) {
+        console.log('All done!');
+    }
 }
 
 function serializeTsProject(
     inputDir: string,
     outDir: string,
     options: any,
-) {
+): void {
     console.log(`Serializing TS project to JSON: '${inputDir}' -> '${outDir}'`);
 
     if (fs.existsSync(outDir) && !fs.statSync(outDir).isDirectory()) {
@@ -219,24 +255,32 @@ function serializeTsProject(
     const scene = buildSceneFromProjectDir(inputDir, options.verbose);
 
     if (options.inferTypes) {
-        if (options.verbose) console.log('Inferring types...');
+        if (options.verbose) {
+            console.log('Inferring types...');
+        }
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
+                if (options.verbose) {
+                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
+                }
                 scene.inferTypes();
             }
         }
     }
 
     if (options.entrypoint) {
-        if (options.verbose) console.log('Generating entrypoint...');
+        if (options.verbose) {
+            console.log('Generating entrypoint...');
+        }
         PointerAnalysis.pointerAnalysisForWholeProject(scene);
     }
 
     serializeScene(scene, outDir, options.verbose);
 
-    if (options.verbose) console.log('All done!');
+    if (options.verbose) {
+        console.log('All done!');
+    }
 }
 
 function myParseInt(value: string, _previous: number): number {
