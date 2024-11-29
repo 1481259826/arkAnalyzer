@@ -267,7 +267,7 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
             const type = method.getType();
             if (type instanceof FunctionType ||
                 (type instanceof ClassType && type.getClassSignature().getClassName() === CALL_BACK)) {
-                const subSignature = new MethodSubSignature(methodName, [], VoidType);
+                const subSignature = new MethodSubSignature(methodName, [], VoidType.getInstance());
                 this.setMethodSignature(new MethodSignature(baseType.getClassSignature(), subSignature));
                 return this;
             }
