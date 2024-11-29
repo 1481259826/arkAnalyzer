@@ -12,9 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let i: number = 0;
-try {
-    i++;
-} catch (err) {
-    i--;
+
+import { BasicBlock } from '../graph/BasicBlock';
+
+export class Trap {
+    private readonly tryBlocks: BasicBlock[];
+    private readonly catchBlocks: BasicBlock[];
+
+    constructor(tryBlocks: BasicBlock[], catchBlocks: BasicBlock[]) {
+        this.tryBlocks = tryBlocks;
+        this.catchBlocks = catchBlocks;
+    }
+
+    public getTryBlocks(): BasicBlock[] {
+        return this.tryBlocks;
+    }
+
+    public getCatchBlocks(): BasicBlock[] {
+        return this.catchBlocks;
+    }
 }

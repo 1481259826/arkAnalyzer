@@ -15,7 +15,15 @@
 
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
-import { ArkAssignStmt, ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
+import {
+    ArkAssignStmt,
+    ArkIfStmt,
+    ArkInvokeStmt,
+    ArkReturnStmt,
+    ArkReturnVoidStmt,
+    ArkThrowStmt,
+    Stmt,
+} from '../base/Stmt';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkClass } from '../model/ArkClass';
@@ -25,7 +33,13 @@ import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
-import { AliasType, AliasTypeDeclaration } from '../base/Type';
+import { AliasType, AliasTypeDeclaration, UnknownType } from '../base/Type';
+import { Trap } from '../base/Trap';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { ArkCaughtExceptionRef } from '../base/Ref';
+import { FullPosition } from '../base/Position';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CfgBuilder');
 
 class StatementBuilder {
     type: string;
@@ -234,8 +248,7 @@ export class CfgBuilder {
         this.arrowFunctionWithoutBlock = true;
     }
 
-    
-    judgeLastType(s: StatementBuilder, lastStatement: StatementBuilder) {
+    judgeLastType(s: StatementBuilder, lastStatement: StatementBuilder): void {
         if (lastStatement.type === 'ifStatement') {
             let lastIf = lastStatement as ConditionStatementBuilder;
             if (lastIf.nextT == null) {
@@ -602,7 +615,7 @@ export class CfgBuilder {
                         }
                     }
                 } else {
-                    if (last instanceof TryStatementBuilder && exit.type == 'finallyExit') {
+                    if (last instanceof TryStatementBuilder && exit.type === 'finallyExit') {
                         last.afterFinal = exit.next;
                         last.next = last.tryFirst;
                         exit.lasts.delete(last);
@@ -756,7 +769,7 @@ export class CfgBuilder {
         this.exit.block = returnBlock;
     }
 
-    addReturnStmt() {
+    addReturnStmt(): void {
         let notReturnStmts: StatementBuilder[] = [];
         for (let stmt of [...this.exit.lasts]) {
             if (stmt.type !== 'returnStatement') {
@@ -1027,9 +1040,7 @@ export class CfgBuilder {
     }
 
     public buildCfgAndOriginalCfg(): {
-        cfg: Cfg,
-        locals: Set<Local>,
-        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
+        cfg: Cfg, locals: Set<Local>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>, traps: Trap[],
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1039,9 +1050,7 @@ export class CfgBuilder {
     }
 
     public buildCfgAndOriginalCfgForSimpleArrowFunction(): {
-        cfg: Cfg,
-        locals: Set<Local>,
-        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
+        cfg: Cfg, locals: Set<Local>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>, traps: Trap[],
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1079,26 +1088,29 @@ export class CfgBuilder {
         return {
             cfg: cfg,
             locals: arkIRTransformer.getLocals(),
-            aliasTypeMap: arkIRTransformer.getAliasTypeMap()
+            aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
+            traps: [],
         };
     }
 
     public buildNormalCfgAndOriginalCfg(): {
-        cfg: Cfg,
-        locals: Set<Local>,
-        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>
+        cfg: Cfg, locals: Set<Local>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>, traps: Trap[],
     } {
-        const cfg = new Cfg();
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
-        let isStartingStmtInCfgBlock = true;
-
+        let startingStmtInCfg: Stmt | null = null;
+        const basicBlockSet = new Set<BasicBlock>();
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
         const blocksContainLoopCondition = new Set<Block>();
+        const blockBuildersBeforeTry = new Set<Block>();
         for (let i = 0; i < this.blocks.length; i++) {
             // build block in Cfg
             const stmtsInBlock: Stmt[] = [];
             if (i === 0) {
                 stmtsInBlock.push(...arkIRTransformer.prebuildStmts());
+            }
+            const stmtsCnt = this.blocks[i].stmts.length;
+            if (this.blocks[i].stmts[stmtsCnt - 1].type === 'tryStatement') {
+                blockBuildersBeforeTry.add(this.blocks[i]);
             }
             for (const statementBuilder of this.blocks[i].stmts) {
                 if (statementBuilder.type === 'loopStatement') {
@@ -1113,13 +1125,12 @@ export class CfgBuilder {
             const blockInCfg = new BasicBlock();
             blockInCfg.setId(this.blocks[i].id);
             for (const stmt of stmtsInBlock) {
-                if (isStartingStmtInCfgBlock) {
-                    isStartingStmtInCfgBlock = false;
-                    cfg.setStartingStmt(stmt);
+                if (startingStmtInCfg === null) {
+                    startingStmtInCfg = stmt;
                 }
                 blockInCfg.addStmt(stmt);
             }
-            cfg.addBlock(blockInCfg);
+            basicBlockSet.add(blockInCfg);
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
         }
         let currBlockId = this.blocks.length;
@@ -1188,7 +1199,8 @@ export class CfgBuilder {
 
                 if (prevBlockBuilderContainsLoop) {
                     // should create an extra block when previous block contains loop condition
-                    this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder, stmtsInsertBeforeCondition, false, cfg);
+                    this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder,
+                        stmtsInsertBeforeCondition, false, basicBlockSet);
                 } else {
                     const blockBuilderBeforeCondition = blockBuilder.lasts[0];
                     const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
@@ -1208,7 +1220,8 @@ export class CfgBuilder {
 
                     if (blockBuildersReenterCondition.length > 1 || blocksContainLoopCondition.has(blockBuildersReenterCondition[0])) {
                         // put incrementor statements into an extra block
-                        this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder, stmtsReenterCondition, true, cfg);
+                        this.insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock, blockBuilder,
+                            stmtsReenterCondition, true, basicBlockSet);
                     } else {
                         // put incrementor statements into prev reenter block
                         const blockReenterCondition = blockBuilderToCfgBlock.get(blockBuildersReenterCondition[0]) as BasicBlock;
@@ -1230,12 +1243,23 @@ export class CfgBuilder {
             }
         }
 
+        const traps = this.buildTraps(blockBuilderToCfgBlock, blockBuildersBeforeTry, arkIRTransformer, basicBlockSet);
+
         for (const blockBuilder of this.blocks) {
             if (blockBuilder.id === -1) {
                 blockBuilder.id = currBlockId++;
                 const block = blockBuilderToCfgBlock.get(blockBuilder) as BasicBlock;
                 block.setId(blockBuilder.id);
             }
+        }
+        const cfg = new Cfg();
+        const startingBasicBlock = blockBuilderToCfgBlock.get(this.blocks[0])!;
+        cfg.setStartingStmt(startingBasicBlock.getStmts()[0]);
+        for (const basicBlock of basicBlockSet) {
+            if (basicBlock.getId() === -1) {
+                basicBlock.setId(currBlockId++);
+            }
+            cfg.addBlock(basicBlock);
         }
         for (const stmt of cfg.getStmts()) {
             stmt.setCfg(cfg);
@@ -1245,14 +1269,13 @@ export class CfgBuilder {
             cfg: cfg,
             locals: arkIRTransformer.getLocals(),
             aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
+            traps: traps,
         };
     }
 
     private insertBeforeConditionBlockBuilder(blockBuilderToCfgBlock: Map<Block, BasicBlock>,
-        conditionBlockBuilder: Block,
-        stmtsInsertBeforeCondition: Stmt[],
-        collectReenter: Boolean,
-        cfg: Cfg): void {
+                                              conditionBlockBuilder: Block, stmtsInsertBeforeCondition: Stmt[],
+                                              collectReenter: Boolean, basicBlockSet: Set<BasicBlock>): void {
         const blockId = conditionBlockBuilder.id;
         const block = blockBuilderToCfgBlock.get(conditionBlockBuilder) as BasicBlock;
         const blockBuildersBeforeCondition: Block[] = [];
@@ -1314,7 +1337,249 @@ export class CfgBuilder {
         block.getPredecessors().splice(0, predecessorsCnt, ...newPrevBlocksBeforeCondition);
 
         this.blocks.push(blockBuilderInsertBeforeCondition);
-        cfg.addBlock(blockInsertBeforeCondition);
+        basicBlockSet.add(blockInsertBeforeCondition);
         blockBuilderToCfgBlock.set(blockBuilderInsertBeforeCondition, blockInsertBeforeCondition);
+    }
+
+    private buildTraps(blockBuilderToCfgBlock: Map<Block, BasicBlock>, blockBuildersBeforeTry: Set<Block>,
+                       arkIRTransformer: ArkIRTransformer, basicBlockSet: Set<BasicBlock>): Trap[] {
+        const traps: Trap[] = [];
+        for (const blockBuilderBeforeTry of blockBuildersBeforeTry) {
+            if (blockBuilderBeforeTry.nexts.length === 0) {
+                logger.error(`can't find try block.`);
+                continue;
+            }
+            const blockBuilderContainTry = blockBuilderBeforeTry.nexts[0];
+            const stmtsCnt = blockBuilderBeforeTry.stmts.length;
+            const tryStmtBuilder = blockBuilderBeforeTry.stmts[stmtsCnt - 1] as TryStatementBuilder;
+            const finallyBlockBuilder = tryStmtBuilder.finallyStatement?.block;
+            if (!finallyBlockBuilder) {
+                logger.error(`can't find finally block or dummy finally block.`);
+                continue;
+            }
+            const { bfsBlocks: tryBfsBlocks, tailBlocks: tryTailBlocks } = this.getAllBlocksBFS(blockBuilderToCfgBlock,
+                blockBuilderContainTry, finallyBlockBuilder);
+            let catchBfsBlocks: BasicBlock[] = [];
+            let catchTailBlocks: BasicBlock[] = [];
+            const catchBlockBuilder = tryStmtBuilder.catchStatement?.block;
+            if (catchBlockBuilder) {
+                ({ bfsBlocks: catchBfsBlocks, tailBlocks: catchTailBlocks } = this.getAllBlocksBFS(
+                    blockBuilderToCfgBlock, catchBlockBuilder));
+            }
+            const finallyStmts = finallyBlockBuilder.stmts;
+            const blockBuilderAfterFinally = tryStmtBuilder.afterFinal?.block;
+            if (!blockBuilderAfterFinally) {
+                logger.error(`can't find block after try...catch.`);
+                continue;
+            }
+            if (finallyStmts.length === 1 && finallyStmts[0].code === 'dummyFinally') { // no finally block
+                const trapsIfNoFinally = this.buildTrapsIfNoFinally(tryBfsBlocks, tryTailBlocks, catchBfsBlocks,
+                    catchTailBlocks,
+                    finallyBlockBuilder, blockBuilderAfterFinally, basicBlockSet, blockBuilderToCfgBlock);
+                if (trapsIfNoFinally) {
+                    traps.push(...trapsIfNoFinally);
+                }
+            } else {
+                const trapsIfFinallyExist = this.buildTrapsIfFinallyExist(tryBfsBlocks, tryTailBlocks, catchBfsBlocks,
+                    catchTailBlocks, finallyBlockBuilder, blockBuilderAfterFinally, basicBlockSet, arkIRTransformer,
+                    blockBuilderToCfgBlock);
+                traps.push(...trapsIfFinallyExist);
+            }
+        }
+        return traps;
+    }
+
+    private buildTrapsIfNoFinally(tryBfsBlocks: BasicBlock[], tryTailBlocks: BasicBlock[], catchBfsBlocks: BasicBlock[],
+                                  catchTailBlocks: BasicBlock[], finallyBlockBuilder: Block,
+                                  blockBuilderAfterFinally: Block, basicBlockSet: Set<BasicBlock>,
+                                  blockBuilderToCfgBlock: Map<Block, BasicBlock>): Trap[] | null {
+        if (catchBfsBlocks.length === 0) {
+            logger.error(`catch block expected.`);
+            return null;
+        }
+        if (!blockBuilderToCfgBlock.has(blockBuilderAfterFinally)) {
+            logger.error(`can't find basicBlock corresponding to the blockBuilder.`);
+            return null;
+        }
+        let blockAfterFinally: BasicBlock = blockBuilderToCfgBlock.get(blockBuilderAfterFinally)!;
+        if (!blockBuilderToCfgBlock.has(finallyBlockBuilder)) {
+            logger.error(`can't find basicBlock corresponding to the blockBuilder.`);
+            return null;
+        }
+        const finallyBlock = blockBuilderToCfgBlock.get(finallyBlockBuilder)!;
+        let dummyFinallyIdxInPredecessors = -1;
+        for (let i = 0; i < blockAfterFinally.getPredecessors().length; i++) {
+            if (blockAfterFinally.getPredecessors()[i] === finallyBlock) {
+                dummyFinallyIdxInPredecessors = i;
+                break;
+            }
+        }
+        if (dummyFinallyIdxInPredecessors === -1) {
+            return null;
+        }
+        blockAfterFinally.getPredecessors().splice(dummyFinallyIdxInPredecessors, 1);
+        for (const tryTailBlock of tryTailBlocks) {
+            tryTailBlock.setSuccessorBlock(0, blockAfterFinally);
+            blockAfterFinally.addPredecessorBlock(tryTailBlock);
+        }
+        basicBlockSet.delete(finallyBlock);
+
+        for (const catchTailBlock of catchTailBlocks) {
+            catchTailBlock.addSuccessorBlock(blockAfterFinally);
+            blockAfterFinally.addPredecessorBlock(catchTailBlock);
+        }
+        for (const tryTailBlock of tryTailBlocks) {
+            tryTailBlock.addExceptionalSuccessorBlock(catchBfsBlocks[0]);
+        }
+        return [new Trap(tryBfsBlocks, catchBfsBlocks)];
+    }
+
+    private buildTrapsIfFinallyExist(tryBfsBlocks: BasicBlock[], tryTailBlocks: BasicBlock[],
+                                     catchBfsBlocks: BasicBlock[], catchTailBlocks: BasicBlock[],
+                                     finallyBlockBuilder: Block, blockBuilderAfterFinally: Block,
+                                     basicBlockSet: Set<BasicBlock>, arkIRTransformer: ArkIRTransformer,
+                                     blockBuilderToCfgBlock: Map<Block, BasicBlock>): Trap[] {
+        const { bfsBlocks: finallyBfsBlocks, tailBlocks: finallyTailBlocks } = this.getAllBlocksBFS(
+            blockBuilderToCfgBlock,
+            finallyBlockBuilder, blockBuilderAfterFinally);
+        const copyFinallyBfsBlocks = this.copyFinallyBlocks(finallyBfsBlocks, finallyTailBlocks, basicBlockSet,
+            arkIRTransformer, blockBuilderToCfgBlock);
+        const traps: Trap[] = [];
+        if (catchBfsBlocks.length !== 0) {
+            for (const catchTailBlock of catchTailBlocks) {
+                catchTailBlock.addSuccessorBlock(finallyBfsBlocks[0]);
+                finallyBfsBlocks[0].addPredecessorBlock(catchTailBlock);
+            }
+            // try -> catch trap
+            for (const tryTailBlock of tryTailBlocks) {
+                tryTailBlock.addExceptionalSuccessorBlock(catchBfsBlocks[0]);
+            }
+            traps.push(new Trap(tryBfsBlocks, catchBfsBlocks));
+            // catch -> finally trap
+            for (const catchTailBlock of catchTailBlocks) {
+                catchTailBlock.addExceptionalSuccessorBlock(copyFinallyBfsBlocks[0]);
+            }
+            traps.push(new Trap(catchBfsBlocks, copyFinallyBfsBlocks));
+        } else {
+            // try -> finally trap
+            for (const tryTailBlock of tryTailBlocks) {
+                tryTailBlock.addExceptionalSuccessorBlock(copyFinallyBfsBlocks[0]);
+            }
+            traps.push(new Trap(tryBfsBlocks, copyFinallyBfsBlocks));
+        }
+        return traps;
+    }
+
+    private getAllBlocksBFS(blockBuilderToCfgBlock: Map<Block, BasicBlock>, startBlockBuilder: Block,
+                            endBlockBuilder?: Block): { bfsBlocks: BasicBlock[], tailBlocks: BasicBlock[] } {
+        const bfsBlocks: BasicBlock[] = [];
+        const tailBlocks: BasicBlock[] = [];
+        const queue: Block[] = [];
+        const visitedBlockBuilders = new Set<Block>();
+        queue.push(startBlockBuilder);
+        while (queue.length !== 0) {
+            const currBlockBuilder = queue.splice(0, 1)[0];
+            if (visitedBlockBuilders.has(currBlockBuilder)) {
+                continue;
+            }
+            visitedBlockBuilders.add(currBlockBuilder);
+            if (!blockBuilderToCfgBlock.has(currBlockBuilder)) {
+                logger.error(`can't find basicBlock corresponding to the blockBuilder.`);
+                continue;
+            }
+            const currBlock = blockBuilderToCfgBlock.get(currBlockBuilder)!;
+            bfsBlocks.push(currBlock);
+
+            const childList = currBlockBuilder.nexts;
+            if (childList.length === 0 || (childList.length !== 0 && (childList[0] === endBlockBuilder))) {
+                if (childList[0] === endBlockBuilder) {
+                    tailBlocks.push(currBlock);
+                    continue;
+                }
+            }
+            if (childList.length !== 0) {
+                for (const child of childList) {
+                    queue.push(child);
+                }
+            }
+        }
+        return { bfsBlocks, tailBlocks };
+    }
+
+    private copyFinallyBlocks(finallyBfsBlocks: BasicBlock[], finallyTailBlocks: BasicBlock[],
+                              basicBlockSet: Set<BasicBlock>, arkIRTransformer: ArkIRTransformer,
+                              blockBuilderToCfgBlock: Map<Block, BasicBlock>): BasicBlock[] {
+        const copyFinallyBfsBlocks = this.copyBlocks(finallyBfsBlocks);
+        const caughtExceptionRef = new ArkCaughtExceptionRef(UnknownType.getInstance());
+        const {
+            value: exceptionValue,
+            stmts: exceptionAssignStmts,
+        } = arkIRTransformer.generateAssignStmtForValue(caughtExceptionRef, [FullPosition.DEFAULT]);
+        copyFinallyBfsBlocks[0].addHead(exceptionAssignStmts);
+        const finallyPredecessorsCnt = copyFinallyBfsBlocks[0].getPredecessors().length;
+        copyFinallyBfsBlocks[0].getPredecessors().splice(0, finallyPredecessorsCnt);
+        const throwStmt = new ArkThrowStmt(exceptionValue);
+        let copyFinallyTailBlocks = copyFinallyBfsBlocks.splice(
+            copyFinallyBfsBlocks.length - finallyTailBlocks.length, finallyTailBlocks.length);
+        copyFinallyTailBlocks.forEach((copyFinallyTailBlock: BasicBlock) => {
+            const successorsCnt = copyFinallyTailBlock.getSuccessors().length;
+            copyFinallyTailBlock.getSuccessors().splice(0, successorsCnt);
+        });
+        if (copyFinallyTailBlocks.length > 1) {
+            const newCopyFinallyTailBlock = new BasicBlock();
+            copyFinallyTailBlocks.forEach((copyFinallyTailBlock: BasicBlock) => {
+                copyFinallyTailBlock.addSuccessorBlock(newCopyFinallyTailBlock);
+                newCopyFinallyTailBlock.addPredecessorBlock(copyFinallyTailBlock);
+            });
+            copyFinallyTailBlocks = [newCopyFinallyTailBlock];
+        }
+        copyFinallyTailBlocks[0].addStmt(throwStmt);
+        copyFinallyBfsBlocks.push(...copyFinallyTailBlocks);
+        copyFinallyBfsBlocks.forEach((copyFinallyBfsBlock: BasicBlock) => {
+            basicBlockSet.add(copyFinallyBfsBlock);
+        });
+        return copyFinallyBfsBlocks;
+    }
+
+    private copyBlocks(sourceBlocks: BasicBlock[]): BasicBlock[] {
+        const sourceToTarget = new Map<BasicBlock, BasicBlock>();
+        const targetBlocks: BasicBlock[] = [];
+        for (const sourceBlock of sourceBlocks) {
+            const targetBlock = new BasicBlock();
+            for (const stmt of sourceBlock.getStmts()) {
+                targetBlock.addStmt(this.copyStmt(stmt)!);
+            }
+            sourceToTarget.set(sourceBlock, targetBlock);
+            targetBlocks.push(targetBlock);
+        }
+        for (const sourceBlock of sourceBlocks) {
+            const targetBlock = sourceToTarget.get(sourceBlock)!;
+            for (const predecessor of sourceBlock.getPredecessors()) {
+                const targetPredecessor = sourceToTarget.get(predecessor)!;
+                targetBlock.addPredecessorBlock(targetPredecessor);
+            }
+            for (const successor of sourceBlock.getSuccessors()) {
+                const targetSuccessor = sourceToTarget.get(successor)!;
+                targetBlock.addSuccessorBlock(targetSuccessor);
+            }
+        }
+        return targetBlocks;
+    }
+
+    private copyStmt(sourceStmt: Stmt): Stmt | null {
+        if (sourceStmt instanceof ArkAssignStmt) {
+            return new ArkAssignStmt(sourceStmt.getLeftOp(), sourceStmt.getRightOp());
+        } else if (sourceStmt instanceof ArkInvokeStmt) {
+            return new ArkInvokeStmt(sourceStmt.getInvokeExpr());
+        } else if (sourceStmt instanceof ArkIfStmt) {
+            return new ArkIfStmt(sourceStmt.getConditionExprExpr());
+        } else if (sourceStmt instanceof ArkReturnStmt) {
+            return new ArkReturnStmt(sourceStmt.getOp());
+        } else if (sourceStmt instanceof ArkReturnVoidStmt) {
+            return new ArkReturnVoidStmt();
+        } else if (sourceStmt instanceof ArkThrowStmt) {
+            return new ArkThrowStmt(sourceStmt.getOp());
+        }
+        return null;
     }
 }

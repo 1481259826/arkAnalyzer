@@ -30,7 +30,7 @@ export class TypeInferenceTest {
 
     public testLocalTypes() {
         let scene = this.buildScene();
-        console.log(scene)
+        console.log(scene);
     }
 
     public printStmts(body: ArkBody): void {

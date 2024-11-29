@@ -16,17 +16,21 @@
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
 import { AliasType, AliasTypeDeclaration } from '../base/Type';
+import { Trap } from '../base/Trap';
 
 export class ArkBody {
     private locals: Map<string, Local>;
     private cfg: Cfg;
     private aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>;
+    private traps?: Trap[];
 
-    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>) {
+    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>,
+                traps?: Trap[]) {
         this.cfg = cfg;
         this.aliasTypeMap = aliasTypeMap;
         this.locals = new Map<string, Local>();
         locals.forEach(local => this.locals.set(local.getName(), local));
+        this.traps = traps;
     }
 
     public getLocals(): Map<string, Local> {
@@ -58,5 +62,9 @@ export class ArkBody {
             return aliasTypeInfo[0];
         }
         return null;
+    }
+
+    public getTraps(): Trap[] | undefined {
+        return this.traps;
     }
 }
