@@ -179,7 +179,6 @@ function serializeMultipleTsFiles(
     options: any,
 ): void {
     console.log(`Serializing multiple TS files to JSON: '${inputDir}' -> '${outDir}'`);
-
     if (fs.existsSync(outDir) && !fs.statSync(outDir).isDirectory()) {
         console.error(`ERROR: Output path must be a directory.`);
         process.exit(1);
@@ -196,9 +195,7 @@ function serializeMultipleTsFiles(
     let files = scene.getFiles();
     if (options.verbose) {
         console.log(`Scene contains ${files.length} files`);
-        for (let f of files) {
-            console.log(`- '${f.getName()}'`);
-        }
+        files.forEach((f) => console.log(`- '${f.getName()}'`));
     }
 
     if (options.inferTypes) {
@@ -234,10 +231,7 @@ function serializeMultipleTsFiles(
         console.log(`Serializing ArkIR for '${filepath}' to '${outPath}'...`);
         printer.dumpToJson(f, outPath);
     }
-
-    if (options.verbose) {
-        console.log('All done!');
-    }
+    console.log('All done!');
 }
 
 function serializeTsProject(
