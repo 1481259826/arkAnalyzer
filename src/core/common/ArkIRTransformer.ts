@@ -97,10 +97,8 @@ import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import {
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
-    COMPONENT_CUSTOMVIEW,
-    COMPONENT_FOR_EACH,
-    COMPONENT_IF,
-    COMPONENT_LAZY_FOR_EACH,
+    COMPONENT_CUSTOMVIEW, COMPONENT_FOR_EACH,
+    COMPONENT_IF, COMPONENT_LAZY_FOR_EACH,
     COMPONENT_POP_FUNCTION,
     COMPONENT_REPEAT,
     isEtsSystemComponent,
@@ -113,6 +111,8 @@ import { buildModifiers } from '../model/builder/builderUtils';
 import { TEMP_LOCAL_PREFIX } from './Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
+
+export const DUMMY_INITIALIZER_STMT = 'dummyInitializerStmt';
 
 type ValueAndStmts = {
     value: Value,
@@ -132,13 +132,7 @@ export class DummyStmt extends Stmt {
 }
 
 export class ArkIRTransformer {
-    public static readonly DUMMY_LOOP_INITIALIZER_STMT = 'LoopInitializer';
-    public static readonly DUMMY_CONDITIONAL_OPERATOR_IF_TRUE_STMT = 'ConditionalOperatorIfTrue';
-    public static readonly DUMMY_CONDITIONAL_OPERATOR_IF_FALSE_STMT = 'ConditionalOperatorIfFalse';
-    public static readonly DUMMY_CONDITIONAL_OPERATOR_END_STMT = 'ConditionalOperatorEnd';
-
-    private conditionalOperatorNo: number = 0;
-    private tempLocalNo: number = 0;
+    private tempLocalIndex: number = 0;
     private locals: Map<string, Local> = new Map();
     private sourceFile: ts.SourceFile;
     private declaringMethod: ArkMethod;
@@ -363,7 +357,7 @@ export class ArkIRTransformer {
         if (forStatement.initializer) {
             stmts.push(...this.tsNodeToValueAndStmts(forStatement.initializer).stmts);
         }
-        const dummyInitializerStmt = new DummyStmt(ArkIRTransformer.DUMMY_LOOP_INITIALIZER_STMT);
+        const dummyInitializerStmt = new DummyStmt(DUMMY_INITIALIZER_STMT);
         stmts.push(dummyInitializerStmt);
 
         if (forStatement.condition) {
@@ -514,7 +508,7 @@ export class ArkIRTransformer {
 
     private whileStatementToStmts(whileStatement: ts.WhileStatement): Stmt[] {
         const stmts: Stmt[] = [];
-        const dummyInitializerStmt = new DummyStmt(ArkIRTransformer.DUMMY_LOOP_INITIALIZER_STMT);
+        const dummyInitializerStmt = new DummyStmt(DUMMY_INITIALIZER_STMT);
         stmts.push(dummyInitializerStmt);
 
         const {
@@ -709,8 +703,8 @@ export class ArkIRTransformer {
     }
 
     private conditionalExpressionToValueAndStmts(conditionalExpression: ts.ConditionalExpression): ValueAndStmts {
+        // TODO: separated by blocks
         const stmts: Stmt[] = [];
-        const currConditionalOperatorIndex = this.conditionalOperatorNo++;
         const {
             value: conditionValue,
             valueOriginalPositions: conditionPositions,
@@ -721,34 +715,28 @@ export class ArkIRTransformer {
         ifStmt.setOperandOriginalPositions(conditionPositions);
         stmts.push(ifStmt);
 
-        stmts.push(
-            new DummyStmt(ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_IF_TRUE_STMT + currConditionalOperatorIndex));
         const {
             value: whenTrueValue,
             valueOriginalPositions: whenTruePositions,
             stmts: whenTrueStmts
         } = this.tsNodeToValueAndStmts(conditionalExpression.whenTrue);
         stmts.push(...whenTrueStmts);
-        const resultLocal = this.generateTempLocal();
-        const assignStmtWhenTrue = new ArkAssignStmt(resultLocal, whenTrueValue);
-        const resultLocalPosition: FullPosition[] = [whenTruePositions[0]];
-        assignStmtWhenTrue.setOperandOriginalPositions([...resultLocalPosition, ...whenTruePositions]);
-        stmts.push(assignStmtWhenTrue);
-
-        stmts.push(
-            new DummyStmt(ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_IF_FALSE_STMT + currConditionalOperatorIndex));
+        const {
+            value: resultValue,
+            valueOriginalPositions: resultPositions,
+            stmts: tempStmts,
+        } = this.generateAssignStmtForValue(whenTrueValue, whenTruePositions);
+        stmts.push(...tempStmts);
         const {
             value: whenFalseValue,
             valueOriginalPositions: whenFalsePositions,
             stmts: whenFalseStmts,
         } = this.tsNodeToValueAndStmts(conditionalExpression.whenFalse);
         stmts.push(...whenFalseStmts);
-        const assignStmt = new ArkAssignStmt(resultLocal, whenFalseValue);
-        assignStmt.setOperandOriginalPositions([...resultLocalPosition, ...whenFalsePositions]);
+        const assignStmt = new ArkAssignStmt(resultValue, whenFalseValue);
+        assignStmt.setOperandOriginalPositions([...resultPositions, ...whenFalsePositions]);
         stmts.push(assignStmt);
-        stmts.push(
-            new DummyStmt(ArkIRTransformer.DUMMY_CONDITIONAL_OPERATOR_END_STMT + currConditionalOperatorIndex));
-        return { value: resultLocal, valueOriginalPositions: resultLocalPosition, stmts: stmts };
+        return { value: resultValue, valueOriginalPositions: resultPositions, stmts: stmts };
     }
 
     private objectLiteralExpresionToValueAndStmts(objectLiteralExpression: ts.ObjectLiteralExpression): ValueAndStmts {
@@ -1803,8 +1791,8 @@ export class ArkIRTransformer {
     }
 
     private generateTempLocal(localType: Type = UnknownType.getInstance()): Local {
-        const tempLocalName = TEMP_LOCAL_PREFIX + this.tempLocalNo;
-        this.tempLocalNo++;
+        const tempLocalName = TEMP_LOCAL_PREFIX + this.tempLocalIndex;
+        this.tempLocalIndex++;
         const tempLocal: Local = new Local(tempLocalName, localType);
         this.locals.set(tempLocalName, tempLocal);
         return tempLocal;
