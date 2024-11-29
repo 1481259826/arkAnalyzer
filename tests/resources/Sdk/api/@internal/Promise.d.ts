@@ -13,37 +13,9 @@
  * limitations under the License.
  */
 
-import { a, B, name } from "./file1"
+interface Promise<T> {
 
-class C extends name {
-    constructor(num: number) {
-        super(num)
-    }
+    then<>(onfulfilled?: ((value: T) => T)): Promise<T>;
+
+    catch(onrejected?: ((reason: any) => T)): Promise<T>;
 }
-
-let c = new C(1)
-
-class D extends name {
-    constructor(num: number) {
-        super(num)
-    }
-}
-
-namespace temp {
-    let d = new D(2) //
-
-    export function main() {
-        let c2 = c;
-        let c3 = c;
-        let d2 = d;
-        main2();
-    }
-    
-    export function main2() {
-        let a = c.getID();
-        let b = d.getID();
-    }
-}
-
-// temp.main()
-// temp.main2()

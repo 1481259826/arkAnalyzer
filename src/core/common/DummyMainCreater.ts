@@ -343,11 +343,22 @@ export class DummyMainCreater {
         return methods;
     }
 
-    public getMethodsFromAllAbilities(): ArkMethod[] {
+    private classInheritsAbility(arkClass: ArkClass): boolean {
         const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility', 'UIAbility', 'BackupExtensionAbility'];
+        let superClass = arkClass.getSuperClass();
+        while (superClass) {
+            if (ABILITY_BASE_CLASSES.includes(superClass.getName())) {
+                return true;
+            }
+            superClass = superClass.getSuperClass();
+        }
+        return false;
+    }
+
+    public getMethodsFromAllAbilities(): ArkMethod[] {
         let methods: ArkMethod[] = [];
         this.scene.getClasses()
-            .filter(cls => ABILITY_BASE_CLASSES.includes(cls.getSuperClassName()))
+            .filter(cls => this.classInheritsAbility(cls))
             .forEach(cls => {
                 methods.push(...cls.getMethods().filter(mtd => LIFECYCLE_METHOD_NAME.includes(mtd.getName())));
             });

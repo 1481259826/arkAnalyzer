@@ -13,37 +13,19 @@
  * limitations under the License.
  */
 
-import { a, B, name } from "./file1"
+import { media } from '@kit.MediaKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
-class C extends name {
-    constructor(num: number) {
-        super(num)
-    }
+async function test2(): Promise<void> {
+    await media.createAVPlayer().then((player) => {
+        if (player !== null) {
+            player.on('audioInterrupt', () => {
+                console.error('createAVPlayer audioInterrupt2');
+            });
+        } else {
+            console.log('createAVPlayer: error');
+        }
+    }).catch((error: BusinessError) => {
+        console.log('createAVPlayer: error:${error}');
+    });
 }
-
-let c = new C(1)
-
-class D extends name {
-    constructor(num: number) {
-        super(num)
-    }
-}
-
-namespace temp {
-    let d = new D(2) //
-
-    export function main() {
-        let c2 = c;
-        let c3 = c;
-        let d2 = d;
-        main2();
-    }
-    
-    export function main2() {
-        let a = c.getID();
-        let b = d.getID();
-    }
-}
-
-// temp.main()
-// temp.main2()

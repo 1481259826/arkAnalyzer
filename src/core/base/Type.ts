@@ -19,11 +19,14 @@ import { LineColPosition } from './Position';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
     ANY_KEYWORD,
-    BOOLEAN_KEYWORD, NEVER_KEYWORD,
+    BOOLEAN_KEYWORD,
+    NEVER_KEYWORD,
     NULL_KEYWORD,
     NUMBER_KEYWORD,
-    STRING_KEYWORD, UNDEFINED_KEYWORD,
-    UNKNOWN_KEYWORD, VOID_KEYWORD,
+    STRING_KEYWORD,
+    UNDEFINED_KEYWORD,
+    UNKNOWN_KEYWORD,
+    VOID_KEYWORD,
 } from '../common/TSConst';
 
 /**
@@ -243,11 +246,7 @@ export class UnionType extends Type {
     }
 
     public toString(): string {
-        let typeStr = this.types.join('|');
-        if (!(this.currType instanceof UnknownType) && this.currType !== this) {
-            typeStr += '-' + this.currType;
-        }
-        return typeStr;
+        return this.types.join('|');
     }
 }
 
@@ -345,7 +344,12 @@ export class ClassType extends Type {
     }
 
     public toString(): string {
-        return this.classSignature.toString();
+        let temp = this.classSignature.toString();
+        let generic = this.realGenericTypes?.join(',');
+        if (generic) {
+            temp += `<${generic}>`;
+        }
+        return temp;
     }
 }
 

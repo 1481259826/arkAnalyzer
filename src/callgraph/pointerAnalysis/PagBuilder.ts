@@ -33,7 +33,6 @@ import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, Intra
 import { PtsSet } from './PtsDS';
 import { GLOBAL_THIS } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
-import { ExportInfo } from '../../core/model/ArkExport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -72,7 +71,7 @@ export class PagBuilder {
     private globalThisValue: Value = new Local(GLOBAL_THIS);
     private globalThisPagNode?: PagGlobalThisNode;
     private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
-    private exportVariableMap: Map<Local, Local[]> = new Map();
+    private externalScopeVariableMap: Map<Local, Local[]> = new Map();
 
     constructor(p: Pag, cg: CallGraph, s: Scene, kLimit: number) {
         this.pag = p;
@@ -481,9 +480,9 @@ export class PagBuilder {
             let baseNodeIDs = this.pag.getNodesByValue(base);
             if (!baseNodeIDs) {
                 // bind the call site to export base
-                let exportBaseLocal = this.getExportLocal(base, funcID);
-                if (exportBaseLocal) {
-                    baseNodeIDs = this.pag.getNodesByValue(exportBaseLocal);
+                let interProceduralLocal = this.getSourceValueFromExternalScope(base, funcID);
+                if (interProceduralLocal) {
+                    baseNodeIDs = this.pag.getNodesByValue(interProceduralLocal);
                 }
             }
 
@@ -756,9 +755,9 @@ export class PagBuilder {
         if (!srcNodeId) {
             // this check is for export local and closure use
             // replace the invoke base, because its origin base has no pag node
-            let exportBaseLocal = this.getExportLocal(srcBaseLocal, callerFunID);
-            if (exportBaseLocal) {
-                srcNodeId = this.pag.hasCtxNode(cid, exportBaseLocal);
+            let interProceduralLocal = this.getSourceValueFromExternalScope(srcBaseLocal, callerFunID);
+            if (interProceduralLocal) {
+                srcNodeId = this.pag.hasCtxNode(cid, interProceduralLocal);
             }
         }
 
@@ -849,7 +848,7 @@ export class PagBuilder {
                 } else if (retValue instanceof Constant) {
                     continue;
                 } else if (retValue instanceof AbstractExpr) {
-                    console.log(retValue)
+                    logger.debug(retValue);
                     continue;
                 } else {
                     throw new Error('return dst not a local or constant, but: ' + retValue.getType().toString())
@@ -1411,26 +1410,15 @@ export class PagBuilder {
                 return;
             }
 
-            let type = value.getType();
-            if (!type) {
+            if (!value.getType()) {
                 return;
             }
 
-            let curMethod = this.cg.getArkMethodByFuncID(funcID);
-            if (!curMethod) {
-                return;
-            }
+            let srcLocal = this.getSourceValueFromExternalScope(value, funcID);
 
-            let curFile = curMethod.getDeclaringArkFile();
-            let impInfo = curFile.getImportInfoBy(value.getName());
-            if (!impInfo) {
-                return;
-            }
-
-            let exp = impInfo.getLazyExportInfo();
-            if (exp) {
-                // if `value` is from field base, use origin value instead
-                this.addInterFuncEdge(impInfo.getLazyExportInfo()!, originValue ?? value, funcID);
+            if (srcLocal) {
+                // if `value` is from field base, use origin value(fieldRef) instead
+                this.addInterFuncEdge(srcLocal, originValue ?? value, funcID);
             }
         } else if (value instanceof ArkInstanceFieldRef) {
             let base = value.getBase();
@@ -1440,45 +1428,105 @@ export class PagBuilder {
         }
     }
 
-    private addInterFuncEdge(src: ExportInfo, dst: Value, funcID: FuncID): void {
+    private addInterFuncEdge(src: Local, dst: Value, funcID: FuncID): void {
         this.interFuncPags = this.interFuncPags ?? new Map();
         let interFuncPag = this.interFuncPags.get(funcID) ?? new InterFuncPag();
         // Export a local
-        if (src instanceof ExportInfo && src.getArkExport() instanceof Local) {
-            let srcExportLoal = src.getArkExport() as Local;
-            // Add a InterProcedural edge
-            if (dst instanceof Local) {
-                let e: InterProceduralEdge = {src: srcExportLoal, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
-                interFuncPag.addToInterProceduralEdgeSet(e);
-                this.addExportVariableMap(srcExportLoal, dst as Local);
-            } else if (dst instanceof ArkInstanceFieldRef) {
-                // record the export base use
-                this.addExportVariableMap(srcExportLoal, dst.getBase());
-            }
-            this.interFuncPags.set(funcID, interFuncPag);
+        // Add a InterProcedural edge
+        if (dst instanceof Local) {
+            let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
+            interFuncPag.addToInterProceduralEdgeSet(e);
+            this.addExportVariableMap(src, dst as Local);
+        } else if (dst instanceof ArkInstanceFieldRef) {
+            // record the export base use
+            this.addExportVariableMap(src, dst.getBase());
+        }
+        this.interFuncPags.set(funcID, interFuncPag);
 
-            // Put the function which the src belongs to to worklist
-            let srcFunc = srcExportLoal.getDeclaringStmt()?.getCfg().getDeclaringMethod();
-            if (srcFunc) {
-                let srcFuncID = this.cg.getCallGraphNodeByMethod(srcFunc.getSignature()).getID();
-                let cid = this.ctx.getNewContextID(srcFuncID);
-                let csFuncID = new CSFuncID(cid, srcFuncID);
-                this.buildFuncPagAndAddToWorklist(csFuncID);
-            }
+        // Put the function which the src belongs to to worklist
+        let srcFunc = src.getDeclaringStmt()?.getCfg().getDeclaringMethod();
+        if (srcFunc) {
+            let srcFuncID = this.cg.getCallGraphNodeByMethod(srcFunc.getSignature()).getID();
+            let cid = this.ctx.getNewContextID(srcFuncID);
+            let csFuncID = new CSFuncID(cid, srcFuncID);
+            this.buildFuncPagAndAddToWorklist(csFuncID);
         }
         // Extend other types of src here
     }
 
+    private getSourceValueFromExternalScope(value: Local, funcID: FuncID): Local | undefined {
+        let sourceValue;
+        // TODO: first from default method
+        sourceValue = this.getDefaultMethodSourceValue(value, funcID);
+        if (!sourceValue) {
+            sourceValue = this.getExportSourceValue(value, funcID);
+        }
+
+        return sourceValue;
+    }
+
+    private getDefaultMethodSourceValue(value: Local, funcID: FuncID): Local | undefined {
+        // namespace check
+        let arkMethod = this.cg.getArkMethodByFuncID(funcID);
+        if (!arkMethod) {
+            return;
+        }
+
+        let declaringNameSpace = arkMethod.getDeclaringArkClass().getDeclaringArkNamespace();
+        while (declaringNameSpace) {
+            let nameSpaceLocals = declaringNameSpace.getDefaultClass()
+                .getDefaultArkMethod()?.getBody()?.getLocals() ?? new Map();
+            if (nameSpaceLocals.has(value.getName())) {
+                return nameSpaceLocals.get(value.getName());
+            }
+
+            declaringNameSpace = declaringNameSpace.getDeclaringArkNamespace() ?? undefined;
+        }
+        
+        // file check
+        let declaringFile = arkMethod.getDeclaringArkFile();
+        let fileLocals = declaringFile.getDefaultClass()
+            .getDefaultArkMethod()?.getBody()?.getLocals() ?? new Map();
+        if (!fileLocals.has(value.getName())) {
+            return;
+        }
+
+        return fileLocals.get(value.getName());
+    }
+
+    private getExportSourceValue(value: Local, funcID: FuncID): Local | undefined {
+        let curMethod = this.cg.getArkMethodByFuncID(funcID);
+        if (!curMethod) {
+            return;
+        }
+
+        let curFile = curMethod.getDeclaringArkFile();
+        let impInfo = curFile.getImportInfoBy(value.getName());
+        if (!impInfo) {
+            return;
+        }
+
+        let exportSource = impInfo.getLazyExportInfo();
+        if (!exportSource) {
+            return;
+        }
+
+        let exportSouceValue = exportSource.getArkExport();
+        if (exportSouceValue instanceof Local) {
+            return exportSouceValue;
+        }
+    }
+
     private addExportVariableMap(src: Local, dst: Local): void {
-        let exportMap: Local[] = this.exportVariableMap.get(src) ?? [];
+        let exportMap: Local[] = this.externalScopeVariableMap.get(src) ?? [];
         if (!exportMap.includes(dst)) {
             exportMap.push(dst);
-            this.exportVariableMap.set(src, exportMap);
+            this.externalScopeVariableMap.set(src, exportMap);
         }
     }
 
     public getExportVariableMap(src: Local): Local[] {
-        return this.exportVariableMap.get(src) ?? [];
+        return this.externalScopeVariableMap.get(src) ?? [];
     }
 
     /// Add inter-procedural Pag Nodes and Edges
@@ -1501,12 +1549,5 @@ export class PagBuilder {
         }
 
         return true;
-    }
-
-    private getExportLocal(base: Local, funcID: FuncID): Local | undefined {
-        let exportInfo = this.cg.getArkMethodByFuncID(funcID)?.getDeclaringArkFile().getImportInfoBy(base.getName());
-        if (exportInfo) {
-            return (exportInfo.getLazyExportInfo()?.getArkExport() as Local);
-        }
     }
 }
