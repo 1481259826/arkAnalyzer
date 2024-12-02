@@ -78,13 +78,10 @@ export class PrinterBuilder {
         output: string | undefined = undefined
     ): void {
         let filename = output;
-        if (output === undefined) {
-            filename = join(
-                this.getOutputDir(arkFile),
-                arkFile.getName() + '.dot'
-            );
+        if (filename === undefined) {
+            filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.dot');
         }
-        fs.mkdirSync(dirname(filename as string), { recursive: true });
+        fs.mkdirSync(dirname(filename), { recursive: true });
 
         let printer: Printer = new DotFilePrinter(arkFile);
         PrinterBuilder.dump(printer, filename as string);
@@ -110,6 +107,7 @@ export class PrinterBuilder {
             filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.json');
         }
         fs.mkdirSync(dirname(filename), { recursive: true });
+
         let printer: Printer = new JsonPrinter(arkFile);
         PrinterBuilder.dump(printer, filename);
     }
