@@ -532,8 +532,13 @@ export class CfgBuilder {
                 } else {
                     lastStatement = tryExit;
                 }
+            } else if (ts.isExportAssignment(c)) {
+                if (ts.isNewExpression(c.expression)) {
+                    let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
+                    judgeLastType(s);
+                    lastStatement = s;
+                }
             }
-
         }
         this.scopeLevel--;
         if (lastStatement.type !== 'breakStatement' && lastStatement.type !== 'continueStatement' && lastStatement.type !== 'returnStatement') {

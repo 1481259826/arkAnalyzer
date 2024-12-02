@@ -53,12 +53,13 @@ import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { CONSTRUCTOR_NAME, SUPER_NAME } from './TSConst';
-import { ModelUtils } from './ModelUtils';
+import { findArkExport, ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { ClassSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { ANONYMOUS_CLASS_PREFIX, INSTANCE_INIT_METHOD_NAME, UNKNOWN_FILE_NAME } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { Scene } from '../../Scene';
+import { ArkFile } from '../model/ArkFile';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -663,5 +664,17 @@ export class TypeInference {
             }
         }
         anonField.setSignature(property.getSignature());
+    }
+
+    public static inferExportInfos(file: ArkFile): void {
+        file.getExportInfos().forEach(exportInfo => {
+            if (exportInfo.getArkExport() === undefined) {
+                let arkExport = findArkExport(exportInfo);
+                exportInfo.setArkExport(arkExport);
+                if (arkExport) {
+                    exportInfo.setExportClauseType(arkExport.getExportType());
+                }
+            }
+        });
     }
 }

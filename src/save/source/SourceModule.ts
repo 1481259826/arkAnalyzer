@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { ModifierType } from '../../core/model/ArkBaseModel';
 import { ExportInfo, ExportType } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
 import { ArkMetadataKind } from '../../core/model/ArkMetadata';
@@ -38,8 +37,7 @@ export class SourceExportInfo extends SourceBase {
         });
 
         if (
-            !this.info.getFrom() &&
-            (this.info.getArkExport()?.containsModifier(ModifierType.EXPORT) ||
+            !this.info.getFrom() && (this.info.isExport() ||
                 this.info.getExportClauseType() === ExportType.LOCAL ||
                 this.info.getExportClauseType() === ExportType.TYPE)
         ) {

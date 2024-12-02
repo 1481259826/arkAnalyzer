@@ -108,7 +108,7 @@ import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
 import { buildModifiers } from '../model/builder/builderUtils';
-import { TEMP_LOCAL_PREFIX } from './Const';
+import { DEFAULT_EXPORT_NAME, TEMP_LOCAL_PREFIX } from './Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
 
@@ -212,6 +212,8 @@ export class ArkIRTransformer {
             stmts = this.returnStatementToStmts(node);
         } else if (ts.isFunctionDeclaration(node)) {
             stmts = this.functionDeclarationToStmts(node);
+        } else if (ts.isExportAssignment(node)) {
+            stmts = this.expressionInExportToStmts(node.expression);
         }
 
         this.mapStmtsToTsStmt(stmts, node);
@@ -627,6 +629,29 @@ export class ArkIRTransformer {
             assignStmt.setOperandOriginalPositions(catchValuePositions);
             stmts.push(assignStmt);
         }
+        return stmts;
+    }
+
+    private expressionInExportToStmts(expression: ts.Node): Stmt[] {
+        if (ts.isNewExpression(expression)) {
+            return this.newExpressionInExportToStmts(expression);
+        }
+        return [];
+    }
+
+    private newExpressionInExportToStmts(newExpression: ts.NewExpression): Stmt[] {
+        let stmts: Stmt[] = [];
+        let {
+            value: rightValue,
+            valueOriginalPositions: rightPositions,
+            stmts: rightStmts,
+        } = this.tsNodeToValueAndStmts(newExpression);
+        stmts.push(...rightStmts);
+        let leftValue = this.getOrCreatLocal(DEFAULT_EXPORT_NAME);
+        let leftPositions = rightPositions;
+        const assignStmt = new ArkAssignStmt(leftValue, rightValue);
+        assignStmt.setOperandOriginalPositions([...leftPositions, ...rightPositions]);
+        stmts.push(assignStmt);
         return stmts;
     }
 
@@ -1126,7 +1151,12 @@ export class ArkIRTransformer {
     }
 
     private newExpressionToValueAndStmts(newExpression: ts.NewExpression): ValueAndStmts {
-        const className = newExpression.expression.getText(this.sourceFile);
+        let className = '';
+        if (ts.isClassExpression(newExpression.expression) && newExpression.expression.name) {
+            className = newExpression.expression.name.text;
+        } else {
+            className = newExpression.expression.getText(this.sourceFile);
+        }
         if (className === Builtin.ARRAY) {
             return this.newArrayExpressionToValueAndStmts(newExpression);
         }
