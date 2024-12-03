@@ -794,6 +794,7 @@ export enum RelationalBinaryOperator {
     InEquality = '!=',
     StrictEquality = '===',
     StrictInequality = '!==',
+    isPropertyOf = 'in',
 }
 
 export type BinaryOperator = NormalBinaryOperator | RelationalBinaryOperator;
@@ -921,6 +922,7 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
             case '||':
             case '==':
             case '===':
+            case 'in':
                 type = BooleanType.getInstance();
                 break;
             case '&':
