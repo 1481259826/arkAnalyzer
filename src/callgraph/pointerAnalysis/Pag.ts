@@ -27,7 +27,7 @@ import { FunctionType } from '../../core/base/Type';
 import { MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { GLOBAL_THIS } from '../../core/common/TSConst';
+import { GLOBAL_THIS_NAME, SET_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -491,11 +491,11 @@ export class PagNewExprNode extends PagNode {
     }
 }
 
-export class PagNewArrayExprNode extends PagNode {
+export class PagNewContainerExprNode extends PagNode {
     // store the cloned array ref node
     elementNode: NodeID | undefined;
 
-    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: ArkNewArrayExpr, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: Value, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt);
     }
 
@@ -631,7 +631,7 @@ export class Pag extends BaseGraph {
 
     public getOrClonePagArrayFieldNode(src: PagArrayNode, basePt: NodeID): PagInstanceFieldNode {
         let baseNode = this.getNode(basePt);
-        if (baseNode instanceof PagNewArrayExprNode) {
+        if (baseNode instanceof PagNewContainerExprNode) {
             // check if Array Ref real node has been created or not, if not: create a real Array Ref node
             let existedNode = baseNode.getElementNode();
             if (existedNode) {
@@ -659,7 +659,7 @@ export class Pag extends BaseGraph {
             } else {
                 // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
                 // value has been replaced in param
-                if (value.getName() === GLOBAL_THIS && value.getDeclaringStmt() == null) {
+                if (value.getName() === GLOBAL_THIS_NAME && value.getDeclaringStmt() == null) {
                     pagNode = new PagGlobalThisNode(id, -1, value)
                 } else {
                     pagNode = new PagLocalNode(id, cid, value, stmt);
@@ -686,9 +686,14 @@ export class Pag extends BaseGraph {
         } else if (value instanceof ArkArrayRef) {
             pagNode = new PagArrayNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
-            pagNode = new PagNewExprNode(id, cid, value, stmt);
+            let className: string = value.getClassType().getClassSignature().getClassName();
+            if (className === SET_NAME) {
+                pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
+            } else {
+                pagNode = new PagNewExprNode(id, cid, value, stmt);
+            }
         } else if (value instanceof ArkNewArrayExpr) {
-            pagNode = new PagNewArrayExprNode(id, cid, value, stmt);
+            pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
@@ -866,7 +871,7 @@ export class Pag extends BaseGraph {
                 if (src instanceof PagFuncNode ||
                     src instanceof PagGlobalThisNode ||
                     src instanceof PagNewExprNode ||
-                    src instanceof PagNewArrayExprNode
+                    src instanceof PagNewContainerExprNode
                 ) {
                     this.addrEdge.add(edge);
                     this.stashAddrEdge.add(edge);
