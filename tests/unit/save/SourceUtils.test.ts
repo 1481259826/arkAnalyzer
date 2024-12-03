@@ -37,7 +37,7 @@ describe('SourceUtilsTest', () => {
     });
 
     it('UnknownType case', () => {
-        let type = new ty.UnknownType();
+        let type = ty.UnknownType.getInstance();
         assert.equal(transformer.typeToString(type), 'any');
     });
 
@@ -60,7 +60,7 @@ describe('SourceUtilsTest', () => {
     });
 
     it('VoidType case', () => {
-        let type = new ty.VoidType();
+        let type = ty.VoidType.getInstance();
         assert.equal(transformer.typeToString(type), 'void');
     });
 
