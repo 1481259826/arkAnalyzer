@@ -178,6 +178,10 @@ export abstract class ArkBaseModel {
         return this.containsModifier(ModifierType.EXPORT);
     }
 
+    public isDefault(): boolean {
+        return this.containsModifier(ModifierType.DEFAULT);
+    }
+
     /** @deprecated Use {@link isExport} instead. */
     public isExported(): boolean {
         return this.isExport();

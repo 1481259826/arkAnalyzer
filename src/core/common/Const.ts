@@ -39,5 +39,8 @@ export const UNKNOWN_CLASS_NAME = ''; // temp for being compatible with existing
 export const UNKNOWN_FIELD_NAME = ''; // temp for being compatible with existing type inference
 export const UNKNOWN_METHOD_NAME = ''; // temp for being compatible with existing type inference
 
+// Export const
+export const DEFAULT_EXPORT_NAME = 'default';
+
 // IR const
 export const TEMP_LOCAL_PREFIX = NAME_PREFIX;

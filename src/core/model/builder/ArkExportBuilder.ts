@@ -19,14 +19,21 @@ import { ArkExport, ExportInfo, ExportType, FromInfo } from '../ArkExport';
 import { buildModifiers } from './builderUtils';
 import { ArkFile } from '../ArkFile';
 import { ALL, DEFAULT } from "../../common/TSConst";
-import { ModifierType } from '../ArkBaseModel';
+import { ArkBaseModel, ModifierType } from '../ArkBaseModel';
 import { IRUtils } from '../../common/IRUtils';
+import { DEFAULT_EXPORT_NAME } from '../../common/Const';
 
 export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 
 function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineColPosition): ExportInfo {
+    let exportClauseName: string;
+    if (arkInstance instanceof ArkBaseModel && arkInstance.isDefault()) {
+        exportClauseName = DEFAULT_EXPORT_NAME;
+    } else {
+        exportClauseName = arkInstance.getName();
+    }
     return new ExportInfo.Builder()
-        .exportClauseName(arkInstance.getName())
+        .exportClauseName(exportClauseName)
         .exportClauseType(arkInstance.getExportType())
         .modifiers(arkInstance.getModifiers())
         .arkExport(arkInstance)
@@ -99,7 +106,8 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
     const originTsPosition = LineColPosition.buildFromNode(node, sourceFile);
     const tsSourceCode = node.getText(sourceFile);
     let modifiers = buildModifiers(node);
-    if (isKeyword(node.getChildren(sourceFile), ts.SyntaxKind.DefaultKeyword)) {
+
+    if (isKeyword(node.getChildren(sourceFile), ts.SyntaxKind.DefaultKeyword) || node.isExportEquals) {
         modifiers |= ModifierType.DEFAULT;
     }
     if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { // just like: export default {a,b,c}

@@ -142,6 +142,11 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
         } else if (ts.isExportDeclaration(child)) {
             buildExportDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else if (ts.isExportAssignment(child)) {
+            if (ts.isNewExpression(child.expression) && ts.isClassExpression(child.expression.expression)) {
+                let cls: ArkClass = new ArkClass();
+                buildNormalArkClassFromArkFile(child.expression.expression, arkFile, cls, astRoot);
+                arkFile.addArkClass(cls);
+            }
             buildExportAssignment(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else if (ts.isVariableStatement(child) && isExported(child.modifiers)) {
             buildExportVariableStatement(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));

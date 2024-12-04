@@ -15,21 +15,84 @@
 
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
-import { FileSignature, Local, Scene, SceneConfig } from '../../src';
+import { ArkClass, FileSignature, Local, Scene, SceneConfig } from '../../src';
+import { ArkExport, ExportInfo } from '../../src/core/model/ArkExport';
+import { ArkBaseModel, ModifierType } from '../../src/core/model/ArkBaseModel';
+import {
+    DefaultExportClassWithDeclaring_Expect_IR,
+    ExportClassWithDeclaring_Expect_IR,
+    ExportClass_Expect_IR,
+    ExportClassWithAs_Expect_IR,
+    DefaultSingleExportClass_Expect_IR,
+    DefaultExportClassInstanceWithNewIndependent_Expect_IR,
+    DefaultExportClassInstanceWithNew_Expect_IR,
+    DefaultExportClassInstanceWithLetIndependent_Expect_IR,
+    ExportClassInstanceWithLet_Expect_IR
+} from '../resources/exports/class/expectedIR';
+import {
+    ExportAllFromOtherFile_Expect_IR,
+    ExportAllFromThisFile_Expect_IR,
+    ExportAllWithAsNameFromOtherFile_Expect_IR,
+    ExportAllWithAsNameFromThisFile_Expect_IR,
+} from '../resources/exports/from/expectedIR';
 
-
-describe("export Test", () => {
+function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
-    config.getSdksObj().push({ moduleName: "", name: "etsSdk", path: path.join(__dirname, "../resources/Sdk") })
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.getSdksObj().push({
         moduleName: '',
         name: 'lottie',
         path: path.join(__dirname, '../resources/lottieModule'),
     });
-    config.buildFromProjectDir(path.join(__dirname, "../resources/exports"));
+    config.buildFromProjectDir(path.join(__dirname, '../resources/exports'));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
+    return projectScene;
+}
+
+let projectScene = buildScene();
+
+function compareModifiers(arkModel: ArkBaseModel | ArkExport, expectedModifiers: any): void {
+    if (expectedModifiers.includes('EXPORT')) {
+        assert.isTrue(arkModel.containsModifier(ModifierType.EXPORT));
+    } else {
+        assert.isFalse(arkModel.containsModifier(ModifierType.EXPORT));
+    }
+    if (expectedModifiers.includes('DEFAULT')) {
+        assert.isTrue(arkModel.containsModifier(ModifierType.DEFAULT));
+    } else {
+        assert.isFalse(arkModel.containsModifier(ModifierType.DEFAULT));
+    }
+}
+
+function compareExportInfo(exportInfo: ExportInfo | undefined, expectIR: any): void {
+    assert.isDefined(exportInfo);
+    assert.equal(exportInfo!.isDefault(), expectIR._default);
+    assert.equal(exportInfo!.getNameBeforeAs(), expectIR.nameBeforeAs);
+    assert.equal(exportInfo!.getExportClauseType(), expectIR.exportClauseType);
+    if (expectIR.modifiers !== undefined) {
+        compareModifiers(exportInfo as ExportInfo, expectIR.modifiers);
+    }
+
+    const arkExport = exportInfo!.getArkExport();
+    assert.isDefined(arkExport);
+    assert.isNotNull(arkExport);
+    assert.isTrue(arkExport instanceof expectIR.arkExport.type);
+    if (expectIR.arkExport.type === ArkClass) {
+        assert.equal((arkExport as ArkClass).getSignature().toString(), expectIR.arkExport.classSignature);
+        if (expectIR.arkExport.modifiers !== undefined) {
+            compareModifiers(arkExport as ArkExport, expectIR.arkExport.modifiers);
+        }
+    } else if (expectIR.arkExport.type === Local) {
+        if (expectIR.arkExport.local.type === ArkClass) {
+            assert.equal((arkExport as Local).getType().toString(), expectIR.arkExport.local.classSignature);
+        }
+    }
+}
+
+describe("export Test", () => {
+
     it('debug case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const file = projectScene.getFile(fileId);
@@ -118,4 +181,99 @@ describe("function Test", () => {
             ?.getArkExport()?.toString();
         assert.equal(signature, 'Lottie')
     })
+})
+
+describe("export Class Test", () => {
+    it('default export class when declaring class', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassNormal.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(DefaultExportClassWithDeclaring_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, DefaultExportClassWithDeclaring_Expect_IR);
+    });
+
+    it('export class independently from class declaration', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassNormal.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(ExportClass_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportClass_Expect_IR);
+    });
+
+    it('export class independently from class declaration by renaming', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassNormal.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(ExportClassWithAs_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportClassWithAs_Expect_IR);
+    });
+
+    it('export class when declaring class', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassNormal.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(ExportClassWithDeclaring_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportClassWithDeclaring_Expect_IR);
+    });
+
+    it('single export class independently from class declaration', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/singleExportClass.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(DefaultSingleExportClass_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, DefaultSingleExportClass_Expect_IR);
+    });
+
+    it('default export class instance with new independently', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassInstanceWithNewIndependent.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(DefaultExportClassInstanceWithNewIndependent_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, DefaultExportClassInstanceWithNewIndependent_Expect_IR);
+    });
+
+    it('default export class instance with new', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassInstanceWithNew.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(DefaultExportClassInstanceWithNew_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, DefaultExportClassInstanceWithNew_Expect_IR);
+    });
+
+    it('default export class instance with independent let', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassInstanceWithLet.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(DefaultExportClassInstanceWithLetIndependent_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, DefaultExportClassInstanceWithLetIndependent_Expect_IR);
+    });
+
+    it('export class instance with let', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassInstanceWithLet.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(ExportClassInstanceWithLet_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportClassInstanceWithLet_Expect_IR);
+    });
+})
+
+describe("export From Test", () => {
+    it('export all from this file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromThisFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllFromThisFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllFromThisFile_Expect_IR);
+    });
+
+    it('export all with as name from this file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromThisFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllWithAsNameFromThisFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllWithAsNameFromThisFile_Expect_IR);
+    });
+
+    it('export all from other file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromOtherFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllFromOtherFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllFromOtherFile_Expect_IR);
+    });
+
+    it('export all with as name from other file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromOtherFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllWithAsNameFromOtherFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllWithAsNameFromOtherFile_Expect_IR);
+    });
 })

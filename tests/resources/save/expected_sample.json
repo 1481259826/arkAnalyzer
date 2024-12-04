@@ -4520,7 +4520,7 @@
   "exportInfos": [
     {
       "exportClauseName": "Person",
-      "exportClauseType": 9,
+      "exportClauseType": 1,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4530,7 +4530,7 @@
     },
     {
       "exportClauseName": "Student",
-      "exportClauseType": 9,
+      "exportClauseType": 1,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4540,7 +4540,7 @@
     },
     {
       "exportClauseName": "Shape",
-      "exportClauseType": 9,
+      "exportClauseType": 1,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4550,7 +4550,7 @@
     },
     {
       "exportClauseName": "Circle",
-      "exportClauseType": 9,
+      "exportClauseType": 1,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4560,7 +4560,7 @@
     },
     {
       "exportClauseName": "simpleFunction",
-      "exportClauseType": 9,
+      "exportClauseType": 2,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4570,7 +4570,7 @@
     },
     {
       "exportClauseName": "complexFunction",
-      "exportClauseType": 9,
+      "exportClauseType": 2,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4580,7 +4580,7 @@
     },
     {
       "exportClauseName": "sum",
-      "exportClauseType": 9,
+      "exportClauseType": 3,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4590,7 +4590,7 @@
     },
     {
       "exportClauseName": "fileContent",
-      "exportClauseType": 9,
+      "exportClauseType": 3,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
@@ -4600,7 +4600,7 @@
     },
     {
       "exportClauseName": "processInput",
-      "exportClauseType": 9,
+      "exportClauseType": 2,
       "isDefault": false,
       "modifiers": 0,
       "originTsPosition": {
