@@ -18,7 +18,7 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
+import { ClassSignature, FileSignature, fileSignatureCompare, MethodSignature } from '../model/ArkSignature';
 import { ArkExport, ExportInfo, ExportType, FromInfo } from '../model/ArkExport';
 import { ArkField } from '../model/ArkField';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
@@ -451,6 +451,15 @@ export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
     if (!file) {
         logger.warn(`${fromInfo.getOriginName()} ${fromInfo.getFrom()} file not found: 
         ${fromInfo.getDeclaringArkFile()?.getFileSignature()?.toString()}`);
+        return null;
+    }
+    if (fileSignatureCompare(file.getFileSignature(), fromInfo.getDeclaringArkFile().getFileSignature())) {
+        for (let exportInfo of file.getExportInfos()) {
+            if (exportInfo.getOriginName() === fromInfo.getOriginName()) {
+                exportInfo.setArkExport(file.getDefaultClass());
+                return exportInfo;
+            }
+        }
         return null;
     }
     let exportInfo = findExportInfoInfile(fromInfo, file) || null;

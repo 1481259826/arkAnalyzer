@@ -29,6 +29,12 @@ import {
     DefaultExportClassInstanceWithLetIndependent_Expect_IR,
     ExportClassInstanceWithLet_Expect_IR
 } from '../resources/exports/class/expectedIR';
+import {
+    ExportAllFromOtherFile_Expect_IR,
+    ExportAllFromThisFile_Expect_IR,
+    ExportAllWithAsNameFromOtherFile_Expect_IR,
+    ExportAllWithAsNameFromThisFile_Expect_IR,
+} from '../resources/exports/from/expectedIR';
 
 function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
@@ -239,5 +245,35 @@ describe("export Class Test", () => {
         const file = projectScene.getFile(fileId);
         const exportInfo = file?.getExportInfoBy(ExportClassInstanceWithLet_Expect_IR.exportClauseName);
         compareExportInfo(exportInfo, ExportClassInstanceWithLet_Expect_IR);
+    });
+})
+
+describe("export From Test", () => {
+    it('export all from this file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromThisFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllFromThisFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllFromThisFile_Expect_IR);
+    });
+
+    it('export all with as name from this file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromThisFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllWithAsNameFromThisFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllWithAsNameFromThisFile_Expect_IR);
+    });
+
+    it('export all from other file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromOtherFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllFromOtherFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllFromOtherFile_Expect_IR);
+    });
+
+    it('export all with as name from other file', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromOtherFile.ts');
+        const file = projectScene.getFile(fileId);
+        const defaultExport = file?.getExportInfoBy(ExportAllWithAsNameFromOtherFile_Expect_IR.exportClauseName);
+        compareExportInfo(defaultExport, ExportAllWithAsNameFromOtherFile_Expect_IR);
     });
 })
