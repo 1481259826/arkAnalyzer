@@ -106,9 +106,9 @@ import {
 import { FullPosition, LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
-import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, DEFAULT, THIS_NAME } from './TSConst';
 import { buildModifiers } from '../model/builder/builderUtils';
-import { DEFAULT_EXPORT_NAME, TEMP_LOCAL_PREFIX } from './Const';
+import { TEMP_LOCAL_PREFIX } from './Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
 
@@ -633,21 +633,21 @@ export class ArkIRTransformer {
     }
 
     private expressionInExportToStmts(expression: ts.Node): Stmt[] {
-        if (ts.isNewExpression(expression)) {
-            return this.newExpressionInExportToStmts(expression);
+        if (ts.isNewExpression(expression) || ts.isObjectLiteralExpression(expression)) {
+            return this.newClassInExportToStmts(expression);
         }
         return [];
     }
 
-    private newExpressionInExportToStmts(newExpression: ts.NewExpression): Stmt[] {
+    private newClassInExportToStmts(expression: ts.NewExpression | ts.ObjectLiteralExpression): Stmt[] {
         let stmts: Stmt[] = [];
         let {
             value: rightValue,
             valueOriginalPositions: rightPositions,
             stmts: rightStmts,
-        } = this.tsNodeToValueAndStmts(newExpression);
+        } = this.tsNodeToValueAndStmts(expression);
         stmts.push(...rightStmts);
-        let leftValue = this.getOrCreatLocal(DEFAULT_EXPORT_NAME);
+        let leftValue = this.getOrCreatLocal(DEFAULT);
         let leftPositions = rightPositions;
         const assignStmt = new ArkAssignStmt(leftValue, rightValue);
         assignStmt.setOperandOriginalPositions([...leftPositions, ...rightPositions]);

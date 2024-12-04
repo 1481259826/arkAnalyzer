@@ -35,6 +35,7 @@ import {
     ExportAllWithAsNameFromOtherFile_Expect_IR,
     ExportAllWithAsNameFromThisFile_Expect_IR,
 } from '../resources/exports/from/expectedIR';
+import { DefaultExportObjectLiteral_Expect_IR } from '../resources/exports/objectLiteral/expectedIR';
 
 function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
@@ -187,8 +188,8 @@ describe("export Class Test", () => {
     it('default export class when declaring class', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'class/exportClassNormal.ts');
         const file = projectScene.getFile(fileId);
-        const defaultExport = file?.getExportInfoBy(DefaultExportClassWithDeclaring_Expect_IR.exportClauseName);
-        compareExportInfo(defaultExport, DefaultExportClassWithDeclaring_Expect_IR);
+        const exportInfo = file?.getExportInfoBy(DefaultExportClassWithDeclaring_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, DefaultExportClassWithDeclaring_Expect_IR);
     });
 
     it('export class independently from class declaration', () => {
@@ -248,32 +249,48 @@ describe("export Class Test", () => {
     });
 })
 
+describe("export ObjectLiteral Test", () => {
+    it('default export ObjectLiteral', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'objectLiteral/exportObjectLiteral.ts');
+        const file = projectScene.getFile(fileId);
+        const exportInfo = file?.getExportInfoBy(DefaultExportObjectLiteral_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, DefaultExportObjectLiteral_Expect_IR);
+
+        const anonymousClass = file?.getClassWithName('%AC$%dflt$%dflt$0');
+        assert.isDefined(anonymousClass);
+        assert.isNotNull(anonymousClass);
+        assert.isTrue((anonymousClass as ArkClass).getFields().some(field => field.getName() === 'data'));
+        assert.isTrue((anonymousClass as ArkClass).getMethods().some(m => m.getName() === 'onCreate'));
+        assert.isTrue((anonymousClass as ArkClass).getMethods().some(m => m.getName() === 'onDestroy'));
+    });
+})
+
 describe("export From Test", () => {
     it('export all from this file', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromThisFile.ts');
         const file = projectScene.getFile(fileId);
-        const defaultExport = file?.getExportInfoBy(ExportAllFromThisFile_Expect_IR.exportClauseName);
-        compareExportInfo(defaultExport, ExportAllFromThisFile_Expect_IR);
+        const exportInfo = file?.getExportInfoBy(ExportAllFromThisFile_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportAllFromThisFile_Expect_IR);
     });
 
     it('export all with as name from this file', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromThisFile.ts');
         const file = projectScene.getFile(fileId);
-        const defaultExport = file?.getExportInfoBy(ExportAllWithAsNameFromThisFile_Expect_IR.exportClauseName);
-        compareExportInfo(defaultExport, ExportAllWithAsNameFromThisFile_Expect_IR);
+        const exportInfo = file?.getExportInfoBy(ExportAllWithAsNameFromThisFile_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportAllWithAsNameFromThisFile_Expect_IR);
     });
 
     it('export all from other file', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromOtherFile.ts');
         const file = projectScene.getFile(fileId);
-        const defaultExport = file?.getExportInfoBy(ExportAllFromOtherFile_Expect_IR.exportClauseName);
-        compareExportInfo(defaultExport, ExportAllFromOtherFile_Expect_IR);
+        const exportInfo = file?.getExportInfoBy(ExportAllFromOtherFile_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportAllFromOtherFile_Expect_IR);
     });
 
     it('export all with as name from other file', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'from/exportAllFromOtherFile.ts');
         const file = projectScene.getFile(fileId);
-        const defaultExport = file?.getExportInfoBy(ExportAllWithAsNameFromOtherFile_Expect_IR.exportClauseName);
-        compareExportInfo(defaultExport, ExportAllWithAsNameFromOtherFile_Expect_IR);
+        const exportInfo = file?.getExportInfoBy(ExportAllWithAsNameFromOtherFile_Expect_IR.exportClauseName);
+        compareExportInfo(exportInfo, ExportAllWithAsNameFromOtherFile_Expect_IR);
     });
 })

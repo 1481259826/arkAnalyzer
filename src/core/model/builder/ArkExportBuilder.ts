@@ -18,17 +18,18 @@ import { LineColPosition } from '../../base/Position';
 import { ArkExport, ExportInfo, ExportType, FromInfo } from '../ArkExport';
 import { buildModifiers } from './builderUtils';
 import { ArkFile } from '../ArkFile';
-import { ALL, DEFAULT } from "../../common/TSConst";
+import { ALL, DEFAULT } from '../../common/TSConst';
 import { ArkBaseModel, ModifierType } from '../ArkBaseModel';
 import { IRUtils } from '../../common/IRUtils';
-import { DEFAULT_EXPORT_NAME } from '../../common/Const';
+import { ArkClass } from '../ArkClass';
+import { buildNormalArkClassFromArkFile } from './ArkClassBuilder';
 
 export { buildExportInfo, buildExportAssignment, buildExportDeclaration };
 
 function buildExportInfo(arkInstance: ArkExport, arkFile: ArkFile, line: LineColPosition): ExportInfo {
     let exportClauseName: string;
     if (arkInstance instanceof ArkBaseModel && arkInstance.isDefault()) {
-        exportClauseName = DEFAULT_EXPORT_NAME;
+        exportClauseName = DEFAULT;
     } else {
         exportClauseName = arkInstance.getName();
     }
@@ -110,38 +111,28 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
     if (isKeyword(node.getChildren(sourceFile), ts.SyntaxKind.DefaultKeyword) || node.isExportEquals) {
         modifiers |= ModifierType.DEFAULT;
     }
-    if (ts.isObjectLiteralExpression(node.expression) && node.expression.properties) { // just like: export default {a,b,c}
-        node.expression.properties.forEach((property) => {
-            if (property.name && ts.isIdentifier(property.name)) {
-                const exportInfo = new ExportInfo.Builder()
-                    .exportClauseName(property.name.text)
-                    .exportClauseType(ExportType.UNKNOWN)
-                    .nameBeforeAs(property.name.text)
-                    .modifiers(modifiers)
-                    .tsSourceCode(tsSourceCode)
-                    .originTsPosition(originTsPosition)
-                    .declaringArkFile(arkFile)
-                    .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
-                    .build();
-                exportInfos.push(exportInfo);
-            }
-        });
-    } else {
-        const exportInfo = new ExportInfo.Builder()
-            .exportClauseType(ExportType.UNKNOWN)
-            .modifiers(modifiers)
-            .tsSourceCode(tsSourceCode)
-            .originTsPosition(originTsPosition)
-            .declaringArkFile(arkFile)
-            .exportClauseName(DEFAULT)
-            .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
-        if (ts.isIdentifier(node.expression)) { // just like: export default xx
-            exportInfo.nameBeforeAs(node.expression.text);
-        } else if (ts.isAsExpression(node.expression)) { // just like: export default xx as YY
-            exportInfo.nameBeforeAs(node.expression.expression.getText(sourceFile))
-        }
-        exportInfos.push(exportInfo.build());
+
+    let exportInfo = new ExportInfo.Builder()
+        .exportClauseType(ExportType.UNKNOWN)
+        .modifiers(modifiers)
+        .tsSourceCode(tsSourceCode)
+        .originTsPosition(originTsPosition)
+        .declaringArkFile(arkFile)
+        .exportClauseName(DEFAULT)
+        .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()));
+
+    if (ts.isNewExpression(node.expression) && ts.isClassExpression(node.expression.expression)) {
+        let cls: ArkClass = new ArkClass();
+        buildNormalArkClassFromArkFile(node.expression.expression, arkFile, cls, sourceFile);
     }
+
+    if (ts.isIdentifier(node.expression)) { // just like: export default xx
+        exportInfo.nameBeforeAs(node.expression.text);
+    } else if (ts.isAsExpression(node.expression)) { // just like: export default xx as YY
+        exportInfo.nameBeforeAs(node.expression.expression.getText(sourceFile))
+    }
+    exportInfos.push(exportInfo.build());
+
     return exportInfos;
 }
 

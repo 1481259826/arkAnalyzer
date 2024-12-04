@@ -14,12 +14,12 @@
  */
 
 import { ExportType } from '../../../../src/core/model/ArkExport';
-import { ArkClass, DEFAULT_EXPORT_NAME, Local } from '../../../../src';
+import { ArkClass, DEFAULT, Local } from '../../../../src';
 
 export const DefaultExportClassWithDeclaring_Expect_IR = {
     _default: true,
     nameBeforeAs: undefined,
-    exportClauseName: DEFAULT_EXPORT_NAME,
+    exportClauseName: DEFAULT,
     exportClauseType: ExportType.CLASS,
     modifiers: ['EXPORT', 'DEFAULT'],
     arkExport: {
@@ -69,10 +69,9 @@ export const ExportClassWithDeclaring_Expect_IR = {
 };
 
 export const DefaultSingleExportClass_Expect_IR = {
-    // TODO: this should be default export
     _default: true,
     nameBeforeAs: 'MathUtils',
-    exportClauseName: DEFAULT_EXPORT_NAME,
+    exportClauseName: DEFAULT,
     exportClauseType: ExportType.CLASS,
     modifiers: ['DEFAULT'],
     arkExport: {
@@ -85,7 +84,7 @@ export const DefaultSingleExportClass_Expect_IR = {
 export const DefaultExportClassInstanceWithNewIndependent_Expect_IR = {
     _default: true,
     nameBeforeAs: undefined,
-    exportClauseName: DEFAULT_EXPORT_NAME,
+    exportClauseName: DEFAULT,
     exportClauseType: ExportType.LOCAL,
     modifiers: ['DEFAULT'],
     arkExport: {
@@ -100,7 +99,7 @@ export const DefaultExportClassInstanceWithNewIndependent_Expect_IR = {
 export const DefaultExportClassInstanceWithNew_Expect_IR = {
     _default: true,
     nameBeforeAs: undefined,
-    exportClauseName: DEFAULT_EXPORT_NAME,
+    exportClauseName: DEFAULT,
     exportClauseType: ExportType.LOCAL,
     modifiers: ['DEFAULT'],
     arkExport: {
@@ -115,7 +114,7 @@ export const DefaultExportClassInstanceWithNew_Expect_IR = {
 export const DefaultExportClassInstanceWithLetIndependent_Expect_IR = {
     _default: true,
     nameBeforeAs: 'MU',
-    exportClauseName: DEFAULT_EXPORT_NAME,
+    exportClauseName: DEFAULT,
     exportClauseType: ExportType.LOCAL,
     modifiers: ['DEFAULT'],
     arkExport: {
