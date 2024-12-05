@@ -566,7 +566,7 @@ export abstract class AnnotationType extends Type {
         return this.originType;
     }
 
-    public getTypeString() {
+    public getTypeString(): string {
         return this.originType;
     }
 }
