@@ -632,7 +632,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 if (decorators.length === 1) {
                     this.fieldTypes.set(field.getName(), decorators[0]);
                 } else {
-                    this.fieldTypes.set(field.getName(), decorators);
+                    this.fieldTypes.set(field.getName(), decorators[0]);
                 }
             } else {
                 this.fieldTypes.set(field.getName(), field.getSignature().getType());

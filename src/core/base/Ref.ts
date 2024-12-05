@@ -273,7 +273,7 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
                     continue;
                 }
                 newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
-                if (!TypeInference.isUnclearType(newFieldSignature)) {
+                if (!TypeInference.isUnclearType(newFieldSignature?.getType())) {
                     break;
                 }
             }
