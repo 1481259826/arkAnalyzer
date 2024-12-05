@@ -533,7 +533,7 @@ export class CfgBuilder {
                     lastStatement = tryExit;
                 }
             } else if (ts.isExportAssignment(c)) {
-                if (ts.isNewExpression(c.expression)) {
+                if (ts.isNewExpression(c.expression) || ts.isObjectLiteralExpression(c.expression)) {
                     let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
                     judgeLastType(s);
                     lastStatement = s;
