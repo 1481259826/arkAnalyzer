@@ -311,7 +311,7 @@ export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, metho
     if (node) {
         return tsNode2Type(node, sourceFile, method);
     } else {
-        return new UnknownType();
+        return UnknownType.getInstance();
     }
 }
 

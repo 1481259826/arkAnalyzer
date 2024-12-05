@@ -47,7 +47,7 @@ export class AnyType extends Type {
         return this.INSTANCE;
     }
 
-    constructor() {
+    private constructor() {
         super();
     }
 
@@ -67,7 +67,7 @@ export class UnknownType extends Type {
         return this.INSTANCE;
     }
 
-    constructor() {
+    private constructor() {
         super();
     }
 
@@ -131,7 +131,7 @@ export abstract class PrimitiveType extends Type {
 export class BooleanType extends PrimitiveType {
     private static readonly INSTANCE = new BooleanType();
 
-    constructor() {
+    private constructor() {
         super(BOOLEAN_KEYWORD);
     }
 
@@ -143,7 +143,7 @@ export class BooleanType extends PrimitiveType {
 export class NumberType extends PrimitiveType {
     private static readonly INSTANCE = new NumberType();
 
-    constructor() {
+    private constructor() {
         super(NUMBER_KEYWORD);
     }
 
@@ -155,7 +155,7 @@ export class NumberType extends PrimitiveType {
 export class StringType extends PrimitiveType {
     private static readonly INSTANCE = new StringType();
 
-    constructor() {
+    private constructor() {
         super(STRING_KEYWORD);
     }
 
@@ -175,7 +175,7 @@ export class NullType extends PrimitiveType {
         return this.INSTANCE;
     }
 
-    constructor() {
+    private constructor() {
         super(NULL_KEYWORD);
     }
 }
@@ -191,7 +191,7 @@ export class UndefinedType extends PrimitiveType {
         return this.INSTANCE;
     }
 
-    constructor() {
+    private constructor() {
         super(UNDEFINED_KEYWORD);
     }
 }
@@ -261,7 +261,7 @@ export class VoidType extends Type {
         return this.INSTANCE;
     }
 
-    constructor() {
+    private constructor() {
         super();
     }
 
@@ -277,7 +277,7 @@ export class NeverType extends Type {
         return this.INSTANCE;
     }
 
-    constructor() {
+    private constructor() {
         super();
     }
 
