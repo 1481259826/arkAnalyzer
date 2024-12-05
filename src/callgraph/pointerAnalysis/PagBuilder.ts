@@ -29,9 +29,9 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode } from './Pag';
 import { PtsSet } from './PtsDS';
-import { GLOBAL_THIS_NAME, SET_NAME } from '../../core/common/TSConst';
+import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -559,8 +559,9 @@ export class PagBuilder {
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
                 let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
-                let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
-                srcNodes.push(...staticSrcNodes);
+                // TODO: block container
+                srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
+                srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid));
 
                 // Pass base's pts to callee's this pointer
                 if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkInstanceInvokeExpr) {
@@ -868,8 +869,8 @@ export class PagBuilder {
             return srcNodes;
         }
 
-        if (calleeMethod.getDeclaringArkClass().getName() === SET_NAME) {
-            srcNodes.push(...this.processContainerPagCallEdge(cs, callerCid));
+        // block the container SDK
+        if (calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)')) {
             return srcNodes;
         }
 
@@ -964,23 +965,24 @@ export class PagBuilder {
         return srcNodes;
     }
 
-    private processContainerPagCallEdge(cs: CallSite, cid: ContextID): NodeID[] {
+    private processContainerPagCallEdge(cs: CallSite, cid: ContextID, baseClassPTNode: NodeID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
-        let calleeClass: ArkClass = calleeMethod?.getDeclaringArkClass()!;
+        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
 
-        if (!calleeMethod) {
+        if (!calleeMethod || !(ptNode instanceof PagNewContainerExprNode)) {
             return srcNodes;
         }
 
-        let calleeClassName = calleeClass.getName();
-        let calleeMethodName = calleeMethod.getName();
         let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
 
-        if ((calleeClassName === SET_NAME && calleeMethodName === 'add')) {
-            let srcPagNode = this.getOrNewPagNode(cid, containerValue, cs.callStmt);
-            let dstPagNode = this.getOrNewPagNode(cid, cs.args![0], cs.callStmt);
+        if ((calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)'))) {
+            let srcNode = this.pag.getOrNewNode(cid, cs.args![0], cs.callStmt);
+            let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
+
+            this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
+            srcNodes.push(srcNode.getID());
         }
 
         return srcNodes;

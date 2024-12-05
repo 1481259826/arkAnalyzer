@@ -261,7 +261,7 @@ export class PointerAnalysis extends AbstractAnalysis {
                 // clone the real field node with abstract field node
                 let dstNode;
                 if (fieldNode instanceof PagArrayNode) {
-                    dstNode = this.pag.getOrClonePagArrayFieldNode(fieldNode, pt);
+                    dstNode = this.pag.getOrClonePagContainerFieldNode(pt, fieldNode);
                 } else {
                     dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                 }
@@ -286,7 +286,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             for (let pt of diffPts!) {
                 let srcNode;
                 if (fieldNode instanceof PagArrayNode) {
-                    srcNode = this.pag.getOrClonePagArrayFieldNode(fieldNode, pt);
+                    srcNode = this.pag.getOrClonePagContainerFieldNode(pt, fieldNode);
                 } else {
                     srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                 }

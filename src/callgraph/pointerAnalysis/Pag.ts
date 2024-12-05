@@ -23,11 +23,11 @@ import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { Constant } from '../../core/base/Constant';
-import { FunctionType } from '../../core/base/Type';
-import { MethodSignature } from '../../core/model/ArkSignature';
+import { FunctionType, UnknownType } from '../../core/base/Type';
+import { ClassSignature, FieldSignature, FileSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { GLOBAL_THIS_NAME, SET_NAME } from '../../core/common/TSConst';
+import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -52,6 +52,10 @@ export enum StorageLinkEdgeType {
     Local2Property,
     TwoWay
 }
+
+const containerFieldSignature = new FieldSignature('field', 
+    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')), 
+    new UnknownType());
 
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
@@ -349,7 +353,8 @@ export class PagNode extends BaseNode {
                 label = label + '\n' + method;
             }
             label = label + ' ln: ' + this.stmt.getOriginPositionInfo().getLineNo();
-
+        } else if (this.value) {
+            label += `\n${this.value.toString()}`;
         }
 
         return label;
@@ -508,7 +513,10 @@ export class PagNewContainerExprNode extends PagNode {
     }
 
     public getElementNode(): NodeID | undefined {
-        return this.elementNode;
+        if (this.elementNode) {
+            return this.elementNode;
+        }
+        return undefined;
     }
 }
 
@@ -629,21 +637,28 @@ export class Pag extends BaseGraph {
         }
     }
 
-    public getOrClonePagArrayFieldNode(src: PagArrayNode, basePt: NodeID): PagInstanceFieldNode {
-        let baseNode = this.getNode(basePt);
+    public getOrClonePagContainerFieldNode(basePt: NodeID, src?: PagArrayNode, base?: Local): PagInstanceFieldNode {
+        let baseNode = this.getNode(basePt) as PagNode;
         if (baseNode instanceof PagNewContainerExprNode) {
             // check if Array Ref real node has been created or not, if not: create a real Array Ref node
-            let existedNode = baseNode.getElementNode();
+            let existedNode = baseNode.getElementNode(), fieldNode!: PagNode;
             if (existedNode) {
                 return this.getNode(existedNode) as PagInstanceFieldNode;
             }
 
-            let fieldNode = this.getOrClonePagNode(src, basePt);
+            if (src) {
+                fieldNode = this.getOrClonePagNode(src, basePt);
+            } else if (base) {
+                fieldNode = this.getOrClonePagNode(
+                    this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)), basePt
+                );
+            }
+
             baseNode.addElementNode(fieldNode.getID());
             fieldNode.setBasePt(basePt);
             return fieldNode;
         } else {
-            throw new Error(`Error clone array field node ${src.getValue()}`);
+            throw new Error(`Error clone array field node ${baseNode.getValue()}`);
         }
     }
 
@@ -686,8 +701,8 @@ export class Pag extends BaseGraph {
         } else if (value instanceof ArkArrayRef) {
             pagNode = new PagArrayNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
-            let className: string = value.getClassType().getClassSignature().getClassName();
-            if (className === SET_NAME) {
+            let classSignature = value.getClassType().getClassSignature();
+            if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set')) {
                 pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
             } else {
                 pagNode = new PagNewExprNode(id, cid, value, stmt);
