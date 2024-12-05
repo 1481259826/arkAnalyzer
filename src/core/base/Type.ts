@@ -101,7 +101,7 @@ export class UnclearReferenceType extends Type {
         return this.genericTypes;
     }
 
-    public getTypeString() {
+    public getTypeString():string {
         let str = this.name;
         if (this.genericTypes.length > 0) {
             str += '<' + this.genericTypes.join(',') + '>';
@@ -126,7 +126,7 @@ export abstract class PrimitiveType extends Type {
         return this.name;
     }
 
-    public getTypeString() {
+    public getTypeString():string {
         return this.name;
     }
 }
