@@ -139,7 +139,7 @@ describe("Infer Array Test", () => {
         const fields = file?.getClassWithName('FieldType')?.getFields();
         if (fields) {
             const arkField = fields[0];
-            assert.equal(arkField.getType(), '(number|string)[]');
+            assert.equal(arkField.getType().toString(), '(number|string)[]');
             assert.equal(fields[1].getType(), StringType.getInstance());
         }
     })
