@@ -870,7 +870,8 @@ export class PagBuilder {
         }
 
         // block the container SDK
-        if (calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)')) {
+        if (calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)') ||
+            calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
             return srcNodes;
         }
 
@@ -977,12 +978,18 @@ export class PagBuilder {
 
         let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
 
-        if ((calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)'))) {
-            let srcNode = this.pag.getOrNewNode(cid, cs.args![0], cs.callStmt);
+        const containerValueProcess = (argIndex: number) => {
+            let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
             let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
 
             this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
             srcNodes.push(srcNode.getID());
+        }
+
+        if ((calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)'))) {
+            containerValueProcess(0);
+        } else if (calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
+            containerValueProcess(1);
         }
 
         return srcNodes;

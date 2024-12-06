@@ -702,7 +702,8 @@ export class Pag extends BaseGraph {
             pagNode = new PagArrayNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
             let classSignature = value.getClassType().getClassSignature();
-            if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set')) {
+            if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set') ||
+                classSignature.toString().endsWith('lib.es2015.collection.d.ts: Map')) {
                 pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
             } else {
                 pagNode = new PagNewExprNode(id, cid, value, stmt);
