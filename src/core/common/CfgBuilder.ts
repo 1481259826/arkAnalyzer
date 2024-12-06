@@ -96,6 +96,7 @@ class TryStatementBuilder extends StatementBuilder {
     catchStatement: StatementBuilder | null = null;
     catchError: string = '';
     finallyStatement: StatementBuilder | null = null;
+    afterFinal: StatementBuilder | null = null;
 
     constructor(type: string, code: string, astNode: ts.Node, scopeID: number) {
         super(type, code, astNode, scopeID);
@@ -492,15 +493,18 @@ export class CfgBuilder {
         if (c.finallyBlock && c.finallyBlock.statements.length > 0) {
             this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
         } else {
-            let dummyFinally = new StatementBuilder('statement', 'dummyFinally', c, scopeID);
+            let dummyFinally = new StatementBuilder('statement', 'dummyFinally', c, (new Scope(this.scopes.length)).id);
             final.next = dummyFinally;
-            dummyFinally.lasts.add(final);
+            dummyFinally.lasts.add(final); 
             dummyFinally.next = finalExit;
             finalExit.lasts.add(dummyFinally);
         }
         trystm.finallyStatement = final.next;
         tryExit.next = final.next;
         final.next?.lasts.add(tryExit);
+
+        trystm.next = finalExit;
+        finalExit.lasts.add(trystm);
         return finalExit;
     }
 
@@ -511,6 +515,10 @@ export class CfgBuilder {
             let c = nodes[i];
             if (ts.isVariableStatement(c) || ts.isExpressionStatement(c) || ts.isThrowStatement(c) || ts.isTypeAliasDeclaration(c)) {
                 let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
+                this.judgeLastType(s, lastStatement);
+                lastStatement = s;
+            } else if (!this.declaringMethod.isDefaultArkMethod() && ts.isFunctionDeclaration(c)) {
+                let s = new StatementBuilder('functionDeclarationStatement', c.getText(this.sourceFile), c, scope.id);
                 this.judgeLastType(s, lastStatement);
                 lastStatement = s;
             } else if (ts.isReturnStatement(c)) {
@@ -544,6 +552,12 @@ export class CfgBuilder {
                 lastStatement = blockExit;
             } else if (ts.isTryStatement(c)) {
                 lastStatement = this.ASTNodeTryStatement(c, lastStatement, scope.id);
+            } else if (ts.isExportAssignment(c)) {
+                if (ts.isNewExpression(c.expression) || ts.isObjectLiteralExpression(c.expression)) {
+                    let s = new StatementBuilder('statement', c.getText(this.sourceFile), c, scope.id);
+                    this.judgeLastType(s, lastStatement);
+                    lastStatement = s;
+                }
             }
         }
         if (lastStatement.type !== 'breakStatement' && lastStatement.type !== 'continueStatement' && lastStatement.type !== 'returnStatement') {
@@ -588,6 +602,12 @@ export class CfgBuilder {
                         }
                     }
                 } else {
+                    if (last instanceof TryStatementBuilder && exit.type == 'finallyExit') {
+                        last.afterFinal = exit.next;
+                        last.next = last.tryFirst;
+                        exit.lasts.delete(last);
+                        continue;
+                    }
                     last.next = exit.next;
                     const lasts = exit.next!.lasts;
                     lasts.delete(exit);
@@ -733,6 +753,7 @@ export class CfgBuilder {
             this.exit.lasts = new Set(lasts);
             returnBlock.lasts.push(notReturnStmt.block!);
         }
+        this.exit.block = returnBlock;
     }
 
     addReturnStmt() {
