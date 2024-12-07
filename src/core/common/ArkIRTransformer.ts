@@ -114,7 +114,7 @@ import { TEMP_LOCAL_PREFIX } from './Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkIRTransformer');
 
-type ValueAndStmts = {
+export type ValueAndStmts = {
     value: Value,
     valueOriginalPositions: FullPosition[], // original positions of value and its uses
     stmts: Stmt[]
@@ -193,8 +193,6 @@ export class ArkIRTransformer {
             stmts = this.typeAliasDeclarationToStmts(node);
         } else if (ts.isBlock(node)) {
             stmts = this.blockToStmts(node);
-        } else if (ts.isSwitchStatement(node)) {
-            stmts = this.switchStatementToStmts(node);
         } else if (ts.isForStatement(node)) {
             stmts = this.forStatementToStmts(node);
         } else if (ts.isForInStatement(node) || ts.isForOfStatement(node)) {
@@ -325,40 +323,45 @@ export class ArkIRTransformer {
         return [];
     }
 
-    private switchStatementToStmts(switchStatement: ts.SwitchStatement): Stmt[] {
-        const stmts: Stmt[] = [];
+    public switchStatementToValueAndStmts(switchStatement: ts.SwitchStatement): ValueAndStmts[] {
+        const valueAndStmtsOfSwitchAndCases: ValueAndStmts[] = [];
+        const exprStmts: Stmt[] = [];
         let {
             value: exprValue,
             valueOriginalPositions: exprPositions,
-            stmts: exprStmts,
+            stmts: exprTempStmts,
         } = this.tsNodeToValueAndStmts(switchStatement.expression);
-        stmts.push(...exprStmts);
+        exprStmts.push(...exprTempStmts);
         if (IRUtils.moreThanOneAddress(exprValue)) {
-            const { value: newExprValue, stmts: exprStmts } = this.generateAssignStmtForValue(exprValue, exprPositions);
-            stmts.push(...exprStmts);
-            exprValue = newExprValue;
+            ({ value: exprValue, valueOriginalPositions: exprPositions, stmts: exprTempStmts } =
+                this.generateAssignStmtForValue(exprValue, exprPositions));
+            exprStmts.push(...exprTempStmts);
         }
-        const caseValues: Value[] = [];
+        valueAndStmtsOfSwitchAndCases.push(
+            { value: exprValue, valueOriginalPositions: exprPositions, stmts: exprStmts });
+
         for (const clause of switchStatement.caseBlock.clauses) {
             if (ts.isCaseClause(clause)) {
+                const clauseStmts: Stmt[] = [];
                 let {
                     value: clauseValue,
                     valueOriginalPositions: clausePositions,
-                    stmts: clauseStmts,
-                } = this.tsNodeToValueAndStmts(switchStatement.expression);
-                stmts.push(...clauseStmts);
+                    stmts: clauseTempStmts,
+                } = this.tsNodeToValueAndStmts(clause.expression);
+                clauseStmts.push(...clauseTempStmts);
                 if (IRUtils.moreThanOneAddress(clauseValue)) {
-                    const {
-                        value: newClauseValue,
-                        stmts: clauseStmts,
-                    } = this.generateAssignStmtForValue(exprValue, clausePositions);
-                    stmts.push(...clauseStmts);
-                    clauseValue = newClauseValue;
+                    ({
+                        value: clauseValue,
+                        valueOriginalPositions: clausePositions,
+                        stmts: clauseTempStmts,
+                    } = this.generateAssignStmtForValue(clauseValue, clausePositions));
+                    clauseStmts.push(...clauseTempStmts);
                 }
-                caseValues.push(clauseValue);
+                valueAndStmtsOfSwitchAndCases.push(
+                    { value: clauseValue, valueOriginalPositions: clausePositions, stmts: clauseStmts });
             }
         }
-        return stmts;
+        return valueAndStmtsOfSwitchAndCases;
     }
 
     private forStatementToStmts(forStatement: ts.ForStatement): Stmt[] {
@@ -1847,6 +1850,58 @@ export class ArkIRTransformer {
         const assignStmt = new ArkAssignStmt(leftOp, value);
         assignStmt.setOperandOriginalPositions([leftOpPosition, ...valueOriginalPositions]);
         return { value: leftOp, valueOriginalPositions: [leftOpPosition], stmts: [assignStmt] };
+    }
+
+    public generateAssignStmtForValues(leftValue: Value, leftOpOriginalPositions: FullPosition[], rightValue: Value,
+                                       rightOpOriginalPositions: FullPosition[]): Stmt[] {
+        const stmts: Stmt[] = [];
+        if (IRUtils.moreThanOneAddress(leftValue) && IRUtils.moreThanOneAddress(rightValue)) {
+            const {
+                value: tempRightValue,
+                valueOriginalPositions: tempRightPositions,
+                stmts: rightStmts,
+            } = this.generateAssignStmtForValue(rightValue, rightOpOriginalPositions);
+            stmts.push(...rightStmts);
+            rightValue = tempRightValue;
+            rightOpOriginalPositions = tempRightPositions;
+        }
+
+        const assignStmt = new ArkAssignStmt(leftValue, rightValue);
+        assignStmt.setOperandOriginalPositions([...leftOpOriginalPositions, ...rightOpOriginalPositions]);
+        stmts.push(assignStmt);
+        return stmts;
+    }
+
+    public generateIfStmtForValues(leftValue: Value, leftOpOriginalPositions: FullPosition[], rightValue: Value,
+                                   rightOpOriginalPositions: FullPosition[]): Stmt[] {
+        const stmts: Stmt[] = [];
+        if (IRUtils.moreThanOneAddress(leftValue)) {
+            const {
+                value: tempLeftValue,
+                valueOriginalPositions: tempLeftPositions,
+                stmts: leftStmts,
+            } = this.generateAssignStmtForValue(leftValue, leftOpOriginalPositions);
+            stmts.push(...leftStmts);
+            leftValue = tempLeftValue;
+            leftOpOriginalPositions = tempLeftPositions;
+        }
+        if (IRUtils.moreThanOneAddress(rightValue)) {
+            const {
+                value: tempRightValue,
+                valueOriginalPositions: tempRightPositions,
+                stmts: rightStmts,
+            } = this.generateAssignStmtForValue(rightValue, rightOpOriginalPositions);
+            stmts.push(...rightStmts);
+            rightValue = tempRightValue;
+            rightOpOriginalPositions = tempRightPositions;
+        }
+
+        const conditionExpr = new ArkConditionExpr(leftValue, rightValue, RelationalBinaryOperator.Equality);
+        const conditionPositions = [...leftOpOriginalPositions, ...rightOpOriginalPositions];
+        const ifStmt = new ArkIfStmt(conditionExpr);
+        ifStmt.setOperandOriginalPositions([...conditionPositions]);
+        stmts.push(ifStmt);
+        return stmts;
     }
 
     private isRelationalOperator(operator: BinaryOperator): boolean {

@@ -39,6 +39,19 @@ import {
     CONDITIONAL_OPERATOR_EXPECT_CASE7,
 } from '../../../resources/cfg/conditionalOperator/ConditionalOperatorExpect';
 import { assertBlocksEqual } from '../../common';
+import {
+    SWITCH_EXPECT_CASE1,
+    SWITCH_EXPECT_CASE10,
+    SWITCH_EXPECT_CASE11,
+    SWITCH_EXPECT_CASE2,
+    SWITCH_EXPECT_CASE3,
+    SWITCH_EXPECT_CASE4,
+    SWITCH_EXPECT_CASE5,
+    SWITCH_EXPECT_CASE6,
+    SWITCH_EXPECT_CASE7,
+    SWITCH_EXPECT_CASE8,
+    SWITCH_EXPECT_CASE9,
+} from '../../../resources/cfg/switch/SwitchExpect';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
@@ -120,6 +133,22 @@ describe('CfgTest', () => {
         testBlocks(scene, 'ConditionalOperatorSample.ts', 'case6', CONDITIONAL_OPERATOR_EXPECT_CASE6.blocks);
         testBlocks(scene, 'ConditionalOperatorSample.ts', 'case7', CONDITIONAL_OPERATOR_EXPECT_CASE7.blocks);
     });
+
+    it('case3: switch statement', () => {
+        const scene = buildScene('switch');
+        testBlocks(scene, 'SwitchSample.ts', 'case1', SWITCH_EXPECT_CASE1.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case2', SWITCH_EXPECT_CASE2.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case3', SWITCH_EXPECT_CASE3.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case4', SWITCH_EXPECT_CASE4.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case5', SWITCH_EXPECT_CASE5.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case6', SWITCH_EXPECT_CASE6.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case7', SWITCH_EXPECT_CASE7.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case8', SWITCH_EXPECT_CASE8.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case9', SWITCH_EXPECT_CASE9.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case10', SWITCH_EXPECT_CASE10.blocks);
+        testBlocks(scene, 'SwitchSample.ts', 'case11', SWITCH_EXPECT_CASE11.blocks);
+
+    });
 });
 
 const BASE_DIR = 'tests/resources/cfg';
@@ -143,4 +172,3 @@ function testBlocks(scene: Scene, filePath: string, methodName: string, expectBl
     }
     assertBlocksEqual(blocks, expectBlocks);
 }
-
