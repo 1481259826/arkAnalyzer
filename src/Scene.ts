@@ -942,7 +942,11 @@ export class Scene {
                 TypeInference.inferTypeInMethod(defaultArkMethod);
             }
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
-            arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
+            arkClass.getMethods().forEach(arkMethod => {
+                if (!arkMethod.isDefaultArkMethod()) {
+                    TypeInference.inferTypeInMethod(arkMethod);
+                }
+            });
         });
         TypeInference.inferExportInfos(file);
         TypeInference.inferImportInfos(file);

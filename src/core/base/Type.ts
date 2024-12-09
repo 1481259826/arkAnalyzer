@@ -102,12 +102,53 @@ export class UnclearReferenceType extends Type {
         return this.genericTypes;
     }
 
-    public getTypeString():string {
+    public getTypeString(): string {
         let str = this.name;
         if (this.genericTypes.length > 0) {
             str += '<' + this.genericTypes.join(',') + '>';
         }
         return str;
+    }
+}
+
+export class UnclearImportType extends Type {
+    private importFrom: string;
+    private importClauseName?: string;
+    private isTypeOf?: boolean;
+
+    constructor(importFrom: string) {
+        super();
+        this.importFrom = importFrom;
+    }
+
+    public getImportFrom(): string {
+        return this.importFrom;
+    }
+
+    public getImportClauseName(): string | undefined {
+        return this.importClauseName;
+    }
+
+    public setImportClauseName(importClauseName: string): void {
+        this.importClauseName = importClauseName;
+    }
+
+    public setIsTypeOf(isTypeOf: boolean): void {
+        this.isTypeOf = isTypeOf;
+    }
+
+    public getIsTypeOf(): boolean | undefined {
+        return this.isTypeOf;
+    }
+
+    public getTypeString(): string {
+        if (this.importClauseName !== undefined) {
+            return `import(${this.getImportFrom()}).${this.importClauseName}`;
+        }
+        if (this.isTypeOf) {
+            return `typeof import(${this.getImportFrom()})`;
+        }
+        return `import(${this.getImportFrom()})`;
     }
 }
 
@@ -461,7 +502,7 @@ export class AliasType extends Type implements ArkExport {
     }
 
     public getTypeString(): string {
-        return this.name;
+        return this.getSignature().toString();
     }
 
     public getExportType(): ExportType {

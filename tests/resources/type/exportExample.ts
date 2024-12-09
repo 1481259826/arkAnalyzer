@@ -13,29 +13,16 @@
  * limitations under the License.
  */
 
-declare type ClassAType = import('./exportExample').ClassA;
-
-declare type ClassBType = import('./exportExample').default;
-
-declare type numberAType = import('./exportExample').numberA;
-
-type BooleanAliasType = boolean;
-
-export type StringAliasType = string;
-
-export function useAliasTypeInParam(param: BooleanAliasType[] | StringAliasType): void {
-    console.log(param);
+export class ClassA {
+    public printContent(): void {
+        console.log('ClassA');
+    }
 }
 
-export function useAliasTypeInBody(): void {
-    const a: numberAType[] = [1, 2, 3];
-    console.log(a);
-}
+export default class ClassB {
+    public printContent(): void {
+        console.log('ClassB');
+    }
+};
 
-let a = 0;
-let b = 1;
-switch (a) {
-    case 2:
-    case 3:
-        b = 3;
-}
+export declare type numberA = number;

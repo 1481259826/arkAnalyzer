@@ -39,6 +39,7 @@ import {
     NumberType,
     StringType,
     Type,
+    UnclearImportType,
     UnclearReferenceType,
     UndefinedType,
     UnionType,
@@ -53,13 +54,15 @@ import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { CONSTRUCTOR_NAME, SUPER_NAME } from './TSConst';
-import { findArkExport, ModelUtils } from './ModelUtils';
+import { findArkExport, findExportInfo, ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import { ANONYMOUS_CLASS_PREFIX, INSTANCE_INIT_METHOD_NAME, UNKNOWN_FILE_NAME } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { Scene } from '../../Scene';
 import { ArkFile } from '../model/ArkFile';
+import { ImportInfo } from '../model/ArkImport';
+import { LineColPosition } from '../base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -103,49 +106,53 @@ export class TypeInference {
         }
     }
 
-    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type) {
-        let type;
-        if (leftOpType instanceof UnclearReferenceType) {
-            type = this.inferUnclearRefType(leftOpType, declaringArkClass);
-        } else if (leftOpType instanceof ClassType
-            && leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-            type = TypeInference.inferUnclearReferenceType(leftOpType.getClassSignature().getClassName(), declaringArkClass);
-        } else if (leftOpType instanceof UnionType) {
+    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type): Type | null | undefined {
+        function inferSingleType(leftOpType: Type, declaringArkClass: ArkClass): Type | null | undefined {
+            if (leftOpType instanceof UnclearReferenceType) {
+                return TypeInference.inferUnclearRefType(leftOpType, declaringArkClass);
+            }
+            if (leftOpType instanceof UnclearImportType) {
+                return TypeInference.inferUnclearImportType(leftOpType, declaringArkClass);
+            }
+            if (leftOpType instanceof ClassType &&
+                leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+                return TypeInference.inferUnclearReferenceType(leftOpType.getClassSignature().getClassName(), declaringArkClass);
+            }
+            if (leftOpType instanceof ArrayType) {
+                let baseType = TypeInference.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
+                if (baseType) {
+                    leftOpType.setBaseType(baseType);
+                }
+                return leftOpType;
+            }
+            if (leftOpType instanceof AliasType) {
+                let baseType = TypeInference.inferUnclearedType(leftOpType.getOriginalType(), declaringArkClass);
+                if (baseType) {
+                    leftOpType.setOriginalType(baseType);
+                }
+                return leftOpType;
+            }
+            if (leftOpType instanceof AnnotationNamespaceType) {
+                return TypeInference.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
+            }
+            return null;
+        }
+
+        if (leftOpType instanceof UnionType) {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let optionType = types[i];
-                let newType;
-                if (optionType instanceof ClassType) {
-                    newType = TypeInference.inferUnclearReferenceType(optionType.getClassSignature().getClassName(), declaringArkClass);
-                } else if (optionType instanceof UnclearReferenceType) {
-                    newType = TypeInference.inferUnclearReferenceType(optionType.getName(), declaringArkClass);
-                } else {
-                    newType = optionType;
-                }
+                let newType = inferSingleType(optionType, declaringArkClass);
                 if (newType) {
                     types[i] = newType;
                 }
                 if (rightType && newType && newType.constructor === rightType.constructor) {
                     leftOpType.setCurrType(rightType);
-                    type = leftOpType;
                 }
             }
-        } else if (leftOpType instanceof ArrayType) {
-            let baseType = this.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
-            if (baseType) {
-                leftOpType.setBaseType(baseType);
-                type = leftOpType;
-            }
-        } else if (leftOpType instanceof AliasType) {
-            let baseType = this.inferUnclearedType(leftOpType.getOriginalType(), declaringArkClass);
-            if (baseType) {
-                leftOpType.setOriginalType(baseType);
-                type = leftOpType;
-            }
-        } else if (leftOpType instanceof AnnotationNamespaceType) {
-            type = this.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
+            return leftOpType;
         }
-        return type;
+        return inferSingleType(leftOpType, declaringArkClass);
     }
 
     public static inferTypeInMethod(arkMethod: ArkMethod): void {
@@ -455,6 +462,20 @@ export class TypeInference {
             }
             return null;
         }
+    }
+
+    private static inferUnclearImportType(unClearImportType: UnclearImportType, arkClass: ArkClass): Type | null {
+        // TODO: typeof import case is waiting to support, only support specifying importClauseName case
+        const importClauseName = unClearImportType.getImportClauseName();
+        if (importClauseName === undefined) {
+            return null;
+        }
+        const importFrom = unClearImportType.getImportFrom();
+        let importInfo = new ImportInfo();
+        importInfo.build(importClauseName, '', importFrom, new LineColPosition(0, 0), 0);
+        importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
+        let exportInfo = findExportInfo(importInfo);
+        return this.parseArkExport2Type(exportInfo?.getArkExport());
     }
 
     public static inferUnclearReferenceType(refName: string, arkClass: ArkClass): Type | null {

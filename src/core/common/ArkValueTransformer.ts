@@ -1456,9 +1456,17 @@ export class ArkValueTransformer {
                 return this.resolveTypeLiteralNode(type as ts.TypeLiteralNode);
             case ts.SyntaxKind.FunctionType:
                 return this.resolveFunctionTypeNode(type as ts.FunctionTypeNode);
+            case ts.SyntaxKind.ImportType:
+                return UnknownType.getInstance();
+            case ts.SyntaxKind.TypeQuery:
+                return this.resolveTypeQueryNode(type as ts.TypeQueryNode);
             default:
                 ;
         }
+        return UnknownType.getInstance();
+    }
+
+    private resolveTypeQueryNode(typeQueryNode: ts.TypeQueryNode): Type {
         return UnknownType.getInstance();
     }
 
