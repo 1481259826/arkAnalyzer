@@ -19,10 +19,11 @@ import { Sdk } from '../../../src/Config';
 import { assert } from 'vitest';
 
 let sdk: Sdk = {
-    name: "ohos",
-    path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
-    moduleName: ""
+    name: 'ohos',
+    path: '/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets',
+    moduleName: ''
 };
+
 describe('ContainerAddTest', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir('./tests/resources/pta/Container');

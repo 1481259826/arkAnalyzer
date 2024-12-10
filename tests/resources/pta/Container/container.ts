@@ -43,10 +43,6 @@ namespace Container {
             let set = new Set();
             let ele = new Element();
             set.add(ele);
-            // let temp = this.set.has(ele);
-            // let values = this.set.values;
-            // this.set.delete(ele);
-            // this.set.clear();
         }
     }
 
@@ -55,23 +51,14 @@ namespace Container {
             let map = new Map();
             let ele = new Element();
             map.set(ele.getBase(), ele);
-            // let b = this.map.get(ele.getBase());
-            // this.map.clear()
         }
     }
 
     function main() {
-        // let arrayTest: ArrayTest = new ArrayTest();
         let setTest: SetTest = new SetTest();
         let mapTest: MapTest = new MapTest();
 
         setTest.test();
-        // arrayTest.test();
         mapTest.test()
-
-        // let fac = new Factory();
-        // let fac2 = new Factory2();
-        // let a = [fac.getEle(), fac2.getEle()];
-        // let b = a[0];
     }
 }

@@ -978,13 +978,13 @@ export class PagBuilder {
 
         let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
 
-        const containerValueProcess = (argIndex: number) => {
+        const containerValueProcess = (argIndex: number): void => {
             let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
             let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
 
             this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
             srcNodes.push(srcNode.getID());
-        }
+        };
 
         if ((calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)'))) {
             containerValueProcess(0);

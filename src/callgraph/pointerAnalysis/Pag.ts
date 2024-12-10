@@ -23,7 +23,7 @@ import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { Constant } from '../../core/base/Constant';
-import { FunctionType, UnknownType } from '../../core/base/Type';
+import { FunctionType, UnclearReferenceType } from '../../core/base/Type';
 import { ClassSignature, FieldSignature, FileSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
@@ -55,7 +55,7 @@ export enum StorageLinkEdgeType {
 
 const containerFieldSignature = new FieldSignature('field', 
     new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')), 
-    new UnknownType());
+    new UnclearReferenceType(''));
 
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
@@ -641,7 +641,8 @@ export class Pag extends BaseGraph {
         let baseNode = this.getNode(basePt) as PagNode;
         if (baseNode instanceof PagNewContainerExprNode) {
             // check if Array Ref real node has been created or not, if not: create a real Array Ref node
-            let existedNode = baseNode.getElementNode(), fieldNode!: PagNode;
+            let existedNode = baseNode.getElementNode();
+            let fieldNode!: PagNode;
             if (existedNode) {
                 return this.getNode(existedNode) as PagInstanceFieldNode;
             }
