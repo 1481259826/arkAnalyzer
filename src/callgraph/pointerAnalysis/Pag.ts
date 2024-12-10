@@ -650,6 +650,7 @@ export class Pag extends BaseGraph {
                 fieldNode = this.getOrClonePagNode(src, basePt);
             } else if (base) {
                 fieldNode = this.getOrClonePagNode(
+                    // TODO: cid check
                     this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)), basePt
                 );
             }
