@@ -1183,6 +1183,10 @@ export class ArkUnopExpr extends AbstractExpr {
         return this.op;
     }
 
+    public setOp(newOp: Value): void {
+        this.op = newOp;
+    }
+
     public getType(): Type {
         return this.op.getType();
     }

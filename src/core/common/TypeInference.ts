@@ -24,7 +24,7 @@ import {
     ArkParameterRef,
     ArkStaticFieldRef,
 } from '../base/Ref';
-import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, Stmt } from '../base/Stmt';
 import {
     AliasType,
     AnnotationNamespaceType,
@@ -213,11 +213,7 @@ export class TypeInference {
         for (const expr of exprs) {
             const newExpr = expr.inferType(arkMethod);
             if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
-                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
-                    stmt.setRightOp(newExpr);
-                } else if (stmt instanceof ArkInvokeStmt) {
-                    stmt.replaceInvokeExpr(newExpr);
-                }
+                stmt.replaceUse(expr, newExpr);
             }
         }
     }
@@ -234,21 +230,14 @@ export class TypeInference {
         const stmtDef = stmt.getDef();
         if (stmtDef && stmtDef instanceof AbstractRef) {
             const fieldRef = stmtDef.inferType(arkMethod);
-            if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
-                stmt.setLeftOp(fieldRef);
-            }
+            stmt.replaceDef(stmtDef, fieldRef);
         }
     }
 
     private static processRef(use: AbstractRef | ArkInstanceFieldRef, stmt: Stmt, arkMethod: ArkMethod): void {
         const fieldRef = use.inferType(arkMethod);
         if (fieldRef instanceof ArkStaticFieldRef && stmt instanceof ArkAssignStmt) {
-            if (stmt.getRightOp() instanceof ArkInstanceFieldRef) {
-                stmt.setRightOp(fieldRef);
-            } else {
-                stmt.replaceUse(use, fieldRef);
-                stmt.setRightOp(stmt.getRightOp());
-            }
+            stmt.replaceUse(use, fieldRef);
         } else if (use instanceof ArkInstanceFieldRef && fieldRef instanceof ArkArrayRef && stmt instanceof ArkAssignStmt) {
             const index = fieldRef.getIndex();
             if (index instanceof Constant && index.getType() instanceof StringType) {
@@ -258,7 +247,6 @@ export class TypeInference {
                 }
             }
             stmt.replaceUse(use, fieldRef);
-            stmt.setRightOp(stmt.getRightOp());
         }
     }
 

@@ -25,6 +25,8 @@ import {
     SceneConfig,
     TypeInference
 } from '../../src';
+import { testMethodStmts } from './ArkIRTransformer.test';
+import { OperandOriginalPositions_Expect_IR } from '../resources/inferType/IRChange/OperandOriginalPositionsExpect';
 
 describe('StaticSingleAssignmentFormer Test', () => {
     let config: SceneConfig = new SceneConfig();
@@ -42,7 +44,7 @@ describe('StaticSingleAssignmentFormer Test', () => {
 
         const spy = vi.spyOn(method, 'getBody');
         TypeInference.inferTypeInMethod(method);
-        expect(spy).toHaveBeenCalledTimes(5);
+        expect(spy).toHaveBeenCalledTimes(6);
     });
 
     it('inferSimpleTypeInMethod case', () => {
@@ -106,4 +108,18 @@ describe('Infer Method Return Type', () => {
         assert.isTrue(signature?.getType() instanceof ClassType);
         expect(signature?.getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
     });
+});
+
+describe('IR Changes with Type Inference Test', () => {
+    const config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../resources/inferType/IRChange'));
+    const scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
+    it('operand original positions case', () => {
+        testMethodStmts(scene, 'OperandOriginalPositionsTest.ts', OperandOriginalPositions_Expect_IR.stmts, 'Sample',
+            'testOperandOriginalPositions');
+    });
+
 });

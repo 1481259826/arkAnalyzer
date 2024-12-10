@@ -1926,7 +1926,7 @@ export class CfgBuilder {
         } else if (sourceStmt instanceof ArkInvokeStmt) {
             return new ArkInvokeStmt(sourceStmt.getInvokeExpr());
         } else if (sourceStmt instanceof ArkIfStmt) {
-            return new ArkIfStmt(sourceStmt.getConditionExprExpr());
+            return new ArkIfStmt(sourceStmt.getConditionExpr());
         } else if (sourceStmt instanceof ArkReturnStmt) {
             return new ArkReturnStmt(sourceStmt.getOp());
         } else if (sourceStmt instanceof ArkReturnVoidStmt) {

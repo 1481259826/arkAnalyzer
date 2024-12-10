@@ -14,7 +14,7 @@
  */
 
 import { AbstractBinopExpr, AbstractInvokeExpr, ArkCastExpr, ArkUnopExpr } from '../base/Expr';
-import { AbstractFieldRef, ArkArrayRef } from '../base/Ref';
+import { AbstractFieldRef, AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
 import { Value } from '../base/Value';
 import { Scene } from '../../Scene';
 import ts from 'ohos-typescript';
@@ -24,6 +24,7 @@ import { Stmt } from '../base/Stmt';
 import { ArkBaseModel } from '../model/ArkBaseModel';
 import { Local } from '../base/Local';
 import { NAME_PREFIX } from './Const';
+import { FullPosition } from '../base/Position';
 
 export class IRUtils {
     public static moreThanOneAddress(value: Value): boolean {
@@ -78,5 +79,67 @@ export class IRUtils {
 
     public static isTempLocal(value: Value): boolean {
         return value instanceof Local && value.getName().startsWith(NAME_PREFIX);
+    }
+
+    public static findOperandIdx(stmt: Stmt, operand: Value): number {
+        let index: number = -1;
+        const operands = stmt.getDefAndUses();
+        for (let i = 0; i < operands.length; i++) {
+            if (operands[i] === operand) {
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
+    public static adjustOperandOriginalPositions(stmt: Stmt, oldValue: Value, newValue: Value): void {
+        const operandOriginalPositions = stmt.getOperandOriginalPositions();
+        if (!operandOriginalPositions) {
+            return;
+        }
+        const operandOriginalPositionSize = operandOriginalPositions.length;
+        const defUseSize = stmt.getDefAndUses().length;
+        const oldValueUseSize = oldValue.getUses().length;
+        const newValueUseSize = newValue.getUses().length;
+        const oldValueIdx = IRUtils.findOperandIdx(stmt, oldValue);
+        const baseValueOffset = 1;
+        const fieldValueOffset = 2;
+
+        if (oldValue instanceof AbstractRef && newValue instanceof AbstractRef) {
+            if (newValue instanceof ArkStaticFieldRef) {
+                operandOriginalPositions.splice(oldValueIdx + baseValueOffset,
+                    oldValueUseSize - newValueUseSize);
+            } else if (oldValue instanceof ArkStaticFieldRef) {
+                operandOriginalPositions.splice(oldValueIdx + baseValueOffset, 0,
+                    ...IRUtils.generateDefaultPositions(
+                        newValueUseSize - oldValueUseSize));
+            }
+
+            if (oldValue instanceof ArkInstanceFieldRef && newValue instanceof ArkArrayRef) {
+                if (operandOriginalPositionSize === defUseSize) { // may not reserve positions for field name
+                    operandOriginalPositions.splice(oldValueIdx + fieldValueOffset, 0,
+                        ...IRUtils.generateDefaultPositions(
+                            newValueUseSize - oldValueUseSize));
+                }
+            } else if (oldValue instanceof ArkArrayRef && newValue instanceof ArkInstanceFieldRef) {
+                operandOriginalPositions.splice(oldValueIdx + fieldValueOffset,
+                    oldValueUseSize - newValueUseSize);
+            }
+        } else if (oldValue instanceof AbstractInvokeExpr && newValue instanceof AbstractInvokeExpr) {
+            if (oldValueUseSize === newValueUseSize + 1) {
+                operandOriginalPositions.splice(oldValueIdx + baseValueOffset, 1);
+            } else if (oldValueUseSize === newValueUseSize - 1) {
+                operandOriginalPositions.splice(oldValueIdx + baseValueOffset, 0, FullPosition.DEFAULT);
+            }
+        }
+    }
+
+    public static generateDefaultPositions(count: number): FullPosition[] {
+        const defaultPositions: FullPosition[] = [];
+        for (let i = 0; i < count; i++) {
+            defaultPositions.push(FullPosition.DEFAULT);
+        }
+        return defaultPositions;
     }
 }

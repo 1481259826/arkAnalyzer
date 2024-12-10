@@ -26,43 +26,6 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
 Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
 
 class ArkIRTransformerTest {
-    // public async testSimpleStmt() {
-    //     logger.info('testSimpleStmt start');
-    //     const tsFilePath = 'tests/resources/arkIRTransformer/mainModule/main.ts';
-    //     const tsSourceCode = fs.readFileSync(tsFilePath).toString();
-    //     const sourceFile: ts.SourceFile = ts.createSourceFile(tsFilePath, tsSourceCode, ts.ScriptTarget.Latest, true, undefined, ETS_COMPILER_OPTIONS);
-    //
-    //     const dumpArkFile = new ArkFile();
-    //     dumpArkFile.setName('dumpArkFile');
-    //     dumpArkFile.setProjectName('dumpProject');
-    //     dumpArkFile.genFileSignature();
-    //     const dumpArkClass = new ArkClass();
-    //     dumpArkClass.setName('dumpArkClass');
-    //     dumpArkFile.addArkClass(dumpArkClass);
-    //     dumpArkClass.setDeclaringArkFile(dumpArkFile);
-    //     dumpArkClass.genSignature();
-    //     const dumpArkMethod = new ArkMethod();
-    //     dumpArkMethod.setName('dumpArkMethod');
-    //     dumpArkClass.addMethod(dumpArkMethod);
-    //     dumpArkMethod.setDeclaringArkClass(dumpArkClass);
-    //
-    //     const arkIRTransformer = new ArkIRTransformer(sourceFile, dumpArkMethod);
-    //     for (const statement of sourceFile.statements) {
-    //         const stmts = arkIRTransformer.tsNodeToStmts(statement);
-    //         logger.info(`ts node text: ${statement.getText(sourceFile)}`);
-    //         logger.info(`stmts:`);
-    //         for (const stmt of stmts) {
-    //             logger.info(`-- ${stmt.toString()}`);
-    //         }
-    //     }
-    //     logger.info('locals:');
-    //     arkIRTransformer.getLocals().forEach(local => {
-    //         logger.error('name: ' + local.toString() + ', type: ' + local.getType());
-    //     });
-    //
-    //     logger.info('testSimpleStmt end\n');
-    // }
-
     public testStmtsOfSimpleProject() {
         logger.error('testStmtsOfSimpleProject start');
 
@@ -73,7 +36,7 @@ class ArkIRTransformerTest {
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
         logger.error('\nbafore inferTypes');
-        // this.printScene(scene);
+        this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
         this.printScene(scene);
@@ -104,20 +67,21 @@ class ArkIRTransformerTest {
     private printStmts(body: ArkBody): void {
         logger.error('--- threeAddresStmts ---');
         const cfg = body.getCfg();
-        for (const threeAddresStmt of cfg.getStmts()) {
-            logger.error(`text: ${threeAddresStmt.toString()}`);
-            // logger.error(`-original position: ${threeAddresStmt.getOriginPositionInfo().getLineNo()}, ${threeAddresStmt.getOriginPositionInfo().getColNo()}`);
-            // if (threeAddresStmt.getOriginPositionInfo().getLineNo() === -1) {
-            //     logger.error(`text: ${threeAddresStmt.toString()}`);
-            // }
+        for (const threeAddressStmt of cfg.getStmts()) {
+            logger.error(`text: ${threeAddressStmt.toString()}`);
+            const operandOriginalPositions: any[] = [];
+            for (const operand of threeAddressStmt.getDefAndUses()) {
+                const operandOriginalPosition = threeAddressStmt.getOperandOriginalPosition(operand);
+                if (operandOriginalPosition) {
+                    operandOriginalPositions.push(
+                        [operandOriginalPosition.getFirstLine(), operandOriginalPosition.getFirstCol(),
+                            operandOriginalPosition.getLastLine(), operandOriginalPosition.getLastCol()]);
+                } else {
+                    operandOriginalPositions.push(operandOriginalPosition);
+                }
+            }
+            logger.error(`operandOriginalPositions: ${operandOriginalPositions.join('], [')}`);
         }
-
-        // logger.error('--- originalStmts ---');
-        // const originalCfg = body.getOriginalCfg();
-        // for (const originalStmt of originalCfg.getStmts()) {
-        //     logger.error(`text: ${originalStmt.toString()}`);
-        //     logger.error(`-original position: ${originalStmt.getOriginPositionInfo().getLineNo()}, ${originalStmt.getOriginPositionInfo().getColNo()}`);
-        // }
     }
 
     private printScene(scene: Scene): void {

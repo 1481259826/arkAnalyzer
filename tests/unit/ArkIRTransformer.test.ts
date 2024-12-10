@@ -14,7 +14,7 @@
  */
 
 import { assert, describe, expect, it } from 'vitest';
-import { ArkMethod, Scene, SceneConfig, Stmt } from '../../src';
+import { ArkMethod, DEFAULT_ARK_CLASS_NAME, Scene, SceneConfig, Stmt } from '../../src';
 import path from 'path';
 import {
     BinaryExpression_Expect_IR, CallExpression_Expect_IR,
@@ -42,10 +42,12 @@ import {
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
-function testMethodStmts(scene: Scene, filePath: string, expectStmts: any[]): void {
-    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
-    const arkMethod = arkFile?.getDefaultClass().getMethods()
-        .find((method) => (method.getName() === DEFAULT_ARK_METHOD_NAME));
+export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any[],
+                                className: string = DEFAULT_ARK_CLASS_NAME,
+                                methodName: string = DEFAULT_ARK_METHOD_NAME): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(fileName));
+    const arkMethod = arkFile?.getClassWithName(className)?.getMethods()
+        .find((method) => (method.getName() === methodName));
     const stmts = arkMethod?.getCfg()?.getStmts();
     if (!stmts) {
         assert.isDefined(stmts);

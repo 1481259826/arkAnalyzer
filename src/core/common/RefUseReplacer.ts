@@ -29,7 +29,6 @@ export class RefUseReplacer {
         this.newUse = newUse;
     }
 
-    // TODO:是否将该逻辑移Ref具体类中，利用多态实现
     public caseRef(ref: AbstractRef): void {
         if (ref instanceof ArkInstanceFieldRef) {
             this.caseFieldRef(ref);
@@ -39,14 +38,16 @@ export class RefUseReplacer {
     }
 
     private caseFieldRef(ref: ArkInstanceFieldRef): void {
-        if (ref.getBase() === this.oldUse) {
-            ref.setBase(<Local>this.newUse);
+        if (ref.getBase() === this.oldUse && this.newUse instanceof Local) {
+            ref.setBase(this.newUse);
         }
     }
 
     private caseArrayRef(ref: ArkArrayRef): void {
         if (ref.getBase() === this.oldUse) {
-            ref.setBase(<Local>this.newUse);
+            if (this.newUse instanceof Local) {
+                ref.setBase(this.newUse);
+            }
         } else if (ref.getIndex() === this.oldUse) {
             ref.setIndex(this.newUse);
         }

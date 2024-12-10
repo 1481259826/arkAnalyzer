@@ -17,14 +17,20 @@ import {
     AbstractBinopExpr,
     AbstractExpr,
     AbstractInvokeExpr,
+    ArkAwaitExpr,
     ArkCastExpr,
+    ArkDeleteExpr,
     ArkInstanceInvokeExpr,
     ArkInstanceOfExpr,
     ArkNewArrayExpr,
+    ArkPtrInvokeExpr,
     ArkTypeOfExpr,
+    ArkUnopExpr,
+    ArkYieldExpr,
 } from '../base/Expr';
 import { Local } from '../base/Local';
 import { Value } from '../base/Value';
+import { AbstractFieldRef } from '../base/Ref';
 
 /**
  * Replace old use of a Expr inplace
@@ -38,7 +44,6 @@ export class ExprUseReplacer {
         this.newUse = newUse;
     }
 
-    // TODO:是否将该逻辑移Expr具体类中，利用多态实现
     public caseExpr(expr: AbstractExpr): void {
         if (expr instanceof AbstractBinopExpr) {
             this.caseBinopExpr(expr);
@@ -52,6 +57,14 @@ export class ExprUseReplacer {
             this.caseInstanceOfExpr(expr);
         } else if (expr instanceof ArkCastExpr) {
             this.caseCastExpr(expr);
+        } else if (expr instanceof ArkAwaitExpr) {
+            this.caseAwaitExpr(expr);
+        } else if (expr instanceof ArkYieldExpr) {
+            this.caseYieldExpr(expr);
+        } else if (expr instanceof ArkDeleteExpr) {
+            this.caseDeleteExpr(expr);
+        } else if (expr instanceof ArkUnopExpr) {
+            this.caseUnopExpr(expr);
         }
     }
 
@@ -74,6 +87,8 @@ export class ExprUseReplacer {
 
         if (expr instanceof ArkInstanceInvokeExpr && expr.getBase() === this.oldUse) {
             expr.setBase(<Local>this.newUse);
+        } else if (expr instanceof ArkPtrInvokeExpr && expr.getFuncPtrLocal() === this.oldUse && this.newUse instanceof Local) {
+            expr.setFunPtrLocal(this.newUse);
         }
     }
 
@@ -96,6 +111,30 @@ export class ExprUseReplacer {
     }
 
     private caseCastExpr(expr: ArkCastExpr): void {
+        if (expr.getOp() === this.oldUse) {
+            expr.setOp(this.newUse);
+        }
+    }
+
+    private caseAwaitExpr(expr: ArkAwaitExpr): void {
+        if (expr.getPromise() === this.oldUse) {
+            expr.setPromise(this.newUse);
+        }
+    }
+
+    private caseDeleteExpr(expr: ArkDeleteExpr): void {
+        if (expr.getField() === this.oldUse && this.newUse instanceof AbstractFieldRef) {
+            expr.setField(this.newUse);
+        }
+    }
+
+    private caseYieldExpr(expr: ArkYieldExpr): void {
+        if (expr.getYieldValue() === this.oldUse) {
+            expr.setYieldValue(this.newUse);
+        }
+    }
+
+    private caseUnopExpr(expr: ArkUnopExpr): void {
         if (expr.getOp() === this.oldUse) {
             expr.setOp(this.newUse);
         }
