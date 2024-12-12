@@ -262,7 +262,7 @@ export class ArrayBindingPatternParameter {
 
 export class MethodParameter {
     private name: string = '';
-    private type!: Type;
+    private type: Type = UnknownType.getInstance();
     private optional: boolean = false;
     private dotDotDotToken: boolean = false;
     private objElements: ObjectBindingPatternParameter[] = [];

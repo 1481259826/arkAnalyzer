@@ -14,6 +14,7 @@
  */
 
 export class ClassA {
+    public name: string = 'classA';
     public printContent(): void {
         console.log('ClassA');
     }
@@ -26,3 +27,21 @@ export default class ClassB {
 };
 
 export declare type numberA = number;
+
+export namespace A {
+    export namespace B {
+        export class C {
+            public abc(): void {
+                console.log('abc');
+            }
+        }
+    }
+}
+
+export let objectA = {
+    a: {
+        b: {
+            c: 'this is c',
+        }
+    }
+}

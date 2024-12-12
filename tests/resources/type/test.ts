@@ -13,23 +13,39 @@
  * limitations under the License.
  */
 
-declare type ClassAType = import('./exportExample').ClassA;
+import { A, numberA, objectA } from './exportExample';
 
-declare type ClassBType = import('./exportExample').default;
+function simpleAliasType(): void {
+    type BooleanAliasType = boolean;
+    type StringAliasType = string;
 
-declare type numberAType = import('./exportExample').numberA;
-
-type BooleanAliasType = boolean;
-
-export type StringAliasType = string;
-
-export function useAliasTypeInParam(param: BooleanAliasType[] | StringAliasType): void {
-    console.log(param);
+    function useAliasTypeInParam(param: BooleanAliasType[] | StringAliasType): void {
+        console.log(param);
+    }
 }
 
-export function useAliasTypeInBody(): void {
-    const a: numberAType[] = [1, 2, 3];
-    console.log(a);
+function aliasTypeWithImport(): void {
+    type ClassAType = import('./exportExample').ClassA;
+    type ClassBType = import('./exportExample').default;
+    type NumberAType = import('./exportExample').numberA;
+
+    type typeOfType = typeof import('./exportExample');
+    type MultiImportType = import('./exportExample').A.B.C;
+
+    function useAliasTypeInBody(): void {
+        const a: NumberAType[] = [1, 2, 3];
+        console.log(a);
+    }
+}
+
+function aliasTypeWithTypeOf(): void {
+    type ReferTypeOf = typeof objectA;
+    type MultiReferTypeOf = typeof objectA.a.b.c;
+}
+
+function aliasTypeWithReference(): void {
+    type ReferType = numberA;
+    type MultiReferType = A.B.C;
 }
 
 let a = 0;
@@ -39,3 +55,6 @@ switch (a) {
     case 3:
         b = 3;
 }
+
+declare type ABC = '123';
+let a: ABC = '123';

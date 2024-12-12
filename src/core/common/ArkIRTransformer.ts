@@ -268,17 +268,34 @@ export class ArkIRTransformer {
     }
 
     private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {
+        const stmts: Stmt[] = [];
         const aliasName = typeAliasDeclaration.name.text;
-        const originalType = this.arkValueTransformer.resolveTypeNode(typeAliasDeclaration.type);
-        const aliasType = new AliasType(aliasName, originalType,
-            new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        const rightOp = typeAliasDeclaration.type;
+        let originalType = UnknownType.getInstance();
+        if (ts.isImportTypeNode(rightOp) || ts.isTypeReferenceNode(rightOp) || ts.isTypeQueryNode(rightOp)) {
+            let {
+                value: rightValue,
+                valueOriginalPositions: positions,
+                stmts: rightStmts,
+            } = this.tsNodeToValueAndStmts(rightOp);
+            stmts.push(...rightStmts);
+            const leftValue = new Local('abc');
+            const leftPosition = FullPosition.buildFromNode(typeAliasDeclaration.name, this.sourceFile);
+            const assignStmt = new ArkAssignStmt(leftValue, rightValue);
+            assignStmt.setOperandOriginalPositions([leftPosition, ...positions]);
+            stmts.push(assignStmt);
+            originalType = rightValue.getType();
+        } else {
+            originalType = this.arkValueTransformer.resolveTypeNode(rightOp);
+        }
+        const aliasType = new AliasType(aliasName, originalType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
         const modifiers = typeAliasDeclaration.modifiers ? buildModifiers(typeAliasDeclaration) : 0;
         aliasType.setModifiers(modifiers);
         const sourceCode = typeAliasDeclaration.getText(this.sourceFile);
         const aliasTypePosition = LineColPosition.buildFromNode(typeAliasDeclaration, this.sourceFile);
         const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition)
         this.arkValueTransformer.getAliasTypeMap().set(aliasName, [aliasType, aliasTypeDeclaration]);
-        return [];
+        return stmts;
     }
 
     public switchStatementToValueAndStmts(switchStatement: ts.SwitchStatement): ValueAndStmts[] {

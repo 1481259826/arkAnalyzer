@@ -1024,7 +1024,7 @@ export class ArkTypeOfExpr extends AbstractExpr {
     }
 
     public getType(): Type {
-        return StringType.getInstance();
+        return this.op.getType();
     }
 
     public toString(): string {
