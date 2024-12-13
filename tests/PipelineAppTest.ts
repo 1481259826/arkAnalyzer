@@ -71,7 +71,8 @@ function doValidation(scene: Scene) : void {
     let classes = scene.getClasses();
     let files = scene.getFiles();
     let methods = scene.getMethods();
-    let customComponents = scene.getCustomComponents();
+    // let customComponents = scene.getCustomComponents();
+    console.info(`Actural numbers: File ${files.length}; Class ${classes.length}; Methods ${methods.length}`)
 
     obj.filesNumber[1] = files.length;
 
