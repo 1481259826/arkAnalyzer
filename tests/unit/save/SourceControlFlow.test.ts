@@ -74,7 +74,7 @@ namespace Case1 {
       lrc.sort((a: any, b: any) => {
       return a.lineStartTime - b.lineStartTime;
     });
-      i = 0;
+      let i: number = 0;
       for (; i < lrc.length; i = i + 1) {
         if (i === lrc.length - 1) {
           lrc[i].lineDuration = Number.MAX_VALUE;

@@ -71,12 +71,6 @@
                 "type": {
                   "_": "StringType"
                 }
-              },
-              {
-                "name": "readFileSync",
-                "type": {
-                  "_": "UnknownType"
-                }
               }
             ],
             "cfg": {
@@ -4001,12 +3995,6 @@
                 }
               },
               {
-                "name": "Math",
-                "type": {
-                  "_": "UnknownType"
-                }
-              },
-              {
                 "name": "%0",
                 "type": {
                   "_": "UnknownType"
@@ -4298,12 +4286,6 @@
                     },
                     "declaringNamespace": null
                   }
-                }
-              },
-              {
-                "name": "Math",
-                "type": {
-                  "_": "UnknownType"
                 }
               },
               {

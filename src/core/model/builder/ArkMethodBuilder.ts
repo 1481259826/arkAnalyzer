@@ -81,8 +81,10 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
 }
 
 export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
-
     mtd.setDeclaringArkClass(declaringClass);
+    if (declaringMethod !== undefined) {
+        mtd.setOuterMethod(declaringMethod);
+    }
 
     if (ts.isFunctionDeclaration(methodNode)) {
         mtd.setAsteriskToken(methodNode.asteriskToken !== undefined);

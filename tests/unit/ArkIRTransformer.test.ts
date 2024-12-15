@@ -14,10 +14,26 @@
  */
 
 import { assert, describe, expect, it } from 'vitest';
-import { ArkMethod, DEFAULT_ARK_CLASS_NAME, Scene, SceneConfig, Stmt } from '../../src';
 import path from 'path';
 import {
-    BinaryExpression_Expect_IR, CallExpression_Expect_IR,
+    ANONYMOUS_METHOD_PREFIX,
+    ArkMethod,
+    DEFAULT_ARK_CLASS_NAME,
+    DEFAULT_ARK_METHOD_NAME,
+    GlobalRef,
+    Local,
+    ModelUtils,
+    NAME_DELIMITER,
+    NAME_PREFIX,
+    Scene,
+    SceneConfig,
+    Stmt,
+    TEMP_LOCAL_PREFIX,
+    Value,
+} from '../../src';
+import {
+    BinaryExpression_Expect_IR,
+    CallExpression_Expect_IR,
     LiteralExpression_Expect_IR,
     NewExpression_Expect_IR,
     Operator_Expect_IR,
@@ -27,10 +43,13 @@ import {
     CompoundAssignment_Expect_IR,
     Declaration_Expect_IR,
 } from '../resources/arkIRTransformer/assignment/AssignmentExpectIR';
-import { ModelUtils } from '../../src/core/common/ModelUtils';
-import { DEFAULT_ARK_METHOD_NAME } from '../../src/core/common/Const';
 import {
     ArrowFunction_Expect_IR,
+    ClosureAnonymousFunction_Expect_IR,
+    ClosureClassMethod_Expect_IR,
+    ClosureFunction_Expect_IR,
+    ClosureNamespaceClassMethod_Expect_IR,
+    ClosureNamespaceFunction_Expect_IR,
     NoOverloadMethod_Expect_IR,
     NoOverloadMethodWithBody2_Expect_IR,
     NoOverloadMethodWithBody_Expect_IR,
@@ -38,7 +57,9 @@ import {
     OverloadInterfaceMethod_Expect_IR,
     OverloadMethod_Expect_IR,
     OverloadNamespaceMethod_Expect_IR,
+    UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
+import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
@@ -84,6 +105,9 @@ function assertStmtsEqual(stmts: Stmt[], expectStmts: any[]): void {
     for (let i = 0; i < stmts.length; i++) {
         expect(stmts[i].toString()).toEqual(expectStmts[i].text);
 
+        if (expectStmts[i].operandOriginalPositions === undefined) {
+            continue;
+        }
         const operandOriginalPositions: any[] = [];
         for (const operand of stmts[i].getDefAndUses()) {
             const operandOriginalPosition = stmts[i].getOperandOriginalPosition(operand);
@@ -198,13 +222,89 @@ function assertMethodLineEqual(method: ArkMethod, expectMethod: any): void {
     }
 }
 
+function assertLocalsEqual(actualLocals: Map<string, Local>, expectLocals: any): void {
+    for (let i = 0; i < expectLocals.length; i++) {
+        if (expectLocals[i].name.startsWith(TEMP_LOCAL_PREFIX)) {
+            continue;
+        }
+        const actualLocal = actualLocals.get(expectLocals[i].name);
+        assert.isDefined(actualLocal);
+        if (expectLocals[i].type !== undefined) {
+            assert.equal(actualLocal!.getType().toString(), expectLocals[i].type);
+        }
+        if (expectLocals[i].declaringStmt !== undefined) {
+            if (expectLocals[i].declaringStmt === null) {
+                expect(actualLocal!.getDeclaringStmt()).toEqual(expectLocals[i].declaringStmt);
+            } else {
+                expect(actualLocal!.getDeclaringStmt()?.toString()).toEqual(expectLocals[i].declaringStmt.text);
+            }
+        }
+        if (expectLocals[i].usedStmts !== undefined) {
+            assertStmtsEqual(actualLocal!.getUsedStmts(), expectLocals[i].usedStmts);
+        }
+    }
+}
+
+function assertGlobalsEqual(actualGlobals: Map<string, Value> | undefined, expectGlobals: any): void{
+    if (expectGlobals !== undefined && expectGlobals !== null) {
+        assert.isDefined(actualGlobals);
+    } else {
+        assert.isUndefined(actualGlobals);
+        return;
+    }
+    for (let i = 0; i < expectGlobals.length; i++) {
+        if (expectGlobals[i].name.startsWith(TEMP_LOCAL_PREFIX)) {
+            continue;
+        }
+        const actualGlobal = actualGlobals!.get(expectGlobals[i].name);
+        assert.isDefined(actualGlobal);
+        if (expectGlobals[i].instanceof !== undefined) {
+            assert.isTrue(actualGlobal instanceof expectGlobals[i].instanceof);
+        }
+        if (expectGlobals[i].type !== undefined) {
+            assert.equal(actualGlobal!.getType().toString(), expectGlobals[i].type);
+        }
+        if (expectGlobals[i].usedStmts !== undefined) {
+            if (actualGlobal instanceof GlobalRef) {
+                assertStmtsEqual(actualGlobal!.getUsedStmts(), expectGlobals[i].usedStmts);
+            }
+        }
+    }
+}
+
 function assertMethodBodyEqual(method: ArkMethod, expectBodyDefined: boolean, expectMethod?: any): void {
     const body = method.getBody();
     if (!expectBodyDefined) {
         assert.isUndefined(body);
         return;
     }
-    expect(body?.getLocals().get('x')?.getName()).toEqual(expectMethod.body.locals.x.name);
+    assert.isDefined(expectMethod);
+    if (expectMethod.body !== undefined) {
+        assert.isDefined(body);
+        if (expectMethod.body.locals !== undefined) {
+            assertLocalsEqual(body!.getLocals(), expectMethod.body.locals);
+        }
+        assertGlobalsEqual(body!.getGlobals(), expectMethod.body.globals);
+    }
+}
+
+function assertMethodBodyBuilderEqual(method: ArkMethod, expectedBodyBuilder: any): void {
+    const bodyBuilder = method.getBodyBuilder();
+    if (expectedBodyBuilder === undefined) {
+        assert.isUndefined(bodyBuilder);
+    } else {
+        assert.isDefined(bodyBuilder);
+    }
+}
+
+function assertParamsEqual(actualParams: MethodParameter[], expectedParams: any): void {
+    if (expectedParams !== undefined) {
+        assert.equal(actualParams.length, expectedParams.length);
+        for (let i = 0; i < expectedParams.length; i++) {
+            assert.equal(actualParams[i].getName(), expectedParams[i].name);
+            assert.equal(actualParams[i].getType(), expectedParams[i].type);
+        }
+    }
 }
 
 function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void {
@@ -215,25 +315,41 @@ function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void
             assert.isNull(declareSignatures);
         } else {
             assert.isNotNull(declareSignatures);
-            expect(declareSignatures?.length).toEqual(expectDeclareSignatures.length);
+            assert.equal(declareSignatures?.length, expectDeclareSignatures.length);
             declareSignatures?.find((signature, index) => {
-                expect(signature.toString()).toEqual(expectDeclareSignatures[index].toString);
-                expect(signature.getMethodSubSignature().getReturnType().toString()).toEqual(expectDeclareSignatures[index].methodSubSignature.returnType);
+                assert.equal(signature.toString(), expectDeclareSignatures[index].toString);
+                assert.equal(signature.getType().toString(), expectDeclareSignatures[index].methodSubSignature.returnType);
+                assertParamsEqual(signature.getMethodSubSignature().getParameters(), expectDeclareSignatures[index].methodSubSignature.parameters);
             });
         }
     }
 
     const implementationSignature = method.getImplementationSignature();
     const expectImplSignature = expectMethod.methodSignature;
-    if (expectImplSignature !== undefined) {
-        if (expectImplSignature === null) {
-            assert.isNull(implementationSignature);
-        } else {
-            assert.isNotNull(implementationSignature);
-            expect(implementationSignature?.toString()).toEqual(expectImplSignature.toString);
-            expect(implementationSignature?.getMethodSubSignature().getReturnType().toString()).toEqual(expectImplSignature.methodSubSignature.returnType);
-        }
+    if (expectImplSignature !== undefined && expectImplSignature !== null) {
+        assert.isNotNull(implementationSignature);
+        assert.equal(implementationSignature!.toString(), expectImplSignature.toString);
+        assert.equal(implementationSignature!.getType().toString(), expectImplSignature.methodSubSignature.returnType);
+        assertParamsEqual(implementationSignature!.getMethodSubSignature().getParameters(), expectImplSignature.methodSubSignature.parameters);
     }
+}
+
+function assertOuterMethodEqual(method: ArkMethod, outerMethod: any): void {
+    assert.equal(method.getOuterMethod()?.getSignature().toString(), outerMethod.toString);
+}
+
+function testNoMethodClosure(arkMethod: ArkMethod, expectMethod: any): void {
+    assert.isUndefined(arkMethod.getOuterMethod());
+    assertMethodSignatureEqual(arkMethod, expectMethod);
+    assertMethodBodyEqual(arkMethod, true, expectMethod);
+    assertMethodBodyBuilderEqual(arkMethod, expectMethod.bodyBuilder);
+}
+
+function testMethodClosure(arkMethod: ArkMethod, expectMethod: any): void {
+    assertOuterMethodEqual(arkMethod, expectMethod.outerMethod);
+    assertMethodSignatureEqual(arkMethod, expectMethod);
+    assertMethodBodyEqual(arkMethod, true, expectMethod);
+    assertMethodBodyBuilderEqual(arkMethod, expectMethod.bodyBuilder);
 }
 
 function buildScene(folderName: string) {
@@ -318,5 +434,54 @@ describe('function Test', () => {
 
     it('test no overload function with body 2', async () => {
         testNoMethodOverloadWithBody(scene, 'OverloadFunctionTest.ts', 'function7', NoOverloadMethodWithBody2_Expect_IR);
+    });
+});
+
+describe('closure Test', () => {
+    const scene = buildScene('function');
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith('ClosureParamsTest.ts'));
+
+    it('test unClosure function', async () => {
+        const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'outerFunction1'));
+        assert.isDefined(arkMethod);
+        testNoMethodClosure(arkMethod as ArkMethod, UnClosureFunction_Expect_IR);
+    });
+
+    it('test closure in function', async () => {
+        const methodName = `${NAME_PREFIX}innerFunction1${NAME_DELIMITER}outerFunction1`;
+        const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod as ArkMethod, ClosureFunction_Expect_IR);
+    });
+
+    it('test closure in anonymous function', async () => {
+        const methodName = `${ANONYMOUS_METHOD_PREFIX}0${NAME_DELIMITER}outerFunction1`;
+        const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod as ArkMethod, ClosureAnonymousFunction_Expect_IR);
+    });
+
+    it('test closure in class method', async () => {
+        const arkClass = arkFile?.getClasses().find((cls) => (cls.getName() === 'ClosureClass'));
+        const methodName = `${NAME_PREFIX}innerFunction2${NAME_DELIMITER}outerFunction2`;
+        const arkMethod = arkClass?.getMethods().find((method) => (method.getName() === methodName));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod as ArkMethod, ClosureClassMethod_Expect_IR);
+    });
+
+    it('test closure in Namespace function', async () => {
+        const arkNS = arkFile?.getNamespaces().find((ns) => ns.getName() === 'closureNamespace');
+        const methodName = `${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3`;
+        const arkMethod = arkNS?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod as ArkMethod, ClosureNamespaceFunction_Expect_IR);
+    });
+
+    it('test closure Namespace Class method', async () => {
+        const arkNS = arkFile?.getNamespaces().find((ns) => ns.getName() === 'closureNamespace');
+        const methodName = `${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3`;
+        const arkMethod = arkNS?.getClassWithName('ClosureClass')?.getMethods().find((method) => (method.getName() === methodName));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod as ArkMethod, ClosureNamespaceClassMethod_Expect_IR);
     });
 });
