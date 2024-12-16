@@ -477,14 +477,20 @@ export class TypeInference {
             return type;
         }
         if (type instanceof AliasType) {
-            type = type.getOriginalType();
-        }
-        if (type instanceof ClassType) {
-            return new ClassType(type.getClassSignature(), realTypes);
-        } else if (type instanceof FunctionType) {
-            return new FunctionType(type.getMethodSignature(), realTypes);
+            type.setOriginalType(buildNewType(type.getOriginalType()));
+            return type;
         } else {
-            return new UnclearReferenceType(urType.getName(), realTypes);
+            return buildNewType(type);
+        }
+
+        function buildNewType(type: Type | null): Type {
+            if (type instanceof ClassType) {
+                return new ClassType(type.getClassSignature(), realTypes);
+            } else if (type instanceof FunctionType) {
+                return new FunctionType(type.getMethodSignature(), realTypes);
+            } else {
+                return new UnclearReferenceType(urType.getName(), realTypes);
+            }
         }
     }
 
