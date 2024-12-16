@@ -402,6 +402,10 @@ export class CallGraph extends BaseGraph {
         this.cgStat.printStat();
     }
 
+    public getStat(): string {
+        return this.cgStat.getStat();
+    }
+
     public setDummyMainFuncID(dummyMainMethodID: number): void {
         this.dummyMainMethodID = dummyMainMethodID;
     }

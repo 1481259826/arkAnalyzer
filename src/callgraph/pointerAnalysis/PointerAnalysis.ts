@@ -113,6 +113,14 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
     }
 
+    public getStat(): string {
+        let ret: string = this.cg.getStat();
+        ret += '\n' + this.pagBuilder.getStat();
+        ret += '\n' + this.ptaStat.getStat();
+
+        return ret;
+    }
+
     protected preProcessMethod(funcID: FuncID): CallSite[] {
         // do nothing
         return [];
@@ -591,7 +599,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             if (!err) {
                 fs.truncate(filePath, 0, (err) => {
                     if (err) {
-                        console.log('Error to truncate file ', err);
+                        logger.error('Error to truncate file ', err);
                     }
                 });
             }
@@ -611,7 +619,7 @@ export class PointerAnalysis extends AbstractAnalysis {
 
             fs.writeFile(filePath, updatedContent, 'utf8', (err) => {
                 if (err) {
-                    console.error('Error to write file', err);
+                    logger.error('Error to write file', err);
                 }
             });
         });

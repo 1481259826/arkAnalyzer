@@ -28,12 +28,6 @@ import { Scene } from '../src/Scene';
 let config: SceneConfig = new SceneConfig();
 config.buildFromJson('./tests/PipelineAppTestConfig.json');
 
-function assert(condition: any, msg?: string): asserts condition {
-  if (!condition) {
-    throw new Error(msg);
-  }
-}
-
 function assertObj(obj: Object): void {
     const keys = Object.keys(obj);
     const vals = Object.values(obj);
