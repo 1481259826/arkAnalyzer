@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let i: number = 0;
-try {
-    i++;
-} catch (err) {
-    i--;
+
+let a = 0;
+let b = 1;
+switch (a) {
+    case 2:
+    case 3:
+        b = 3;
 }

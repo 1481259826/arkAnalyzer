@@ -97,6 +97,7 @@ class SwitchStatementBuilder extends StatementBuilder {
     nexts: StatementBuilder[];
     cases: Case[] = [];
     default: StatementBuilder | null = null;
+    afterSwitch: StatementBuilder | null = null;
 
     constructor(type: string, code: string, astNode: ts.Node, scopeID: number) {
         super(type, code, astNode, scopeID);
@@ -425,6 +426,7 @@ export class CfgBuilder {
         let switchExit = new StatementBuilder('switchExit', '', null, scopeID);
         this.exits.push(switchExit);
         this.switchExitStack.push(switchExit);
+        switchExit.lasts.add(switchstm);
         switchstm.code = 'switch (' + c.expression + ')';
         let lastCaseExit: StatementBuilder | null = null;
         for (let i = 0; i < c.caseBlock.clauses.length; i++) {
@@ -591,7 +593,8 @@ export class CfgBuilder {
 
     deleteExit() {
         for (const exit of this.exits) {
-            for (const last of [...exit.lasts]) {
+            const lasts = [...exit.lasts];
+            for (const last of lasts) {
                 if (last instanceof ConditionStatementBuilder) {
                     if (last.nextT === exit) {
                         last.nextT = exit.next;
@@ -605,14 +608,14 @@ export class CfgBuilder {
                         lasts.add(last);
                     }
                 } else if (last instanceof SwitchStatementBuilder) {
-                    for (let i = 0; i < last.nexts.length; i++) {
-                        const stmt = last.nexts[i];
-                        if (stmt === exit) {
-                            last.nexts[i] = exit.next!;
-                            const lasts = exit.next!.lasts;
-                            lasts.delete(exit);
-                            lasts.add(last);
-                        }
+                    if (exit.type === 'switchExit') {
+                        last.afterSwitch = exit.next;
+                    }
+                    exit.next!.lasts.delete(exit);
+                    last.nexts = last.nexts.filter(item => item !== exit);
+                    if (last.nexts.length === 0) {
+                        last.next = exit.next;
+                        exit.next?.lasts.add(last);
                     }
                 } else {
                     if (last instanceof TryStatementBuilder && exit.type === 'finallyExit') {
@@ -669,6 +672,9 @@ export class CfgBuilder {
                     }
                     break;
                 } else if (stmt instanceof SwitchStatementBuilder) {
+                    if (stmt.nexts.length === 0) {
+                        stmtQueue.push(stmt.afterSwitch!);
+                    }
                     for (let i = stmt.nexts.length - 1; i >= 0; i--) {
                         stmtQueue.push(stmt.nexts[i]);
                     }
@@ -723,6 +729,13 @@ export class CfgBuilder {
                         nextF.lasts.push(block);
                     }
                 } else if (originStatement instanceof SwitchStatementBuilder) {
+                    if (originStatement.nexts.length === 0) {
+                        const nextBlock = originStatement.afterSwitch!.block;
+                        if (nextBlock && (lastStatement || nextBlock !== block)) {
+                            block.nexts.push(nextBlock);
+                            nextBlock.lasts.push(block);
+                        }
+                    }
                     for (const next of originStatement.nexts) {
                         const nextBlock = next.block;
                         if (nextBlock && (lastStatement || nextBlock !== block)) {
@@ -780,18 +793,18 @@ export class CfgBuilder {
             return;
         }
         const returnStatement = new StatementBuilder('returnStatement', 'return;', null, this.exit.scopeID);
-        let tryExit = false;
+        let TryOrSwitchExit = false;
         if (notReturnStmts.length === 1 && notReturnStmts[0].block) {
             let p: ts.Node | null = notReturnStmts[0].astNode;
             while (p && p !== this.astRoot) {
-                if (ts.isTryStatement(p)) {
-                    tryExit = true;
+                if (ts.isTryStatement(p) || ts.isSwitchStatement(p)) {
+                    TryOrSwitchExit = true;
                     break;
                 }
                 p = p.parent;
             }
         }
-        if (notReturnStmts.length === 1 && !(notReturnStmts[0] instanceof ConditionStatementBuilder) && !tryExit) {
+        if (notReturnStmts.length === 1 && !(notReturnStmts[0] instanceof ConditionStatementBuilder) && !TryOrSwitchExit) {
             const notReturnStmt = notReturnStmts[0];
             notReturnStmt.next = returnStatement;
             returnStatement.lasts = new Set([notReturnStmt]);
