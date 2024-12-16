@@ -472,9 +472,12 @@ export class TypeInference {
         if (urType.getName() === Builtin.ARRAY) {
             return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
         }
-        const type = this.inferUnclearReferenceType(urType.getName(), arkClass);
+        let type = this.inferUnclearReferenceType(urType.getName(), arkClass);
         if (realTypes.length === 0) {
             return type;
+        }
+        if (type instanceof AliasType) {
+            type = type.getOriginalType();
         }
         if (type instanceof ClassType) {
             return new ClassType(type.getClassSignature(), realTypes);

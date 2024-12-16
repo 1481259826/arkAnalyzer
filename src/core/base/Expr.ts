@@ -382,7 +382,10 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
             baseType = baseType.getOriginalType();
         }
         if (baseType instanceof UnionType) {
-            for (const type of baseType.getTypes()) {
+            for (let type of baseType.getTypes()) {
+                if (type instanceof AliasType) {
+                    type = type.getOriginalType();
+                }
                 result = this.inferMethod(type, methodName, scene);
                 if (result) {
                     break;
