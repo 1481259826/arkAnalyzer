@@ -57,7 +57,7 @@ export class PagBuilder {
     private pagStat: PAGStat;
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
-    private instanceField2UniqInstanceMap: Map<[string, Value], Value> = new Map();
+    private instanceField2UniqInstanceMap: Map<string, Value> = new Map();
     private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
     private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
@@ -68,7 +68,7 @@ export class PagBuilder {
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
-    private globalThisValue: Value = new Local(GLOBAL_THIS);
+    private globalThisValue: Local = new Local(GLOBAL_THIS);
     private globalThisPagNode?: PagGlobalThisNode;
     private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
     private externalScopeVariableMap: Map<Local, Local[]> = new Map();
@@ -1101,20 +1101,21 @@ export class PagBuilder {
 
         let sig = v.getFieldSignature();
         let sigStr = sig.toString()
-        let base: Value;
+        let base: Local;
         let real: Value | undefined;
 
         if (v instanceof ArkInstanceFieldRef) {
-            base = (v as ArkInstanceFieldRef).getBase()
+            base = (v as ArkInstanceFieldRef).getBase() as Local
             if (base instanceof Local && base.getName() === GLOBAL_THIS && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
                 base = this.getGlobalThisValue();
                 (v as ArkInstanceFieldRef).setBase(base as Local)
             }
+            let key = `${base.getSignature()}-${sigStr}`
 
-            real = this.instanceField2UniqInstanceMap.get([sigStr, base!]);
+            real = this.instanceField2UniqInstanceMap.get(key);
             if (!real) {
-                this.instanceField2UniqInstanceMap.set([sigStr, base!], v);
+                this.instanceField2UniqInstanceMap.set(key, v);
                 real = v;
             }
         } else {
@@ -1231,7 +1232,7 @@ export class PagBuilder {
         return false;
     }
 
-    public getGlobalThisValue(): Value {
+    public getGlobalThisValue(): Local {
         return this.globalThisValue;
     }
 
@@ -1383,6 +1384,10 @@ export class PagBuilder {
 
     public printStat(): void {
         this.pagStat.printStat();
+    }
+
+    public getStat(): string {
+        return this.pagStat.getStat();
     }
 
     public getUnhandledFuncs(): FuncID[] {
