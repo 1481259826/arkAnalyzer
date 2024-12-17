@@ -20,7 +20,7 @@ import { assert } from 'vitest';
 
 let sdk: Sdk = {
     name: 'ohos',
-    path: '/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets',
+    path: 'tests/resources/Sdk/',
     moduleName: ''
 };
 
