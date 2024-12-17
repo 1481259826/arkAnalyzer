@@ -35,7 +35,7 @@ let sdk: Sdk = {
 };
 sdk;
 
-function printStat(pta: PointerAnalysis) {
+function printStat(pta: PointerAnalysis): void {
     console.log(pta.getStat());
 }
 
@@ -137,6 +137,6 @@ function runDir(output: string) {
 
 if (false) {
     runProject("./out");
-}
-else 
+} else {
     runDir('./out')
+}
