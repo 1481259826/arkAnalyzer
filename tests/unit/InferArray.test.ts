@@ -151,6 +151,13 @@ describe("Infer Array Test", () => {
         assert.isTrue(classB?.getFieldWithName('field1')?.getType() instanceof AliasType);
     })
 
+    it('alias type Test case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'B.ets');
+        const aliasType = projectScene.getFile(fileId)?.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName('TestType');
+        assert.isTrue(aliasType?.getOriginalType() instanceof AliasType);
+        assert.equal((aliasType?.getOriginalType() as AliasType).getOriginalType().getTypeString(), '@inferType/Target.ets: MySpace.%AC$0<@inferType/Target.ets: MySpace.ClassTarget>');
+    })
+
     it('constructor case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);

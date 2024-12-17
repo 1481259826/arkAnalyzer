@@ -1,5 +1,7 @@
 import { MySpace, TypeTarget } from './Target';
 
+type TestType = MySpace.Constructor<MySpace.ClassTarget>;
+
 export function funcB() {
     MySpace.funcTarget();
 }

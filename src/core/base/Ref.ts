@@ -110,9 +110,9 @@ export class ArkArrayRef extends AbstractRef {
     }
 
     public getType(): Type {
-        const baseType = this.base.getType();
+        let baseType = this.base.getType();
         if (baseType instanceof AliasType) {
-            return baseType.getOriginalType();
+            baseType = baseType.getOriginalType();
         }
         if (baseType instanceof ArrayType) {
             return baseType.getBaseType();
@@ -268,9 +268,12 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         }
         let newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
         if (baseType instanceof UnionType) {
-            for (const type of baseType.getTypes()) {
+            for (let type of baseType.getTypes()) {
                 if (type instanceof UndefinedType || type instanceof NullType) {
                     continue;
+                }
+                if (type instanceof AliasType) {
+                    type = type.getOriginalType();
                 }
                 newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
                 if (!TypeInference.isUnclearType(newFieldSignature?.getType())) {

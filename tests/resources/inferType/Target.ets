@@ -1,5 +1,9 @@
 export namespace MySpace {
 
+    export type Constructor<T> = {
+        new(): T;
+    }
+
     export function funcTarget() {
         console.log('funcTarget');
     }

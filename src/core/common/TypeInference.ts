@@ -472,16 +472,25 @@ export class TypeInference {
         if (urType.getName() === Builtin.ARRAY) {
             return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
         }
-        const type = this.inferUnclearReferenceType(urType.getName(), arkClass);
+        let type = this.inferUnclearReferenceType(urType.getName(), arkClass);
         if (realTypes.length === 0) {
             return type;
         }
-        if (type instanceof ClassType) {
-            return new ClassType(type.getClassSignature(), realTypes);
-        } else if (type instanceof FunctionType) {
-            return new FunctionType(type.getMethodSignature(), realTypes);
-        } else {
-            return new UnclearReferenceType(urType.getName(), realTypes);
+        return buildNewType(type);
+
+        function buildNewType(type: Type | null): Type | null {
+            if (type instanceof AliasType) {
+                const newType = buildNewType(type.getOriginalType());
+                if (newType) {
+                    type.setOriginalType(newType);
+                }
+                return type;
+            } else if (type instanceof ClassType) {
+                return new ClassType(type.getClassSignature(), realTypes);
+            } else if (type instanceof FunctionType) {
+                return new FunctionType(type.getMethodSignature(), realTypes);
+            }
+            return null;
         }
     }
 
