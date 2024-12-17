@@ -137,6 +137,6 @@ function runDir(output: string) {
 
 if (false) {
     runProject("./out");
-}
-else 
+} else {
     runDir('./out')
+}
