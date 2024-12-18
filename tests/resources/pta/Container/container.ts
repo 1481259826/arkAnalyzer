@@ -28,7 +28,7 @@ namespace Container {
         public test() {
             this.array = [[]];
             this.array.push([new Element()]);
-            let a = []
+            let a = [];
             a.push();
             let b = this.getArrayElement();
         }
@@ -59,6 +59,6 @@ namespace Container {
         let mapTest: MapTest = new MapTest();
 
         setTest.test();
-        mapTest.test()
+        mapTest.test();
     }
 }

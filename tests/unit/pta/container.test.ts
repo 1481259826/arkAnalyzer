@@ -39,8 +39,8 @@ describe('ContainerAddTest', () => {
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
-    let ptaConfig = new PointerAnalysisConfig(2, './out', true, true)
-    let pta = new PointerAnalysis(pag, cg, scene, ptaConfig)
+    let ptaConfig = new PointerAnalysisConfig(2, './out', true, true);
+    let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
     pta.setEntries(debugfunc);
     pta.start();
 
@@ -48,8 +48,6 @@ describe('ContainerAddTest', () => {
     .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
     let mapMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'MapTest')
     .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
-
-    mapMethod;
 
     it('case1: Set.add(<T>)', () => {
         let setLocal = setMethod[0]?.getBody()?.getLocals().get('ele')!;

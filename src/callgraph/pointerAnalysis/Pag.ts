@@ -666,71 +666,78 @@ export class Pag extends BaseGraph {
 
     public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
         let id: NodeID = this.nodeNum;
-        let pagNode: PagNode
+        let pagNode: PagNode;
+    
         if (value instanceof Local) {
-            const valueType = value.getType()
-            if (valueType instanceof FunctionType &&
-                (value.getDeclaringStmt() === null)) {
-                // init function pointer
-                pagNode = new PagFuncNode(id, cid, value, stmt, valueType.getMethodSignature())
-            } else {
-                // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
-                // value has been replaced in param
-                if (value.getName() === GLOBAL_THIS_NAME && value.getDeclaringStmt() == null) {
-                    pagNode = new PagGlobalThisNode(id, -1, value)
-                } else {
-                    pagNode = new PagLocalNode(id, cid, value, stmt);
-                }
-            }
+            pagNode = this.handleLocalNode(id, cid, value, stmt);
         } else if (value instanceof ArkInstanceFieldRef) {
-            if (value.getType() instanceof FunctionType) {
-                // function ptr: let ptr = Class.MethodA
-                pagNode = new PagFuncNode(id, cid, value, stmt,
-                    (value.getType() as FunctionType).getMethodSignature());
-            } else {
-                // normal field
-                pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
-            }
+            pagNode = this.handleInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
-            if (value.getType() instanceof FunctionType) {
-                // function ptr: let ptr = Class.StaticMethodA
-                pagNode = new PagFuncNode(id, cid, value, stmt,
-                    (value.getType() as FunctionType).getMethodSignature());
-            } else {
-                // normal field
-                pagNode = new PagStaticFieldNode(id, cid, value, stmt);
-            }
+            pagNode = this.handleStaticFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkArrayRef) {
             pagNode = new PagArrayNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
-            let classSignature = value.getClassType().getClassSignature();
-            if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set') ||
-                classSignature.toString().endsWith('lib.es2015.collection.d.ts: Map')) {
-                pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
-            } else {
-                pagNode = new PagNewExprNode(id, cid, value, stmt);
-            }
+            pagNode = this.handleNewExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewArrayExpr) {
             pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
-            throw new Error('This Node need use addThisNode method');
+            throw new Error('This Node needs to use addThisNode method');
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
-
+    
         this.addNode(pagNode!);
+        this.addContextOrExportInfoMap(refresh, cid, id, value, pagNode, stmt);
+    
+        return pagNode!;
+    }
 
-        // Value
+    private handleLocalNode(id: NodeID, cid: ContextID, value: Local, stmt?: Stmt): PagNode {
+        const valueType = value.getType();
+        if (valueType instanceof FunctionType && value.getDeclaringStmt() === null) {
+            return new PagFuncNode(id, cid, value, stmt, valueType.getMethodSignature());
+        } else if (value.getName() === GLOBAL_THIS_NAME && value.getDeclaringStmt() == null) {
+            return new PagGlobalThisNode(id, -1, value);
+        } else {
+            return new PagLocalNode(id, cid, value, stmt);
+        }
+    }
+    
+    private handleInstanceFieldNode(id: NodeID, cid: ContextID, value: ArkInstanceFieldRef, stmt?: Stmt): PagNode {
+        return this.createFieldNode(id, cid, value, stmt);
+    }
+    
+    private handleStaticFieldNode(id: NodeID, cid: ContextID, value: ArkStaticFieldRef, stmt?: Stmt): PagNode {
+        return this.createFieldNode(id, cid, value, stmt);
+    }
+    
+    private createFieldNode(id: NodeID, cid: ContextID, value: any, stmt?: Stmt): PagNode {
+        if (value.getType() instanceof FunctionType) {
+            return new PagFuncNode(id, cid, value, stmt, (value.getType() as FunctionType).getMethodSignature());
+        } else {
+            return value instanceof ArkStaticFieldRef ? new PagStaticFieldNode(id, cid, value, stmt) : new PagInstanceFieldNode(id, cid, value, stmt);
+        }
+    }
+    
+    private handleNewExprNode(id: NodeID, cid: ContextID, value: ArkNewExpr, stmt?: Stmt): PagNode {
+        const classSignature = value.getClassType().getClassSignature();
+        if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set') ||
+            classSignature.toString().endsWith('lib.es2015.collection.d.ts: Map')) {
+            return new PagNewContainerExprNode(id, cid, value, stmt);
+        } else {
+            return new PagNewExprNode(id, cid, value, stmt);
+        }
+    }
+    
+    private addContextOrExportInfoMap(refresh: boolean, cid: ContextID, id: NodeID, 
+        value: PagNodeType, pagNode: PagNode, stmt?: Stmt): void {
         if (!(value instanceof ExportInfo)) {
             this.addContextMap(refresh, cid, id, value, stmt!, pagNode!);
         } else {
-            // ExportInfo
             this.addExportInfoMap(id, value);
         }
-
-        return pagNode!;
     }
     
     private addExportInfoMap(id: NodeID, v: ExportInfo): void {
