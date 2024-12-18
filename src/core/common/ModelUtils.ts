@@ -598,7 +598,7 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
     return exportInfo;
 }
 
-export function initModulePathMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>) {
+export function initModulePathMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>): void {
     if (moduleMap) {
         moduleMap.clear();
     }

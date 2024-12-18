@@ -74,6 +74,6 @@ declare namespace outer {
     }
 }
 
-function testDoubleNamespace() {
+function testDoubleNamespace(): void {
     outer.inner.TestClass.request();
 }
