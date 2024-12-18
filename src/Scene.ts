@@ -427,12 +427,18 @@ export class Scene {
         if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getNamespacesMap().get(namespaceSignature.toMapKey()) || null;
         } else {
-            const arkFile = this.getFile(namespaceSignature.getDeclaringFileSignature());
-            const parentNs = namespaceSignature.getDeclaringNamespaceSignature();
-            if (parentNs) {
-                return arkFile?.getNamespace(parentNs)?.getNamespace(namespaceSignature) || null;
-            }
-            return arkFile?.getNamespace(namespaceSignature) || null;
+            return this.getNamespaceBySignature(namespaceSignature);
+        }
+    }
+
+    private getNamespaceBySignature(signature: NamespaceSignature): ArkNamespace | null {
+        const parentSignature = signature.getDeclaringNamespaceSignature();
+        if (parentSignature) {
+            const parentNamespace = this.getNamespaceBySignature(parentSignature);
+            return parentNamespace?.getNamespace(signature) || null;
+        } else {
+            const arkFile = this.getFile(signature.getDeclaringFileSignature());
+            return arkFile?.getNamespace(signature) || null;
         }
     }
 
@@ -460,11 +466,11 @@ export class Scene {
         if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
             return this.getClassesMap(refresh).get(classSignature.toMapKey()) || null;
         } else {
-            const arkFile = this.getFile(classSignature.getDeclaringFileSignature());
             const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
             if (namespaceSignature) {
-                return arkFile?.getNamespace(namespaceSignature)?.getClass(classSignature) || null;
+                return this.getNamespaceBySignature(namespaceSignature)?.getClass(classSignature) || null;
             }
+            const arkFile = this.getFile(classSignature.getDeclaringFileSignature());
             return arkFile?.getClass(classSignature) || null;
         }
     }
