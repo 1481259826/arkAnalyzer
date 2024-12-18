@@ -17,6 +17,9 @@ import { ArkAssignStmt } from "../../core/base/Stmt";
 import { UnknownType } from "../../core/base/Type";
 import { CallGraphNode, CallGraphNodeKind } from "../model/CallGraph";
 import { PointerAnalysis } from "../pointerAnalysis/PointerAnalysis";
+import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 abstract class StatTraits {
     public getStat(): string {
@@ -24,7 +27,7 @@ abstract class StatTraits {
     }
 
     public printStat(): void {
-        console.log(this.getStat());
+        logger.trace(this.getStat());
     }
 }
 
@@ -158,7 +161,7 @@ export class PTAStat implements StatTraits {
     }
 
     public printStat(): void {
-        console.log(this.getStat());
+        logger.trace(this.getStat());
     }
 }
 
@@ -177,7 +180,7 @@ export class PAGStat implements StatTraits {
     }
 
     public printStat(): void {
-        console.log(this.getStat());
+        logger.trace(this.getStat());
     }
 }
 

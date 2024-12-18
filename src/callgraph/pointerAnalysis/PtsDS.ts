@@ -259,12 +259,6 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         if (propa) propa.clear();
     }
 
-    dumpPtData(): void {
-        // TODO: to be implemented
-        console.log(this.diffPtsMap);
-        console.log(this.propaPtsMap);
-    }
-
     calculateDiff(src: K, dst: K): DS {
         let srcDiff = this.diffPtsMap.get(src)!;
         let dstPropa = this.propaPtsMap.get(dst);

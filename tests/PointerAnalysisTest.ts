@@ -35,6 +35,10 @@ let sdk: Sdk = {
 };
 sdk;
 
+function printStat(pta: PointerAnalysis): void {
+    console.log(pta.getStat());
+}
+
 function dumpIR(scene: Scene) {
     scene.getMethods().forEach(fun => {
         console.log("\n---\n" + fun.getSignature().toString())
@@ -89,27 +93,16 @@ function runProject(output: string) {
     let projectScene: Scene = new Scene();
     projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject()
-    // projectScene.collectProjectImportInfos();
     projectScene.inferTypes();
 
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true, true)
     let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
-    pta;
-
-    // printTypeDiff(pta);
+    printStat(pta);
 }
 
 
 function runDir(output: string) {
-    config.buildFromProjectDir('./tests/resources/pta/GlobalVar');
-    // config.buildConfig(
-    //     'Dir',
-    //     './tests/resources/pta/Container',
-    //     [sdk],
-    //     [
-    //         'tests/resources/pta/Container/container.ts'
-    //     ]
-    // )
+    config.buildFromProjectDir('./tests/resources/callgraph/swap');
 
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
@@ -130,7 +123,6 @@ function runDir(output: string) {
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries(debugfunc);
     pta.start();
-    //cg.dump(output + "/subcg.dot", debugfunc[0]);
 
     cg.dump(output + "/subcg.dot", debugfunc[0])
     cgBuilder.setEntries()
@@ -139,8 +131,10 @@ function runDir(output: string) {
 
     dumpIR(projectScene)
     printTypeDiff(pta);
-    console.log("fin")
+
+    printStat(pta);
 }
+
 if (false) {
     runProject("./out");
 } else {
