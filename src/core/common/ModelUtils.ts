@@ -598,11 +598,15 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
     return exportInfo;
 }
 
+export function initModulePathMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>): void {
+    if (moduleMap) {
+        moduleMap.clear();
+    }
+    moduleMap = FileUtils.generateModuleMap(ohPkgContentMap);
+}
+
 
 function getArkFileFromOtherModule(fromInfo: FromInfo) {
-    if (moduleMap === undefined) {
-        moduleMap = FileUtils.generateModuleMap(fromInfo.getDeclaringArkFile().getScene().getOhPkgContentMap());
-    }
     if (!moduleMap || moduleMap.size === 0) {
         return;
     }

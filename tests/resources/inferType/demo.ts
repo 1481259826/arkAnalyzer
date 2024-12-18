@@ -65,3 +65,15 @@ class Test {
 
 const d = new Test();
 let b = d.pass();
+
+declare namespace outer {
+    namespace inner {
+        class TestClass {
+            static request(): void;
+        }
+    }
+}
+
+function testDoubleNamespace(): void {
+    outer.inner.TestClass.request();
+}

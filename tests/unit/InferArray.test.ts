@@ -122,6 +122,14 @@ describe("Infer Array Test", () => {
         assert.isTrue((stmt as ArkAssignStmt).getRightOp() instanceof ArkStaticFieldRef);
     })
 
+    it('embed namespace case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
+        const file = projectScene.getFile(fileId);
+        const method = file?.getDefaultClass()?.getMethodWithName('testDoubleNamespace');
+        const stmt = method?.getCfg()?.getStmts().at(-2);
+        assert.equal(stmt?.toString(), 'staticinvoke <@inferType/demo.ts: outer.inner.TestClass.[static]request()>()');
+    })
+
     it('field case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'Field.ts');
         const file = projectScene.getFile(fileId);
