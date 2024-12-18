@@ -17,7 +17,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { SceneConfig, SceneOptions, Sdk } from './Config';
-import { ModelUtils } from './core/common/ModelUtils';
+import { initModulePathMap, ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
 import { ArkClass } from './core/model/ArkClass';
@@ -265,7 +265,7 @@ export class Scene {
             moduleScene.ModuleSceneBuilder(value, key);
             this.moduleScenesMap.set(value, moduleScene);
         });
-
+        initModulePathMap(this.ohPkgContentMap);
         this.buildAllMethodBody();
         this.addDefaultConstructors();
     }
