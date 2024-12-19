@@ -103,8 +103,8 @@ export class AbstractFlowGraph {
                             this.entry = p;
                         }
                         this.nodes = this.dfsPostOrder(this.entry);
+                        change = postMax !== this.nodes.length;
                         postMax = this.nodes.length;
-                        change = true;
                     }
                 }
             }
@@ -1048,14 +1048,12 @@ class IfExitRegion extends IfRegion {
     }
 
     public replace() {
-        this.replaceContitionPred();;
+        this.replaceContitionPred();
 
         let succ = this.contition.getSucc()[1];
         succ.replacePred(this.contition, this);
         this.addSucc(succ);
     }
-
-    
 }
 
 class IfBreakRegion extends IfRegion {
@@ -1066,7 +1064,7 @@ class IfBreakRegion extends IfRegion {
 
     public replace() {
         this.replaceContitionPred();
-        
+
         let succ = this.contition.getSucc()[1];
         succ.replacePred(this.contition, this);
         this.addSucc(succ);
