@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { NodeID, BaseNode, GraphTraits } from './BaseExplicitGraph'
+import { NodeID, BaseNode, GraphTraits } from './BaseExplicitGraph';
 
 type NodeSet = Set<NodeID>;
 type NodeStack = NodeID[];
@@ -29,7 +29,7 @@ class NodeSCCInfo {
 
     constructor() {
         this._rep = Number.MAX_SAFE_INTEGER;
-        this._subNodes = new Set()
+        this._subNodes = new Set();
     }
 
     get rep(): NodeID {
@@ -151,7 +151,7 @@ export class SCCDetection<Graph extends GraphTraits> {
         this.setRep(v, v);
         this.setVisited(v);
 
-        let node = this.getNode(v)
+        let node = this.getNode(v);
         node.getOutgoingEdges().forEach(e => {
             let w: NodeID = e.getDstID();
             if (!this.isVisited(w)) {
@@ -205,7 +205,7 @@ export class SCCDetection<Graph extends GraphTraits> {
     public getRepNode(n: NodeID): NodeID {
         const it = this._R.get(n);
         if (!it) {
-            throw new Error("scc rep not found");
+            throw new Error('scc rep not found');
         }
         const rep = it.rep;
         return rep !== Number.MAX_SAFE_INTEGER ? rep : n;
@@ -260,7 +260,7 @@ export class SCCDetection<Graph extends GraphTraits> {
     public getSubNodes(n: NodeID): NodeSet {
         const it = this._R.get(n);
         if (!it) {
-            throw new Error("sccInfo not found for a node");
+            throw new Error('sccInfo not found for a node');
         }
         let sub = it.subNodes;
         if (sub.size === 0) {

@@ -54,7 +54,7 @@ while (topo.length > 0) {
     })
 }
 
-console.log('===\n')
+console.log('===\n');
 for (let n of cg.getNodesIter()) {
     let sccNodes = scc.getMySCCNodes(n.getID());
     console.log((n as CallGraphNode).getMethod().getMethodSubSignature().getMethodName());
