@@ -20,7 +20,7 @@ import { Scene } from '../../Scene';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
-import { BaseEdge, BaseNode, BaseGraph, NodeID } from './BaseGraph';
+import { BaseEdge, BaseNode, BaseExplicitGraph, NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CGStat } from '../common/Statistics';
 import { ContextID } from '../pointerAnalysis/Context';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
@@ -157,7 +157,7 @@ export class CallGraphNode extends BaseNode {
     }
 }
 
-export class CallGraph extends BaseGraph {
+export class CallGraph extends BaseExplicitGraph {
     private scene: Scene;
     private idToCallSiteMap: Map<CallSiteID, CallSite> = new Map();
     private callSiteToIdMap: Map<CallSite, CallSiteID> = new Map();

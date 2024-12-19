@@ -133,7 +133,7 @@ export abstract class BaseNode {
 
 }
 
-export class BaseGraph implements GraphTraits{
+export abstract class BaseExplicitGraph implements GraphTraits{
     protected edgeNum: number = 0;
     protected nodeNum: number = 0;
     protected idToNodeMap: Map<NodeID, BaseNode>;

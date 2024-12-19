@@ -15,7 +15,7 @@
 
 import { Scene } from '../../Scene';
 import { Value } from '../../core/base/Value';
-import { NodeID } from '../model/BaseGraph';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import path from 'path';
 import * as fs from 'fs';
 import { CallGraph, CallGraphNode, CallSite, DynCallSite, FuncID } from '../model/CallGraph';

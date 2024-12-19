@@ -16,7 +16,7 @@
 import { CallGraph, CallGraphNode, CallGraphNodeKind, Method } from '../CallGraph';
 import { Scene } from '../../../Scene';
 import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../../../core/base/Expr";
-import { NodeID } from '../BaseGraph';
+import { NodeID } from '../../../core/graph/BaseExplicitGraph';
 import { ClassHierarchyAnalysis } from '../../algorithm/ClassHierarchyAnalysis';
 import { RapidTypeAnalysis } from '../../algorithm/RapidTypeAnalysis';
 import { ArkMethod } from '../../../core/model/ArkMethod';

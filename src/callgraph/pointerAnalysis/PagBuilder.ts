@@ -22,7 +22,7 @@ import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
 import { Local } from '../../core/base/Local';
-import { NodeID } from '../model/BaseGraph';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ClassType, FunctionType, StringType } from '../../core/base/Type';

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { BaseEdge, BaseNode, GraphTraits, NodeID } from "../callgraph/model/BaseGraph";
+import { BaseEdge, BaseNode, GraphTraits, NodeID } from "../core/graph/BaseExplicitGraph";
 import { Printer } from "./Printer";
 
 function escapeStr(input: string): string {
