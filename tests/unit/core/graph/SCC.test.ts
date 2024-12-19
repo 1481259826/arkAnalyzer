@@ -23,7 +23,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 describe('SCCTest', () => {
-    let config: SceneConfig = new SceneConfig()
+    let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir('./tests/resources/scc');
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);

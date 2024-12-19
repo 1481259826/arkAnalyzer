@@ -15,8 +15,8 @@
 
 import { NodeID, BaseNode, GraphTraits } from './BaseExplicitGraph'
 
-type NodeSet = Set<NodeID>
-type NodeStack = NodeID[]
+type NodeSet = Set<NodeID>;
+type NodeStack = NodeID[];
 type Node2RepSCCInfoMap = Map<NodeID, NodeSCCInfo>;
 type Node2NodeMap = Map<NodeID, NodeID>;
 
@@ -85,7 +85,7 @@ export class SCCDetection<Graph extends GraphTraits> {
         this._I = 0;
         this._D = new Map<NodeID, NodeID>();
         this._S = new Array<NodeID>();
-        this._T = new Array<NodeID>()
+        this._T = new Array<NodeID>();
         this.repNodes = new Set<NodeID>();
         this._R = new Map<number, NodeSCCInfo>();
         this.visitedNodes = new Set();
@@ -140,7 +140,7 @@ export class SCCDetection<Graph extends GraphTraits> {
     private getNode(id: NodeID): BaseNode {
         let n = this._G.getNode(id);
         if (!n) {
-            throw new Error('Node is not found')
+            throw new Error('Node is not found');
         }
         return n;
     }
@@ -162,7 +162,7 @@ export class SCCDetection<Graph extends GraphTraits> {
                 let repV = this.getRep(v);
                 let repW = this.getRep(w);
                 if (!this._D.has(repV) || !this._D.has(repW)) {
-                    throw new Error('Error happening in SCC detection')
+                    throw new Error('Error happening in SCC detection');
                 }
                 let rep = this._D.get(repV)! < this._D.get(repW)! ? repV : repW;
                 this.setRep(v, rep);
@@ -216,7 +216,7 @@ export class SCCDetection<Graph extends GraphTraits> {
      */
     public find(): void {
         this.clear();
-        let nodeIt = this._G.nodesItor()
+        let nodeIt = this._G.nodesItor();
         for (let node of nodeIt) {
             const nodeId: NodeID = node.getID();
             if (!this.isVisited(nodeId) && !this._D.has(nodeId)) {
@@ -242,7 +242,7 @@ export class SCCDetection<Graph extends GraphTraits> {
             return true;
         }
         // self-cycle: a call a
-        let repNode = this._G.getNode(rep)!
+        let repNode = this._G.getNode(rep)!;
         for (const e of repNode?.getOutgoingEdges()) {
             if (e.getDstID() === rep) {
                 return true;

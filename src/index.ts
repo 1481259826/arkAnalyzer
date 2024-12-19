@@ -76,7 +76,7 @@ export { ViewTree, ViewTreeNode } from './core/graph/ViewTree';
 export { DominanceFinder } from './core/graph/DominanceFinder';
 export { DominanceTree } from './core/graph/DominanceTree';
 export { NodeID, Kind, GraphTraits, BaseEdge, BaseNode, BaseExplicitGraph } from './core/graph/BaseExplicitGraph';
-export { SCCDetection } from './core/graph/Scc'
+export { SCCDetection } from './core/graph/Scc';
 
 // core/model
 export { ArkFile } from './core/model/ArkFile';
