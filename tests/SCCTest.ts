@@ -51,7 +51,7 @@ while (topo.length > 0) {
     subn.forEach(s => {
         let f: CallGraphNode = cg.getNode(s) as CallGraphNode;
         console.log('  ' + f.getMethod().getMethodSubSignature().getMethodName());
-    })
+    });
 }
 
 console.log('===\n');
