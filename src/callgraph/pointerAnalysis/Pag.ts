@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { NodeID, BaseEdge, BaseGraph, BaseNode, Kind } from '../model/BaseGraph';
+import { NodeID, BaseEdge, BaseExplicitGraph, BaseNode, Kind } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, CallSite, DynCallSite } from '../model/CallGraph';
 import { Value } from '../../core/base/Value';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt';
@@ -566,7 +566,7 @@ export class PagGlobalThisNode extends PagNode {
     }
 }
 
-export class Pag extends BaseGraph {
+export class Pag extends BaseExplicitGraph {
 
     private cg!: CallGraph;
     private contextValueToIdMap: Map<Value, Map<ContextID, NodeID>> = new Map();

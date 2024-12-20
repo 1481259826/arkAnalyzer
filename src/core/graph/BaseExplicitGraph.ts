@@ -56,7 +56,7 @@ export abstract class BaseEdge {
         return {
             src: this.src.getID(),
             dst: this.dst.getID()
-        }
+        };
     }
 
     public getDotAttr(): string {
@@ -128,12 +128,11 @@ export abstract class BaseNode {
     }
 
     public getDotLabel(): string {
-        return ''
+        return '';
     }
-
 }
 
-export class BaseGraph implements GraphTraits{
+export abstract class BaseExplicitGraph implements GraphTraits {
     protected edgeNum: number = 0;
     protected nodeNum: number = 0;
     protected idToNodeMap: Map<NodeID, BaseNode>;
@@ -170,7 +169,7 @@ export class BaseGraph implements GraphTraits{
     }
 
     public removeNode(id: NodeID): boolean {
-        if(this.idToNodeMap.delete(id)) {
+        if (this.idToNodeMap.delete(id)) {
             this.nodeNum --;
             return true;
         }
@@ -178,7 +177,7 @@ export class BaseGraph implements GraphTraits{
     }
 
     public hasEdge(src: BaseNode, dst: BaseNode): boolean {
-        for(let e of src.getOutgoingEdges()) {
+        for (let e of src.getOutgoingEdges()) {
             if (e.getDstNode() === dst) {
                 return true;
             }
@@ -189,7 +188,7 @@ export class BaseGraph implements GraphTraits{
 
     public ifEdgeExisting(edge: BaseEdge): boolean {
         let edgeMark: string = `${edge.getSrcID()}-${edge.getDstID()}:${edge.getKind()}`;
-        if(this.edgeMarkSet.has(edgeMark)) {
+        if (this.edgeMarkSet.has(edgeMark)) {
             return true;
         }
 

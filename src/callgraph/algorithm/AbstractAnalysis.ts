@@ -21,7 +21,7 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { MethodSignature } from '../../core/model/ArkSignature';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { NodeID } from '../model/BaseGraph';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, FuncID, CallSite, CallGraphNode } from '../model/CallGraph';
 import { CallGraphBuilder } from '../model/builder/CallGraphBuilder';
 

@@ -18,7 +18,7 @@ import { Scene } from '../../Scene';
 import { Stmt } from '../../core/base/Stmt';
 import { ArkClass } from '../../core/model/ArkClass';
 import { ClassSignature } from '../../core/model/ArkSignature';
-import { NodeID } from '../model/BaseGraph';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, CallSite, FuncID } from '../model/CallGraph';
 import { AbstractAnalysis } from './AbstractAnalysis';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';

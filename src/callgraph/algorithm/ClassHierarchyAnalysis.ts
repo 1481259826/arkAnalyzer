@@ -17,7 +17,7 @@ import { ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { Scene } from '../../Scene';
 import { Stmt } from '../../core/base/Stmt';
 import { ArkClass } from '../../core/model/ArkClass';
-import { NodeID } from '../model/BaseGraph';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, CallSite } from '../model/CallGraph';
 import { AbstractAnalysis } from './AbstractAnalysis';
 

@@ -22,7 +22,6 @@ export { RapidTypeAnalysis } from './callgraph/algorithm/RapidTypeAnalysis';
 export { PTAStat, PAGStat, CGStat } from './callgraph/common/Statistics';
 
 // callgraph/model
-export { NodeID, Kind, GraphTraits, BaseEdge, BaseNode, BaseGraph } from './callgraph/model/BaseGraph';
 export * from './callgraph/model/CallGraph';
 export { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 
@@ -76,6 +75,8 @@ export { Cfg } from './core/graph/Cfg';
 export { ViewTree, ViewTreeNode } from './core/graph/ViewTree';
 export { DominanceFinder } from './core/graph/DominanceFinder';
 export { DominanceTree } from './core/graph/DominanceTree';
+export { NodeID, Kind, GraphTraits, BaseEdge, BaseNode, BaseExplicitGraph } from './core/graph/BaseExplicitGraph';
+export { SCCDetection } from './core/graph/Scc';
 
 // core/model
 export { ArkFile } from './core/model/ArkFile';

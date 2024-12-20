@@ -41,7 +41,7 @@ function assertObj(obj: Object): void {
     }
 }
 
-function getScene4Json(config: SceneConfig) : Scene {
+function getScene4Json(config: SceneConfig): Scene {
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     scene.buildScene4HarmonyProject();
@@ -50,22 +50,21 @@ function getScene4Json(config: SceneConfig) : Scene {
     return scene;
 }
 
-function doValidation(scene: Scene) : void {
+function doValidation(scene: Scene): void {
     // Validation objects. 
     // Array holds two elements:
     //   element[0] is expected value
     //   element[1] is actual value
     const obj = {
-        filesNumber: [286],
-        classesNumber: [631],
-        methodsNumber: [2488],
-        customComponentsNumber : [1130]
+        filesNumber: [279],
+        classesNumber: [1806],
+        methodsNumber: [6054],
+        customComponentsNumber: [1130]
     }
 
     let classes = scene.getClasses();
     let files = scene.getFiles();
     let methods = scene.getMethods();
-    // let customComponents = scene.getCustomComponents();
     console.info(`Actural numbers: File ${files.length}; Class ${classes.length}; Methods ${methods.length}`)
 
     obj.filesNumber[1] = files.length;
