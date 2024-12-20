@@ -16,7 +16,6 @@
 import fs from 'fs';
 import { dirname, join } from 'path';
 import { ArkFile } from '../core/model/ArkFile';
-import { ArkStream } from './ArkStream';
 import { DotFilePrinter } from './DotPrinter';
 import { SourceFilePrinter } from './source/SourceFilePrinter';
 import { Printer } from './Printer';
@@ -54,15 +53,11 @@ export class PrinterBuilder {
     }
 
     public static dump(source: Printer, output: string) {
-        let streamOut = new ArkStream(fs.createWriteStream(output));
-        streamOut.write(source.dump());
-        streamOut.close();
+        fs.writeFileSync(output, source.dump());
     }
 
     public static dumpOriginal(source: Printer, output: string) {
-        let streamOut = new ArkStream(fs.createWriteStream(output));
-        streamOut.write(source.dumpOriginal());
-        streamOut.close();
+        fs.writeFileSync(output, source.dumpOriginal());
     }
 
     protected getOutputDir(arkFile: ArkFile): string {
