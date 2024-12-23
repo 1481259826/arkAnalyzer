@@ -14,7 +14,7 @@
  */
 
 import {
-    ANONYMOUS_METHOD_PREFIX,
+    ANONYMOUS_METHOD_PREFIX, CLOSURES_LOCAL_NAME,
     DEFAULT_ARK_CLASS_NAME,
     GlobalRef,
     NAME_DELIMITER,
@@ -360,6 +360,7 @@ export const NoOverloadMethodWithBody2_Expect_IR = {
 };
 
 export const UnClosureFunction_Expect_IR = {
+    outerMethod: undefined,
     methodSignature: {
         toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.outerFunction1(number)`,
         methodSubSignature: {
@@ -385,6 +386,29 @@ export const UnClosureFunction_Expect_IR = {
                 name: 'flag',
                 type: 'number',
             },
+            {
+                name: 'innerFunction2',
+                type: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.${ANONYMOUS_METHOD_PREFIX}0${NAME_DELIMITER}outerFunction1([outerInput])`,
+                declaringStmt: {
+                    text: `innerFunction2 = ${ANONYMOUS_METHOD_PREFIX}0${NAME_DELIMITER}outerFunction1`
+                },
+                usedStmts: [
+                    {
+                        // TODO: TypeInfer should locate the right function
+                        text: `ptrinvoke <@%unk/%unk: .innerFunction2([outerInput])>(${CLOSURES_LOCAL_NAME}1)`
+                    }
+                ]
+            },
+            {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: `[count, flag]`,
+                usedStmts: []
+            },
+            {
+                name: `${CLOSURES_LOCAL_NAME}1`,
+                type: `[outerInput]`,
+                usedStmts: []
+            }
         ],
         globals: [
             {
@@ -401,8 +425,11 @@ export const UnClosureFunction_Expect_IR = {
                 name: `innerFunction1`,
                 type: 'unknown',
                 instanceof: GlobalRef,
-                // TODO: 函数call应该在该GlobalRef的useStmts中
-                usedStmts: []
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@%unk/%unk: .innerFunction1()>(\'abc\')'
+                    }
+                ]
             }
         ]
     }
@@ -413,16 +440,12 @@ export const ClosureFunction_Expect_IR = {
         toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.outerFunction1(number)`,
     },
     methodSignature: {
-        toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction1${NAME_DELIMITER}outerFunction1(number, number, string)`,
+        toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction1${NAME_DELIMITER}outerFunction1([count, flag], string)`,
         methodSubSignature: {
             parameters: [
                 {
-                    name: 'count',
-                    type: 'number'
-                },
-                {
-                    name: 'flag',
-                    type: 'number'
+                    name: `${CLOSURES_LOCAL_NAME}0`,
+                    type: '[count, flag]'
                 },
                 {
                     name: 'innerInput',
@@ -436,10 +459,25 @@ export const ClosureFunction_Expect_IR = {
     body: {
         locals: [
             {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: '[count, flag]',
+                declaringStmt: {
+                    text: `${CLOSURES_LOCAL_NAME}0 = parameter0: [count, flag]`
+                },
+                usedStmts: [
+                    {
+                        text: `count = ${CLOSURES_LOCAL_NAME}0.count`
+                    },
+                    {
+                        text: `flag = ${CLOSURES_LOCAL_NAME}0.flag`
+                    }
+                ]
+            },
+            {
                 name: 'count',
                 type: 'number',
                 declaringStmt: {
-                    text: 'count = parameter0: number'
+                    text: `count = ${CLOSURES_LOCAL_NAME}0.count`
                 },
                 usedStmts: [
                     {
@@ -451,7 +489,7 @@ export const ClosureFunction_Expect_IR = {
                 name: 'flag',
                 type: 'number',
                 declaringStmt: {
-                    text: 'flag = parameter1: number'
+                    text: `flag = ${CLOSURES_LOCAL_NAME}0.flag`
                 },
                 // TODO: switch中的变量使用算usedStmts吗？
                 usedStmts: []
@@ -460,7 +498,7 @@ export const ClosureFunction_Expect_IR = {
                 name: 'innerInput',
                 type: 'string',
                 declaringStmt: {
-                    text: 'innerInput = parameter2: string'
+                    text: 'innerInput = parameter1: string'
                 },
             },
             {
@@ -481,12 +519,12 @@ export const ClosureAnonymousFunction_Expect_IR = {
         toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.outerFunction1(number)`,
     },
     methodSignature: {
-        toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.${ANONYMOUS_METHOD_PREFIX}0${NAME_DELIMITER}outerFunction1(number)`,
+        toString: `@function/ClosureParamsTest.ts: ${DEFAULT_ARK_CLASS_NAME}.${ANONYMOUS_METHOD_PREFIX}0${NAME_DELIMITER}outerFunction1([outerInput])`,
         methodSubSignature: {
             parameters: [
                 {
-                    name: 'outerInput',
-                    type: 'number'
+                    name: `${CLOSURES_LOCAL_NAME}1`,
+                    type: '[outerInput]'
                 }
             ],
             returnType: 'void'
@@ -496,10 +534,22 @@ export const ClosureAnonymousFunction_Expect_IR = {
     body: {
         locals: [
             {
+                name: `${CLOSURES_LOCAL_NAME}1`,
+                type: '[outerInput]',
+                declaringStmt: {
+                    text: `${CLOSURES_LOCAL_NAME}1 = parameter0: [outerInput]`
+                },
+                usedStmts: [
+                    {
+                        text: `outerInput = ${CLOSURES_LOCAL_NAME}1.outerInput`
+                    }
+                ]
+            },
+            {
                 name: 'outerInput',
                 type: 'number',
                 declaringStmt: {
-                    text: 'outerInput = parameter0: number'
+                    text: `outerInput = ${CLOSURES_LOCAL_NAME}1.outerInput`
                 },
             },
             {
@@ -527,16 +577,12 @@ export const ClosureClassMethod_Expect_IR = {
         toString: '@function/ClosureParamsTest.ts: ClosureClass.outerFunction2(number)'
     },
     methodSignature: {
-        toString: `@function/ClosureParamsTest.ts: ClosureClass.${NAME_PREFIX}innerFunction2${NAME_DELIMITER}outerFunction2(string, number[], string)`,
+        toString: `@function/ClosureParamsTest.ts: ClosureClass.${NAME_PREFIX}innerFunction2${NAME_DELIMITER}outerFunction2([count, nums], string)`,
         methodSubSignature: {
             parameters: [
                 {
-                    name: 'count',
-                    type: 'string'
-                },
-                {
-                    name: 'nums',
-                    type: 'number[]'
+                    name: `${CLOSURES_LOCAL_NAME}0`,
+                    type: '[count, nums]'
                 },
                 {
                     name: 'outerInput',
@@ -550,10 +596,25 @@ export const ClosureClassMethod_Expect_IR = {
     body: {
         locals: [
             {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: '[count, nums]',
+                declaringStmt: {
+                    text: `${CLOSURES_LOCAL_NAME}0 = parameter0: [count, nums]`
+                },
+                usedStmts: [
+                    {
+                        text: `count = ${CLOSURES_LOCAL_NAME}0.count`
+                    },
+                    {
+                        text: `nums = ${CLOSURES_LOCAL_NAME}0.nums`
+                    },
+                ]
+            },
+            {
                 name: 'count',
                 type: 'string',
                 declaringStmt: {
-                    text: 'count = parameter0: string'
+                    text: `count = ${CLOSURES_LOCAL_NAME}0.count`
                 },
                 usedStmts: [
                     {
@@ -571,7 +632,7 @@ export const ClosureClassMethod_Expect_IR = {
                 name: 'nums',
                 type: 'number[]',
                 declaringStmt: {
-                    text: 'nums = parameter1: number[]'
+                    text: `nums = ${CLOSURES_LOCAL_NAME}0.nums`
                 },
                 usedStmts: [
                     {
@@ -583,7 +644,7 @@ export const ClosureClassMethod_Expect_IR = {
                 name: 'outerInput',
                 type: 'string',
                 declaringStmt: {
-                    text: 'outerInput = parameter2: string'
+                    text: 'outerInput = parameter1: string'
                 }
             },
             {
@@ -604,13 +665,13 @@ export const ClosureNamespaceFunction_Expect_IR = {
     },
     methodDeclareSignatures: [
         {
-            toString: `@function/ClosureParamsTest.ts: closureNamespace.${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3(number, number, number)`,
+            toString: `@function/ClosureParamsTest.ts: closureNamespace.${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3([count, size, outerInput])`,
             methodSubSignature: {
                 returnType: 'string'
             }
         },
         {
-            toString: `@function/ClosureParamsTest.ts: closureNamespace.${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3(number, number, number, string)`,
+            toString: `@function/ClosureParamsTest.ts: closureNamespace.${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3([count, size, outerInput], string)`,
             methodSubSignature: {
                 returnType: 'string'
             }
@@ -618,20 +679,12 @@ export const ClosureNamespaceFunction_Expect_IR = {
 
     ],
     methodSignature: {
-        toString: `@function/ClosureParamsTest.ts: closureNamespace.${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3(number, number, number, string)`,
+        toString: `@function/ClosureParamsTest.ts: closureNamespace.${DEFAULT_ARK_CLASS_NAME}.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3([count, size, outerInput], string)`,
         methodSubSignature: {
             parameters: [
                 {
-                    name: 'count',
-                    type: 'number'
-                },
-                {
-                    name: 'size',
-                    type: 'number'
-                },
-                {
-                    name: 'outerInput',
-                    type: 'number'
+                    name: `${CLOSURES_LOCAL_NAME}0`,
+                    type: '[count, size, outerInput]'
                 },
                 {
                     name: 'innerInput',
@@ -645,10 +698,28 @@ export const ClosureNamespaceFunction_Expect_IR = {
     body: {
         locals: [
             {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: '[count, size, outerInput]',
+                declaringStmt: {
+                    text: `${CLOSURES_LOCAL_NAME}0 = parameter0: [count, size, outerInput]`
+                },
+                usedStmts: [
+                    {
+                        text: `count = ${CLOSURES_LOCAL_NAME}0.count`
+                    },
+                    {
+                        text: `size = ${CLOSURES_LOCAL_NAME}0.size`
+                    },
+                    {
+                        text: `outerInput = ${CLOSURES_LOCAL_NAME}0.outerInput`
+                    }
+                ]
+            },
+            {
                 name: 'count',
                 type: 'number',
                 declaringStmt: {
-                    text: 'count = parameter0: number'
+                    text: `count = ${CLOSURES_LOCAL_NAME}0.count`
                 },
                 usedStmts: [
                     {
@@ -660,7 +731,7 @@ export const ClosureNamespaceFunction_Expect_IR = {
                 name: 'size',
                 type: 'number',
                 declaringStmt: {
-                    text: 'size = parameter1: number'
+                    text: `size = ${CLOSURES_LOCAL_NAME}0.size`
                 },
                 usedStmts: [
                     {
@@ -672,13 +743,21 @@ export const ClosureNamespaceFunction_Expect_IR = {
                 name: 'outerInput',
                 type: 'number',
                 declaringStmt: {
-                    text: 'outerInput = parameter2: number'
+                    text: `outerInput = ${CLOSURES_LOCAL_NAME}0.outerInput`
                 },
                 usedStmts: [
                     {
                         text: '%1 = outerInput + \': \''
                     }
                 ]
+            },
+            {
+                name: 'innerInput',
+                type: 'string',
+                declaringStmt: {
+                    text: 'innerInput = parameter1: string'
+                },
+                usedStmts: []
             },
             {
                 name: 'this',
@@ -709,16 +788,12 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
         toString: '@function/ClosureParamsTest.ts: closureNamespace.ClosureClass.outerFunction3(number)'
     },
     methodSignature: {
-        toString: `@function/ClosureParamsTest.ts: closureNamespace.ClosureClass.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3(boolean, number)`,
+        toString: `@function/ClosureParamsTest.ts: closureNamespace.ClosureClass.${NAME_PREFIX}innerFunction3${NAME_DELIMITER}outerFunction3([flag, outerInput])`,
         methodSubSignature: {
             parameters: [
                 {
-                    name: 'flag',
-                    type: 'boolean'
-                },
-                {
-                    name: 'outerInput',
-                    type: 'number'
+                    name: `${CLOSURES_LOCAL_NAME}0`,
+                    type: '[flag, outerInput]'
                 }
             ],
             returnType: 'void'
@@ -728,10 +803,25 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
     body: {
         locals: [
             {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: '[flag, outerInput]',
+                declaringStmt: {
+                    text: `${CLOSURES_LOCAL_NAME}0 = parameter0: [flag, outerInput]`
+                },
+                usedStmts: [
+                    {
+                        text: `flag = ${CLOSURES_LOCAL_NAME}0.flag`
+                    },
+                    {
+                        text: `outerInput = ${CLOSURES_LOCAL_NAME}0.outerInput`
+                    }
+                ]
+            },
+            {
                 name: 'flag',
                 type: 'boolean',
                 declaringStmt: {
-                    text: 'flag = parameter0: boolean'
+                    text: `flag = ${CLOSURES_LOCAL_NAME}0.flag`
                 },
                 usedStmts: [
                     {
@@ -743,7 +833,7 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
                 name: 'outerInput',
                 type: 'number',
                 declaringStmt: {
-                    text: 'outerInput = parameter1: number'
+                    text: `outerInput = ${CLOSURES_LOCAL_NAME}0.outerInput`
                 },
                 usedStmts: [
                     {
@@ -757,6 +847,109 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
             {
                 name: 'this',
                 type: '@function/ClosureParamsTest.ts: closureNamespace.ClosureClass'
+            }
+        ]
+    }
+};
+
+export const UnClosureAnonymousInForEach_Expect_IR = {
+    outerMethod: undefined,
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: BasicDataSource.notifyDataDelete(number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: '[index]',
+                declaringStmt: null,
+                usedStmts: []
+            },
+            {
+                name: 'index',
+                type: 'number',
+                declaringStmt: {
+                    text: `index = parameter0: number`
+                },
+                usedStmts: []
+            },
+            {
+                name: '%AM0$notifyDataDelete',
+                type: '@function/ClosureParamsTest.ts: BasicDataSource.%AM0$notifyDataDelete([index], unknown)',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke %0.<@%unk/%unk: .forEach()>(%AM0$notifyDataDelete)'
+                    }
+                ]
+            }
+        ],
+        stmts: [
+            {
+                text: 'index = parameter0: number',
+            },
+            {
+                text: 'this = this: @function/ClosureParamsTest.ts: BasicDataSource',
+            },
+            {
+                text: '%0 = this.<@function/ClosureParamsTest.ts: BasicDataSource.listeners>',
+            },
+            {
+                text: 'instanceinvoke %0.<@%unk/%unk: .forEach()>(%AM0$notifyDataDelete)',
+            },
+            {
+                text: 'return',
+            }
+        ]
+    }
+};
+
+export const ClosureAnonymousInForEach_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: BasicDataSource.notifyDataDelete(number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: BasicDataSource.%AM0$notifyDataDelete([index], unknown)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `${CLOSURES_LOCAL_NAME}0`,
+                type: '[index]',
+                declaringStmt: {
+                    text: '%closures0 = parameter0: [index]'
+                },
+                usedStmts: [
+                    {
+                        text: 'index = %closures0.index'
+                    }
+                ]
+            },
+            {
+                name: 'index',
+                type: 'number',
+                declaringStmt: {
+                    text: `index = %closures0.index`
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = index + listener'
+                    }
+                ]
+            }
+        ],
+        globals: [
+            {
+                name: 'console',
+                type: 'unknown',
+                instanceof: GlobalRef,
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke console.<@%unk/%unk: .log()>(%0)'
+                    }
+                ]
             }
         ]
     }

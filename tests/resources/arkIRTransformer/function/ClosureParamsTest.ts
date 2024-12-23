@@ -88,3 +88,12 @@ namespace closureNamespace {
     }
 }
 
+class BasicDataSource {
+    public listeners: number[] = [];
+
+    notifyDataDelete(index: number): void {
+        this.listeners.forEach(listener => {
+            console.log(index + listener);
+        });
+    }
+}

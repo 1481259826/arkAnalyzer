@@ -61,7 +61,7 @@ describe('Nested Method with Function Declaration Statement', () => {
        expect((stmts as Stmt[])[1].toString()).toEqual('instanceinvoke console.<@%unk/%unk: .log()>(\'This is nested function with function declaration.\')');
        expect((stmts as Stmt[])[2].toString()).toEqual('staticinvoke <@%unk/%unk: .innerInnerFunction1()>()');
 
-       const global = method!.getBody()?.getGlobals()?.get('innerInnerFunction1');
+       const global = method!.getBody()?.getUsedGlobals()?.get('innerInnerFunction1');
        assert.isDefined(global);
 
        // TODO： the type should be FunctionType after inferType support
@@ -90,7 +90,7 @@ describe('Nested Method with Function Declaration Statement', () => {
         assert.isDefined(stmts);
         expect((stmts as Stmt[])[1].toString()).toEqual('staticinvoke <@%unk/%unk: .innerFunction1()>()');
 
-        const global = method!.getBody()?.getGlobals()?.get('innerFunction1');
+        const global = method!.getBody()?.getUsedGlobals()?.get('innerFunction1');
         assert.isDefined(global);
 
         // TODO： the type should be FunctionType after inferType support
@@ -195,7 +195,7 @@ describe('Recursive Method', () => {
         assert.isDefined(method);
         assert.isNotNull(method);
 
-        const global = method!.getBody()?.getGlobals()?.get('factorial');
+        const global = method!.getBody()?.getUsedGlobals()?.get('factorial');
         assert.isDefined(global);
 
         // TODO： the type should be FunctionType after inferType support
@@ -209,7 +209,7 @@ describe('Recursive Method', () => {
         assert.isDefined(method);
         assert.isNotNull(method);
 
-        const global = method!.getBody()?.getGlobals()?.get('factorial');
+        const global = method!.getBody()?.getUsedGlobals()?.get('factorial');
         assert.isDefined(global);
 
         // TODO： the type should be FunctionType after inferType support
@@ -266,7 +266,7 @@ describe('Nested Method in Class', () => {
         let innerFunction1Value: Value | undefined = locals?.get('innerFunction1');
         assert.isUndefined(innerFunction1Value);
 
-        const globals = outerMethod?.getBody()?.getGlobals();
+        const globals = outerMethod?.getBody()?.getUsedGlobals();
         assert.isDefined(globals);
         innerFunction1Value = globals!.get('innerFunction1');
         assert.isDefined(innerFunction1Value);

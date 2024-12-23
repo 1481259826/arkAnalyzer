@@ -21,7 +21,7 @@ import { Value } from '../base/Value';
 
 export class ArkBody {
     private locals: Map<string, Local>;
-    private globals?: Map<string, Value>;
+    private usedGlobals?: Map<string, Value>;
     private cfg: Cfg;
     private aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>;
     private traps?: Trap[];
@@ -50,12 +50,12 @@ export class ArkBody {
         this.locals.set(name, local);
     }
 
-    public getGlobals(): Map<string, Value> | undefined {
-        return this.globals;
+    public getUsedGlobals(): Map<string, Value> | undefined {
+        return this.usedGlobals;
     }
 
-    public setGlobal(globals: Map<string, Value>): void {
-        this.globals = globals;
+    public setUsedGlobals(globals: Map<string, Value>): void {
+        this.usedGlobals = globals;
     }
 
     public getCfg(): Cfg {

@@ -46,6 +46,7 @@ import {
 import {
     ArrowFunction_Expect_IR,
     ClosureAnonymousFunction_Expect_IR,
+    ClosureAnonymousInForEach_Expect_IR,
     ClosureClassMethod_Expect_IR,
     ClosureFunction_Expect_IR,
     ClosureNamespaceClassMethod_Expect_IR,
@@ -57,6 +58,7 @@ import {
     OverloadInterfaceMethod_Expect_IR,
     OverloadMethod_Expect_IR,
     OverloadNamespaceMethod_Expect_IR,
+    UnClosureAnonymousInForEach_Expect_IR,
     UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
@@ -224,9 +226,6 @@ function assertMethodLineEqual(method: ArkMethod, expectMethod: any): void {
 
 function assertLocalsEqual(actualLocals: Map<string, Local>, expectLocals: any): void {
     for (let i = 0; i < expectLocals.length; i++) {
-        if (expectLocals[i].name.startsWith(TEMP_LOCAL_PREFIX)) {
-            continue;
-        }
         const actualLocal = actualLocals.get(expectLocals[i].name);
         assert.isDefined(actualLocal);
         if (expectLocals[i].type !== undefined) {
@@ -245,7 +244,7 @@ function assertLocalsEqual(actualLocals: Map<string, Local>, expectLocals: any):
     }
 }
 
-function assertGlobalsEqual(actualGlobals: Map<string, Value> | undefined, expectGlobals: any): void{
+function assertGlobalsEqual(actualGlobals: Map<string, Value> | undefined, expectGlobals: any): void {
     if (expectGlobals !== undefined && expectGlobals !== null) {
         assert.isDefined(actualGlobals);
     } else {
@@ -284,7 +283,10 @@ function assertMethodBodyEqual(method: ArkMethod, expectBodyDefined: boolean, ex
         if (expectMethod.body.locals !== undefined) {
             assertLocalsEqual(body!.getLocals(), expectMethod.body.locals);
         }
-        assertGlobalsEqual(body!.getGlobals(), expectMethod.body.globals);
+        assertGlobalsEqual(body!.getUsedGlobals(), expectMethod.body.globals);
+        if (expectMethod.body.stmts !== undefined) {
+            assertStmtsEqual(body!.getCfg().getStmts(), expectMethod.body.stmts);
+        }
     }
 }
 
@@ -302,7 +304,7 @@ function assertParamsEqual(actualParams: MethodParameter[], expectedParams: any)
         assert.equal(actualParams.length, expectedParams.length);
         for (let i = 0; i < expectedParams.length; i++) {
             assert.equal(actualParams[i].getName(), expectedParams[i].name);
-            assert.equal(actualParams[i].getType(), expectedParams[i].type);
+            assert.equal(actualParams[i].getType().getTypeString(), expectedParams[i].type);
         }
     }
 }
@@ -310,17 +312,25 @@ function assertParamsEqual(actualParams: MethodParameter[], expectedParams: any)
 function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void {
     const declareSignatures = method.getDeclareSignatures();
     const expectDeclareSignatures = expectMethod.methodDeclareSignatures;
-    if (expectDeclareSignatures !== undefined) {
-        if (expectDeclareSignatures === null) {
+    if (expectDeclareSignatures === null) {
             assert.isNull(declareSignatures);
-        } else {
-            assert.isNotNull(declareSignatures);
-            assert.equal(declareSignatures?.length, expectDeclareSignatures.length);
-            declareSignatures?.find((signature, index) => {
-                assert.equal(signature.toString(), expectDeclareSignatures[index].toString);
-                assert.equal(signature.getType().toString(), expectDeclareSignatures[index].methodSubSignature.returnType);
-                assertParamsEqual(signature.getMethodSubSignature().getParameters(), expectDeclareSignatures[index].methodSubSignature.parameters);
-            });
+    } else if (expectDeclareSignatures !== undefined) {
+        assert.isNotNull(declareSignatures);
+        assert.equal(declareSignatures?.length, expectDeclareSignatures.length);
+        let index = 0;
+        for (let signature of declareSignatures!) {
+            assert.equal(signature.toString(), expectDeclareSignatures[index].toString);
+            const expectDeclareSubSignatures = expectDeclareSignatures[index].methodSubSignature;
+            index++;
+            if (expectDeclareSubSignatures === undefined) {
+                continue;
+            }
+            if (expectDeclareSubSignatures.returnType !== undefined) {
+                assert.equal(signature.getType().toString(), expectDeclareSubSignatures.returnType);
+            }
+            if (expectDeclareSubSignatures.parameters !== undefined) {
+                assertParamsEqual(signature.getMethodSubSignature().getParameters(), expectDeclareSubSignatures.parameters);
+            }
         }
     }
 
@@ -329,20 +339,24 @@ function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void
     if (expectImplSignature !== undefined && expectImplSignature !== null) {
         assert.isNotNull(implementationSignature);
         assert.equal(implementationSignature!.toString(), expectImplSignature.toString);
-        assert.equal(implementationSignature!.getType().toString(), expectImplSignature.methodSubSignature.returnType);
-        assertParamsEqual(implementationSignature!.getMethodSubSignature().getParameters(), expectImplSignature.methodSubSignature.parameters);
+        const expectImplSubSignature = expectImplSignature.methodSubSignature;
+        if (expectImplSubSignature !== undefined) {
+            if (expectImplSubSignature.returnType !== undefined) {
+                assert.equal(implementationSignature!.getType().toString(), expectImplSubSignature.returnType);
+            }
+            if (expectImplSubSignature.parameters !== undefined) {
+                assertParamsEqual(implementationSignature!.getMethodSubSignature().getParameters(), expectImplSubSignature.parameters);
+            }
+        }
     }
 }
 
 function assertOuterMethodEqual(method: ArkMethod, outerMethod: any): void {
+    if (outerMethod === undefined || outerMethod === null || outerMethod.toString === undefined) {
+        assert.isUndefined(method.getOuterMethod());
+        return;
+    }
     assert.equal(method.getOuterMethod()?.getSignature().toString(), outerMethod.toString);
-}
-
-function testNoMethodClosure(arkMethod: ArkMethod, expectMethod: any): void {
-    assert.isUndefined(arkMethod.getOuterMethod());
-    assertMethodSignatureEqual(arkMethod, expectMethod);
-    assertMethodBodyEqual(arkMethod, true, expectMethod);
-    assertMethodBodyBuilderEqual(arkMethod, expectMethod.bodyBuilder);
 }
 
 function testMethodClosure(arkMethod: ArkMethod, expectMethod: any): void {
@@ -444,7 +458,7 @@ describe('closure Test', () => {
     it('test unClosure function', async () => {
         const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'outerFunction1'));
         assert.isDefined(arkMethod);
-        testNoMethodClosure(arkMethod as ArkMethod, UnClosureFunction_Expect_IR);
+        testMethodClosure(arkMethod as ArkMethod, UnClosureFunction_Expect_IR);
     });
 
     it('test closure in function', async () => {
@@ -483,5 +497,17 @@ describe('closure Test', () => {
         const arkMethod = arkNS?.getClassWithName('ClosureClass')?.getMethods().find((method) => (method.getName() === methodName));
         assert.isDefined(arkMethod);
         testMethodClosure(arkMethod as ArkMethod, ClosureNamespaceClassMethod_Expect_IR);
+    });
+
+    it('test outer function with anonymous function using in forEach args', async () => {
+        const arkMethod = arkFile?.getClassWithName('BasicDataSource')?.getMethods().find((method) => (method.getName() === 'notifyDataDelete'));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod!, UnClosureAnonymousInForEach_Expect_IR);
+    });
+
+    it('test anonymous function using in forEach args', async () => {
+        const arkMethod = arkFile?.getClassWithName('BasicDataSource')?.getMethods().find((method) => (method.getName() === '%AM0$notifyDataDelete'));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod!, ClosureAnonymousInForEach_Expect_IR);
     });
 });

@@ -490,3 +490,32 @@ export class GlobalRef extends AbstractRef {
         return this.getName();
     }
 }
+
+export class ClosureFieldRef extends AbstractRef {
+    private base: Local;
+    private fieldName: string;
+    private type: Type;
+
+    constructor(base: Local, fieldName: string, type: Type) {
+        super();
+        this.base = base;
+        this.fieldName = fieldName;
+        this.type = type;
+    }
+
+    public getUses(): Value[] {
+        return [];
+    }
+
+    public getType(): Type {
+        return this.type;
+    }
+
+    public getFieldName(): string {
+        return this.fieldName;
+    }
+
+    public toString(): string {
+        return this.base.toString() + '.' + this.getFieldName();
+    }
+}

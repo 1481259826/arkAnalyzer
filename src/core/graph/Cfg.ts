@@ -20,6 +20,7 @@ import { ArkError, ArkErrorCode } from '../common/ArkError';
 import { ArkMethod } from '../model/ArkMethod';
 import { BasicBlock } from './BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { ArkStaticInvokeExpr } from '../base/Expr';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
 
 /**
@@ -150,7 +151,7 @@ export class Cfg {
         return 'cfg';
     }
 
-    public buildDefUseStmt() {
+    public buildDefUseStmt(locals: Set<Local>) {
         for (const block of this.blocks) {
             for (const stmt of block.getStmts()) {
                 const defValue = stmt.getDef();
@@ -161,10 +162,24 @@ export class Cfg {
                     if (value instanceof Local) {
                         const local = value as Local;
                         local.addUsedStmt(stmt)
+                    } else if (value instanceof ArkStaticInvokeExpr) {
+                        const local = this.getLocalInStaticInvokeExpr(value, locals);
+                        if (local !== null) {
+                            local.addUsedStmt(stmt);
+                        }
                     }
                 }
             }
         }
+    }
+
+    private getLocalInStaticInvokeExpr(expr: ArkStaticInvokeExpr, locals: Set<Local>): Local | null {
+        for (let local of locals) {
+            if (local.getName() === expr.getMethodSignature().getMethodSubSignature().getMethodName()) {
+                return local;
+            }
+        }
+        return null;
     }
 
     public buildDefUseChain() {

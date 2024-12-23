@@ -40,7 +40,7 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
 export class ArkMethod extends ArkBaseModel implements ArkExport {
     private code?: string;
     private declaringArkClass!: ArkClass;
-    // used for one nested function to locate its outer function
+    // used for the nested function to locate its outer function
     private outerMethod?: ArkMethod;
 
     private genericTypes?: GenericType[];

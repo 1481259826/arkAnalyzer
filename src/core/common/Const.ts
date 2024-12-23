@@ -41,3 +41,4 @@ export const UNKNOWN_METHOD_NAME = ''; // temp for being compatible with existin
 
 // IR const
 export const TEMP_LOCAL_PREFIX = NAME_PREFIX;
+export const CLOSURES_LOCAL_NAME = TEMP_LOCAL_PREFIX + 'closures';
