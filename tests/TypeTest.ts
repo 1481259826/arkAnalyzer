@@ -24,12 +24,13 @@ export class TypeInferenceTest {
         const scene = new Scene();
         scene.buildBasicInfo(config);
         scene.buildSceneFromProjectDir(config);
+        scene.inferTypes();
         return scene
     }
 
     public testLocalTypes() {
         let scene = this.buildScene();
-        scene.inferTypes();
+        console.log(scene);
     }
 
     public printStmts(body: ArkBody): void {
