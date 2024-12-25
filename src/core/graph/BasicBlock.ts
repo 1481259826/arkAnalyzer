@@ -211,6 +211,24 @@ export class BasicBlock {
         this.successorBlocks.push(block);
     }
 
+    public removePredecessorBlock(block: BasicBlock): boolean {
+        let index = this.predecessorBlocks.indexOf(block);
+        if (index < 0) {
+            return false;
+        }
+        this.predecessorBlocks.splice(index, 1);
+        return true;
+    }
+
+    public removeSuccessorBlock(block: BasicBlock): boolean {
+        let index = this.successorBlocks.indexOf(block);
+        if (index < 0) {
+            return false;
+        }
+        this.successorBlocks.splice(index, 1);
+        return true;
+    }
+
     public toString(): string {
         let strs: string[] = [];
         for (const stmt of this.stmts) {

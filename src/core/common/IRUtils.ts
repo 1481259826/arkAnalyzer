@@ -22,9 +22,11 @@ import { SceneOptions } from '../../Config';
 import { ArkMetadataKind } from '../model/ArkMetadata';
 import { Stmt } from '../base/Stmt';
 import { ArkBaseModel } from '../model/ArkBaseModel';
+import { Local } from '../base/Local';
+import { NAME_PREFIX } from './Const';
 
 export class IRUtils {
-    static moreThanOneAddress(value: Value): boolean {
+    public static moreThanOneAddress(value: Value): boolean {
         if (
             value instanceof AbstractBinopExpr ||
             value instanceof AbstractInvokeExpr ||
@@ -38,7 +40,7 @@ export class IRUtils {
         return false;
     }
 
-    static generateTextForStmt(scene: Scene): void {
+    public static generateTextForStmt(scene: Scene): void {
         for (const method of scene.getMethods()) {
             const cfg = method.getCfg();
             if (cfg) {
@@ -49,7 +51,7 @@ export class IRUtils {
         }
     }
 
-    static setLeadingComments(
+    public static setLeadingComments(
         metadata: Stmt | ArkBaseModel,
         node: ts.Node,
         sourceFile: ts.SourceFile,
@@ -61,7 +63,7 @@ export class IRUtils {
         }
     }
 
-    static getLeadingComments(node: ts.Node, sourceFile: ts.SourceFile, options: SceneOptions): string[] {
+    public static getLeadingComments(node: ts.Node, sourceFile: ts.SourceFile, options: SceneOptions): string[] {
         let comments: string[] = [];
         if (!options.enableLeadingComments) {
             return comments;
@@ -72,5 +74,9 @@ export class IRUtils {
             comments.push(comment);
         }
         return comments;
+    }
+
+    public static isTempLocal(value: Value): boolean {
+        return value instanceof Local && value.getName().startsWith(NAME_PREFIX);
     }
 }

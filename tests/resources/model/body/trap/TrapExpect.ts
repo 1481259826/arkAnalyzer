@@ -76,7 +76,7 @@ export const TRAP_EXPECT_CASE2 = {
                         'instanceinvoke console.<@%unk/%unk: .log()>(\'try\')',
                     ],
                     preds: [0],
-                    succes: [4],
+                    succes: [3],
                 },
             ],
             catchBlocks: [
@@ -87,7 +87,7 @@ export const TRAP_EXPECT_CASE2 = {
                         'instanceinvoke console.<@%unk/%unk: .log()>(\'catch\')',
                     ],
                     preds: [],
-                    succes: [4],
+                    succes: [3],
                 },
             ],
         },
