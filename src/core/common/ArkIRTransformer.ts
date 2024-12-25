@@ -1852,26 +1852,6 @@ export class ArkIRTransformer {
         return { value: leftOp, valueOriginalPositions: [leftOpPosition], stmts: [assignStmt] };
     }
 
-    public generateAssignStmtForValues(leftValue: Value, leftOpOriginalPositions: FullPosition[], rightValue: Value,
-                                       rightOpOriginalPositions: FullPosition[]): Stmt[] {
-        const stmts: Stmt[] = [];
-        if (IRUtils.moreThanOneAddress(leftValue) && IRUtils.moreThanOneAddress(rightValue)) {
-            const {
-                value: tempRightValue,
-                valueOriginalPositions: tempRightPositions,
-                stmts: rightStmts,
-            } = this.generateAssignStmtForValue(rightValue, rightOpOriginalPositions);
-            stmts.push(...rightStmts);
-            rightValue = tempRightValue;
-            rightOpOriginalPositions = tempRightPositions;
-        }
-
-        const assignStmt = new ArkAssignStmt(leftValue, rightValue);
-        assignStmt.setOperandOriginalPositions([...leftOpOriginalPositions, ...rightOpOriginalPositions]);
-        stmts.push(assignStmt);
-        return stmts;
-    }
-
     public generateIfStmtForValues(leftValue: Value, leftOpOriginalPositions: FullPosition[], rightValue: Value,
                                    rightOpOriginalPositions: FullPosition[]): Stmt[] {
         const stmts: Stmt[] = [];
@@ -2154,8 +2134,6 @@ export class ArkIRTransformer {
                 return RelationalBinaryOperator.StrictEquality;
             case ts.SyntaxKind.ExclamationEqualsEqualsToken:
                 return RelationalBinaryOperator.StrictInequality;
-            default:
-                ;
         }
         return null;
     }
