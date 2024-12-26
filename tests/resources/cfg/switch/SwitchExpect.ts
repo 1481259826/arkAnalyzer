@@ -582,3 +582,162 @@ export const SWITCH_EXPECT_CASE11 = {
         },
     ],
 };
+
+export const SWITCH_EXPECT_CASE12 = {
+    blocks: [
+        {
+            id: 5,
+            stmts: [
+                'this = this: @switch/SwitchSample.ts: %dflt',
+                'a = 0',
+                'if a > 1',
+            ],
+            preds: [],
+            succes: [6, 7],
+        },
+        {
+            id: 6,
+            stmts: [
+                'b = 12',
+            ],
+            preds: [5],
+            succes: [8],
+        },
+        {
+            id: 7,
+            stmts: [
+                'b = 13',
+            ],
+            preds: [5],
+            succes: [8],
+        },
+        {
+            id: 8,
+            stmts: [
+                'if a == 2',
+            ],
+            preds: [6, 7],
+            succes: [0, 4],
+        },
+        {
+            id: 0,
+            stmts: [
+                'b = 2',
+            ],
+            preds: [8],
+            succes: [3],
+        },
+        {
+            id: 4,
+            stmts: [
+                'if a == 3',
+            ],
+            preds: [8],
+            succes: [1, 2],
+        },
+        {
+            id: 1,
+            stmts: [
+                'b = 3',
+            ],
+            preds: [4],
+            succes: [3],
+        },
+        {
+            id: 2,
+            stmts: [
+                'b = 10',
+            ],
+            preds: [4],
+            succes: [3],
+        },
+        {
+            id: 3,
+            stmts: [
+                'return',
+            ],
+            preds: [0, 1, 2],
+            succes: [],
+        },
+    ],
+};
+
+export const SWITCH_EXPECT_CASE13 = {
+    blocks: [
+        {
+            id: 0,
+            stmts: [
+                'this = this: @switch/SwitchSample.ts: %dflt',
+                'a = 0',
+                'b = 1',
+                'if a == 2',
+            ],
+            preds: [],
+            succes: [1, 4],
+        },
+        {
+            id: 1,
+            stmts: [
+                'b = 2',
+            ],
+            preds: [0],
+            succes: [5],
+        },
+        {
+            id: 4,
+            stmts: [
+                'if a == 3',
+            ],
+            preds: [0],
+            succes: [2, 3],
+        },
+        {
+            id: 2,
+            stmts: [
+                'b = 3',
+            ],
+            preds: [4],
+            succes: [5],
+        },
+        {
+            id: 3,
+            stmts: [
+                'b = 10',
+            ],
+            preds: [4],
+            succes: [5],
+        },
+        {
+            id: 5,
+            stmts: [
+                'if a > 1',
+            ],
+            preds: [1, 2, 3],
+            succes: [6, 7],
+        },
+        {
+            id: 6,
+            stmts: [
+                'b = 12',
+            ],
+            preds: [5],
+            succes: [8],
+        },
+        {
+            id: 7,
+            stmts: [
+                'b = 13',
+            ],
+            preds: [5],
+            succes: [8],
+        },
+        {
+            id: 8,
+            stmts: [
+                'return',
+            ],
+            preds: [6, 7],
+            succes: [],
+        },
+    ],
+};

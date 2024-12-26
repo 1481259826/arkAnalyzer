@@ -1176,10 +1176,10 @@ export class CfgBuilder {
         let currBlockId = this.blocks.length;
         this.linkBasicBlocks(blockBuilderToCfgBlock);
         this.rebuildBlocksInLoop(blockBuilderToCfgBlock, blocksContainLoopCondition, basicBlockSet);
-        this.rebuildBlocksContainConditionalOperator(basicBlockSet);
-        const traps = this.buildTraps(blockBuilderToCfgBlock, blockBuildersBeforeTry, arkIRTransformer, basicBlockSet);
         this.buildSwitch(blockBuilderToCfgBlock, blockBuildersContainSwitch, valueAndStmtsOfSwitchAndCasesAll,
             arkIRTransformer, basicBlockSet);
+        this.rebuildBlocksContainConditionalOperator(basicBlockSet);
+        const traps = this.buildTraps(blockBuilderToCfgBlock, blockBuildersBeforeTry, arkIRTransformer, basicBlockSet);
         for (const blockBuilder of this.blocks) {
             if (blockBuilder.id === -1) {
                 blockBuilder.id = currBlockId++;

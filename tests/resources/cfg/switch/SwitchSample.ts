@@ -156,3 +156,36 @@ function case11(): void {
         default:
     }
 }
+
+function case12(): void {
+    let a = 0;
+    let b = a > 1 ? 12 : 13;
+    switch (a) {
+        case 2:
+            b = 2;
+            break;
+        case 3:
+            b = 3;
+            break;
+        default:
+            b = 10;
+            break;
+    }
+}
+
+function case13(): void {
+    let a = 0;
+    let b = 1;
+    switch (a) {
+        case 2:
+            b = 2;
+            break;
+        case 3:
+            b = 3;
+            break;
+        default:
+            b = 10;
+            break;
+    }
+    b = a > 1 ? 12 : 13;
+}
