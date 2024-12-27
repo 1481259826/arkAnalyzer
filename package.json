@@ -14,7 +14,11 @@
     "testonce": "vitest --no-color run",
     "coverage": "vitest run --coverage",
     "heapdump": "npm run build && node --expose-gc out/tests/HeapDumpTest.js",
-    "gendoc": "npx typedoc"
+    "gendoc": "npx typedoc",
+    "downloadOhosTypescriptPackage": "git clone https://gitee.com/yifei-xue/arktools.git",
+    "installOhosTypescriptPackage": "npm install arktools/lib/ohos-typescript-4.9.5-r4-OpenHarmony-v5.0.0-Release.tgz --no-save",
+    "cleanOhosTypescriptPackage": "rm -rf arktools",
+    "postinstall": "npm run cleanOhosTypescriptPackage && npm run downloadOhosTypescriptPackage && npm run installOhosTypescriptPackage && npm run cleanOhosTypescriptPackage"
   },
   "dependencies": {
     "commander": "11.0.0",
