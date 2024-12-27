@@ -15,13 +15,57 @@
 
 let globalValue: number = 0;
 
+class BasicTest {
+    public listeners: number[] = [];
+
+    basicMethod(): void {
+        const outer = 2;
+        function nestedMethod(): void {
+            let nested = 'abc';
+        }
+        nestedMethod();
+    }
+
+    basicOuterMethod1(): number {
+        const output = 3;
+        function basicNestedMethod1(input: number): number {
+            return output + input;
+        }
+        return basicNestedMethod1(2);
+    }
+
+    basicOuterMethod2(index: number): void {
+        this.listeners.forEach(listener => {
+            console.log(index + listener);
+        });
+    }
+
+    basicOuterMethod3(output: string): void {
+        let basicNestedMethod3 = function(): void {
+            console.log(output);
+        };
+        basicNestedMethod3();
+    }
+}
+
+function basicOuterMethod4(): (input: number) => void {
+    const base = 3;
+    return function basicNestedMethod4(input: number): void {
+        input += base;
+    };
+}
+
+function callMethod4(): void {
+    let callMethod = basicOuterMethod4();
+    callMethod(3);
+}
+
 function outerFunction1(outerInput: number): void {
     let count = 0;
     let flag = 1;
     function innerFunction1(innerInput: string): string {
         count++;
         let result: string;
-        // TODO: usedStmts of flag should not be empty
         switch (flag) {
             case 1:
                 result = innerInput + 'ok1';
@@ -80,20 +124,14 @@ namespace closureNamespace {
                 if (!flag) {
                     return;
                 }
-                while (outerInput > 0) {
-                    outerInput--;
+                try {
+                    while (outerInput > 0) {
+                        outerInput--;
+                    }
+                } catch (error) {
+                    console.log(error);
                 }
             }
         }
-    }
-}
-
-class BasicDataSource {
-    public listeners: number[] = [];
-
-    notifyDataDelete(index: number): void {
-        this.listeners.forEach(listener => {
-            console.log(index + listener);
-        });
     }
 }

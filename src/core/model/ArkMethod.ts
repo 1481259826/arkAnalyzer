@@ -536,7 +536,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 this.setBody(arkBody);
                 arkBody.getCfg().setDeclaringMethod(this);
                 if (this.getOuterMethod() === undefined) {
-                    this.bodyBuilder.distinguishGlobalAndClosure();
+                    this.bodyBuilder.handleGlobalAndClosure();
                 }
             }
         }

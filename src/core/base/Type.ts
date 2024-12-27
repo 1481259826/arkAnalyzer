@@ -332,6 +332,10 @@ export class ClosureType extends FunctionType {
     public getLexicalEnv(): LexicalEnvType {
         return this.lexicalEnv;
     }
+
+    public getTypeString(): string {
+        return 'closures: ' + super.getTypeString();
+    }
 }
 
 /**
@@ -622,17 +626,17 @@ export class AnnotationTypeQueryType extends AnnotationType {
 }
 
 export class LexicalEnvType extends Type {
-    private nestedMethod: MethodSignature;
+    private nestedMethodSignature: MethodSignature;
     private closures: Local[] = [];
 
     constructor(nestedMethod: MethodSignature, closures?: Local[]) {
         super();
-        this.nestedMethod = nestedMethod;
+        this.nestedMethodSignature = nestedMethod;
         this.closures = closures ?? this.closures;
     }
 
     public getNestedMethod(): MethodSignature {
-        return this.nestedMethod;
+        return this.nestedMethodSignature;
     }
 
     public getClosures(): Local[] {

@@ -15,16 +15,16 @@
 
 import { ArkBody } from '../model/ArkBody';
 import { ArkMethod } from '../model/ArkMethod';
-import { MethodSignature, MethodSubSignature } from '../model/ArkSignature';
+import { FieldSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
 import { CfgBuilder } from './CfgBuilder';
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
-import { ArkClass } from '../model/ArkClass';
-import { CLOSURES_LOCAL_NAME, NAME_DELIMITER, NAME_PREFIX } from './Const';
-import { ArkParameterRef, ClosureFieldRef, GlobalRef } from '../base/Ref';
-import { ArkAssignStmt, ArkInvokeStmt } from '../base/Stmt';
-import { LexicalEnvType, FunctionType } from '../base/Type';
+import { LEXICAL_ENV_NAME_PREFIX, NAME_DELIMITER, NAME_PREFIX } from './Const';
+import { ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef, GlobalRef } from '../base/Ref';
+import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../base/Stmt';
+import { LexicalEnvType, FunctionType, ClosureType } from '../base/Type';
+import { AbstractInvokeExpr, ArkPtrInvokeExpr } from '../base/Expr';
 
 export class BodyBuilder {
     private cfgBuilder: CfgBuilder;
@@ -60,14 +60,63 @@ export class BodyBuilder {
         this.globals = globals;
     }
 
-    private findNestedMethod(outerMethodName: string, arkClass: ArkClass): ArkMethod[] | null {
+    public handleGlobalAndClosure(): void {
+        // 首先将outerMethod中的全局变量从locals中移到usedGlobals中，避免干扰嵌套函数中闭包变量的识别
+        let outerMethod = this.getCfgBuilder().getDeclaringMethod();
+        let outerGlobals = outerMethod.getBodyBuilder()?.getGlobals();
+        outerMethod.freeBodyBuilder();
+        let outerLocals = outerMethod.getBody()?.getLocals();
+        if (outerGlobals !== undefined && outerLocals !== undefined) {
+            this.moveLocalToGlobal(outerLocals, outerGlobals);
+            if (outerGlobals.size > 0) {
+                outerMethod.getBody()?.setUsedGlobals(outerGlobals);
+            }
+        }
+
+        let nestedMethods = this.findNestedMethod(outerMethod);
+        if (nestedMethods === null) {
+            return;
+        }
+        let closuresNum = 0;
+        for (let nestedMethod of nestedMethods) {
+            let nestedGlobals = nestedMethod.getBodyBuilder()?.getGlobals();
+            nestedMethod.freeBodyBuilder();
+            let nestedLocals = nestedMethod.getBody()?.getLocals();
+            if (nestedLocals === undefined || nestedGlobals === undefined) {
+                continue;
+            }
+            const nestedSignature = nestedMethod.getImplementationSignature();
+            if (nestedSignature === null) {
+                continue;
+            }
+            // 嵌套函数优先匹配闭包变量，存入词法环境中，该词法环境加入外层函数的locals中，剩余globals中变量为真正的全局变量
+            let lexicalEnv = new LexicalEnvType(nestedSignature);
+            if (outerLocals !== undefined) {
+                this.moveGlobalToLexicalEnv(nestedGlobals, outerLocals, lexicalEnv);
+                if (lexicalEnv.getClosures().length > 0) {
+                    const closuresLocal = new Local(`${LEXICAL_ENV_NAME_PREFIX}${closuresNum}`, lexicalEnv);
+                    outerLocals.set(closuresLocal.getName(), closuresLocal);
+                    this.updateNestedMethodWithClosures(nestedMethod, closuresLocal);
+                    this.updateOuterMethodWithClosures(outerMethod, nestedMethod, closuresLocal);
+                    closuresNum++;
+                }
+            }
+            this.moveLocalToGlobal(nestedLocals, nestedGlobals);
+            if (nestedGlobals.size > 0) {
+                nestedMethod.getBody()?.setUsedGlobals(nestedGlobals);
+            }
+        }
+    }
+
+    private findNestedMethod(outerMethod: ArkMethod): ArkMethod[] | null {
         let nestedMethods: ArkMethod[] = [];
+        const arkClass = outerMethod.getDeclaringArkClass();
         for (let method of arkClass.getMethods()) {
-            if (!method.getName().startsWith(NAME_PREFIX) || !method.getName().endsWith(outerMethodName)) {
+            if (!method.getName().startsWith(NAME_PREFIX) || !method.getName().endsWith(outerMethod.getName())) {
                 continue;
             }
             const components = method.getName().split(NAME_DELIMITER);
-            // TODO: 待支持多层嵌套，此处需按嵌套顺序返回多层级的method
+            // TODO: 当前仅返回第一层的嵌套函数，待支持多层嵌套
             if (components.length === 2) {
                 nestedMethods.push(method);
             }
@@ -88,86 +137,143 @@ export class BodyBuilder {
         });
     }
 
-    private moveGlobalToClosure(nestedGlobals: Map<string, GlobalRef>, outerLocals: Map<string, Local>, closures: LexicalEnvType): void {
-        nestedGlobals!.forEach((value, key) => {
-            const local = outerLocals!.get(key);
+    private moveGlobalToLexicalEnv(nestedGlobals: Map<string, GlobalRef>, outerLocals: Map<string, Local>, lexicalEnv: LexicalEnvType): void {
+        for (let key of nestedGlobals.keys()) {
+            const local = outerLocals.get(key);
             if (local !== undefined) {
-                closures.addClosure(local);
-                nestedGlobals?.delete(key);
-            }
-        });
-    }
-
-    public distinguishGlobalAndClosure(): void {
-        let outerMethod = this.getCfgBuilder().getDeclaringMethod();
-        let outerGlobals = outerMethod.getBodyBuilder()?.getGlobals();
-        outerMethod.freeBodyBuilder();
-        let outerLocals = outerMethod.getBody()?.getLocals();
-        if (outerGlobals !== undefined && outerLocals !== undefined) {
-            this.moveLocalToGlobal(outerLocals, outerGlobals);
-            if (outerGlobals.size > 0) {
-                outerMethod.getBody()?.setUsedGlobals(outerGlobals);
-            }
-        }
-
-        let nestedMethods = this.findNestedMethod(outerMethod.getName(), this.getCfgBuilder().declaringClass);
-        if (nestedMethods === null) {
-            return;
-        }
-
-        let closuresNum = 0;
-        for (let nestedMethod of nestedMethods) {
-            let nestedGlobals = nestedMethod.getBodyBuilder()?.getGlobals();
-            nestedMethod.freeBodyBuilder();
-            let nestedLocals = nestedMethod.getBody()?.getLocals();
-            if (nestedLocals === undefined || nestedGlobals === undefined) {
-                continue;
-            }
-            const nestedSignature = nestedMethod.getImplementationSignature();
-            if (nestedSignature === null) {
-                continue;
-            }
-            let closures = new LexicalEnvType(nestedSignature);
-            if (outerLocals !== undefined) {
-                this.moveGlobalToClosure(nestedGlobals, outerLocals, closures);
-                if (closures.getClosures().length > 0) {
-                    const closuresLocal = new Local(`${CLOSURES_LOCAL_NAME}${closuresNum}`, closures);
-                    outerLocals.set(closuresLocal.getName(), closuresLocal);
-                    this.updateMethodSignaturesAndStmts(nestedMethod, closuresLocal);
-                    closuresNum++;
-                }
-            }
-            this.moveLocalToGlobal(nestedLocals, nestedGlobals);
-            if (nestedGlobals.size > 0) {
-                nestedMethod.getBody()?.setUsedGlobals(nestedGlobals);
+                lexicalEnv.addClosure(local);
+                nestedGlobals.delete(key);
             }
         }
     }
 
-    private updateMethodSignaturesAndStmts(method: ArkMethod, closuresLocal: Local): void {
+    private updateNestedMethodWithClosures(nestedMethod: ArkMethod, closuresLocal: Local): void {
         if (!(closuresLocal.getType() instanceof LexicalEnvType)) {
             return;
         }
 
-        const declareSignatures = method.getDeclareSignatures();
+        const declareSignatures = nestedMethod.getDeclareSignatures();
         declareSignatures?.forEach((signature, index) => {
-            method.setDeclareSignatureWithIndex(this.createNewSignature(closuresLocal, signature), index);
+            nestedMethod.setDeclareSignatureWithIndex(this.createNewSignatureWithClosures(closuresLocal, signature), index);
         });
 
-        const implementSignature = method.getImplementationSignature();
+        const implementSignature = nestedMethod.getImplementationSignature();
         if (implementSignature !== null) {
-            method.setImplementationSignature(this.createNewSignature(closuresLocal, implementSignature));
+            nestedMethod.setImplementationSignature(this.createNewSignatureWithClosures(closuresLocal, implementSignature));
         }
 
-        const outerMethod = method.getOuterMethod();
-        if (outerMethod !== undefined) {
-            this.updateSignatureInUsedStmts(outerMethod, method.getName(), closuresLocal);
-        }
-
-        this.addClosureParamsAssignStmts(closuresLocal, method);
+        this.addClosureParamsAssignStmts(closuresLocal, nestedMethod);
     }
 
-    private createNewSignature(closuresLocal: Local, oldSignature: MethodSignature): MethodSignature {
+    private updateOuterMethodWithClosures(outerMethod: ArkMethod, nestedMethod: ArkMethod, closuresLocal: Local): void {
+        const nestedMethodName = nestedMethod.getName();
+        const nestedMethodLocal = outerMethod.getBody()?.getLocals().get(nestedMethodName);
+        if (nestedMethodLocal !== undefined) {
+            this.updateLocalInfoWithClosures(nestedMethodLocal, outerMethod, nestedMethod, closuresLocal);
+        } else {
+            const nestedMethodGlobal = outerMethod.getBody()?.getUsedGlobals()?.get(nestedMethodName);
+            if (nestedMethodGlobal !== undefined && nestedMethodGlobal instanceof GlobalRef) {
+                this.updateGlobalInfoWithClosures(nestedMethodGlobal, outerMethod, nestedMethod, closuresLocal);
+            }
+        }
+
+        const originalMethodName = this.getOriginalNestedMethodName(nestedMethodName);
+        if (originalMethodName === null) {
+            return;
+        }
+        const originalMethodLocal = outerMethod.getBody()?.getLocals().get(originalMethodName);
+        if (originalMethodLocal !== undefined) {
+            this.updateLocalInfoWithClosures(originalMethodLocal, outerMethod, nestedMethod, closuresLocal);
+        } else {
+            const originalMethodGlobal = outerMethod.getBody()?.getUsedGlobals()?.get(originalMethodName);
+            if (originalMethodGlobal !== undefined && originalMethodGlobal instanceof GlobalRef) {
+                this.updateGlobalInfoWithClosures(originalMethodGlobal, outerMethod, nestedMethod, closuresLocal);
+            }
+        }
+    }
+
+    private getOriginalNestedMethodName(nestedMethodName: string): string | null {
+        if (nestedMethodName.startsWith(NAME_PREFIX) && nestedMethodName.includes(NAME_DELIMITER)) {
+            const nameComponents = nestedMethodName.slice(1).split(NAME_DELIMITER);
+            if (nameComponents.length > 1) {
+                return nameComponents[0];
+            }
+        }
+        return null;
+    }
+
+    private updateGlobalInfoWithClosures(globalRef: GlobalRef, outerMethod: ArkMethod, nestedMethod: ArkMethod, closuresLocal: Local): void {
+        if (globalRef.getRef() !== null) {
+            return;
+        }
+        const methodSignature = nestedMethod.getImplementationSignature();
+        if (methodSignature === null) {
+            return;
+        }
+        const lexicalEnv = closuresLocal.getType();
+        if (!(lexicalEnv instanceof LexicalEnvType)) {
+            return;
+        }
+        const fieldSignature = new FieldSignature(
+            methodSignature.getMethodSubSignature().getMethodName(),
+            methodSignature.getDeclaringClassSignature(),
+            new ClosureType(lexicalEnv, methodSignature));
+        globalRef.setRef(new ArkStaticFieldRef((fieldSignature)));
+        this.updateAbstractInvokeExprWithClosures(globalRef, outerMethod.getSignature(), nestedMethod.getSignature(), closuresLocal);
+    }
+
+    private updateLocalInfoWithClosures(local: Local, outerMethod: ArkMethod, nestedMethod: ArkMethod, closuresLocal: Local): void {
+        const localType = local.getType();
+        if (!(localType instanceof FunctionType)) {
+            return;
+        }
+
+        const lexicalEnv = closuresLocal.getType();
+        if (!(lexicalEnv instanceof LexicalEnvType)) {
+            return;
+        }
+
+        // 更新local的类型为ClosureType，methodSignature为内层嵌套函数
+        const nestedMethodSignature = nestedMethod.getImplementationSignature();
+        if (nestedMethodSignature !== null) {
+            local.setType(new ClosureType(lexicalEnv, nestedMethodSignature, localType.getRealGenericTypes()));
+        } else {
+            local.setType(new ClosureType(lexicalEnv, localType.getMethodSignature(), localType.getRealGenericTypes()));
+        }
+
+        this.updateAbstractInvokeExprWithClosures(local, outerMethod.getSignature(), nestedMethod.getSignature(), closuresLocal);
+    }
+
+    // 更新所有stmt中调用内层函数处的AbstractInvokeExpr中的函数签名和实参args，加入闭包参数
+    // 更新所有stmt中定义的函数指针的usedStmt中的函数签名和实参args，加入闭包参数
+    private updateAbstractInvokeExprWithClosures(value: Local | GlobalRef, outerMethodSignature: MethodSignature,
+                                                 nestedMethodSignature: MethodSignature, closuresLocal: Local): void {
+        for (const usedStmt of value.getUsedStmts()) {
+            if (usedStmt instanceof ArkInvokeStmt) {
+                this.updateSignatureAndArgsInArkInvokeExpr(usedStmt, nestedMethodSignature, closuresLocal);
+            } else if (usedStmt instanceof ArkAssignStmt) {
+                const rightOp = usedStmt.getRightOp();
+                if (rightOp instanceof AbstractInvokeExpr) {
+                    this.updateSignatureAndArgsInArkInvokeExpr(usedStmt, nestedMethodSignature, closuresLocal);
+                }
+                const leftOp = usedStmt.getLeftOp();
+                if (leftOp instanceof Local) {
+                    leftOp.setType(rightOp.getType());
+                }
+            } else if (usedStmt instanceof ArkReturnStmt) {
+                outerMethodSignature.getMethodSubSignature().setReturnType(value.getType());
+            }
+            const defValue = usedStmt.getDef();
+            if (defValue === null) {
+                continue;
+            }
+            if ((defValue instanceof Local || defValue instanceof GlobalRef) && defValue.getType() instanceof FunctionType) {
+                this.updateAbstractInvokeExprWithClosures(defValue, outerMethodSignature, nestedMethodSignature, closuresLocal);
+            }
+        }
+    }
+
+    private createNewSignatureWithClosures(closuresLocal: Local, oldSignature: MethodSignature): MethodSignature {
         let oldSubSignature = oldSignature.getMethodSubSignature();
         const params = oldSubSignature.getParameters();
         const closuresParam = new MethodParameter();
@@ -183,59 +289,54 @@ export class BodyBuilder {
         return new MethodSignature(oldSignature.getDeclaringClassSignature(), newSubSignature);
     }
 
-    private updateSignatureInUsedStmts(outerMethod: ArkMethod, nestedMethodName: string, closuresLocal: Local): void {
-        const local = outerMethod.getBody()?.getLocals().get(nestedMethodName);
-        if (local === undefined || !(local.getType() instanceof FunctionType)) {
-            return;
-        }
-
-        // 更新外层函数的stmt中调用内层函数处的AbstractInvokeExpr中的函数签名和实参args，加入闭包参数
-        for (const usedStmt of local.getUsedStmts()) {
-            if (usedStmt instanceof ArkInvokeStmt) {
-                this.updateSignatureAndArgsInIArkInvokeStmt(usedStmt, nestedMethodName, closuresLocal);
-            }
-            const defValue = usedStmt.getDef();
-            if (defValue === null) {
-                continue;
-            }
-            if (!(defValue instanceof Local) || !(defValue.getType() instanceof FunctionType)) {
+    private updateSignatureAndArgsInArkInvokeExpr(stmt: ArkInvokeStmt | ArkAssignStmt, methodSignature: MethodSignature, closuresLocal: Local): void {
+        let expr: AbstractInvokeExpr;
+        if (stmt instanceof ArkInvokeStmt) {
+            expr = stmt.getInvokeExpr();
+        } else {
+            const rightOp = stmt.getRightOp();
+            if (!(rightOp instanceof AbstractInvokeExpr)) {
                 return;
             }
-            for (const stmt of defValue.getUsedStmts()) {
-                if (stmt instanceof ArkInvokeStmt) {
-                    this.updateSignatureAndArgsInIArkInvokeStmt(stmt, defValue.getName(), closuresLocal);
-                }
-            }
+            expr = rightOp;
         }
-    }
-
-    private updateSignatureAndArgsInIArkInvokeStmt(stmt: ArkInvokeStmt, callMethodName: string, closuresLocal: Local): void {
-        const expr = stmt.getInvokeExpr();
-        if (expr.getMethodSignature().getMethodSubSignature().getMethodName() !== callMethodName) {
+        const exprMethodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
+        const nestedMethodName = methodSignature.getMethodSubSignature().getMethodName();
+        if (exprMethodName === nestedMethodName) {
+            expr.setMethodSignature(this.createNewSignatureWithClosures(closuresLocal, methodSignature));
+            expr.getArgs().unshift(closuresLocal);
+            closuresLocal.addUsedStmt(stmt);
             return;
         }
-        expr.setMethodSignature(this.createNewSignature(closuresLocal, expr.getMethodSignature()));
-        expr.getArgs().unshift(closuresLocal);
+
+        const originalMethodName = this.getOriginalNestedMethodName(nestedMethodName);
+        if (originalMethodName !== null) {
+            if (exprMethodName === originalMethodName || expr instanceof ArkPtrInvokeExpr) {
+                expr.setMethodSignature(methodSignature);
+                expr.getArgs().unshift(closuresLocal);
+                closuresLocal.addUsedStmt(stmt);
+            }
+        }
     }
 
     private addClosureParamsAssignStmts(closuresParam: Local, method: ArkMethod): void {
-        const lexicalEnvType = closuresParam.getType();
-        if (!(lexicalEnvType instanceof LexicalEnvType)) {
+        const lexicalEnv = closuresParam.getType();
+        if (!(lexicalEnv instanceof LexicalEnvType)) {
             return;
         }
-        const closures = lexicalEnvType.getClosures();
+        const closures = lexicalEnv.getClosures();
         if (closures.length === 0) {
             return;
         }
-        let oldParamRefs = method.getParameterRefs();
+        const oldParamRefs = method.getParameterRefs();
         let body = method.getBody();
         if (body === undefined) {
             return;
         }
         let stmts = Array.from(body.getCfg().getBlocks())[0].getStmts();
         let index = 0;
-        const parameterRef = new ArkParameterRef(index, closuresParam.getType());
-        const closuresLocal = new Local(closuresParam.getName(), closuresParam.getType());
+        const parameterRef = new ArkParameterRef(index, lexicalEnv);
+        const closuresLocal = new Local(closuresParam.getName(), lexicalEnv);
         body.addLocal(closuresLocal.getName(), closuresLocal);
         let assignStmt = new ArkAssignStmt(closuresLocal, parameterRef);
         stmts.splice(index, 0, assignStmt);
@@ -259,6 +360,4 @@ export class BodyBuilder {
             closuresLocal.addUsedStmt(assignStmt);
         }
     }
-
-
 }

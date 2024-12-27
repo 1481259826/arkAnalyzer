@@ -19,6 +19,7 @@ import {
     ANONYMOUS_METHOD_PREFIX,
     ArkMethod,
     DEFAULT_ARK_CLASS_NAME,
+    ArkStaticFieldRef,
     DEFAULT_ARK_METHOD_NAME,
     GlobalRef,
     Local,
@@ -28,7 +29,6 @@ import {
     Scene,
     SceneConfig,
     Stmt,
-    TEMP_LOCAL_PREFIX,
     Value,
 } from '../../src';
 import {
@@ -45,8 +45,18 @@ import {
 } from '../resources/arkIRTransformer/assignment/AssignmentExpectIR';
 import {
     ArrowFunction_Expect_IR,
+    BasicNestedMethod1_Expect_IR,
+    BasicNestedMethod2_Expect_IR,
+    BasicNestedMethod3_Expect_IR,
+    BasicNestedMethod4_Expect_IR,
+    BasicNestedMethod_Expect_IR,
+    BasicOuterMethod1_Expect_IR,
+    BasicOuterMethod2_Expect_IR,
+    BasicOuterMethod3_Expect_IR,
+    BasicOuterMethod4_Expect_IR,
+    BasicOuterMethod_Expect_IR,
+    CallMethod4_Expect_IR,
     ClosureAnonymousFunction_Expect_IR,
-    ClosureAnonymousInForEach_Expect_IR,
     ClosureClassMethod_Expect_IR,
     ClosureFunction_Expect_IR,
     ClosureNamespaceClassMethod_Expect_IR,
@@ -58,7 +68,6 @@ import {
     OverloadInterfaceMethod_Expect_IR,
     OverloadMethod_Expect_IR,
     OverloadNamespaceMethod_Expect_IR,
-    UnClosureAnonymousInForEach_Expect_IR,
     UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
@@ -252,13 +261,18 @@ function assertGlobalsEqual(actualGlobals: Map<string, Value> | undefined, expec
         return;
     }
     for (let i = 0; i < expectGlobals.length; i++) {
-        if (expectGlobals[i].name.startsWith(TEMP_LOCAL_PREFIX)) {
-            continue;
-        }
         const actualGlobal = actualGlobals!.get(expectGlobals[i].name);
         assert.isDefined(actualGlobal);
         if (expectGlobals[i].instanceof !== undefined) {
             assert.isTrue(actualGlobal instanceof expectGlobals[i].instanceof);
+            if (expectGlobals[i].ref === null) {
+                const refValue = (actualGlobal as GlobalRef).getRef();
+                assert.isNull(refValue);
+            } else if (expectGlobals[i].ref !== undefined && expectGlobals[i].instanceof === GlobalRef) {
+                const refValue = (actualGlobal as GlobalRef).getRef();
+                assert.isNotNull(refValue);
+                assertGlobalRefEqual(refValue!, expectGlobals[i].ref);
+            }
         }
         if (expectGlobals[i].type !== undefined) {
             assert.equal(actualGlobal!.getType().toString(), expectGlobals[i].type);
@@ -266,6 +280,24 @@ function assertGlobalsEqual(actualGlobals: Map<string, Value> | undefined, expec
         if (expectGlobals[i].usedStmts !== undefined) {
             if (actualGlobal instanceof GlobalRef) {
                 assertStmtsEqual(actualGlobal!.getUsedStmts(), expectGlobals[i].usedStmts);
+            }
+        }
+    }
+}
+
+function assertGlobalRefEqual(refValue: Value, expectedRef: any): void {
+    if (expectedRef.type !== undefined) {
+        assert.equal(refValue.getType().toString(), expectedRef.type);
+    }
+    if (expectedRef.instanceof !== undefined) {
+        assert.isTrue(refValue instanceof expectedRef.instanceof);
+        if (expectedRef.instanceof === ArkStaticFieldRef) {
+            const fieldSignature = (refValue as ArkStaticFieldRef).getFieldSignature();
+            if (expectedRef.fieldName !== undefined) {
+                assert.equal(fieldSignature.getFieldName(), expectedRef.fieldName);
+            }
+            if (expectedRef.declaringSignature !== undefined) {
+                assert.equal(fieldSignature.getDeclaringSignature().toString(), expectedRef.declaringSignature);
             }
         }
     }
@@ -455,10 +487,58 @@ describe('closure Test', () => {
     const scene = buildScene('function');
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith('ClosureParamsTest.ts'));
 
-    it('test unClosure function', async () => {
-        const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'outerFunction1'));
-        assert.isDefined(arkMethod);
-        testMethodClosure(arkMethod as ArkMethod, UnClosureFunction_Expect_IR);
+    it('basic test nested function with no closures', async () => {
+        const nestedMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === '%nestedMethod$basicMethod'));
+        assert.isDefined(nestedMethod);
+        testMethodClosure(nestedMethod as ArkMethod, BasicNestedMethod_Expect_IR);
+
+        const outerMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === 'basicMethod'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod as ArkMethod, BasicOuterMethod_Expect_IR);
+    });
+
+    it('basic test independently nested function declaration', async () => {
+        const nestedMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === '%basicNestedMethod1$basicOuterMethod1'));
+        assert.isDefined(nestedMethod);
+        testMethodClosure(nestedMethod as ArkMethod, BasicNestedMethod1_Expect_IR);
+
+        const outerMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === 'basicOuterMethod1'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod as ArkMethod, BasicOuterMethod1_Expect_IR);
+    });
+
+    it('basic test anonymous nested function declared in forEach', async () => {
+        const nestedMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === '%AM0$basicOuterMethod2'));
+        assert.isDefined(nestedMethod);
+        testMethodClosure(nestedMethod!, BasicNestedMethod2_Expect_IR);
+
+        const outerMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === 'basicOuterMethod2'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, BasicOuterMethod2_Expect_IR);
+    });
+
+    it('basic test ptr invoke anonymous nested function', async () => {
+        const nestedMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === '%AM1$basicOuterMethod3'));
+        assert.isDefined(nestedMethod);
+        testMethodClosure(nestedMethod!, BasicNestedMethod3_Expect_IR);
+
+        const outerMethod = arkFile?.getClassWithName('BasicTest')?.getMethods().find((method) => (method.getName() === 'basicOuterMethod3'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, BasicOuterMethod3_Expect_IR);
+    });
+
+    it('basic test return nested function', async () => {
+        const nestedMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === '%basicNestedMethod4$basicOuterMethod4'));
+        assert.isDefined(nestedMethod);
+        testMethodClosure(nestedMethod!, BasicNestedMethod4_Expect_IR);
+
+        const outerMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'basicOuterMethod4'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, BasicOuterMethod4_Expect_IR);
+
+        const callMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'callMethod4'));
+        assert.isDefined(callMethod);
+        testMethodClosure(callMethod!, CallMethod4_Expect_IR);
     });
 
     it('test closure in function', async () => {
@@ -468,8 +548,14 @@ describe('closure Test', () => {
         testMethodClosure(arkMethod as ArkMethod, ClosureFunction_Expect_IR);
     });
 
+    it('test unClosure function', async () => {
+        const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'outerFunction1'));
+        assert.isDefined(arkMethod);
+        testMethodClosure(arkMethod as ArkMethod, UnClosureFunction_Expect_IR);
+    });
+
     it('test closure in anonymous function', async () => {
-        const methodName = `${ANONYMOUS_METHOD_PREFIX}0${NAME_DELIMITER}outerFunction1`;
+        const methodName = `${ANONYMOUS_METHOD_PREFIX}1${NAME_DELIMITER}outerFunction1`;
         const arkMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === methodName));
         assert.isDefined(arkMethod);
         testMethodClosure(arkMethod as ArkMethod, ClosureAnonymousFunction_Expect_IR);
@@ -497,17 +583,5 @@ describe('closure Test', () => {
         const arkMethod = arkNS?.getClassWithName('ClosureClass')?.getMethods().find((method) => (method.getName() === methodName));
         assert.isDefined(arkMethod);
         testMethodClosure(arkMethod as ArkMethod, ClosureNamespaceClassMethod_Expect_IR);
-    });
-
-    it('test outer function with anonymous function using in forEach args', async () => {
-        const arkMethod = arkFile?.getClassWithName('BasicDataSource')?.getMethods().find((method) => (method.getName() === 'notifyDataDelete'));
-        assert.isDefined(arkMethod);
-        testMethodClosure(arkMethod!, UnClosureAnonymousInForEach_Expect_IR);
-    });
-
-    it('test anonymous function using in forEach args', async () => {
-        const arkMethod = arkFile?.getClassWithName('BasicDataSource')?.getMethods().find((method) => (method.getName() === '%AM0$notifyDataDelete'));
-        assert.isDefined(arkMethod);
-        testMethodClosure(arkMethod!, ClosureAnonymousInForEach_Expect_IR);
     });
 });
