@@ -227,8 +227,8 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
             if (namespace) {
                 const foundMethod = ModelUtils.findPropertyInNamespace(methodName, namespace);
                 if (foundMethod instanceof ArkMethod) {
-                    TypeInference.inferMethodReturnType(foundMethod);
-                    let signature = foundMethod.matchMethodSignature(this.args.map(v=>v.getType()));
+                    let signature = foundMethod.matchMethodSignature(this.args.map(v => v.getType()));
+                    TypeInference.inferSignatureReturnType(signature, foundMethod);
                     this.setMethodSignature(signature);
                     return new ArkStaticInvokeExpr(signature, this.getArgs(), this.getRealGenericTypes());
                 }
@@ -254,8 +254,8 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
         }
         const method = arkClass ? ModelUtils.findPropertyInClass(methodName, arkClass) : null;
         if (method instanceof ArkMethod) {
-            TypeInference.inferMethodReturnType(method);
-            const methodSignature = method.matchMethodSignature(this.args.map(v=>v.getType()));
+            const methodSignature = method.matchMethodSignature(this.args.map(v => v.getType()));
+            TypeInference.inferSignatureReturnType(methodSignature, method);
             this.setMethodSignature(methodSignature);
             this.realGenericTypes = method.getDeclaringArkClass() === arkClass ? baseType.getRealGenericTypes() :
                 arkClass?.getRealTypes();
@@ -429,7 +429,7 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         if (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT) {
             const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
             if (global instanceof ArkMethod) {
-                const methodSignature = global.matchMethodSignature(this.getArgs().map(v=>v.getType()));
+                const methodSignature = global.matchMethodSignature(this.getArgs().map(v => v.getType()));
                 this.setMethodSignature(methodSignature);
                 return true;
             }
@@ -488,8 +488,8 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
             method = arkExport.getMethodWithName(CONSTRUCTOR_NAME);
         }
         if (method) {
-            TypeInference.inferMethodReturnType(method);
-            let signature = method.matchMethodSignature(this.getArgs().map(v=>v.getType()));
+            let signature = method.matchMethodSignature(this.getArgs().map(v => v.getType()));
+            TypeInference.inferSignatureReturnType(signature, method);
             if (method.isAnonymousMethod()) {
                 const subSignature = signature.getMethodSubSignature();
                 const newSubSignature = new MethodSubSignature(methodName, subSignature.getParameters(),

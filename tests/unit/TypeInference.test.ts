@@ -15,16 +15,7 @@
 
 import { assert, describe, expect, it, vi } from 'vitest';
 import path from 'path';
-import {
-    ArkClass,
-    ArkMethod,
-    ClassType,
-    CONSTRUCTOR_NAME,
-    MethodSignature,
-    Scene,
-    SceneConfig,
-    TypeInference
-} from '../../src';
+import { ArkClass, ClassType, CONSTRUCTOR_NAME, MethodSignature, Scene, SceneConfig, TypeInference } from '../../src';
 import { testMethodStmts } from './ArkIRTransformer.test';
 import { OperandOriginalPositions_Expect_IR } from '../resources/inferType/IRChange/OperandOriginalPositionsExpect';
 
@@ -44,7 +35,7 @@ describe('StaticSingleAssignmentFormer Test', () => {
 
         const spy = vi.spyOn(method, 'getBody');
         TypeInference.inferTypeInMethod(method);
-        expect(spy).toHaveBeenCalledTimes(6);
+        expect(spy).toHaveBeenCalledTimes(7);
     });
 
     it('inferSimpleTypeInMethod case', () => {
@@ -54,7 +45,7 @@ describe('StaticSingleAssignmentFormer Test', () => {
         }
 
         for (const method of methods) {
-            const spy = vi.spyOn(method, "getBody");
+            const spy = vi.spyOn(method, 'getBody');
             TypeInference.inferSimpleTypeInMethod(method);
             expect(spy).toHaveBeenCalledTimes(1);
         }
@@ -74,10 +65,10 @@ describe('Infer Method Return Type', () => {
 
         let method = (sampleClass as ArkClass).getMethodWithName(CONSTRUCTOR_NAME);
         assert.isNotNull(method);
-        TypeInference.inferMethodReturnType(method as ArkMethod);
         let signature = method?.getImplementationSignature();
         assert.isDefined(signature);
         assert.isNotNull(signature);
+        TypeInference.inferSignatureReturnType(signature!, method!);
         expect(signature?.toString()).toEqual('@inferType/inferSample.ts: Sample.constructor()');
         assert.isTrue(signature?.getType() instanceof ClassType);
         expect(signature?.getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
@@ -89,8 +80,7 @@ describe('Infer Method Return Type', () => {
 
         let method = (sampleClass as ArkClass).getMethodWithName('sampleMethod');
         assert.isNotNull(method);
-        TypeInference.inferMethodReturnType(method as ArkMethod);
-
+        TypeInference.inferTypeInMethod(method!);
         let signatures = method?.getDeclareSignatures();
         assert.isDefined(signatures);
         assert.isNotNull(signatures);
