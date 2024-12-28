@@ -51,7 +51,6 @@ import {
     ArkInvokeStmt,
     ArkReturnStmt,
     ArkReturnVoidStmt,
-    ArkSwitchStmt,
     ArkThrowStmt,
     Stmt,
 } from '../core/base/Stmt';
@@ -609,12 +608,6 @@ export class JsonPrinter extends Printer {
             return {
                 _: 'ThrowStmt',
                 arg: this.serializeValue(stmt.getOp()),
-            };
-        } else if (stmt instanceof ArkSwitchStmt) {
-            return {
-                _: 'SwitchStmt',
-                arg: this.serializeValue(stmt.getKey()),
-                cases: stmt.getCases().map((value) => this.serializeValue(value)),
             };
         } else {
             throw new Error('Unhandled Stmt: ' + util.inspect(stmt, { showHidden: true, depth: null }));

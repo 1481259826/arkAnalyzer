@@ -295,8 +295,6 @@ export const ETS_COMPILER_OPTIONS = {
             'RichEditor',
             'Component3D',
             'ContainerSpan',
-            'ForEach',
-            'LazyForEach',
         ],
         'extend': {
             'decorator': ['Extend', 'AnimatableExtend'],
@@ -927,7 +925,12 @@ export const ETS_COMPILER_OPTIONS = {
     },
 };
 
-export const BUILDIN_SYSTEM_COMPONENT: Set<string> = new Set(ETS_COMPILER_OPTIONS.ets.components);
+export const COMPONENT_FOR_EACH: string = 'ForEach';
+export const COMPONENT_LAZY_FOR_EACH: string = 'LazyForEach';
+
+export const BUILDIN_SYSTEM_COMPONENT: Set<string> = new Set(
+    [...ETS_COMPILER_OPTIONS.ets.components, COMPONENT_FOR_EACH,
+        COMPONENT_LAZY_FOR_EACH]);
 
 export const BUILDIN_ATOMIC_COMPONENT: Set<string> = new Set([
     'AbilityComponent',
@@ -1005,8 +1008,6 @@ export const COMPONENT_CREATE_FUNCTION: string = 'create';
 export const COMPONENT_POP_FUNCTION: string = 'pop';
 export const COMPONENT_CUSTOMVIEW: string = 'View';
 export const COMPONENT_REPEAT: string = 'Repeat';
-export const COMPONENT_FOR_EACH: string = 'ForEach';
-export const COMPONENT_LAZY_FOR_EACH: string = 'LazyForEach';
 
 export const COMPONENT_IF: string = 'If';
 export const COMPONENT_IF_BRANCH: string = 'IfBranch';
