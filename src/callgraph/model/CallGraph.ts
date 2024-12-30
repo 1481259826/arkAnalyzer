@@ -425,4 +425,8 @@ export class CallGraph extends BaseExplicitGraph {
 
         return true;
     }
+
+    public getGraphName(): string {
+        return 'CG';
+    }
 }
