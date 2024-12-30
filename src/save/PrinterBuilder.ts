@@ -14,7 +14,7 @@
  */
 
 import fs from 'fs';
-import { dirname, join } from 'path';
+import path from 'path';
 import { ArkFile } from '../core/model/ArkFile';
 import { DotFilePrinter } from './DotPrinter';
 import { SourceFilePrinter } from './source/SourceFilePrinter';
@@ -28,15 +28,10 @@ import { JsonPrinter } from './JsonPrinter';
  * let srcPrinter = new SourceMethodPrinter(method);
  * PrinterBuilder.dump(srcPrinter, 'output.ts');
  *
- * // dump method original ts source
- * PrinterBuilder.dumpOriginal(srcPrinter, 'output.ts');
  *
  * // dump method cfg to dot
  * let dotPrinter = new DotMethodPrinter(method);
  * PrinterBuilder.dump(dotPrinter, 'output.dot');
- *
- * // dump method original dot
- * PrinterBuilder.dumpOriginal(dotPrinter, 'output.dot');
  *
  * // dump project
  * let printer = new PrinterBuilder('output');
@@ -56,15 +51,11 @@ export class PrinterBuilder {
         fs.writeFileSync(output, source.dump());
     }
 
-    public static dumpOriginal(source: Printer, output: string) {
-        fs.writeFileSync(output, source.dumpOriginal());
-    }
-
     protected getOutputDir(arkFile: ArkFile): string {
         if (this.outputDir === '') {
-            return join(arkFile.getProjectDir(), '..', 'output');
+            return path.join(arkFile.getProjectDir(), '..', 'output');
         } else {
-            return join(this.outputDir);
+            return path.join(this.outputDir);
         }
     }
 
@@ -74,9 +65,9 @@ export class PrinterBuilder {
     ): void {
         let filename = output;
         if (filename === undefined) {
-            filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.dot');
+            filename = path.join(this.getOutputDir(arkFile), arkFile.getName() + '.dot');
         }
-        fs.mkdirSync(dirname(filename), { recursive: true });
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
 
         let printer: Printer = new DotFilePrinter(arkFile);
         PrinterBuilder.dump(printer, filename as string);
@@ -88,9 +79,12 @@ export class PrinterBuilder {
     ): void {
         let filename = output;
         if (filename === undefined) {
-            filename = join(this.getOutputDir(arkFile), arkFile.getName());
+            filename = path.join(this.getOutputDir(arkFile), arkFile.getName());
         }
-        fs.mkdirSync(dirname(filename), { recursive: true });
+        if (path.extname(filename) === '') {
+            filename += '.ts';
+        }
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
 
         let printer: Printer = new SourceFilePrinter(arkFile);
         PrinterBuilder.dump(printer, filename);
@@ -99,9 +93,9 @@ export class PrinterBuilder {
     public dumpToJson(arkFile: ArkFile, output: string | undefined = undefined): void {
         let filename = output;
         if (filename === undefined) {
-            filename = join(this.getOutputDir(arkFile), arkFile.getName() + '.json');
+            filename = path.join(this.getOutputDir(arkFile), arkFile.getName() + '.json');
         }
-        fs.mkdirSync(dirname(filename), { recursive: true });
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
 
         let printer: Printer = new JsonPrinter(arkFile);
         PrinterBuilder.dump(printer, filename);

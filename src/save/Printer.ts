@@ -29,9 +29,4 @@ export abstract class Printer {
      * ArkIR dump
      */
     public abstract dump(): string;
-
-    /**
-     * Original dump
-     */
-    public abstract dumpOriginal(): string;
 }

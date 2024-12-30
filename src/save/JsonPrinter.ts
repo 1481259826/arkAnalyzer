@@ -106,10 +106,6 @@ export class JsonPrinter extends Printer {
         return JSON.stringify(jsonObject, null, 2);
     }
 
-    public dumpOriginal(): string {
-        return '';
-    }
-
     private serializeArkFile(file: ArkFile): object {
         return {
             signature: this.serializeFileSignature(file.getFileSignature()),

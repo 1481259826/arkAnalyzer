@@ -97,8 +97,4 @@ export class SourceNamespace extends SourceBase {
 
         return this.printer.toString();
     }
-
-    public dumpOriginal(): string {
-        return this.ns.getCode();
-    }
 }

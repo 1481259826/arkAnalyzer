@@ -60,10 +60,6 @@ export class SourceMethod extends SourceBase {
         return this.printer.toString();
     }
 
-    public dumpOriginal(): string {
-        return this.method.getCode() + '\n';
-    }
-
     public getLine(): number {
         let line = this.method.getLine();
         if (line === null) {

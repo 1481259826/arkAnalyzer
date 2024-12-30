@@ -68,9 +68,6 @@ export class SourceExportInfo extends SourceBase {
 
         return this.printer.toString();
     }
-    public dumpOriginal(): string {
-        return this.info.getTsSourceCode();
-    }
 }
 
 export class SourceImportInfo extends SourceBase {
@@ -124,8 +121,5 @@ export class SourceImportInfo extends SourceBase {
             this.printer.writeIndent().writeLine(`import '${this.info.getFrom() as string}';`);
         }
         return this.printer.toString();
-    }
-    public dumpOriginal(): string {
-        return this.info.getTsSourceCode();
     }
 }
