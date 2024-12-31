@@ -440,7 +440,7 @@ export class SourceIfStmt extends SourceStmt {
 
     public transfer2ts(): void {
         let code: string;
-        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let expr = (this.original as ArkIfStmt).getConditionExpr();
         code = `if (${this.transformer.valueToString(expr.getOp1())}`;
         code += ` ${expr.getOperator()} `;
         code += `${this.transformer.valueToString(expr.getOp2())}) {`;
@@ -473,7 +473,7 @@ export class SourceWhileStmt extends SourceStmt {
      * @returns
      */
     private forOf2ts(): boolean {
-        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let expr = (this.original as ArkIfStmt).getConditionExpr();
         let temp3 = expr.getOp1();
         let op2 = expr.getOp2();
         let firstStmt = this.context.getStmtReader().first();
@@ -604,7 +604,7 @@ export class SourceWhileStmt extends SourceStmt {
             return;
         }
         let code: string;
-        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let expr = (this.original as ArkIfStmt).getConditionExpr();
         code = `while (${this.valueToString(expr.getOp1())}`;
         code += ` ${expr.getOperator().trim()} `;
         code += `${this.valueToString(expr.getOp2())}) {`;
@@ -651,7 +651,7 @@ export class SourceForStmt extends SourceWhileStmt {
 
     public transfer2ts(): void {
         let code: string;
-        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let expr = (this.original as ArkIfStmt).getConditionExpr();
         code = `for (; ${this.transformer.valueToString(expr.getOp1())}`;
         code += ` ${expr.getOperator().trim()} `;
         code += `${this.transformer.valueToString(expr.getOp2())}; `;
@@ -691,7 +691,7 @@ export class SourceDoWhileStmt extends SourceWhileStmt {
 
     public transfer2ts(): void {
         let code: string;
-        let expr = (this.original as ArkIfStmt).getConditionExprExpr();
+        let expr = (this.original as ArkIfStmt).getConditionExpr();
         code = `} while (${this.valueToString(expr.getOp1())}`;
         code += ` ${expr.getOperator().trim()} `;
         code += `${this.valueToString(expr.getOp2())})`;

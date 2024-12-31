@@ -2121,7 +2121,15 @@
               }
             ],
             "returnType": {
-              "_": "UnknownType"
+              "_": "ClassType",
+              "signature": {
+                "declaringFile": {
+                  "fileName": "sample.ts",
+                  "projectName": "save"
+                },
+                "declaringNamespace": null,
+                "name": "Student"
+              }
             }
           },
           "modifiers": 0,
@@ -3756,7 +3764,15 @@
               }
             ],
             "returnType": {
-              "_": "UnknownType"
+              "_": "ClassType",
+              "signature": {
+                "declaringFile": {
+                  "fileName": "sample.ts",
+                  "projectName": "save"
+                },
+                "declaringNamespace": null,
+                "name": "Circle"
+              }
             }
           },
           "modifiers": 0,

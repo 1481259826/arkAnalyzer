@@ -1059,6 +1059,7 @@ export class ArkIRTransformer {
             const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(argumentValue.toString());
             elementAccessExpr = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
         }
+        // reserve positions for field name
         const exprPositions = [FullPosition.buildFromNode(elementAccessExpression, this.sourceFile), ...basePositions,
             ...arguPositions];
         return { value: elementAccessExpr, valueOriginalPositions: exprPositions, stmts: stmts };
@@ -1382,23 +1383,36 @@ export class ArkIRTransformer {
     }
 
     private awaitExpressionToValueAndStmts(awaitExpression: ts.AwaitExpression): ValueAndStmts {
-        const {
+        const stmts: Stmt[] = [];
+        let {
             value: promiseValue,
             valueOriginalPositions: promisePositions,
-            stmts: stmts,
+            stmts: promiseStmts,
         } = this.tsNodeToValueAndStmts(awaitExpression.expression);
+        stmts.push(...promiseStmts);
+        if (IRUtils.moreThanOneAddress(promiseValue)) {
+            ({ value: promiseValue, valueOriginalPositions: promisePositions, stmts: promiseStmts } =
+                this.generateAssignStmtForValue(promiseValue, promisePositions));
+            stmts.push(...promiseStmts);
+        }
         const awaitExpr = new ArkAwaitExpr(promiseValue);
         const awaitExprPositions = [FullPosition.buildFromNode(awaitExpression, this.sourceFile), ...promisePositions];
         return { value: awaitExpr, valueOriginalPositions: awaitExprPositions, stmts: stmts };
     }
 
     private yieldExpressionToValueAndStmts(yieldExpression: ts.YieldExpression): ValueAndStmts {
+        const stmts: Stmt[] = [];
         let yieldValue: Value = ValueUtil.getUndefinedConst();
         let yieldPositions = [FullPosition.DEFAULT];
-        let stmts: Stmt[] = [];
+        let yieldStmts: Stmt[] = [];
         if (yieldExpression.expression) {
-            ({ value: yieldValue, valueOriginalPositions: yieldPositions, stmts: stmts } =
+            ({ value: yieldValue, valueOriginalPositions: yieldPositions, stmts: yieldStmts } =
                 this.tsNodeToValueAndStmts(yieldExpression.expression));
+            if (IRUtils.moreThanOneAddress(yieldValue)) {
+                ({ value: yieldValue, valueOriginalPositions: yieldPositions, stmts: yieldStmts } =
+                    this.generateAssignStmtForValue(yieldValue, yieldPositions));
+                stmts.push(...yieldStmts);
+            }
         }
 
         const yieldExpr = new ArkYieldExpr(yieldValue);

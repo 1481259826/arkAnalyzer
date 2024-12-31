@@ -76,14 +76,14 @@ export interface StringValidator {
 }
 export const numberRegexp = /^[0-9]+$/;
 export default class ZipCodeValidator implements StringValidator {
-  isAcceptable(s?: string) {
+  isAcceptable(s?: string): boolean {
     return s.length === 5 && numberRegexp.test(s);
   }
 }
 export {ZipCodeValidator};
 export {ZipCodeValidator as mainValidator};
 export class ParseIntBasedZipCodeValidator {
-  isAcceptable(s: string) {
+  isAcceptable(s: string): boolean {
     return s.length === 5 && parseInt(s).toString() === s;
   }
 }
