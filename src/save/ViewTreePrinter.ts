@@ -48,9 +48,6 @@ export class ViewTreePrinter extends Printer {
 
         return this.printer.toString();
     }
-    public dumpOriginal(): string {
-        return '';
-    }
 
     private walk(
         item: ViewTreeNode,

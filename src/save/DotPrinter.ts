@@ -53,9 +53,6 @@ export class DotMethodPrinter extends Printer {
 
         return this.printer.toString();
     }
-    public dumpOriginal(): string {
-        return '';
-    }
 
     protected stringHashCode(name: string): number {
         let hashCode = 0;
@@ -129,26 +126,6 @@ export class DotClassPrinter extends Printer {
 
         return this.printer.toString();
     }
-
-    public dumpOriginal(): string {
-        this.printer.clear();
-        if (!this.nesting) {
-            this.printer.writeLine(`digraph "${this.cls.getName()}" {`);
-            this.printer.incIndent();
-        }
-
-        for (let method of this.cls.getMethods()) {
-            let mtd = new DotMethodPrinter(method, true);
-            this.printer.write(mtd.dumpOriginal());
-        }
-
-        if (!this.nesting) {
-            this.printer.decIndent();
-            this.printer.writeLine(`}`);
-        }
-
-        return this.printer.toString();
-    }
 }
 
 /**
@@ -183,25 +160,6 @@ export class DotNamespacePrinter extends Printer {
 
         return this.printer.toString();
     }
-
-    public dumpOriginal(): string {
-        this.printer.clear();
-        if (!this.nesting) {
-            this.printer.writeLine(`digraph "${this.ns.getName()}" {`);
-            this.printer.incIndent();
-        }
-
-        for (let method of this.ns.getAllMethodsUnderThisNamespace()) {
-            let mtd = new DotMethodPrinter(method, true);
-            this.printer.write(mtd.dumpOriginal());
-        }
-
-        if (!this.nesting) {
-            this.printer.decIndent();
-            this.printer.writeLine(`}`);
-        }
-        return this.printer.toString();
-    }
 }
 
 /**
@@ -229,27 +187,6 @@ export class DotFilePrinter extends Printer {
         for (let cls of this.arkFile.getClasses()) {
             let clsPrinter = new DotClassPrinter(cls, true);
             this.printer.write(clsPrinter.dump());
-        }
-
-        this.printer.decIndent();
-        this.printer.writeLine('}');
-
-        return this.printer.toString();
-    }
-    public dumpOriginal(): string {
-        this.printer.clear();
-        this.printer.writeLine(`digraph "${this.arkFile.getName()}" {`);
-        this.printer.incIndent();
-
-        for (let ns of this.arkFile.getNamespaces()) {
-            let nsPrinter = new DotNamespacePrinter(ns, true);
-            this.printer.write(nsPrinter.dumpOriginal());
-        }
-
-        // print class
-        for (let cls of this.arkFile.getClasses()) {
-            let clsPrinter = new DotClassPrinter(cls, true);
-            this.printer.write(clsPrinter.dumpOriginal());
         }
 
         this.printer.decIndent();

@@ -84,10 +84,6 @@ export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
         return this.printer.toString();
     }
 
-    public dumpOriginal(): string {
-       return "" ;
-    }
-
     public writeGraph(): void {
         this.writeHeader();
         this.writeNodes();

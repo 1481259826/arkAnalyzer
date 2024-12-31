@@ -19,8 +19,6 @@ import { assert, describe, expect, it, vi } from 'vitest';
 import { Scene } from '../../../src/Scene';
 import path from 'path';
 import fs from 'fs';
-import { SourceFilePrinter } from '../../../src/save/source/SourceFilePrinter';
-import { ArkStream } from '../../../src/save/ArkStream';
 import { SourceDefaultClass } from '../../../src/save/source/SourceClass';
 
 let config: SceneConfig = new SceneConfig();
@@ -102,23 +100,6 @@ describe('PrinterBuilderTest', () => {
         expect(spy).toHaveBeenCalledTimes(scene.getFiles().length);
     });
 
-    it('case6: printOriginalCode', () => {
-        let arkfile = scene
-            .getFiles()
-            .find((file) => file.getName() == 'basic.ts');
-        if (arkfile == null) {
-            assert.isNotNull(arkfile);
-            return;
-        }
-        let printer = new SourceFilePrinter(arkfile);
-        let outstream = new ArkStream(
-            fs.createWriteStream('out/basic.code.ts')
-        );
-        const spy = vi.spyOn(outstream, 'write');
-        outstream.write(printer.dumpOriginal());
-        expect(spy).toHaveBeenCalled();
-        outstream.close();
-    });
     it('case7: SourceDefaultClass dumpOriginalCode', () => {
         let config: SceneConfig = new SceneConfig();
         config.buildFromProjectDir(

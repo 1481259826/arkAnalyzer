@@ -73,7 +73,4 @@ export class SourceField extends SourceBase {
         }
         return this.printer.toString();
     }
-    public dumpOriginal(): string {
-        return this.field.getCode() + '\n';
-    }
 }

@@ -97,7 +97,4 @@ export class SourceFilePrinter extends Printer {
 
         return this.printer.toString();
     }
-    public dumpOriginal(): string {
-        return this.arkFile.getCode();
-    }
 }

@@ -100,10 +100,6 @@ export class SourceClass extends SourceBase {
         return this.printer.toString();
     }
 
-    public dumpOriginal(): string {
-        return this.cls.getCode() + '\n';
-    }
-
     private dumpObject(): string {
         this.printer.write('{');
 
@@ -203,26 +199,6 @@ export class SourceDefaultClass extends SourceClass {
 
     public dump(): string {
         this.printMethods();
-        return this.printer.toString();
-    }
-
-    public dumpOriginal(): string {
-        for (let method of this.cls.getMethods()) {
-            if (method.isDefaultArkMethod()) {
-                const stmts = method.getOriginalCfg()?.getStmts();
-                if (!stmts) {
-                    continue;
-                }
-                for (let stmt of stmts) {
-                    let code = stmt.toString();
-                    if (!code.startsWith('import') && code !== 'return;') {
-                        this.printer.writeLine(code);
-                    }
-                }
-            } else if (method.getCode()) {
-                this.printer.writeLine(method.getCode()!);
-            }
-        }
         return this.printer.toString();
     }
 }
