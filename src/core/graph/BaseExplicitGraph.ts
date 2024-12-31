@@ -24,7 +24,7 @@ export interface GraphTraits {
 export abstract class BaseEdge {
     private src: BaseNode;
     private dst: BaseNode;
-    private kind: Kind;
+    protected kind: Kind;
 
     constructor(s: BaseNode, d: BaseNode, k: Kind) {
         this.src = s;
@@ -52,21 +52,21 @@ export abstract class BaseEdge {
         return this.kind;
     }
 
-    public getEndPoints(): { src: NodeID, dst: NodeID } {
+    public getEndPoints(): { src: NodeID; dst: NodeID } {
         return {
             src: this.src.getID(),
-            dst: this.dst.getID()
+            dst: this.dst.getID(),
         };
     }
 
     public getDotAttr(): string {
-        return '';
+        return 'color=black';
     }
 }
 
 export abstract class BaseNode {
     private id: NodeID;
-    private kind: Kind;
+    protected kind: Kind;
     private inEdges: Set<BaseEdge> = new Set();
     private outEdges: Set<BaseEdge> = new Set();
 
@@ -84,11 +84,11 @@ export abstract class BaseNode {
     }
 
     public hasIncomingEdges(): boolean {
-        return (this.inEdges.size !== 0);
+        return this.inEdges.size !== 0;
     }
 
     public hasOutgoingEdges(): boolean {
-        return (this.outEdges.size === 0);
+        return this.outEdges.size === 0;
     }
 
     public hasIncomingEdge(e: BaseEdge): boolean {
@@ -127,9 +127,7 @@ export abstract class BaseNode {
         return 'shape=box';
     }
 
-    public getDotLabel(): string {
-        return '';
-    }
+    public abstract getDotLabel(): string;
 }
 
 export abstract class BaseExplicitGraph implements GraphTraits {
@@ -170,7 +168,7 @@ export abstract class BaseExplicitGraph implements GraphTraits {
 
     public removeNode(id: NodeID): boolean {
         if (this.idToNodeMap.delete(id)) {
-            this.nodeNum --;
+            this.nodeNum--;
             return true;
         }
         return false;
@@ -200,7 +198,5 @@ export abstract class BaseExplicitGraph implements GraphTraits {
         return this.idToNodeMap.values();
     }
 
-    public getGraphName(): string {
-        return '';
-    }
-};
+    public abstract getGraphName(): string;
+}
