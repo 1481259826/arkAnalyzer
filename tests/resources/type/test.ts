@@ -30,7 +30,7 @@ function aliasTypeWithImport(): void {
     type NumberAType = import('./exportExample').numberA;
 
     type typeOfType = typeof import('./exportExample');
-    type MultiImportType = import('./exportExample').A.B.C;
+    type MultiQualifierType = import('./exportExample').A.B.C;
 
     function useAliasTypeInBody(): void {
         const a: NumberAType[] = [1, 2, 3];
@@ -38,9 +38,9 @@ function aliasTypeWithImport(): void {
     }
 }
 
-function aliasTypeWithTypeOf(): void {
-    type ReferTypeOf = typeof objectA;
-    type MultiReferTypeOf = typeof objectA.a.b.c;
+function aliasTypeWithTypeQuery(): void {
+    type SingleTypeQuery = typeof objectA;
+    type MultiTypeQuery = typeof objectA.a.b.c;
 }
 
 function aliasTypeWithReference(): void {
@@ -48,13 +48,8 @@ function aliasTypeWithReference(): void {
     type MultiReferType = A.B.C;
 }
 
-let a = 0;
-let b = 1;
-switch (a) {
-    case 2:
-    case 3:
-        b = 3;
+function aliasTypeWithLiteralType(): void {
+    declare type ABC = '123';
+    let a: ABC = '123';
+    type XYZ = typeof a;
 }
-
-declare type ABC = '123';
-let a: ABC = '123';

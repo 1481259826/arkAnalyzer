@@ -14,7 +14,7 @@
  */
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
+import { AbstractExpr, AliasTypeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { Local } from '../base/Local';
 import {
     AbstractFieldRef,
@@ -24,7 +24,7 @@ import {
     ArkParameterRef,
     ArkStaticFieldRef,
 } from '../base/Ref';
-import { ArkAssignStmt, Stmt } from '../base/Stmt';
+import { ArkAliasTypeDefineStmt, ArkAssignStmt, Stmt } from '../base/Stmt';
 import {
     AliasType,
     AnnotationNamespaceType,
@@ -53,19 +53,19 @@ import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { CONSTRUCTOR_NAME, SUPER_NAME } from './TSConst';
-import { findArkExport, ModelUtils } from './ModelUtils';
+import { findArkExport, findExportInfo, ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import {
     ANONYMOUS_CLASS_PREFIX,
     INSTANCE_INIT_METHOD_NAME,
-    NAME_DELIMITER,
-    NAME_PREFIX,
     UNKNOWN_FILE_NAME,
 } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { Scene } from '../../Scene';
 import { ArkFile } from '../model/ArkFile';
+import { ImportInfo } from '../model/ArkImport';
+import { LineColPosition } from '../base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -109,68 +109,19 @@ export class TypeInference {
         }
     }
 
-    private static inferAliasType(leftOpType: AliasType, method: ArkMethod): Type | null {
-        let local = method?.getBody()?.getLocals()?.get(leftOpType.getName());
-        if (local !== undefined) {
-            return local.getType();
-         }
-        let alias = method?.getBody()?.getAliasTypeMap()?.get(leftOpType.getName());
-        if (alias !== undefined) {
-            return alias[0].getOriginalType();
+    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type): Type | null {
+        if (leftOpType instanceof UnclearReferenceType) {
+            return TypeInference.inferUnclearRefType(leftOpType, declaringArkClass);
         }
-        if (method.getName().startsWith(NAME_PREFIX)) {
-            const declaringMethodName = method.getName().split(NAME_DELIMITER).at(-1);
-            if (declaringMethodName !== undefined) {
-                const declaringMethod = method.getDeclaringArkClass().getMethodWithName(declaringMethodName);
-                if (declaringMethod !== null) {
-                    return TypeInference.inferAliasType(leftOpType, declaringMethod);
-                }
-            }
+        if (leftOpType instanceof ClassType &&
+            leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+            return TypeInference.inferUnclearReferenceType(leftOpType.getClassSignature().getClassName(), declaringArkClass);
         }
-        return null;
-    }
-
-    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type): Type | null | undefined {
-        function inferSingleType(leftOpType: Type, declaringArkClass: ArkClass): Type | null | undefined {
-            if (leftOpType instanceof UnclearReferenceType) {
-                return TypeInference.inferUnclearRefType(leftOpType, declaringArkClass);
-            }
-            if (leftOpType instanceof ClassType &&
-                leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-                return TypeInference.inferUnclearReferenceType(leftOpType.getClassSignature().getClassName(), declaringArkClass);
-            }
-            if (leftOpType instanceof ArrayType) {
-                let baseType = TypeInference.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
-                if (baseType) {
-                    leftOpType.setBaseType(baseType);
-                }
-                return leftOpType;
-            }
-            if (leftOpType instanceof AliasType) {
-                const method = declaringArkClass.getMethod(leftOpType.getSignature().getDeclaringMethodSignature());
-                let originType: Type | null | undefined;
-                if (method !== null) {
-                    originType = TypeInference.inferAliasType(leftOpType, method);
-                }
-                if (originType === null || originType === undefined) {
-                    originType = TypeInference.inferUnclearedType(leftOpType.getOriginalType(), declaringArkClass);
-                }
-                if (originType !== null && originType !== undefined) {
-                    leftOpType.setOriginalType(originType);
-                }
-                return leftOpType;
-            }
-            if (leftOpType instanceof AnnotationNamespaceType) {
-                return TypeInference.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
-            }
-            return null;
-        }
-
         if (leftOpType instanceof UnionType) {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let optionType = types[i];
-                let newType = inferSingleType(optionType, declaringArkClass);
+                let newType = TypeInference.inferUnclearedType(optionType, declaringArkClass);
                 if (newType) {
                     types[i] = newType;
                 }
@@ -180,7 +131,26 @@ export class TypeInference {
             }
             return leftOpType;
         }
-        return inferSingleType(leftOpType, declaringArkClass);
+        if (leftOpType instanceof ArrayType) {
+            let baseType = TypeInference.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
+            if (baseType) {
+                leftOpType.setBaseType(baseType);
+                return leftOpType;
+            }
+            return null;
+        }
+        if (leftOpType instanceof AliasType) {
+            let originalType = TypeInference.inferUnclearedType(leftOpType.getOriginalType(), declaringArkClass);
+            if (originalType) {
+                leftOpType.setOriginalType(originalType);
+                return leftOpType;
+            }
+            return null;
+        }
+        if (leftOpType instanceof AnnotationNamespaceType) {
+            return TypeInference.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
+        }
+        return null;
     }
 
     public static inferTypeInMethod(arkMethod: ArkMethod): void {
@@ -206,6 +176,14 @@ export class TypeInference {
             logger.warn('empty body');
             return;
         }
+        body.getAliasTypeMap()?.forEach((value) => {
+            if (value[0].getOriginalType() instanceof UnclearReferenceType) {
+                const newAliasType = this.inferUnclearedType(value[0], arkClass);
+                if (newAliasType !== null && newAliasType instanceof AliasType) {
+                    value[1].getExpr().setOriginalType(newAliasType.getOriginalType());
+                }
+            }
+        });
         this.inferGenericType(arkMethod.getGenericTypes(), arkClass);
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
@@ -215,7 +193,6 @@ export class TypeInference {
                 this.resolveArkAssignStmt(stmt, arkClass);
             }
         }
-        body.getAliasTypeMap()?.forEach((value) => this.inferUnclearedType(value[0], arkClass));
     }
 
     /**
@@ -241,11 +218,17 @@ export class TypeInference {
      * such as ArkInstanceInvokeExpr ArkStaticInvokeExpr ArkNewExpr
      */
     private static resolveExprsInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
-        const exprs = stmt.getExprs();
-        for (const expr of exprs) {
+        for (const expr of stmt.getExprs()) {
             const newExpr = expr.inferType(arkMethod);
             if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
                 stmt.replaceUse(expr, newExpr);
+            }
+            if (stmt instanceof ArkAliasTypeDefineStmt && newExpr instanceof AliasTypeExpr) {
+                const alias = arkMethod.getBody()?.getAliasTypeMap()?.get(stmt.getAliasName());
+                if (alias === undefined) {
+                    return;
+                }
+                alias[0].setOriginalType(newExpr.getOriginalType());
             }
         }
     }
@@ -478,11 +461,11 @@ export class TypeInference {
 
         function buildNewType(type: Type | null): Type | null {
             if (type instanceof AliasType) {
-                const newType = buildNewType(type.getOriginalType());
-                if (newType) {
-                    type.setOriginalType(newType);
+                const newOriginalType = buildNewType(type.getOriginalType());
+                if (newOriginalType) {
+                    return new AliasType(type.getName(), newOriginalType, type.getSignature());
                 }
-                return type;
+                return new AliasType(type.getName(), type.getOriginalType(), type.getSignature());
             } else if (type instanceof ClassType) {
                 return new ClassType(type.getClassSignature(), realTypes);
             } else if (type instanceof FunctionType) {
@@ -580,8 +563,11 @@ export class TypeInference {
         if (SUPER_NAME === baseName) {
             return this.parseArkExport2Type(arkClass.getSuperClass());
         }
-        const field = arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()
-            ?.getBody()?.getLocals()?.get(baseName);
+        let field: ArkField | Local | null | undefined;
+        field = arkClass.getFieldWithName(baseName) ?? arkClass.getStaticFieldWithName(baseName);
+        if (field === null) {
+            field = arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName);
+        }
         if (field && !this.isUnclearType(field.getType())) {
             return field.getType();
         }
@@ -641,7 +627,6 @@ export class TypeInference {
         }
     }
 
-
     private static assignAnonField(property: ArkField, anonField: ArkField, scene: Scene, set: Set<string>): void {
         function deepInfer(anonType: Type, declaredSignature: ClassSignature): void {
             if (anonType instanceof ClassType && anonType.getClassSignature().getClassName().startsWith(ANONYMOUS_CLASS_PREFIX)) {
@@ -689,5 +674,43 @@ export class TypeInference {
         file.getImportInfos().forEach(importInfo => {
             importInfo.getLazyExportInfo();
         });
+    }
+
+    public static inferUnclearAliasImportType(arkClass: ArkClass, importFrom: string, isTypeOf: boolean, importQualifier: string | null): Type | null {
+        if (importQualifier === null) {
+            if (isTypeOf) {
+                // TODO: typeof import case (isTypeOf is true) is waiting to be supported
+                return null;
+            }
+            return null;
+        }
+
+        const qualifiers = importQualifier.split('.');
+        let importInfo = new ImportInfo();
+        importInfo.build(qualifiers[0], '', importFrom, new LineColPosition(0, 0), 0);
+        importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
+        let arkExport = findExportInfo(importInfo)?.getArkExport();
+        if (arkExport === null || arkExport === undefined) {
+            return null;
+        }
+
+        if (qualifiers.length === 1) {
+            return this.parseArkExport2Type(arkExport);
+        }
+        return this.getTypeWithQualifier(arkExport, qualifiers.slice(1));
+    }
+
+    private static getTypeWithQualifier(parent: ArkExport, qualifiers: string[]): Type | null {
+        if (parent instanceof ArkNamespace) {
+            const arkExport = parent.getExportInfoBy(qualifiers[0])?.getArkExport();
+            if (arkExport === undefined || arkExport === null) {
+                return null;
+            }
+            if (qualifiers.length === 1) {
+                return this.parseArkExport2Type(arkExport);
+            }
+            return this.getTypeWithQualifier(arkExport, qualifiers.slice(1));
+        }
+        return null;
     }
 }

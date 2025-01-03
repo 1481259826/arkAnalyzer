@@ -12,15 +12,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-type A = typeof import('./api/@ohos.arkui.UIContext');
-
-declare type UIContextType = import('./api/@ohos.arkui.UIContext').A;
-
-declare type UIContextType = import('./api/@ohos.arkui.UIContext').A.B;
-
-declare type UIContextType = import('./api/@ohos.arkui.UIContext').A.B.C;
-
-declare type UIContextImportType = typeof import('./api/@ohos.arkui.UIContext');
-
-declare type FunctionBType = functionA('abc').functionB;

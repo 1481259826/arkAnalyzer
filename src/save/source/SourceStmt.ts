@@ -24,6 +24,7 @@ import {
 import { Local } from '../../core/base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
 import {
+    ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
@@ -915,6 +916,9 @@ export function stmt2SourceStmt(context: StmtPrinterContext, stmt: Stmt): Source
     }
     if (stmt instanceof ArkThrowStmt) {
         return new SourceThrowStmt(context, stmt);
+    }
+    if (stmt instanceof ArkAliasTypeDefineStmt) {
+        return new SourceTypeAliasStmt(context, stmt, stmt.getAliasType());
     }
     logger.info(`stmt2SourceStmt ${stmt.constructor} not support.`);
     return new SourceCommonStmt(context, stmt);

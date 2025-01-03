@@ -1213,3 +1213,115 @@ export class ArkUnopExpr extends AbstractExpr {
         return this.operator + this.op;
     }
 }
+
+export class AliasTypeExpr extends AbstractExpr {
+    private readonly referenceName: string;
+    private readonly isTypeOf: boolean = false;
+    private originalType: Type = UnknownType.getInstance();
+
+    constructor(referenceName: string, isTypeOf: boolean = false, originalType?: Type) {
+        super();
+        this.referenceName = referenceName;
+        this.isTypeOf = isTypeOf;
+        if (originalType !== undefined) {
+            this.originalType = originalType;
+        }
+    }
+
+    public getReferenceName(): string {
+        return this.referenceName;
+    }
+
+    public getIsTypeOf(): boolean {
+        return this.isTypeOf;
+    }
+
+    public getOriginalType(): Type {
+        return this.originalType;
+    }
+
+    public setOriginalType(originalType: Type): void {
+        this.originalType = originalType;
+    }
+
+    public getUses(): Value[] {
+        return [];
+    }
+
+    public getType(): Type {
+        return this.getOriginalType();
+    }
+
+    public toString(): string {
+        if (this.getIsTypeOf()) {
+            return `typeof ${this.getReferenceName()}`;
+        }
+        return this.getReferenceName();
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        const originalType = this.getOriginalType();
+        let rightType: Type | null = null;
+        if (originalType instanceof UnknownType) {
+            rightType = TypeInference.inferUnclearReferenceType(this.getReferenceName(), arkMethod.getDeclaringArkClass());
+        } else if (originalType instanceof UnclearReferenceType) {
+            rightType = TypeInference.inferUnclearRefType(originalType, arkMethod.getDeclaringArkClass());
+        }
+        if (rightType !== null) {
+            this.setOriginalType(rightType);
+        }
+        return this;
+    }
+}
+
+export class AliasTypeImportExpr extends AliasTypeExpr {
+    private readonly importFrom: string;
+    private readonly qualifier?: string;
+
+    constructor(referenceName: string, isTypeOf: boolean, importFrom: string, qualifier?: string) {
+        super(referenceName, isTypeOf);
+        this.importFrom = importFrom;
+        if (qualifier !== undefined) {
+            this.qualifier = qualifier;
+        }
+    }
+
+    public getImportFrom(): string {
+        return this.importFrom;
+    }
+
+    public getImportQualifier(): string | null {
+        return this.qualifier ?? null;
+    }
+
+    public toString(): string {
+        const importFrom = this.getImportFrom();
+        if (importFrom === '') {
+            return '';
+        }
+        let res = `import('${importFrom}')`;
+        const importClauseName = this.getImportQualifier();
+        if (importClauseName !== null) {
+            res += `.${importClauseName}`;
+        }
+        if (this.getIsTypeOf()) {
+            res = 'typeof ' + res;
+        }
+        return res;
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        const originalType = this.getOriginalType();
+        let rightType: Type | null = null;
+        if (originalType instanceof UnknownType) {
+            rightType = TypeInference.inferUnclearAliasImportType(arkMethod.getDeclaringArkClass(),
+                this.getImportFrom(), this.getIsTypeOf(), this.getImportQualifier());
+        }
+        if (rightType !== null) {
+            this.setOriginalType(rightType);
+        }
+        return this;
+    }
+}
+
+

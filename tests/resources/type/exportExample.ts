@@ -44,4 +44,4 @@ export let objectA = {
             c: 'this is c',
         }
     }
-}
+};

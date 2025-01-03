@@ -16,36 +16,26 @@
 import { assert, describe, it } from 'vitest';
 import path from 'path';
 import {
+    AbstractExpr,
     AliasType,
     AliasTypeDeclaration,
+    ArkAliasTypeDefineStmt,
     FileSignature,
     Scene,
     SceneConfig,
     Stmt,
 } from '../../src';
 import {
-    AliasLocalType,
-    AliasOriginalType,
     AliasTypeMultiRef,
-    AliasTypeMultiRefStmts,
-    AliasTypeOf,
     AliasTypeOfBoolean,
     AliasTypeOfClassA,
-    AliasTypeOfClassAStmts,
-    AliasTypeOfClassB,
-    AliasTypeOfClassBStmts,
-    AliasTypeOfMultiImport,
-    AliasTypeOfMultiImportStmts,
-    AliasTypeOfMultiRef,
-    AliasTypeOfMultiRefStmts,
-    AliasTypeOfNumberA,
-    AliasTypeOfNumberAStmts,
-    AliasTypeOfRef,
-    AliasTypeOfRefStmts,
-    AliasTypeOfStmts,
+    AliasTypeOfClassB, AliasTypeOfLiteralType,
+    AliasTypeOfMultiQualifier,
+    AliasTypeOfMultiTypeQuery,
+    AliasTypeOfNumberA, AliasTypeOfQueryOfLiteralType,
+    AliasTypeOfSingleTypeQuery,
     AliasTypeOfString,
     AliasTypeRef,
-    AliasTypeRefStmts,
 } from '../resources/type/expectedIR';
 
 function buildScene(): Scene {
@@ -53,6 +43,7 @@ function buildScene(): Scene {
     config.buildFromProjectDir(path.join(__dirname, '../resources/type'));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
+    projectScene.inferTypes();
     return projectScene;
 }
 
@@ -73,7 +64,14 @@ function compareTypeAlias(alias: [AliasType, AliasTypeDeclaration] | undefined, 
 }
 
 function compareTypeAliasStmts(stmts: Stmt[], expectIR: any): void {
+    assert.equal(stmts.length, expectIR.length);
     for (let i = 0; i < stmts.length; i++) {
+        if (expectIR[i].instanceof !== undefined) {
+            assert.isTrue(stmts[i] instanceof expectIR[i].instanceof);
+        }
+        if (expectIR[i].typeAliasExpr !== undefined && stmts[i] instanceof ArkAliasTypeDefineStmt) {
+            compareTypeAliasExpr((stmts[i] as ArkAliasTypeDefineStmt).getAliasTypeExpr(), expectIR[i].typeAliasExpr);
+        }
         assert.equal(stmts[i].toString(), expectIR[i].toString);
         assert.equal(stmts[i].getOriginPositionInfo().getLineNo(), expectIR[i].line);
         assert.equal(stmts[i].getOriginPositionInfo().getColNo(), expectIR[i].column);
@@ -81,324 +79,304 @@ function compareTypeAliasStmts(stmts: Stmt[], expectIR: any): void {
         if (expectIR[i].operandColumns === undefined) {
             continue;
         }
-        let j = 0;
-        let opPosition = stmts[i].getOperandOriginalPosition(j);
-        while (opPosition !== null && opPosition !== undefined) {
-            const cols = [opPosition.getFirstCol(), opPosition.getLastCol()];
-            assert.equal(cols[0], expectIR[i].operandColumns[j][0]);
-            assert.equal(cols[1], expectIR[i].operandColumns[j][1]);
-            j++;
-            opPosition = stmts[i].getOperandOriginalPosition(j);
+        for (let j = 0; j < expectIR[i].operandColumns.length; j++) {
+            const expectedOpPosition = expectIR[i].operandColumns[j];
+            const opPosition = stmts[i].getOperandOriginalPosition(j);
+            assert.isNotNull(opPosition);
+            const cols = [opPosition!.getFirstCol(), opPosition!.getLastCol()];
+            assert.equal(cols[0], expectedOpPosition[0]);
+            assert.equal(cols[1], expectedOpPosition[1]);
         }
-        assert.isUndefined(expectIR[i].operandColumns[j]);
     }
-    assert.isUndefined(expectIR[stmts.length]);
 }
 
+function compareTypeAliasExpr(expr: AbstractExpr, expectedExpr: any): void {
+    if (expectedExpr.instanceof !== undefined) {
+        assert.isTrue(expr instanceof expectedExpr.instanceof);
+    }
+    assert.equal(expr.toString(), expectedExpr.toString);
+}
+
+let projectScene = buildScene();
+const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+
 describe('Simple Alias Type Test', () => {
-    let projectScene = buildScene();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
-    const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-        .getMethodWithName('simpleAliasType')?.getBody()?.getAliasTypeMap();
-    const stmts = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('simpleAliasType')?.getBody()?.getCfg().getStmts();
+    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('simpleAliasType');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
 
     it('alias type of boolean', () => {
         const alias = aliasTypeMap?.get('BooleanAliasType');
         assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfBoolean);
+        if (AliasTypeOfBoolean.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfBoolean.alias);
+        }
 
-        assert.isDefined(stmts);
-        assert.equal(stmts!.length, 2);
+        if (AliasTypeOfBoolean.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(1, 2);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfBoolean.stmts);
+        }
     });
 
     it('alias type of string', () => {
         const alias = aliasTypeMap?.get('StringAliasType');
         assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfString);
+        if (AliasTypeOfString.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfString.alias);
+        }
 
-        assert.isDefined(stmts);
-        assert.isDefined(stmts);
-        assert.equal(stmts!.length, 2);
-    });
-});
-
-describe('Alias Type With Import Test', () => {
-    let projectScene = buildScene();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
-    const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-        .getMethodWithName('aliasTypeWithImport')?.getBody()?.getAliasTypeMap();
-    const stmts = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithImport')?.getBody()?.getCfg().getStmts();
-
-    it('alias type of exported class', () => {
-        const alias = aliasTypeMap?.get('ClassAType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfClassA);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 3);
-        const relatedStmts = stmts!.slice(1, 3);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfClassAStmts);
+        if (AliasTypeOfString.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(2, 3);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfString.stmts);
+        }
     });
 
-    it('alias type of default exported class', () => {
-        const alias = aliasTypeMap?.get('ClassBType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfClassB);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 5);
-        const relatedStmts = stmts!.slice(3, 5);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfClassBStmts);
-    });
-
-    it('alias type of exported number type', () => {
-        const alias = aliasTypeMap?.get('NumberAType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfNumberA);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 7);
-        const relatedStmts = stmts!.slice(5, 7);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfNumberAStmts);
-    });
-
-    it('alias type of typeof import', () => {
-        const alias = aliasTypeMap?.get('typeOfType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOf);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 9);
-        const relatedStmts = stmts!.slice(7, 9);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfStmts);
-    });
-
-    it('alias type of multiple import path', () => {
-        const alias = aliasTypeMap?.get('MultiImportType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfMultiImport);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 13);
-        const relatedStmts = stmts!.slice(9,13);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfMultiImportStmts);
-    });
-});
-
-describe('Alias Type With TypeOf Test', () => {
-    let projectScene = buildScene();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
-    const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-        .getMethodWithName('aliasTypeWithTypeOf')?.getBody()?.getAliasTypeMap();
-    const stmts = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithTypeOf')?.getBody()?.getCfg().getStmts();
-
-    it('alias type of reference', () => {
-        const alias = aliasTypeMap?.get('ReferTypeOf');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfRef);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 2);
-        const relatedStmts = stmts!.slice(1, 2);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfRefStmts);
-    });
-
-    it('alias type of multiple reference', () => {
-        const alias = aliasTypeMap?.get('MultiReferTypeOf');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeOfMultiRef);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 5);
-        const relatedStmts = stmts!.slice(2, 5);
-        compareTypeAliasStmts(relatedStmts, AliasTypeOfMultiRefStmts);
-    });
-});
-
-describe('Alias Type With Reference Test', () => {
-    let projectScene = buildScene();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
-    const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-        .getMethodWithName('aliasTypeWithReference')?.getBody()?.getAliasTypeMap();
-    const stmts = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithReference')?.getBody()?.getCfg().getStmts();
-
-    it('alias type', () => {
-        const alias = aliasTypeMap?.get('ReferType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeRef);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 2);
-        const relatedStmts = stmts!.slice(1, 2);
-        compareTypeAliasStmts(relatedStmts, AliasTypeRefStmts);
-    });
-
-    it('alias type of multiple reference', () => {
-        const alias = aliasTypeMap?.get('MultiReferType');
-        assert.isDefined(alias);
-        compareTypeAlias(alias, AliasTypeMultiRef);
-
-        assert.isDefined(stmts);
-        assert.isTrue(stmts!.length > 4);
-        const relatedStmts = stmts!.slice(2, 4);
-        compareTypeAliasStmts(relatedStmts, AliasTypeMultiRefStmts);
-    });
-});
-
-describe('Using Alias Type in Method Test', () => {
-    let projectScene = buildScene();
-    projectScene.inferTypes();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
-
-    it('alias type in params case', () => {
+    it('alias type using in params', () => {
         const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('%useAliasTypeInParam$simpleAliasType');
         assert.isDefined(method);
         assert.isNotNull(method);
         const params = method!.getSubSignature().getParameters();
         assert.equal(params.length, 1);
-        assert.equal(params[0].getType().toString(), 'BooleanAliasType[]|StringAliasType');
+        const booleanAliasType = '@type/test.ts: %dflt.simpleAliasType()#BooleanAliasType';
+        const stringAliasType = '@type/test.ts: %dflt.simpleAliasType()#StringAliasType';
+        assert.equal(params[0].getType().toString(), `${booleanAliasType}[]|${stringAliasType}`);
     });
 
-    it('alias type in body case', () => {
+    it('type alias should not in locals', () => {
+        const locals = method?.getBody()?.getLocals();
+        assert.isDefined(locals);
+        assert.equal(locals!.size, 1);
+    });
+});
+
+describe('Alias Type With Import Test', () => {
+    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithImport');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
+
+    it('alias type of exported class', () => {
+        const alias = aliasTypeMap?.get('ClassAType');
+        assert.isDefined(alias);
+        if (AliasTypeOfClassA.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfClassA.alias);
+        }
+
+        if (AliasTypeOfClassA.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(1, 2);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfClassA.stmts);
+        }
+    });
+
+    it('alias type of default exported class', () => {
+        const alias = aliasTypeMap?.get('ClassBType');
+        assert.isDefined(alias);
+        if (AliasTypeOfClassB.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfClassB.alias);
+        }
+
+        if (AliasTypeOfClassB.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(2, 3);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfClassB.stmts);
+        }
+    });
+
+    it('alias type of exported number type', () => {
+        const alias = aliasTypeMap?.get('NumberAType');
+        assert.isDefined(alias);
+        if (AliasTypeOfNumberA.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfNumberA.alias);
+        }
+
+        if (AliasTypeOfNumberA.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(3, 4);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfNumberA.stmts);
+        }
+    });
+
+    it('alias type of multiple qualifier', () => {
+        const alias = aliasTypeMap?.get('MultiQualifierType');
+        assert.isDefined(alias);
+        if (AliasTypeOfMultiQualifier.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfMultiQualifier.alias);
+        }
+
+        if (AliasTypeOfMultiQualifier.stmts !== undefined) {
+            assert.isDefined(stmts);
+            assert.isTrue(stmts!.length > 6);
+            const relatedStmts = stmts!.slice(5, 6);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfMultiQualifier.stmts);
+        }
+    });
+
+    it('alias type using in body', () => {
         const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('%useAliasTypeInBody$aliasTypeWithImport');
         assert.isDefined(method);
         assert.isNotNull(method);
         const localA = method!.getBody()?.getLocals().get('a');
         assert.isDefined(localA);
-        assert.equal(localA!.getType().toString(), 'number[]');
+        assert.equal(localA!.getType().toString(), '@type/test.ts: %dflt.aliasTypeWithImport()#NumberAType[]');
+    });
+
+    it('type alias should not in locals', () => {
+        const locals = method?.getBody()?.getLocals();
+
+        const classAType = locals?.get('ClassAType');
+        assert.isUndefined(classAType);
+
+        const classBType = locals?.get('ClassBType');
+        assert.isUndefined(classBType);
+
+        const numberAType = locals?.get('NumberAType');
+        assert.isUndefined(numberAType);
+
+        const typeOfType = locals?.get('typeOfType');
+        assert.isUndefined(typeOfType);
+
+        const multiQualifierType = locals?.get('MultiQualifierType');
+        assert.isUndefined(multiQualifierType);
     });
 });
 
-describe('Original Type After Type Infer', () => {
-    let projectScene = buildScene();
-    projectScene.inferTypes();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+describe('Alias Type With Type Query Test', () => {
+    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithTypeQuery');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
 
-    it('simple alias type', () => {
-        const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('simpleAliasType')?.getBody()?.getAliasTypeMap();
+    it('alias type of single qualifier', () => {
+        const alias = aliasTypeMap?.get('SingleTypeQuery');
+        assert.isDefined(alias);
+        if (AliasTypeOfSingleTypeQuery.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfSingleTypeQuery.alias);
+        }
 
-        const booleanAliasType = aliasTypeMap?.get('BooleanAliasType')
-        assert.isDefined(booleanAliasType);
-        assert.equal(booleanAliasType![0].getOriginalType().toString(), AliasOriginalType.BooleanAliasType);
-
-        const stringAliasType = aliasTypeMap?.get('StringAliasType')
-        assert.isDefined(stringAliasType);
-        assert.equal(stringAliasType![0].getOriginalType().toString(), AliasOriginalType.StringAliasType);
+        if (AliasTypeOfSingleTypeQuery.stmts !== undefined) {
+            assert.isDefined(stmts);
+            assert.isTrue(stmts!.length > 2);
+            const relatedStmts = stmts!.slice(1, 2);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfSingleTypeQuery.stmts);
+        }
     });
 
-    it('alias type with import', () => {
-        const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('aliasTypeWithImport')?.getBody()?.getAliasTypeMap();
+    it('alias type of multiple qualifiers', () => {
+        const alias = aliasTypeMap?.get('MultiTypeQuery');
+        assert.isDefined(alias);
+        if (AliasTypeOfMultiTypeQuery.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfMultiTypeQuery.alias);
+        }
 
-        const classAType = aliasTypeMap?.get('ClassAType')
-        assert.isDefined(classAType);
-        assert.equal(classAType![0].getOriginalType().toString(), AliasOriginalType.ClassAType);
-
-        const classBType = aliasTypeMap?.get('ClassBType')
-        assert.isDefined(classBType);
-        assert.equal(classBType![0].getOriginalType().toString(), AliasOriginalType.ClassBType);
-
-        const numberAType = aliasTypeMap?.get('NumberAType')
-        assert.isDefined(numberAType);
-        assert.equal(numberAType![0].getOriginalType().toString(), AliasOriginalType.NumberAType);
-
-        const typeOfType = aliasTypeMap?.get('typeOfType')
-        assert.isDefined(typeOfType);
-        assert.equal(typeOfType![0].getOriginalType().toString(), AliasOriginalType.typeOfType);
-
-        const multiImportType = aliasTypeMap?.get('MultiImportType')
-        assert.isDefined(multiImportType);
-        assert.equal(multiImportType![0].getOriginalType().toString(), AliasOriginalType.MultiImportType);
+        if (AliasTypeOfMultiTypeQuery.stmts !== undefined) {
+            assert.isDefined(stmts);
+            assert.isTrue(stmts!.length > 3);
+            const relatedStmts = stmts!.slice(2, 3);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfMultiTypeQuery.stmts);
+        }
     });
 
-    it('alias type with typeof', () => {
-        const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('aliasTypeWithTypeOf')?.getBody()?.getAliasTypeMap();
+    it('type alias should not in locals', () => {
+        const locals = method?.getBody()?.getLocals();
 
-        const referTypeOf = aliasTypeMap?.get('ReferTypeOf')
-        assert.isDefined(referTypeOf);
-        assert.equal(referTypeOf![0].getOriginalType().toString(), AliasOriginalType.ReferTypeOf);
+        const singleTypeQuery = locals?.get('SingleTypeQuery');
+        assert.isUndefined(singleTypeQuery);
 
-        const multiReferTypeOf = aliasTypeMap?.get('MultiReferTypeOf')
-        assert.isDefined(multiReferTypeOf);
-        assert.equal(multiReferTypeOf![0].getOriginalType().toString(), AliasOriginalType.MultiReferTypeOf);
+        const multiTypeQuery = locals?.get('MultiTypeQuery');
+        assert.isUndefined(multiTypeQuery);
     });
 
-    it('alias type with reference', () => {
-        const aliasTypeMap = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('aliasTypeWithReference')?.getBody()?.getAliasTypeMap();
+});
 
-        const referType = aliasTypeMap?.get('ReferType')
-        assert.isDefined(referType);
-        assert.equal(referType![0].getOriginalType().toString(), AliasOriginalType.ReferType);
+describe('Alias Type With Reference Test', () => {
+    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithReference');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
 
-        const multiReferType = aliasTypeMap?.get('MultiReferType')
-        assert.isDefined(multiReferType);
-        assert.equal(multiReferType![0].getOriginalType().toString(), AliasOriginalType.MultiReferType);
+    it('alias type', () => {
+        const alias = aliasTypeMap?.get('ReferType');
+        assert.isDefined(alias);
+        if (AliasTypeRef.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeRef.alias);
+        }
+
+        if (AliasTypeRef.stmts !== undefined) {
+            assert.isDefined(stmts);
+            assert.isTrue(stmts!.length > 2);
+            const relatedStmts = stmts!.slice(1, 2);
+            compareTypeAliasStmts(relatedStmts, AliasTypeRef.stmts);
+        }
+    });
+
+    it('alias type of multiple reference', () => {
+        const alias = aliasTypeMap?.get('MultiReferType');
+        assert.isDefined(alias);
+        if (AliasTypeMultiRef.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeMultiRef.alias);
+        }
+
+        if (AliasTypeMultiRef.stmts !== undefined) {
+            assert.isDefined(stmts);
+            assert.isTrue(stmts!.length > 3);
+            const relatedStmts = stmts!.slice(2, 3);
+            compareTypeAliasStmts(relatedStmts, AliasTypeMultiRef.stmts);
+        }
+    });
+
+    it('type alias should not in locals', () => {
+        const locals = method?.getBody()?.getLocals();
+
+        const referType = locals?.get('ReferType');
+        assert.isUndefined(referType);
+
+        const multiReferType = locals?.get('MultiReferType');
+        assert.isUndefined(multiReferType);
     });
 });
 
-describe('Local Type After Type Inference', () => {
-    let projectScene = buildScene();
-    projectScene.inferTypes();
-    const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+describe('Alias Type With Literal Type Test', () => {
+    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithLiteralType');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
 
-    it('simple alias type', () => {
-        const locals = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('simpleAliasType')?.getBody()?.getLocals();
+    it('alias type of literalType', () => {
+        const alias = aliasTypeMap?.get('ABC');
+        assert.isDefined(alias);
+        if (AliasTypeOfLiteralType.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfLiteralType.alias);
+        }
+
+        if (AliasTypeOfLiteralType.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(1, 2);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfLiteralType.stmts);
+        }
+    });
+
+    it('alias type of type query of literalType', () => {
+        const alias = aliasTypeMap?.get('XYZ');
+        assert.isDefined(alias);
+        if (AliasTypeOfQueryOfLiteralType.alias !== undefined) {
+            compareTypeAlias(alias, AliasTypeOfQueryOfLiteralType.alias);
+        }
+
+        if (AliasTypeOfQueryOfLiteralType.stmts !== undefined) {
+            assert.isDefined(stmts);
+            const relatedStmts = stmts!.slice(3, 4);
+            compareTypeAliasStmts(relatedStmts, AliasTypeOfQueryOfLiteralType.stmts);
+        }
+    });
+
+    it('type alias should not in locals', () => {
+        const locals = method?.getBody()?.getLocals();
         assert.isDefined(locals);
-        assert.equal(locals!.size, 1);
-    });
+        assert.equal(locals!.size, 2);
 
-    it('alias type with import', () => {
-        const locals = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('aliasTypeWithImport')?.getBody()?.getLocals();
+        const localABC = locals?.get('ABC');
+        assert.isUndefined(localABC);
 
-        const classAType = locals?.get('ClassAType')
-        assert.isDefined(classAType);
-        assert.equal(classAType!.getType().toString(), AliasLocalType.ClassAType);
-
-        const classBType = locals?.get('ClassBType')
-        assert.isDefined(classBType);
-        assert.equal(classBType!.getType().toString(), AliasLocalType.ClassBType);
-
-        const numberAType = locals?.get('NumberAType')
-        assert.isDefined(numberAType);
-        assert.equal(numberAType!.getType().toString(), AliasLocalType.NumberAType);
-
-        const typeOfType = locals?.get('typeOfType')
-        assert.isDefined(typeOfType);
-        assert.equal(typeOfType!.getType().toString(), AliasLocalType.typeOfType);
-
-        const multiImportType = locals?.get('MultiImportType')
-        assert.isDefined(multiImportType);
-        assert.equal(multiImportType!.getType().toString(), AliasLocalType.MultiImportType);
-    });
-
-    it('alias type with typeof', () => {
-        const locals = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('aliasTypeWithTypeOf')?.getBody()?.getLocals();
-
-        const referTypeOf = locals?.get('ReferTypeOf')
-        assert.isDefined(referTypeOf);
-        assert.equal(referTypeOf!.getType().toString(), AliasLocalType.ReferTypeOf);
-
-        const multiReferTypeOf = locals?.get('MultiReferTypeOf')
-        assert.isDefined(multiReferTypeOf);
-        assert.equal(multiReferTypeOf!.getType().toString(), AliasLocalType.MultiReferTypeOf);
-    });
-
-    it('alias type with reference', () => {
-        const locals = projectScene.getFile(fileId)?.getDefaultClass()
-            .getMethodWithName('aliasTypeWithReference')?.getBody()?.getLocals();
-
-        const referType = locals?.get('ReferType')
-        assert.isDefined(referType);
-        assert.equal(referType!.getType().toString(), AliasLocalType.ReferType);
-
-        const multiReferType = locals?.get('MultiReferType')
-        assert.isDefined(multiReferType);
-        assert.equal(multiReferType!.getType().toString(), AliasLocalType.MultiReferType);
+        const localXYZ = locals?.get('XYZ');
+        assert.isUndefined(localXYZ);
     });
 });

@@ -1434,9 +1434,8 @@ export class ArkValueTransformer {
             case ts.SyntaxKind.ArrayType:
                 return new ArrayType(this.resolveTypeNode((type as ts.ArrayTypeNode).elementType), 1);
             case ts.SyntaxKind.UnionType: {
-                const cur = type as ts.UnionTypeNode;
                 const mayTypes: Type[] = [];
-                cur.types.forEach(t => mayTypes.push(this.resolveTypeNode(t)));
+                (type as ts.UnionTypeNode).types.forEach(t => mayTypes.push(this.resolveTypeNode(t)));
                 return new UnionType(mayTypes);
             }
             case ts.SyntaxKind.TupleType: {
@@ -1461,13 +1460,28 @@ export class ArkValueTransformer {
             case ts.SyntaxKind.TypeQuery:
                 return this.resolveTypeQueryNode(type as ts.TypeQueryNode);
             default:
-                ;
+                return UnknownType.getInstance();
         }
-        return UnknownType.getInstance();
     }
 
     private resolveTypeQueryNode(typeQueryNode: ts.TypeQueryNode): Type {
-        return UnknownType.getInstance();
+        const exprName = typeQueryNode.exprName.getText(this.sourceFile);
+        const aliasTypeAndPosition = this.aliasTypeMap.get(exprName);
+        if (!aliasTypeAndPosition) {
+            const genericTypes: Type[] = [];
+            if (typeQueryNode.typeArguments) {
+                for (const typeArgument of typeQueryNode.typeArguments) {
+                    genericTypes.push(this.resolveTypeNode(typeArgument));
+                }
+            }
+            const local = this.locals.get(exprName);
+            if (local !== undefined) {
+                return local.getType();
+            }
+            return new UnclearReferenceType(exprName, genericTypes);
+        } else {
+            return aliasTypeAndPosition[0];
+        }
     }
 
     private resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode): Type {
@@ -1539,16 +1553,17 @@ export class ArkValueTransformer {
         const typeReferenceFullName = typeReferenceNode.getText(this.sourceFile);
         const aliasTypeAndPosition = this.aliasTypeMap.get(typeReferenceFullName);
         if (!aliasTypeAndPosition) {
+            const typeName = typeReferenceNode.typeName.getText(this.sourceFile);
+            const local = this.locals.get(typeName);
+            if (local !== undefined) {
+                return local.getType();
+            }
             const genericTypes: Type[] = [];
             if (typeReferenceNode.typeArguments) {
                 for (const typeArgument of typeReferenceNode.typeArguments) {
                     genericTypes.push(this.resolveTypeNode(typeArgument));
                 }
             }
-
-            // TODO:handle ts.QualifiedName
-            const typeNameNode = typeReferenceNode.typeName;
-            const typeName = typeNameNode.getText(this.sourceFile);
             return new UnclearReferenceType(typeName, genericTypes);
         } else {
             return aliasTypeAndPosition[0];

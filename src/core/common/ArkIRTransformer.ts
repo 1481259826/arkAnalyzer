@@ -16,6 +16,8 @@
 import {
     AbstractExpr,
     AbstractInvokeExpr,
+    AliasTypeExpr,
+    AliasTypeImportExpr,
     ArkCastExpr,
     ArkConditionExpr,
     ArkInstanceInvokeExpr,
@@ -30,6 +32,7 @@ import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
 import {
+    ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
@@ -268,34 +271,49 @@ export class ArkIRTransformer {
     }
 
     private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {
-        const stmts: Stmt[] = [];
         const aliasName = typeAliasDeclaration.name.text;
         const rightOp = typeAliasDeclaration.type;
-        let originalType = UnknownType.getInstance();
-        if (ts.isImportTypeNode(rightOp) || ts.isTypeReferenceNode(rightOp) || ts.isTypeQueryNode(rightOp)) {
-            let {
-                value: rightValue,
-                valueOriginalPositions: positions,
-                stmts: rightStmts,
-            } = this.tsNodeToValueAndStmts(rightOp);
-            stmts.push(...rightStmts);
-            const leftValue = new Local('abc');
-            const leftPosition = FullPosition.buildFromNode(typeAliasDeclaration.name, this.sourceFile);
-            const assignStmt = new ArkAssignStmt(leftValue, rightValue);
-            assignStmt.setOperandOriginalPositions([leftPosition, ...positions]);
-            stmts.push(assignStmt);
-            originalType = rightValue.getType();
+        let rightType = this.arkValueTransformer.resolveTypeNode(rightOp);
+
+        let expr: AliasTypeExpr;
+        if (ts.isImportTypeNode(rightOp)) {
+            expr = this.resolveImportTypeNode(rightOp);
+        } else if (ts.isTypeQueryNode(rightOp)) {
+            expr = new AliasTypeExpr(rightOp.exprName.getText(this.sourceFile), true, rightType);
         } else {
-            originalType = this.arkValueTransformer.resolveTypeNode(rightOp);
+            expr = new AliasTypeExpr(rightOp.getText(this.sourceFile), false, rightType);
         }
-        const aliasType = new AliasType(aliasName, originalType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+
+        const aliasType = new AliasType(aliasName, rightType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
         const modifiers = typeAliasDeclaration.modifiers ? buildModifiers(typeAliasDeclaration) : 0;
         aliasType.setModifiers(modifiers);
         const sourceCode = typeAliasDeclaration.getText(this.sourceFile);
         const aliasTypePosition = LineColPosition.buildFromNode(typeAliasDeclaration, this.sourceFile);
-        const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition)
-        this.arkValueTransformer.getAliasTypeMap().set(aliasName, [aliasType, aliasTypeDeclaration]);
-        return stmts;
+        const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition, expr);
+        this.getAliasTypeMap().set(aliasName, [aliasType, aliasTypeDeclaration]);
+
+        const aliasTypeDefineStmt = new ArkAliasTypeDefineStmt(aliasType, expr);
+        const leftPosition = FullPosition.buildFromNode(typeAliasDeclaration.name, this.sourceFile);
+        const rightPosition = FullPosition.buildFromNode(rightOp, this.sourceFile);
+        const operandOriginalPositions = [leftPosition, rightPosition];
+        aliasTypeDefineStmt.setOperandOriginalPositions(operandOriginalPositions);
+
+        return [aliasTypeDefineStmt];
+    }
+
+    private resolveImportTypeNode(importTypeNode: ts.ImportTypeNode): AliasTypeImportExpr {
+        let importFrom = '';
+        if (ts.isLiteralTypeNode(importTypeNode.argument)) {
+            if (ts.isStringLiteral(importTypeNode.argument.literal)) {
+                importFrom = importTypeNode.argument.literal.text;
+            }
+        }
+
+        const importQualifier = importTypeNode.qualifier;
+        if (importQualifier !== undefined) {
+            return new AliasTypeImportExpr(importTypeNode.getText(), importTypeNode.isTypeOf, importFrom, importQualifier.getText(this.sourceFile));
+        }
+        return new AliasTypeImportExpr(importTypeNode.getText(), importTypeNode.isTypeOf, importFrom);
     }
 
     public switchStatementToValueAndStmts(switchStatement: ts.SwitchStatement): ValueAndStmts[] {

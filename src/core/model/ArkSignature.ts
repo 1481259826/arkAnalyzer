@@ -355,7 +355,7 @@ export class LocalSignature {
         return this.name;
     }
 
-    public getDeclaringMethodSignature() {
+    public getDeclaringMethodSignature(): MethodSignature {
         return this.declaringMethodSignature;
     }
 

@@ -29,6 +29,7 @@ import {
     VOID_KEYWORD,
 } from '../common/TSConst';
 import { Local } from './Local';
+import { AliasTypeExpr } from './Expr';
 
 /**
  * @category core/base/type
@@ -559,12 +560,14 @@ export class GenericType extends Type {
 }
 
 export class AliasTypeDeclaration {
-    private sourceCode: string;
-    private position: LineColPosition;
+    private readonly sourceCode: string;
+    private readonly position: LineColPosition;
+    private readonly expr: AliasTypeExpr;
 
-    constructor(sourceCode: string, position: LineColPosition) {
+    constructor(sourceCode: string, position: LineColPosition, expr: AliasTypeExpr) {
         this.sourceCode = sourceCode;
         this.position = position;
+        this.expr = expr;
     }
 
     public getSourceCode(): string {
@@ -573,6 +576,10 @@ export class AliasTypeDeclaration {
 
     public getPosition(): LineColPosition {
         return this.position;
+    }
+
+    public getExpr(): AliasTypeExpr {
+        return this.expr;
     }
 }
 
@@ -651,4 +658,3 @@ export class LexicalEnvType extends Type {
         return `[${this.getClosures().join(', ')}]`;
     }
 }
-
