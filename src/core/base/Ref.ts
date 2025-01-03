@@ -36,6 +36,7 @@ import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
 import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
 import { THIS_NAME } from '../common/TSConst';
+import { Stmt } from './Stmt';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
@@ -350,6 +351,10 @@ export class ArkParameterRef extends AbstractRef {
         return this.index;
     }
 
+    public setIndex(index: number): void {
+        this.index = index;
+    }
+
     public getType(): Type {
         return this.paramType;
     }
@@ -434,5 +439,83 @@ export class ArkCaughtExceptionRef extends AbstractRef {
 
     public toString(): string {
         return 'caughtexception: ' + this.type;
+    }
+}
+
+export class GlobalRef extends AbstractRef {
+    private name: string;
+    private ref: Value | null;
+    private usedStmts: Stmt[];
+
+    constructor(name: string, ref?: Value) {
+        super();
+        this.name = name;
+        this.ref = ref ?? null;
+        this.usedStmts = [];
+    }
+
+    public getName(): string {
+        return this.name;
+    }
+
+    public getUses(): Value[] {
+        return this.ref?.getUses() || [];
+    }
+
+    public getType(): Type {
+        return this.ref?.getType() || UnknownType.getInstance();
+    }
+
+    public getRef(): Value | null {
+        return this.ref || null;
+    }
+
+    public setRef(value: Value): void {
+        this.ref = value;
+    }
+
+    public getUsedStmts(): Stmt[] {
+        return this.usedStmts;
+    }
+
+    public addUsedStmts(usedStmts: Stmt | Stmt[]): void {
+        if (usedStmts instanceof Stmt) {
+            this.usedStmts.push(usedStmts);
+        } else {
+            this.usedStmts.push(...usedStmts);
+        }
+    }
+
+    public toString(): string {
+        return this.getName();
+    }
+}
+
+export class ClosureFieldRef extends AbstractRef {
+    private base: Local;
+    private fieldName: string;
+    private type: Type;
+
+    constructor(base: Local, fieldName: string, type: Type) {
+        super();
+        this.base = base;
+        this.fieldName = fieldName;
+        this.type = type;
+    }
+
+    public getUses(): Value[] {
+        return [];
+    }
+
+    public getType(): Type {
+        return this.type;
+    }
+
+    public getFieldName(): string {
+        return this.fieldName;
+    }
+
+    public toString(): string {
+        return this.base.toString() + '.' + this.getFieldName();
     }
 }

@@ -20,6 +20,8 @@ import { ArkError, ArkErrorCode } from '../common/ArkError';
 import { ArkMethod } from '../model/ArkMethod';
 import { BasicBlock } from './BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { ArkStaticInvokeExpr } from '../base/Expr';
+import { Value } from '../base/Value';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
 
 /**
@@ -150,18 +152,28 @@ export class Cfg {
         return 'cfg';
     }
 
-    public buildDefUseStmt() {
+    public buildDefUseStmt(locals: Set<Local>): void {
         for (const block of this.blocks) {
             for (const stmt of block.getStmts()) {
                 const defValue = stmt.getDef();
-                if (defValue && defValue instanceof Local) {
+                if (defValue && defValue instanceof Local && defValue.getDeclaringStmt() === null) {
                     defValue.setDeclaringStmt(stmt);
                 }
                 for (const value of stmt.getUses()) {
-                    if (value instanceof Local) {
-                        const local = value as Local;
-                        local.addUsedStmt(stmt)
-                    }
+                    this.buildUseStmt(value, locals, stmt);
+                }
+            }
+        }
+    }
+
+    private buildUseStmt(value: Value, locals: Set<Local>, stmt: Stmt): void {
+        if (value instanceof Local) {
+            value.addUsedStmt(stmt);
+        } else if (value instanceof ArkStaticInvokeExpr) {
+            for (let local of locals) {
+                if (local.getName() === value.getMethodSignature().getMethodSubSignature().getMethodName()) {
+                    local.addUsedStmt(stmt);
+                    return;
                 }
             }
         }

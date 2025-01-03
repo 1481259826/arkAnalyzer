@@ -28,6 +28,7 @@ import {
     UNKNOWN_KEYWORD,
     VOID_KEYWORD,
 } from '../common/TSConst';
+import { Local } from './Local';
 
 /**
  * @category core/base/type
@@ -317,6 +318,27 @@ export class FunctionType extends Type {
 }
 
 /**
+ * types for closures which is a special FunctionType with a lexical env
+ * @category core/base/type
+ */
+export class ClosureType extends FunctionType {
+    private lexicalEnv: LexicalEnvType;
+
+    constructor(lexicalEnv: LexicalEnvType, methodSignature: MethodSignature, realGenericTypes?: Type[]) {
+        super(methodSignature, realGenericTypes);
+        this.lexicalEnv = lexicalEnv;
+    }
+
+    public getLexicalEnv(): LexicalEnvType {
+        return this.lexicalEnv;
+    }
+
+    public getTypeString(): string {
+        return 'closures: ' + super.getTypeString();
+    }
+}
+
+/**
  * type of an object
  * @category core/base/type
  */
@@ -600,6 +622,33 @@ export class AnnotationNamespaceType extends AnnotationType {
 export class AnnotationTypeQueryType extends AnnotationType {
     constructor(originType: string) {
         super(originType);
+    }
+}
+
+export class LexicalEnvType extends Type {
+    private nestedMethodSignature: MethodSignature;
+    private closures: Local[] = [];
+
+    constructor(nestedMethod: MethodSignature, closures?: Local[]) {
+        super();
+        this.nestedMethodSignature = nestedMethod;
+        this.closures = closures ?? this.closures;
+    }
+
+    public getNestedMethod(): MethodSignature {
+        return this.nestedMethodSignature;
+    }
+
+    public getClosures(): Local[] {
+        return this.closures;
+    }
+
+    public addClosure(closure: Local): void {
+        this.closures.push(closure);
+    }
+
+    public getTypeString(): string {
+        return `[${this.getClosures().join(', ')}]`;
     }
 }
 

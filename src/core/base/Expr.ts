@@ -555,6 +555,16 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
         // TODO: handle type inference
         return this;
     }
+
+    public getUses(): Value[] {
+        let uses: Value[] = [];
+        uses.push(this.getFuncPtrLocal());
+        uses.push(...this.getArgs());
+        for (const arg of this.getArgs()) {
+            uses.push(...arg.getUses());
+        }
+        return uses;
+    }
 }
 
 export class ArkNewExpr extends AbstractExpr {

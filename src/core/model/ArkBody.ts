@@ -17,9 +17,11 @@ import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
 import { AliasType, AliasTypeDeclaration } from '../base/Type';
 import { Trap } from '../base/Trap';
+import { Value } from '../base/Value';
 
 export class ArkBody {
     private locals: Map<string, Local>;
+    private usedGlobals?: Map<string, Value>;
     private cfg: Cfg;
     private aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>;
     private traps?: Trap[];
@@ -42,6 +44,18 @@ export class ArkBody {
             this.locals = new Map<string, Local>();
         }
         locals.forEach(local => this.locals.set(local.getName(), local));
+    }
+
+    public addLocal(name: string, local: Local): void {
+        this.locals.set(name, local);
+    }
+
+    public getUsedGlobals(): Map<string, Value> | undefined {
+        return this.usedGlobals;
+    }
+
+    public setUsedGlobals(globals: Map<string, Value>): void {
+        this.usedGlobals = globals;
     }
 
     public getCfg(): Cfg {

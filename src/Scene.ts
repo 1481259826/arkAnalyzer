@@ -208,6 +208,7 @@ export class Scene {
             for (const cls of file.getClasses()) {
                 for (const method of cls.getMethods(true)) {
                     method.buildBody();
+                    method.freeBodyBuilder();
                 }
             }
         }
@@ -215,6 +216,7 @@ export class Scene {
             for (const cls of namespace.getClasses()) {
                 for (const method of cls.getMethods(true)) {
                     method.buildBody();
+                    method.freeBodyBuilder();
                 }
             }
         }
@@ -241,7 +243,10 @@ export class Scene {
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this);
             buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
-            ModelUtils.getAllClassesInFile(arkFile).forEach(cls => cls.getDefaultArkMethod()?.buildBody());
+            ModelUtils.getAllClassesInFile(arkFile).forEach(cls => {
+                cls.getDefaultArkMethod()?.buildBody();
+                cls.getDefaultArkMethod()?.freeBodyBuilder();
+            });
             const fileSig = arkFile.getFileSignature().toMapKey();
             this.sdkArkFilesMap.set(fileSig, arkFile);
             ModelUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);

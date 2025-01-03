@@ -81,8 +81,10 @@ export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd:
 }
 
 export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
-
     mtd.setDeclaringArkClass(declaringClass);
+    if (declaringMethod !== undefined) {
+        mtd.setOuterMethod(declaringMethod);
+    }
 
     if (ts.isFunctionDeclaration(methodNode)) {
         mtd.setAsteriskToken(methodNode.asteriskToken !== undefined);
@@ -447,7 +449,7 @@ export function buildInitMethod(initMethod: ArkMethod, fieldInitializerStmts: St
         stmt.setCfg(cfg);
     }
     cfg.setStartingStmt(assignStmt);
-    cfg.buildDefUseStmt();
+    cfg.buildDefUseStmt(locals);
     cfg.setDeclaringMethod(initMethod);
     initMethod.setBody(new ArkBody(locals, cfg));
 }
@@ -480,7 +482,8 @@ export function isMethodImplementation(node: MethodLikeNode): boolean {
         ts.isConstructorDeclaration(node) ||
         ts.isGetAccessorDeclaration(node) ||
         ts.isSetAccessorDeclaration(node) ||
-        ts.isFunctionExpression(node)) {
+        ts.isFunctionExpression(node) ||
+        ts.isArrowFunction(node)) {
         if (node.body !== undefined) {
             return true;
         }

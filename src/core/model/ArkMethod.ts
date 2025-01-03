@@ -40,6 +40,8 @@ export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionD
 export class ArkMethod extends ArkBaseModel implements ArkExport {
     private code?: string;
     private declaringArkClass!: ArkClass;
+    // used for the nested function to locate its outer function
+    private outerMethod?: ArkMethod;
 
     private genericTypes?: GenericType[];
 
@@ -431,6 +433,21 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return undefined;
     }
 
+    public getParameterRefs(): ArkParameterRef[] | null {
+        let paramRefs: ArkParameterRef[] = [];
+        const blocks = this.getBody()?.getCfg().getBlocks();
+        if (blocks === undefined) {
+            return null;
+        }
+        const stmts = Array.from(blocks)[0].getStmts();
+        for (let stmt of stmts) {
+            if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef) {
+                paramRefs.push((stmt as ArkAssignStmt).getRightOp() as ArkParameterRef);
+            }
+        }
+        return paramRefs;
+    }
+
     public getParameterInstances(): Value[] {
         // 获取方法体中参数Local实例
         let stmts: Stmt[] = [];
@@ -508,15 +525,20 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         }
     }
 
+    public freeBodyBuilder(): void {
+        this.bodyBuilder = undefined;
+    }
+
     public buildBody() {
         if (this.bodyBuilder) {
             const arkBody: ArkBody | null = this.bodyBuilder.build();
             if (arkBody) {
                 this.setBody(arkBody);
                 arkBody.getCfg().setDeclaringMethod(this);
-
+                if (this.getOuterMethod() === undefined) {
+                    this.bodyBuilder.handleGlobalAndClosure();
+                }
             }
-            this.bodyBuilder = undefined;
         }
     }
 
@@ -616,6 +638,14 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             }
             return true;
         }) ?? signatures?.[0] ?? this.getSignature();
+    }
+
+    public getOuterMethod(): ArkMethod | undefined {
+        return this.outerMethod;
+    }
+
+    public setOuterMethod(method: ArkMethod): void {
+        this.outerMethod = method;
     }
 
 }

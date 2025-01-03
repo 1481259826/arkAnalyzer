@@ -64,7 +64,7 @@ for (let pet of pets) {
 for (let pet of pets) {
   console.info(pet);
 }
-i = 0;
+let i: number = 0;
 do {
   if (i == 0) {
     continue;

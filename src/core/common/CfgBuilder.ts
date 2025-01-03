@@ -38,6 +38,7 @@ import { Trap } from '../base/Trap';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCaughtExceptionRef } from '../base/Ref';
 import { FullPosition } from '../base/Position';
+import { GlobalRef } from '../base/Ref';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CfgBuilder');
 
@@ -248,6 +249,10 @@ export class CfgBuilder {
         this.catches = [];
         this.sourceFile = sourceFile;
         this.arrowFunctionWithoutBlock = true;
+    }
+
+    public getDeclaringMethod(): ArkMethod {
+        return this.declaringMethod;
     }
 
     judgeLastType(s: StatementBuilder, lastStatement: StatementBuilder): void {
@@ -1076,7 +1081,11 @@ export class CfgBuilder {
     }
 
     public buildCfgAndOriginalCfg(): {
-        cfg: Cfg, locals: Set<Local>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>, traps: Trap[],
+        cfg: Cfg,
+        locals: Set<Local>,
+        globals: Map<string, GlobalRef> | null,
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>,
+        traps: Trap[],
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgAndOriginalCfgForSimpleArrowFunction();
@@ -1086,7 +1095,11 @@ export class CfgBuilder {
     }
 
     public buildCfgAndOriginalCfgForSimpleArrowFunction(): {
-        cfg: Cfg, locals: Set<Local>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>, traps: Trap[],
+        cfg: Cfg,
+        locals: Set<Local>,
+        globals: Map<string, GlobalRef> | null,
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>,
+        traps: Trap[],
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1124,13 +1137,18 @@ export class CfgBuilder {
         return {
             cfg: cfg,
             locals: arkIRTransformer.getLocals(),
+            globals: arkIRTransformer.getGlobals(),
             aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
             traps: [],
         };
     }
 
     public buildNormalCfgAndOriginalCfg(): {
-        cfg: Cfg, locals: Set<Local>, aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>, traps: Trap[],
+        cfg: Cfg,
+        locals: Set<Local>,
+        globals: Map<string, GlobalRef> | null,
+        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>,
+        traps: Trap[],
     } {
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();
         const basicBlockSet = new Set<BasicBlock>();
@@ -1202,6 +1220,7 @@ export class CfgBuilder {
         return {
             cfg: cfg,
             locals: arkIRTransformer.getLocals(),
+            globals: arkIRTransformer.getGlobals(),
             aliasTypeMap: arkIRTransformer.getAliasTypeMap(),
             traps: traps,
         };
