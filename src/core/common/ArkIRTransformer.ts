@@ -43,7 +43,8 @@ import {
     ArkInstanceFieldRef,
     ArkParameterRef,
     ArkStaticFieldRef,
-    ArkThisRef, GlobalRef,
+    ArkThisRef,
+    GlobalRef,
 } from '../base/Ref';
 import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
@@ -237,6 +238,8 @@ export class ArkIRTransformer {
             stmts = this.functionDeclarationToStmts(node);
         } else if (ts.isExportAssignment(node)) {
             stmts = this.expressionInExportToStmts(node.expression);
+        } else if (ts.isClassDeclaration(node)) {
+            this.buildArkClass(node)
         }
 
         this.mapStmtsToTsStmt(stmts, node);
@@ -337,7 +340,7 @@ export class ArkIRTransformer {
         const sourceCode = typeAliasDeclaration.getText(this.sourceFile);
         const aliasTypePosition = LineColPosition.buildFromNode(typeAliasDeclaration, this.sourceFile);
         const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition)
-            this.aliasTypeMap.set(aliasName, [aliasType, aliasTypeDeclaration]);
+        this.aliasTypeMap.set(aliasName, [aliasType, aliasTypeDeclaration]);
         return [];
     }
 
@@ -935,23 +938,28 @@ export class ArkIRTransformer {
     }
 
     private classExpressionToValueAndStmts(classExpression: ts.ClassExpression): ValueAndStmts {
-        const declaringArkClass = this.declaringMethod.getDeclaringArkClass();
-        const declaringArkNamespace = declaringArkClass.getDeclaringArkNamespace();
-        const newClass = new ArkClass();
-        if (declaringArkNamespace) {
-            buildNormalArkClassFromArkNamespace(classExpression, declaringArkNamespace, newClass, this.sourceFile, this.declaringMethod);
-            declaringArkNamespace.addArkClass(newClass);
-        } else {
-            const declaringArkFile = declaringArkClass.getDeclaringArkFile();
-            buildNormalArkClassFromArkFile(classExpression, declaringArkFile, newClass, this.sourceFile, this.declaringMethod);
-            declaringArkFile.addArkClass(newClass);
-        }
+        const newClass = this.buildArkClass(classExpression);
         const classValue = this.addNewLocal(newClass.getName(), new ClassType(newClass.getSignature()));
         return {
             value: classValue,
             valueOriginalPositions: [FullPosition.buildFromNode(classExpression, this.sourceFile)],
             stmts: [],
         };
+    }
+
+    private buildArkClass(classNode: ts.ClassExpression | ts.ClassDeclaration) {
+        const declaringArkClass = this.declaringMethod.getDeclaringArkClass();
+        const declaringArkNamespace = declaringArkClass.getDeclaringArkNamespace();
+        const newClass = new ArkClass();
+        if (declaringArkNamespace) {
+            buildNormalArkClassFromArkNamespace(classNode, declaringArkNamespace, newClass, this.sourceFile, this.declaringMethod);
+            declaringArkNamespace.addArkClass(newClass);
+        } else {
+            const declaringArkFile = declaringArkClass.getDeclaringArkFile();
+            buildNormalArkClassFromArkFile(classNode, declaringArkFile, newClass, this.sourceFile, this.declaringMethod);
+            declaringArkFile.addArkClass(newClass);
+        }
+        return newClass;
     }
 
     private templateExpressionToValueAndStmts(templateExpression: ts.TemplateExpression): ValueAndStmts {

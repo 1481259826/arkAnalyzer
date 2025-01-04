@@ -20,7 +20,12 @@ import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import ts from 'ohos-typescript';
 import { ArkClass, ClassCategory } from '../ArkClass';
-import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod, checkAndUpdateMethod } from './ArkMethodBuilder';
+import {
+    buildArkMethodFromArkClass,
+    buildDefaultArkMethodFromArkClass,
+    buildInitMethod,
+    checkAndUpdateMethod
+} from './ArkMethodBuilder';
 import { buildDecorators, buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
@@ -273,12 +278,8 @@ function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass
     }
 
     if (clsNode.heritageClauses) {
-        for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-            if (value === 'ExtendsKeyword') {
-                cls.setSuperClassName(key);
-            } else {
-                cls.addImplementedInterfaceName(key);
-            }
+        for (let key of buildHeritageClauses(clsNode.heritageClauses).keys()) {
+            cls.addImplementedInterfaceName(key);
         }
     }
 

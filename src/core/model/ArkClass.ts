@@ -50,7 +50,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private classSignature!: ClassSignature;
 
     private superClassName: string = '';
-    private superClass?: ArkClass | null;
+    private heritageClasses?: Map<string, ArkClass | null>;
     private implementedInterfaceNames: string[] = [];
     private genericsTypes?: GenericType[];
     private realTypes?: Type[];
@@ -191,26 +191,27 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      * @returns The superclass of this class.
      */
     public getSuperClass(): ArkClass | null {
-        if (this.superClass === undefined) {
-            const type = TypeInference.inferUnclearReferenceType(this.superClassName, this);
-            let superClass;
+        return this.getHeritageClass(this.superClassName);
+    }
+
+    private getHeritageClass(heritageClassName: string): ArkClass | null {
+        if (!this.heritageClasses) {
+            this.heritageClasses = new Map<string, ArkClass | null>();
+        }
+        let superClass = this.heritageClasses.get(heritageClassName);
+        if (superClass === undefined) {
+            const type = TypeInference.inferUnclearReferenceType(heritageClassName, this);
             if (type instanceof ClassType &&
                 (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
                 superClass.addExtendedClass(this);
-                this.superClass = superClass;
                 const realGenericTypes = type.getRealGenericTypes();
                 if (realGenericTypes) {
                     this.realTypes = realGenericTypes;
                 }
-                return this.superClass;
             }
-            this.superClass = null;
+            this.heritageClasses.set(heritageClassName, superClass || null);
         }
-        return this.superClass;
-    }
-
-    public setSuperClass(superClass: ArkClass) {
-        this.superClass = superClass;
+        return superClass || null;
     }
 
     public getExtendedClasses(): Map<string, ArkClass> {
@@ -231,6 +232,10 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     public hasImplementedInterface(interfaceName: string) {
         return (this.implementedInterfaceNames.indexOf(interfaceName) > -1);
+    }
+
+    public getImplementedInterface(interfaceName: string): ArkClass | null {
+        return this.getHeritageClass(interfaceName);
     }
 
     /**

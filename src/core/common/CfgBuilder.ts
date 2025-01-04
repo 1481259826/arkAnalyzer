@@ -36,9 +36,8 @@ import { IRUtils } from './IRUtils';
 import { AliasType, AliasTypeDeclaration, UnknownType } from '../base/Type';
 import { Trap } from '../base/Trap';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { ArkCaughtExceptionRef } from '../base/Ref';
+import { ArkCaughtExceptionRef, GlobalRef } from '../base/Ref';
 import { FullPosition } from '../base/Position';
-import { GlobalRef } from '../base/Ref';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CfgBuilder');
 
@@ -540,6 +539,10 @@ export class CfgBuilder {
                 lastStatement = s;
             } else if (!this.declaringMethod.isDefaultArkMethod() && ts.isFunctionDeclaration(c)) {
                 let s = new StatementBuilder('functionDeclarationStatement', c.getText(this.sourceFile), c, scope.id);
+                this.judgeLastType(s, lastStatement);
+                lastStatement = s;
+            } else if (!this.declaringMethod.isDefaultArkMethod() && ts.isClassDeclaration(c)) {
+                let s = new StatementBuilder('classDeclarationStatement', c.getText(this.sourceFile), c, scope.id);
                 this.judgeLastType(s, lastStatement);
                 lastStatement = s;
             } else if (ts.isReturnStatement(c)) {
