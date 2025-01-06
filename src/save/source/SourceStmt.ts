@@ -29,7 +29,6 @@ import {
     ArkInvokeStmt,
     ArkReturnStmt,
     ArkReturnVoidStmt,
-    ArkSwitchStmt,
     ArkThrowStmt,
     Stmt,
 } from '../../core/base/Stmt';
@@ -41,10 +40,7 @@ import { ArkCodeBuffer } from '../ArkStream';
 import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
-import {
-    CLASS_CATEGORY_COMPONENT,
-    SourceUtils,
-} from './SourceUtils';
+import { CLASS_CATEGORY_COMPONENT, SourceUtils } from './SourceUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
 import { ClassCategory } from '../../core/model/ArkClass';
 import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
@@ -766,48 +762,6 @@ export class SourceReturnVoidStmt extends SourceStmt {
         } else {
             this.setText('return;');
         }
-    }
-}
-
-export class SourceSwitchStmt extends SourceStmt {
-    constructor(context: StmtPrinterContext, original: ArkSwitchStmt) {
-        super(context, original);
-    }
-
-    public transfer2ts(): void {
-        this.setText(`switch (${this.transformer.valueToString((this.original as ArkSwitchStmt).getKey())}) {`);
-    }
-
-    protected afterDump(): void {
-        this.printer.incIndent();
-    }
-}
-
-export class SourceCaseStmt extends SourceStmt {
-    caseIndex: number;
-
-    constructor(context: StmtPrinterContext, original: ArkSwitchStmt, index: number) {
-        super(context, original);
-        this.caseIndex = index;
-    }
-
-    public isDefault(): boolean {
-        let cases = (this.original as ArkSwitchStmt).getCases();
-        return this.caseIndex >= cases.length;
-    }
-
-    public transfer2ts(): void {
-        let cases = (this.original as ArkSwitchStmt).getCases();
-        if (this.caseIndex < cases.length) {
-            let value = (this.original as ArkSwitchStmt).getCases()[this.caseIndex];
-            this.setText(`case ${this.transformer.valueToString(value)}:`);
-        } else {
-            this.setText('default: ');
-        }
-    }
-
-    protected afterDump(): void {
-        this.printer.incIndent();
     }
 }
 

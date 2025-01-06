@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkSwitchStmt, Stmt } from '../base/Stmt';
+import { ArkIfStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../base/Stmt';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
@@ -243,8 +243,7 @@ export class BasicBlock {
             if (
                 stmt instanceof ArkIfStmt ||
                 stmt instanceof ArkReturnStmt ||
-                stmt instanceof ArkReturnVoidStmt ||
-                stmt instanceof ArkSwitchStmt
+                stmt instanceof ArkReturnVoidStmt
             ) {
                 branchStmts.push(stmt);
             }
