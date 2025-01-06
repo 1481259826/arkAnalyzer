@@ -501,7 +501,6 @@ export class ArkValueTransformer {
     }
 
     private identifierToValueAndStmts(identifier: ts.Identifier, variableDefFlag: boolean = false): ValueAndStmts {
-        // TODO: handle global variable
         let identifierValue: Value;
         let identifierPositions = [FullPosition.buildFromNode(identifier, this.sourceFile)];
         if (identifier.text === UndefinedType.getInstance().getName()) {
@@ -849,6 +848,7 @@ export class ArkValueTransformer {
         return { value: newArrayLocal, valueOriginalPositions: newArrayPositions, stmts: stmts };
     }
 
+
     private prefixUnaryExpressionToValueAndStmts(prefixUnaryExpression: ts.PrefixUnaryExpression): ValueAndStmts {
         const stmts: Stmt[] = [];
         let {
@@ -1015,112 +1015,158 @@ export class ArkValueTransformer {
 
     public variableDeclarationListToValueAndStmts(variableDeclarationList: ts.VariableDeclarationList): ValueAndStmts {
         const stmts: Stmt[] = [];
+        const isConst = (variableDeclarationList.flags & ts.NodeFlags.Const) !== 0;
         for (const declaration of variableDeclarationList.declarations) {
-            const {
-                stmts: declaredStmts,
-            } = this.variableDeclarationToValueAndStmts(declaration, variableDeclarationList.flags);
+            const { stmts: declaredStmts } = this.variableDeclarationToValueAndStmts(declaration, isConst);
             stmts.push(...declaredStmts);
         }
         return { value: ValueUtil.getUndefinedConst(), valueOriginalPositions: [FullPosition.DEFAULT], stmts: stmts };
     }
 
-    private variableDeclarationToValueAndStmts(variableDeclaration: ts.VariableDeclaration,
-                                               nodeFlag: ts.NodeFlags): ValueAndStmts {
+    public variableDeclarationToValueAndStmts(variableDeclaration: ts.VariableDeclaration,
+                                              isConst: boolean, needRightOp: boolean = true): ValueAndStmts {
         const leftOpNode = variableDeclaration.name;
-        let rightOpNode: ts.Node | null = null;
-        if (variableDeclaration.initializer) {
-            rightOpNode = variableDeclaration.initializer;
-        }
+        const rightOpNode = variableDeclaration.initializer;
+        const declarationType = variableDeclaration.type ? this.resolveTypeNode(
+            variableDeclaration.type) : UnknownType.getInstance();
+        return this.assignmentToValueAndStmts(leftOpNode, rightOpNode, true, isConst, declarationType, needRightOp);
+    }
 
-        const stmts: Stmt[] = [];
+    private assignmentToValueAndStmts(leftOpNode: ts.Node, rightOpNode: ts.Node | undefined, variableDefFlag: boolean,
+                                      isConst: boolean, declarationType: Type,
+                                      needRightOp: boolean = true): ValueAndStmts {
         let leftValueAndStmts: ValueAndStmts;
         if (ts.isIdentifier(leftOpNode)) {
-            leftValueAndStmts = this.identifierToValueAndStmts(leftOpNode, true);
+            leftValueAndStmts = this.identifierToValueAndStmts(leftOpNode, variableDefFlag);
+        } else if (ts.isArrayBindingPattern(leftOpNode) || ts.isArrayLiteralExpression(leftOpNode)) {
+            leftValueAndStmts = this.arrayDestructuringToValueAndStmts(leftOpNode, isConst);
+        } else if (ts.isObjectBindingPattern(leftOpNode) || ts.isObjectLiteralExpression(leftOpNode)) {
+            leftValueAndStmts = this.objectDestructuringToValueAndStmts(leftOpNode, isConst);
         } else {
             leftValueAndStmts = this.tsNodeToValueAndStmts(leftOpNode);
         }
-        let leftValue = leftValueAndStmts.value;
-        let leftPositions = leftValueAndStmts.valueOriginalPositions;
-        let leftStmts = leftValueAndStmts.stmts;
-        stmts.push(...leftStmts);
+        const { value: leftValue, valueOriginalPositions: leftPositions, stmts: leftStmts } = leftValueAndStmts;
+
+        let stmts: Stmt[] = [];
+        if (needRightOp) {
+            const {
+                value: rightValue, valueOriginalPositions: rightPositions, stmts: rightStmts,
+            } = this.assignmentRightOpToValueAndStmts(rightOpNode, leftValue);
+            if (leftValue instanceof Local) {
+                if (variableDefFlag) {
+                    leftValue.setConstFlag(isConst);
+                    leftValue.setType(declarationType);
+                }
+                if (leftValue.getType() instanceof UnknownType && !(rightValue.getType() instanceof UnknownType) &&
+                    !(rightValue.getType() instanceof UndefinedType)) {
+                    leftValue.setType(rightValue.getType());
+                }
+            }
+            const assignStmt = new ArkAssignStmt(leftValue, rightValue);
+            assignStmt.setOperandOriginalPositions([...leftPositions, ...rightPositions]);
+            if (ts.isArrayBindingPattern(leftOpNode) || ts.isArrayLiteralExpression(leftOpNode) ||
+                ts.isObjectBindingPattern(leftOpNode) || ts.isObjectLiteralExpression(leftOpNode)) {
+                stmts.push(...rightStmts, assignStmt, ...leftStmts);
+            } else {
+                stmts.push(...rightStmts, ...leftStmts, assignStmt);
+            }
+        } else {
+            stmts = leftStmts;
+        }
+        return { value: leftValue, valueOriginalPositions: leftPositions, stmts: stmts };
+    }
+
+    private assignmentRightOpToValueAndStmts(rightOpNode: ts.Node | undefined, leftValue: Value): ValueAndStmts {
         let rightValue: Value;
         let rightPositions: FullPosition[];
+        let tempRightStmts: Stmt[] = [];
+        const rightStmts: Stmt[] = [];
         if (rightOpNode) {
-            let {
-                value: tempRightValue,
-                valueOriginalPositions: tempRightPositions,
-                stmts: rightStmts,
-            } = this.tsNodeToValueAndStmts(rightOpNode);
-            stmts.push(...rightStmts);
-            rightValue = tempRightValue;
-            rightPositions = tempRightPositions;
+            ({ value: rightValue, valueOriginalPositions: rightPositions, stmts: tempRightStmts } =
+                this.tsNodeToValueAndStmts(rightOpNode));
+            rightStmts.push(...tempRightStmts);
         } else {
             rightValue = ValueUtil.getUndefinedConst();
             rightPositions = [FullPosition.DEFAULT];
         }
         if (IRUtils.moreThanOneAddress(leftValue) && IRUtils.moreThanOneAddress(rightValue)) {
-            const {
-                value: tempRightValue,
-                valueOriginalPositions: tempRightPositions,
-                stmts: rightStmts,
-            } = this.arkIRTransformer.generateAssignStmtForValue(rightValue, rightPositions);
-            stmts.push(...rightStmts);
-            rightValue = tempRightValue;
-            rightPositions = tempRightPositions;
+            ({ value: rightValue, valueOriginalPositions: rightPositions, stmts: tempRightStmts } =
+                this.arkIRTransformer.generateAssignStmtForValue(rightValue, rightPositions));
+            rightStmts.push(...tempRightStmts);
         }
+        return { value: rightValue, valueOriginalPositions: rightPositions, stmts: rightStmts };
+    }
 
-        const isConst = (nodeFlag & ts.NodeFlags.Const) !== 0;
-        if (leftValue instanceof Local) {
-            leftValue.setConstFlag(isConst);
-            if (variableDeclaration.type) {
-                leftValue.setType(this.resolveTypeNode(variableDeclaration.type));
-            }
-            if (leftValue.getType() instanceof UnknownType && !(rightValue.getType() instanceof UnknownType) &&
-                !(rightValue.getType() instanceof UndefinedType)) {
-                leftValue.setType(rightValue.getType());
-            }
+    // In assignment patterns, the left operand will be an array literal expression
+    private arrayDestructuringToValueAndStmts(arrayDestructuring: ts.ArrayBindingPattern | ts.ArrayLiteralExpression,
+                                               isConst: boolean = false): ValueAndStmts {
+        const stmts: Stmt[] = [];
+        const arrayTempLocal = this.generateTempLocal();
+        const leftOriginalPosition = FullPosition.buildFromNode(arrayDestructuring, this.sourceFile);
+        const elements = arrayDestructuring.elements;
+        const isArrayBindingPattern = ts.isArrayBindingPattern(arrayDestructuring);
+        let index = 0;
+        for (const element of elements) {
+            const arrayRef = new ArkArrayRef(arrayTempLocal, ValueUtil.getOrCreateNumberConst(index));
+            const arrayRefPositions = [leftOriginalPosition, leftOriginalPosition, FullPosition.DEFAULT];
+            const itemName = element.getText(this.sourceFile);
+            const targetLocal = isArrayBindingPattern ? this.addNewLocal(itemName) : this.getOrCreateLocal(itemName);
+            const targetLocalPosition = FullPosition.buildFromNode(element, this.sourceFile);
+            isArrayBindingPattern && targetLocal.setConstFlag(isConst);
+            const assignStmt = new ArkAssignStmt(targetLocal, arrayRef);
+            assignStmt.setOperandOriginalPositions([targetLocalPosition, ...arrayRefPositions]);
+            stmts.push(assignStmt);
+            index++;
         }
-        const assignStmt = new ArkAssignStmt(leftValue, rightValue);
-        assignStmt.setOperandOriginalPositions([...leftPositions, ...rightPositions]);
-        stmts.push(assignStmt);
+        return { value: arrayTempLocal, valueOriginalPositions: [leftOriginalPosition], stmts: stmts };
+    }
 
-        if (ts.isArrayBindingPattern(leftOpNode)) {
-            const elements = leftOpNode.elements;
-            let index = 0;
-            for (const element of elements) {
-                const arrayRef = new ArkArrayRef(leftValue as Local, ValueUtil.getOrCreateNumberConst(index));
-                const arrayRefPositions = [leftPositions[0], ...leftPositions, FullPosition.DEFAULT];
-                const item = new Local(element.getText(this.sourceFile));
-                const itemPosition = FullPosition.buildFromNode(element, this.sourceFile);
-                item.setConstFlag(isConst);
-                const assignStmt = new ArkAssignStmt(item, arrayRef);
-                assignStmt.setOperandOriginalPositions([itemPosition, ...arrayRefPositions]);
-                stmts.push(assignStmt);
-                index++;
+    // In assignment patterns, the left operand will be an object literal expression
+    private objectDestructuringToValueAndStmts(objectDestructuring: ts.ObjectBindingPattern | ts.ObjectLiteralExpression,
+                                                isConst: boolean = false): ValueAndStmts {
+        const stmts: Stmt[] = [];
+        const objectTempLocal = this.generateTempLocal();
+        const leftOriginalPosition = FullPosition.buildFromNode(objectDestructuring, this.sourceFile);
+        const isObjectBindingPattern = ts.isObjectBindingPattern(objectDestructuring);
+        const elements = isObjectBindingPattern ? objectDestructuring.elements : objectDestructuring.properties;
+        for (const element of elements) {
+            let fieldName = '';
+            let targetName = '';
+            if (ts.isBindingElement(element)) {
+                fieldName = element.propertyName ? element.propertyName.getText(this.sourceFile) : element.name.getText(
+                    this.sourceFile);
+                targetName = element.name.getText(this.sourceFile);
+            } else if (ts.isPropertyAssignment(element)) {
+                fieldName = element.name.getText(this.sourceFile);
+                targetName = element.initializer.getText(this.sourceFile);
+            } else if (ts.isShorthandPropertyAssignment(element)) {
+                fieldName = element.name.getText(this.sourceFile);
+                targetName = fieldName;
+            } else {
+                continue;
             }
-        } else if (ts.isObjectBindingPattern(leftOpNode)) {
-            const elements = leftOpNode.elements;
-            for (const element of elements) {
-                const fieldName = element.propertyName ? element.propertyName.getText(
-                    this.sourceFile) : element.name.getText(this.sourceFile);
-                const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
-                const fieldRef = new ArkInstanceFieldRef(leftValue as Local, fieldSignature);
-                const fieldRefPositions = [leftPositions[0], ...leftPositions];
-                const fieldLocal = this.addNewLocal(element.name.getText(this.sourceFile));
-                fieldLocal.setConstFlag(isConst);
-                const fieldLocalPosition = FullPosition.buildFromNode(element, this.sourceFile);
-                const assignStmt = new ArkAssignStmt(fieldLocal, fieldRef);
-                assignStmt.setOperandOriginalPositions([fieldLocalPosition, ...fieldRefPositions]);
-                stmts.push(assignStmt);
-            }
+
+            const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
+            const fieldRef = new ArkInstanceFieldRef(objectTempLocal, fieldSignature);
+            const fieldRefPositions = [leftOriginalPosition, leftOriginalPosition];
+            const targetLocal = isObjectBindingPattern ? this.addNewLocal(targetName) : this.getOrCreateLocal(
+                targetName);
+            isObjectBindingPattern && targetLocal.setConstFlag(isConst);
+            const targetLocalPosition = FullPosition.buildFromNode(element, this.sourceFile);
+            const assignStmt = new ArkAssignStmt(targetLocal, fieldRef);
+            assignStmt.setOperandOriginalPositions([targetLocalPosition, ...fieldRefPositions]);
+            stmts.push(assignStmt);
         }
-        return { value: leftValue, valueOriginalPositions: leftPositions, stmts: stmts };
+        return { value: objectTempLocal, valueOriginalPositions: [leftOriginalPosition], stmts: stmts };
     }
 
     private binaryExpressionToValueAndStmts(binaryExpression: ts.BinaryExpression): ValueAndStmts {
         const operatorToken = binaryExpression.operatorToken;
         if (operatorToken.kind === ts.SyntaxKind.FirstAssignment) {
-            return this.assignmentToValueAndStmts(binaryExpression);
+            const leftOpNode = binaryExpression.left;
+            const rightOpNode = binaryExpression.right;
+            const declarationType = UnknownType.getInstance();
+            return this.assignmentToValueAndStmts(leftOpNode, rightOpNode, false, false, declarationType, true);
         } else if (ArkValueTransformer.compoundAssignmentOperators.has(operatorToken.kind)) {
             return this.compoundAssignmentToValueAndStmts(binaryExpression);
         }
@@ -1165,39 +1211,6 @@ export class ArkValueTransformer {
             }
         }
         return { value: exprValue, valueOriginalPositions: exprValuePositions, stmts: stmts };
-    }
-
-    private assignmentToValueAndStmts(binaryExpression: ts.BinaryExpression): ValueAndStmts {
-        const leftOpNode = binaryExpression.left;
-        const rightOpNode = binaryExpression.right;
-        const stmts: Stmt[] = [];
-        let { value: leftValue, valueOriginalPositions: leftPositions, stmts: leftStmts } = this.tsNodeToValueAndStmts(
-            leftOpNode);
-        stmts.push(...leftStmts);
-        let {
-            value: rightValue,
-            valueOriginalPositions: rightPositions,
-            stmts: rightStmts,
-        } = this.tsNodeToValueAndStmts(rightOpNode);
-        stmts.push(...rightStmts);
-        if (IRUtils.moreThanOneAddress(leftValue) && IRUtils.moreThanOneAddress(rightValue)) {
-            const {
-                value: newRightValue,
-                valueOriginalPositions: newRightPositions,
-                stmts: rightStmts,
-            } = this.arkIRTransformer.generateAssignStmtForValue(rightValue, rightPositions);
-            stmts.push(...rightStmts);
-            rightValue = newRightValue;
-            rightPositions = newRightPositions;
-        }
-        if (leftValue instanceof Local && leftValue.getType() instanceof UnknownType && !(rightValue.getType() instanceof UnknownType)) {
-            leftValue.setType(rightValue.getType());
-        }
-
-        const assignStmt = new ArkAssignStmt(leftValue, rightValue);
-        assignStmt.setOperandOriginalPositions([...leftPositions, ...rightPositions]);
-        stmts.push(assignStmt);
-        return { value: leftValue, valueOriginalPositions: leftPositions, stmts: stmts };
     }
 
     private compoundAssignmentToValueAndStmts(binaryExpression: ts.BinaryExpression): ValueAndStmts {

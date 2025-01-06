@@ -17,7 +17,7 @@ import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
-import { ArkInstanceFieldRef, PrinterBuilder } from '../src';
+import { ArkInstanceFieldRef, PrinterBuilder, Stmt } from '../src';
 import { ModelUtils } from '../src/core/common/ModelUtils';
 import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
 
@@ -35,7 +35,7 @@ class ArkIRTransformerTest {
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
-        logger.error('\nbafore inferTypes');
+        logger.error('\nbefore inferTypes');
         this.printScene(scene);
         scene.inferTypes();
         logger.error('\nafter inferTypes');
@@ -65,23 +65,26 @@ class ArkIRTransformerTest {
     }
 
     private printStmts(body: ArkBody): void {
-        logger.error('--- threeAddresStmts ---');
+        logger.error('--- threeAddressStmts ---');
         const cfg = body.getCfg();
         for (const threeAddressStmt of cfg.getStmts()) {
-            logger.error(`text: ${threeAddressStmt.toString()}`);
-            const operandOriginalPositions: any[] = [];
-            for (const operand of threeAddressStmt.getDefAndUses()) {
-                const operandOriginalPosition = threeAddressStmt.getOperandOriginalPosition(operand);
-                if (operandOriginalPosition) {
-                    operandOriginalPositions.push(
-                        [operandOriginalPosition.getFirstLine(), operandOriginalPosition.getFirstCol(),
-                            operandOriginalPosition.getLastLine(), operandOriginalPosition.getLastCol()]);
-                } else {
-                    operandOriginalPositions.push(operandOriginalPosition);
-                }
-            }
-            logger.error(`operandOriginalPositions: ${operandOriginalPositions.join('], [')}`);
+            logger.error(`text: '${threeAddressStmt.toString()}'`);
         }
+    }
+
+    public printOperandOriginalPositions(stmt: Stmt): void {
+        const operandOriginalPositions: any[] = [];
+        for (const operand of stmt.getDefAndUses()) {
+            const operandOriginalPosition = stmt.getOperandOriginalPosition(operand);
+            if (operandOriginalPosition) {
+                operandOriginalPositions.push(
+                    [operandOriginalPosition.getFirstLine(), operandOriginalPosition.getFirstCol(),
+                        operandOriginalPosition.getLastLine(), operandOriginalPosition.getLastCol()]);
+            } else {
+                operandOriginalPositions.push(operandOriginalPosition);
+            }
+        }
+        logger.error(`operandOriginalPositions: [${operandOriginalPositions.join('], [')}]`);
     }
 
     private printScene(scene: Scene): void {
@@ -95,8 +98,12 @@ class ArkIRTransformerTest {
                     if (body) {
                         this.printStmts(body);
                         logger.error('-- locals:');
-                        arkMethod.getBody()!.getLocals().forEach(local => {
-                            logger.error('name: ' + local.toString() + ', type: ' + local.getType());
+                        body.getLocals().forEach(local => {
+                            logger.error(`name: ${local.getName()}, type: ${local.getType()}`);
+                        });
+                        logger.error('-- usedGlobals:');
+                        body.getUsedGlobals()?.forEach(usedGlobalName => {
+                            logger.error(`name: ${usedGlobalName}`);
                         });
                     }
                 }

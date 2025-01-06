@@ -198,3 +198,132 @@ export const CompoundAssignment_Expect_IR = {
         },
     ],
 };
+
+export const Destructuring_Expect_IR = {
+    stmts: [
+        {
+            text: 'this = this: @assignment/DestructuringSample.ts: %dflt',
+            operandOriginalPositions: [null, null],
+        },
+        {
+            text: '%1 = newarray (number)[2]',
+            operandOriginalPositions: [[16, 16, 16, 22], [16, 16, 16, 22], [-1, -1, -1, -1]],
+        },
+        {
+            text: '%1[0] = 7',
+            operandOriginalPositions: [[16, 16, 16, 22], [16, 16, 16, 22], [-1, -1, -1, -1], [16, 17, 16, 18]],
+        },
+        {
+            text: '%1[1] = 8',
+            operandOriginalPositions: [[16, 16, 16, 22], [16, 16, 16, 22], [-1, -1, -1, -1], [16, 20, 16, 21]],
+        },
+        {
+            text: '%0 = %1',
+            operandOriginalPositions: [[16, 5, 16, 13], [16, 16, 16, 22]],
+        },
+        {
+            text: 'd1 = %0[0]',
+            operandOriginalPositions: [[16, 6, 16, 8], [16, 5, 16, 13], [16, 5, 16, 13], [-1, -1, -1, -1]],
+        },
+        {
+            text: 'd2 = %0[1]',
+            operandOriginalPositions: [[16, 10, 16, 12], [16, 5, 16, 13], [16, 5, 16, 13], [-1, -1, -1, -1]],
+        },
+        {
+            text: '%3 = new @assignment/DestructuringSample.ts: %AC$%dflt$%dflt$0',
+            operandOriginalPositions: [[17, 20, 17, 36], [17, 20, 17, 36]],
+        },
+        {
+            text: 'instanceinvoke %3.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$0.constructor()>()',
+            operandOriginalPositions: [[17, 20, 17, 36], [17, 20, 17, 36]],
+        },
+        {
+            text: '%2 = %3',
+            operandOriginalPositions: [[17, 7, 17, 17], [17, 20, 17, 36]],
+        },
+        {
+            text: 'd3 = %2.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$0.d3>',
+            operandOriginalPositions: [[17, 9, 17, 11], [17, 7, 17, 17], [17, 7, 17, 17]],
+        },
+        {
+            text: 'd4 = %2.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$0.d4>',
+            operandOriginalPositions: [[17, 13, 17, 15], [17, 7, 17, 17], [17, 7, 17, 17]],
+        },
+        {
+            text: '%5 = new @assignment/DestructuringSample.ts: %AC$%dflt$%dflt$1',
+            operandOriginalPositions: [[18, 28, 18, 44], [18, 28, 18, 44]],
+        },
+        {
+            text: 'instanceinvoke %5.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$1.constructor()>()',
+            operandOriginalPositions: [[18, 28, 18, 44], [18, 28, 18, 44]],
+        },
+        {
+            text: '%4 = %5',
+            operandOriginalPositions: [[18, 7, 18, 25], [18, 28, 18, 44]],
+        },
+        {
+            text: 'd7 = %4.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$1.d5>',
+            operandOriginalPositions: [[18, 9, 18, 15], [18, 7, 18, 25], [18, 7, 18, 25]],
+        },
+        {
+            text: 'd8 = %4.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$1.d6>',
+            operandOriginalPositions: [[18, 17, 18, 23], [18, 7, 18, 25], [18, 7, 18, 25]],
+        },
+        {
+            text: 'd9 = 0',
+            operandOriginalPositions: [[19, 5, 19, 7], [19, 10, 19, 11]],
+        },
+        {
+            text: 'd10 = 0',
+            operandOriginalPositions: [[20, 5, 20, 8], [20, 11, 20, 12]],
+        },
+        {
+            text: '%7 = newarray (number)[2]',
+            operandOriginalPositions: [[21, 13, 21, 19], [21, 13, 21, 19], [-1, -1, -1, -1]],
+        },
+        {
+            text: '%7[0] = 7',
+            operandOriginalPositions: [[21, 13, 21, 19], [21, 13, 21, 19], [-1, -1, -1, -1], [21, 14, 21, 15]],
+        },
+        {
+            text: '%7[1] = 8',
+            operandOriginalPositions: [[21, 13, 21, 19], [21, 13, 21, 19], [-1, -1, -1, -1], [21, 17, 21, 18]],
+        },
+        {
+            text: '%6 = %7',
+            operandOriginalPositions: [[21, 1, 21, 10], [21, 13, 21, 19]],
+        },
+        {
+            text: 'd9 = %6[0]',
+            operandOriginalPositions: [[21, 2, 21, 4], [21, 1, 21, 10], [21, 1, 21, 10], [-1, -1, -1, -1]],
+        },
+        {
+            text: 'd10 = %6[1]',
+            operandOriginalPositions: [[21, 6, 21, 9], [21, 1, 21, 10], [21, 1, 21, 10], [-1, -1, -1, -1]],
+        },
+        {
+            text: '%9 = new @assignment/DestructuringSample.ts: %AC$%dflt$%dflt$2',
+            operandOriginalPositions: [[22, 26, 22, 44], [22, 26, 22, 44]],
+        },
+        {
+            text: 'instanceinvoke %9.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$2.constructor()>()',
+            operandOriginalPositions: [[22, 26, 22, 44], [22, 26, 22, 44]],
+        },
+        {
+            text: '%8 = %9',
+            operandOriginalPositions: [[22, 2, 22, 23], [22, 26, 22, 44]],
+        },
+        {
+            text: 'd9 = %8.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$2.d11>',
+            operandOriginalPositions: [[22, 4, 22, 11], [22, 2, 22, 23], [22, 2, 22, 23]],
+        },
+        {
+            text: 'd10 = %8.<@assignment/DestructuringSample.ts: %AC$%dflt$%dflt$2.d12>',
+            operandOriginalPositions: [[22, 13, 22, 21], [22, 2, 22, 23], [22, 2, 22, 23]],
+        },
+        {
+            text: 'return',
+            operandOriginalPositions: [],
+        },
+    ],
+};
