@@ -486,59 +486,6 @@ export class ArkReturnVoidStmt extends Stmt {
     }
 }
 
-export class ArkSwitchStmt extends Stmt {
-    private key: Value;
-    private cases: Value[];  // default as an extra block
-
-    constructor(key: Value, cases: Value[]) {
-        super();
-        this.key = key;
-        this.cases = cases;
-    }
-
-    /**
-     * Returns the key in a switch statement.
-     * @returns The key in a switch statement.
-     */
-    public getKey(): Value {
-        return this.key;
-    }
-
-    public getCases(): Value[] {
-        return this.cases;
-    }
-
-    public isBranch(): boolean {
-        return true;
-    }
-
-    public getExpectedSuccessorCount(): number {
-        return this.cases.length + 1;
-    }
-
-    public toString(): string {
-        let strs: string[] = [];
-        strs.push('switch(' + this.key + ') {');
-        for (const c of this.cases) {
-            strs.push('case ');
-            strs.push(c.toString());
-            strs.push(': ');
-            strs.push(', ');
-        }
-
-        strs.push('default : }');
-        const str = strs.join('');
-        return str;
-    }
-
-    public getUses(): Value[] {
-        let uses: Value[] = [];
-        uses.push(this.key);
-        uses.push(...this.key.getUses());
-        return uses;
-    }
-}
-
 export class ArkThrowStmt extends Stmt {
     private op: Value;
 
