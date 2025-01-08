@@ -28,8 +28,10 @@ export interface Sdk {
 
 export type SceneOptionsValue = string | number | boolean | (string | number)[] | string[] | null | undefined;
 export interface SceneOptions {
+    supportFileExts?: string[];
     ignoreFileNames?: string[];
     enableLeadingComments?: boolean;
+    isScanAbc?: boolean;
     [option: string]: SceneOptionsValue;
 }
 const CONFIG_FILENAME = 'arkanalyzer.json';
@@ -50,14 +52,8 @@ export class SceneConfig {
     private options: SceneOptions;
 
     constructor(options?: SceneOptions) {
-        try {
-            this.options = JSON.parse(fs.readFileSync(DEFAULT_CONFIG_FILE, 'utf-8'));
-        } catch (error) {
-            this.options = {};
-        }
-        if (options) {
-            this.options = { ...this.options, ...options };
-        }
+        this.options = { supportFileExts: ['.ets', '.ts'] };
+        this.loadDefaultConfig(options);
     }
 
     public getOptions(): SceneOptions {
@@ -101,7 +97,11 @@ export class SceneConfig {
     public buildFromProjectDir(targetProjectDirectory: string) {
         this.targetProjectDirectory = targetProjectDirectory;
         this.targetProjectName = path.basename(targetProjectDirectory);
-        this.projectFiles = getAllFiles(targetProjectDirectory, ['.ets', '.ts'], this.options.ignoreFileNames);
+        this.projectFiles = getAllFiles(
+            targetProjectDirectory,
+            this.options.supportFileExts!,
+            this.options.ignoreFileNames
+        );
     }
 
     public buildFromJson(configJsonPath: string) {
@@ -165,5 +165,18 @@ export class SceneConfig {
 
     public getSdksObj() {
         return this.sdksObj;
+    }
+
+    private loadDefaultConfig(options?: SceneOptions): void {
+        let configFile = DEFAULT_CONFIG_FILE;
+        if (!fs.existsSync(configFile)) {
+            configFile = path.join(__dirname, 'config', CONFIG_FILENAME);
+        }
+        try {
+            this.options = { ...this.options, ...JSON.parse(fs.readFileSync(configFile, 'utf-8')) };
+        } catch (error) {}
+        if (options) {
+            this.options = { ...this.options, ...options };
+        }
     }
 }

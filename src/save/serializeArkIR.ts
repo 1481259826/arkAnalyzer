@@ -49,7 +49,7 @@ export function buildSceneFromProjectDir(inputDir: string, verbose: boolean = fa
     return scene;
 }
 
-function dumpToJson(arkFile: ArkFile, output?: string): void {
+export function serializeArkFile(arkFile: ArkFile, output?: string): void {
     let filename = output;
     if (filename === undefined) {
         const outputDir = path.join(arkFile.getProjectDir(), '..', 'output');
@@ -75,7 +75,7 @@ export function serializeScene(
         if (verbose) {
             console.log(`Serializing ArkIR for '${filepath}' to '${outPath}'...`);
         }
-        dumpToJson(f, outPath);
+        serializeArkFile(f, outPath);
     }
     if (verbose) {
         console.log(`All ${files.length} files in scene are serialized`);

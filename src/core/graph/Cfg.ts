@@ -198,12 +198,8 @@ export class Cfg {
                     // 本block有对应def直接结束,否则找所有的前序block
                     if (defStmts.length !== 0) {
                         this.defUseChains.push(new DefUseChain(value, defStmts[0], stmt));
-                    }
-                    else {
-                        const needWalkBlocks: BasicBlock[] = [];
-                        for (const predecessor of block.getPredecessors()) {
-                            needWalkBlocks.push(predecessor);
-                        }
+                    } else {
+                        const needWalkBlocks: BasicBlock[] = [...block.getPredecessors()];
                         const walkedBlocks = new Set();
                         while (needWalkBlocks.length > 0) {
                             const predecessor = needWalkBlocks.pop();
@@ -229,7 +225,7 @@ export class Cfg {
                             walkedBlocks.add(predecessor);
                         }
                         for (const def of defStmts) {
-                            this.defUseChains.push(new DefUseChain(value, def, stmt))
+                            this.defUseChains.push(new DefUseChain(value, def, stmt));
                         }
                     }
                 }

@@ -1,4 +1,8 @@
 {
+    "supportFileExts": [
+        ".ets",
+        ".ts"
+    ],
     "enableLeadingComments": false,
     "ignoreFileNames": [
         "oh_modules",
