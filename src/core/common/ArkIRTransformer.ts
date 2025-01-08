@@ -25,14 +25,7 @@ import {
     RelationalBinaryOperator,
     UnaryOperator,
 } from '../base/Expr';
-import {
-    ArkArrayRef,
-    ArkCaughtExceptionRef,
-    ArkInstanceFieldRef,
-    ArkParameterRef,
-    ArkThisRef,
-    GlobalRef,
-} from '../base/Ref';
+import { ArkCaughtExceptionRef, ArkInstanceFieldRef, ArkParameterRef, ArkThisRef, GlobalRef } from '../base/Ref';
 import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
@@ -45,7 +38,7 @@ import {
     ArkThrowStmt,
     Stmt,
 } from '../base/Stmt';
-import { AliasType, AliasTypeDeclaration, ArrayType, BooleanType, ClassType, UnknownType } from '../base/Type';
+import { AliasType, AliasTypeDeclaration, BooleanType, ClassType, UnknownType } from '../base/Type';
 import { ValueUtil } from './ValueUtil';
 import {
     ClassSignature,
@@ -418,73 +411,25 @@ export class ArkIRTransformer {
         } = this.generateAssignStmtForValue(valueFieldRef, valueFieldRefPositions);
         stmts.push(...yieldValueStmts);
 
-        // TODO: Support generics and then fill in the exact type
         const castExpr = new ArkCastExpr(yieldValue, UnknownType.getInstance());
         const castExprPositions = [yieldValuePositions[0], ...yieldValuePositions];
-        if (ts.isVariableDeclarationList(forOfStatement.initializer)) {
-            const variableDeclarationList = forOfStatement.initializer as ts.VariableDeclarationList;
-            const isConst = (variableDeclarationList.flags & ts.NodeFlags.Const) !== 0;
-            const variableDeclaration = variableDeclarationList.declarations[0];
-            if (ts.isArrayBindingPattern(variableDeclaration.name)) {
-                const {
-                    value: arrayItem,
-                    valueOriginalPositions: arrayItemPositions,
-                    stmts: arrayItemStmts,
-                } = this.generateAssignStmtForValue(castExpr, castExprPositions);
-                stmts.push(...arrayItemStmts);
-                (arrayItem as Local).setType(new ArrayType(UnknownType.getInstance(), 1));
-
-                const elements = variableDeclaration.name.elements;
-                let index = 0;
-                for (const element of elements) {
-                    const arrayRef = new ArkArrayRef(arrayItem as Local, ValueUtil.getOrCreateNumberConst(index));
-                    const arrayRefPositions = [arrayItemPositions[0], ...arrayItemPositions, FullPosition.DEFAULT];
-                    const item = new Local(element.getText(this.sourceFile));
-                    const itemPosition = FullPosition.buildFromNode(element, this.sourceFile);
-                    item.setConstFlag(isConst);
-                    const assignStmt = new ArkAssignStmt(item, arrayRef);
-                    assignStmt.setOperandOriginalPositions([itemPosition, ...arrayRefPositions]);
-                    stmts.push(assignStmt);
-                    index++;
-                }
-            } else if (ts.isObjectBindingPattern(variableDeclaration.name)) {
-                const {
-                    value: objectItem,
-                    valueOriginalPositions: objectItemPositions,
-                    stmts: objectItemStmts,
-                } = this.generateAssignStmtForValue(castExpr, castExprPositions);
-                stmts.push(...objectItemStmts);
-
-                const elements = variableDeclaration.name.elements;
-                for (const element of elements) {
-                    const fieldName = element.propertyName ? element.propertyName.getText(this.sourceFile) : element.name.getText(this.sourceFile);
-                    const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
-                    const fieldRef = new ArkInstanceFieldRef(objectItem as Local, fieldSignature);
-                    const fieldRefPositions = [objectItemPositions[0], ...objectItemPositions];
-                    const fieldLocal = this.arkValueTransformer.addNewLocal(element.name.getText(this.sourceFile));
-                    const fieldLocalPosition = FullPosition.buildFromNode(element, this.sourceFile);
-                    fieldLocal.setConstFlag(isConst);
-                    const assignStmt = new ArkAssignStmt(fieldLocal, fieldRef);
-                    assignStmt.setOperandOriginalPositions([fieldLocalPosition, ...fieldRefPositions]);
-                    stmts.push(assignStmt);
-                }
-            } else {
-                const item = this.arkValueTransformer.addNewLocal(
-                    variableDeclaration.name.getText(this.sourceFile));
-                item.setConstFlag(isConst);
-                stmts.push(new ArkAssignStmt(item, castExpr));
-            }
-        } else {
+        const initializerNode = forOfStatement.initializer;
+        if (ts.isVariableDeclarationList(initializerNode)) {
+            const isConst = (initializerNode.flags & ts.NodeFlags.Const) !== 0;
             const {
-                value: item,
-                valueOriginalPositions: itemPositions,
-                stmts: itemStmts,
-            } = this.tsNodeToValueAndStmts(
-                forOfStatement.initializer);
-            stmts.push(...itemStmts);
-            const assignStmt = new ArkAssignStmt(item, castExpr);
-            assignStmt.setOperandOriginalPositions([...itemPositions, ...castExprPositions]);
-            stmts.push(assignStmt);
+                value: initValue, valueOriginalPositions: initOriPos, stmts: initStmts,
+            } = this.arkValueTransformer.variableDeclarationToValueAndStmts(initializerNode.declarations[0], isConst,
+                false);
+            const assignStmt = new ArkAssignStmt(initValue, castExpr);
+            assignStmt.setOperandOriginalPositions([...initOriPos, ...castExprPositions]);
+            stmts.push(assignStmt, ...initStmts);
+        } else { // initializer maybe an expression
+            const {
+                value: initValue, valueOriginalPositions: initOriPos, stmts: initStmts,
+            } = this.tsNodeToValueAndStmts(initializerNode);
+            const assignStmt = new ArkAssignStmt(initValue, castExpr);
+            assignStmt.setOperandOriginalPositions([...initOriPos, ...castExprPositions]);
+            stmts.push(...initStmts, assignStmt);
         }
         return stmts;
     }
@@ -601,15 +546,13 @@ export class ArkIRTransformer {
         const stmts: Stmt[] = [];
         if (catchClause.variableDeclaration) {
             const {
-                value: catchValue,
-                valueOriginalPositions: catchValuePositions,
-                stmts: catchStmts,
-            } = this.tsNodeToValueAndStmts(catchClause.variableDeclaration);
-            stmts.push(...catchStmts);
+                value: catchValue, valueOriginalPositions: catchOriPos, stmts: catchStmts,
+            } = this.arkValueTransformer.variableDeclarationToValueAndStmts(catchClause.variableDeclaration, false,
+                false);
             const caughtExceptionRef = new ArkCaughtExceptionRef(UnknownType.getInstance());
             const assignStmt = new ArkAssignStmt(catchValue, caughtExceptionRef);
-            assignStmt.setOperandOriginalPositions(catchValuePositions);
-            stmts.push(assignStmt);
+            assignStmt.setOperandOriginalPositions(catchOriPos);
+            stmts.push(assignStmt, ...catchStmts);
         }
         return stmts;
     }

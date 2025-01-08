@@ -91,7 +91,6 @@ class ClosureClass {
         console.log(innerFunction2('abc'));
         function innerFunction2(outerInput: string): string {
             count = count + outerInput;
-            // TODO: ArrayBindingPattern语句无法正确处理，举例：let [a, b, c] = ['a', 'b', 'c'];
             for (let item of nums) {
                 count = count + item;
             }

@@ -41,7 +41,7 @@ import {
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
     CompoundAssignment_Expect_IR,
-    Declaration_Expect_IR,
+    Declaration_Expect_IR, Destructuring_Expect_IR,
 } from '../resources/arkIRTransformer/assignment/AssignmentExpectIR';
 import {
     ArrowFunction_Expect_IR,
@@ -444,6 +444,10 @@ describe('assignment Test', () => {
 
     it('test compound assignment', async () => {
         testMethodStmts(scene, 'CompoundAssignmentTest.ts', CompoundAssignment_Expect_IR.stmts);
+    });
+
+    it('test destructuring', async () => {
+        testMethodStmts(scene, 'DestructuringSample.ts', Destructuring_Expect_IR.stmts);
     });
 });
 

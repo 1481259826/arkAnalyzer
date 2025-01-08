@@ -1432,6 +1432,16 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
             {
                 name: 'this',
                 type: '@function/ClosureParamsTest.ts: closureNamespace.ClosureClass'
+            },
+            {
+                name: `error`,
+                type: 'unknown',
+                instanceof: GlobalRef,
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke console.<@%unk/%unk: .log()>(error)'
+                    }
+                ]
             }
         ],
         globals: [
@@ -1445,17 +1455,6 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
                     }
                 ]
             },
-            {
-                // TODO: catch error变量与stmt需要修改，修改后error应该被识别为locals变量
-                name: `error`,
-                type: 'unknown',
-                instanceof: GlobalRef,
-                usedStmts: [
-                    {
-                        text: 'instanceinvoke console.<@%unk/%unk: .log()>(error)'
-                    }
-                ]
-            }
         ]
     }
 };
