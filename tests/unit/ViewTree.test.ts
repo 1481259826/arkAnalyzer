@@ -60,6 +60,8 @@ import {
     Case3_BuilderParamTest_Expect_ViewTree,
 } from '../resources/viewtree/builderparam/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
+import { ViewTreePrinter } from '../../src';
+import { CryptoUtils } from '../../src/utils/crypto_utils';
 
 function expectViewTree(root: ViewTreeNode | null, expectTree: any) {
     if (!root) {
@@ -280,8 +282,6 @@ describe('builder Test', () => {
         let root = vt.getRoot();
         expectViewTree(root, Case_ComplexStateValueTest_Expect_ViewTree);
     });
-
-    
 });
 
 describe('builderParam Test', () => {
@@ -391,5 +391,17 @@ describe('project Test', () => {
 
     it('test alias', async () => {
         testClassViewTree(scene, 'Page', Project_Page_Expect_ViewTree);
+    });
+
+    it('test viewtree dot', async () => {
+        let arkFile = scene.getFiles().find((file) => file.getName().endsWith(`Page.ets`));
+        let arkClass = arkFile?.getClassWithName('Page');
+        let vt = arkClass?.getViewTree();
+        if (!vt) {
+            assert.isDefined(vt);
+            return;
+        }
+        let printer = new ViewTreePrinter(vt);
+        expect(CryptoUtils.sha256(printer.dump())).eq('gA9b_8g9pqxGE0JjQkK19eC-Rq5LANgG6DuDtq_X8Fo');
     });
 });
