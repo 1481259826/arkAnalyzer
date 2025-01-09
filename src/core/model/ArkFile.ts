@@ -14,7 +14,7 @@
  */
 
 import { ModuleScene, Scene } from '../../Scene';
-import { ExportInfo } from './ArkExport';
+import { ArkExport, ExportInfo } from './ArkExport';
 import { ImportInfo } from './ArkImport';
 import { ArkClass } from './ArkClass';
 import { ArkNamespace } from './ArkNamespace';
@@ -212,8 +212,57 @@ export class ArkFile {
         return exportInfos;
     }
 
+    /**
+     * Find out the {@link ExportInfo} of this {@link ArkFile} by the given export name.
+     * It returns an {@link ExportInfo} or 'undefined' if it failed to find.
+     * @param name
+     * @returns
+     * @example
+     ```typescript
+     // abc.ts ArkFile
+     export class A {
+         ...
+     }
+
+     export namespace B {
+         export namespace C {
+             export class D {}
+         }
+     }
+
+     // xyz.ts call getExportInfoBy
+     let arkFile = scene.getFile(fileSignature);
+
+     // a is the export class A defined in abc.ts
+     let a = arkFile.getExportInfoBy('A');
+
+     // b is the export class D within namespace C defined in abc.ts
+     let b = arkFile.getExportInfoBy('B.C.D');
+     ```
+     */
     public getExportInfoBy(name: string): ExportInfo | undefined {
-        return this.exportInfoMap.get(name);
+        const separator = '.';
+        const names = name.split(separator);
+        if (names.length === 1) {
+            return this.exportInfoMap.get(names[0]);
+        }
+
+        let index = 0;
+        let currExportInfo = this.exportInfoMap.get(names[index]);
+        if (currExportInfo === undefined) {
+            return undefined;
+        }
+
+        for (let i = 1; i < names.length; i++) {
+            const arkExport: ArkExport | null | undefined = currExportInfo.getArkExport();
+            if (arkExport && arkExport instanceof ArkNamespace) {
+                currExportInfo = arkExport.getExportInfoBy(names[i]);
+                if (currExportInfo === undefined) {
+                    return undefined;
+                }
+            }
+        }
+        return currExportInfo;
     }
 
     public addExportInfo(exportInfo: ExportInfo, key?: string) {

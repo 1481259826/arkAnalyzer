@@ -40,6 +40,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { SourceUtils } from './SourceUtils';
 import { SourceMethod } from './SourceMethod';
 import {
+    AliasType,
     ArrayType,
     ClassType,
     FunctionType,
@@ -401,6 +402,10 @@ export class SourceTransformer {
             return type.getName();
         }
 
+        if (type instanceof AliasType) {
+            return type.getName();
+        }
+
         if (!type) {
             return 'any';
         }
@@ -447,7 +452,7 @@ export class SourceTransformer {
     }
 
     private classType2string(type: ClassType): string {
-        let name = type.getClassSignature().getClassName();
+        const name = SourceUtils.getStaticInvokeClassFullName(type.getClassSignature());
         if (SourceUtils.isDefaultClass(name)) {
             return 'any';
         }

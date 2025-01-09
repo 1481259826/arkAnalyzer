@@ -517,6 +517,19 @@ export class ArkThrowStmt extends Stmt {
     }
 }
 
+/**
+ * Statement of type alias definition combines with the left hand as {@link AliasType} and right hand as {@link AliasTypeExpr}.
+ * @category core/base/stmt
+ * @extends Stmt
+ * @example
+ ```typescript
+ type A = string;
+ type B = import('./abc').TypeB;
+
+ let c = 123;
+ declare type C = typeof c;
+ ```
+ */
 export class ArkAliasTypeDefineStmt extends Stmt {
     private aliasType: AliasType;
     private aliasTypeExpr: AliasTypeExpr;
@@ -550,7 +563,7 @@ export class ArkAliasTypeDefineStmt extends Stmt {
         return str;
     }
 
-    public getExprs(): AbstractExpr[] {
+    public getExprs(): AliasTypeExpr[] {
         return [this.getAliasTypeExpr()];
     }
 }

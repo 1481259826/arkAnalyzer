@@ -49,7 +49,7 @@ export class Local implements Value, ArkExport {
 
     public inferType(arkMethod: ArkMethod): Local {
         if (TypeInference.isUnclearType(this.type)) {
-            const type = TypeInference.inferUnclearReferenceType(this.name, arkMethod.getDeclaringArkClass());
+            const type = TypeInference.inferUnclearReferenceType(this.name, arkMethod.getDeclaringArkClass())[1];
             if (type) {
                 this.type = type;
             }

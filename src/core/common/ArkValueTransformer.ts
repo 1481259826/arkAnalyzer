@@ -16,7 +16,7 @@
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
 import { FullPosition } from '../base/Position';
-import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
+import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import {
     AbstractBinopExpr,
     ArkAwaitExpr,
@@ -41,7 +41,6 @@ import { ArkClass } from '../model/ArkClass';
 import { buildNormalArkClassFromArkFile, buildNormalArkClassFromArkNamespace } from '../model/builder/ArkClassBuilder';
 import {
     AliasType,
-    AliasTypeDeclaration,
     AnyType,
     ArrayType,
     BooleanType,
@@ -95,7 +94,7 @@ export class ArkValueTransformer {
     private thisLocal: Local;
     private declaringMethod: ArkMethod;
     private arkIRTransformer: ArkIRTransformer;
-    private aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]> = new Map();
+    private aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]> = new Map();
     private builderMethodContextFlag = false;
 
     private static compoundAssignmentOperators = new Set([ts.SyntaxKind.PlusEqualsToken,
@@ -130,7 +129,7 @@ export class ArkValueTransformer {
         return this.thisLocal;
     }
 
-    public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> {
+    public getAliasTypeMap(): Map<string, [AliasType, ArkAliasTypeDefineStmt]> {
         return this.aliasTypeMap;
     }
 
@@ -1466,22 +1465,18 @@ export class ArkValueTransformer {
 
     private resolveTypeQueryNode(typeQueryNode: ts.TypeQueryNode): Type {
         const exprName = typeQueryNode.exprName.getText(this.sourceFile);
-        const aliasTypeAndPosition = this.aliasTypeMap.get(exprName);
-        if (!aliasTypeAndPosition) {
-            const genericTypes: Type[] = [];
-            if (typeQueryNode.typeArguments) {
-                for (const typeArgument of typeQueryNode.typeArguments) {
-                    genericTypes.push(this.resolveTypeNode(typeArgument));
-                }
-            }
-            const local = this.locals.get(exprName);
-            if (local !== undefined) {
-                return local.getType();
-            }
-            return new UnclearReferenceType(exprName, genericTypes);
-        } else {
-            return aliasTypeAndPosition[0];
+        const local = this.locals.get(exprName);
+        if (local !== undefined) {
+            return local.getType();
         }
+
+        const genericTypes: Type[] = [];
+        if (typeQueryNode.typeArguments) {
+            for (const typeArgument of typeQueryNode.typeArguments) {
+                genericTypes.push(this.resolveTypeNode(typeArgument));
+            }
+        }
+        return new UnclearReferenceType(exprName, genericTypes);
     }
 
     private resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode): Type {

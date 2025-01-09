@@ -956,7 +956,7 @@ export class Scene {
      * Iterate all assignment statements in methods,
      * and set the type of left operand based on the type of right operand
      * if the left operand is a local variable as well as an unknown.
-     * @Deprecated
+     * @deprecated
      * @example
      * 1. Infer simple type when scene building.
 

@@ -53,7 +53,7 @@ import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { CONSTRUCTOR_NAME, SUPER_NAME } from './TSConst';
-import { findArkExport, findExportInfo, ModelUtils } from './ModelUtils';
+import { findArkExport, ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { ClassSignature, MethodSignature } from '../model/ArkSignature';
 import {
@@ -64,8 +64,6 @@ import {
 import { EMPTY_STRING } from './ValueUtil';
 import { Scene } from '../../Scene';
 import { ArkFile } from '../model/ArkFile';
-import { ImportInfo } from '../model/ArkImport';
-import { LineColPosition } from '../base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -98,7 +96,7 @@ export class TypeInference {
         }
         let fieldType;
         if (beforeType) {
-            fieldType = this.inferUnclearedType(beforeType, arkClass, rightType);
+            fieldType = this.inferUnclearedType(beforeType, arkClass, rightType)[1];
         }
         if (fieldType) {
             arkField.getSignature().setType(fieldType);
@@ -109,7 +107,17 @@ export class TypeInference {
         }
     }
 
-    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type): Type | null {
+    /**
+     * Infer type for a given unclear type.
+     * It returns an array with 2 items, original object and original type.
+     * The original object is null if there is no object, or it failed to find the object.
+     * The original type is null if failed to infer the type.
+     * @param leftOpType
+     * @param declaringArkClass
+     * @param [rightType]
+     * @returns
+     */
+    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type): [any, Type | null] {
         if (leftOpType instanceof UnclearReferenceType) {
             return TypeInference.inferUnclearRefType(leftOpType, declaringArkClass);
         }
@@ -121,7 +129,7 @@ export class TypeInference {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let optionType = types[i];
-                let newType = TypeInference.inferUnclearedType(optionType, declaringArkClass);
+                let newType = TypeInference.inferUnclearedType(optionType, declaringArkClass)[1];
                 if (newType) {
                     types[i] = newType;
                 }
@@ -129,28 +137,28 @@ export class TypeInference {
                     leftOpType.setCurrType(rightType);
                 }
             }
-            return leftOpType;
+            return [null, leftOpType];
         }
         if (leftOpType instanceof ArrayType) {
-            let baseType = TypeInference.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
-            if (baseType) {
-                leftOpType.setBaseType(baseType);
-                return leftOpType;
+            let baseAndType = TypeInference.inferUnclearedType(leftOpType.getBaseType(), declaringArkClass);
+            if (baseAndType[1]) {
+                leftOpType.setBaseType(baseAndType[1]);
+                return [baseAndType[0], leftOpType];
             }
-            return null;
+            return baseAndType;
         }
         if (leftOpType instanceof AliasType) {
-            let originalType = TypeInference.inferUnclearedType(leftOpType.getOriginalType(), declaringArkClass);
-            if (originalType) {
-                leftOpType.setOriginalType(originalType);
-                return leftOpType;
+            let originalAndType = TypeInference.inferUnclearedType(leftOpType.getOriginalType(), declaringArkClass);
+            if (originalAndType[1]) {
+                leftOpType.setOriginalType(originalAndType[1]);
+                return [originalAndType[0], leftOpType];
             }
-            return null;
+            return originalAndType;
         }
         if (leftOpType instanceof AnnotationNamespaceType) {
             return TypeInference.inferUnclearReferenceType(leftOpType.getOriginType(), declaringArkClass);
         }
-        return null;
+        return [null, null];
     }
 
     public static inferTypeInMethod(arkMethod: ArkMethod): void {
@@ -164,7 +172,7 @@ export class TypeInference {
         }
         signatures.forEach(s => {
             s.getMethodSubSignature().getParameters().forEach(p => {
-                const type = TypeInference.inferUnclearedType(p.getType(), arkClass);
+                const type = TypeInference.inferUnclearedType(p.getType(), arkClass)[1];
                 if (type) {
                     p.setType(type);
                 }
@@ -176,17 +184,11 @@ export class TypeInference {
             logger.warn('empty body');
             return;
         }
-        body.getAliasTypeMap()?.forEach((value) => {
-            if (value[0].getOriginalType() instanceof UnclearReferenceType) {
-                const newAliasType = this.inferUnclearedType(value[0], arkClass);
-                if (newAliasType !== null && newAliasType instanceof AliasType) {
-                    value[1].getExpr().setOriginalType(newAliasType.getOriginalType());
-                }
-            }
-        });
+        body.getAliasTypeMap()?.forEach((value) => TypeInference.inferAliasTypeAndStmt(value[1], arkMethod));
         this.inferGenericType(arkMethod.getGenericTypes(), arkClass);
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
+
             for (const stmt of block.getStmts()) {
                 this.resolveExprsInStmt(stmt, arkMethod);
                 this.resolveFieldRefsInStmt(stmt, arkMethod);
@@ -196,7 +198,7 @@ export class TypeInference {
     }
 
     /**
-     * @Deprecated
+     * @deprecated
      * @param arkMethod
      */
     public static inferSimpleTypeInMethod(arkMethod: ArkMethod): void {
@@ -213,6 +215,25 @@ export class TypeInference {
         }
     }
 
+    private static inferAliasTypeAndStmt(aliasTypeDefineStmt: ArkAliasTypeDefineStmt, arkMethod: ArkMethod): void {
+        const aliasType = aliasTypeDefineStmt.getAliasType();
+        const aliasTypeExpr = aliasTypeDefineStmt.getAliasTypeExpr();
+        const originalType = aliasType.getOriginalType();
+
+        if (TypeInference.isUnclearType(originalType)) {
+            // 寻找右侧表达式中最终指向的对象，对象的类型即为aliasType的OriginalType，对象本身为右侧表达式中的typeObject
+            let [newObject, newType] = TypeInference.inferUnclearedType(originalType, arkMethod.getDeclaringArkClass());
+            if (AliasTypeExpr.isAliasTypeOriginalModel(newObject)) {
+                aliasTypeExpr.setOriginalObject(newObject);
+            } else {
+                logger.warn(`Object found is ${newObject}, which haven't been supported now.`);
+            }
+            if (newType !== null) {
+                aliasType.setOriginalType(newType);
+            }
+        }
+    }
+
     /**
      * infer type for Exprs in stmt which invoke method.
      * such as ArkInstanceInvokeExpr ArkStaticInvokeExpr ArkNewExpr
@@ -222,13 +243,6 @@ export class TypeInference {
             const newExpr = expr.inferType(arkMethod);
             if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
                 stmt.replaceUse(expr, newExpr);
-            }
-            if (stmt instanceof ArkAliasTypeDefineStmt && newExpr instanceof AliasTypeExpr) {
-                const alias = arkMethod.getBody()?.getAliasTypeMap()?.get(stmt.getAliasName());
-                if (alias === undefined) {
-                    return;
-                }
-                alias[0].setOriginalType(newExpr.getOriginalType());
             }
         }
     }
@@ -300,12 +314,12 @@ export class TypeInference {
         }
         const rightOp = stmt.getRightOp();
         if (rightOp instanceof Local && rightOp.getType() instanceof UnknownType) {
-            const type = this.inferUnclearReferenceType(rightOp.getName(), arkClass);
+            const type = this.inferUnclearReferenceType(rightOp.getName(), arkClass)[1];
             if (type) {
                 rightOp.setType(type);
             }
         } else if (rightOp.getType() instanceof UnclearReferenceType) {
-            const type = this.inferUnclearReferenceType((rightOp.getType() as UnclearReferenceType).getName(), arkClass);
+            const type = this.inferUnclearReferenceType((rightOp.getType() as UnclearReferenceType).getName(), arkClass)[1];
             if (type && rightOp instanceof ArkParameterRef) {
                 rightOp.setType(type);
             }
@@ -313,7 +327,7 @@ export class TypeInference {
         const leftOp = stmt.getLeftOp();
         let type: Type | null | undefined = leftOp.getType();
         if (this.isUnclearType(type)) {
-            type = this.inferUnclearedType(type, arkClass, rightOp.getType());
+            type = this.inferUnclearedType(type, arkClass, rightOp.getType())[1];
         }
         if (type instanceof UnionType &&
             !this.isUnclearType(rightOp.getType()) && !(leftOp instanceof ArkArrayRef)) {
@@ -410,7 +424,7 @@ export class TypeInference {
         if (!this.isUnclearType(currReturnType)) {
             return;
         }
-        const newReturnType = this.inferUnclearedType(currReturnType, arkMethod.getDeclaringArkClass());
+        const newReturnType = this.inferUnclearedType(currReturnType, arkMethod.getDeclaringArkClass())[1];
         if (newReturnType) {
             oldSignature.getMethodSubSignature().setReturnType(newReturnType);
         } else if (arkMethod.getBody()) {
@@ -432,14 +446,14 @@ export class TypeInference {
         types?.forEach(type => {
             const defaultType = type.getDefaultType();
             if (defaultType instanceof UnclearReferenceType) {
-                const newDefaultType = TypeInference.inferUnclearReferenceType(defaultType.getName(), arkClass);
+                const newDefaultType = TypeInference.inferUnclearReferenceType(defaultType.getName(), arkClass)[1];
                 if (newDefaultType) {
                     type.setDefaultType(newDefaultType);
                 }
             }
             const constraint = type.getConstraint();
             if (constraint instanceof UnclearReferenceType) {
-                const newConstraint = TypeInference.inferUnclearReferenceType(constraint.getName(), arkClass);
+                const newConstraint = TypeInference.inferUnclearReferenceType(constraint.getName(), arkClass)[1];
                 if (newConstraint) {
                     type.setConstraint(newConstraint);
                 }
@@ -447,17 +461,26 @@ export class TypeInference {
         });
     }
 
-    public static inferUnclearRefType(urType: UnclearReferenceType, arkClass: ArkClass): Type | null {
+    /**
+     * Infer type for a given {@link UnclearReferenceType} type.
+     * It returns an array with 2 items, original object and original type.
+     * The original object is null if there is no object, or it failed to find the object.
+     * The original type is null if it failed to infer the type.
+     * @param urType
+     * @param arkClass
+     * @returns
+     */
+    public static inferUnclearRefType(urType: UnclearReferenceType, arkClass: ArkClass): [any, Type | null] {
         const realTypes = urType.getGenericTypes();
         this.inferRealGenericTypes(realTypes, arkClass);
         if (urType.getName() === Builtin.ARRAY) {
-            return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
+            return [null, new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1)];
         }
-        let type = this.inferUnclearReferenceType(urType.getName(), arkClass);
+        let objectAndType = this.inferUnclearReferenceType(urType.getName(), arkClass);
         if (realTypes.length === 0) {
-            return type;
+            return objectAndType;
         }
-        return buildNewType(type);
+        return [objectAndType[0], buildNewType(objectAndType[1])];
 
         function buildNewType(type: Type | null): Type | null {
             if (type instanceof AliasType) {
@@ -475,13 +498,23 @@ export class TypeInference {
         }
     }
 
-    public static inferUnclearReferenceType(refName: string, arkClass: ArkClass): Type | null {
+    /**
+     * Find out the original object and type for a given unclear reference type name.
+     * It returns an array with 2 items, original object and original type.
+     * The original object is null if there is no object, or it failed to find the object.
+     * The original type is null if it failed to infer the type.
+     * @param refName
+     * @param arkClass
+     * @returns
+     */
+    public static inferUnclearReferenceType(refName: string, arkClass: ArkClass): [any, Type | null] {
         if (!refName) {
-            return null;
+            return [null, null];
         }
         //split and iterate to infer each type
         const singleNames = refName.split('.');
         let type = null;
+        let object;
         for (let i = 0; i < singleNames.length; i++) {
             let genericName: string = EMPTY_STRING;
             const name = singleNames[i].replace(/<(\w+)>/, (match, group1) => {
@@ -489,16 +522,16 @@ export class TypeInference {
                 return EMPTY_STRING;
             });
             if (i === 0) {
-                type = this.inferBaseType(name, arkClass);
+                [object, type] = this.inferBaseType(name, arkClass);
             } else if (type) {
-                type = this.inferFieldType(type, name, arkClass)?.[1];
+                [object, type] = this.inferFieldType(type, name, arkClass);
             }
             if (!type) {
-                return null;
+                return [null, null];
             }
             if (genericName) {
                 const realTypes = genericName.split(',').map(generic => {
-                    const realType = this.inferBaseType(generic, arkClass);
+                    const realType = this.inferBaseType(generic, arkClass)[1];
                     return realType ?? new UnclearReferenceType(generic);
                 });
                 if (type instanceof ClassType) {
@@ -508,60 +541,80 @@ export class TypeInference {
                 }
             }
         }
-        return type;
+        return [object, type];
     }
 
-    public static inferFieldType(baseType: Type, fieldName: string, declareClass: ArkClass): [any, Type] | null {
+    /**
+     * Find out the original object and type for a given base type and the field name.
+     * It returns an array with 2 items, original object and original type.
+     * The original object is null if there is no object, or it failed to find the object.
+     * The original type is null if it failed to infer the type.
+     * @param baseType
+     * @param fieldName
+     * @param declareClass
+     * @returns
+     */
+    public static inferFieldType(baseType: Type, fieldName: string, declareClass: ArkClass): [any, Type | null] {
         if (baseType instanceof AliasType) {
             baseType = baseType.getOriginalType();
         } else if (baseType instanceof UnionType && baseType.getCurrType()) {
             baseType = baseType.getCurrType();
         }
-        let propertyAndType: [any, Type] | null = null;
+
         if (baseType instanceof ClassType) {
             const arkClass = declareClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
-            if (!arkClass) {
-                if (fieldName === Builtin.ITERATOR_RESULT_VALUE && baseType.getClassSignature()
-                    .getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
-                    const types = baseType.getRealGenericTypes();
-                    if (types && types.length > 0) {
-                        propertyAndType = [null, types[0]];
-                    }
+            if (arkClass === null && fieldName === Builtin.ITERATOR_RESULT_VALUE &&
+                baseType.getClassSignature().getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+                const types = baseType.getRealGenericTypes();
+                if (types && types.length > 0) {
+                    return [null, types[0]];
                 }
-                return propertyAndType;
+                return [null, null];
             }
-            if (arkClass.isAnonymousClass()) {
-                const fieldType = this.inferUnclearReferenceType(fieldName, arkClass);
-                return fieldType ? [null, fieldType] : null;
+            if (arkClass === null) {
+                return [null, null];
             }
+
             const property = ModelUtils.findPropertyInClass(fieldName, arkClass);
-            let propertyType: Type | null = null;
+            if (property === null) {
+                if (arkClass.isAnonymousClass()) {
+                    return this.inferUnclearReferenceType(fieldName, arkClass);
+                }
+                return [null, null];
+            }
             if (property instanceof ArkField) {
-                propertyType = property.getType();
-            } else if (property) {
-                propertyType = this.parseArkExport2Type(property);
+                return [property, property.getType()];
             }
-            if (propertyType) {
-                propertyAndType = [property, propertyType];
-            }
-        } else if (baseType instanceof AnnotationNamespaceType) {
+            return [property, this.parseArkExport2Type(property)];
+        }
+
+        if (baseType instanceof AnnotationNamespaceType) {
             const namespace = declareClass.getDeclaringArkFile().getScene().getNamespace(baseType.getNamespaceSignature());
             if (namespace) {
                 const property = ModelUtils.findPropertyInNamespace(fieldName, namespace);
-                const propertyType = this.parseArkExport2Type(property);
-                if (propertyType) {
-                    propertyAndType = [property, propertyType];
+                if (property === undefined) {
+                    return [null, null];
                 }
+                return [property, this.parseArkExport2Type(property)];
             }
-        } else {
-            logger.warn('infer unclear reference type fail: ' + fieldName);
+            return [null, null];
         }
-        return propertyAndType;
+        logger.warn('infer unclear reference type fail: ' + fieldName);
+        return [null, null];
     }
 
-    public static inferBaseType(baseName: string, arkClass: ArkClass): Type | null {
+    /**
+     * Find out the original object and type for a given base name.
+     * It returns an array with 2 items, original object and original type.
+     * The original object is null if there is no object, or it failed to find the object.
+     * The original type is null if failed to infer the type.
+     * @param baseName
+     * @param arkClass
+     * @returns
+     */
+    public static inferBaseType(baseName: string, arkClass: ArkClass): [any, Type | null] {
         if (SUPER_NAME === baseName) {
-            return this.parseArkExport2Type(arkClass.getSuperClass());
+            return [arkClass.getSuperClass(), this.parseArkExport2Type(arkClass.getSuperClass())];
         }
         let field: ArkField | Local | null | undefined;
         field = arkClass.getFieldWithName(baseName) ?? arkClass.getStaticFieldWithName(baseName);
@@ -569,7 +622,7 @@ export class TypeInference {
             field = arkClass.getDeclaringArkFile().getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName);
         }
         if (field && !this.isUnclearType(field.getType())) {
-            return field.getType();
+            return [field, field.getType()];
         }
         let arkExport: ArkExport | null = ModelUtils.getClassWithName(baseName, arkClass)
             ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
@@ -579,7 +632,7 @@ export class TypeInference {
         if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
-        return this.parseArkExport2Type(arkExport);
+        return [arkExport, this.parseArkExport2Type(arkExport)];
     }
 
     public static inferRealGenericTypes(realTypes: Type[] | undefined, arkClass: ArkClass): void {
@@ -589,7 +642,7 @@ export class TypeInference {
         for (let i = 0; i < realTypes.length; i++) {
             const mayType = realTypes[i];
             if (this.isUnclearType(mayType)) {
-                const newType = this.inferUnclearedType(mayType, arkClass);
+                const newType = this.inferUnclearedType(mayType, arkClass)[1];
                 if (newType) {
                     realTypes[i] = newType;
                 }
@@ -674,43 +727,5 @@ export class TypeInference {
         file.getImportInfos().forEach(importInfo => {
             importInfo.getLazyExportInfo();
         });
-    }
-
-    public static inferUnclearAliasImportType(arkClass: ArkClass, importFrom: string, isTypeOf: boolean, importQualifier: string | null): Type | null {
-        if (importQualifier === null) {
-            if (isTypeOf) {
-                // TODO: typeof import case (isTypeOf is true) is waiting to be supported
-                return null;
-            }
-            return null;
-        }
-
-        const qualifiers = importQualifier.split('.');
-        let importInfo = new ImportInfo();
-        importInfo.build(qualifiers[0], '', importFrom, new LineColPosition(0, 0), 0);
-        importInfo.setDeclaringArkFile(arkClass.getDeclaringArkFile());
-        let arkExport = findExportInfo(importInfo)?.getArkExport();
-        if (arkExport === null || arkExport === undefined) {
-            return null;
-        }
-
-        if (qualifiers.length === 1) {
-            return this.parseArkExport2Type(arkExport);
-        }
-        return this.getTypeWithQualifier(arkExport, qualifiers.slice(1));
-    }
-
-    private static getTypeWithQualifier(parent: ArkExport, qualifiers: string[]): Type | null {
-        if (parent instanceof ArkNamespace) {
-            const arkExport = parent.getExportInfoBy(qualifiers[0])?.getArkExport();
-            if (arkExport === undefined || arkExport === null) {
-                return null;
-            }
-            if (qualifiers.length === 1) {
-                return this.parseArkExport2Type(arkExport);
-            }
-            return this.getTypeWithQualifier(arkExport, qualifiers.slice(1));
-        }
-        return null;
     }
 }

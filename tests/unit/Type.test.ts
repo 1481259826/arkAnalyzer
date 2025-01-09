@@ -16,26 +16,32 @@
 import { assert, describe, it } from 'vitest';
 import path from 'path';
 import {
-    AbstractExpr,
-    AliasType,
-    AliasTypeDeclaration,
+    AliasType, AliasTypeExpr,
     ArkAliasTypeDefineStmt,
-    FileSignature,
+    Type,
+    FileSignature, ImportInfo,
     Scene,
-    SceneConfig,
+    SceneConfig, SourceMethodPrinter,
     Stmt,
+    Local, ArkField, ArkClass,
 } from '../../src';
 import {
     AliasTypeMultiRef,
     AliasTypeOfBoolean,
     AliasTypeOfClassA,
-    AliasTypeOfClassB, AliasTypeOfLiteralType,
+    AliasTypeOfClassB, AliasTypeOfFunctionType,
+    AliasTypeOfLiteralType,
     AliasTypeOfMultiQualifier,
     AliasTypeOfMultiTypeQuery,
-    AliasTypeOfNumberA, AliasTypeOfQueryOfLiteralType,
+    AliasTypeOfNumberA, AliasTypeOfObjectA,
+    AliasTypeOfQueryOfLiteralType,
     AliasTypeOfSingleTypeQuery,
-    AliasTypeOfString,
-    AliasTypeRef,
+    AliasTypeOfString, AliasTypeOfUnionType, AliasTypeOfWholeExports,
+    AliasTypeRef, SourceAliasTypeWithFunctionType,
+    SourceAliasTypeWithImport, SourceAliasTypeWithLiteralType,
+    SourceAliasTypeWithReference,
+    SourceAliasTypeWithTypeQuery, SourceAliasTypeWithUnionType,
+    SourceSimpleAliasType,
 } from '../resources/type/expectedIR';
 
 function buildScene(): Scene {
@@ -47,89 +53,97 @@ function buildScene(): Scene {
     return projectScene;
 }
 
-function compareTypeAlias(alias: [AliasType, AliasTypeDeclaration] | undefined, expectIR: any): void {
-    assert.isDefined(alias);
-    const aliasType = (alias as [AliasType, AliasTypeDeclaration])[0];
-    assert.isDefined(aliasType);
-    assert.equal(aliasType!.getOriginalType().toString(), expectIR.aliasType.originalType);
-    assert.equal(aliasType!.getName(), expectIR.aliasType.name);
-    assert.equal(aliasType!.getModifiers(), expectIR.aliasType.modifiers);
-    assert.equal(aliasType!.getSignature().toString(), expectIR.aliasType.signature);
-
-    const aliasTypeDeclaration = (alias as [AliasType, AliasTypeDeclaration])[1];
-    assert.isDefined(aliasTypeDeclaration);
-    assert.equal(aliasTypeDeclaration!.getSourceCode(), expectIR.aliasTypeDeclaration.sourceCode);
-    assert.equal(aliasTypeDeclaration!.getPosition().getLineNo(), expectIR.aliasTypeDeclaration.position.line);
-    assert.equal(aliasTypeDeclaration!.getPosition().getColNo(), expectIR.aliasTypeDeclaration.position.column);
+function compareAliasType(aliasType: AliasType, expectIR: any): void {
+    assert.equal(aliasType!.getOriginalType().toString(), expectIR.originalType);
+    assert.equal(aliasType!.getName(), expectIR.name);
+    assert.equal(aliasType!.getModifiers(), expectIR.modifiers);
+    assert.equal(aliasType!.getSignature().toString(), expectIR.signature);
 }
 
-function compareTypeAliasStmts(stmts: Stmt[], expectIR: any): void {
-    assert.equal(stmts.length, expectIR.length);
-    for (let i = 0; i < stmts.length; i++) {
-        if (expectIR[i].instanceof !== undefined) {
-            assert.isTrue(stmts[i] instanceof expectIR[i].instanceof);
-        }
-        if (expectIR[i].typeAliasExpr !== undefined && stmts[i] instanceof ArkAliasTypeDefineStmt) {
-            compareTypeAliasExpr((stmts[i] as ArkAliasTypeDefineStmt).getAliasTypeExpr(), expectIR[i].typeAliasExpr);
-        }
-        assert.equal(stmts[i].toString(), expectIR[i].toString);
-        assert.equal(stmts[i].getOriginPositionInfo().getLineNo(), expectIR[i].line);
-        assert.equal(stmts[i].getOriginPositionInfo().getColNo(), expectIR[i].column);
+function compareTypeAliasStmt(stmt: Stmt, expectIR: any): void {
+    if (expectIR.instanceof !== undefined) {
+        assert.isTrue(stmt instanceof expectIR.instanceof);
+    }
+    if (expectIR.typeAliasExpr !== undefined && stmt instanceof ArkAliasTypeDefineStmt) {
+        compareTypeAliasExpr(stmt.getAliasTypeExpr(), expectIR.typeAliasExpr);
+    }
+    assert.equal(stmt.toString(), expectIR.toString);
+    assert.equal(stmt.getOriginPositionInfo().getLineNo(), expectIR.line);
+    assert.equal(stmt.getOriginPositionInfo().getColNo(), expectIR.column);
 
-        if (expectIR[i].operandColumns === undefined) {
-            continue;
-        }
-        for (let j = 0; j < expectIR[i].operandColumns.length; j++) {
-            const expectedOpPosition = expectIR[i].operandColumns[j];
-            const opPosition = stmts[i].getOperandOriginalPosition(j);
-            assert.isNotNull(opPosition);
-            const cols = [opPosition!.getFirstCol(), opPosition!.getLastCol()];
-            assert.equal(cols[0], expectedOpPosition[0]);
-            assert.equal(cols[1], expectedOpPosition[1]);
-        }
+    if (expectIR.operandColumns === undefined) {
+        return;
+    }
+    for (let j = 0; j < expectIR.operandColumns.length; j++) {
+        const expectedOpPosition = expectIR.operandColumns[j];
+        const opPosition = stmt.getOperandOriginalPosition(j);
+        assert.isNotNull(opPosition);
+        const cols = [opPosition!.getFirstCol(), opPosition!.getLastCol()];
+        assert.equal(cols[0], expectedOpPosition[0]);
+        assert.equal(cols[1], expectedOpPosition[1]);
     }
 }
 
-function compareTypeAliasExpr(expr: AbstractExpr, expectedExpr: any): void {
-    if (expectedExpr.instanceof !== undefined) {
-        assert.isTrue(expr instanceof expectedExpr.instanceof);
+function compareTypeAliasExpr(expr: AliasTypeExpr, expectedExpr: any): void {
+    const originalObject = expr.getOriginalObject();
+    assert.isTrue(originalObject instanceof expectedExpr.originalObject.instanceof);
+    if (originalObject instanceof Type) {
+        assert.equal(originalObject.toString(), expectedExpr.originalObject.toString);
+    } else if (originalObject instanceof ImportInfo && originalObject.getLazyExportInfo()) {
+        const arkExport = originalObject.getLazyExportInfo()!.getArkExport();
+        assert.isDefined(arkExport);
+        assert.isNotNull(arkExport);
+        if (arkExport instanceof Local) {
+            assert.equal(arkExport.getType().getTypeString(), expectedExpr.originalObject.lazyExportInfo.arkExport.signature);
+        } else {
+            assert.equal(arkExport!.getSignature().toString(), expectedExpr.originalObject.lazyExportInfo.arkExport.signature);
+        }
+    } else if (originalObject instanceof Local) {
+        assert.equal(originalObject.getType().getTypeString(), expectedExpr.originalObject.typeString);
+        assert.equal(originalObject.getDeclaringStmt()?.toString(), expectedExpr.originalObject.declaringStmt);
+    } else if (originalObject instanceof ArkField) {
+        assert.equal(originalObject.getSignature().toString(), expectedExpr.originalObject.signature);
+    } else if (originalObject instanceof ArkClass) {
+        assert.equal(originalObject.getSignature().toString(), expectedExpr.originalObject.signature);
     }
+    assert.equal(expr.getTransferWithTypeOf(), expectedExpr.transferWithTypeOf);
     assert.equal(expr.toString(), expectedExpr.toString);
 }
 
 let projectScene = buildScene();
 const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+const defaultClass = projectScene.getFile(fileId)?.getDefaultClass();
 
 describe('Simple Alias Type Test', () => {
-    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('simpleAliasType');
+    const method = defaultClass?.getMethodWithName('simpleAliasType');
     const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
     const stmts = method?.getBody()?.getCfg().getStmts();
 
     it('alias type of boolean', () => {
         const alias = aliasTypeMap?.get('BooleanAliasType');
         assert.isDefined(alias);
-        if (AliasTypeOfBoolean.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfBoolean.alias);
+        if (AliasTypeOfBoolean.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfBoolean.aliasType);
         }
 
-        if (AliasTypeOfBoolean.stmts !== undefined) {
+        if (AliasTypeOfBoolean.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(1, 2);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfBoolean.stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfBoolean.stmt);
         }
     });
 
     it('alias type of string', () => {
         const alias = aliasTypeMap?.get('StringAliasType');
         assert.isDefined(alias);
-        if (AliasTypeOfString.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfString.alias);
+        if (AliasTypeOfString.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfString.aliasType);
         }
 
-        if (AliasTypeOfString.stmts !== undefined) {
+        if (AliasTypeOfString.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(2, 3);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfString.stmts);
+            assert.isAtLeast(stmts!.length, 3);
+            compareTypeAliasStmt(stmts![2], AliasTypeOfString.stmt);
         }
     });
 
@@ -152,64 +166,111 @@ describe('Simple Alias Type Test', () => {
 });
 
 describe('Alias Type With Import Test', () => {
-    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithImport');
+    const method = defaultClass?.getMethodWithName('aliasTypeWithImport');
     const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
     const stmts = method?.getBody()?.getCfg().getStmts();
 
     it('alias type of exported class', () => {
         const alias = aliasTypeMap?.get('ClassAType');
         assert.isDefined(alias);
-        if (AliasTypeOfClassA.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfClassA.alias);
+        if (AliasTypeOfClassA.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfClassA.aliasType);
         }
 
-        if (AliasTypeOfClassA.stmts !== undefined) {
+        if (AliasTypeOfClassA.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(1, 2);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfClassA.stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfClassA.stmt);
         }
+
+        const importInfo = projectScene.getFile(fileId)?.getImportInfoBy('ClassA');
+        assert.isUndefined(importInfo);
     });
 
     it('alias type of default exported class', () => {
         const alias = aliasTypeMap?.get('ClassBType');
         assert.isDefined(alias);
-        if (AliasTypeOfClassB.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfClassB.alias);
+        if (AliasTypeOfClassB.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfClassB.aliasType);
         }
 
-        if (AliasTypeOfClassB.stmts !== undefined) {
+        if (AliasTypeOfClassB.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(2, 3);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfClassB.stmts);
+            assert.isAtLeast(stmts!.length, 3);
+            compareTypeAliasStmt(stmts![2], AliasTypeOfClassB.stmt);
         }
+
+        let importInfo = projectScene.getFile(fileId)?.getImportInfoBy('ClassB');
+        assert.isUndefined(importInfo);
+
+        importInfo = projectScene.getFile(fileId)?.getImportInfoBy('default');
+        assert.isUndefined(importInfo);
     });
 
     it('alias type of exported number type', () => {
         const alias = aliasTypeMap?.get('NumberAType');
         assert.isDefined(alias);
-        if (AliasTypeOfNumberA.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfNumberA.alias);
+        if (AliasTypeOfNumberA.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfNumberA.aliasType);
         }
 
-        if (AliasTypeOfNumberA.stmts !== undefined) {
+        if (AliasTypeOfNumberA.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(3, 4);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfNumberA.stmts);
+            assert.isAtLeast(stmts!.length, 4);
+            compareTypeAliasStmt(stmts![3], AliasTypeOfNumberA.stmt);
         }
+
+        const importInfo = projectScene.getFile(fileId)?.getImportInfoBy('numberA');
+        assert.isDefined(importInfo);
+        assert.equal(importInfo!.getOriginTsPosition().getLineNo(), 16);
     });
 
     it('alias type of multiple qualifier', () => {
         const alias = aliasTypeMap?.get('MultiQualifierType');
         assert.isDefined(alias);
-        if (AliasTypeOfMultiQualifier.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfMultiQualifier.alias);
+        if (AliasTypeOfMultiQualifier.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfMultiQualifier.aliasType);
         }
 
-        if (AliasTypeOfMultiQualifier.stmts !== undefined) {
+        if (AliasTypeOfMultiQualifier.stmt !== undefined) {
             assert.isDefined(stmts);
-            assert.isTrue(stmts!.length > 6);
-            const relatedStmts = stmts!.slice(5, 6);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfMultiQualifier.stmts);
+            assert.isAtLeast(stmts!.length, 5);
+            compareTypeAliasStmt(stmts![4], AliasTypeOfMultiQualifier.stmt);
+        }
+
+        const importInfo = projectScene.getFile(fileId)?.getImportInfoBy('A.B.C');
+        assert.isUndefined(importInfo);
+    });
+
+    it('alias type of object literal type', () => {
+        const alias = aliasTypeMap?.get('ObjectAType');
+        assert.isDefined(alias);
+        if (AliasTypeOfObjectA.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfObjectA.aliasType);
+        }
+
+        if (AliasTypeOfObjectA.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 6);
+            compareTypeAliasStmt(stmts![5], AliasTypeOfObjectA.stmt);
+        }
+
+        const importInfo = projectScene.getFile(fileId)?.getImportInfoBy('objectA');
+        assert.isDefined(importInfo);
+        assert.equal(importInfo!.getOriginTsPosition().getLineNo(), 16);
+    });
+
+    it('alias type of whole exports type', () => {
+        const alias = aliasTypeMap?.get('WholeExportsType');
+        assert.isDefined(alias);
+        if (AliasTypeOfWholeExports.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfWholeExports.aliasType);
+        }
+
+        if (AliasTypeOfWholeExports.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 7);
+            compareTypeAliasStmt(stmts![6], AliasTypeOfWholeExports.stmt);
         }
     });
 
@@ -239,41 +300,45 @@ describe('Alias Type With Import Test', () => {
 
         const multiQualifierType = locals?.get('MultiQualifierType');
         assert.isUndefined(multiQualifierType);
+
+        const objectAType = locals?.get('ObjectAType');
+        assert.isUndefined(objectAType);
+
+        const wholeExportsType = locals?.get('WholeExportsType');
+        assert.isUndefined(wholeExportsType);
     });
 });
 
 describe('Alias Type With Type Query Test', () => {
-    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithTypeQuery');
+    const method = defaultClass?.getMethodWithName('aliasTypeWithTypeQuery');
     const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
     const stmts = method?.getBody()?.getCfg().getStmts();
 
     it('alias type of single qualifier', () => {
         const alias = aliasTypeMap?.get('SingleTypeQuery');
         assert.isDefined(alias);
-        if (AliasTypeOfSingleTypeQuery.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfSingleTypeQuery.alias);
+        if (AliasTypeOfSingleTypeQuery.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfSingleTypeQuery.aliasType);
         }
 
-        if (AliasTypeOfSingleTypeQuery.stmts !== undefined) {
+        if (AliasTypeOfSingleTypeQuery.stmt !== undefined) {
             assert.isDefined(stmts);
-            assert.isTrue(stmts!.length > 2);
-            const relatedStmts = stmts!.slice(1, 2);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfSingleTypeQuery.stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfSingleTypeQuery.stmt);
         }
     });
 
     it('alias type of multiple qualifiers', () => {
         const alias = aliasTypeMap?.get('MultiTypeQuery');
         assert.isDefined(alias);
-        if (AliasTypeOfMultiTypeQuery.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfMultiTypeQuery.alias);
+        if (AliasTypeOfMultiTypeQuery.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfMultiTypeQuery.aliasType);
         }
 
-        if (AliasTypeOfMultiTypeQuery.stmts !== undefined) {
+        if (AliasTypeOfMultiTypeQuery.stmt !== undefined) {
             assert.isDefined(stmts);
-            assert.isTrue(stmts!.length > 3);
-            const relatedStmts = stmts!.slice(2, 3);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfMultiTypeQuery.stmts);
+            assert.isAtLeast(stmts!.length, 3);
+            compareTypeAliasStmt(stmts![2], AliasTypeOfMultiTypeQuery.stmt);
         }
     });
 
@@ -286,41 +351,38 @@ describe('Alias Type With Type Query Test', () => {
         const multiTypeQuery = locals?.get('MultiTypeQuery');
         assert.isUndefined(multiTypeQuery);
     });
-
 });
 
 describe('Alias Type With Reference Test', () => {
-    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithReference');
+    const method = defaultClass?.getMethodWithName('aliasTypeWithReference');
     const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
     const stmts = method?.getBody()?.getCfg().getStmts();
 
     it('alias type', () => {
         const alias = aliasTypeMap?.get('ReferType');
         assert.isDefined(alias);
-        if (AliasTypeRef.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeRef.alias);
+        if (AliasTypeRef.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeRef.aliasType);
         }
 
-        if (AliasTypeRef.stmts !== undefined) {
+        if (AliasTypeRef.stmt !== undefined) {
             assert.isDefined(stmts);
-            assert.isTrue(stmts!.length > 2);
-            const relatedStmts = stmts!.slice(1, 2);
-            compareTypeAliasStmts(relatedStmts, AliasTypeRef.stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeRef.stmt);
         }
     });
 
     it('alias type of multiple reference', () => {
         const alias = aliasTypeMap?.get('MultiReferType');
         assert.isDefined(alias);
-        if (AliasTypeMultiRef.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeMultiRef.alias);
+        if (AliasTypeMultiRef.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeMultiRef.aliasType);
         }
 
         if (AliasTypeMultiRef.stmts !== undefined) {
             assert.isDefined(stmts);
-            assert.isTrue(stmts!.length > 3);
-            const relatedStmts = stmts!.slice(2, 3);
-            compareTypeAliasStmts(relatedStmts, AliasTypeMultiRef.stmts);
+            assert.isAtLeast(stmts!.length, 3);
+            compareTypeAliasStmt(stmts![2], AliasTypeMultiRef.stmts);
         }
     });
 
@@ -336,35 +398,35 @@ describe('Alias Type With Reference Test', () => {
 });
 
 describe('Alias Type With Literal Type Test', () => {
-    const method = projectScene.getFile(fileId)?.getDefaultClass().getMethodWithName('aliasTypeWithLiteralType');
+    const method = defaultClass?.getMethodWithName('aliasTypeWithLiteralType');
     const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
     const stmts = method?.getBody()?.getCfg().getStmts();
 
     it('alias type of literalType', () => {
         const alias = aliasTypeMap?.get('ABC');
         assert.isDefined(alias);
-        if (AliasTypeOfLiteralType.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfLiteralType.alias);
+        if (AliasTypeOfLiteralType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfLiteralType.aliasType);
         }
 
-        if (AliasTypeOfLiteralType.stmts !== undefined) {
+        if (AliasTypeOfLiteralType.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(1, 2);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfLiteralType.stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfLiteralType.stmt);
         }
     });
 
     it('alias type of type query of literalType', () => {
         const alias = aliasTypeMap?.get('XYZ');
         assert.isDefined(alias);
-        if (AliasTypeOfQueryOfLiteralType.alias !== undefined) {
-            compareTypeAlias(alias, AliasTypeOfQueryOfLiteralType.alias);
+        if (AliasTypeOfQueryOfLiteralType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfQueryOfLiteralType.aliasType);
         }
 
-        if (AliasTypeOfQueryOfLiteralType.stmts !== undefined) {
+        if (AliasTypeOfQueryOfLiteralType.stmt !== undefined) {
             assert.isDefined(stmts);
-            const relatedStmts = stmts!.slice(3, 4);
-            compareTypeAliasStmts(relatedStmts, AliasTypeOfQueryOfLiteralType.stmts);
+            assert.isAtLeast(stmts!.length, 4);
+            compareTypeAliasStmt(stmts![3], AliasTypeOfQueryOfLiteralType.stmt);
         }
     });
 
@@ -378,5 +440,127 @@ describe('Alias Type With Literal Type Test', () => {
 
         const localXYZ = locals?.get('XYZ');
         assert.isUndefined(localXYZ);
+    });
+});
+
+describe('Alias Type With Function Type Test', () => {
+    const method = defaultClass?.getMethodWithName('aliasTypeWithFunctionType');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
+
+    it('alias type of FunctionType', () => {
+        const alias = aliasTypeMap?.get('FunctionAliasType');
+        assert.isDefined(alias);
+        if (AliasTypeOfFunctionType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfFunctionType.aliasType);
+        }
+
+        if (AliasTypeOfFunctionType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfFunctionType.stmt);
+        }
+    });
+});
+
+describe('Alias Type With Union Type Test', () => {
+    const method = defaultClass?.getMethodWithName('aliasTypeWithUnionType');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
+
+    it('alias type of UnionType', () => {
+        const alias = aliasTypeMap?.get('UnionAliasType');
+        assert.isDefined(alias);
+        if (AliasTypeOfUnionType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfUnionType.aliasType);
+        }
+
+        if (AliasTypeOfUnionType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfUnionType.stmt);
+        }
+    });
+});
+
+describe('Save to TS Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, '../resources/type'));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
+    let arkFile = scene.getFiles().find((value) => {
+        return value.getName() === 'test.ts';
+    });
+
+    it('case1: method simpleAliasType', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('simpleAliasType');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceSimpleAliasType);
+    });
+
+    it('case2: method aliasTypeWithImport', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithImport');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithImport);
+    });
+
+    it('case3: method aliasTypeWithTypeQuery', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithTypeQuery');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithTypeQuery);
+    });
+
+    it('case4: method aliasTypeWithReference', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithReference');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithReference);
+    });
+
+    it('case5: method aliasTypeWithLiteralType', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithLiteralType');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithLiteralType);
+    });
+
+    it('case6: method aliasTypeWithFunctionType', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithFunctionType');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithFunctionType);
+    });
+
+    it('case7: method aliasTypeWithUnionType', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithUnionType');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithUnionType);
     });
 });

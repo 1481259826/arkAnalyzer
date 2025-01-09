@@ -14,380 +14,462 @@
  */
 
 import {
-    AliasTypeExpr,
-    AliasTypeImportExpr,
-    ArkAliasTypeDefineStmt,
-    DEFAULT_ARK_CLASS_NAME,
+    AliasType,
+    ArkAliasTypeDefineStmt, ArkClass, ArkField, BooleanType,
+    DEFAULT_ARK_CLASS_NAME, ImportInfo, Local, LiteralType, StringType, ArkMethod,
+    UnionType,
 } from '../../../src';
 
 export const AliasTypeOfBoolean = {
-    alias: {
-        aliasType: {
-            name: 'BooleanAliasType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.simpleAliasType()#BooleanAliasType`,
-            modifiers: 0,
-            originalType: 'boolean'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type BooleanAliasType = boolean;',
-            position: {
-                line: 19,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'BooleanAliasType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.simpleAliasType()#BooleanAliasType`,
+        modifiers: 0,
+        originalType: 'boolean'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: BooleanType,
                 toString: 'boolean'
             },
-            toString: 'type BooleanAliasType = boolean',
-            line: 19,
-            column: 5,
-            operandColumns: [[10, 26], [29, 36]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: 'boolean'
+        },
+        toString: 'type BooleanAliasType = boolean',
+        line: 19,
+        column: 5,
+        operandColumns: [[10, 26], [29, 36]]
+    }
 };
 
 export const AliasTypeOfString = {
-    alias: {
-        aliasType: {
-            name: 'StringAliasType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.simpleAliasType()#StringAliasType`,
-            modifiers: 0,
-            originalType: 'string'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type StringAliasType = string;',
-            position: {
-                line: 20,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'StringAliasType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.simpleAliasType()#StringAliasType`,
+        modifiers: 0,
+        originalType: 'string'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: StringType,
                 toString: 'string'
             },
-            toString: 'type StringAliasType = string',
-            line: 20,
-            column: 5,
-            operandColumns: [[10, 25], [28, 34]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: 'string'
+        },
+        toString: 'type StringAliasType = string',
+        line: 20,
+        column: 5,
+        operandColumns: [[10, 25], [28, 34]]
+    }
 };
 
 export const AliasTypeOfClassA = {
-    alias: {
-        aliasType: {
-            name: 'ClassAType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#ClassAType`,
-            modifiers: 0,
-            originalType: '@type/exportExample.ts: ClassA',
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type ClassAType = import(\'./exportExample\').ClassA;',
-            position: {
-                line: 28,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'ClassAType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#ClassAType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: ClassA',
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeImportExpr,
-                toString: 'import(\'./exportExample\').ClassA'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ImportInfo,
+                lazyExportInfo: {
+                    arkExport: {
+                        signature: '@type/exportExample.ts: ClassA'
+                    }
+                }
             },
-            toString: 'type ClassAType = import(\'./exportExample\').ClassA',
-            line: 28,
-            column: 5,
-            operandColumns: [[10, 20], [23, 55]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: 'import(\'./exportExample\').ClassA'
+        },
+        toString: 'type ClassAType = import(\'./exportExample\').ClassA',
+        line: 28,
+        column: 5,
+        operandColumns: [[10, 20], [23, 55]]
+    }
 };
 
 export const AliasTypeOfClassB = {
-    alias: {
-        aliasType: {
-            name: 'ClassBType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#ClassBType`,
-            modifiers: 0,
-            originalType: '@type/exportExample.ts: ClassB',
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type ClassBType = import(\'./exportExample\').default;',
-            position: {
-                line: 29,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'ClassBType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#ClassBType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: ClassB',
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeImportExpr,
-                toString: 'import(\'./exportExample\').default'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ImportInfo,
+                lazyExportInfo: {
+                    arkExport: {
+                        signature: '@type/exportExample.ts: ClassB'
+                    }
+                }
             },
-            toString: 'type ClassBType = import(\'./exportExample\').default',
-            line: 29,
-            column: 5,
-            operandColumns: [[10, 20], [23, 56]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: 'import(\'./exportExample\').default'
+        },
+        toString: 'type ClassBType = import(\'./exportExample\').default',
+        line: 29,
+        column: 5,
+        operandColumns: [[10, 20], [23, 56]]
+    }
 };
 
 export const AliasTypeOfNumberA = {
-    alias: {
-        aliasType: {
-            name: 'NumberAType',
-            signature: `@type/test.ts: %dflt.aliasTypeWithImport()#NumberAType`,
-            modifiers: 0,
-            originalType: `@type/exportExample.ts: %dflt.[static]%dflt()#numberA`,
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type NumberAType = import(\'./exportExample\').numberA;',
-            position: {
-                line: 30,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'NumberAType',
+        signature: `@type/test.ts: %dflt.aliasTypeWithImport()#NumberAType`,
+        modifiers: 0,
+        originalType: `@type/exportExample.ts: %dflt.[static]%dflt()#numberA`,
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeImportExpr,
-                toString: 'import(\'./exportExample\').numberA'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ImportInfo,
+                lazyExportInfo: {
+                    arkExport: {
+                        signature: '@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
+                    }
+                }
             },
-            toString: 'type NumberAType = import(\'./exportExample\').numberA',
-            line: 30,
-            column: 5,
-            operandColumns: [[10, 21], [24, 57]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: 'import(\'./exportExample\').numberA'
+        },
+        toString: 'type NumberAType = import(\'./exportExample\').numberA',
+        line: 30,
+        column: 5,
+        operandColumns: [[10, 21], [24, 57]]
+    }
 };
 
 export const AliasTypeOfMultiQualifier = {
-    alias: {
-        aliasType: {
-            name: 'MultiQualifierType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#MultiQualifierType`,
-            modifiers: 0,
-            originalType: '@type/exportExample.ts: A.B.C'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type MultiQualifierType = import(\'./exportExample\').A.B.C;',
-            position: {
-                line: 33,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'MultiQualifierType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#MultiQualifierType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: A.B.C'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeImportExpr,
-                toString: 'import(\'./exportExample\').A.B.C'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ImportInfo,
+                lazyExportInfo: {
+                    arkExport: {
+                        signature: '@type/exportExample.ts: A.B.C'
+                    }
+                },
             },
-            toString: 'type MultiQualifierType = import(\'./exportExample\').A.B.C',
-            line: 33,
-            column: 5,
-            operandColumns: [[10, 28], [31, 62]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: 'import(\'./exportExample\').A.B.C'
+        },
+        toString: 'type MultiQualifierType = import(\'./exportExample\').A.B.C',
+        line: 31,
+        column: 5,
+        operandColumns: [[10, 28], [31, 62]]
+    }
+};
+
+export const AliasTypeOfObjectA = {
+    aliasType: {
+        name: 'ObjectAType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#ObjectAType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ImportInfo,
+                lazyExportInfo: {
+                    arkExport: {
+                        signature: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
+                    }
+                },
+            },
+            transferWithTypeOf: true,
+            toString: 'typeof import(\'./exportExample\').objectA'
+        },
+        toString: 'type ObjectAType = typeof import(\'./exportExample\').objectA',
+        line: 33,
+        column: 5,
+        operandColumns: [[10, 21], [24, 64]]
+    }
+};
+
+// TODO: originalObject should be the map of all exports of the import file
+export const AliasTypeOfWholeExports = {
+    aliasType: {
+        name: 'WholeExportsType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#WholeExportsType`,
+        modifiers: 0,
+        originalType: 'unknown'
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ImportInfo,
+                lazyExportInfo: null
+            },
+            transferWithTypeOf: true,
+            toString: 'typeof import(\'./exportExample\')'
+        },
+        toString: 'type WholeExportsType = typeof import(\'./exportExample\')',
+        line: 34,
+        column: 5,
+        operandColumns: [[10, 26], [29, 61]]
+    }
 };
 
 export const AliasTypeOfSingleTypeQuery = {
-    alias: {
-        aliasType: {
-            name: 'SingleTypeQuery',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithTypeQuery()#SingleTypeQuery`,
-            modifiers: 0,
-            originalType: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type SingleTypeQuery = typeof objectA;',
-            position: {
-                line: 42,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'SingleTypeQuery',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithTypeQuery()#SingleTypeQuery`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
-                toString: 'typeof objectA'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: Local,
+                typeString: '@type/exportExample.ts: %AC$%dflt$%dflt$0',
+                declaringStmt: 'objectA = %0'
             },
-            toString: 'type SingleTypeQuery = typeof objectA',
-            line: 42,
-            column: 5,
-            operandColumns: [[10, 25], [28, 42]]
-        }
-    ]
+            transferWithTypeOf: true,
+            toString: 'typeof objectA'
+        },
+        toString: 'type SingleTypeQuery = typeof objectA',
+        line: 43,
+        column: 5,
+        operandColumns: [[10, 25], [28, 42]]
+    }
 };
 
+// TODO: expr with ArkField toString should be objectA.a.b.c
 export const AliasTypeOfMultiTypeQuery = {
-    alias: {
-        aliasType: {
-            name: 'MultiTypeQuery',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithTypeQuery()#MultiTypeQuery`,
-            modifiers: 0,
-            originalType: 'string'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type MultiTypeQuery = typeof objectA.a.b.c;',
-            position: {
-                line: 43,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'MultiTypeQuery',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithTypeQuery()#MultiTypeQuery`,
+        modifiers: 0,
+        originalType: 'string'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
-                toString: 'typeof objectA.a.b.c'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArkField,
+                signature: '@type/exportExample.ts: %AC$%AC$%AC$%dflt$%dflt$0$%instInit$1$%instInit$2.c'
             },
-            toString: 'type MultiTypeQuery = typeof objectA.a.b.c',
-            line: 43,
-            column: 5,
-            operandColumns: [[10, 24], [27, 47]]
-        }
-    ]
+            transferWithTypeOf: true,
+            toString: 'typeof c'
+        },
+        toString: 'type MultiTypeQuery = typeof c',
+        line: 44,
+        column: 5,
+        operandColumns: [[10, 24], [27, 47]]
+    }
 };
 
 export const AliasTypeRef = {
-    alias: {
-        aliasType: {
-            name: 'ReferType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithReference()#ReferType`,
-            modifiers: 0,
-            originalType: '@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type ReferType = numberA;',
-            position: {
-                line: 47,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'ReferType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithReference()#ReferType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
-                toString: 'numberA'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: AliasType,
+                toString: '@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
             },
-            toString: 'type ReferType = numberA',
-            line: 47,
-            column: 5,
-            operandColumns: [[10, 19], [22, 29]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: '@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
+        },
+        toString: 'type ReferType = @type/exportExample.ts: %dflt.[static]%dflt()#numberA',
+        line: 48,
+        column: 5,
+        operandColumns: [[10, 19], [22, 29]]
+    }
 };
 
 export const AliasTypeMultiRef = {
-    alias: {
-        aliasType: {
-            name: 'MultiReferType',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithReference()#MultiReferType`,
-            modifiers: 0,
-            originalType: '@type/exportExample.ts: A.B.C'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type MultiReferType = A.B.C;',
-            position: {
-                line: 48,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'MultiReferType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithReference()#MultiReferType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: A.B.C'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
-                toString: 'A.B.C'
+    stmts: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArkClass,
+                signature: '@type/exportExample.ts: A.B.C'
             },
-            toString: 'type MultiReferType = A.B.C',
-            line: 48,
-            column: 5,
-            operandColumns: [[10, 24], [27, 32]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: '@type/exportExample.ts: A.B.C'
+        },
+        toString: 'type MultiReferType = @type/exportExample.ts: A.B.C',
+        line: 49,
+        column: 5,
+        operandColumns: [[10, 24], [27, 32]]
+    }
 };
 
 export const AliasTypeOfLiteralType = {
-    alias: {
-        aliasType: {
-            name: 'ABC',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithLiteralType()#ABC`,
-            modifiers: 16384,
-            originalType: '\'123\''
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'declare type ABC = \'123\';',
-            position: {
-                line: 52,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'ABC',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithLiteralType()#ABC`,
+        modifiers: 16384,
+        originalType: '\'123\''
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: LiteralType,
                 toString: '\'123\''
             },
-            toString: 'declare type ABC = \'123\'',
-            line: 52,
-            column: 5,
-            operandColumns: [[18, 21], [24, 29]]
-        }
-    ]
+            transferWithTypeOf: false,
+            toString: '\'123\''
+        },
+        toString: 'declare type ABC = \'123\'',
+        line: 53,
+        column: 5,
+        operandColumns: [[18, 21], [24, 29]]
+    }
 };
 
 export const AliasTypeOfQueryOfLiteralType = {
-    alias: {
-        aliasType: {
-            name: 'XYZ',
-            signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithLiteralType()#XYZ`,
-            modifiers: 0,
-            originalType: '@type/test.ts: %dflt.aliasTypeWithLiteralType()#ABC'
-        },
-        aliasTypeDeclaration: {
-            sourceCode: 'type XYZ = typeof a;',
-            position: {
-                line: 54,
-                column: 5,
-            }
-        }
+    aliasType: {
+        name: 'XYZ',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithLiteralType()#XYZ`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.aliasTypeWithLiteralType()#ABC'
     },
-    stmts: [
-        {
-            instanceof: ArkAliasTypeDefineStmt,
-            typeAliasExpr: {
-                instanceof: AliasTypeExpr,
-                toString: 'typeof a'
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: Local,
+                typeString: '@type/test.ts: %dflt.aliasTypeWithLiteralType()#ABC',
+                declaringStmt: 'a = \'123\''
             },
-            toString: 'type XYZ = typeof a',
-            line: 54,
-            column: 5,
-            operandColumns: [[10, 13], [16, 24]]
-        }
-    ]
+            transferWithTypeOf: true,
+            toString: 'typeof a'
+        },
+        toString: 'type XYZ = typeof a',
+        line: 55,
+        column: 5,
+        operandColumns: [[10, 13], [16, 24]]
+    }
 };
+
+export const AliasTypeOfFunctionType = {
+    aliasType: {
+        name: 'FunctionAliasType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithFunctionType()#FunctionAliasType`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.aliasTypeWithLiteralType()'
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArkMethod,
+                toString: '@type/test.ts: %dflt.aliasTypeWithLiteralType()'
+            },
+            transferWithTypeOf: true,
+            toString: 'typeof @type/test.ts: %dflt.aliasTypeWithLiteralType()'
+        },
+        toString: 'type FunctionAliasType = typeof @type/test.ts: %dflt.aliasTypeWithLiteralType()',
+        line: 59,
+        column: 5,
+        operandColumns: [[10, 27], [30, 61]]
+    }
+};
+
+export const AliasTypeOfUnionType = {
+    aliasType: {
+        name: 'UnionAliasType',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithUnionType()#UnionAliasType`,
+        modifiers: 0,
+        originalType: '@type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: UnionType,
+                toString: '@type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
+            },
+            transferWithTypeOf: false,
+            toString: '@type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
+        },
+        toString: 'type UnionAliasType = @type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA',
+        line: 63,
+        column: 5,
+        operandColumns: [[10, 24], [27, 42]]
+    }
+};
+
+export const SourceSimpleAliasType = `function simpleAliasType(): void {
+  type BooleanAliasType = boolean;
+  type StringAliasType = string;
+}
+`;
+
+export const SourceAliasTypeWithImport = `function aliasTypeWithImport(): void {
+  type ClassAType = import('./exportExample').ClassA;
+  type ClassBType = import('./exportExample').default;
+  type NumberAType = import('./exportExample').numberA;
+  type MultiQualifierType = import('./exportExample').A.B.C;
+  type ObjectAType = typeof import('./exportExample').objectA;
+  type WholeExportsType = typeof import('./exportExample');
+}
+`;
+
+// TODO: MultiTypeQuery expr should be typeof objectA.a.b.c
+export const SourceAliasTypeWithTypeQuery = `function aliasTypeWithTypeQuery(): void {
+  type SingleTypeQuery = typeof objectA;
+  type MultiTypeQuery = typeof c;
+}
+`;
+
+export const SourceAliasTypeWithReference = `function aliasTypeWithReference(): void {
+  type ReferType = numberA;
+  type MultiReferType = A.B.C;
+}
+`;
+
+export const SourceAliasTypeWithLiteralType = `function aliasTypeWithLiteralType(): void {
+  declare type ABC = '123';
+  let a: ABC = '123';
+  type XYZ = typeof a;
+}
+`;
+
+export const SourceAliasTypeWithFunctionType = `function aliasTypeWithFunctionType(): void {
+  type FunctionAliasType = typeof aliasTypeWithLiteralType;
+}
+`;
+
+export const SourceAliasTypeWithUnionType = `function aliasTypeWithUnionType(): void {
+  type UnionAliasType = A.B.C | numberA;
+}
+`;

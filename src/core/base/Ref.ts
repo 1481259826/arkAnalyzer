@@ -234,13 +234,13 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
     private getBaseType(arkClass: ArkClass): Type | null {
         let baseType: Type | null = this.base.getType();
         if (this.base instanceof Local && baseType instanceof UnknownType) {
-            baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
+            baseType = TypeInference.inferBaseType(this.base.getName(), arkClass)[1];
             if (!baseType && (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT)) {
                 const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(this.base.getName());
                 baseType = TypeInference.parseArkExport2Type(global);
             }
         } else if (baseType instanceof UnclearReferenceType) {
-            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
+            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass)[1];
         }
         if (!baseType) {
             logger.warn('infer field ref base type fail: ' + this.toString());
@@ -296,9 +296,9 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
     private getNewFieldSignature(arkClass: ArkClass, baseType: Type): FieldSignature | null {
         const fieldName = this.getFieldName().replace(/[\"|\']/, '');
         const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
-        let propertyType = propertyAndType?.[1];
+        let propertyType = propertyAndType[1];
         if (propertyType && TypeInference.isUnclearType(propertyType)) {
-            const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
+            const newType = TypeInference.inferUnclearedType(propertyType, arkClass)[1];
             if (newType) {
                 propertyType = newType;
             }
@@ -371,7 +371,7 @@ export class ArkParameterRef extends AbstractRef {
                 return this;
             }
         }
-        let type = TypeInference.inferUnclearedType(this.paramType, arkMethod.getDeclaringArkClass());
+        let type = TypeInference.inferUnclearedType(this.paramType, arkMethod.getDeclaringArkClass())[1];
         if (type) {
             this.paramType = type;
         }
@@ -400,7 +400,7 @@ export class ArkThisRef extends AbstractRef {
         const arkClass = arkMethod.getDeclaringArkClass();
         const className = this.type.getClassSignature().getClassName();
         if (className.startsWith(ANONYMOUS_CLASS_PREFIX)) {
-            let type = TypeInference.inferBaseType(className.split(ANONYMOUS_CLASS_DELIMITER)[1], arkClass);
+            let type = TypeInference.inferBaseType(className.split(ANONYMOUS_CLASS_DELIMITER)[1], arkClass)[1];
             if (type instanceof ClassType) {
                 this.type = type;
             }

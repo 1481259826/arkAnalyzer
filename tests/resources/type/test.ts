@@ -28,9 +28,10 @@ function aliasTypeWithImport(): void {
     type ClassAType = import('./exportExample').ClassA;
     type ClassBType = import('./exportExample').default;
     type NumberAType = import('./exportExample').numberA;
-
-    type typeOfType = typeof import('./exportExample');
     type MultiQualifierType = import('./exportExample').A.B.C;
+
+    type ObjectAType = typeof import('./exportExample').objectA;
+    type WholeExportsType = typeof import('./exportExample');
 
     function useAliasTypeInBody(): void {
         const a: NumberAType[] = [1, 2, 3];
@@ -52,4 +53,12 @@ function aliasTypeWithLiteralType(): void {
     declare type ABC = '123';
     let a: ABC = '123';
     type XYZ = typeof a;
+}
+
+function aliasTypeWithFunctionType(): void {
+    type FunctionAliasType = typeof aliasTypeWithLiteralType;
+}
+
+function aliasTypeWithUnionType(): void {
+    type UnionAliasType = A.B.C | numberA;
 }

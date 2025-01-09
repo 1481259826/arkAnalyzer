@@ -15,7 +15,6 @@
 
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
-import { LineColPosition } from './Position';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
     ANY_KEYWORD,
@@ -29,7 +28,6 @@ import {
     VOID_KEYWORD,
 } from '../common/TSConst';
 import { Local } from './Local';
-import { AliasTypeExpr } from './Expr';
 
 /**
  * @category core/base/type
@@ -220,7 +218,7 @@ export class LiteralType extends PrimitiveType {
         return this.literalName;
     }
 
-    public toString(): string {
+    public getTypeString():string {
         return this.literalName.toString();
     }
 }
@@ -556,30 +554,6 @@ export class GenericType extends Type {
             str += ' = ' + this.defaultType.toString();
         }
         return str;
-    }
-}
-
-export class AliasTypeDeclaration {
-    private readonly sourceCode: string;
-    private readonly position: LineColPosition;
-    private readonly expr: AliasTypeExpr;
-
-    constructor(sourceCode: string, position: LineColPosition, expr: AliasTypeExpr) {
-        this.sourceCode = sourceCode;
-        this.position = position;
-        this.expr = expr;
-    }
-
-    public getSourceCode(): string {
-        return this.sourceCode;
-    }
-
-    public getPosition(): LineColPosition {
-        return this.position;
-    }
-
-    public getExpr(): AliasTypeExpr {
-        return this.expr;
     }
 }
 

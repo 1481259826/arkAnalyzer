@@ -22,7 +22,7 @@ import { Local } from '../base/Local';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
 import { LEXICAL_ENV_NAME_PREFIX, NAME_DELIMITER, NAME_PREFIX } from './Const';
 import { ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef, GlobalRef } from '../base/Ref';
-import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../base/Stmt';
+import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../base/Stmt';
 import {
     LexicalEnvType,
     FunctionType,
@@ -31,7 +31,7 @@ import {
     UnionType,
     Type,
     AliasType,
-    AliasTypeDeclaration, ArrayType,
+    ArrayType,
 } from '../base/Type';
 import { AbstractInvokeExpr, ArkPtrInvokeExpr } from '../base/Expr';
 
@@ -117,23 +117,22 @@ export class BodyBuilder {
 
             // 对嵌套函数中的UnclearReferenceType类型的变量进行类型推导，类型是否为外层函数中定义的类型别名
             const typeAliases = outerMethod.getBody()?.getAliasTypeMap();
-            if (typeAliases === undefined) {
-                continue;
+            if (typeAliases !== undefined) {
+                this.updateLocalTypesWithTypeAlias(nestedLocals, typeAliases);
             }
-            this.updateLocalTypesWithTypeAlias(nestedLocals, typeAliases);
         }
     }
 
-    private updateLocalTypesWithTypeAlias(locals: Map<string, Local>, typeAliases: Map<string, [AliasType, AliasTypeDeclaration]>): void {
+    private updateLocalTypesWithTypeAlias(locals: Map<string, Local>, typeAliases: Map<string, [AliasType, ArkAliasTypeDefineStmt]>): void {
         for (let local of locals.values()) {
-            const newType = this.inferUnclearReferenceType(local.getType(), typeAliases);
+            const newType = this.inferUnclearReferenceTypeWithTypeAlias(local.getType(), typeAliases);
             if (newType !== null) {
                 local.setType(newType);
             }
         }
     }
 
-    private inferUnclearReferenceType(localType: Type, typeAliases: Map<string, [AliasType, AliasTypeDeclaration]>): Type | null {
+    private inferUnclearReferenceTypeWithTypeAlias(localType: Type, typeAliases: Map<string, [AliasType, ArkAliasTypeDefineStmt]>): Type | null {
         if (localType instanceof ArrayType && localType.getBaseType() instanceof UnclearReferenceType) {
             const typeAlias = typeAliases.get((localType.getBaseType() as UnclearReferenceType).getName());
             if (typeAlias !== undefined) {
@@ -145,7 +144,7 @@ export class BodyBuilder {
         if (localType instanceof UnionType) {
             const optionTypes = localType.getTypes();
             for (let i = 0; i < optionTypes.length; i++) {
-                const newType = this.inferUnclearReferenceType(optionTypes[i], typeAliases);
+                const newType = this.inferUnclearReferenceTypeWithTypeAlias(optionTypes[i], typeAliases);
                 if (newType !== null) {
                     optionTypes[i] = newType;
                 }
