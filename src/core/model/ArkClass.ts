@@ -49,9 +49,8 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private declaringArkNamespace: ArkNamespace | undefined;
     private classSignature!: ClassSignature;
 
-    private superClassName: string = '';
-    private heritageClasses?: Map<string, ArkClass | null>;
-    private implementedInterfaceNames: string[] = [];
+    private heritageClasses: Map<string, ArkClass | null | undefined> = new Map<string, ArkClass | null | undefined>();
+
     private genericsTypes?: GenericType[];
     private realTypes?: Type[];
     private defaultMethod: ArkMethod | null = null;
@@ -178,12 +177,12 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         this.classSignature = classSig;
     }
 
-    public getSuperClassName() {
-        return this.superClassName;
+    public getSuperClassName(): string {
+        return this.heritageClasses.keys().next().value;
     }
 
-    public setSuperClassName(superClassName: string) {
-        this.superClassName = superClassName;
+    public addHeritageClassName(className: string) {
+        this.heritageClasses.set(className, undefined);
     }
 
     /**
@@ -191,19 +190,22 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      * @returns The superclass of this class.
      */
     public getSuperClass(): ArkClass | null {
-        return this.getHeritageClass(this.superClassName);
+        const heritageClass = this.getHeritageClass(this.getSuperClassName());
+        if (heritageClass && heritageClass.getCategory() !== ClassCategory.INTERFACE) {
+            return heritageClass;
+        }
+        return null;
     }
 
     private getHeritageClass(heritageClassName: string): ArkClass | null {
-        if (!this.heritageClasses) {
-            this.heritageClasses = new Map<string, ArkClass | null>();
-        }
         let superClass = this.heritageClasses.get(heritageClassName);
         if (superClass === undefined) {
             const type = TypeInference.inferUnclearReferenceType(heritageClassName, this);
             if (type instanceof ClassType &&
                 (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
-                superClass.addExtendedClass(this);
+                if (superClass.getCategory() === ClassCategory.CLASS || this.category === ClassCategory.INTERFACE) {
+                    superClass.addExtendedClass(this);
+                }
                 const realGenericTypes = type.getRealGenericTypes();
                 if (realGenericTypes) {
                     this.realTypes = realGenericTypes;
@@ -214,6 +216,17 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         return superClass || null;
     }
 
+    public getAllHeritageClasses(): ArkClass[] {
+        const result: ArkClass[] = [];
+        this.heritageClasses.forEach((v, k) => {
+            const heritage = v ?? this.getHeritageClass(k);
+            if (heritage) {
+                result.push(heritage);
+            }
+        })
+        return result;
+    }
+
     public getExtendedClasses(): Map<string, ArkClass> {
         return this.extendedClasses;
     }
@@ -222,20 +235,23 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         this.extendedClasses.set(extendedClass.getName(), extendedClass);
     }
 
-    public getImplementedInterfaceNames() {
-        return this.implementedInterfaceNames;
-    }
-
-    public addImplementedInterfaceName(interfaceName: string) {
-        this.implementedInterfaceNames.push(interfaceName);
+    public getImplementedInterfaceNames(): string[] {
+        if (this.category === ClassCategory.INTERFACE) {
+            return [];
+        }
+        return Array.from(this.heritageClasses.keys()).slice(1);
     }
 
     public hasImplementedInterface(interfaceName: string) {
-        return (this.implementedInterfaceNames.indexOf(interfaceName) > -1);
+        return this.heritageClasses.has(interfaceName) && this.getSuperClassName() !== interfaceName;
     }
 
     public getImplementedInterface(interfaceName: string): ArkClass | null {
-        return this.getHeritageClass(interfaceName);
+        const heritageClass = this.getHeritageClass(interfaceName);
+        if (heritageClass && heritageClass.getCategory() === ClassCategory.INTERFACE) {
+            return heritageClass;
+        }
+        return null;
     }
 
     /**

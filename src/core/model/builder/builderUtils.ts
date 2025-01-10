@@ -118,7 +118,7 @@ export function buildModifiers(node: ts.Node): number {
     return modifiers;
 }
 
-export function buildHeritageClauses(heritageClauses: ts.NodeArray<HeritageClause>): Map<string, string> {
+export function buildHeritageClauses(heritageClauses?: ts.NodeArray<HeritageClause>): Map<string, string> {
     let heritageClausesMap: Map<string, string> = new Map<string, string>();
     heritageClauses?.forEach((heritageClause) => {
         heritageClause.types.forEach((type) => {

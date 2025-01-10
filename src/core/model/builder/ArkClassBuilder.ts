@@ -205,15 +205,7 @@ function buildStruct2ArkClass(clsNode: ts.StructDeclaration, cls: ArkClass, sour
         });
     }
 
-    if (clsNode.heritageClauses) {
-        for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-            if (value === 'ExtendsKeyword') {
-                cls.setSuperClassName(key);
-            } else {
-                cls.addImplementedInterfaceName(key);
-            }
-        }
-    }
+    initHeritage(buildHeritageClauses(clsNode.heritageClauses), cls);
 
     cls.setModifiers(buildModifiers(clsNode));
     cls.setDecorators(buildDecorators(clsNode, sourceFile));
@@ -241,15 +233,7 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
         });
     }
 
-    if (clsNode.heritageClauses) {
-        for (let [key, value] of buildHeritageClauses(clsNode.heritageClauses)) {
-            if (value === 'ExtendsKeyword') {
-                cls.setSuperClassName(key);
-            } else {
-                cls.addImplementedInterfaceName(key);
-            }
-        }
-    }
+    initHeritage(buildHeritageClauses(clsNode.heritageClauses), cls);
 
     cls.setModifiers(buildModifiers(clsNode));
     cls.setDecorators(buildDecorators(clsNode, sourceFile));
@@ -258,6 +242,20 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
     init4InstanceInitMethod(cls);
     init4StaticInitMethod(cls);
     buildArkClassMembers(clsNode, cls, sourceFile);
+}
+
+function initHeritage(heritageClauses: Map<string, string>, cls: ArkClass) {
+    let superName = '';
+    for (let [key, value] of heritageClauses) {
+        if (value === ts.SyntaxKind[ts.SyntaxKind.ExtendsKeyword]) {
+            superName = key;
+            break;
+        }
+    }
+    cls.addHeritageClassName(superName);
+    for (let key of heritageClauses.keys()) {
+        cls.addHeritageClassName(key);
+    }
 }
 
 function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
@@ -277,11 +275,7 @@ function buildInterface2ArkClass(clsNode: ts.InterfaceDeclaration, cls: ArkClass
         });
     }
 
-    if (clsNode.heritageClauses) {
-        for (let key of buildHeritageClauses(clsNode.heritageClauses).keys()) {
-            cls.addImplementedInterfaceName(key);
-        }
-    }
+    initHeritage(buildHeritageClauses(clsNode.heritageClauses), cls);
 
     cls.setModifiers(buildModifiers(clsNode));
     cls.setDecorators(buildDecorators(clsNode, sourceFile));
@@ -317,7 +311,6 @@ function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClas
     const classSignature = new ClassSignature(className,
         cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
     cls.setSignature(classSignature);
-
 
 
     cls.setCategory(ClassCategory.TYPE_LITERAL);
