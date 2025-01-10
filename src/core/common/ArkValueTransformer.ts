@@ -676,11 +676,11 @@ export class ArkValueTransformer {
                 } = this.tsNodeToValueAndStmts(argument);
                 this.builderMethodContextFlag = prevBuilderMethodContextFlag;
                 this.arkIRTransformer.setBuilderMethodContextFlag(prevBuilderMethodContextFlag);
-                currStmts.push(...argStmts);
+                argStmts.forEach(s => currStmts.push(s));
                 if (IRUtils.moreThanOneAddress(argValue)) {
                     ({ value: argValue, valueOriginalPositions: argPositions, stmts: argStmts } =
                         this.arkIRTransformer.generateAssignStmtForValue(argValue, argPositions));
-                    currStmts.push(...argStmts);
+                    argStmts.forEach(s => currStmts.push(s));
                 }
                 args.push(argValue);
                 argPositionsAll.push(argPositions);
@@ -1019,7 +1019,7 @@ export class ArkValueTransformer {
             const {
                 stmts: declaredStmts,
             } = this.variableDeclarationToValueAndStmts(declaration, variableDeclarationList.flags);
-            stmts.push(...declaredStmts);
+            declaredStmts.forEach(s => stmts.push(s));
         }
         return { value: ValueUtil.getUndefinedConst(), valueOriginalPositions: [FullPosition.DEFAULT], stmts: stmts };
     }

@@ -489,16 +489,11 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
     public getReturnValues(): Value[] {
         // 获取方法体中return值实例
         let resultValues: Value[] = [];
-        let stmts: Stmt[] = [];
-        if (this.getCfg()) {
-            const cfg = this.getCfg() as Cfg;
-            stmts.push(...cfg.getStmts());
-        }
-        for (let stmt of stmts) {
+        this.getCfg()?.getStmts().forEach(stmt => {
             if (stmt instanceof ArkReturnStmt) {
                 resultValues.push(stmt.getOp());
             }
-        }
+        });
         return resultValues;
     }
 

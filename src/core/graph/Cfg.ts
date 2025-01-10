@@ -22,6 +22,7 @@ import { BasicBlock } from './BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkStaticInvokeExpr } from '../base/Expr';
 import { Value } from '../base/Value';
+
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
 
 /**
@@ -35,12 +36,13 @@ export class Cfg {
     private defUseChains: DefUseChain[] = [];
     private declaringMethod: ArkMethod = new ArkMethod();
 
-    constructor() {}
+    constructor() {
+    }
 
     public getStmts(): Stmt[] {
         let stmts = new Array<Stmt>();
         for (const block of this.blocks) {
-            stmts.push(...block.getStmts());
+            block.getStmts().forEach(s => stmts.push(s));
         }
         return stmts;
     }
@@ -198,8 +200,7 @@ export class Cfg {
                     // 本block有对应def直接结束,否则找所有的前序block
                     if (defStmts.length !== 0) {
                         this.defUseChains.push(new DefUseChain(value, defStmts[0], stmt));
-                    }
-                    else {
+                    } else {
                         const needWalkBlocks: BasicBlock[] = [];
                         for (const predecessor of block.getPredecessors()) {
                             needWalkBlocks.push(predecessor);

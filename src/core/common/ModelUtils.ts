@@ -346,6 +346,13 @@ export class ModelUtils {
         if (property) {
             return property;
         }
+        for (const implName of arkClass.getImplementedInterfaceNames()) {
+            currentClass = arkClass.getImplementedInterface(implName);
+            property = currentClass?.getMethodWithName(name) ?? currentClass?.getStaticMethodWithName(name);
+            if (property) {
+                return property;
+            }
+        }
         if (arkClass.isDefaultArkClass()) {
             return findArkExport(arkClass.getDeclaringArkFile().getExportInfoBy(name));
         }
