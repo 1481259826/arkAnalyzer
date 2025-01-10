@@ -52,6 +52,10 @@ export abstract class BaseEdge {
         return this.kind;
     }
 
+    public setKind(kind: Kind): void {
+        this.kind = kind;
+    }
+
     public getEndPoints(): { src: NodeID; dst: NodeID } {
         return {
             src: this.src.getID(),
@@ -81,6 +85,10 @@ export abstract class BaseNode {
 
     public getKind(): Kind {
         return this.kind;
+    }
+
+    public setKind(kind: Kind): void {
+        this.kind = kind;
     }
 
     public hasIncomingEdges(): boolean {

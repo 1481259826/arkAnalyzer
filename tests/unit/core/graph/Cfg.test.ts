@@ -52,6 +52,7 @@ import {
     SWITCH_EXPECT_CASE8,
     SWITCH_EXPECT_CASE9,
 } from '../../../resources/cfg/switch/SwitchExpect';
+import { LOOP_EXPECT_CASE1, LOOP_EXPECT_CASE2 } from '../../../resources/cfg/loop/LoopExpect';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
@@ -149,8 +150,14 @@ describe('CfgTest', () => {
         testBlocks(scene, 'SwitchSample.ts', 'case11', SWITCH_EXPECT_CASE11.blocks);
         testBlocks(scene, 'SwitchSample.ts', 'case12', SWITCH_EXPECT_CASE12.blocks);
         testBlocks(scene, 'SwitchSample.ts', 'case13', SWITCH_EXPECT_CASE13.blocks);
-
     });
+
+    it('case4: loop statement', () => {
+            const scene = buildScene('loop');
+            testBlocks(scene, 'LoopSample.ts', 'case1', LOOP_EXPECT_CASE1.blocks);
+            testBlocks(scene, 'LoopSample.ts', 'case2', LOOP_EXPECT_CASE2.blocks);
+        },
+    );
 });
 
 const BASE_DIR = 'tests/resources/cfg';

@@ -22,7 +22,6 @@ import { BasicBlock } from './BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkStaticInvokeExpr } from '../base/Expr';
 import { Value } from '../base/Value';
-
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
 
 /**
@@ -36,8 +35,7 @@ export class Cfg {
     private defUseChains: DefUseChain[] = [];
     private declaringMethod: ArkMethod = new ArkMethod();
 
-    constructor() {
-    }
+    constructor() {}
 
     public getStmts(): Stmt[] {
         let stmts = new Array<Stmt>();
@@ -201,10 +199,7 @@ export class Cfg {
                     if (defStmts.length !== 0) {
                         this.defUseChains.push(new DefUseChain(value, defStmts[0], stmt));
                     } else {
-                        const needWalkBlocks: BasicBlock[] = [];
-                        for (const predecessor of block.getPredecessors()) {
-                            needWalkBlocks.push(predecessor);
-                        }
+                        const needWalkBlocks: BasicBlock[] = [...block.getPredecessors()];
                         const walkedBlocks = new Set();
                         while (needWalkBlocks.length > 0) {
                             const predecessor = needWalkBlocks.pop();
@@ -230,7 +225,7 @@ export class Cfg {
                             walkedBlocks.add(predecessor);
                         }
                         for (const def of defStmts) {
-                            this.defUseChains.push(new DefUseChain(value, def, stmt))
+                            this.defUseChains.push(new DefUseChain(value, def, stmt));
                         }
                     }
                 }
