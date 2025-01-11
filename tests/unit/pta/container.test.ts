@@ -20,7 +20,7 @@ import { assert } from 'vitest';
 
 let sdk: Sdk = {
     name: 'ohos',
-    path: 'tests/resources/Sdk/',
+    path: './builtIn/typescript',
     moduleName: ''
 };
 
