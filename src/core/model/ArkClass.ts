@@ -178,10 +178,10 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public getSuperClassName(): string {
-        return this.heritageClasses.keys().next().value;
+        return this.heritageClasses.keys().next().value || '';
     }
 
-    public addHeritageClassName(className: string) {
+    public addHeritageClassName(className: string): void {
         this.heritageClasses.set(className, undefined);
     }
 
@@ -223,7 +223,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
             if (heritage) {
                 result.push(heritage);
             }
-        })
+        });
         return result;
     }
 

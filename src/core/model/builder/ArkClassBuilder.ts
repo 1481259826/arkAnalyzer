@@ -244,7 +244,7 @@ function buildClass2ArkClass(clsNode: ts.ClassDeclaration | ts.ClassExpression, 
     buildArkClassMembers(clsNode, cls, sourceFile);
 }
 
-function initHeritage(heritageClauses: Map<string, string>, cls: ArkClass) {
+function initHeritage(heritageClauses: Map<string, string>, cls: ArkClass): void {
     let superName = '';
     for (let [key, value] of heritageClauses) {
         if (value === ts.SyntaxKind[ts.SyntaxKind.ExtendsKeyword]) {
