@@ -336,18 +336,20 @@ export class ModelUtils {
     }
 
     public static findPropertyInClass(name: string, arkClass: ArkClass): ArkExport | ArkField | null {
-        let property;
-        let currentClass: ArkClass | null = arkClass;
-        do {
-            property = currentClass.getMethodWithName(name) ?? currentClass.getStaticMethodWithName(name)
-                ?? currentClass.getFieldWithName(name) ?? currentClass.getStaticFieldWithName(name);
-            currentClass = currentClass.getSuperClass();
-        } while (!property && currentClass);
+        let property: ArkExport | ArkField | null = arkClass.getMethodWithName(name)
+            ?? arkClass.getStaticMethodWithName(name) ?? arkClass.getFieldWithName(name)
+            ?? arkClass.getStaticFieldWithName(name);
         if (property) {
             return property;
         }
         if (arkClass.isDefaultArkClass()) {
             return findArkExport(arkClass.getDeclaringArkFile().getExportInfoBy(name));
+        }
+        for (const heritage of arkClass.getAllHeritageClasses()) {
+            property = this.findPropertyInClass(name, heritage);
+            if (property) {
+                return property;
+            }
         }
         return null;
     }

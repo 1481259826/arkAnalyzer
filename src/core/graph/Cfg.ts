@@ -40,7 +40,7 @@ export class Cfg {
     public getStmts(): Stmt[] {
         let stmts = new Array<Stmt>();
         for (const block of this.blocks) {
-            stmts.push(...block.getStmts());
+            block.getStmts().forEach(s => stmts.push(s));
         }
         return stmts;
     }
