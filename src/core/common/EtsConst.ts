@@ -1029,3 +1029,6 @@ export const API_COMMON: string = path.sep + 'common' + path.sep;
 export const COMPONENT_ATTRIBUTE: string = 'Attribute';
 export const CALL_BACK: string = 'Callback';
 export const ON_OFF: Set<string> = new Set(['on', 'off']);
+
+export const OH_PACKAGE_JSON5 = 'oh-package.json5';
+export const BUILD_PROFILE_JSON5 = 'build-profile.json5';

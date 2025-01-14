@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './logger';
 import { transfer2UnixPath } from './pathTransfer';
+import { OH_PACKAGE_JSON5 } from '../core/common/EtsConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'FileUtils');
 
@@ -44,6 +45,10 @@ export class FileUtils {
         return false;
     }
 
+    public static isAbsolutePath(path: string): boolean {
+        return /^(\/|\\|[A-Z]:\\)/.test(path);
+    }
+
     public static generateModuleMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>) {
         const moduleMap: Map<string, ModulePath> = new Map();
         ohPkgContentMap.forEach((content, filePath) => {
@@ -59,7 +64,7 @@ export class FileUtils {
                 Object.entries(content.dependencies).forEach(([name, value]) => {
                     if (!moduleMap.get(name)) {
                         const modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
-                        const key = path.resolve(modulePath, 'oh-package.json5');
+                        const key = path.resolve(modulePath, OH_PACKAGE_JSON5);
                         const target = ohPkgContentMap.get(key);
                         if (target) {
                             moduleMap.set(name, new ModulePath(modulePath, target.main ?

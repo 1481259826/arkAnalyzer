@@ -35,13 +35,14 @@ function snapshot(name: string): void {
 function testAppProject(): void {
     let config: SceneConfig = new SceneConfig();
     config.buildConfig(PROJECT_NAME, PROJECT_ROOT, []);
+    const supportFileExts = config.getOptions().supportFileExts!;
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     logger.error('start ... ');
 
     if (MODULES.size > 0) {
         for (const [moduleName, modulePath] of MODULES) {
-            scene.buildModuleScene(moduleName, join(PROJECT_ROOT, modulePath));
+            scene.buildModuleScene(moduleName, join(PROJECT_ROOT, modulePath), supportFileExts);
         }
     } else {
         scene.buildScene4HarmonyProject();

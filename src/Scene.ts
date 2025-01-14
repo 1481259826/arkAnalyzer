@@ -16,7 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { SceneConfig, SceneOptions, Sdk } from './Config';
+import { SceneConfig, SceneOptions, Sdk, TsConfig } from './Config';
 import { initModulePathMap, ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
@@ -31,11 +31,15 @@ import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { getFileRecursively } from './utils/FileUtils';
-import { ArkExport, ExportType } from './core/model/ArkExport';
+import { ArkExport, ExportInfo, ExportType } from './core/model/ArkExport';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { DEFAULT_ARK_CLASS_NAME, STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
+
+import { ImportInfo } from './core/model/ArkImport';
+import { ALL, TSCONFIG_JSON } from './core/common/TSConst';
+import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -74,15 +78,28 @@ export class Scene {
     private ohPkgContentMap: Map<string, { [k: string]: unknown }> = new Map<string, { [k: string]: unknown }>();
     private ohPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
+    private overRides: Map<string, string> = new Map();
+    private overRideDependencyMap: Map<string, unknown> = new Map();
+    private globalModule2PathMapping?: { [k: string]: string[]; } | undefined;
+    private baseUrl?: string | undefined;
 
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
     private options!: SceneOptions;
+    private indexPathArray = ['Index.ets', 'Index.ts', 'Index.d.ets', 'Index.d.ts', 'index.ets', 'index.ts', 'index.d.ets', 'index.d.ts'];
 
     constructor() {
     }
 
     public getOptions(): SceneOptions {
         return this.options;
+    }
+
+    public getOverRides(): Map<string, string> {
+        return this.overRides;
+    }
+
+    public getOverRideDependencyMap(): Map<string, unknown> {
+        return this.overRideDependencyMap;
     }
 
     public clear(): void {
@@ -133,44 +150,38 @@ export class Scene {
         this.genArkFiles();
     }
 
+    public buildSceneFromFiles(sceneConfig: SceneConfig): void {
+        this.buildBasicInfo(sceneConfig);
+        this.buildOhPkgContentMap();
+        initModulePathMap(this.ohPkgContentMap);
+        this.getFilesOrderByDependency();
+    }
+
     /**
      * Set the basic information of the scene using a config,
      * such as the project's name, real path and files.
      * @param sceneConfig - the config used to set the basic information of scene.
      */
-    public buildBasicInfo(sceneConfig: SceneConfig) {
+    public buildBasicInfo(sceneConfig: SceneConfig): void {
         this.options = sceneConfig.getOptions();
         this.projectName = sceneConfig.getTargetProjectName();
         this.realProjectDir = fs.realpathSync(sceneConfig.getTargetProjectDirectory());
         this.projectFiles = sceneConfig.getProjectFiles();
 
-        const buildProfile = path.join(this.realProjectDir, './build-profile.json5');
-        if (fs.existsSync(buildProfile)) {
-            let configurationsText: string;
-            try {
-                configurationsText = fs.readFileSync(buildProfile, 'utf-8');
-            } catch (error) {
-                logger.error(`Error reading file: ${error}`);
-                return;
-            }
-            const buildProfileJson = parseJsonText(configurationsText);
-            const modules = buildProfileJson.modules;
-            if (modules instanceof Array) {
-                modules.forEach((module) => {
-                    this.modulePath2NameMap.set(path.resolve(this.realProjectDir, path.join(module.srcPath)), module.name);
-                });
-            }
-        } else {
-            logger.warn('There is no build-profile.json5 for this project.');
-        }
+        this.parseBuildProfile();
 
-        const OhPkgFilePath = path.join(this.realProjectDir, './oh-package.json5');
-        if (fs.existsSync(OhPkgFilePath)) {
-            this.ohPkgFilePath = OhPkgFilePath;
-            this.ohPkgContent = fetchDependenciesFromFile(this.ohPkgFilePath);
-            this.ohPkgContentMap.set(OhPkgFilePath, this.ohPkgContent);
+        this.parseOhPackage();
+        let tsConfigFilePath;
+        if (this.options.tsconfig) {
+            tsConfigFilePath = path.join(sceneConfig.getTargetProjectDirectory(), this.options.tsconfig);
         } else {
-            logger.warn('This project has no oh-package.json5!');
+            tsConfigFilePath = path.join(sceneConfig.getTargetProjectDirectory(), TSCONFIG_JSON);
+        }
+        if (fs.existsSync(tsConfigFilePath)) {
+            const tsConfigObj: TsConfig = fetchDependenciesFromFile(tsConfigFilePath);
+            this.findTsConfigInfoDeeply(tsConfigObj, tsConfigFilePath);
+        } else {
+            logger.warn('This project has no tsconfig.json!');
         }
 
         // handle sdks
@@ -193,6 +204,78 @@ export class Scene {
         });
     }
 
+    private parseBuildProfile(): void {
+        const buildProfile = path.join(this.realProjectDir, BUILD_PROFILE_JSON5);
+        if (fs.existsSync(buildProfile)) {
+            let configurationsText: string;
+            try {
+                configurationsText = fs.readFileSync(buildProfile, 'utf-8');
+            } catch (error) {
+                logger.error(`Error reading file: ${error}`);
+                return;
+            }
+            const buildProfileJson = parseJsonText(configurationsText);
+            const modules = buildProfileJson.modules;
+            if (modules instanceof Array) {
+                modules.forEach((module) => {
+                    this.modulePath2NameMap.set(path.resolve(this.realProjectDir, path.join(module.srcPath)), module.name);
+                });
+            }
+        } else {
+            logger.warn('There is no build-profile.json5 for this project.');
+        }
+    }
+
+    private parseOhPackage(): void {
+        const OhPkgFilePath = path.join(this.realProjectDir, OH_PACKAGE_JSON5);
+        if (fs.existsSync(OhPkgFilePath)) {
+            this.ohPkgFilePath = OhPkgFilePath;
+            this.ohPkgContent = fetchDependenciesFromFile(this.ohPkgFilePath);
+            this.ohPkgContentMap.set(OhPkgFilePath, this.ohPkgContent);
+            if (this.ohPkgContent.overrides) {
+                let overRides = this.ohPkgContent.overrides as { [k: string]: unknown };
+                for (const [key, value] of Object.entries(overRides)) {
+                    this.overRides.set(key, value as string);
+                }
+            }
+            if (this.ohPkgContent.overrideDependencyMap) {
+                let globalOverRideDependencyMap = this.ohPkgContent.overrideDependencyMap as { [k: string]: unknown };
+                for (const [key, value] of Object.entries(globalOverRideDependencyMap)) {
+                    let globalDependency = fetchDependenciesFromFile(value as string);
+                    this.overRideDependencyMap.set(key, globalDependency);
+                }
+            }
+
+        } else {
+            logger.warn('This project has no oh-package.json5!');
+        }
+    }
+
+    private findTsConfigInfoDeeply(tsConfigObj: TsConfig, tsConfigFilePath: string): void {
+        if (tsConfigObj.extends) {
+            const extTsConfigObj: TsConfig = fetchDependenciesFromFile(path.join(path.dirname(tsConfigFilePath), tsConfigObj.extends));
+            this.findTsConfigInfoDeeply(extTsConfigObj, tsConfigFilePath);
+            if (!this.baseUrl && !this.globalModule2PathMapping) {
+                this.addTsConfigInfo(extTsConfigObj);
+            }
+        }
+        if (!this.baseUrl && !this.globalModule2PathMapping) {
+            this.addTsConfigInfo(tsConfigObj);
+        }
+    }
+
+    private addTsConfigInfo(tsConfigObj: TsConfig): void {
+        if (tsConfigObj.compilerOptions && tsConfigObj.compilerOptions.paths) {
+            const paths = tsConfigObj.compilerOptions.paths;
+            if (paths) {
+                this.globalModule2PathMapping = paths;
+            }
+        }
+        if (tsConfigObj.compilerOptions && tsConfigObj.compilerOptions.baseUrl) {
+            this.baseUrl = tsConfigObj.compilerOptions.baseUrl;
+        }
+    }
+
     private addDefaultConstructors(): void {
         for (const file of this.getFiles()) {
             for (const cls of ModelUtils.getAllClassesInFile(file)) {
@@ -202,7 +285,7 @@ export class Scene {
         }
     }
 
-    private buildAllMethodBody() {
+    private buildAllMethodBody(): void {
         this.buildStage = SceneBuildStage.CLASS_DONE;
         for (const file of this.getFiles()) {
             for (const cls of file.getClasses()) {
@@ -236,8 +319,224 @@ export class Scene {
         this.addDefaultConstructors();
     }
 
+    private getFilesOrderByDependency(): void {
+        for (const projectFile of this.projectFiles) {
+            this.getDependencyFilesDeeply(projectFile);
+        }
+        this.buildAllMethodBody();
+        this.addDefaultConstructors();
+    }
+
+    private getDependencyFilesDeeply(projectFile: string): void {
+        if (!this.options.supportFileExts!.includes(path.extname(projectFile))) {
+            return;
+        }
+        const fileSignature = new FileSignature(this.getProjectName(), path.relative(this.getRealProjectDir(), projectFile));
+        if (!this.filesMap.has(fileSignature.toMapKey()) && !this.isRepeatBuildFile(projectFile)) {
+            let arkFile = new ArkFile();
+            arkFile.setScene(this);
+            buildArkFileFromFile(projectFile, this.getRealProjectDir(), arkFile, this.getProjectName());
+            for (const [modulePath, moduleName] of this.modulePath2NameMap) {
+                if (arkFile.getFilePath().startsWith(modulePath)) {
+                    this.addArkFile2ModuleScene(modulePath, moduleName, arkFile);
+                    break;
+                }
+            }
+            this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
+
+            const importInfos = arkFile.getImportInfos();
+            let repeatFroms: string[] = [];
+            this.findDependencyFiles(importInfos, arkFile, repeatFroms);
+
+            const exportInfos = arkFile.getExportInfos();
+            this.findDependencyFiles(exportInfos, arkFile, repeatFroms);
+        }
+    }
+
+    private isRepeatBuildFile(projectFile: string): boolean {
+        for (const [key, file] of this.filesMap) {
+            if (key && file.getFilePath().toLowerCase() === projectFile.toLowerCase()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private addArkFile2ModuleScene(modulePath: string, moduleName: string, arkFile: ArkFile): void {
+        if (this.moduleScenesMap.has(moduleName)) {
+            let curModuleScene = this.moduleScenesMap.get(moduleName);
+            if (curModuleScene) {
+                curModuleScene.addArkFile(arkFile);
+                arkFile.setModuleScene(curModuleScene);
+            }
+        } else {
+            let moduleScene = new ModuleScene(this);
+            moduleScene.ModuleScenePartiallyBuilder(moduleName, modulePath);
+            moduleScene.addArkFile(arkFile);
+            this.moduleScenesMap.set(moduleName, moduleScene);
+            arkFile.setModuleScene(moduleScene);
+        }
+    }
+
+    private findDependencyFiles(importOrExportInfos: ImportInfo[] | ExportInfo[], arkFile: ArkFile, repeatFroms: string[]): void {
+        for (const importOrExportInfo of importOrExportInfos) {
+            const from = importOrExportInfo.getFrom();
+            if (from && !repeatFroms.includes(from)) {
+                this.parseFrom(from, arkFile);
+                repeatFroms.push(from);
+            }
+        }
+    }
+
+    private parseFrom(from: string, arkFile: ArkFile): void {
+        if (/^@[a-z|\-]+?\/?/.test(from)) {
+            for (const [ohPkgContentPath, ohPkgContent] of this.ohPkgContentMap) {
+                this.findDependenciesByOhPkg(ohPkgContentPath, ohPkgContent, from, arkFile);
+            }
+        } else if (/^([^@]*\/)([^\/]*)$/.test(from) || /^[\.\./|\.\.]+$/.test(from)) {
+            this.findRelativeDependenciesByOhPkg(from, arkFile);
+        } else if (/^[@a-zA-Z0-9]+(\/[a-zA-Z0-9]+)*$/.test(from)) {
+            this.findDependenciesByTsConfig(from, arkFile);
+        }
+    }
+
+    private findDependenciesByTsConfig(from: string, arkFile: ArkFile): void {
+        if (this.globalModule2PathMapping) {
+            const paths: { [k: string]: string[] } = this.globalModule2PathMapping;
+            Object.keys(paths).forEach((key) => this.parseTsConfigParms(paths, key, from, arkFile));
+        }
+    }
+
+    private parseTsConfigParms(paths: { [k: string]: string[] }, key: string, from: string, arkFile: ArkFile): void {
+        const module2pathMapping = paths[key];
+        if (key.includes(ALL)) {
+            this.processFuzzyMapping(key, from, module2pathMapping, arkFile);
+        } else if (from.startsWith(key)) {
+            let tail = from.substring(key.length, from.length);
+            module2pathMapping.forEach((pathMapping) => {
+                let originPath = path.join(this.getRealProjectDir(), pathMapping, tail);
+                if (this.baseUrl) {
+                    originPath = path.resolve(this.baseUrl, originPath);
+                }
+                this.findDependenciesByRule(originPath, arkFile);
+            });
+        }
+    }
+
+    private processFuzzyMapping(key: string, from: string, module2pathMapping: string[], arkFile: ArkFile): void {
+        key = key.substring(0, key.indexOf(ALL) - 1);
+        if (from.substring(0, key.indexOf(ALL) - 1) === key) {
+            let tail = from.substring(key.indexOf(ALL) - 1, from.length);
+            module2pathMapping.forEach((pathMapping) => {
+                pathMapping = pathMapping.substring(0, pathMapping.indexOf(ALL) - 1);
+                let originPath = path.join(this.getRealProjectDir(), pathMapping, tail);
+                if (this.baseUrl) {
+                    originPath = path.join(this.baseUrl, originPath);
+                }
+                this.findDependenciesByRule(originPath, arkFile);
+            });
+        }
+    }
+
+    private findDependenciesByRule(originPath: string, arkFile: ArkFile): void {
+        const extNameArray = ['.ets', '.ts', '.d.ets', '.d.ts'];
+        if (!this.findFilesByPathArray(originPath, this.indexPathArray, arkFile) && !this.findFilesByExtNameArray(originPath, extNameArray, arkFile)) {
+            logger.info(originPath + 'module mapperInfo is not found!');
+        }
+    }
+
+    private findFilesByPathArray(originPath: string, pathArray: string[], arkFile: ArkFile): boolean {
+        for (const pathInfo of pathArray) {
+            const curPath = path.join(originPath, pathInfo);
+            if (fs.existsSync(curPath) && !this.isRepeatBuildFile(curPath)) {
+                this.addFileNode2DependencyGrap(curPath, arkFile);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private findFilesByExtNameArray(originPath: string, pathArray: string[], arkFile: ArkFile): boolean {
+        for (const pathInfo of pathArray) {
+            const curPath = originPath + pathInfo;
+            if (fs.existsSync(curPath) && !this.isRepeatBuildFile(curPath)) {
+                this.addFileNode2DependencyGrap(curPath, arkFile);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private findRelativeDependenciesByOhPkg(from: string, arkFile: ArkFile): void {
+        //relative path ../from  ./from
+        //order
+        //1. ../from/oh-package.json5 -> [[name]] -> overRides/overRideDependencyMap? -> 
+        //[[main]] -> file path ->dependencies(priority)+devDependencies? dynamicDependencies(not support) ->
+        //key overRides/overRideDependencyMap?
+        //2. ../from/index.ets(ts)
+        //3. ../from/index.d.ets(ts)
+        //4. ../from.ets(ts)
+        //5. ../from.d.ets(ts)
+        //2.3.4.5 random order
+        let originPath = this.getOriginPath(from, arkFile);
+        if (fs.existsSync(path.join(originPath, OH_PACKAGE_JSON5))) {
+            for (const [ohPkgContentPath, ohPkgContent] of this.ohPkgContentMap) {
+                this.findDependenciesByOhPkg(ohPkgContentPath, ohPkgContent, from, arkFile);
+            }
+        }
+        this.findDependenciesByRule(originPath, arkFile);
+    }
+
+    private findDependenciesByOhPkg(ohPkgContentPath: string, ohPkgContentInfo: { [k: string]: unknown }, from: string, arkFile: ArkFile): void {
+        //module name @ohos/from
+        const ohPkgContent: { [k: string]: unknown } | undefined = ohPkgContentInfo;
+        //module main name is must be
+        if (ohPkgContent && ohPkgContent.name && from.startsWith(ohPkgContent.name.toString())) {
+            let originPath = ohPkgContentPath.toString().replace(OH_PACKAGE_JSON5, '');
+            if (ohPkgContent.main) {
+                originPath = path.join(ohPkgContentPath.toString().replace(OH_PACKAGE_JSON5, ''), ohPkgContent.main.toString());
+                if (ohPkgContent.dependencies) {
+                    this.getDependenciesMapping(ohPkgContent.dependencies, ohPkgContentPath, from, arkFile);
+                } else if (ohPkgContent.devDependencies) {
+                    this.getDependenciesMapping(ohPkgContent.devDependencies, ohPkgContentPath, from, arkFile);
+                } else if (ohPkgContent.dynamicDependencies) {
+                    // dynamicDependencies not support
+                }
+                this.addFileNode2DependencyGrap(originPath, arkFile);
+            }
+            if (!this.findFilesByPathArray(originPath, this.indexPathArray, arkFile)) {
+                logger.info(originPath + 'module mapperInfo is not found!');
+            }
+        }
+    }
+
+    private getDependenciesMapping(dependencies: object, ohPkgContentPath: string, from: string, arkFile: ArkFile): void {
+        for (let [moduleName, modulePath] of Object.entries(dependencies)) {
+            logger.debug('dependencies:' + moduleName);
+            if (modulePath.startsWith('file:')) {
+                modulePath = modulePath.replace(/^file:/, '');
+            }
+            const innerOhpackagePath = path.join(ohPkgContentPath.replace(OH_PACKAGE_JSON5, ''), modulePath.toString(), OH_PACKAGE_JSON5);
+            if (!this.ohPkgContentMap.has(innerOhpackagePath)) {
+                const innerModuleOhPkgContent = fetchDependenciesFromFile(innerOhpackagePath);
+                this.findDependenciesByOhPkg(innerOhpackagePath, innerModuleOhPkgContent, from, arkFile);
+            }
+        }
+    }
+
+    private getOriginPath(from: string, arkFile: ArkFile): string {
+        const parentPath = /^\.{1,2}\//.test(from) ? path.dirname(arkFile.getFilePath()) : arkFile.getProjectDir();
+        return path.resolve(parentPath, from);
+    }
+
+    private addFileNode2DependencyGrap(filePath: string, arkFile: ArkFile): void {
+        this.getDependencyFilesDeeply(filePath);
+        this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
+    }
+
     private buildSdk(sdkName: string, sdkPath: string) {
-        const allFiles = getAllFiles(sdkPath, ['.ets', '.ts'], this.options.ignoreFileNames);
+        const allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         allFiles.forEach((file) => {
             logger.info('=== parse sdk file:', file);
             let arkFile: ArkFile = new ArkFile();
@@ -258,16 +557,10 @@ export class Scene {
      * Next, build a `ModuleScene` for this project to generate {@link ArkFile}. Finally, it build bodies of all methods, generate extended classes, and add DefaultConstructors.
      */
     public buildScene4HarmonyProject() {
-        this.modulePath2NameMap.forEach((value, key) => {
-            const moduleOhPkgFilePath = path.resolve(key, './oh-package.json5');
-            if (fs.existsSync(moduleOhPkgFilePath)) {
-                const moduleOhPkgContent = fetchDependenciesFromFile(moduleOhPkgFilePath);
-                this.ohPkgContentMap.set(moduleOhPkgFilePath, moduleOhPkgContent);
-            }
-        });
+        this.buildOhPkgContentMap();
         this.modulePath2NameMap.forEach((value, key) => {
             let moduleScene = new ModuleScene(this);
-            moduleScene.ModuleSceneBuilder(value, key);
+            moduleScene.ModuleSceneBuilder(value, key, this.options.supportFileExts!);
             this.moduleScenesMap.set(value, moduleScene);
         });
         initModulePathMap(this.ohPkgContentMap);
@@ -275,13 +568,23 @@ export class Scene {
         this.addDefaultConstructors();
     }
 
-    public buildModuleScene(moduleName: string, modulePath: string) {
+    private buildOhPkgContentMap(): void {
+        this.modulePath2NameMap.forEach((value, key) => {
+            const moduleOhPkgFilePath = path.resolve(key, OH_PACKAGE_JSON5);
+            if (fs.existsSync(moduleOhPkgFilePath)) {
+                const moduleOhPkgContent = fetchDependenciesFromFile(moduleOhPkgFilePath);
+                this.ohPkgContentMap.set(moduleOhPkgFilePath, moduleOhPkgContent);
+            }
+        });
+    }
+
+    public buildModuleScene(moduleName: string, modulePath: string, supportFileExts: string[]) {
         if (this.moduleScenesMap.get(moduleName)) {
             return;
         }
 
         // get oh-package.json5
-        const moduleOhPkgFilePath = path.resolve(this.realProjectDir, path.join(modulePath, './oh-package.json5'));
+        const moduleOhPkgFilePath = path.resolve(this.realProjectDir, path.join(modulePath, OH_PACKAGE_JSON5));
         if (fs.existsSync(moduleOhPkgFilePath)) {
             const moduleOhPkgContent = fetchDependenciesFromFile(moduleOhPkgFilePath);
             this.ohPkgContentMap.set(moduleOhPkgFilePath, moduleOhPkgContent);
@@ -293,32 +596,35 @@ export class Scene {
         const moduleOhPkgContent = this.ohPkgContentMap.get(moduleOhPkgFilePath);
         if (moduleOhPkgContent) {
             if (moduleOhPkgContent.dependencies instanceof Object) {
-                Object.entries(moduleOhPkgContent.dependencies).forEach(([k, v]) => {
-                    const pattern = new RegExp('^(\\.\\.\\/\|\\.\\/)');
-                    if (typeof (v) === 'string') {
-                        let dependencyModulePath: string = '';
-                        if (pattern.test(v)) {
-                            dependencyModulePath = path.join(moduleOhPkgFilePath, v);
-                        } else if (v.startsWith('file:')) {
-                            const dependencyFilePath = path.join(moduleOhPkgFilePath, v.replace(/^file:/, ''));
-                            const dependencyOhPkgPath = getFileRecursively(path.dirname(dependencyFilePath), 'oh-package.json5');
-                            dependencyModulePath = path.dirname(dependencyOhPkgPath);
-                        }
-                        logger.info('Dependency path: ', dependencyModulePath);
-                        const dependencyModuleName = this.modulePath2NameMap.get(dependencyModulePath);
-                        if (dependencyModuleName) {
-                            this.buildModuleScene(dependencyModuleName, dependencyModulePath);
-                        }
-                    }
-                });
+                this.processModuleOhPkgContent(moduleOhPkgContent.dependencies, moduleOhPkgFilePath, supportFileExts);
             }
         }
 
         let moduleScene = new ModuleScene(this);
-        moduleScene.ModuleSceneBuilder(moduleName, modulePath);
+        moduleScene.ModuleSceneBuilder(moduleName, modulePath, supportFileExts);
         this.moduleScenesMap.set(moduleName, moduleScene);
 
         this.buildAllMethodBody();
+    }
+
+    private processModuleOhPkgContent(dependencies: Object, moduleOhPkgFilePath: string, supportFileExts: string[]): void {
+        Object.entries(dependencies).forEach(([k, v]) => {
+            const pattern = new RegExp('^(\\.\\.\\/\|\\.\\/)');
+            if (typeof (v) === 'string') {
+                let dependencyModulePath: string = '';
+                if (pattern.test(v)) {
+                    dependencyModulePath = path.join(moduleOhPkgFilePath, v);
+                } else if (v.startsWith('file:')) {
+                    const dependencyFilePath = path.join(moduleOhPkgFilePath, v.replace(/^file:/, ''));
+                    const dependencyOhPkgPath = getFileRecursively(path.dirname(dependencyFilePath), OH_PACKAGE_JSON5);
+                    dependencyModulePath = path.dirname(dependencyOhPkgPath);
+                }
+                const dependencyModuleName = this.modulePath2NameMap.get(dependencyModulePath);
+                if (dependencyModuleName) {
+                    this.buildModuleScene(dependencyModuleName, dependencyModulePath, supportFileExts);
+                }
+            }
+        });
     }
 
     /**
@@ -639,6 +945,7 @@ export class Scene {
             arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
         });
         TypeInference.inferExportInfos(file);
+        TypeInference.inferImportInfos(file);
     }
 
     /**
@@ -913,12 +1220,21 @@ export class Scene {
     public getModuleSceneMap(): Map<string, ModuleScene> {
         return this.moduleScenesMap;
     }
+
+    public getGlobalModule2PathMapping(): { [k: string]: string[]; } | undefined {
+        return this.globalModule2PathMapping;
+    }
+
+    public getbaseUrl(): string | undefined {
+        return this.baseUrl;
+    }
 }
 
 export class ModuleScene {
     private projectScene: Scene;
     private moduleName: string = '';
     private modulePath: string = '';
+    private moduleFileMap: Map<string, ArkFile> = new Map();
 
     private moduleOhPkgFilePath: string = '';
     private ohPkgContent: { [k: string]: unknown } = {};
@@ -927,7 +1243,7 @@ export class ModuleScene {
         this.projectScene = projectScene;
     }
 
-    public ModuleSceneBuilder(moduleName: string, modulePath: string, recursively: boolean = false): void {
+    public ModuleSceneBuilder(moduleName: string, modulePath: string, supportFileExts: string[], recursively: boolean = false): void {
         this.moduleName = moduleName;
         this.modulePath = modulePath;
 
@@ -938,15 +1254,24 @@ export class ModuleScene {
         } else {
             logger.warn('This module has no oh-package.json5!');
         }
+        this.genArkFiles(supportFileExts);
+    }
 
-        this.genArkFiles();
+    public ModuleScenePartiallyBuilder(moduleName: string, modulePath: string): void {
+        this.moduleName = moduleName;
+        this.modulePath = modulePath;
+        if (this.moduleOhPkgFilePath) {
+            this.ohPkgContent = fetchDependenciesFromFile(this.moduleOhPkgFilePath);
+        } else {
+            logger.warn('This module has no oh-package.json5!');
+        }
     }
 
     /**
      * get oh-package.json5
      */
     private getModuleOhPkgFilePath() {
-        const moduleOhPkgFilePath = path.resolve(this.projectScene.getRealProjectDir(), path.join(this.modulePath, './oh-package.json5'));
+        const moduleOhPkgFilePath = path.resolve(this.projectScene.getRealProjectDir(), path.join(this.modulePath, OH_PACKAGE_JSON5));
         if (fs.existsSync(moduleOhPkgFilePath)) {
             this.moduleOhPkgFilePath = moduleOhPkgFilePath;
         }
@@ -972,8 +1297,16 @@ export class ModuleScene {
         return this.ohPkgContent;
     }
 
-    private genArkFiles() {
-        getAllFiles(this.modulePath, ['.ets', '.ts'], this.projectScene.getOptions().ignoreFileNames).forEach((file) => {
+    public getModuleFilesMap(): Map<string, ArkFile> {
+        return this.moduleFileMap;
+    }
+
+    public addArkFile(arkFile: ArkFile): void {
+        this.moduleFileMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
+    }
+
+    private genArkFiles(supportFileExts: string[]) {
+        getAllFiles(this.modulePath, supportFileExts, this.projectScene.getOptions().ignoreFileNames).forEach((file) => {
             logger.info('=== parse file:', file);
             let arkFile: ArkFile = new ArkFile();
             arkFile.setScene(this.projectScene);
