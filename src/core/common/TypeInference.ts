@@ -649,4 +649,10 @@ export class TypeInference {
             }
         });
     }
+
+    public static inferImportInfos(file: ArkFile): void {
+        file.getImportInfos().forEach(importInfo => {
+            importInfo.getLazyExportInfo();
+        });
+    }
 }

@@ -26,11 +26,23 @@ export interface Sdk {
     moduleName: string;
 }
 
+export interface TsConfig {
+    extends?: string;
+    compilerOptions?: {
+        baseUrl?: string;
+        paths?: {
+            [key: string]: string[];
+        };
+    };
+
+}
+
 export type SceneOptionsValue = string | number | boolean | (string | number)[] | string[] | null | undefined;
 export interface SceneOptions {
     supportFileExts?: string[];
     ignoreFileNames?: string[];
     enableLeadingComments?: boolean;
+    tsconfig?: string;
     isScanAbc?: boolean;
     [option: string]: SceneOptionsValue;
 }
@@ -104,6 +116,37 @@ export class SceneConfig {
         );
     }
 
+    public buildFromProjectFiles(projectName: string, projectDir: string, filesAndDirectorys: string[], sdks?: Sdk[]): void {
+        if (sdks) {
+            this.sdksObj = sdks;
+        }
+        this.targetProjectDirectory = projectDir;
+        this.targetProjectName = projectName;
+        if (filesAndDirectorys.length === 0) {
+            logger.error('no files for build scene!');
+            return;
+        }
+        filesAndDirectorys.forEach(fileOrDirectory => this.processFilePaths(fileOrDirectory, projectDir));
+    }
+
+    private processFilePaths(fileOrDirectory: string, projectDir: string): void {
+        let absoluteFilePath = '';
+        if (fileOrDirectory.includes(projectDir)) {
+            absoluteFilePath = fileOrDirectory;
+        } else {
+            absoluteFilePath = path.join(projectDir, fileOrDirectory);
+        }
+        if (fs.statSync(absoluteFilePath).isDirectory()) {
+            getAllFiles(absoluteFilePath, this.getOptions().supportFileExts!, this.options.ignoreFileNames).forEach((filePath) => {
+                if (!this.projectFiles.includes(filePath)) {
+                    this.projectFiles.push(filePath);
+                }
+            });
+        } else {
+            this.projectFiles.push(absoluteFilePath);
+        }
+    }
+
     public buildFromJson(configJsonPath: string) {
         if (fs.existsSync(configJsonPath)) {
             let configurationsText: string;
@@ -174,7 +217,7 @@ export class SceneConfig {
         }
         try {
             this.options = { ...this.options, ...JSON.parse(fs.readFileSync(configFile, 'utf-8')) };
-        } catch (error) {}
+        } catch (error) { }
         if (options) {
             this.options = { ...this.options, ...options };
         }

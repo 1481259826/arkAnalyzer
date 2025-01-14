@@ -35,4 +35,5 @@ export const NUMBER_KEYWORD = 'number';
 export const STRING_KEYWORD = 'string';
 export const VOID_KEYWORD = 'void';
 export const NEVER_KEYWORD = 'never';
+export const TSCONFIG_JSON = 'tsconfig.json';
 
