@@ -29,12 +29,12 @@
  * - **Sparse Storage**: Only stores the indices of set bits, making it memory-efficient
  *   for sparse datasets.
  * - **Efficient Operations**: Supports fast bitwise operations such as union and intersection
- * - **Iterable**: Provides an iterator to traverse all set bits in ascending order.
+ * - **Iterable**: Provides an iterator to traverse all set bits in stored order.
  * - **Dynamic Resizing**: Automatically adjusts its internal structure as bits are set
  *   or reset.
  * 
  * Perforceman VS Array
- * - **Random Store**           2.5:1
+ * - **Random Store**         2.5:1
  * - **Continuous Store**       1:1
  * - **Random Test**            1:6 
  * - **Continuous Test**        1:1
