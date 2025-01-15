@@ -50,7 +50,7 @@ function testNormal(): boolean {
     }
 
     let sbv2 = new SparseBitVector();
-    let com = new Set()
+    let com = new Set();
     for (let i = 0; i < numOperations; i++) {
         const num = getRandomInt(0, numOperations);
         com.add(num);
