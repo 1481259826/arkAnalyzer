@@ -108,7 +108,7 @@ class SparseBitVectorElement {
     count(): number {
         let numBits = 0;
         this.bits.forEach(word => {
-            numBits += this.countBits(word)
+            numBits += this.countBits(word);
         });
         return numBits;
     }
@@ -149,7 +149,7 @@ class SparseBitVectorElement {
     // Comparison
     equals(rhs: SparseBitVectorElement): boolean {
         for (let i = 0; i < this.BITWORDS_NUM; i++) {
-            if (this.bits[i] != rhs.word(i)) {
+            if (this.bits[i] !== rhs.word(i)) {
                 return false;
             }
         }
@@ -339,7 +339,7 @@ export class SparseBitVector {
                 next() {
                     return { value: undefined, done: true };
                 }
-            }
+            };
         }
         let bitIndex = element[1].findFirst();
         return {
@@ -375,7 +375,7 @@ export class SparseBitVector {
             if (!rhsElem) { return false; }
             if (!rhsElem.equals(p[1])) { return false; }
         }
-        return true;;
+        return true;
     }
 
     /**

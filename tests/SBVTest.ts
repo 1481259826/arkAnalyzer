@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { SparseBitVector } from '../src/utils/SparseBitVector'
+import { SparseBitVector } from '../src/utils/SparseBitVector';
 
 const numOperations = 100000; // Number of operations to perform
 const maxBitIndex = numOperations; // Maximum bit index to test
@@ -67,12 +67,12 @@ function testNormal(): boolean {
     }
 
     if (com.size !== i) {
-        console.log('ERROR on total')
+        console.log('ERROR on total');
         return false;
     }
 
     if (com.size !== sbv2.count()) {
-        console.log('ERROR on count')
+        console.log('ERROR on count');
         return false;
     }
 
@@ -93,7 +93,7 @@ function testEQ(): boolean {
     nums.reverse().forEach(n => sbv2.set(n));
 
     if (!sbv1.equals(sbv2)) {
-        console.log('ERROR on euquals')
+        console.log('ERROR on euquals');
         return false;
     }
 
