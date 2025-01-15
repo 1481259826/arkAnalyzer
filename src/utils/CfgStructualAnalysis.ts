@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-import { ArkIfStmt, ArkReturnStmt } from '../core/base/Stmt';
+import { ArkIfStmt, ArkReturnStmt, ArkThrowStmt } from '../core/base/Stmt';
+import { Trap } from '../core/base/Trap';
 import { BasicBlock } from '../core/graph/BasicBlock';
 import { Cfg } from '../core/graph/Cfg';
 
@@ -28,6 +29,9 @@ export enum CodeBlockType {
     WHILE,
     FOR,
     COMPOUND_END,
+    TRY,
+    CATCH,
+    FINALLY,
 }
 
 export type TraversalCallback = (block: BasicBlock | undefined, type: CodeBlockType) => void;
@@ -41,7 +45,7 @@ export class AbstractFlowGraph {
     private structBlocks: Map<AbstractNode, Set<AbstractNode>> = new Map();
     private loopMap: Map<AbstractNode, NaturalLoopRegion> = new Map();
 
-    constructor(cfg: Cfg) {
+    constructor(cfg: Cfg, traps?: Trap[]) {
         this.block2NodeMap = new Map<BasicBlock, AbstractNode>();
         for (const bb of cfg.getBlocks()) {
             let an = new AbstractNode();
@@ -59,8 +63,12 @@ export class AbstractFlowGraph {
             }
         }
 
+        let trapRegions = this.buildTrap(traps);
+        this.searchTrapFinallyNodes(trapRegions);
+        this.trapsStructuralAnalysis(trapRegions);
+
         this.entry = this.block2NodeMap.get(cfg.getStartingBlock()!)!;
-        this.structuralAnalysis();
+        this.entry = this.structuralAnalysis(this.entry);
     }
 
     public getEntry(): AbstractNode {
@@ -83,8 +91,11 @@ export class AbstractFlowGraph {
         }
     }
 
-    private structuralAnalysis() {
-        this.nodes = this.dfsPostOrder(this.entry);
+    private structuralAnalysis(entry: AbstractNode, scope?: Set<AbstractNode>): AbstractNode {
+        let preds = entry.getPred();
+        let entryBak = entry;
+        this.nodes = this.dfsPostOrder(entry, scope);
+        this.entry = entry;
         this.buildCyclicStructural();
 
         // acyclic structural
@@ -95,24 +106,37 @@ export class AbstractFlowGraph {
             for (let i = 0; i < postMax; i++) {
                 let node = this.nodes[i];
                 let nset = new Set<AbstractNode>();
-                let rtype = this.identifyRegionType(node, nset);
-                if (rtype !== undefined) {
-                    let p = this.reduce(rtype, nset);
-                    if (p) {
-                        if (nset.has(this.entry)) {
-                            this.entry = p;
-                        }
-                        this.nodes = this.dfsPostOrder(this.entry);
-                        change = postMax !== this.nodes.length;
-                        postMax = this.nodes.length;
-                    }
+                let rtype = this.identifyRegionType(node, nset, scope);
+                if (!rtype) {
+                    continue;
                 }
+
+                let p = this.reduce(rtype, nset);
+                if (!p) {
+                    continue;
+                }
+
+                scope?.add(p);
+                if (nset.has(entry)) {
+                    entry = p;
+                }
+                this.nodes = this.dfsPostOrder(entry, scope);
+                change = postMax !== this.nodes.length;
+                postMax = this.nodes.length;
             }
         }
+
+        for (const pred of preds) {
+            pred.replaceSucc(entryBak, entry);
+            entry.addPred(pred);
+        }
+
+        return entry;
     }
 
     private dfsPostOrder(
         node: AbstractNode,
+        scope?: Set<AbstractNode>,
         visitor: Set<AbstractNode> = new Set(),
         postOrder: AbstractNode[] = []
     ): AbstractNode[] {
@@ -121,7 +145,12 @@ export class AbstractFlowGraph {
             if (visitor.has(succ)) {
                 continue;
             }
-            this.dfsPostOrder(succ, visitor, postOrder);
+
+            if (scope && !scope.has(succ)) {
+                continue;
+            }
+
+            this.dfsPostOrder(succ, scope, visitor, postOrder);
         }
         postOrder.push(node);
         return postOrder;
@@ -280,8 +309,11 @@ export class AbstractFlowGraph {
         return false;
     }
 
-    private isValidInBlocks(node: AbstractNode): boolean {
+    private isValidInBlocks(node: AbstractNode, scope?: Set<AbstractNode>): boolean {
         if (this.isForLoopIncNode(node) || node.hasIfStmt()) {
+            return false;
+        }
+        if (scope && !scope.has(node)) {
             return false;
         }
 
@@ -339,14 +371,14 @@ export class AbstractFlowGraph {
         return false;
     }
 
-    private isBlockRegion(node: AbstractNode, nodeSet: Set<AbstractNode>): boolean {
+    private isBlockRegion(node: AbstractNode, nodeSet: Set<AbstractNode>, scope?: Set<AbstractNode>): boolean {
         let n = node;
         let p = true;
         let s = n.getSucc().length === 1;
         nodeSet.clear();
 
         let blocks = [];
-        while (p && s && !nodeSet.has(n) && this.isValidInBlocks(n)) {
+        while (p && s && !nodeSet.has(n) && this.isValidInBlocks(n, scope)) {
             nodeSet.add(n);
             blocks.push(n);
             n = n.getSucc()[0];
@@ -354,7 +386,7 @@ export class AbstractFlowGraph {
             s = n.getSucc().length === 1;
         }
 
-        if (p && this.isValidInBlocks(n)) {
+        if (p && this.isValidInBlocks(n, scope)) {
             if (!nodeSet.has(n)) {
                 blocks.push(n);
             }
@@ -364,7 +396,7 @@ export class AbstractFlowGraph {
         n = node;
         p = n.getPred().length === 1;
         s = true;
-        while (p && s && this.isValidInBlocks(n)) {
+        while (p && s && this.isValidInBlocks(n, scope)) {
             if (!nodeSet.has(n)) {
                 blocks.unshift(n);
             }
@@ -377,7 +409,7 @@ export class AbstractFlowGraph {
             s = n.getSucc().length === 1;
         }
 
-        if (s && this.isValidInBlocks(n)) {
+        if (s && this.isValidInBlocks(n, scope)) {
             if (!nodeSet.has(n)) {
                 blocks.unshift(n);
             }
@@ -471,8 +503,12 @@ export class AbstractFlowGraph {
         return false;
     }
 
-    private identifyRegionType(node: AbstractNode, nodeSet: Set<AbstractNode>): RegionType | undefined {
-        if (this.isBlockRegion(node, nodeSet)) {
+    private identifyRegionType(
+        node: AbstractNode,
+        nodeSet: Set<AbstractNode>,
+        scope?: Set<AbstractNode>
+    ): RegionType | undefined {
+        if (this.isBlockRegion(node, nodeSet, scope)) {
             return RegionType.BLOCK_REGION;
         }
 
@@ -628,6 +664,12 @@ export class AbstractFlowGraph {
             let doWhileLoop = new DoWhileLoopRegion(nodeSet);
             this.loopMap.set(doWhileLoop.header, doWhileLoop);
             node = doWhileLoop;
+        } else if (
+            rtype === RegionType.TRY_CATCH_REGION ||
+            rtype === RegionType.TRY_FINALLY_REGION ||
+            rtype === RegionType.TRY_CATCH_FINALLY_REGION
+        ) {
+            node = new TrapRegion(nodeSet, rtype);
         }
 
         return node;
@@ -656,6 +698,9 @@ export class AbstractFlowGraph {
 
     private setIntersect(a: Set<AbstractNode>, b: Set<AbstractNode>): Set<AbstractNode> {
         let r = new Set<AbstractNode>();
+        if (!b) {
+            return r;
+        }
         for (const n of b) {
             if (a.has(n)) {
                 r.add(n);
@@ -672,10 +717,158 @@ export class AbstractFlowGraph {
 
         return this.setIntersect(a, b).size === a.size;
     }
+
+    private buildTrap(traps?: Trap[]): NaturalTrapRegion[] {
+        if (!traps) {
+            return [];
+        }
+        traps.sort(
+            (a, b) =>
+                a.getTryBlocks().length +
+                a.getCatchBlocks().length -
+                (b.getTryBlocks().length + b.getCatchBlocks().length)
+        );
+
+        let trapRegions: NaturalTrapRegion[] = [];
+
+        for (const trap of traps) {
+            let region = new NaturalTrapRegion(trap, this.block2NodeMap);
+            let findTrapRegion = this.getNaturalTrapRegion(region);
+
+            if (!findTrapRegion) {
+                for (const n of region.getNodes()) {
+                    this.structOf.set(n, region);
+                }
+                trapRegions.push(region);
+                continue;
+            }
+            if (findTrapRegion.type === RegionType.TRY_FINALLY_REGION) {
+                findTrapRegion.trySet = region.trySet;
+                findTrapRegion.catchSet = region.catchSet;
+                region = findTrapRegion;
+            } else {
+                findTrapRegion.finallySet = region.finallySet;
+                region = findTrapRegion;
+            }
+
+            for (const n of region.getNodes()) {
+                this.structOf.set(n, region);
+            }
+            region.type = RegionType.TRY_CATCH_FINALLY_REGION;
+        }
+
+        this.structOf.clear();
+
+        return trapRegions;
+    }
+
+    private searchTrapFinallyNodes(trapRegions: NaturalTrapRegion[]): void {
+        // search finally
+        for (const region of trapRegions) {
+            if (region.type === RegionType.TRY_CATCH_REGION) {
+                continue;
+            }
+
+            this.bfs(region);
+        }
+    }
+
+    private bfs(region: NaturalTrapRegion): void {
+        let finallyNodes = new Set<AbstractNode>();
+        let count = (region as NaturalTrapRegion).finallySet!.size;
+        let queue = [region.getSucc()[0]];
+        while (queue.length > 0 && finallyNodes.size < count) {
+            let node = queue[0];
+            queue.splice(0, 1);
+            finallyNodes.add(node);
+            (region as NaturalTrapRegion).identifyFinallySet.add(node);
+            for (const succ of node.getSucc()) {
+                if (!finallyNodes.has(succ)) {
+                    queue.push(succ);
+                }
+            }
+        }
+    }
+
+    private getNaturalTrapRegion(trap: NaturalTrapRegion): NaturalTrapRegion | undefined {
+        let findTrap = this.findNaturalTrapRegion(trap.trySet);
+        if (findTrap) {
+            return findTrap;
+        }
+        if (trap.catchSet) {
+            findTrap = this.findNaturalTrapRegion(trap.catchSet);
+        }
+
+        if (findTrap) {
+            return findTrap;
+        }
+
+        if (trap.finallySet) {
+            findTrap = this.findNaturalTrapRegion(trap.finallySet);
+        }
+
+        return findTrap;
+    }
+
+    private findNaturalTrapRegion(nodes: Set<AbstractNode>): NaturalTrapRegion | undefined {
+        let findTrap: NaturalTrapRegion | undefined = undefined;
+        for (const node of nodes) {
+            if (!this.structOf.has(node)) {
+                return undefined;
+            }
+            if (!findTrap) {
+                findTrap = this.structOf.get(node)! as NaturalTrapRegion;
+                continue;
+            }
+            if (findTrap !== this.structOf.get(node)) {
+                return undefined;
+            }
+        }
+        return findTrap;
+    }
+
+    private trapsStructuralAnalysis(trapRegions: NaturalTrapRegion[]): void {
+        trapRegions.sort((a, b) => a.size() - b.size());
+
+        for (const trap of trapRegions) {
+            let tryNode = this.trapsSubStructuralAnalysis(trap.trySet)!;
+            let catchNode: AbstractNode | undefined = this.trapsSubStructuralAnalysis(trap.catchSet);
+            let finnallyNode: AbstractNode | undefined = this.trapsSubStructuralAnalysis(trap.identifyFinallySet);
+
+            if (catchNode === undefined) {
+                this.reduce(RegionType.TRY_FINALLY_REGION, new Set([tryNode, finnallyNode!]));
+            } else if (finnallyNode === undefined) {
+                this.reduce(RegionType.TRY_CATCH_REGION, new Set([tryNode, catchNode!]));
+            } else {
+                this.reduce(RegionType.TRY_CATCH_FINALLY_REGION, new Set([tryNode, catchNode!, finnallyNode!]));
+            }
+        }
+    }
+
+    private trapsSubStructuralAnalysis(nodes?: Set<AbstractNode>): AbstractNode | undefined {
+        if (!nodes) {
+            return undefined;
+        }
+        let entry = Array.from(nodes)[0];
+        if (nodes.size <= 1) {
+            return entry;
+        }
+
+        for (const node of nodes) {
+            if (this.structOf.has(node)) {
+                nodes.add(this.structOf.get(node)!);
+            }
+        }
+
+        return this.structuralAnalysis(entry, nodes);
+    }
 }
 
 enum RegionType {
     ABSTRACT_NODE,
+    TRY_NODE,
+    CATCH_NODE,
+    FINALLY_NODE,
     /* Sequence of blocks.  */
     BLOCK_REGION,
     IF_REGION,
@@ -690,6 +883,9 @@ enum RegionType {
     FOR_LOOP_REGION,
     CASE_REGION,
     SWITCH_REGION,
+    TRY_CATCH_REGION,
+    TRY_FINALLY_REGION,
+    TRY_CATCH_FINALLY_REGION,
 }
 
 const LOOP_TYPES = new Set<RegionType>([
@@ -749,6 +945,10 @@ class AbstractNode {
     }
 
     public addPred(block: AbstractNode): void {
+        let set = new Set(this.predNodes);
+        if (set.has(block)) {
+            return;
+        }
         this.predNodes.push(block);
     }
 
@@ -810,6 +1010,14 @@ abstract class Region extends AbstractNode {
         super();
         this.nset = nset;
         this.type = type;
+    }
+
+    public getBlock(): BasicBlock | undefined {
+        if (this.nset.size === 0) {
+            return undefined;
+        }
+
+        return Array.from(this.nset)[0].getBlock();
     }
 
     public abstract replace(): void;
@@ -1136,5 +1344,149 @@ class IfElseRegion extends Region {
         callback(undefined, CodeBlockType.ELSE);
         this.else.traversal(callback, CodeBlockType.NORMAL);
         callback(undefined, CodeBlockType.COMPOUND_END);
+    }
+}
+
+class TrapRegion extends Region {
+    tryNode: AbstractNode;
+    catchNode?: AbstractNode;
+    finallyNode?: AbstractNode;
+
+    constructor(nset: Set<AbstractNode>, type: RegionType) {
+        super(nset, type);
+        let nodes = Array.from(nset);
+
+        this.tryNode = nodes[0];
+        if (type === RegionType.TRY_CATCH_REGION) {
+            this.catchNode = nodes[1];
+        } else if (type === RegionType.TRY_FINALLY_REGION) {
+            this.finallyNode = nodes[1];
+        } else {
+            this.catchNode = nodes[1];
+            this.finallyNode = nodes[2];
+        }
+    }
+
+    public replace(): void {
+        for (let pred of this.tryNode.getPred()) {
+            if (pred !== this.tryNode) {
+                pred.replaceSucc(this.tryNode, this);
+                this.addPred(pred);
+            }
+        }
+
+        if (this.finallyNode) {
+            for (let succ of this.finallyNode.getSucc()) {
+                if (succ !== this.finallyNode) {
+                    succ.replacePred(this.finallyNode, this);
+                    this.addSucc(succ);
+                }
+            }
+        } else {
+            for (let succ of this.tryNode.getSucc()) {
+                if (succ !== this.tryNode) {
+                    succ.replacePred(this.tryNode, this);
+                    this.addSucc(succ);
+                }
+            }
+        }
+    }
+
+    public traversal(callback: TraversalCallback) {
+        callback(undefined, CodeBlockType.TRY);
+        this.tryNode.traversal(callback, CodeBlockType.NORMAL);
+        if (this.catchNode) {
+            callback(this.catchNode.getBlock(), CodeBlockType.CATCH);
+            this.catchNode?.traversal(callback, CodeBlockType.NORMAL);
+        }
+        if (this.finallyNode) {
+            callback(undefined, CodeBlockType.FINALLY);
+            this.finallyNode?.traversal(callback, CodeBlockType.NORMAL);
+        }
+        callback(undefined, CodeBlockType.COMPOUND_END);
+    }
+}
+
+class NaturalTrapRegion extends Region {
+    trySet: Set<AbstractNode>;
+    catchSet?: Set<AbstractNode>;
+    finallySet?: Set<AbstractNode>;
+    identifyFinallySet: Set<AbstractNode>;
+
+    constructor(trap: Trap, block2NodeMap: Map<BasicBlock, AbstractNode>) {
+        super(new Set<AbstractNode>(), RegionType.TRY_CATCH_FINALLY_REGION);
+        this.trySet = new Set<AbstractNode>();
+        this.catchSet = new Set<AbstractNode>();
+        this.identifyFinallySet = new Set<AbstractNode>();
+
+        for (const block of trap.getTryBlocks()) {
+            this.trySet.add(block2NodeMap.get(block)!);
+        }
+
+        for (const block of trap.getCatchBlocks()) {
+            this.catchSet.add(block2NodeMap.get(block)!);
+        }
+
+        if (this.isFinallyNode(Array.from(this.catchSet!)[this.catchSet.size - 1])!) {
+            this.type = RegionType.TRY_FINALLY_REGION;
+            this.finallySet = this.catchSet;
+            this.catchSet = undefined;
+        } else {
+            this.type = RegionType.TRY_CATCH_REGION;
+        }
+    }
+
+    private isFinallyNode(node: AbstractNode): boolean {
+        let block = node.getBlock();
+        if (!block) {
+            return false;
+        }
+
+        let stmtLen = block.getStmts().length;
+        if (stmtLen < 1) {
+            return false;
+        }
+
+        let stmtLast = block.getStmts()[stmtLen - 1];
+        return stmtLast instanceof ArkThrowStmt;
+    }
+
+    public size(): number {
+        let size = this.trySet.size;
+        if (this.catchSet) {
+            size += this.catchSet.size;
+        }
+        if (this.finallySet) {
+            size += this.finallySet.size;
+        }
+        return size;
+    }
+
+    public replace(): void {}
+
+    public getNodes(): AbstractNode[] {
+        let nodes = Array.from(this.trySet);
+
+        if (this.catchSet) {
+            nodes.push(...this.catchSet);
+        }
+
+        if (this.finallySet) {
+            nodes.push(...this.finallySet);
+        }
+        return nodes;
+    }
+
+    public getSucc(): AbstractNode[] {
+        let succ = new Set<AbstractNode>();
+
+        for (const node of this.trySet) {
+            for (const s of node.getSucc()) {
+                if (!this.trySet.has(s)) {
+                    succ.add(s);
+                }
+            }
+        }
+        return Array.from(succ);
     }
 }

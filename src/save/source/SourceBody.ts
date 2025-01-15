@@ -23,14 +23,17 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
 import {
     SourceBreakStmt,
+    SourceCatchStmt,
     SourceCompoundEndStmt,
     SourceContinueStmt,
     SourceDoStmt,
     SourceDoWhileStmt,
     SourceElseStmt,
+    SourceFinallyStmt,
     SourceForStmt,
     SourceIfStmt,
     SourceStmt,
+    SourceTryStmt,
     SourceTypeAliasStmt,
     SourceWhileStmt,
     stmt2SourceStmt,
@@ -48,7 +51,6 @@ import { LineColPosition } from '../../core/base/Position';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
 
 class AliasStmt extends Stmt {
-
     constructor(position: LineColPosition) {
         super();
         this.originalPosition = position;
@@ -57,7 +59,6 @@ class AliasStmt extends Stmt {
     toString(): string {
         return '';
     }
-    
 }
 
 export class SourceBody implements StmtPrinterContext {
@@ -78,7 +79,7 @@ export class SourceBody implements StmtPrinterContext {
         this.printer = new ArkCodeBuffer(indent);
         this.method = method;
         this.arkBody = method.getBody()!;
-        this.cfgUtils = new AbstractFlowGraph(method.getCfg()!);
+        this.cfgUtils = new AbstractFlowGraph(method.getCfg()!, this.arkBody.getTraps());
         this.tempCodeMap = new Map();
         this.tempVisitor = new Set();
         this.definedLocals = new Set();
@@ -198,6 +199,14 @@ export class SourceBody implements StmtPrinterContext {
             this.pushStmt(new SourceElseStmt(this, this.lastStmt));
         } else if (type === CodeBlockType.DO) {
             this.pushStmt(new SourceDoStmt(this, this.lastStmt));
+        } else if (type === CodeBlockType.TRY) {
+            this.pushStmt(new SourceTryStmt(this, this.lastStmt));
+        } else if (type === CodeBlockType.CATCH) {
+            this.pushStmt(new SourceCatchStmt(this, this.lastStmt, block));
+            // catch need read block first stmt, using return to void walk block twice.
+            return;
+        } else if (type === CodeBlockType.FINALLY) {
+            this.pushStmt(new SourceFinallyStmt(this, this.lastStmt));
         }
 
         if (!block) {

@@ -82,6 +82,14 @@ export class DotMethodPrinter extends Printer {
                 // Node0 -> Node1;
                 this.printer.writeIndent().writeLine(`${blockToNode.get(block)} -> ${blockToNode.get(nextBlock)};`);
             }
+
+            let exceptionalNextBlock = block.getExceptionalSuccessorBlocks();
+            if (!exceptionalNextBlock) {
+                continue;
+            }
+            for (const nextBlock of exceptionalNextBlock) {
+                this.printer.writeIndent().writeLine(`${blockToNode.get(block)} -> ${blockToNode.get(nextBlock)}[style="dotted"];`);
+            }
         }
     }
 

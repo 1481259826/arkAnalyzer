@@ -104,12 +104,12 @@ export abstract class SourceStmt implements Dump {
 
     protected dumpTs(): string {
         let content: string[] = [];
-        let comments = this.original.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || [];
+        let comments = (this.original.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[]) || [];
         comments.forEach((v) => {
             content.push(`${this.printer.getIndent()}${v}\n`);
         });
         if (this.text.length > 0) {
-            content.push( `${this.printer.getIndent()}${this.text}\n`);
+            content.push(`${this.printer.getIndent()}${this.text}\n`);
         }
         return content.join('');
     }
@@ -241,7 +241,7 @@ export class SourceAssignStmt extends SourceStmt {
                 if (this.context.isLocalDefined(this.leftOp)) {
                     this.setText(`${this.leftCode} = ${this.rightCode};`);
                 } else {
-                    let flag = this.leftOp.getConstFlag() ? 'const': 'let';
+                    let flag = this.leftOp.getConstFlag() ? 'const' : 'let';
                     if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
                         this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
                     } else {
@@ -811,7 +811,74 @@ export class SourceTypeAliasStmt extends SourceStmt {
         if (modifiersArray.length > 0) {
             modifier = `${modifiersArray.join(' ')} `;
         }
-        this.setText(`${modifier}type ${this.aliasType.getName()} = ${this.transformer.typeToString(this.aliasType.getOriginalType())};`);
+        this.setText(
+            `${modifier}type ${this.aliasType.getName()} = ${this.transformer.typeToString(
+                this.aliasType.getOriginalType()
+            )};`
+        );
+    }
+}
+
+export class SourceTryStmt extends SourceStmt {
+    constructor(context: StmtPrinterContext, stmt: Stmt) {
+        super(context, stmt);
+    }
+
+    public transfer2ts(): void {
+        this.setText('try {');
+    }
+
+    protected afterDump(): void {
+        this.printer.incIndent();
+    }
+}
+
+export class SourceCatchStmt extends SourceStmt {
+    block: BasicBlock | undefined;
+    constructor(context: StmtPrinterContext, stmt: Stmt, block?: BasicBlock) {
+        super(context, stmt);
+        this.block = block;
+    }
+
+    public transfer2ts(): void {
+        if (this.block) {
+            let stmt = this.block!.getStmts()[0];
+            if (stmt instanceof ArkAssignStmt) {
+                if (stmt.getLeftOp() instanceof Local) {
+                    let name = (stmt.getLeftOp() as Local).getName();
+                    this.setText(`} catch (${name}) {`);
+                    this.context.setSkipStmt(stmt);
+                    return;
+                }
+            }
+        }
+        this.setText('} catch (e) {');
+    }
+
+    protected beforeDump(): void {
+        this.printer.decIndent();
+    }
+
+    protected afterDump(): void {
+        this.printer.incIndent();
+    }
+}
+
+export class SourceFinallyStmt extends SourceStmt {
+    constructor(context: StmtPrinterContext, stmt: Stmt) {
+        super(context, stmt);
+    }
+
+    public transfer2ts(): void {
+        this.setText('} finally {');
+    }
+
+    protected beforeDump(): void {
+        this.printer.decIndent();
+    }
+
+    protected afterDump(): void {
+        this.printer.incIndent();
     }
 }
 
