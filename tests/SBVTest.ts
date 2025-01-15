@@ -43,14 +43,14 @@ function testNormal(): boolean {
     for (let i = 0; i < numOperations; i++) {
         let exp = setNums.has(i);
         let real = sbv.test(i);
-        if(exp != real) {
-            console.log("ERROR on test")
+        if (exp !== real) {
+            console.log('ERROR on test')
             return false;
         }
     }
-    
+
     let sbv2 = new SparseBitVector();
-    let com = new Set() 
+    let com = new Set()
     for (let i = 0; i < numOperations; i++) {
         const num = getRandomInt(0, numOperations);
         com.add(num);
@@ -67,16 +67,16 @@ function testNormal(): boolean {
     }
 
     if (com.size !== i) {
-        console.log("ERROR on total")
+        console.log('ERROR on total')
         return false;
     }
 
     if (com.size !== sbv2.count()) {
-        console.log("ERROR on count")
+        console.log('ERROR on count')
         return false;
     }
 
-    console.log('Test End ' + i)
+    console.log('Test End ' + i);
     return true;
 }
 
@@ -90,16 +90,16 @@ function testEQ(): boolean {
     }
 
     nums.forEach(n => sbv1.set(n));
-    nums.reverse().forEach(n=> sbv2.set(n));
+    nums.reverse().forEach(n => sbv2.set(n));
 
-    if(!sbv1.equals(sbv2)) {
-        console.log("ERROR on euquals")
+    if (!sbv1.equals(sbv2)) {
+        console.log('ERROR on euquals')
         return false;
     }
 
     sbv2.reset(nums[0]);
-    if(sbv1.equals(sbv2)) {
-        console.log("ERROR on euquals")
+    if (sbv1.equals(sbv2)) {
+        console.log('ERROR on euquals');
         return false;
     }
 
@@ -109,19 +109,14 @@ function testEQ(): boolean {
 function testUn(): boolean {
     let sbv1 = new SparseBitVector();
     let sbv2 = new SparseBitVector();
-    let nums1 = [1,2,4,128];
-    let nums2 = [1,3,6,7,129,270];
+    let nums1 = [1, 2, 4, 128];
+    let nums2 = [1, 3, 6, 7, 129, 270];
     nums1.forEach(n => sbv1.set(n));
     nums2.forEach(n => sbv2.set(n));
 
-    let result = new Array()
     sbv1.unionWith(sbv2);
-    for(let e of sbv1) {
-        result.push(e);
-    }
-    let ss = result.toString();
-    if(ss !== '1,2,3,4,6,7,128,129,270') {
-        console.log("ERROR on Union")
+    if (sbv1.toString() !== '1,2,3,4,6,7,128,129,270') {
+        console.log('ERROR on Union');
         return false;
     }
 
@@ -131,19 +126,14 @@ function testUn(): boolean {
 function testIt(): boolean {
     let sbv1 = new SparseBitVector();
     let sbv2 = new SparseBitVector();
-    let nums1 = [1,2,4,7,32,128,1000,3000];
-    let nums2 = [1,3,6,7,128,129,270,1000];
+    let nums1 = [1, 2, 4, 7, 32, 128, 1000, 3000];
+    let nums2 = [1, 3, 6, 7, 128, 129, 270, 1000];
     nums1.forEach(n => sbv1.set(n));
     nums2.forEach(n => sbv2.set(n));
 
-    let result = new Array()
     sbv1.intersectWith(sbv2);
-    for(let e of sbv1) {
-        result.push(e);
-    }
-    let ss = result.toString();
-    if(ss !== '1,7,128,1000') {
-        console.log("ERROR on Union")
+    if (sbv1.toString() !== '1,7,128,1000') {
+        console.log('ERROR on Union');
         return false;
     }
 
@@ -152,8 +142,8 @@ function testIt(): boolean {
 
 
 // Test the performance of SparseBitVector
-function testSparseBitVectorRandomPerformance():void {
-    console.log('\nSBV random test ...')
+function testSparseBitVectorRandomPerformance(): void {
+    console.log('\nSBV random test ...');
     const initialMemory = getMemoryUsage();
 
     const vector = new SparseBitVector(128);
@@ -190,7 +180,7 @@ function testSparseBitVectorRandomPerformance():void {
     }
     console.timeEnd('resetBits');
 
-    console.time('countBits')
+    console.time('countBits');
     const count = vector.count();
     console.timeEnd('countBits');
     console.log(`Number of set bits: ${count}`);
@@ -240,7 +230,7 @@ function testCompareRandomPerformance(): void {
 
 // Test the performance of SparseBitVector
 function testSparseBitVectorNotRandomPerformance(): void {
-    console.log('\nSBV not random test ...')
+    console.log('\nSBV not random test ...');
     const initialMemory = getMemoryUsage();
 
     const vector = new SparseBitVector(128);
@@ -277,7 +267,7 @@ function testSparseBitVectorNotRandomPerformance(): void {
     const memoryAfterSettingBits = getMemoryUsage();
     console.log(`Memory increase: ${(memoryAfterSettingBits - initialMemory).toFixed(2)} MB`);
 
-    console.time('countBits')
+    console.time('countBits');
     const count = vector.count();
     console.timeEnd('countBits');
     console.log(`Number of set bits: ${count}`);
@@ -334,15 +324,15 @@ export function test(): boolean {
 
 // Run the performance test
 if (1) {
-    sleep(1500)
+    sleep(1500);
     testSparseBitVectorRandomPerformance();
-    sleep(10000)
+    sleep(10000);
     testCompareRandomPerformance();
-    console.log('======')
-    sleep(10000)
-    testSparseBitVectorNotRandomPerformance()
-    sleep(10000)
-    testCompareNotRandomPerformance()
+    console.log('======');
+    sleep(10000);
+    testSparseBitVectorNotRandomPerformance();
+    sleep(10000);
+    testCompareNotRandomPerformance();
 }
 
 test();

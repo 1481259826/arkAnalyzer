@@ -34,20 +34,20 @@
  *   or reset.
  * 
  * Perforceman VS Array
- * - **Random Store**       2.5:1
- * - **Continuous Store**   1:1
- * - **Random Test**        1:6 
- * - **Continuous Test**    1:1
- * - **Random Iterator**    4:1
- * - **Continuous Iterator**2:1
+ * - **Random Store**           2.5:1
+ * - **Continuous Store**       1:1
+ * - **Random Test**            1:6 
+ * - **Continuous Test**        1:1
+ * - **Random Iterator**        4:1
+ * - **Continuous Iterator**    2:1
  *
  * The SparseBitVector is parameterized by `ElementSize`, which defines the size of each
- * chunk (element) in the bit vector. This allows for customization based on the expected
- * sparsity and performance requirements.
+ * chunk (element) in the bit vector and MUST be times of 32. This allows for customization
+ * based on the expected sparsity and performance requirements.
  *
  */
 
-export type Word = Uint32Array
+export type Word = Uint32Array;
 const BITWORD_SIZE = 32; // bits of a Word 
 class SparseBitVectorElement {
     private ELEMENT_SIZE; // bits of element. Default as 128
@@ -109,7 +109,7 @@ class SparseBitVectorElement {
         let numBits = 0;
         this.bits.forEach(word => {
             numBits += this.countBits(word)
-        })
+        });
         return numBits;
     }
 
@@ -127,7 +127,7 @@ class SparseBitVectorElement {
     findNext(bitIdx: number): number {
         bitIdx++;
         let wordIndex = Math.floor(bitIdx / BITWORD_SIZE);
-        let bitOffset = bitIdx % BITWORD_SIZE ;
+        let bitOffset = bitIdx % BITWORD_SIZE;
 
         // Check the current word
         // Mask off previous bits
@@ -148,8 +148,8 @@ class SparseBitVectorElement {
 
     // Comparison
     equals(rhs: SparseBitVectorElement): boolean {
-        for(let i = 0; i < this.BITWORDS_NUM; i++) {
-            if(this.bits[i] != rhs.word(i)) {
+        for (let i = 0; i < this.BITWORDS_NUM; i++) {
+            if (this.bits[i] != rhs.word(i)) {
                 return false;
             }
         }
@@ -195,7 +195,7 @@ class SparseBitVectorElement {
 
     // Count the number of set bits in a word
     countBits(word: number): number {
-         // assume the value is treated as a unsigned integer
+        // assume the value is treated as a unsigned integer
         let v = word;
 
         // Step 1: Pairwise addition of bits
@@ -250,7 +250,7 @@ export class SparseBitVector {
     private ELEMENT_SIZE: number;
     // Unordered storage of elements.
     // key is actually the element index (normally it is in element)
-    private elements: Map<number,SparseBitVectorElement> = new Map();
+    private elements: Map<number, SparseBitVectorElement> = new Map();
 
     constructor(elementsSize: number = 128) {
         this.ELEMENT_SIZE = elementsSize;
@@ -259,7 +259,7 @@ export class SparseBitVector {
         return this.ELEMENT_SIZE;
     }
 
-    get elems(){
+    get elems(): Map<number, SparseBitVectorElement> {
         return this.elements;
     }
 
@@ -284,7 +284,7 @@ export class SparseBitVector {
     // Set a bit if not existing. Else return
     testAndSet(bitIdx: number): boolean {
         let old = this.test(bitIdx);
-        if(!old) {
+        if (!old) {
             this.set(bitIdx);
             return true;
         }
@@ -309,7 +309,7 @@ export class SparseBitVector {
         const firstElement = this.elements.entries().next().value;
         if (firstElement) {
             const firstBit = firstElement[1].findFirst();
-            return firstElement[0]* this.ELEMENT_SIZE + firstBit;
+            return firstElement[0] * this.ELEMENT_SIZE + firstBit;
         } else {
             return -1;
         }
@@ -358,19 +358,19 @@ export class SparseBitVector {
                 }
                 return { value: undefined, done: true };
             }
-        }
+        };
     }
 
     /**
      * Check if this SparseBitVector is equal to another SparseBitVector.
      */
     equals(rhs: SparseBitVector): boolean {
-        if(this.ELEMENT_SIZE != rhs.ELEMENT_SIZE || this.elems.size != rhs.elems.size) {
+        if (this.ELEMENT_SIZE !== rhs.ELEMENT_SIZE || this.elems.size !== rhs.elems.size) {
             return false;
         }
 
         let rhsElems = rhs.elems;
-        for(let p of this.elements) {
+        for (let p of this.elements) {
             let rhsElem = rhsElems.get(p[0]);
             if (!rhsElem) { return false; }
             if (!rhsElem.equals(p[1])) { return false; }
@@ -394,7 +394,7 @@ export class SparseBitVector {
             if (elem) {
                 changed = elem!.unionWith(p[1]) || changed;
             } else {
-                newElems.set(p[0],p[1]);
+                newElems.set(p[0], p[1]);
             }
         }
 
@@ -439,10 +439,16 @@ export class SparseBitVector {
         }
 
         if (needDeleteIdx.size > 0) {
-            needDeleteIdx.forEach(idx => this.elements.delete(idx))
+            needDeleteIdx.forEach(idx => this.elements.delete(idx));
             changed = true;
         }
 
         return changed;
+    }
+
+    // Dump as string
+    toString(): string {
+        let ar = [...this];
+        return ar.toString();
     }
 }
