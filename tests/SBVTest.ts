@@ -33,7 +33,7 @@ function getMemoryUsage(): number {
 
 function testNormal(): boolean {
     let sbv = new SparseBitVector();
-    let setNums = new Set()
+    let setNums = new Set();
     for (let i = 0; i < numOperations / 2; i++) {
         const num = getRandomInt(0, maxBitIndex);
         setNums.add(num);
@@ -44,7 +44,7 @@ function testNormal(): boolean {
         let exp = setNums.has(i);
         let real = sbv.test(i);
         if (exp !== real) {
-            console.log('ERROR on test')
+            console.log('ERROR on test');
             return false;
         }
     }
