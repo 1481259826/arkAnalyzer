@@ -16,3 +16,4 @@ exportRollup.config.mjs
 dist/
 *.log
 output
+builtIn/
