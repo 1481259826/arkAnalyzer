@@ -13,24 +13,13 @@
  * limitations under the License.
  */
 
-import { Stmt } from '../base/Stmt';
+import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { window } from '@kit.ArkUI';
+import { A } from './EntryAbility2';
 
-export class PathEdgePoint<D> {
-    public node:Stmt;
-    public fact:D;
-
-    constructor(node:Stmt, fact:D){
-        this.node = node;
-        this.fact = fact;
-    }
-}
-
-export class PathEdge<D> {
-    public edgeStart:PathEdgePoint<D>;
-    public edgeEnd:PathEdgePoint<D>;
-
-    constructor(start:PathEdgePoint<D>, end:PathEdgePoint<D>) {
-        this.edgeStart=start;
-        this.edgeEnd=end;
-    }
+export default class EntryAbility1 extends UIAbility {
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam, c: A.C): void {
+    hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
+  }
 }

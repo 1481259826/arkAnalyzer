@@ -507,6 +507,10 @@ export class ClosureFieldRef extends AbstractRef {
         return [];
     }
 
+    public getBase(): Local {
+        return this.base;
+    }
+
     public getType(): Type {
         return this.type;
     }

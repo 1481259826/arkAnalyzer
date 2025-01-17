@@ -15,11 +15,7 @@
 
 import { ArkInvokeStmt } from "../base/Stmt";
 import { FunctionType } from "../base/Type";
-import { ArkClass } from "../model/ArkClass";
 import { ArkMethod } from "../model/ArkMethod";
-import { ArkNamespace } from "../model/ArkNamespace";
-import { Scene } from "../../Scene";
-import { FileSignature } from '../model/ArkSignature';
 import { Local } from "../base/Local";
 import { AbstractRef, ArkStaticFieldRef, ArkInstanceFieldRef } from "../base/Ref";
 
@@ -36,95 +32,6 @@ export const INTERNAL_SINK_METHOD: string[] = [
     'console.<@%unk/%unk: .assert()>'
 ]
 
-const filenamePrefix = '@etsSdk/api/'
-
-export function Json2ArkMethod(sdkName:string, str: string, scene: Scene): ArkMethod | null {
-    const mes = str.split(': ');
-    const fileName = filenamePrefix + mes[0] + ': ';
-    const otherMes = mes.slice(1).join(': ').split('.');
-    if (otherMes.length < 3) {
-        return null;
-    }
-    const namespaceName = otherMes[0];
-    const className = otherMes[1];
-    const methodName = otherMes[2].split('(')[0];
-    let paramNames: string[] = [];
-    if (otherMes[2]) {
-        if (!otherMes[2].match(/\((.*?)\)/)) {
-            return null;
-        }
-        paramNames = otherMes[2].match(/\((.*?)\)/)![1].split(',').map((item: string) => item.replace(/\s/g, '')).filter((item: string) => item !== '');
-    }
-    
-    const file = scene.getFile(new FileSignature(sdkName, fileName));
-    if (!file) {
-        return null;
-    }
-    let arkClass: ArkClass | null = null;
-    if (namespaceName === "_") {
-        if (className === '_') {
-            arkClass = file.getDefaultClass();
-        } else {
-            for (const clas of file.getClasses()) {
-                if (clas.getName() === className) {
-                    arkClass = clas;
-                    break;
-                }
-            }
-        }
-    } else {
-        let arkNamespace: ArkNamespace | null = null;
-        for (const ns of file.getNamespaces()) {
-            if (ns.getName() === namespaceName) {
-                arkNamespace = ns;
-                break;
-            }
-        }
-        if (arkNamespace) {
-            if (className === '_') {
-                arkClass = arkNamespace.getDefaultClass()
-            } else {
-                for (const clas of arkNamespace.getClasses()) {
-                    if (clas.getName() === className) {
-                        arkClass = clas;
-                        break;
-                    }
-                }
-            }
-        } else {
-            return null;
-        }
-    }
-    if (!arkClass) {
-        return null;
-    } else {
-        let arkMethod: ArkMethod | null = null;
-        for (const method of arkClass.getMethods()) {
-            if (method.getName() === methodName) {
-                arkMethod = method;
-                break;
-            }
-        }
-        if (arkMethod && arkMethod.getParameters().length === paramNames.length) {
-            let paramEqual = true;
-            for (let i = 0; i < arkMethod.getParameters().length; i++) {
-                const param = arkMethod.getParameters()[i]
-                if (param.getName() + ':' + param.getType().toString() !== paramNames[i]) {
-                    paramEqual = false;
-                    break;
-                }
-            }
-            if (paramEqual) {
-                return arkMethod;
-            }
-        } else {
-            return null;
-        }
-    }
-    return null;
-}
-
-// 如果调用回调函数的函数是项目内函数就不用管，会进函数内部执行，只有是sdk函数才需要分析
 export function getRecallMethodInParam(stmt: ArkInvokeStmt): ArkMethod | null {
     for (const param of stmt.getInvokeExpr().getArgs()) {
         if (param.getType() instanceof FunctionType) {

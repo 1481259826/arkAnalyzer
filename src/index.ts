@@ -64,7 +64,7 @@ export { VisibleValue, Scope } from './core/common/VisibleValue';
 export { DataflowProblem, FlowFunction } from './core/dataflow/DataflowProblem';
 export { DataflowResult } from './core/dataflow/DataflowResult';
 export { DataflowSolver } from './core/dataflow/DataflowSolver';
-export { Edge, PathEdgePoint, PathEdge } from './core/dataflow/Edge';
+export { PathEdgePoint, PathEdge } from './core/dataflow/Edge';
 export { Fact } from './core/dataflow/Fact';
 export { UndefinedVariableChecker, UndefinedVariableSolver } from './core/dataflow/UndefinedVariable';
 
