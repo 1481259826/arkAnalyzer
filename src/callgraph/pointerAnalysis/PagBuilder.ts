@@ -33,6 +33,7 @@ import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, Intra
 import { PtsSet } from './PtsDS';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
+import { IsCollectionAPI } from './PTAUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -559,7 +560,6 @@ export class PagBuilder {
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
                 let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
-                // TODO: block container
                 srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
                 srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid));
 
@@ -870,8 +870,7 @@ export class PagBuilder {
         }
 
         // block the container SDK
-        if (calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)') ||
-            calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
+        if (IsCollectionAPI(calleeMethod.getSignature())) {
             return srcNodes;
         }
 

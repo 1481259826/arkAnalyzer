@@ -29,6 +29,7 @@ import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
+import { IsCollectionClass } from './PTAUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export type PagNodeType = Value;
@@ -723,8 +724,7 @@ export class Pag extends BaseGraph {
     
     private handleNewExprNode(id: NodeID, cid: ContextID, value: ArkNewExpr, stmt?: Stmt): PagNode {
         const classSignature = value.getClassType().getClassSignature();
-        if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set') ||
-            classSignature.toString().endsWith('lib.es2015.collection.d.ts: Map')) {
+        if (IsCollectionClass(classSignature)) {
             return new PagNewContainerExprNode(id, cid, value, stmt);
         } else {
             return new PagNewExprNode(id, cid, value, stmt);
