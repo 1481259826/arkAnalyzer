@@ -23,12 +23,13 @@ import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { Constant } from '../../core/base/Constant';
-import { FunctionType } from '../../core/base/Type';
-import { MethodSignature } from '../../core/model/ArkSignature';
+import { FunctionType, UnclearReferenceType } from '../../core/base/Type';
+import { ClassSignature, FieldSignature, FileSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { GLOBAL_THIS } from '../../core/common/TSConst';
+import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
+import { IsCollectionClass } from './PTAUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export type PagNodeType = Value;
@@ -349,7 +350,8 @@ export class PagNode extends BaseNode {
                 label = label + '\n' + method;
             }
             label = label + ' ln: ' + this.stmt.getOriginPositionInfo().getLineNo();
-
+        } else if (this.value) {
+            label += `\n${this.value.toString()}`;
         }
 
         return label;
@@ -491,11 +493,11 @@ export class PagNewExprNode extends PagNode {
     }
 }
 
-export class PagNewArrayExprNode extends PagNode {
+export class PagNewContainerExprNode extends PagNode {
     // store the cloned array ref node
     elementNode: NodeID | undefined;
 
-    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: ArkNewArrayExpr, stmt?: Stmt) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, expr: Value, stmt?: Stmt) {
         super(id, cid, expr, PagNodeKind.HeapObj, stmt);
     }
 
@@ -508,7 +510,10 @@ export class PagNewArrayExprNode extends PagNode {
     }
 
     public getElementNode(): NodeID | undefined {
-        return this.elementNode;
+        if (this.elementNode) {
+            return this.elementNode;
+        }
+        return undefined;
     }
 }
 
@@ -629,85 +634,109 @@ export class Pag extends BaseExplicitGraph {
         }
     }
 
-    public getOrClonePagArrayFieldNode(src: PagArrayNode, basePt: NodeID): PagInstanceFieldNode {
-        let baseNode = this.getNode(basePt);
-        if (baseNode instanceof PagNewArrayExprNode) {
+    public getOrClonePagContainerFieldNode(basePt: NodeID, src?: PagArrayNode, base?: Local): PagInstanceFieldNode {
+        let baseNode = this.getNode(basePt) as PagNode;
+        if (baseNode instanceof PagNewContainerExprNode) {
             // check if Array Ref real node has been created or not, if not: create a real Array Ref node
             let existedNode = baseNode.getElementNode();
+            let fieldNode!: PagNode;
             if (existedNode) {
                 return this.getNode(existedNode) as PagInstanceFieldNode;
             }
 
-            let fieldNode = this.getOrClonePagNode(src, basePt);
+            if (src) {
+                fieldNode = this.getOrClonePagNode(src, basePt);
+            } else if (base) {
+                const containerFieldSignature = new FieldSignature('field', 
+                    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')), 
+                    new UnclearReferenceType(''));
+                fieldNode = this.getOrClonePagNode(
+                    // TODO: cid check
+                    this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)), basePt
+                );
+            }
+
             baseNode.addElementNode(fieldNode.getID());
             fieldNode.setBasePt(basePt);
             return fieldNode;
         } else {
-            throw new Error(`Error clone array field node ${src.getValue()}`);
+            throw new Error(`Error clone array field node ${baseNode.getValue()}`);
         }
     }
 
     public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
         let id: NodeID = this.nodeNum;
-        let pagNode: PagNode
+        let pagNode: PagNode;
+    
         if (value instanceof Local) {
-            const valueType = value.getType()
-            if (valueType instanceof FunctionType &&
-                (value.getDeclaringStmt() === null)) {
-                // init function pointer
-                pagNode = new PagFuncNode(id, cid, value, stmt, valueType.getMethodSignature())
-            } else {
-                // judge 'globalThis' is a redefined Local or real globalThis with its declaring stmt
-                // value has been replaced in param
-                if (value.getName() === GLOBAL_THIS && value.getDeclaringStmt() == null) {
-                    pagNode = new PagGlobalThisNode(id, -1, value)
-                } else {
-                    pagNode = new PagLocalNode(id, cid, value, stmt);
-                }
-            }
+            pagNode = this.handleLocalNode(id, cid, value, stmt);
         } else if (value instanceof ArkInstanceFieldRef) {
-            if (value.getType() instanceof FunctionType) {
-                // function ptr: let ptr = Class.MethodA
-                pagNode = new PagFuncNode(id, cid, value, stmt,
-                    (value.getType() as FunctionType).getMethodSignature());
-            } else {
-                // normal field
-                pagNode = new PagInstanceFieldNode(id, cid, value, stmt);
-            }
+            pagNode = this.handleInstanceFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkStaticFieldRef) {
-            if (value.getType() instanceof FunctionType) {
-                // function ptr: let ptr = Class.StaticMethodA
-                pagNode = new PagFuncNode(id, cid, value, stmt,
-                    (value.getType() as FunctionType).getMethodSignature());
-            } else {
-                // normal field
-                pagNode = new PagStaticFieldNode(id, cid, value, stmt);
-            }
+            pagNode = this.handleStaticFieldNode(id, cid, value, stmt);
         } else if (value instanceof ArkArrayRef) {
             pagNode = new PagArrayNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewExpr) {
-            pagNode = new PagNewExprNode(id, cid, value, stmt);
+            pagNode = this.handleNewExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkNewArrayExpr) {
-            pagNode = new PagNewArrayExprNode(id, cid, value, stmt);
+            pagNode = new PagNewContainerExprNode(id, cid, value, stmt);
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
-            throw new Error('This Node need use addThisNode method');
+            throw new Error('This Node needs to use addThisNode method');
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
-
+    
         this.addNode(pagNode!);
+        this.addContextOrExportInfoMap(refresh, cid, id, value, pagNode, stmt);
+    
+        return pagNode!;
+    }
 
-        // Value
+    private handleLocalNode(id: NodeID, cid: ContextID, value: Local, stmt?: Stmt): PagNode {
+        const valueType = value.getType();
+        if (valueType instanceof FunctionType && value.getDeclaringStmt() === null) {
+            return new PagFuncNode(id, cid, value, stmt, valueType.getMethodSignature());
+        } else if (value.getName() === GLOBAL_THIS_NAME && value.getDeclaringStmt() == null) {
+            return new PagGlobalThisNode(id, -1, value);
+        } else {
+            return new PagLocalNode(id, cid, value, stmt);
+        }
+    }
+    
+    private handleInstanceFieldNode(id: NodeID, cid: ContextID, value: ArkInstanceFieldRef, stmt?: Stmt): PagNode {
+        return this.createFieldNode(id, cid, value, stmt);
+    }
+    
+    private handleStaticFieldNode(id: NodeID, cid: ContextID, value: ArkStaticFieldRef, stmt?: Stmt): PagNode {
+        return this.createFieldNode(id, cid, value, stmt);
+    }
+    
+    private createFieldNode(id: NodeID, cid: ContextID, value: any, stmt?: Stmt): PagNode {
+        if (value.getType() instanceof FunctionType) {
+            return new PagFuncNode(id, cid, value, stmt, (value.getType() as FunctionType).getMethodSignature());
+        } else {
+            return value instanceof ArkStaticFieldRef ? new PagStaticFieldNode(id, cid, value, stmt) : new PagInstanceFieldNode(id, cid, value, stmt);
+        }
+    }
+    
+    private handleNewExprNode(id: NodeID, cid: ContextID, value: ArkNewExpr, stmt?: Stmt): PagNode {
+        const classSignature = value.getClassType().getClassSignature();
+        if (IsCollectionClass(classSignature)) {
+            return new PagNewContainerExprNode(id, cid, value, stmt);
+        } else {
+            return new PagNewExprNode(id, cid, value, stmt);
+        }
+    }
+    
+    private addContextOrExportInfoMap(refresh: boolean, cid: ContextID, id: NodeID, 
+        value: PagNodeType, pagNode: PagNode, stmt?: Stmt): void {
         if (!(value instanceof ExportInfo)) {
             this.addContextMap(refresh, cid, id, value, stmt!, pagNode!);
         } else {
-            // ExportInfo
             this.addExportInfoMap(id, value);
         }
-
-        return pagNode!;
     }
     
     private addExportInfoMap(id: NodeID, v: ExportInfo): void {
@@ -866,7 +895,7 @@ export class Pag extends BaseExplicitGraph {
                 if (src instanceof PagFuncNode ||
                     src instanceof PagGlobalThisNode ||
                     src instanceof PagNewExprNode ||
-                    src instanceof PagNewArrayExprNode
+                    src instanceof PagNewContainerExprNode
                 ) {
                     this.addrEdge.add(edge);
                     this.stashAddrEdge.add(edge);

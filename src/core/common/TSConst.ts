@@ -16,7 +16,7 @@
 export const CONSTRUCTOR_NAME = 'constructor';
 export const SUPER_NAME = 'super';
 export const THIS_NAME = 'this';
-export const GLOBAL_THIS: string = 'globalThis'
+export const GLOBAL_THIS_NAME: string = 'globalThis'
 
 export const DEFAULT = 'default';
 

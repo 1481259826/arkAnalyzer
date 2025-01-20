@@ -102,12 +102,12 @@ function runProject(output: string) {
 
 
 function runDir(output: string) {
-    config.buildFromProjectDir('./tests/resources/callgraph/swap');
+    config.buildFromProjectDir('./tests/resources/pta/Container');
+    config.getSdksObj().push(sdk);
 
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
-    console.log(projectScene)
 
     let cg = new CallGraph(projectScene);
     let cgBuilder = new CallGraphBuilder(cg, projectScene);
@@ -115,10 +115,7 @@ function runDir(output: string) {
 
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
-    console.log(debugfunc);
 
-    let entry = cg.getEntries();
-    console.log(entry.length)
     let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries(debugfunc);
