@@ -15,7 +15,7 @@
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ClassType, FunctionType, GenericType, NumberType, Type, UnionType } from '../base/Type';
+import { ClassType, FunctionType, GenericType, LiteralType, NumberType, Type, UnionType } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
@@ -30,6 +30,7 @@ import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
 import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
+import { Constant } from "../base/Constant";
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -63,7 +64,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         super();
     }
 
-    getExportType(): ExportType {
+    public getExportType(): ExportType {
         return ExportType.METHOD;
     }
 
@@ -586,7 +587,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.validateFields(['declaringArkClass']);
     }
 
-    public matchMethodSignature(args: Type[]): MethodSignature {
+    public matchMethodSignature(args: Value[]): MethodSignature {
         const signatures = this.methodDeclareSignatures?.filter(f => {
             const parameters = f.getMethodSubSignature().getParameters();
             const max = parameters.length;
@@ -597,7 +598,8 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             return args.length >= min && args.length <= max;
         });
 
-        function match(paramType: Type, argType: Type, scene: Scene): boolean {
+        function match(paramType: Type, arg: Value, scene: Scene): boolean {
+            const argType = arg.getType();
             if (paramType instanceof UnionType) {
                 let matched = false;
                 for (const e of paramType.getTypes()) {
@@ -607,9 +609,13 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                     }
                 }
                 return matched;
+            } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
+                return argType.getMethodSignature().getParamLength() === paramType.getMethodSignature().getParamLength();
             } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
                 paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
                 return true;
+            } else if (paramType instanceof LiteralType && arg instanceof Constant) {
+                return arg.getValue() === paramType.getLiteralName().toString();
             } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
                 scene.getClass(argType.getClassSignature())?.getCategory()) {
                 return true;
@@ -624,9 +630,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 if (!args[i]) {
                     return parameters[i].isOptional();
                 }
-                const paramType = parameters[i].getType();
-                const argType = args[i];
-                const isMatched = match(paramType, argType, scene);
+                const isMatched = match(parameters[i].getType(), args[i], scene);
                 if (!isMatched) {
                     return false;
                 }
@@ -641,6 +645,11 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     public setOuterMethod(method: ArkMethod): void {
         this.outerMethod = method;
+    }
+
+    public getFunctionLocal(name: string) {
+        const local = this.getBody()?.getLocals().get(name);
+        return local?.getType() instanceof FunctionType ? local : null;
     }
 
 }

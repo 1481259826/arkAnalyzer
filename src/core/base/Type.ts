@@ -37,6 +37,7 @@ export abstract class Type {
     toString(): string {
         return this.getTypeString();
     }
+
     abstract getTypeString(): string;
 }
 
@@ -102,7 +103,7 @@ export class UnclearReferenceType extends Type {
         return this.genericTypes;
     }
 
-    public getTypeString():string {
+    public getTypeString(): string {
         let str = this.name;
         if (this.genericTypes.length > 0) {
             str += '<' + this.genericTypes.join(',') + '>';
@@ -127,7 +128,7 @@ export abstract class PrimitiveType extends Type {
         return this.name;
     }
 
-    public getTypeString():string {
+    public getTypeString(): string {
         return this.name;
     }
 }
@@ -251,6 +252,18 @@ export class UnionType extends Type {
 
     public getTypeString(): string {
         return this.types.join('|');
+    }
+
+    public flatType(): Type[] {
+        const result: Type[] = [];
+        this.types.forEach(t => {
+            if (t instanceof UnionType) {
+                t.flatType().forEach(e => result.push(e));
+            } else {
+                result.push(t);
+            }
+        });
+        return result;
     }
 }
 

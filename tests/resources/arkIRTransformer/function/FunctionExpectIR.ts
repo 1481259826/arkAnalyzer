@@ -14,7 +14,8 @@
  */
 
 import {
-    ANONYMOUS_METHOD_PREFIX, ArkStaticFieldRef,
+    ANONYMOUS_METHOD_PREFIX,
+    ArkStaticFieldRef,
     DEFAULT_ARK_CLASS_NAME,
     GlobalRef,
     LEXICAL_ENV_NAME_PREFIX,
@@ -124,7 +125,7 @@ export const ArrowFunction_Expect_IR = {
         name: '%AM2',
         stmts1: [
             'this = this: @function/ArrowFunctionTest.ts: %dflt',
-            '%0 = staticinvoke <@%unk/%unk: .func2()>()',
+            '%0 = staticinvoke <@function/ArrowFunctionTest.ts: %dflt.func2()>()',
             'return %0',
         ],
         stmts: [
@@ -135,7 +136,7 @@ export const ArrowFunction_Expect_IR = {
                 ],
             },
             {
-                text: '%0 = staticinvoke <@%unk/%unk: .func2()>()',
+                text: '%0 = staticinvoke <@function/ArrowFunctionTest.ts: %dflt.func2()>()',
                 operandOriginalPositions: [
                     [21, 19, 21, 26], [21, 19, 21, 26],
                 ],
@@ -890,8 +891,7 @@ export const CallMethod4_Expect_IR = {
                 },
                 usedStmts: [
                     {
-                        // TODO: 此处需要类型推导时进行处理
-                        text: 'staticinvoke <@%unk/%unk: .callMethod()>(3)'
+                        text: 'staticinvoke <@function/ClosureParamsTest.ts: %dflt.%basicNestedMethod4$basicOuterMethod4([base], number)>(3)'
                     }
                 ]
             }
@@ -917,7 +917,7 @@ export const CallMethod4_Expect_IR = {
                 text: 'callMethod = staticinvoke <@function/ClosureParamsTest.ts: %dflt.basicOuterMethod4()>()',
             },
             {
-                text: 'staticinvoke <@%unk/%unk: .callMethod()>(3)',
+                text: 'staticinvoke <@function/ClosureParamsTest.ts: %dflt.%basicNestedMethod4$basicOuterMethod4([base], number)>(3)',
             },
             {
                 text: 'return',

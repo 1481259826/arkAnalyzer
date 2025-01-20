@@ -260,7 +260,7 @@ export class ArrayBindingPatternParameter {
     }
 }
 
-export class MethodParameter {
+export class MethodParameter implements Value {
     private name: string = '';
     private type!: Type;
     private optional: boolean = false;
@@ -325,6 +325,10 @@ export class MethodParameter {
 
     public setArrayElements(arrayElements: ArrayBindingPatternParameter[]) {
         this.arrayElements = arrayElements;
+    }
+
+    public getUses(): Value[] {
+        return [];
     }
 }
 

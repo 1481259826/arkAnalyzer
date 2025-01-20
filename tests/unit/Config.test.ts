@@ -32,13 +32,4 @@ describe('SceneConfig Test', () => {
         assert.equal(config.getTargetProjectDirectory(), '');
         assert.equal(config.getSdksObj().length, 0);
     })
-
-    it('test', () => {
-        let a: Map<string, number> = new Map<string, number>();
-        a.set('c', 0);
-        a.set('i', 1);
-        a.set('m', 2);
-        a.set('c', 4);
-        assert.equal(a.size, 3);
-    })
 })
