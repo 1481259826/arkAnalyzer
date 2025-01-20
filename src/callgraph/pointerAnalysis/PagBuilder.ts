@@ -29,10 +29,11 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType } from './Pag';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode } from './Pag';
 import { PtsSet } from './PtsDS';
-import { GLOBAL_THIS } from '../../core/common/TSConst';
+import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
+import { IsCollectionAPI, IsCollectionMapSet, IsCollectionSetAdd } from './PTAUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -68,7 +69,7 @@ export class PagBuilder {
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
-    private globalThisValue: Local = new Local(GLOBAL_THIS);
+    private globalThisValue: Local = new Local(GLOBAL_THIS_NAME);
     private globalThisPagNode?: PagGlobalThisNode;
     private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
     private externalScopeVariableMap: Map<Local, Local[]> = new Map();
@@ -559,8 +560,8 @@ export class PagBuilder {
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
                 let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
-                let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
-                srcNodes.push(...staticSrcNodes);
+                srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
+                srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid));
 
                 // Pass base's pts to callee's this pointer
                 if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkInstanceInvokeExpr) {
@@ -863,7 +864,13 @@ export class PagBuilder {
         let srcNodes: NodeID[] = [];
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
+
         if (!calleeMethod) {
+            return srcNodes;
+        }
+
+        // block the container SDK
+        if (IsCollectionAPI(calleeMethod.getSignature())) {
             return srcNodes;
         }
 
@@ -958,6 +965,35 @@ export class PagBuilder {
         return srcNodes;
     }
 
+    private processContainerPagCallEdge(cs: CallSite, cid: ContextID, baseClassPTNode: NodeID): NodeID[] {
+        let srcNodes: NodeID[] = [];
+        let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+        let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
+        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
+
+        if (!calleeMethod || !(ptNode instanceof PagNewContainerExprNode)) {
+            return srcNodes;
+        }
+
+        let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+
+        const containerValueProcess = (argIndex: number): void => {
+            let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
+            let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
+
+            this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
+            srcNodes.push(srcNode.getID());
+        };
+
+        if (IsCollectionSetAdd(calleeMethod.getSignature())) {
+            containerValueProcess(0);
+        } else if (IsCollectionMapSet(calleeMethod.getSignature())) {
+            containerValueProcess(1);
+        }
+
+        return srcNodes;
+    }
+
     public getOrNewPagNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
         if (v instanceof ArkThisRef) {
             return this.getOrNewThisRefNode(cid, v as ArkThisRef);
@@ -970,7 +1006,7 @@ export class PagBuilder {
         if (v instanceof Local) {
             if (v.getName() === "this") {
                 return this.getOrNewThisLoalNode(cid, v as Local, s);
-            } else if (v.getName() === GLOBAL_THIS && v.getDeclaringStmt() == null) {
+            } else if (v.getName() === GLOBAL_THIS_NAME && v.getDeclaringStmt() == null) {
                 // globalThis node has no cid
                 return this.getOrNewGlobalThisNode(-1)
             }
@@ -1105,8 +1141,8 @@ export class PagBuilder {
         let real: Value | undefined;
 
         if (v instanceof ArkInstanceFieldRef) {
-            base = (v as ArkInstanceFieldRef).getBase() as Local
-            if (base instanceof Local && base.getName() === GLOBAL_THIS && base.getDeclaringStmt() == null) {
+            base = (v as ArkInstanceFieldRef).getBase()
+            if (base instanceof Local && base.getName() === GLOBAL_THIS_NAME && base.getDeclaringStmt() == null) {
                 // replace the base in fieldRef
                 base = this.getGlobalThisValue();
                 (v as ArkInstanceFieldRef).setBase(base as Local)
@@ -1298,7 +1334,7 @@ export class PagBuilder {
                 (rhOp instanceof Local && rhOp.getType() instanceof FunctionType &&
                     rhOp.getDeclaringStmt() === null) ||
                 (rhOp instanceof AbstractFieldRef && rhOp.getType() instanceof FunctionType))) || 
-            (rhOp instanceof Local && rhOp.getName() === GLOBAL_THIS && rhOp.getDeclaringStmt() == null)
+            (rhOp instanceof Local && rhOp.getName() === GLOBAL_THIS_NAME && rhOp.getDeclaringStmt() == null)
         ) {
             return true;
         }

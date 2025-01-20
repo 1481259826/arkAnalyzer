@@ -28,6 +28,8 @@ namespace Container {
         public test() {
             this.array = [[]];
             this.array.push([new Element()]);
+            let a = [];
+            a.push();
             let b = this.getArrayElement();
         }
 
@@ -37,36 +39,26 @@ namespace Container {
     }
 
     class SetTest {
-        public set: Set<Element>;
-
         public test() {
-            this.set = new Set();
+            let set = new Set();
             let ele = new Element();
-            this.set.add(ele);
-            let temp = this.set.has(ele);
-            let values = this.set.values;
-            this.set.delete(ele);
-            this.set.clear();
+            set.add(ele);
         }
     }
 
     class MapTest {
-        public map: Map<number, Element>;
-
         public test() {
-            this.map = new Map();
+            let map = new Map();
             let ele = new Element();
-            this.map.set(ele.getBase(), ele);
-            let b = this.map.get(ele.getBase());
-            this.map.clear()
+            map.set(ele.getBase(), ele);
         }
     }
 
     function main() {
-        let arrayTest: ArrayTest = new ArrayTest();
         let setTest: SetTest = new SetTest();
         let mapTest: MapTest = new MapTest();
 
-        arrayTest.test();
+        setTest.test();
+        mapTest.test();
     }
 }
