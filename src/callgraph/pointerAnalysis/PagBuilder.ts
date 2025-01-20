@@ -33,7 +33,7 @@ import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, Intra
 import { PtsSet } from './PtsDS';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
-import { IsCollectionAPI } from './PTAUtils';
+import { IsCollectionAPI, IsCollectionMapSet, IsCollectionSetAdd } from './PTAUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -985,9 +985,9 @@ export class PagBuilder {
             srcNodes.push(srcNode.getID());
         };
 
-        if ((calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)'))) {
+        if (IsCollectionSetAdd(calleeMethod.getSignature())) {
             containerValueProcess(0);
-        } else if (calleeMethod.getSignature().toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
+        } else if (IsCollectionMapSet(calleeMethod.getSignature())) {
             containerValueProcess(1);
         }
 

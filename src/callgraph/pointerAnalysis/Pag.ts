@@ -54,10 +54,6 @@ export enum StorageLinkEdgeType {
     TwoWay
 }
 
-const containerFieldSignature = new FieldSignature('field', 
-    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')), 
-    new UnclearReferenceType(''));
-
 export class PagEdge extends BaseEdge {
     private stmt: Stmt | undefined;
 
@@ -651,6 +647,9 @@ export class Pag extends BaseGraph {
             if (src) {
                 fieldNode = this.getOrClonePagNode(src, basePt);
             } else if (base) {
+                const containerFieldSignature = new FieldSignature('field', 
+                    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')), 
+                    new UnclearReferenceType(''));
                 fieldNode = this.getOrClonePagNode(
                     // TODO: cid check
                     this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)), basePt

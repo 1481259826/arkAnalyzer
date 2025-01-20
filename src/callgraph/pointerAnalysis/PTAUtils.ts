@@ -24,8 +24,21 @@ export function IsCollectionClass(classSignature: ClassSignature): boolean {
 }
 
 export function IsCollectionAPI(method: MethodSignature): boolean {
-    if (method.toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)') ||
-        method.toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
+    if (IsCollectionSetAdd(method) || IsCollectionMapSet(method)) {
+        return true;
+    }
+    return false;
+}
+
+export function IsCollectionSetAdd(method: MethodSignature): boolean {
+    if (method.toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)')) {
+        return true;
+    }
+    return false;
+}
+
+export function IsCollectionMapSet(method: MethodSignature): boolean {
+    if (method.toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
         return true;
     }
     return false;
