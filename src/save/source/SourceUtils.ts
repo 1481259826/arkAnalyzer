@@ -182,18 +182,20 @@ export class SourceUtils {
         return false;
     }
 
-    public static getStaticInvokeClassFullName(
-        classSignature: ClassSignature,
-        namespace: ArkNamespace | undefined
-    ): string {
-        let namespaceName = classSignature.getDeclaringNamespaceSignature()?.getNamespaceName();
-        let className = classSignature.getClassName();
-
+    public static getStaticInvokeClassFullName(classSignature: ClassSignature, namespace?: ArkNamespace): string {
         let code: string[] = [];
-        if (namespaceName && namespaceName.length > 0 && namespaceName !== namespace?.getName()) {
-            code.push(namespaceName);
+        let declareNamespace = classSignature.getDeclaringNamespaceSignature();
+        while (declareNamespace !== null) {
+            let namespaceName = declareNamespace.getNamespaceName();
+            if (namespaceName.length > 0 && namespaceName !== namespace?.getName()) {
+                code.unshift(namespaceName);
+                declareNamespace = declareNamespace.getDeclaringNamespaceSignature();
+            } else {
+                break;
+            }
         }
 
+        let className = classSignature.getClassName();
         if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
             code.push(className);
         }

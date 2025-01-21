@@ -15,13 +15,15 @@
 
 import { StmtUseReplacer } from '../common/StmtUseReplacer';
 import { Cfg } from '../graph/Cfg';
-import { AbstractExpr, AbstractInvokeExpr, ArkConditionExpr } from './Expr';
+import { AbstractExpr, AbstractInvokeExpr, AliasTypeExpr, ArkConditionExpr } from './Expr';
 import { AbstractFieldRef, ArkArrayRef } from './Ref';
 import { Value } from './Value';
 import { FullPosition, LineColPosition } from './Position';
 import { ArkMetadata, ArkMetadataKind, ArkMetadataType } from '../model/ArkMetadata';
 import { StmtDefReplacer } from '../common/StmtDefReplacer';
 import { IRUtils } from '../common/IRUtils';
+import { AliasType } from './Type';
+import { ModifierType } from '../model/ArkBaseModel';
 
 /**
  * @category core/base/stmt
@@ -512,5 +514,56 @@ export class ArkThrowStmt extends Stmt {
         uses.push(this.op);
         uses.push(...this.op.getUses());
         return uses;
+    }
+}
+
+/**
+ * Statement of type alias definition combines with the left hand as {@link AliasType} and right hand as {@link AliasTypeExpr}.
+ * @category core/base/stmt
+ * @extends Stmt
+ * @example
+ ```typescript
+ type A = string;
+ type B = import('./abc').TypeB;
+
+ let c = 123;
+ declare type C = typeof c;
+ ```
+ */
+export class ArkAliasTypeDefineStmt extends Stmt {
+    private aliasType: AliasType;
+    private aliasTypeExpr: AliasTypeExpr;
+
+    constructor(aliasType: AliasType, typeAliasExpr: AliasTypeExpr) {
+        super();
+        this.aliasType = aliasType;
+        this.aliasTypeExpr = typeAliasExpr;
+    }
+
+    public getAliasType(): AliasType {
+        return this.aliasType;
+    }
+
+    public getAliasTypeExpr(): AliasTypeExpr {
+        return this.aliasTypeExpr;
+    }
+
+    public getAliasName(): string {
+        return this.getAliasType().getName();
+    }
+
+    public toString(): string {
+        let str = `type ${this.getAliasName()} = ${this.getAliasTypeExpr().toString()}`;
+        if (this.getAliasType().containsModifier(ModifierType.DECLARE)) {
+            str = 'declare ' + str;
+        }
+        if (this.getAliasType().containsModifier(ModifierType.EXPORT)) {
+            str = 'export ' + str;
+        }
+        return str;
+    }
+
+    public getExprs(): AliasTypeExpr[] {
+        return [this.getAliasTypeExpr()];
     }
 }

@@ -34,7 +34,6 @@ import {
     SourceIfStmt,
     SourceStmt,
     SourceTryStmt,
-    SourceTypeAliasStmt,
     SourceWhileStmt,
     stmt2SourceStmt,
     StmtPrinterContext,
@@ -46,20 +45,8 @@ import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ModelUtils } from '../../core/common/ModelUtils';
 import { SourceUtils } from './SourceUtils';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
-import { LineColPosition } from '../../core/base/Position';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
-
-class AliasStmt extends Stmt {
-    constructor(position: LineColPosition) {
-        super();
-        this.originalPosition = position;
-    }
-
-    toString(): string {
-        return '';
-    }
-}
 
 export class SourceBody implements StmtPrinterContext {
     protected printer: ArkCodeBuffer;
@@ -173,18 +160,6 @@ export class SourceBody implements StmtPrinterContext {
         this.cfgUtils.preOrder(this.cfgUtils.getEntry(), (block, type) => {
             this.buildBasicBlock(block, type);
         });
-        this.buildTypeAliasStmt();
-    }
-
-    private buildTypeAliasStmt(): void {
-        let map = this.arkBody.getAliasTypeMap();
-        if (!map) {
-            return;
-        }
-        for (const [_, [aliasType, declaration]] of map) {
-            let stmt = new AliasStmt(declaration.getPosition());
-            this.pushStmt(new SourceTypeAliasStmt(this, stmt, aliasType));
-        }
     }
 
     private buildBasicBlock(block: BasicBlock | undefined, type: CodeBlockType): void {

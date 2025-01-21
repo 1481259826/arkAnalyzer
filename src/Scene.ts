@@ -942,7 +942,11 @@ export class Scene {
                 TypeInference.inferTypeInMethod(defaultArkMethod);
             }
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
-            arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
+            arkClass.getMethods().forEach(arkMethod => {
+                if (!arkMethod.isDefaultArkMethod()) {
+                    TypeInference.inferTypeInMethod(arkMethod);
+                }
+            });
         });
         TypeInference.inferExportInfos(file);
         TypeInference.inferImportInfos(file);
@@ -952,7 +956,7 @@ export class Scene {
      * Iterate all assignment statements in methods,
      * and set the type of left operand based on the type of right operand
      * if the left operand is a local variable as well as an unknown.
-     * @Deprecated
+     * @deprecated
      * @example
      * 1. Infer simple type when scene building.
 

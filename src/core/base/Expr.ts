@@ -357,9 +357,9 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         const arkClass = arkMethod.getDeclaringArkClass();
         let baseType: Type | null = this.base.getType();
         if (this.base instanceof Local && baseType instanceof UnknownType) {
-            baseType = TypeInference.inferBaseType(this.base.getName(), arkClass);
+            baseType = TypeInference.inferBaseType(this.base.getName(), arkClass)[1];
         } else if (baseType instanceof UnclearReferenceType) {
-            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass);
+            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass)[1];
         }
         const methodName = this.getMethodSignature().getMethodSubSignature().getMethodName();
         if (!baseType) {
@@ -471,7 +471,7 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
         }
         const className = this.getMethodSignature().getDeclaringClassSignature().getClassName();
         if (className && className !== UNKNOWN_CLASS_NAME) {
-            const baseType = TypeInference.inferUnclearReferenceType(className, arkClass);
+            const baseType = TypeInference.inferUnclearReferenceType(className, arkClass)[1];
             if (baseType) {
                 this.inferMethod(baseType, methodName, arkClass.getDeclaringArkFile().getScene());
                 this.inferArgs(arkMethod);
@@ -595,7 +595,7 @@ export class ArkNewExpr extends AbstractExpr {
         const classSignature = this.classType.getClassSignature();
         if (classSignature.getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             const className = classSignature.getClassName();
-            const type = TypeInference.inferUnclearReferenceType(className, arkMethod.getDeclaringArkClass());
+            const type = TypeInference.inferUnclearReferenceType(className, arkMethod.getDeclaringArkClass())[1];
             if (type && type instanceof ClassType) {
                 let realGenericTypes = this.classType.getRealGenericTypes();
                 this.classType = realGenericTypes ? new ClassType(type.getClassSignature(), realGenericTypes) : type;
@@ -643,7 +643,7 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): ArkNewArrayExpr {
-        const type = TypeInference.inferUnclearedType(this.baseType, arkMethod.getDeclaringArkClass());
+        const type = TypeInference.inferUnclearedType(this.baseType, arkMethod.getDeclaringArkClass())[1];
         if (type) {
             this.baseType = type;
         }
@@ -1024,7 +1024,7 @@ export class ArkTypeOfExpr extends AbstractExpr {
     }
 
     public getType(): Type {
-        return StringType.getInstance();
+        return this.op.getType();
     }
 
     public toString(): string {
@@ -1101,7 +1101,7 @@ export class ArkCastExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass())
+        const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass())[1]
             ?? this.op.getType();
         if (!TypeInference.isUnclearType(type)) {
             this.type = type;
@@ -1211,5 +1211,130 @@ export class ArkUnopExpr extends AbstractExpr {
 
     public toString(): string {
         return this.operator + this.op;
+    }
+}
+
+export type AliasTypeOriginalModel = Type | ImportInfo | Local | ArkClass | ArkMethod | ArkField;
+
+/**
+ * Expression of the right hand of the type alias definition statement.
+ * @category core/base/expr
+ * @extends AbstractExpr
+ * @example
+ ```typescript
+ let a: number = 123;
+ type ABC = typeof a;
+ ```
+ * The AliasTypeExpr of the previous statement is with local 'a' as the 'originalObject' and 'transferWithTypeOf' is true.
+ *
+ * The Following case: import type with no clause name is not supported now,
+ * whose 'originalObject' is {@link ImportInfo} with 'null' 'lazyExportInfo'.
+ ```typescript
+ let a = typeof import('./abc');
+ ```
+ */
+export class AliasTypeExpr extends AbstractExpr {
+    private originalObject: AliasTypeOriginalModel;
+    private readonly transferWithTypeOf: boolean = false;
+
+    constructor(originalObject: AliasTypeOriginalModel, transferWithTypeOf?: boolean) {
+        super();
+        this.originalObject = originalObject;
+        if (transferWithTypeOf !== undefined) {
+            this.transferWithTypeOf = transferWithTypeOf;
+        }
+    }
+
+    public getOriginalObject(): AliasTypeOriginalModel {
+        return this.originalObject;
+    }
+
+    public setOriginalObject(object: AliasTypeOriginalModel): void {
+        this.originalObject = object;
+    }
+
+    public getTransferWithTypeOf(): boolean {
+        return this.transferWithTypeOf;
+    }
+
+    public getType(): Type {
+        function getTypeOfImportInfo(importInfo: ImportInfo): Type {
+            const arkExport = importInfo.getLazyExportInfo()?.getArkExport();
+            if (arkExport) {
+                return TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
+            }
+            return UnknownType.getInstance();
+        }
+
+        const operator = this.getOriginalObject();
+        if (!this.getTransferWithTypeOf()) {
+            if (operator instanceof Type) {
+                return operator;
+            }
+            if (operator instanceof ImportInfo) {
+                return getTypeOfImportInfo(operator);
+            }
+            if (operator instanceof ArkClass) {
+                return new ClassType(operator.getSignature(), operator.getGenericsTypes());
+            }
+            return UnknownType.getInstance();
+        }
+
+        if (operator instanceof ImportInfo) {
+            return getTypeOfImportInfo(operator);
+        }
+        if (operator instanceof Local || operator instanceof ArkField) {
+            return operator.getType();
+        }
+        if (operator instanceof ArkClass) {
+            return new ClassType(operator.getSignature(), operator.getGenericsTypes());
+        }
+        if (operator instanceof ArkMethod) {
+            return new FunctionType(operator.getSignature(), operator.getGenericTypes());
+        }
+        return UnknownType.getInstance();
+    }
+
+    /**
+     * Returns all used values which mainly used for def-use chain analysis.
+     * @returns Always returns empty array because her is the alias type definition which has no relationship with value flow.
+     */
+    public getUses(): Value[] {
+        return [];
+    }
+
+    public toString(): string {
+        let typeOf = '';
+        if (this.getTransferWithTypeOf()) {
+            typeOf = 'typeof ';
+        }
+
+        const typeObject = this.getOriginalObject();
+        if (typeObject instanceof Type) {
+            return `${typeOf}${typeObject.getTypeString()}`;
+        }
+        if (typeObject instanceof ImportInfo) {
+            let res = `${typeOf}import('${typeObject.getFrom()}')`;
+            if (typeObject.getImportClauseName() !== '') {
+                res = `${res}.${typeObject.getImportClauseName()}`;
+            }
+            return res;
+        }
+        if (typeObject instanceof Local) {
+            return `${typeOf}${typeObject.toString()}`;
+        }
+        if (typeObject instanceof ArkClass || typeObject instanceof ArkMethod) {
+            return `${typeOf}${typeObject.getSignature().toString()}`;
+        }
+        return `${typeOf}${typeObject.getName()}`;
+    }
+
+    public static isAliasTypeOriginalModel(object: any): object is AliasTypeOriginalModel {
+        return object instanceof Type ||
+            object instanceof ImportInfo ||
+            object instanceof Local ||
+            object instanceof ArkClass ||
+            object instanceof ArkMethod ||
+            object instanceof ArkField;
     }
 }

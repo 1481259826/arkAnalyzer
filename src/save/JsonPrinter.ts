@@ -379,7 +379,7 @@ export class JsonPrinter extends Printer {
     private serializeLocalSignature(signature: LocalSignature): object {
         return {
             name: signature.getName(),
-            method: this.serializeMethodSignature(signature.getDeclaringMethodSubSignature()),
+            method: this.serializeMethodSignature(signature.getDeclaringMethodSignature()),
         };
     }
 

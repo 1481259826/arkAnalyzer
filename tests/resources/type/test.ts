@@ -13,10 +13,52 @@
  * limitations under the License.
  */
 
-let a = 0;
-let b = 1;
-switch (a) {
-    case 2:
-    case 3:
-        b = 3;
+import { A, numberA, objectA } from './exportExample';
+
+function simpleAliasType(): void {
+    type BooleanAliasType = boolean;
+    type StringAliasType = string;
+
+    function useAliasTypeInParam(param: BooleanAliasType[] | StringAliasType): void {
+        console.log(param);
+    }
+}
+
+function aliasTypeWithImport(): void {
+    type ClassAType = import('./exportExample').ClassA;
+    type ClassBType = import('./exportExample').default;
+    type NumberAType = import('./exportExample').numberA;
+    type MultiQualifierType = import('./exportExample').A.B.C;
+
+    type ObjectAType = typeof import('./exportExample').objectA;
+    type WholeExportsType = typeof import('./exportExample');
+
+    function useAliasTypeInBody(): void {
+        const a: NumberAType[] = [1, 2, 3];
+        console.log(a);
+    }
+}
+
+function aliasTypeWithTypeQuery(): void {
+    type SingleTypeQuery = typeof objectA;
+    type MultiTypeQuery = typeof objectA.a.b.c;
+}
+
+function aliasTypeWithReference(): void {
+    type ReferType = numberA;
+    type MultiReferType = A.B.C;
+}
+
+function aliasTypeWithLiteralType(): void {
+    declare type ABC = '123';
+    let a: ABC = '123';
+    type XYZ = typeof a;
+}
+
+function aliasTypeWithFunctionType(): void {
+    type FunctionAliasType = typeof aliasTypeWithLiteralType;
+}
+
+function aliasTypeWithUnionType(): void {
+    type UnionAliasType = A.B.C | numberA;
 }

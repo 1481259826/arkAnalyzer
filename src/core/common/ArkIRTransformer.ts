@@ -16,6 +16,7 @@
 import {
     AbstractExpr,
     AbstractInvokeExpr,
+    AliasTypeExpr,
     ArkCastExpr,
     ArkConditionExpr,
     ArkInstanceInvokeExpr,
@@ -30,6 +31,7 @@ import { Value } from '../base/Value';
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
 import {
+    ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
@@ -38,7 +40,7 @@ import {
     ArkThrowStmt,
     Stmt,
 } from '../base/Stmt';
-import { AliasType, AliasTypeDeclaration, BooleanType, ClassType, UnknownType } from '../base/Type';
+import { AliasType, BooleanType, ClassType, UnclearReferenceType, UnknownType } from '../base/Type';
 import { ValueUtil } from './ValueUtil';
 import {
     ClassSignature,
@@ -65,6 +67,8 @@ import { Builtin } from './Builtin';
 import { DEFAULT } from './TSConst';
 import { buildModifiers } from '../model/builder/builderUtils';
 import { ArkValueTransformer } from './ArkValueTransformer';
+import { ImportInfo } from '../model/ArkImport';
+import { TypeInference } from './TypeInference';
 
 export type ValueAndStmts = {
     value: Value,
@@ -116,7 +120,7 @@ export class ArkIRTransformer {
         return this.arkValueTransformer.getThisLocal();
     }
 
-    public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> {
+    public getAliasTypeMap(): Map<string, [AliasType, ArkAliasTypeDefineStmt]> {
         return this.arkValueTransformer.getAliasTypeMap();
     }
 
@@ -269,16 +273,68 @@ export class ArkIRTransformer {
 
     private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {
         const aliasName = typeAliasDeclaration.name.text;
-        const originalType = this.arkValueTransformer.resolveTypeNode(typeAliasDeclaration.type);
-        const aliasType = new AliasType(aliasName, originalType,
-            new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        const rightOp = typeAliasDeclaration.type;
+        let rightType = this.arkValueTransformer.resolveTypeNode(rightOp);
+
+        let expr: AliasTypeExpr;
+        if (ts.isImportTypeNode(rightOp)) {
+            expr = this.resolveImportTypeNode(rightOp);
+            const typeObject = expr.getOriginalObject();
+            if (typeObject instanceof ImportInfo && typeObject.getLazyExportInfo() !== null) {
+                const arkExport = typeObject.getLazyExportInfo()!.getArkExport();
+                rightType = TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
+            }
+        } else if (ts.isTypeQueryNode(rightOp)) {
+            const localName = rightOp.exprName.getText(this.sourceFile);
+            const originalLocal = Array.from(this.arkValueTransformer.getLocals()).find(local =>
+                local.getName() === localName);
+            if (originalLocal === undefined || rightType instanceof UnclearReferenceType) {
+                expr = new AliasTypeExpr(new Local(localName, rightType), true);
+            } else {
+                expr = new AliasTypeExpr(originalLocal, true);
+            }
+        } else {
+            expr = new AliasTypeExpr(rightType, false);
+        }
+
+        const aliasType = new AliasType(aliasName, rightType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
         const modifiers = typeAliasDeclaration.modifiers ? buildModifiers(typeAliasDeclaration) : 0;
         aliasType.setModifiers(modifiers);
-        const sourceCode = typeAliasDeclaration.getText(this.sourceFile);
-        const aliasTypePosition = LineColPosition.buildFromNode(typeAliasDeclaration, this.sourceFile);
-        const aliasTypeDeclaration = new AliasTypeDeclaration(sourceCode, aliasTypePosition)
-        this.arkValueTransformer.getAliasTypeMap().set(aliasName, [aliasType, aliasTypeDeclaration]);
-        return [];
+
+        const aliasTypeDefineStmt = new ArkAliasTypeDefineStmt(aliasType, expr);
+        const leftPosition = FullPosition.buildFromNode(typeAliasDeclaration.name, this.sourceFile);
+        const rightPosition = FullPosition.buildFromNode(rightOp, this.sourceFile);
+        const operandOriginalPositions = [leftPosition, rightPosition];
+        aliasTypeDefineStmt.setOperandOriginalPositions(operandOriginalPositions);
+
+        this.getAliasTypeMap().set(aliasName, [aliasType, aliasTypeDefineStmt]);
+
+        return [aliasTypeDefineStmt];
+    }
+
+    private resolveImportTypeNode(importTypeNode: ts.ImportTypeNode): AliasTypeExpr {
+        const importType = 'typeAliasDefine';
+        let importFrom = '';
+        let importClauseName = '';
+
+        if (ts.isLiteralTypeNode(importTypeNode.argument)) {
+            if (ts.isStringLiteral(importTypeNode.argument.literal)) {
+                importFrom = importTypeNode.argument.literal.text;
+            }
+        }
+
+        const importQualifier = importTypeNode.qualifier;
+        if (importQualifier !== undefined) {
+            importClauseName = importQualifier.getText(this.sourceFile);
+        }
+
+        let importInfo = new ImportInfo();
+        importInfo.build(importClauseName, importType, importFrom, LineColPosition.buildFromNode(importTypeNode, this.sourceFile), 0);
+        importInfo.setDeclaringArkFile(this.declaringMethod.getDeclaringArkFile());
+
+        // Function getLazyExportInfo will automatically try to infer the export info if it's undefined at the beginning.
+        importInfo.getLazyExportInfo();
+        return new AliasTypeExpr(importInfo, importTypeNode.isTypeOf);
     }
 
     public switchStatementToValueAndStmts(switchStatement: ts.SwitchStatement): ValueAndStmts[] {

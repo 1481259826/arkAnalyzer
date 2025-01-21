@@ -15,7 +15,6 @@
 
 import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
-import { LineColPosition } from './Position';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
     ANY_KEYWORD,
@@ -102,7 +101,7 @@ export class UnclearReferenceType extends Type {
         return this.genericTypes;
     }
 
-    public getTypeString():string {
+    public getTypeString(): string {
         let str = this.name;
         if (this.genericTypes.length > 0) {
             str += '<' + this.genericTypes.join(',') + '>';
@@ -219,7 +218,7 @@ export class LiteralType extends PrimitiveType {
         return this.literalName;
     }
 
-    public toString(): string {
+    public getTypeString():string {
         return this.literalName.toString();
     }
 }
@@ -461,7 +460,7 @@ export class AliasType extends Type implements ArkExport {
     }
 
     public getTypeString(): string {
-        return this.name;
+        return this.getSignature().toString();
     }
 
     public getExportType(): ExportType {
@@ -558,24 +557,6 @@ export class GenericType extends Type {
     }
 }
 
-export class AliasTypeDeclaration {
-    private sourceCode: string;
-    private position: LineColPosition;
-
-    constructor(sourceCode: string, position: LineColPosition) {
-        this.sourceCode = sourceCode;
-        this.position = position;
-    }
-
-    public getSourceCode(): string {
-        return this.sourceCode;
-    }
-
-    public getPosition(): LineColPosition {
-        return this.position;
-    }
-}
-
 export abstract class AnnotationType extends Type {
     private originType: string;
 
@@ -651,4 +632,3 @@ export class LexicalEnvType extends Type {
         return `[${this.getClosures().join(', ')}]`;
     }
 }
-
