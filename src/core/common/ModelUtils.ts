@@ -377,7 +377,8 @@ export class ModelUtils {
         const start = parentName.indexOf(NAME_DELIMITER);
         let invokeMethod;
         if (start < 0) {
-            invokeMethod = arkMethod.getDeclaringArkClass().getDefaultArkMethod();
+            const cls = arkMethod.getDeclaringArkClass();
+            invokeMethod = cls.getDefaultArkMethod() ?? cls.getDeclaringArkFile().getDefaultClass()?.getDefaultArkMethod();
         } else {
             parentName = parentName.substring(start + 1);
             invokeMethod = arkMethod.getDeclaringArkClass().getMethodWithName(parentName);
@@ -493,11 +494,12 @@ export function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | n
 }
 
 export function findArkExportInFile(name: string, declaringArkFile: ArkFile): ArkExport | null {
-    let arkExport: ArkExport | undefined | null = declaringArkFile.getClassWithName(name)
+    let arkExport: ArkExport | undefined | null = declaringArkFile.getNamespaceWithName(name)
+        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name)
+        ?? declaringArkFile.getClassWithName(name)
         ?? declaringArkFile.getDefaultClass().getMethodWithName(name)
-        ?? declaringArkFile.getNamespaceWithName(name)
-        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name)
-        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(name);
+        ?? declaringArkFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get(name);
+
     if (!arkExport) {
         const importInfo = declaringArkFile.getImportInfoBy(name);
         if (importInfo) {

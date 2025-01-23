@@ -260,7 +260,7 @@ describe("function Test", () => {
         const actual = file?.getDefaultClass()?.getMethodWithName('demoCallBack')
             ?.getCfg()?.getStmts();
         assert.equal((actual?.[1] as ArkInvokeStmt).getInvokeExpr().getMethodSignature().toString(),
-            '@etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.createAVPlayer(@etsSdk/api/@ohos.base.d.ts: AsyncCallback<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer>)');
+            '@etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.createAVPlayer(@etsSdk/api/@ohos.base.d.ts: AsyncCallback<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer,void>)');
         assert.equal((actual?.[2] as ArkAssignStmt).getInvokeExpr()?.getMethodSignature().toString(),
             '@etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.createAVPlayer()');
     })

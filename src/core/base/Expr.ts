@@ -827,8 +827,7 @@ export class ArkCastExpr extends AbstractExpr {
             ?? this.op.getType();
         if (!TypeInference.isUnclearType(type)) {
             this.type = type;
-            if (type instanceof ClassType && arkMethod.getDeclaringArkFile().getScene().getProjectSdkMap()
-                .has(type.getClassSignature().getDeclaringFileSignature().getProjectName())) {
+            if (type instanceof ClassType) {
                 IRInference.inferArgTypeWithSdk(type, arkMethod.getDeclaringArkFile().getScene(), this.op.getType())
             }
         }

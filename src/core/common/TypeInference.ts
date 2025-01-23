@@ -56,7 +56,7 @@ import { ALL, CONSTRUCTOR_NAME, SUPER_NAME } from './TSConst';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { MethodSignature } from '../model/ArkSignature';
-import { INSTANCE_INIT_METHOD_NAME, UNKNOWN_FILE_NAME } from './Const';
+import { INSTANCE_INIT_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX, UNKNOWN_FILE_NAME } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { ImportInfo } from "../model/ArkImport";
 import { MethodParameter } from "../model/builder/ArkMethodBuilder";
@@ -311,7 +311,7 @@ export class TypeInference {
             let localDef;
             if (stmt.getOriginalText()?.startsWith(leftOp.getName()) &&
                 (localDef = ModelUtils.findDeclaredLocal(leftOp, arkMethod))) {
-                if (this.isUnclearType(leftOp.getType()) && !this.isUnclearType(type)) {
+                if (this.isUnclearType(localDef.getType()) && !this.isUnclearType(type)) {
                     localDef.setType(type);
                 }
             }
@@ -425,14 +425,14 @@ export class TypeInference {
             if (defaultType instanceof UnclearReferenceType) {
                 const newDefaultType = TypeInference.inferUnclearRefName(defaultType.getName(), arkClass);
                 if (newDefaultType) {
-                    type.setDefaultType(newDefaultType);
+                    type.setDefaultType(this.replaceTypeWithReal(newDefaultType));
                 }
             }
             const constraint = type.getConstraint();
             if (constraint instanceof UnclearReferenceType) {
                 const newConstraint = TypeInference.inferUnclearRefName(constraint.getName(), arkClass);
                 if (newConstraint) {
-                    type.setConstraint(newConstraint);
+                    type.setConstraint(this.replaceTypeWithReal(newConstraint));
                 }
             }
         });
@@ -445,25 +445,8 @@ export class TypeInference {
             return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
         }
         let type = this.inferUnclearRefName(urType.getName(), arkClass);
-        if (realTypes.length === 0) {
-            return type;
-        }
-        return buildNewType(type);
+        return type ? this.replaceTypeWithReal(type, realTypes) : null;
 
-        function buildNewType(type: Type | null): Type | null {
-            if (type instanceof AliasType) {
-                const newType = buildNewType(type.getOriginalType());
-                if (newType) {
-                    type.setOriginalType(newType);
-                }
-                return type;
-            } else if (type instanceof ClassType) {
-                return new ClassType(type.getClassSignature(), realTypes);
-            } else if (type instanceof FunctionType) {
-                return new FunctionType(type.getMethodSignature(), realTypes);
-            }
-            return null;
-        }
     }
 
     public static inferUnclearRefName(refName: string, arkClass: ArkClass): Type | null {
@@ -597,17 +580,36 @@ export class TypeInference {
 
 
     public static replaceTypeWithReal(type: Type, realTypes?: Type[]): Type {
-        if (type instanceof UnionType && realTypes) {
+        if (type instanceof ClassType) {
+            const replacedTypes = type.getRealGenericTypes()?.map(g => this.replaceTypeWithReal(g, realTypes)) ?? realTypes;
+            return replacedTypes && replacedTypes.length > 0 ? new ClassType(type.getClassSignature(), replacedTypes) : type;
+        } else if (type instanceof FunctionType) {
+            const replacedTypes = type.getRealGenericTypes()?.map(g => this.replaceTypeWithReal(g, realTypes)) ?? realTypes;
+            return replacedTypes && replacedTypes.length > 0 ? new FunctionType(type.getMethodSignature(), replacedTypes) : type;
+        } else if (type instanceof AliasType && realTypes) {
+            let lastAlias = type;
+            let originalType;
+            while ((originalType = lastAlias.getOriginalType()) instanceof AliasType) {
+                lastAlias = originalType;
+            }
+            lastAlias.setOriginalType(this.replaceTypeWithReal(originalType, realTypes));
+        } else if (type instanceof UnionType && realTypes) {
             const types: Type[] = [];
             type.flatType().forEach(t => types.push(this.replaceTypeWithReal(t, realTypes)));
             return new UnionType(types, this.replaceTypeWithReal(type.getCurrType(), realTypes));
-        } else if (type instanceof AliasType) {
-            return this.replaceTypeWithReal(type.getOriginalType(), realTypes);
-        } else if (type instanceof GenericType && realTypes) {
-            const realType = realTypes[type.getIndex()];
+        } else if (type instanceof GenericType) {
+            const realType = realTypes?.[type.getIndex()] ?? type.getDefaultType() ?? type.getConstraint();
             if (realType) {
                 return realType;
             }
+        }
+        return type;
+    }
+
+    public static replaceAliasType(type: Type): Type {
+        let aliasType = type;
+        while (aliasType instanceof AliasType) {
+            aliasType = aliasType.getOriginalType();
         }
         return type;
     }
@@ -617,15 +619,17 @@ export class TypeInference {
         if (!params) {
             return;
         }
-        argType.getMethodSignature().getMethodSubSignature().getParameters().forEach((p, i) => {
-            let type = params?.[i]?.getType();
-            if (type instanceof GenericType && realTypes) {
-                type = realTypes?.[type.getIndex()];
-            }
-            if (type) {
-                p.setType(type);
-            }
-        });
+        argType.getMethodSignature().getMethodSubSignature().getParameters()
+            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX))
+            .forEach((p, i) => {
+                let type = params?.[i]?.getType();
+                if (type instanceof GenericType && realTypes) {
+                    type = realTypes?.[type.getIndex()];
+                }
+                if (type) {
+                    p.setType(type);
+                }
+            });
     }
 
 }

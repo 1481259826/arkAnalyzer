@@ -24,8 +24,7 @@ import {
     Type,
     UnclearReferenceType,
     UndefinedType,
-    UnionType,
-    UnknownType
+    UnionType
 } from "../base/Type";
 import { Local } from "../base/Local";
 import { TypeInference } from "./TypeInference";
@@ -62,6 +61,7 @@ import {
     ANONYMOUS_METHOD_PREFIX,
     CALL_SIGNATURE_NAME,
     DEFAULT_ARK_CLASS_NAME,
+    NAME_DELIMITER,
     UNKNOWN_CLASS_NAME
 } from "./Const";
 import { ValueUtil } from "./ValueUtil";
@@ -98,7 +98,17 @@ export class IRInference {
                 TypeInference.inferTypeInMethod(defaultArkMethod);
             }
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
-            arkClass.getMethods().forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
+            const methods = arkClass.getMethods().sort((a, b) => {
+                const name = a.getName().split(NAME_DELIMITER).reverse().join();
+                const anotherName = b.getName().split(NAME_DELIMITER).reverse().join();
+                if (name.startsWith(anotherName)) {
+                    return 1;
+                } else if (anotherName.startsWith(name)) {
+                    return -1;
+                }
+                return 0;
+            });
+            methods.forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
         });
         this.inferExportInfos(file);
     }
@@ -183,7 +193,7 @@ export class IRInference {
         TypeInference.inferRealGenericTypes(expr.getRealGenericTypes(), arkClass);
         this.inferLocal(expr.getBase(), arkMethod);
 
-        const baseType: Type = expr.getBase().getType();
+        const baseType: Type = TypeInference.replaceAliasType(expr.getBase().getType());
         const methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
         const scene = arkClass.getDeclaringArkFile().getScene();
         if ((methodName === 'forEach') && (baseType instanceof ArrayType)) {
@@ -202,7 +212,7 @@ export class IRInference {
 
     public static inferFieldRef(ref: ArkInstanceFieldRef, arkMethod: ArkMethod): AbstractRef {
         this.inferLocal(ref.getBase(), arkMethod);
-        const baseType: Type = ref.getBase().getType();
+        const baseType: Type = TypeInference.replaceAliasType(ref.getBase().getType());
         if (baseType instanceof ArrayType && ref.getFieldName() !== 'length') {
             return new ArkArrayRef(ref.getBase(), ValueUtil.createConst(ref.getFieldName()));
         }
@@ -259,6 +269,9 @@ export class IRInference {
     }
 
     public static inferArgTypeWithSdk(sdkType: ClassType, scene: Scene, argType: Type): void {
+        if (!scene.getProjectSdkMap().has(sdkType.getClassSignature().getDeclaringFileSignature().getProjectName())) {
+            return;
+        }
         if (argType instanceof UnionType) {
             argType.getTypes().forEach(t => this.inferArgTypeWithSdk(sdkType, scene, t));
         } else if (argType instanceof ClassType && argType.getClassSignature().getClassName().startsWith(ANONYMOUS_CLASS_PREFIX)) {
@@ -382,19 +395,6 @@ export class IRInference {
         }
     }
 
-    // private static tryInferFormGlobal(expr: AbstractInvokeExpr, methodName: string, arkMethod: ArkMethod): boolean {
-    //     let arkClass = arkMethod.getDeclaringArkClass();
-    //     if (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT) {
-    //         const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
-    //         if (global instanceof ArkMethod) {
-    //             const methodSignature = global.matchMethodSignature(expr.getArgs());
-    //             expr.setMethodSignature(methodSignature);
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
-
     private static inferLocal(base: Local, arkMethod: ArkMethod): void {
         const arkClass = arkMethod.getDeclaringArkClass();
         if (base.getName() === THIS_NAME && arkClass.isAnonymousClass()) {
@@ -403,8 +403,11 @@ export class IRInference {
         let baseType: Type | null | undefined = base.getType();
         if (baseType instanceof UnclearReferenceType) {
             baseType = TypeInference.inferUnclearRefName(baseType.getName(), arkClass);
-        } else if (baseType instanceof UnknownType && !base.getDeclaringStmt()) {
-            baseType = ModelUtils.findDeclaredLocal(base, arkMethod)?.getType() ?? TypeInference.inferBaseType(base.getName(), arkClass);
+        } else if (TypeInference.isUnclearType(baseType)) {
+            const declaringStmt = base.getDeclaringStmt();
+            if (!declaringStmt || !declaringStmt.getOriginalText() || declaringStmt.getOriginalText()?.startsWith(base.getName())) {
+                baseType = ModelUtils.findDeclaredLocal(base, arkMethod)?.getType() ?? TypeInference.inferBaseType(base.getName(), arkClass);
+            }
         }
         if (baseType && !TypeInference.isUnclearType(baseType)) {
             base.setType(baseType);
