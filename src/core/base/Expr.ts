@@ -21,6 +21,7 @@ import {
     ArrayType,
     BooleanType,
     ClassType,
+    FunctionType,
     NullType,
     NumberType,
     StringType,
@@ -36,6 +37,9 @@ import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 import { UNKNOWN_FILE_NAME } from '../common/Const';
 import { IRInference } from "../common/IRInference";
+import { ImportInfo } from "../model/ArkImport";
+import { ArkClass } from "../model/ArkClass";
+import { ArkField } from "../model/ArkField";
 
 /**
  * @category core/base/expr
@@ -365,7 +369,7 @@ export class ArkNewArrayExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): ArkNewArrayExpr {
-        const type = TypeInference.inferUnclearedType(this.baseType, arkMethod.getDeclaringArkClass())[1];
+        const type = TypeInference.inferUnclearedType(this.baseType, arkMethod.getDeclaringArkClass());
         if (type) {
             this.baseType = type;
         }
@@ -823,7 +827,7 @@ export class ArkCastExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass())[1]
+        const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass())
             ?? this.op.getType();
         if (!TypeInference.isUnclearType(type)) {
             this.type = type;
@@ -1018,6 +1022,10 @@ export class AliasTypeExpr extends AbstractExpr {
             return new FunctionType(operator.getSignature(), operator.getGenericTypes());
         }
         return UnknownType.getInstance();
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        return IRInference.inferAliasTypeExpr(this, arkMethod);
     }
 
     /**

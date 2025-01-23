@@ -14,7 +14,7 @@
  */
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { AbstractExpr, AliasTypeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
+import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { Local } from '../base/Local';
 import {
     AbstractFieldRef,
@@ -123,14 +123,7 @@ export class TypeInference {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let optionType = types[i];
-                let newType;
-                if (optionType instanceof ClassType) {
-                    newType = TypeInference.inferUnclearRefName(optionType.getClassSignature().getClassName(), declaringArkClass);
-                } else if (optionType instanceof UnclearReferenceType) {
-                    newType = TypeInference.inferUnclearRefName(optionType.getName(), declaringArkClass);
-                } else {
-                    newType = optionType;
-                }
+                let newType = this.inferUnclearedType(optionType, declaringArkClass);
                 if (newType) {
                     types[i] = newType;
                 }
@@ -181,7 +174,6 @@ export class TypeInference {
         if (!body) {
             return;
         }
-        body.getAliasTypeMap()?.forEach((value) => this.inferUnclearedType(value[0], arkClass));
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
@@ -210,25 +202,6 @@ export class TypeInference {
         }
     }
 
-    private static inferAliasTypeAndStmt(aliasTypeDefineStmt: ArkAliasTypeDefineStmt, arkMethod: ArkMethod): void {
-        const aliasType = aliasTypeDefineStmt.getAliasType();
-        const aliasTypeExpr = aliasTypeDefineStmt.getAliasTypeExpr();
-        const originalType = aliasType.getOriginalType();
-
-        if (TypeInference.isUnclearType(originalType)) {
-            // 寻找右侧表达式中最终指向的对象，对象的类型即为aliasType的OriginalType，对象本身为右侧表达式中的typeObject
-            let newType = TypeInference.inferUnclearedType(originalType, arkMethod.getDeclaringArkClass());
-            if (AliasTypeExpr.isAliasTypeOriginalModel(newObject)) {
-                aliasTypeExpr.setOriginalObject(newObject);
-            } else {
-                logger.warn(`Object found is ${newObject}, which haven't been supported now.`);
-            }
-            if (newType !== null) {
-                aliasType.setOriginalType(newType);
-            }
-        }
-    }
-
     /**
      * infer type for Exprs in stmt which invoke method.
      * such as ArkInstanceInvokeExpr ArkStaticInvokeExpr ArkNewExpr
@@ -239,6 +212,9 @@ export class TypeInference {
             if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
                 stmt.replaceUse(expr, newExpr);
             }
+        }
+        if (stmt instanceof ArkAliasTypeDefineStmt && this.isUnclearType(stmt.getAliasType().getOriginalType())) {
+            stmt.getAliasType().setOriginalType(stmt.getAliasTypeExpr().getType());
         }
     }
 
@@ -467,8 +443,7 @@ export class TypeInference {
 
     /**
      * Infer type for a given {@link UnclearReferenceType} type.
-     * It returns an array with 2 items, original object and original type.
-     * The original object is null if there is no object, or it failed to find the object.
+     * It returns original type.
      * The original type is null if it failed to infer the type.
      * @param urType
      * @param arkClass
@@ -487,8 +462,7 @@ export class TypeInference {
 
     /**
      * Find out the original object and type for a given unclear reference type name.
-     * It returns an array with 2 items, original object and original type.
-     * The original object is null if there is no object, or it failed to find the object.
+     * It returns original type.
      * The original type is null if it failed to infer the type.
      * @param refName
      * @param arkClass
@@ -590,8 +564,7 @@ export class TypeInference {
 
     /**
      * Find out the original object and type for a given base name.
-     * It returns an array with 2 items, original object and original type.
-     * The original object is null if there is no object, or it failed to find the object.
+     * It returns original type.
      * The original type is null if failed to infer the type.
      * @param baseName
      * @param arkClass

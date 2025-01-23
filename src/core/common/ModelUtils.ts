@@ -18,7 +18,16 @@ import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ClassSignature, FileSignature, fileSignatureCompare, MethodSignature } from '../model/ArkSignature';
+import {
+    ClassSignature,
+    FieldSignature,
+    FileSignature,
+    fileSignatureCompare,
+    LocalSignature,
+    MethodSignature,
+    NamespaceSignature,
+    Signature
+} from '../model/ArkSignature';
 import { ArkExport, ExportInfo, ExportType, FromInfo } from '../model/ArkExport';
 import { ArkField } from '../model/ArkField';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
@@ -27,9 +36,10 @@ import path from 'path';
 import { Sdk } from '../../Config';
 import { ALL, DEFAULT, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
-import { ClassType } from '../base/Type';
+import { AnnotationNamespaceType, ClassType } from '../base/Type';
 import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
+import { EMPTY_STRING } from "./ValueUtil";
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -385,6 +395,75 @@ export class ModelUtils {
         }
         if (invokeMethod) {
             return this.findDeclaredLocal(local, invokeMethod, ++times);
+        }
+        return null;
+    }
+
+    public static findArkModel(baseName: string, arkClass: ArkClass): ArkExport | ArkField | null {
+        let arkModel: ArkExport | ArkField | null = arkClass.getMethodWithName(baseName)
+            ?? arkClass.getStaticMethodWithName(baseName) ?? arkClass.getFieldWithName(baseName)
+            ?? arkClass.getStaticFieldWithName(baseName);
+        if (arkModel) {
+            return arkModel;
+        }
+        arkModel = ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName)
+            ?? ModelUtils.getClassWithName(baseName, arkClass)
+            ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
+            ?? ModelUtils.getDefaultClass(arkClass)?.getMethodWithName(baseName)
+            ?? ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(baseName)
+            ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
+        if (!arkModel && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
+            arkModel = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
+        }
+        return arkModel;
+    }
+
+    public static findArkModelByRefName(refName: string, arkClass: ArkClass): ArkExport | ArkField | null {
+        const singleNames = refName.split('.');
+        let model = null;
+        for (let i = 0; i < singleNames.length; i++) {
+            if (model instanceof Local || model instanceof ArkField) {
+                const type = model.getType();
+                if (type instanceof ClassType) {
+                    model = arkClass.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
+                } else if (type instanceof AnnotationNamespaceType) {
+                    model = arkClass.getDeclaringArkFile().getScene().getNamespace(type.getNamespaceSignature());
+                }
+            }
+            const name = singleNames[i].replace(/<(\w+)>/, EMPTY_STRING);
+            if (i === 0) {
+                model = this.findArkModel(name, arkClass);
+            } else if (model instanceof ArkClass) {
+                model = this.findPropertyInClass(name, model);
+            } else if (model instanceof ArkNamespace) {
+                model = this.findPropertyInNamespace(name, model)
+            }
+            if (!model) {
+                return null;
+            }
+
+        }
+        return model;
+    }
+
+    public static findArkModelBySignature(signature: Signature, scene: Scene): ArkExport | ArkField | null {
+        if (signature instanceof ClassSignature) {
+            return scene.getClass(signature);
+        } else if (signature instanceof NamespaceSignature) {
+            return scene.getNamespace(signature);
+        } else if (signature instanceof MethodSignature) {
+            return scene.getMethod(signature);
+        } else if (signature instanceof FieldSignature) {
+            const declare = this.findArkModelBySignature(signature.getDeclaringSignature(), scene);
+            if (declare instanceof ArkClass) {
+                return this.findPropertyInClass(signature.getFieldName(), declare);
+            } else if (declare instanceof ArkNamespace) {
+                return this.findPropertyInNamespace(signature.getFieldName(), declare) || null;
+            }
+            return null;
+        } else if (signature instanceof LocalSignature) {
+            const declare = scene.getMethod(signature.getDeclaringMethodSignature());
+            return declare?.getBody()?.getLocals().get(signature.getName()) ?? declare?.getBody()?.getAliasTypeByName(signature.getName()) ?? null;
         }
         return null;
     }

@@ -615,7 +615,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
                 return true;
             } else if (paramType instanceof LiteralType && arg instanceof Constant) {
-                return arg.getValue() === paramType.getLiteralName().toString();
+                return arg.getValue() === paramType.getLiteralName().toString().replace(/[\"|\']/g, '');
             } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
                 scene.getClass(argType.getClassSignature())?.getCategory()) {
                 return true;

@@ -28,7 +28,13 @@ import {
 } from "../base/Type";
 import { Local } from "../base/Local";
 import { TypeInference } from "./TypeInference";
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../base/Expr";
+import {
+    AbstractExpr,
+    AbstractInvokeExpr,
+    AliasTypeExpr,
+    ArkInstanceInvokeExpr,
+    ArkStaticInvokeExpr
+} from "../base/Expr";
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
 import { Scene } from "../../Scene";
 import { ArkClass } from "../model/ArkClass";
@@ -518,5 +524,25 @@ export class IRInference {
             }
         }
         anonField.setSignature(property.getSignature());
+    }
+
+    public static inferAliasTypeExpr(expr: AliasTypeExpr, arkMethod: ArkMethod): AbstractExpr {
+        const originalObject = expr.getOriginalObject();
+        let model;
+        if (originalObject instanceof Local) {
+            model = ModelUtils.findArkModelByRefName(originalObject.getName(), arkMethod.getDeclaringArkClass());
+        } else if (originalObject instanceof Type) {
+            const type = TypeInference.inferUnclearedType(originalObject, arkMethod.getDeclaringArkClass());
+            if (type instanceof ClassType) {
+                const scene = arkMethod.getDeclaringArkFile().getScene();
+                model = ModelUtils.findArkModelBySignature(type.getClassSignature(), scene);
+            } else if (type) {
+                model = type;
+            }
+        }
+        if (AliasTypeExpr.isAliasTypeOriginalModel(model)) {
+            expr.setOriginalObject(model);
+        }
+        return expr;
     }
 }

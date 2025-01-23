@@ -15,7 +15,6 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { Scene, SceneConfig, FileSignature } from '../../src';
 import {
     AliasType,
     ArkAssignStmt,
@@ -27,9 +26,12 @@ import {
     ClassType,
     DEFAULT_ARK_CLASS_NAME,
     DEFAULT_ARK_METHOD_NAME,
+    FileSignature,
     NumberType,
+    Scene,
+    SceneConfig,
     StringType,
-    UnionType,
+    UnionType
 } from '../../src';
 import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../../src/utils/logger';
 
@@ -271,7 +273,7 @@ describe("function Test", () => {
         const file = scene.getFile(fileId);
         const actual = file?.getDefaultClass()?.getMethodWithName('%AM0$demoCallBack')
             ?.getCfg()?.getStmts().find(s => s instanceof ArkInvokeStmt)?.toString();
-        assert.equal(actual, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(audioInterrupt, @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(\'audioInterrupt\', %AM1$%AM0$demoCallBack)');
+        assert.equal(actual, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(\'audioInterrupt\', %AM1$%AM0$demoCallBack)');
     })
 
     it('promise case', () => {
@@ -279,6 +281,6 @@ describe("function Test", () => {
         const file = scene.getFile(fileId);
         const actual2 = file?.getDefaultClass()?.getMethodWithName('%AM3$demoCallBack')
             ?.getCfg()?.getStmts().find(s => s instanceof ArkInvokeStmt)?.toString();
-        assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(audioInterrupt, @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(\'audioInterrupt\', %AM4$%AM3$demoCallBack)');
+        assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(\'audioInterrupt\', %AM4$%AM3$demoCallBack)');
     })
 })

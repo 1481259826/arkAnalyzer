@@ -1496,7 +1496,7 @@ export class ArkValueTransformer {
             default:
                 ;
         }
-        return new LiteralType(literal.getText(sourceFile).replace(/[\"|\']/g, ''));
+        return new LiteralType(literal.getText(sourceFile));
     }
 
     private resolveTemplateLiteralTypeNode(templateLiteralTypeNode: ts.TemplateLiteralTypeNode): Type {
