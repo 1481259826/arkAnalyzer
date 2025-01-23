@@ -24,6 +24,7 @@ import {
 import { Local } from '../../core/base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
 import {
+    ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
@@ -42,9 +43,11 @@ import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
 import { CLASS_CATEGORY_COMPONENT, SourceUtils } from './SourceUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
-import { ClassCategory } from '../../core/model/ArkClass';
+import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
 import { ArkMetadataKind } from '../../core/model/ArkMetadata';
+import { ImportInfo } from '../../core/model/ArkImport';
+import { ArkMethod } from '../../core/model/ArkMethod';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
@@ -811,11 +814,39 @@ export class SourceTypeAliasStmt extends SourceStmt {
         if (modifiersArray.length > 0) {
             modifier = `${modifiersArray.join(' ')} `;
         }
-        this.setText(
-            `${modifier}type ${this.aliasType.getName()} = ${this.transformer.typeToString(
-                this.aliasType.getOriginalType()
-            )};`
-        );
+        const expr = (this.original as ArkAliasTypeDefineStmt).getAliasTypeExpr();
+        let typeOf = '';
+        if (expr.getTransferWithTypeOf()) {
+            typeOf = 'typeof ';
+        }
+        let typeObject = expr.getOriginalObject();
+
+        if (typeObject instanceof Type) {
+            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${this.transformer.typeToString(typeObject)};`);
+            return;
+        }
+        if (typeObject instanceof ImportInfo) {
+            let exprStr = `import('${typeObject.getFrom()}')`;
+            if (typeObject.getImportClauseName() !== '') {
+                exprStr = `${exprStr}.${typeObject.getImportClauseName()}`;
+            }
+            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${exprStr};`);
+            return;
+        }
+        if (typeObject instanceof Local) {
+            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${this.transformer.valueToString(typeObject)};`);
+            return;
+        }
+        if (typeObject instanceof ArkClass) {
+            let name = SourceUtils.getStaticInvokeClassFullName(typeObject.getSignature());
+            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${name};`);
+            return;
+        }
+        if (typeObject instanceof ArkMethod) {
+            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${typeObject.getName()};`);
+            return;
+        }
+        this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${typeObject.getName()};`);
     }
 }
 
@@ -915,6 +946,9 @@ export function stmt2SourceStmt(context: StmtPrinterContext, stmt: Stmt): Source
     }
     if (stmt instanceof ArkThrowStmt) {
         return new SourceThrowStmt(context, stmt);
+    }
+    if (stmt instanceof ArkAliasTypeDefineStmt) {
+        return new SourceTypeAliasStmt(context, stmt, stmt.getAliasType());
     }
     logger.info(`stmt2SourceStmt ${stmt.constructor} not support.`);
     return new SourceCommonStmt(context, stmt);

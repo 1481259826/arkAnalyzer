@@ -22,8 +22,17 @@ import { Local } from '../base/Local';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
 import { LEXICAL_ENV_NAME_PREFIX, NAME_DELIMITER, NAME_PREFIX } from './Const';
 import { ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef, GlobalRef } from '../base/Ref';
-import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../base/Stmt';
-import { LexicalEnvType, FunctionType, ClosureType } from '../base/Type';
+import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../base/Stmt';
+import {
+    LexicalEnvType,
+    FunctionType,
+    ClosureType,
+    UnclearReferenceType,
+    UnionType,
+    Type,
+    AliasType,
+    ArrayType,
+} from '../base/Type';
 import { AbstractInvokeExpr, ArkPtrInvokeExpr } from '../base/Expr';
 
 export class BodyBuilder {
@@ -105,7 +114,50 @@ export class BodyBuilder {
             if (nestedGlobals.size > 0) {
                 nestedMethod.getBody()?.setUsedGlobals(nestedGlobals);
             }
+
+            // 对嵌套函数中的UnclearReferenceType类型的变量进行类型推导，类型是否为外层函数中定义的类型别名
+            const typeAliases = outerMethod.getBody()?.getAliasTypeMap();
+            if (typeAliases !== undefined) {
+                this.updateLocalTypesWithTypeAlias(nestedLocals, typeAliases);
+            }
         }
+    }
+
+    private updateLocalTypesWithTypeAlias(locals: Map<string, Local>, typeAliases: Map<string, [AliasType, ArkAliasTypeDefineStmt]>): void {
+        for (let local of locals.values()) {
+            const newType = this.inferUnclearReferenceTypeWithTypeAlias(local.getType(), typeAliases);
+            if (newType !== null) {
+                local.setType(newType);
+            }
+        }
+    }
+
+    private inferUnclearReferenceTypeWithTypeAlias(localType: Type, typeAliases: Map<string, [AliasType, ArkAliasTypeDefineStmt]>): Type | null {
+        if (localType instanceof ArrayType && localType.getBaseType() instanceof UnclearReferenceType) {
+            const typeAlias = typeAliases.get((localType.getBaseType() as UnclearReferenceType).getName());
+            if (typeAlias !== undefined) {
+                localType.setBaseType(typeAlias[0]);
+                return localType;
+            }
+            return null;
+        }
+        if (localType instanceof UnionType) {
+            const optionTypes = localType.getTypes();
+            for (let i = 0; i < optionTypes.length; i++) {
+                const newType = this.inferUnclearReferenceTypeWithTypeAlias(optionTypes[i], typeAliases);
+                if (newType !== null) {
+                    optionTypes[i] = newType;
+                }
+            }
+            return localType;
+        }
+        if (localType instanceof UnclearReferenceType) {
+            const typeAlias = typeAliases.get(localType.getName());
+            if (typeAlias !== undefined) {
+                return typeAlias[0];
+            }
+        }
+        return null;
     }
 
     private findNestedMethod(outerMethod: ArkMethod): ArkMethod[] | null {

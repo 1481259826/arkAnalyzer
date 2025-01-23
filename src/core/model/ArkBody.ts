@@ -15,18 +15,19 @@
 
 import { Local } from '../base/Local';
 import { Cfg } from '../graph/Cfg';
-import { AliasType, AliasTypeDeclaration } from '../base/Type';
+import { AliasType } from '../base/Type';
 import { Trap } from '../base/Trap';
 import { Value } from '../base/Value';
+import { ArkAliasTypeDefineStmt } from '../base/Stmt';
 
 export class ArkBody {
     private locals: Map<string, Local>;
     private usedGlobals?: Map<string, Value>;
     private cfg: Cfg;
-    private aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>;
+    private aliasTypeMap?: Map<string, [AliasType, ArkAliasTypeDefineStmt]>;
     private traps?: Trap[];
 
-    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, AliasTypeDeclaration]>,
+    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
                 traps?: Trap[]) {
         this.cfg = cfg;
         this.aliasTypeMap = aliasTypeMap;
@@ -66,12 +67,12 @@ export class ArkBody {
         this.cfg = cfg;
     }
 
-    public getAliasTypeMap(): Map<string, [AliasType, AliasTypeDeclaration]> | undefined {
+    public getAliasTypeMap(): Map<string, [AliasType, ArkAliasTypeDefineStmt]> | undefined {
         return this.aliasTypeMap;
     }
 
     public getAliasTypeByName(name: string): AliasType | null {
-        const aliasTypeInfo: [AliasType, AliasTypeDeclaration] | undefined = this.aliasTypeMap?.get(name);
+        const aliasTypeInfo: [AliasType, ArkAliasTypeDefineStmt] | undefined = this.aliasTypeMap?.get(name);
         if (aliasTypeInfo) {
             return aliasTypeInfo[0];
         }

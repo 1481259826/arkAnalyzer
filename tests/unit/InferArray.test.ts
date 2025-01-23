@@ -15,9 +15,7 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from '../../src/Config';
-import { Scene } from '../../src/Scene';
-import { FileSignature } from '../../src/core/model/ArkSignature';
+import { Scene, SceneConfig, FileSignature } from '../../src';
 import {
     AliasType,
     ArkAssignStmt,
@@ -27,6 +25,8 @@ import {
     ArkStaticFieldRef,
     ArrayType,
     ClassType,
+    DEFAULT_ARK_CLASS_NAME,
+    DEFAULT_ARK_METHOD_NAME,
     NumberType,
     StringType,
     UnionType,
@@ -44,6 +44,7 @@ describe("Infer Array Test", () => {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
+
     it('normal case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
@@ -110,7 +111,6 @@ describe("Infer Array Test", () => {
             assert.equal(stmts[14].toString(), 'n = %5[3]');
         }
     })
-
 
     it('demo case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
@@ -200,8 +200,9 @@ describe("Infer Array Test", () => {
 
     it('union array case', () => {
         let flag = false;
+        const paramToString = `@inferType/UnionArray.ts: ${DEFAULT_ARK_CLASS_NAME}.[static]${DEFAULT_ARK_METHOD_NAME}()#ISceneEvent`;
         projectScene.getMethods().forEach(m => {
-            if (m.getSignature().toString().includes('ISceneEvent[]|ISceneEvent')) {
+            if (m.getSignature().toString().includes(`${paramToString}[]|${paramToString}`)) {
                 if (projectScene.getMethod(m.getSignature()) !== null) {
                     flag = true;
                 }

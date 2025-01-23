@@ -16,6 +16,7 @@
 import * as ts from 'ohos-typescript';
 import { Local } from '../base/Local';
 import {
+    ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkIfStmt,
     ArkInvokeStmt,
@@ -33,7 +34,7 @@ import { ModelUtils } from './ModelUtils';
 import { AbstractInvokeExpr } from '../base/Expr';
 import { Builtin } from './Builtin';
 import { IRUtils } from './IRUtils';
-import { AliasType, AliasTypeDeclaration, UnknownType } from '../base/Type';
+import { AliasType, UnknownType } from '../base/Type';
 import { Trap } from '../base/Trap';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCaughtExceptionRef, GlobalRef } from '../base/Ref';
@@ -1087,7 +1088,7 @@ export class CfgBuilder {
         cfg: Cfg,
         locals: Set<Local>,
         globals: Map<string, GlobalRef> | null,
-        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>,
+        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
         traps: Trap[],
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
@@ -1101,7 +1102,7 @@ export class CfgBuilder {
         cfg: Cfg,
         locals: Set<Local>,
         globals: Map<string, GlobalRef> | null,
-        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>,
+        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
         traps: Trap[],
     } {
         const stmts: Stmt[] = [];
@@ -1150,7 +1151,7 @@ export class CfgBuilder {
         cfg: Cfg,
         locals: Set<Local>,
         globals: Map<string, GlobalRef> | null,
-        aliasTypeMap: Map<string, [AliasType, AliasTypeDeclaration]>,
+        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
         traps: Trap[],
     } {
         const blockBuilderToCfgBlock = new Map<Block, BasicBlock>();

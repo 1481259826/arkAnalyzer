@@ -65,17 +65,17 @@ export class Local implements Value, ArkExport {
      * @example
      * 1. get the name of local value.
 
-     ```typescript
-     arkClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
-     const arkField = new ArkField();
-     arkField.setFieldType(ArkField.DEFAULT_ARK_Field);
-     arkField.setDeclaringClass(defaultClass);
-     arkField.setType(local.getType());
-     arkField.setName(local.getName());
-     arkField.genSignature();
-     defaultClass.addField(arkField);
-     });
-     ```
+    ```typescript
+    arkClass.getDefaultArkMethod()?.getBody().getLocals().forEach(local => {
+    const arkField = new ArkField();
+    arkField.setFieldType(ArkField.DEFAULT_ARK_Field);
+    arkField.setDeclaringClass(defaultClass);
+    arkField.setType(local.getType());
+    arkField.setName(local.getName());
+    arkField.genSignature();
+    defaultClass.addField(arkField);
+    });
+    ```
      */
     public getName(): string {
         return this.name;
@@ -107,7 +107,7 @@ export class Local implements Value, ArkExport {
 
     /**
      * Returns the declaring statement, which may also be a **null**.
-     * For example, if the code snippet in a function is `let dd = cc + 5;` where `cc` is a **number**
+     * For example, if the code snippet in a function is `let dd = cc + 5;` where `cc` is a **number** 
      * and `dd` is not defined before, then the declaring statemet of local `dd`:
      * - its **string** text is "dd = cc + 5".
      * - the **strings** of right operand and left operand are "cc + 5" and "dd", respectively.
@@ -116,12 +116,12 @@ export class Local implements Value, ArkExport {
      * @example
      * 1. get the statement that defines the local for the first time.
 
-     ```typescript
-     let stmt = local.getDeclaringStmt();
-     if (stmt !== null) {
-     ...
-     }
-     ```
+    ```typescript
+    let stmt = local.getDeclaringStmt();
+    if (stmt !== null) {
+        ...
+    }
+    ```
      */
     public getDeclaringStmt(): Stmt | null {
         return this.declaringStmt;
@@ -144,9 +144,9 @@ export class Local implements Value, ArkExport {
     }
 
     /**
-     * Returns an array of statements used by the local, i.e., the statements in which the local participate.
-     * For example, if the code snippet is `let dd = cc + 5;` where `cc` is a local and `cc` only appears once,
-     * then the length of **array** returned is 1 and `Stmts[0]` will be same as the example described
+     * Returns an array of statements used by the local, i.e., the statements in which the local participate. 
+     * For example, if the code snippet is `let dd = cc + 5;` where `cc` is a local and `cc` only appears once, 
+     * then the length of **array** returned is 1 and `Stmts[0]` will be same as the example described 
      * in the `Local.getDeclaringStmt()`.
      * @returns An array of statements used by the local.
      */
@@ -160,12 +160,12 @@ export class Local implements Value, ArkExport {
      * @example
      * 1. get a name string.
 
-     ```typescript
-     for (const value of stmt.getUses()) {
-     const name = value.toString();
-     ...
-     }
-     ```
+    ```typescript
+    for (const value of stmt.getUses()) {
+    const name = value.toString();
+    ...
+    }
+    ```
      */
     public toString(): string {
         return this.getName();
@@ -174,7 +174,6 @@ export class Local implements Value, ArkExport {
     public getExportType(): ExportType {
         return ExportType.LOCAL;
     }
-
     public getModifiers(): number {
         return 0;
     }
