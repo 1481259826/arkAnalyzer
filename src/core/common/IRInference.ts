@@ -47,11 +47,11 @@ import {
     FieldSignature,
     MethodSignature,
     MethodSubSignature
-} from "../model/ArkSignature";
-import { CONSTRUCTOR_NAME, IMPORT, THIS_NAME } from "./TSConst";
-import { Builtin } from "./Builtin";
-import { ArkBody } from "../model/ArkBody";
-import { ArkAssignStmt } from "../base/Stmt";
+} from '../model/ArkSignature';
+import { CONSTRUCTOR_NAME, IMPORT, THIS_NAME } from './TSConst';
+import { Builtin } from './Builtin';
+import { ArkBody } from '../model/ArkBody';
+import { ArkAssignStmt } from '../base/Stmt';
 import {
     AbstractFieldRef,
     AbstractRef,
@@ -59,9 +59,9 @@ import {
     ArkInstanceFieldRef,
     ArkParameterRef,
     ArkStaticFieldRef
-} from "../base/Ref";
-import { Value } from "../base/Value";
-import { Constant } from "../base/Constant";
+} from '../base/Ref';
+import { Value } from '../base/Value';
+import { Constant } from '../base/Constant';
 import {
     ANONYMOUS_CLASS_PREFIX,
     ANONYMOUS_METHOD_PREFIX,
@@ -69,9 +69,9 @@ import {
     DEFAULT_ARK_CLASS_NAME,
     NAME_DELIMITER,
     UNKNOWN_CLASS_NAME
-} from "./Const";
-import { ValueUtil } from "./ValueUtil";
-import { ArkFile } from "../model/ArkFile";
+} from './Const';
+import { ValueUtil } from './ValueUtil';
+import { ArkFile } from '../model/ArkFile';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'IRInference');
 

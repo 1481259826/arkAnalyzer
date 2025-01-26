@@ -38,11 +38,9 @@ export class SdkUtils {
                 SdkUtils.loadClass(globalMap, cls);
             }
             if (cls.isDefaultArkClass()) {
-                cls.getMethods().forEach(mtd => {
-                    if (!mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod()) {
-                        globalMap.set(mtd.getName(), mtd);
-                    }
-                });
+                cls.getMethods()
+                    .filter(mtd => !mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod())
+                    .forEach(mtd => globalMap.set(mtd.getName(), mtd));
             }
         });
         const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();

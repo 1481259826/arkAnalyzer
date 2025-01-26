@@ -60,7 +60,7 @@ import { INSTANCE_INIT_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX, UNKNOWN_FILE_NAME }
 import { EMPTY_STRING } from './ValueUtil';
 import { ImportInfo } from '../model/ArkImport';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
-import { IRInference } from "./IRInference";
+import { IRInference } from './IRInference';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
