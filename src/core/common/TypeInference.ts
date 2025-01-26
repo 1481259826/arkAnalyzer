@@ -58,8 +58,9 @@ import { Builtin } from './Builtin';
 import { MethodSignature } from '../model/ArkSignature';
 import { INSTANCE_INIT_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX, UNKNOWN_FILE_NAME } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
-import { ImportInfo } from "../model/ArkImport";
-import { MethodParameter } from "../model/builder/ArkMethodBuilder";
+import { ImportInfo } from '../model/ArkImport';
+import { MethodParameter } from '../model/builder/ArkMethodBuilder';
+import { IRInference } from "./IRInference";
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -69,8 +70,8 @@ export class TypeInference {
     public static inferTypeInArkField(arkField: ArkField): void {
         const arkClass = arkField.getDeclaringArkClass();
         const stmts = arkField.getInitializer();
-        const method = arkClass.getMethodWithName(INSTANCE_INIT_METHOD_NAME)
-            ?? arkClass.getMethodWithName(CONSTRUCTOR_NAME);
+        const method = arkClass.getMethodWithName(INSTANCE_INIT_METHOD_NAME) ??
+            arkClass.getMethodWithName(CONSTRUCTOR_NAME);
         for (const stmt of stmts) {
             if (method) {
                 this.resolveExprsInStmt(stmt, method);
@@ -114,21 +115,17 @@ export class TypeInference {
      * @param [rightType]
      * @returns
      */
-    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type) {
+    public static inferUnclearedType(leftOpType: Type, declaringArkClass: ArkClass, rightType?: Type): Type | null | undefined {
         let type;
-        if (leftOpType instanceof ClassType
-            && leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+        if (leftOpType instanceof ClassType &&
+            leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             type = TypeInference.inferUnclearRefName(leftOpType.getClassSignature().getClassName(), declaringArkClass);
         } else if (leftOpType instanceof UnionType) {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
-                let optionType = types[i];
-                let newType = this.inferUnclearedType(optionType, declaringArkClass);
+                let newType = this.inferUnclearedType(types[i], declaringArkClass);
                 if (newType) {
                     types[i] = newType;
-                }
-                if (rightType && newType && newType.constructor === rightType.constructor) {
-                    leftOpType.setCurrType(rightType);
                 }
             }
             type = leftOpType;
@@ -283,48 +280,50 @@ export class TypeInference {
         }
         const arkClass = arkMethod.getDeclaringArkClass();
         const rightOp = stmt.getRightOp();
-        if (rightOp instanceof Local && rightOp.getType() instanceof UnknownType) {
-            const type = this.inferUnclearRefName(rightOp.getName(), arkClass);
-            if (type) {
-                rightOp.setType(type);
-            }
-        } else if (rightOp.getType() instanceof UnclearReferenceType) {
-            const type = this.inferUnclearRefName((rightOp.getType() as UnclearReferenceType).getName(), arkClass);
-            if (type && rightOp instanceof ArkParameterRef) {
-                rightOp.setType(type);
+        let rightType: Type | null | undefined = rightOp.getType();
+        if (this.isUnclearType(rightType)) {
+            rightType = this.inferUnclearedType(rightType, arkClass);
+            if (rightType) {
+                this.setValueType(rightOp, rightType);
             }
         }
         const leftOp = stmt.getLeftOp();
-        let type: Type | null | undefined = leftOp.getType();
-        if (this.isUnclearType(type)) {
-            type = this.inferUnclearedType(type, arkClass, rightOp.getType());
-        }
-        if (type instanceof UnionType &&
-            !this.isUnclearType(rightOp.getType()) && !(leftOp instanceof ArkArrayRef)) {
-            const cur = type.getTypes().find(t => rightOp.getType().constructor === t.constructor);
-            if (cur) {
-                type.setCurrType(cur);
+        let leftType: Type | null | undefined = leftOp.getType();
+        if (this.isUnclearType(leftType)) {
+            leftType = this.inferUnclearedType(leftType, arkClass);
+            if (!leftType && !this.isUnclearType(rightType)) {
+                leftType = rightType;
             }
         }
-        if (this.isUnclearType(type) && !this.isUnclearType(rightOp.getType())) {
-            type = rightOp.getType();
-        }
-        if (type && leftOp instanceof Local) {
-            leftOp.setType(type);
-            let localDef;
-            if (stmt.getOriginalText()?.startsWith(leftOp.getName()) &&
-                (localDef = ModelUtils.findDeclaredLocal(leftOp, arkMethod))) {
-                if (this.isUnclearType(localDef.getType()) && !this.isUnclearType(type)) {
-                    localDef.setType(type);
+        if (leftType && !this.isUnclearType(leftType)) {
+            this.setValueType(leftOp, leftType);
+            if (leftOp instanceof Local && stmt.getOriginalText()?.startsWith(leftOp.getName())) {
+                let localDef = ModelUtils.findDeclaredLocal(leftOp, arkMethod);
+                if (localDef && this.isUnclearType(localDef.getType())) {
+                    localDef.setType(leftType);
                 }
             }
-        } else if (type && leftOp instanceof AbstractFieldRef) {
-            leftOp.getFieldSignature().setType(type);
+            const type = this.replaceAliasType(leftType);
+            if (rightType && type instanceof ClassType) {
+                IRInference.inferArgTypeWithSdk(type, arkClass.getDeclaringArkFile().getScene(), rightType);
+            } else if (rightType instanceof ArrayType && type instanceof ArrayType) {
+                const baseType = this.replaceAliasType(type.getBaseType());
+                if (baseType instanceof ClassType) {
+                    IRInference.inferArgTypeWithSdk(baseType, arkClass.getDeclaringArkFile().getScene(), rightType);
+                }
+            }
         }
-
     }
 
-    public static isUnclearType(type: Type | null | undefined) {
+    private static setValueType(value: Value, type: Type): void {
+        if (value instanceof Local || value instanceof ArkParameterRef) {
+            value.setType(type);
+        } else if (value instanceof AbstractFieldRef) {
+            value.getFieldSignature().setType(type);
+        }
+    }
+
+    public static isUnclearType(type: Type | null | undefined): boolean {
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType
             || type instanceof NullType || type instanceof UndefinedType) {
             return true;
@@ -523,14 +522,14 @@ export class TypeInference {
         let propertyAndType: [any, Type] | null = null;
         if (baseType instanceof ClassType) {
             const arkClass = declareClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
-            if (!arkClass) {
-                if (fieldName === Builtin.ITERATOR_RESULT_VALUE && baseType.getClassSignature()
-                    .getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
-                    const types = baseType.getRealGenericTypes();
-                    if (types && types.length > 0) {
-                        propertyAndType = [null, types[0]];
-                    }
+            if (!arkClass && fieldName === Builtin.ITERATOR_RESULT_VALUE && baseType.getClassSignature()
+                .getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+                const types = baseType.getRealGenericTypes();
+                if (types && types.length > 0) {
+                    propertyAndType = [null, types[0]];
                 }
+            }
+            if (!arkClass) {
                 return propertyAndType;
             }
             if (arkClass.isAnonymousClass()) {

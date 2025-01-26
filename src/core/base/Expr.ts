@@ -36,10 +36,10 @@ import { AbstractFieldRef, AbstractRef } from './Ref';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 import { UNKNOWN_FILE_NAME } from '../common/Const';
-import { IRInference } from "../common/IRInference";
-import { ImportInfo } from "../model/ArkImport";
-import { ArkClass } from "../model/ArkClass";
-import { ArkField } from "../model/ArkField";
+import { IRInference } from '../common/IRInference';
+import { ImportInfo } from '../model/ArkImport';
+import { ArkClass } from '../model/ArkClass';
+import { ArkField } from '../model/ArkField';
 
 /**
  * @category core/base/expr
@@ -321,8 +321,12 @@ export class ArkNewExpr extends AbstractExpr {
         const classSignature = this.classType.getClassSignature();
         if (classSignature.getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             const className = classSignature.getClassName();
-            const type = TypeInference.inferUnclearRefName(className, arkMethod.getDeclaringArkClass());
+            let type = TypeInference.inferUnclearRefName(className, arkMethod.getDeclaringArkClass());
             if (type && type instanceof ClassType) {
+                const returnType = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature())?.getMethodWithName('construct-signature')?.getReturnType();
+                if (returnType instanceof ClassType) {
+                    type = returnType;
+                }
                 let realGenericTypes = this.classType.getRealGenericTypes();
                 this.classType = realGenericTypes ? new ClassType(type.getClassSignature(), realGenericTypes) : type;
             }
@@ -832,7 +836,7 @@ export class ArkCastExpr extends AbstractExpr {
         if (!TypeInference.isUnclearType(type)) {
             this.type = type;
             if (type instanceof ClassType) {
-                IRInference.inferArgTypeWithSdk(type, arkMethod.getDeclaringArkFile().getScene(), this.op.getType())
+                IRInference.inferArgTypeWithSdk(type, arkMethod.getDeclaringArkFile().getScene(), this.op.getType());
             }
         }
         return this;

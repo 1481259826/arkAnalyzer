@@ -13,42 +13,29 @@
  * limitations under the License.
  */
 
-import { ArkFile } from "../model/ArkFile";
-import { ArkExport } from "../model/ArkExport";
-import { API_COMMON, API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from "./EtsConst";
-import { THIS_NAME } from "./TSConst";
-import { TEMP_LOCAL_PREFIX } from "./Const";
-import { ArkClass, ClassCategory } from "../model/ArkClass";
-import { LocalSignature } from "../model/ArkSignature";
-import { ModelUtils } from "./ModelUtils";
-import { Local } from "../base/Local";
-import { ArkMethod } from "../model/ArkMethod";
+import { ArkFile } from '../model/ArkFile';
+import { ArkExport } from '../model/ArkExport';
+import { API_COMMON, API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
+import { THIS_NAME } from './TSConst';
+import { TEMP_LOCAL_PREFIX } from './Const';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
+import { LocalSignature } from '../model/ArkSignature';
+import { ModelUtils } from './ModelUtils';
+import { Local } from '../base/Local';
+import { ArkMethod } from '../model/ArkMethod';
 
 export class SdkUtils {
 
     public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file.getFilePath().includes(COMPONENT_PATH)
-            || file.getFilePath().includes(API_INTERNAL)
-            || file.getFilePath().includes(API_COMMON);
+        const isGlobalPath = file.getFilePath().includes(COMPONENT_PATH) ||
+            file.getFilePath().includes(API_INTERNAL) || file.getFilePath().includes(API_COMMON);
         if (!isGlobalPath) {
             return;
         }
 
         ModelUtils.getAllClassesInFile(file).forEach(cls => {
             if (!cls.isAnonymousClass() && !cls.isDefaultArkClass()) {
-                const old = globalMap.get(cls.getName());
-                if (old instanceof ArkClass) {
-                    if (old.getCategory() === ClassCategory.CLASS) {
-                        this.copyMethod(cls, old)
-                    } else {
-                        this.copyMethod(old, cls);
-                        globalMap.delete(cls.getName());
-                        globalMap.set(cls.getName(), cls);
-                    }
-                } else if (!old) {
-                    globalMap.set(cls.getName(), cls);
-                }
-
+                SdkUtils.loadClass(globalMap, cls);
             }
             if (cls.isDefaultArkClass()) {
                 cls.getMethods().forEach(mtd => {
@@ -68,7 +55,22 @@ export class SdkUtils {
         defaultArkMethod?.getBody()?.getAliasTypeMap()?.forEach(a => globalMap.set(a[0].getName(), a[0]));
     }
 
-    private static loadGlobalLocal(local: Local, defaultArkMethod: ArkMethod, globalMap: Map<string, ArkExport>) {
+    private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
+        const old = globalMap.get(cls.getName());
+        if (old instanceof ArkClass) {
+            if (old.getCategory() === ClassCategory.CLASS) {
+                this.copyMethod(cls, old);
+            } else {
+                this.copyMethod(old, cls);
+                globalMap.delete(cls.getName());
+                globalMap.set(cls.getName(), cls);
+            }
+        } else if (!old) {
+            globalMap.set(cls.getName(), cls);
+        }
+    }
+
+    private static loadGlobalLocal(local: Local, defaultArkMethod: ArkMethod, globalMap: Map<string, ArkExport>): void {
         const name = local.getName();
         local.setSignature(new LocalSignature(name, defaultArkMethod.getSignature()));
         if (defaultArkMethod.getDeclaringArkFile().getScene().getOptions().isScanAbc) {
@@ -81,7 +83,10 @@ export class SdkUtils {
             }
 
         }
-        globalMap.set(name, local);
+        const old = globalMap.get(name);
+        if (!old) {
+            globalMap.set(name, local);
+        }
     }
 
     private static copyMethod(from: ArkClass, to: ArkClass): void {
@@ -93,6 +98,6 @@ export class SdkUtils {
             } else {
                 to.addMethod(method);
             }
-        })
+        });
     }
 }

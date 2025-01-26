@@ -30,7 +30,8 @@ import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
 import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
-import { Constant } from "../base/Constant";
+import { Constant } from '../base/Constant';
+import { Local } from '../base/Local';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -597,32 +598,6 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             }
             return args.length >= min && args.length <= max;
         });
-
-        function match(paramType: Type, arg: Value, scene: Scene): boolean {
-            const argType = arg.getType();
-            if (paramType instanceof UnionType) {
-                let matched = false;
-                for (const e of paramType.getTypes()) {
-                    if (argType.constructor === e.constructor) {
-                        matched = true;
-                        break;
-                    }
-                }
-                return matched;
-            } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
-                return argType.getMethodSignature().getParamLength() === paramType.getMethodSignature().getParamLength();
-            } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
-                paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
-                return true;
-            } else if (paramType instanceof LiteralType && arg instanceof Constant) {
-                return arg.getValue() === paramType.getLiteralName().toString().replace(/[\"|\']/g, '');
-            } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
-                scene.getClass(argType.getClassSignature())?.getCategory()) {
-                return true;
-            }
-            return argType.constructor === paramType.constructor;
-        }
-
         const scene = this.getDeclaringArkFile().getScene();
         return signatures?.find(p => {
             const parameters = p.getMethodSubSignature().getParameters();
@@ -630,13 +605,38 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 if (!args[i]) {
                     return parameters[i].isOptional();
                 }
-                const isMatched = match(parameters[i].getType(), args[i], scene);
+                const isMatched = this.matchParam(parameters[i].getType(), args[i], scene);
                 if (!isMatched) {
                     return false;
                 }
             }
             return true;
         }) ?? signatures?.[0] ?? this.getSignature();
+    }
+
+    private matchParam(paramType: Type, arg: Value, scene: Scene): boolean {
+        const argType = arg.getType();
+        if (paramType instanceof UnionType) {
+            let matched = false;
+            for (const e of paramType.getTypes()) {
+                if (argType.constructor === e.constructor) {
+                    matched = true;
+                    break;
+                }
+            }
+            return matched;
+        } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
+            return argType.getMethodSignature().getParamLength() === paramType.getMethodSignature().getParamLength();
+        } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
+            paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
+            return true;
+        } else if (paramType instanceof LiteralType && arg instanceof Constant) {
+            return arg.getValue() === paramType.getLiteralName().toString().replace(/[\"|\']/g, '');
+        } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
+            scene.getClass(argType.getClassSignature())?.getCategory()) {
+            return true;
+        }
+        return argType.constructor === paramType.constructor;
     }
 
     public getOuterMethod(): ArkMethod | undefined {
@@ -647,7 +647,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.outerMethod = method;
     }
 
-    public getFunctionLocal(name: string) {
+    public getFunctionLocal(name: string): Local | null {
         const local = this.getBody()?.getLocals().get(name);
         return local?.getType() instanceof FunctionType ? local : null;
     }

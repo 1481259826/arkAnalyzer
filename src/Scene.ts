@@ -36,12 +36,11 @@ import { addInitInConstructor, buildDefaultConstructor } from './core/model/buil
 import { DEFAULT_ARK_CLASS_NAME, STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
-import { IRInference } from "./core/common/IRInference";
-
+import { IRInference } from './core/common/IRInference';
 import { ImportInfo } from './core/model/ArkImport';
 import { ALL, TSCONFIG_JSON } from './core/common/TSConst';
 import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
-import { SdkUtils } from "./core/common/SdkUtils";
+import { SdkUtils } from './core/common/SdkUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -51,7 +50,8 @@ enum SceneBuildStage {
     METHOD_DONE,
     CLASS_COLLECTED,
     METHOD_COLLECTED,
-    INFER_TYPE
+    SDK_INFERRED,
+    TYPE_INFERRED
 };
 
 /**
@@ -490,7 +490,9 @@ export class Scene {
         this.findDependenciesByRule(originPath, arkFile);
     }
 
-    private findDependenciesByOhPkg(ohPkgContentPath: string, ohPkgContentInfo: { [k: string]: unknown }, from: string, arkFile: ArkFile): void {
+    private findDependenciesByOhPkg(ohPkgContentPath: string, ohPkgContentInfo: {
+        [k: string]: unknown
+    }, from: string, arkFile: ArkFile): void {
         //module name @ohos/from
         const ohPkgContent: { [k: string]: unknown } | undefined = ohPkgContentInfo;
         //module main name is must be
@@ -961,14 +963,15 @@ export class Scene {
      scene.inferTypes();
      ```
      */
-    public inferTypes(times: number = 1) {
-        if (times === 1) {
+    public inferTypes() {
+        if (this.buildStage < SceneBuildStage.SDK_INFERRED) {
             this.sdkArkFilesMap.forEach(file => IRInference.inferFile(file));
+            this.buildStage = SceneBuildStage.SDK_INFERRED;
         }
         this.filesMap.forEach(file => IRInference.inferFile(file));
-        if (times === 1) {
+        if (this.buildStage < SceneBuildStage.TYPE_INFERRED) {
             this.getMethodsMap(true);
-            this.buildStage = SceneBuildStage.INFER_TYPE;
+            this.buildStage = SceneBuildStage.TYPE_INFERRED;
         }
     }
 

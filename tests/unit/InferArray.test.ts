@@ -30,8 +30,7 @@ import {
     NumberType,
     Scene,
     SceneConfig,
-    StringType,
-    UnionType
+    StringType
 } from '../../src';
 import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../../src/utils/logger';
 
@@ -211,24 +210,6 @@ describe("Infer Array Test", () => {
             }
         })
         assert.isTrue(flag);
-    })
-
-    it('union currType case', () => {
-        let count = 0;
-        projectScene.getMethods().forEach(m => {
-            if (m.getSignature().toString().includes('testCurrType')) {
-                m.getCfg()?.getStmts().forEach(stmt => {
-                    if (stmt instanceof ArkAssignStmt) {
-                        const leftOp = stmt.getLeftOp();
-                        if (leftOp.getType() instanceof UnionType &&
-                            (leftOp.getType() as UnionType).getCurrType().toString() === 'string') {
-                            count++;
-                        }
-                    }
-                })
-            }
-        })
-        assert.equal(count, 3);
     })
 
     it('field to ArrayRef case', () => {

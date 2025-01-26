@@ -40,7 +40,7 @@ import {
 import { buildNormalArkClassFromArkMethod } from './ArkClassBuilder';
 import { Builtin } from '../../common/Builtin';
 import { modifierKind2Enum } from '../ArkBaseModel';
-import { ArkValueTransformer } from "../../common/ArkValueTransformer";
+import { ArkValueTransformer } from '../../common/ArkValueTransformer';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'builderUtils');
 

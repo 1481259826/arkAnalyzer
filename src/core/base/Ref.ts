@@ -22,7 +22,7 @@ import { TypeInference } from '../common/TypeInference';
 import { ArkMethod } from '../model/ArkMethod';
 import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX } from '../common/Const';
 import { Stmt } from './Stmt';
-import { IRInference } from "../common/IRInference";
+import { IRInference } from '../common/IRInference';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 

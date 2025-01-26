@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ArkMethod } from "../model/ArkMethod";
+import { ArkMethod } from '../model/ArkMethod';
 import {
     AliasType,
     AnnotationNamespaceType,
@@ -25,22 +25,22 @@ import {
     UnclearReferenceType,
     UndefinedType,
     UnionType
-} from "../base/Type";
-import { Local } from "../base/Local";
-import { TypeInference } from "./TypeInference";
+} from '../base/Type';
+import { Local } from '../base/Local';
+import { TypeInference } from './TypeInference';
 import {
     AbstractExpr,
     AbstractInvokeExpr,
     AliasTypeExpr,
     ArkInstanceInvokeExpr,
     ArkStaticInvokeExpr
-} from "../base/Expr";
-import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
-import { Scene } from "../../Scene";
-import { ArkClass } from "../model/ArkClass";
-import { findArkExport, ModelUtils } from "./ModelUtils";
-import { ArkField } from "../model/ArkField";
-import { CALL_BACK } from "./EtsConst";
+} from '../base/Expr';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { Scene } from '../../Scene';
+import { ArkClass } from '../model/ArkClass';
+import { findArkExport, ModelUtils } from './ModelUtils';
+import { ArkField } from '../model/ArkField';
+import { CALL_BACK } from './EtsConst';
 import {
     BaseSignature,
     ClassSignature,
@@ -151,11 +151,11 @@ export class IRInference {
 
     private static inferStaticInvokeExprByMethodName(methodName: string, arkMethod: ArkMethod, expr: ArkStaticInvokeExpr): void {
         const arkClass = arkMethod.getDeclaringArkClass();
-        const arkExport = ModelUtils.getStaticMethodWithName(methodName, arkClass)
-            ?? arkMethod.getFunctionLocal(methodName)
-            ?? ModelUtils.findDeclaredLocal(new Local(methodName), arkMethod)
-            ?? ModelUtils.getArkExportInImportInfoWithName(methodName, arkClass.getDeclaringArkFile())
-            ?? arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
+        const arkExport = ModelUtils.getStaticMethodWithName(methodName, arkClass) ??
+            arkMethod.getFunctionLocal(methodName) ??
+            ModelUtils.findDeclaredLocal(new Local(methodName), arkMethod) ??
+            ModelUtils.getArkExportInImportInfoWithName(methodName, arkClass.getDeclaringArkFile()) ??
+            arkClass.getDeclaringArkFile().getScene().getSdkGlobal(methodName);
         let method;
         let signature;
         if (arkExport instanceof ArkMethod) {
@@ -257,9 +257,9 @@ export class IRInference {
         if (paramType instanceof UnionType) {
             paramType.getTypes().forEach(t => this.inferArg(expr, argType, t, scene, realTypes));
         } else if (paramType instanceof AliasType) {
-            this.inferArg(expr, argType, paramType.getOriginalType(), scene, realTypes)
+            this.inferArg(expr, argType, paramType.getOriginalType(), scene, realTypes);
         } else if (paramType instanceof ArrayType && argType instanceof ArrayType) {
-            this.inferArg(expr, argType.getBaseType(), paramType.getBaseType(), scene, realTypes)
+            this.inferArg(expr, argType.getBaseType(), paramType.getBaseType(), scene, realTypes);
         }
 
         if (paramType instanceof ClassType && scene.getProjectSdkMap().has(paramType.getClassSignature()
@@ -314,10 +314,8 @@ export class IRInference {
                     let signature = foundMethod.matchMethodSignature(expr.getArgs());
                     TypeInference.inferSignatureReturnType(signature, foundMethod);
                     expr.setMethodSignature(signature);
-                    if (expr instanceof ArkInstanceInvokeExpr) {
-                        return new ArkStaticInvokeExpr(signature, expr.getArgs(), expr.getRealGenericTypes());
-                    }
-                    return expr;
+                    return expr instanceof ArkInstanceInvokeExpr ?
+                        new ArkStaticInvokeExpr(signature, expr.getArgs(), expr.getRealGenericTypes()) : expr;
                 }
             }
         } else if (baseType instanceof FunctionType) {
@@ -334,7 +332,8 @@ export class IRInference {
         return null;
     }
 
-    private static inferInvokeExprWithDeclaredClass(expr: AbstractInvokeExpr, baseType: ClassType, methodName: string, scene: Scene): AbstractInvokeExpr | null {
+    private static inferInvokeExprWithDeclaredClass(expr: AbstractInvokeExpr, baseType: ClassType, methodName: string,
+                                                    scene: Scene): AbstractInvokeExpr | null {
         let declaredClass = scene.getClass(baseType.getClassSignature());
         if (!declaredClass) {
             const globalClass = scene.getSdkGlobal(baseType.getClassSignature().getClassName());

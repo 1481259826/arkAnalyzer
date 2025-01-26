@@ -39,7 +39,7 @@ import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
 import { AnnotationNamespaceType, ClassType } from '../base/Type';
 import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
-import { EMPTY_STRING } from "./ValueUtil";
+import { EMPTY_STRING } from './ValueUtil';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -400,18 +400,18 @@ export class ModelUtils {
     }
 
     public static findArkModel(baseName: string, arkClass: ArkClass): ArkExport | ArkField | null {
-        let arkModel: ArkExport | ArkField | null = arkClass.getMethodWithName(baseName)
-            ?? arkClass.getStaticMethodWithName(baseName) ?? arkClass.getFieldWithName(baseName)
-            ?? arkClass.getStaticFieldWithName(baseName);
+        let arkModel: ArkExport | ArkField | null = arkClass.getMethodWithName(baseName) ??
+            arkClass.getStaticMethodWithName(baseName) ?? arkClass.getFieldWithName(baseName) ??
+            arkClass.getStaticFieldWithName(baseName);
         if (arkModel) {
             return arkModel;
         }
-        arkModel = ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName)
-            ?? ModelUtils.getClassWithName(baseName, arkClass)
-            ?? ModelUtils.getNamespaceWithName(baseName, arkClass)
-            ?? ModelUtils.getDefaultClass(arkClass)?.getMethodWithName(baseName)
-            ?? ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(baseName)
-            ?? ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
+        arkModel = ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName) ??
+            ModelUtils.getClassWithName(baseName, arkClass) ??
+            ModelUtils.getNamespaceWithName(baseName, arkClass) ??
+            ModelUtils.getDefaultClass(arkClass)?.getMethodWithName(baseName) ??
+            ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(baseName) ??
+            ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
         if (!arkModel && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkModel = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
@@ -436,7 +436,7 @@ export class ModelUtils {
             } else if (model instanceof ArkClass) {
                 model = this.findPropertyInClass(name, model);
             } else if (model instanceof ArkNamespace) {
-                model = this.findPropertyInNamespace(name, model)
+                model = this.findPropertyInNamespace(name, model);
             }
             if (!model) {
                 return null;
