@@ -323,10 +323,6 @@ export class ArkNewExpr extends AbstractExpr {
             const className = classSignature.getClassName();
             let type = TypeInference.inferUnclearRefName(className, arkMethod.getDeclaringArkClass());
             if (type && type instanceof ClassType) {
-                const returnType = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature())?.getMethodWithName('construct-signature')?.getReturnType();
-                if (returnType instanceof ClassType) {
-                    type = returnType;
-                }
                 let realGenericTypes = this.classType.getRealGenericTypes();
                 this.classType = realGenericTypes ? new ClassType(type.getClassSignature(), realGenericTypes) : type;
             }
