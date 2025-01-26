@@ -36,10 +36,11 @@ import { addInitInConstructor, buildDefaultConstructor } from './core/model/buil
 import { DEFAULT_ARK_CLASS_NAME, STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
-
+import { IRInference } from './core/common/IRInference';
 import { ImportInfo } from './core/model/ArkImport';
 import { ALL, TSCONFIG_JSON } from './core/common/TSConst';
 import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
+import { SdkUtils } from './core/common/SdkUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -47,6 +48,10 @@ enum SceneBuildStage {
     BUILD_INIT,
     CLASS_DONE,
     METHOD_DONE,
+    CLASS_COLLECTED,
+    METHOD_COLLECTED,
+    SDK_INFERRED,
+    TYPE_INFERRED
 };
 
 /**
@@ -199,9 +204,6 @@ export class Scene {
             }
         });
 
-        this.sdkArkFilesMap.forEach(file => {
-            this.inferFile(file);
-        });
     }
 
     private parseBuildProfile(): void {
@@ -488,7 +490,9 @@ export class Scene {
         this.findDependenciesByRule(originPath, arkFile);
     }
 
-    private findDependenciesByOhPkg(ohPkgContentPath: string, ohPkgContentInfo: { [k: string]: unknown }, from: string, arkFile: ArkFile): void {
+    private findDependenciesByOhPkg(ohPkgContentPath: string, ohPkgContentInfo: {
+        [k: string]: unknown
+    }, from: string, arkFile: ArkFile): void {
         //module name @ohos/from
         const ohPkgContent: { [k: string]: unknown } | undefined = ohPkgContentInfo;
         //module main name is must be
@@ -548,7 +552,7 @@ export class Scene {
             });
             const fileSig = arkFile.getFileSignature().toMapKey();
             this.sdkArkFilesMap.set(fileSig, arkFile);
-            ModelUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
+            SdkUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
         });
     }
 
@@ -735,11 +739,19 @@ export class Scene {
     }
 
     public getNamespace(namespaceSignature: NamespaceSignature): ArkNamespace | null {
-        if (this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName()) {
-            return this.getNamespacesMap().get(namespaceSignature.toMapKey()) || null;
-        } else {
-            return this.getNamespaceBySignature(namespaceSignature);
+        const isProject = this.projectName === namespaceSignature.getDeclaringFileSignature().getProjectName();
+        let namespace;
+        if (isProject) {
+            namespace = this.namespacesMap.get(namespaceSignature.toMapKey());
         }
+        if (namespace) {
+            return namespace;
+        }
+        namespace = this.getNamespaceBySignature(namespaceSignature);
+        if (isProject && namespace) {
+            this.namespacesMap.set(namespaceSignature.toMapKey(), namespace);
+        }
+        return namespace || null;
     }
 
     private getNamespaceBySignature(signature: NamespaceSignature): ArkNamespace | null {
@@ -754,7 +766,7 @@ export class Scene {
     }
 
     private getNamespacesMap(): Map<string, ArkNamespace> {
-        if (this.namespacesMap.size === 0) {
+        if (this.buildStage === SceneBuildStage.CLASS_DONE) {
             for (const file of this.getFiles()) {
                 ModelUtils.getAllNamespacesInFile(file).forEach((namespace) => {
                     this.namespacesMap.set(namespace.getNamespaceSignature().toMapKey(), namespace);
@@ -773,21 +785,30 @@ export class Scene {
      * @param classSignature - signature of the class to be obtained.
      * @returns A class.
      */
-    public getClass(classSignature: ClassSignature, refresh?: boolean): ArkClass | null {
-        if (this.projectName === classSignature.getDeclaringFileSignature().getProjectName()) {
-            return this.getClassesMap(refresh).get(classSignature.toMapKey()) || null;
-        } else {
-            const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
-            if (namespaceSignature) {
-                return this.getNamespaceBySignature(namespaceSignature)?.getClass(classSignature) || null;
-            }
-            const arkFile = this.getFile(classSignature.getDeclaringFileSignature());
-            return arkFile?.getClass(classSignature) || null;
+    public getClass(classSignature: ClassSignature): ArkClass | null {
+        const isProject = this.projectName === classSignature.getDeclaringFileSignature().getProjectName();
+        let arkClass;
+        if (isProject) {
+            arkClass = this.classesMap.get(classSignature.toMapKey());
         }
+        if (arkClass) {
+            return arkClass;
+        }
+        const namespaceSignature = classSignature.getDeclaringNamespaceSignature();
+        if (namespaceSignature) {
+            arkClass = this.getNamespaceBySignature(namespaceSignature)?.getClass(classSignature) || null;
+        } else {
+            const arkFile = this.getFile(classSignature.getDeclaringFileSignature());
+            arkClass = arkFile?.getClass(classSignature);
+        }
+        if (isProject && arkClass) {
+            this.classesMap.set(classSignature.toMapKey(), arkClass);
+        }
+        return arkClass || null;
     }
 
     private getClassesMap(refresh?: boolean): Map<string, ArkClass> {
-        if (refresh || (this.classesMap.size === 0 && this.buildStage >= SceneBuildStage.CLASS_DONE)) {
+        if (refresh || this.buildStage === SceneBuildStage.METHOD_DONE) {
             this.classesMap.clear();
             for (const file of this.getFiles()) {
                 for (const cls of file.getClasses()) {
@@ -799,29 +820,43 @@ export class Scene {
                     this.classesMap.set(cls.getSignature().toMapKey(), cls);
                 }
             }
+            if (this.buildStage < SceneBuildStage.CLASS_COLLECTED) {
+                this.buildStage = SceneBuildStage.CLASS_COLLECTED;
+            }
         }
         return this.classesMap;
     }
 
-    public getClasses(refresh?: boolean): ArkClass[] {
-        return Array.from(this.getClassesMap(refresh).values());
+    public getClasses(): ArkClass[] {
+        return Array.from(this.getClassesMap().values());
     }
 
     public getMethod(methodSignature: MethodSignature, refresh?: boolean): ArkMethod | null {
-        if (this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName()) {
-            return this.getMethodsMap(refresh).get(methodSignature.toMapKey()) || null;
-        } else {
-            return this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature) || null;
+        const isProject = this.projectName === methodSignature.getDeclaringClassSignature().getDeclaringFileSignature().getProjectName();
+        let arkMethod;
+        if (isProject) {
+            arkMethod = this.methodsMap.get(methodSignature.toMapKey());
         }
+        if (arkMethod) {
+            return arkMethod;
+        }
+        arkMethod = this.getClass(methodSignature.getDeclaringClassSignature())?.getMethod(methodSignature);
+        if (isProject && arkMethod) {
+            this.methodsMap.set(methodSignature.toMapKey(), arkMethod);
+        }
+        return arkMethod || null;
     }
 
     private getMethodsMap(refresh?: boolean): Map<string, ArkMethod> {
-        if (refresh || (this.methodsMap.size === 0 && this.buildStage >= SceneBuildStage.METHOD_DONE)) {
+        if (refresh || (this.buildStage >= SceneBuildStage.METHOD_DONE && this.buildStage < SceneBuildStage.METHOD_COLLECTED)) {
             this.methodsMap.clear();
-            for (const cls of this.getClassesMap().values()) {
+            for (const cls of this.getClassesMap(refresh).values()) {
                 for (const method of cls.getMethods(true)) {
                     this.methodsMap.set(method.getSignature().toMapKey(), method);
                 }
+            }
+            if (this.buildStage < SceneBuildStage.METHOD_COLLECTED) {
+                this.buildStage = SceneBuildStage.METHOD_COLLECTED;
             }
         }
         return this.methodsMap;
@@ -852,8 +887,8 @@ export class Scene {
      }
      ```
      */
-    public getMethods(refresh?: boolean): ArkMethod[] {
-        return Array.from(this.getMethodsMap(refresh).values());
+    public getMethods(): ArkMethod[] {
+        return Array.from(this.getMethodsMap().values());
     }
 
     public addToMethodsMap(method: ArkMethod): void {
@@ -929,34 +964,22 @@ export class Scene {
      ```
      */
     public inferTypes() {
-        this.filesMap.forEach(file => this.inferFile(file));
-        this.getClasses(true);
-        this.getMethodsMap(true);
-    }
-
-    private inferFile(file: ArkFile): void {
-        ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
-            TypeInference.inferGenericType(arkClass.getGenericsTypes(), arkClass);
-            const defaultArkMethod = arkClass.getDefaultArkMethod();
-            if (defaultArkMethod) {
-                TypeInference.inferTypeInMethod(defaultArkMethod);
-            }
-            arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
-            arkClass.getMethods().forEach(arkMethod => {
-                if (!arkMethod.isDefaultArkMethod()) {
-                    TypeInference.inferTypeInMethod(arkMethod);
-                }
-            });
-        });
-        TypeInference.inferExportInfos(file);
-        TypeInference.inferImportInfos(file);
+        if (this.buildStage < SceneBuildStage.SDK_INFERRED) {
+            this.sdkArkFilesMap.forEach(file => IRInference.inferFile(file));
+            this.buildStage = SceneBuildStage.SDK_INFERRED;
+        }
+        this.filesMap.forEach(file => IRInference.inferFile(file));
+        if (this.buildStage < SceneBuildStage.TYPE_INFERRED) {
+            this.getMethodsMap(true);
+            this.buildStage = SceneBuildStage.TYPE_INFERRED;
+        }
     }
 
     /**
      * Iterate all assignment statements in methods,
      * and set the type of left operand based on the type of right operand
      * if the left operand is a local variable as well as an unknown.
-     * @deprecated
+     * @Deprecated
      * @example
      * 1. Infer simple type when scene building.
 

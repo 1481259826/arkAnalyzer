@@ -96,7 +96,7 @@ export abstract class DataflowSolver<D> {
     }
 
     protected buildStmtMapInClass() {
-        const methods = this.scene.getMethods(true);
+        const methods = this.scene.getMethods();
         methods.push(this.problem.getEntryMethod());
         for (const method of methods) {
             const cfg = method.getCfg();

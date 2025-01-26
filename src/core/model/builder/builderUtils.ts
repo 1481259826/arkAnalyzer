@@ -40,6 +40,7 @@ import {
 import { buildNormalArkClassFromArkMethod } from './ArkClassBuilder';
 import { Builtin } from '../../common/Builtin';
 import { modifierKind2Enum } from '../ArkBaseModel';
+import { ArkValueTransformer } from '../../common/ArkValueTransformer';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'builderUtils');
 
@@ -339,7 +340,7 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         });
         return new UnionType(unionTypePara);
     } else if (ts.isLiteralTypeNode(typeNode)) {
-        return buildTypeFromPreStr(ts.SyntaxKind[typeNode.literal.kind]);
+        return ArkValueTransformer.resolveLiteralTypeNode(typeNode, sourceFile);
     } else if (ts.isTypeLiteralNode(typeNode)) {
         let cls: ArkClass = new ArkClass();
         let declaringClass: ArkClass;

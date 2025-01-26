@@ -86,7 +86,7 @@ describe('SDK Global Map Test', () => {
     });
 
     it('test local value default Method', async () => {
-        const key = 'Column';
+        const key = 'ColumnInterface';
         const apiFile = '@internal/component/ets/column.d.ts';
         const apiMethod = 'create';
         const arkClass = scene.getSdkGlobal(key);

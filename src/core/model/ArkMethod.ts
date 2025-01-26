@@ -15,7 +15,7 @@
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ClassType, FunctionType, GenericType, NumberType, Type, UnionType } from '../base/Type';
+import { ClassType, FunctionType, GenericType, LiteralType, NumberType, Type, UnionType } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
@@ -30,6 +30,8 @@ import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
 import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
+import { Constant } from '../base/Constant';
+import { Local } from '../base/Local';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -63,7 +65,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         super();
     }
 
-    getExportType(): ExportType {
+    public getExportType(): ExportType {
         return ExportType.METHOD;
     }
 
@@ -586,7 +588,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.validateFields(['declaringArkClass']);
     }
 
-    public matchMethodSignature(args: Type[]): MethodSignature {
+    public matchMethodSignature(args: Value[]): MethodSignature {
         const signatures = this.methodDeclareSignatures?.filter(f => {
             const parameters = f.getMethodSubSignature().getParameters();
             const max = parameters.length;
@@ -596,27 +598,6 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             }
             return args.length >= min && args.length <= max;
         });
-
-        function match(paramType: Type, argType: Type, scene: Scene): boolean {
-            if (paramType instanceof UnionType) {
-                let matched = false;
-                for (const e of paramType.getTypes()) {
-                    if (argType.constructor === e.constructor) {
-                        matched = true;
-                        break;
-                    }
-                }
-                return matched;
-            } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
-                paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
-                return true;
-            } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
-                scene.getClass(argType.getClassSignature())?.getCategory()) {
-                return true;
-            }
-            return argType.constructor === paramType.constructor;
-        }
-
         const scene = this.getDeclaringArkFile().getScene();
         return signatures?.find(p => {
             const parameters = p.getMethodSubSignature().getParameters();
@@ -624,9 +605,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 if (!args[i]) {
                     return parameters[i].isOptional();
                 }
-                const paramType = parameters[i].getType();
-                const argType = args[i];
-                const isMatched = match(paramType, argType, scene);
+                const isMatched = this.matchParam(parameters[i].getType(), args[i], scene);
                 if (!isMatched) {
                     return false;
                 }
@@ -635,12 +614,42 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         }) ?? signatures?.[0] ?? this.getSignature();
     }
 
+    private matchParam(paramType: Type, arg: Value, scene: Scene): boolean {
+        const argType = arg.getType();
+        if (paramType instanceof UnionType) {
+            let matched = false;
+            for (const e of paramType.getTypes()) {
+                if (argType.constructor === e.constructor) {
+                    matched = true;
+                    break;
+                }
+            }
+            return matched;
+        } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
+            return argType.getMethodSignature().getParamLength() === paramType.getMethodSignature().getParamLength();
+        } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
+            paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
+            return true;
+        } else if (paramType instanceof LiteralType && arg instanceof Constant) {
+            return arg.getValue() === paramType.getLiteralName().toString().replace(/[\"|\']/g, '');
+        } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
+            scene.getClass(argType.getClassSignature())?.getCategory()) {
+            return true;
+        }
+        return argType.constructor === paramType.constructor;
+    }
+
     public getOuterMethod(): ArkMethod | undefined {
         return this.outerMethod;
     }
 
     public setOuterMethod(method: ArkMethod): void {
         this.outerMethod = method;
+    }
+
+    public getFunctionLocal(name: string): Local | null {
+        const local = this.getBody()?.getLocals().get(name);
+        return local?.getType() instanceof FunctionType ? local : null;
     }
 
 }

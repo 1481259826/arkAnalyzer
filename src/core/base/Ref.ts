@@ -14,29 +14,15 @@
  */
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { BaseSignature, FieldSignature } from '../model/ArkSignature';
+import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
-import {
-    AliasType,
-    AnnotationNamespaceType,
-    ArrayType,
-    ClassType,
-    NullType,
-    Type,
-    UnclearReferenceType,
-    UndefinedType,
-    UnionType,
-    UnknownType
-} from './Type';
+import { ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from './Type';
 import { Value } from './Value';
-import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { TypeInference } from '../common/TypeInference';
-import { ValueUtil } from '../common/ValueUtil';
-import { ArkField } from '../model/ArkField';
 import { ArkMethod } from '../model/ArkMethod';
-import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
-import { THIS_NAME } from '../common/TSConst';
+import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX } from '../common/Const';
 import { Stmt } from './Stmt';
+import { IRInference } from '../common/IRInference';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Ref');
 
@@ -111,10 +97,7 @@ export class ArkArrayRef extends AbstractRef {
     }
 
     public getType(): Type {
-        let baseType = this.base.getType();
-        if (baseType instanceof AliasType) {
-            baseType = baseType.getOriginalType();
-        }
+        let baseType = TypeInference.replaceTypeWithReal(this.base.getType());
         if (baseType instanceof ArrayType) {
             return baseType.getBaseType();
         } else {
@@ -231,96 +214,10 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
         return this.base.toString() + '.<' + this.getFieldSignature() + '>';
     }
 
-    private getBaseType(arkClass: ArkClass): Type | null {
-        let baseType: Type | null = this.base.getType();
-        if (this.base instanceof Local && baseType instanceof UnknownType) {
-            baseType = TypeInference.inferBaseType(this.base.getName(), arkClass)[1];
-            if (!baseType && (arkClass.hasComponentDecorator() || arkClass.getCategory() === ClassCategory.OBJECT)) {
-                const global = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(this.base.getName());
-                baseType = TypeInference.parseArkExport2Type(global);
-            }
-        } else if (baseType instanceof UnclearReferenceType) {
-            baseType = TypeInference.inferUnclearReferenceType(baseType.getName(), arkClass)[1];
-        }
-        if (!baseType) {
-            logger.warn('infer field ref base type fail: ' + this.toString());
-            return null;
-        }
-        if (this.base instanceof Local) {
-            if (this.base.getName() === THIS_NAME && arkClass.isAnonymousClass()) {
-                return null;
-            }
-            this.base.setType(baseType);
-        }
-        if (baseType instanceof AliasType) {
-            baseType = baseType.getOriginalType();
-        }
-        return baseType;
-    }
-
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        const arkClass = arkMethod.getDeclaringArkClass();
-        const baseType: Type | null = this.getBaseType(arkClass);
-        if (!baseType) {
-            return this;
-        }
-        if (baseType instanceof ArrayType && this.getFieldName() !== 'length') {
-            return new ArkArrayRef(this.base, ValueUtil.createConst(this.getFieldName()));
-        }
-        let newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
-        if (baseType instanceof UnionType) {
-            for (let type of baseType.getTypes()) {
-                if (type instanceof UndefinedType || type instanceof NullType) {
-                    continue;
-                }
-                if (type instanceof AliasType) {
-                    type = type.getOriginalType();
-                }
-                newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
-                if (!TypeInference.isUnclearType(newFieldSignature?.getType())) {
-                    break;
-                }
-            }
-        } else {
-            newFieldSignature = this.getNewFieldSignature(arkClass, baseType);
-        }
-        if (newFieldSignature) {
-            if (newFieldSignature.isStatic()) {
-                return new ArkStaticFieldRef(newFieldSignature);
-            }
-            this.setFieldSignature(newFieldSignature);
-        }
-        return this;
+        return IRInference.inferFieldRef(this, arkMethod);
     }
 
-    private getNewFieldSignature(arkClass: ArkClass, baseType: Type): FieldSignature | null {
-        const fieldName = this.getFieldName().replace(/[\"|\']/, '');
-        const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
-        let propertyType = propertyAndType[1];
-        if (propertyType && TypeInference.isUnclearType(propertyType)) {
-            const newType = TypeInference.inferUnclearedType(propertyType, arkClass)[1];
-            if (newType) {
-                propertyType = newType;
-            }
-        }
-        let staticFlag: boolean;
-        let signature: BaseSignature;
-        if (baseType instanceof ClassType) {
-            const property = propertyAndType?.[0];
-            if (property instanceof ArkField) {
-                return property.getSignature();
-            }
-            staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
-                (property instanceof ArkMethod && property.isStatic());
-            signature = property instanceof ArkMethod ? property.getSignature().getDeclaringClassSignature() : baseType.getClassSignature();
-        } else if (baseType instanceof AnnotationNamespaceType) {
-            staticFlag = true;
-            signature = baseType.getNamespaceSignature();
-        } else {
-            return null;
-        }
-        return new FieldSignature(fieldName, signature, propertyType ?? this.getType(), staticFlag);
-    }
 }
 
 export class ArkStaticFieldRef extends AbstractFieldRef {
@@ -364,14 +261,14 @@ export class ArkParameterRef extends AbstractRef {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        if (arkMethod.isAnonymousMethod() && this.paramType instanceof UnknownType) {
+        if (arkMethod.isAnonymousMethod() && (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType)) {
             const type1 = arkMethod.getSignature().getMethodSubSignature().getParameters()[this.index]?.getType();
             if (!TypeInference.isUnclearType(type1)) {
                 this.paramType = type1;
                 return this;
             }
         }
-        let type = TypeInference.inferUnclearedType(this.paramType, arkMethod.getDeclaringArkClass())[1];
+        let type = TypeInference.inferUnclearedType(this.paramType, arkMethod.getDeclaringArkClass());
         if (type) {
             this.paramType = type;
         }
@@ -400,7 +297,7 @@ export class ArkThisRef extends AbstractRef {
         const arkClass = arkMethod.getDeclaringArkClass();
         const className = this.type.getClassSignature().getClassName();
         if (className.startsWith(ANONYMOUS_CLASS_PREFIX)) {
-            let type = TypeInference.inferBaseType(className.split(ANONYMOUS_CLASS_DELIMITER)[1], arkClass)[1];
+            let type = TypeInference.inferBaseType(className.split(ANONYMOUS_CLASS_DELIMITER)[1], arkClass);
             if (type instanceof ClassType) {
                 this.type = type;
             }

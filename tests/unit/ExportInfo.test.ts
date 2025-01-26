@@ -19,15 +19,15 @@ import { ArkClass, FileSignature, Local, Scene, SceneConfig } from '../../src';
 import { ArkExport, ExportInfo } from '../../src/core/model/ArkExport';
 import { ArkBaseModel, ModifierType } from '../../src/core/model/ArkBaseModel';
 import {
-    DefaultExportClassWithDeclaring_Expect_IR,
-    ExportClassWithDeclaring_Expect_IR,
-    ExportClass_Expect_IR,
-    ExportClassWithAs_Expect_IR,
-    DefaultSingleExportClass_Expect_IR,
-    DefaultExportClassInstanceWithNewIndependent_Expect_IR,
-    DefaultExportClassInstanceWithNew_Expect_IR,
     DefaultExportClassInstanceWithLetIndependent_Expect_IR,
-    ExportClassInstanceWithLet_Expect_IR
+    DefaultExportClassInstanceWithNew_Expect_IR,
+    DefaultExportClassInstanceWithNewIndependent_Expect_IR,
+    DefaultExportClassWithDeclaring_Expect_IR,
+    DefaultSingleExportClass_Expect_IR,
+    ExportClass_Expect_IR,
+    ExportClassInstanceWithLet_Expect_IR,
+    ExportClassWithAs_Expect_IR,
+    ExportClassWithDeclaring_Expect_IR
 } from '../resources/exports/class/expectedIR';
 import {
     ExportAllFromOtherFile_Expect_IR,
@@ -151,7 +151,7 @@ describe("export Test", () => {
 
     it('all case', () => {
         let unknownCount = 0;
-        projectScene.getMethods(true).forEach(m => {
+        projectScene.getMethods().forEach(m => {
             m.getCfg()?.getStmts().forEach(s => {
                 const text = s.toString();
                 if (text.includes('Unknown')) {

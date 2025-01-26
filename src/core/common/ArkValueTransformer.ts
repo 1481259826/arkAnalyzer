@@ -1098,7 +1098,7 @@ export class ArkValueTransformer {
 
     // In assignment patterns, the left operand will be an array literal expression
     private arrayDestructuringToValueAndStmts(arrayDestructuring: ts.ArrayBindingPattern | ts.ArrayLiteralExpression,
-                                               isConst: boolean = false): ValueAndStmts {
+                                              isConst: boolean = false): ValueAndStmts {
         const stmts: Stmt[] = [];
         const arrayTempLocal = this.generateTempLocal();
         const leftOriginalPosition = FullPosition.buildFromNode(arrayDestructuring, this.sourceFile);
@@ -1122,7 +1122,7 @@ export class ArkValueTransformer {
 
     // In assignment patterns, the left operand will be an object literal expression
     private objectDestructuringToValueAndStmts(objectDestructuring: ts.ObjectBindingPattern | ts.ObjectLiteralExpression,
-                                                isConst: boolean = false): ValueAndStmts {
+                                               isConst: boolean = false): ValueAndStmts {
         const stmts: Stmt[] = [];
         const objectTempLocal = this.generateTempLocal();
         const leftOriginalPosition = FullPosition.buildFromNode(objectDestructuring, this.sourceFile);
@@ -1447,7 +1447,7 @@ export class ArkValueTransformer {
             case ts.SyntaxKind.NamedTupleMember:
                 return this.resolveTypeNode((type as ts.NamedTupleMember).type);
             case ts.SyntaxKind.LiteralType:
-                return this.resolveLiteralTypeNode(type as ts.LiteralTypeNode);
+                return ArkValueTransformer.resolveLiteralTypeNode(type as ts.LiteralTypeNode, this.sourceFile);
             case ts.SyntaxKind.TemplateLiteralType:
                 return this.resolveTemplateLiteralTypeNode(type as ts.TemplateLiteralTypeNode);
             case ts.SyntaxKind.TypeLiteral:
@@ -1479,7 +1479,7 @@ export class ArkValueTransformer {
         return new UnclearReferenceType(exprName, genericTypes);
     }
 
-    private resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode): Type {
+    public static resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode, sourceFile: ts.SourceFile): Type {
         const literal = literalTypeNode.literal;
         const kind = literal.kind;
         switch (kind) {
@@ -1492,11 +1492,11 @@ export class ArkValueTransformer {
             case ts.SyntaxKind.NumericLiteral:
                 return new LiteralType(parseFloat((literal as ts.NumericLiteral).text));
             case ts.SyntaxKind.PrefixUnaryExpression:
-                return new LiteralType(parseFloat(literal.getText(this.sourceFile)));
+                return new LiteralType(parseFloat(literal.getText(sourceFile)));
             default:
                 ;
         }
-        return new LiteralType(literal.getText(this.sourceFile));
+        return new LiteralType(literal.getText(sourceFile));
     }
 
     private resolveTemplateLiteralTypeNode(templateLiteralTypeNode: ts.TemplateLiteralTypeNode): Type {
