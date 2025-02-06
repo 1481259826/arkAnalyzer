@@ -173,10 +173,11 @@ export class ModelUtils {
     }
 
     public static getNamespaceWithName(namespaceName: string, thisClass: ArkClass): ArkNamespace | null {
-        const thisNamespace = thisClass.getDeclaringArkNamespace();
+        let thisNamespace: ArkNamespace | null | undefined = thisClass.getDeclaringArkNamespace();
         let namespaceSearched: ArkNamespace | null = null;
-        if (thisNamespace) {
+        while (!namespaceSearched && thisNamespace) {
             namespaceSearched = thisNamespace.getNamespaceWithName(namespaceName);
+            thisNamespace = thisNamespace.getDeclaringArkNamespace();
         }
         if (!namespaceSearched) {
             namespaceSearched = thisClass.getDeclaringArkFile().getNamespaceWithName(namespaceName);

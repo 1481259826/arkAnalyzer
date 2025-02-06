@@ -616,6 +616,12 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     private matchParam(paramType: Type, arg: Value, scene: Scene): boolean {
         const argType = arg.getType();
+        if (arg instanceof Local) {
+            const stmt = arg.getDeclaringStmt();
+            if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof Constant) {
+                arg = stmt.getRightOp();
+            }
+        }
         if (paramType instanceof UnionType) {
             let matched = false;
             for (const e of paramType.getTypes()) {
@@ -631,7 +637,8 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
             return true;
         } else if (paramType instanceof LiteralType && arg instanceof Constant) {
-            return arg.getValue() === paramType.getLiteralName().toString().replace(/[\"|\']/g, '');
+            return arg.getValue().replace(/[\"|\']/g, '') === paramType.getLiteralName()
+                .toString().replace(/[\"|\']/g, '');
         } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
             scene.getClass(argType.getClassSignature())?.getCategory()) {
             return true;

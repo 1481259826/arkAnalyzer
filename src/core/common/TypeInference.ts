@@ -303,14 +303,8 @@ export class TypeInference {
                     localDef.setType(leftType);
                 }
             }
-            const type = this.replaceAliasType(leftType);
-            if (rightType && type instanceof ClassType) {
-                IRInference.inferArgTypeWithSdk(type, arkClass.getDeclaringArkFile().getScene(), rightType);
-            } else if (rightType instanceof ArrayType && type instanceof ArrayType) {
-                const baseType = this.replaceAliasType(type.getBaseType());
-                if (baseType instanceof ClassType) {
-                    IRInference.inferArgTypeWithSdk(baseType, arkClass.getDeclaringArkFile().getScene(), rightType);
-                }
+            if (rightType) {
+                IRInference.inferRightWithSdkType(leftType, rightType, arkClass);
             }
         }
     }
@@ -638,6 +632,11 @@ export class TypeInference {
             if (realType) {
                 return realType;
             }
+        } else if (type instanceof AnyType) {
+            const realType = realTypes?.[0];
+            if (realType) {
+                return realType;
+            }
         }
         return type;
     }
@@ -647,7 +646,7 @@ export class TypeInference {
         while (aliasType instanceof AliasType) {
             aliasType = aliasType.getOriginalType();
         }
-        return type;
+        return aliasType;
     }
 
 
