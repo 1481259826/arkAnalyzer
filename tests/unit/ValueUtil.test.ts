@@ -15,7 +15,9 @@
 
 import { NullType, NumberType, StringType, UndefinedType } from '../../src/core/base/Type';
 import { ValueUtil } from '../../src/core/common/ValueUtil';
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
+import { FileSignature, ModelUtils, Scene, SceneConfig } from "../../src";
+import path from "path";
 
 describe("ValueUtil Test", () => {
     it('string case', () => {
@@ -41,5 +43,22 @@ describe("ValueUtil Test", () => {
         let value = ValueUtil.getNullConstant();
         expect(value.getType())
             .toEqual(type);
+    })
+})
+
+describe("ModelUtils Test", () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(path.join(__dirname, "../resources/inferType"));
+    let scene: Scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+    it('namespace normal case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'demo.ts');
+        const outerNameSpace = scene.getFile(fileId)?.getNamespaceWithName('outer');
+        const cls = outerNameSpace?.getNamespaceWithName('inner')?.getClassWithName('TestClass');
+        assert.isDefined(cls);
+        const namespace = ModelUtils.getNamespaceWithName('outer', cls!);
+        assert.equal(namespace, outerNameSpace);
+
     })
 })

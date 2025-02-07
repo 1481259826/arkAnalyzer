@@ -49,10 +49,11 @@ export class SCBSceneSessionManager {
 
 function demoCallBack(){
     media.createAVPlayer((error:BusinessError, player: media.AVPlayer) =>{
-        player.on('audioInterrupt',() => console.error('createAVPlayer audioInterrupt'));
+        player.on("audioInterrupt",() => console.error('createAVPlayer audioInterrupt'));
     })
 
     media.createAVPlayer().then((player: media.AVPlayer) =>{
-        player.on('audioInterrupt',() => console.error('createAVPlayer audioInterrupt2'));
+        let mode = 'audioInterrupt';
+        player.on(mode,() => console.error('createAVPlayer audioInterrupt2'));
     }).catch((error:BusinessError)=>{console.error('createAVPlayer error')})
 }
