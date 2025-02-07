@@ -43,6 +43,7 @@ import { findArkExport, ModelUtils } from './ModelUtils';
 import { ArkField } from '../model/ArkField';
 import { CALL_BACK } from './EtsConst';
 import {
+    AliasClassSignature,
     BaseSignature,
     ClassSignature,
     FieldSignature,
@@ -361,7 +362,7 @@ export class IRInference {
         if (method instanceof ArkMethod) {
             const methodSignature = method.matchMethodSignature(expr.getArgs());
             TypeInference.inferSignatureReturnType(methodSignature, method);
-            expr.setMethodSignature(methodSignature);
+            expr.setMethodSignature(this.replaceMethodSignature(expr.getMethodSignature(), methodSignature));
             let realTypes;
             if (method.getDeclaringArkClass() === declaredClass) {
                 realTypes = baseType.getRealGenericTypes();
@@ -404,6 +405,20 @@ export class IRInference {
             }
         }
         return null;
+    }
+
+    public static replaceMethodSignature(init: MethodSignature, declared: MethodSignature): MethodSignature {
+        const className = init.getDeclaringClassSignature().getClassName();
+        let classSignature;
+        if (declared.getDeclaringClassSignature().getClassName().endsWith('Interface')) {
+            classSignature = new AliasClassSignature(className, declared.getDeclaringClassSignature())
+        }
+        let newSubSignature;
+        if (classSignature || newSubSignature) {
+            return new MethodSignature(classSignature ?? declared.getDeclaringClassSignature(),
+                newSubSignature ?? declared.getMethodSubSignature());
+        }
+        return declared;
     }
 
     private static processForEach(arg: Value, baseType: ArrayType, scene: Scene): void {
