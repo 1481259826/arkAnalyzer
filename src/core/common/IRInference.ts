@@ -278,7 +278,7 @@ export class IRInference {
 
     public static inferRightWithSdkType(leftType: Type, rightType: Type, ackClass: ArkClass): void {
         if (leftType instanceof AliasType) {
-            return this.inferRightWithSdkType(TypeInference.replaceAliasType(leftType), rightType, ackClass);
+            this.inferRightWithSdkType(TypeInference.replaceAliasType(leftType), rightType, ackClass);
         } else if (leftType instanceof UnionType) {
             leftType.getTypes().forEach(t => this.inferRightWithSdkType(t, rightType, ackClass));
         } else if (leftType instanceof ClassType) {
@@ -363,17 +363,7 @@ export class IRInference {
             const methodSignature = method.matchMethodSignature(expr.getArgs());
             TypeInference.inferSignatureReturnType(methodSignature, method);
             expr.setMethodSignature(this.replaceMethodSignature(expr.getMethodSignature(), methodSignature));
-            let realTypes;
-            if (method.getDeclaringArkClass() === declaredClass) {
-                realTypes = baseType.getRealGenericTypes();
-            } else if (declaredClass?.getRealTypes()) {
-                realTypes = declaredClass?.getRealTypes();
-            } else if (declaredClass?.hasComponentDecorator()) {
-                realTypes = [new ClassType(declaredClass?.getSignature())];
-            }
-            if (realTypes) {
-                expr.setRealGenericTypes(realTypes);
-            }
+            expr.setRealGenericTypes(IRInference.getRealTypes(method, declaredClass, baseType));
             if (method.isStatic() && expr instanceof ArkInstanceInvokeExpr) {
                 return new ArkStaticInvokeExpr(methodSignature, expr.getArgs(), expr.getRealGenericTypes());
             }
@@ -407,11 +397,23 @@ export class IRInference {
         return null;
     }
 
+    private static getRealTypes(method: ArkMethod, declaredClass: ArkClass | null, baseType: ClassType): Type[] | undefined {
+        let realTypes;
+        if (method.getDeclaringArkClass() === declaredClass) {
+            realTypes = baseType.getRealGenericTypes();
+        } else if (declaredClass?.getRealTypes()) {
+            realTypes = declaredClass?.getRealTypes();
+        } else if (declaredClass?.hasComponentDecorator()) {
+            realTypes = [new ClassType(declaredClass?.getSignature())];
+        }
+        return realTypes;
+    }
+
     public static replaceMethodSignature(init: MethodSignature, declared: MethodSignature): MethodSignature {
         const className = init.getDeclaringClassSignature().getClassName();
         let classSignature;
         if (declared.getDeclaringClassSignature().getClassName().endsWith('Interface')) {
-            classSignature = new AliasClassSignature(className, declared.getDeclaringClassSignature())
+            classSignature = new AliasClassSignature(className, declared.getDeclaringClassSignature());
         }
         let newSubSignature;
         if (classSignature || newSubSignature) {
