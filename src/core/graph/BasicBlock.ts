@@ -77,7 +77,7 @@ export class BasicBlock {
         if (stmt instanceof Stmt) {
             this.stmts.push(stmt);
         } else {
-            this.stmts.push(...stmt);
+            stmt.forEach(stmt => this.stmts.push(stmt));
         }
     }
 

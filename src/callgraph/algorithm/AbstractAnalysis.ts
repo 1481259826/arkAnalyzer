@@ -124,7 +124,7 @@ export abstract class AbstractAnalysis {
         }
         cfg.getStmts().forEach((stmt) => {
             if (stmt.containsInvokeExpr()) {
-                calleeMethods.push(...this.resolveCall(cgNode.getID(), stmt));
+                this.resolveCall(cgNode.getID(), stmt).forEach(stmt => calleeMethods.push(stmt));
             }
         })
 

@@ -379,7 +379,7 @@ export class GlobalRef extends AbstractRef {
         if (usedStmts instanceof Stmt) {
             this.usedStmts.push(usedStmts);
         } else {
-            this.usedStmts.push(...usedStmts);
+            usedStmts.forEach(stmt => this.usedStmts.push(stmt));
         }
     }
 
