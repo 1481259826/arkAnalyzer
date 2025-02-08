@@ -262,6 +262,6 @@ describe("function Test", () => {
         const file = scene.getFile(fileId);
         const actual2 = file?.getDefaultClass()?.getMethodWithName('%AM3$demoCallBack')
             ?.getCfg()?.getStmts().find(s => s instanceof ArkInvokeStmt)?.toString();
-        assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(\'audioInterrupt\', %AM4$%AM3$demoCallBack)');
+        assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(mode, %AM4$%AM3$demoCallBack)');
     })
 })

@@ -16,6 +16,7 @@ import { ArkMethod } from '../model/ArkMethod';
 import {
     AliasType,
     AnnotationNamespaceType,
+    AnyType,
     ArrayType,
     ClassType,
     FunctionType,
@@ -42,6 +43,7 @@ import { findArkExport, ModelUtils } from './ModelUtils';
 import { ArkField } from '../model/ArkField';
 import { CALL_BACK } from './EtsConst';
 import {
+    AliasClassSignature,
     BaseSignature,
     ClassSignature,
     FieldSignature,
@@ -265,12 +267,27 @@ export class IRInference {
         if (paramType instanceof ClassType && scene.getProjectSdkMap().has(paramType.getClassSignature()
             .getDeclaringFileSignature().getProjectName())) {
             this.inferArgTypeWithSdk(paramType, scene, argType);
-        } else if (paramType instanceof GenericType) {
+        } else if (paramType instanceof GenericType || paramType instanceof AnyType) {
             realTypes.push(argType);
         } else if (paramType instanceof FunctionType && argType instanceof FunctionType) {
             const params = paramType.getMethodSignature().getMethodSubSignature().getParameters();
             const realTypes = expr.getRealGenericTypes();
             TypeInference.inferFunctionType(argType, params, realTypes);
+        }
+    }
+
+    public static inferRightWithSdkType(leftType: Type, rightType: Type, ackClass: ArkClass): void {
+        if (leftType instanceof AliasType) {
+            this.inferRightWithSdkType(TypeInference.replaceAliasType(leftType), rightType, ackClass);
+        } else if (leftType instanceof UnionType) {
+            leftType.getTypes().forEach(t => this.inferRightWithSdkType(t, rightType, ackClass));
+        } else if (leftType instanceof ClassType) {
+            IRInference.inferArgTypeWithSdk(leftType, ackClass.getDeclaringArkFile().getScene(), rightType);
+        } else if (rightType instanceof ArrayType && leftType instanceof ArrayType) {
+            const baseType = TypeInference.replaceAliasType(leftType.getBaseType());
+            if (baseType instanceof ClassType) {
+                IRInference.inferArgTypeWithSdk(baseType, ackClass.getDeclaringArkFile().getScene(), rightType);
+            }
         }
     }
 
@@ -345,9 +362,8 @@ export class IRInference {
         if (method instanceof ArkMethod) {
             const methodSignature = method.matchMethodSignature(expr.getArgs());
             TypeInference.inferSignatureReturnType(methodSignature, method);
-            expr.setMethodSignature(methodSignature);
-            expr.setRealGenericTypes(method.getDeclaringArkClass() === declaredClass ? baseType.getRealGenericTypes() :
-                declaredClass?.getRealTypes());
+            expr.setMethodSignature(this.replaceMethodSignature(expr.getMethodSignature(), methodSignature));
+            expr.setRealGenericTypes(IRInference.getRealTypes(method, declaredClass, baseType));
             if (method.isStatic() && expr instanceof ArkInstanceInvokeExpr) {
                 return new ArkStaticInvokeExpr(methodSignature, expr.getArgs(), expr.getRealGenericTypes());
             }
@@ -379,6 +395,32 @@ export class IRInference {
             }
         }
         return null;
+    }
+
+    private static getRealTypes(method: ArkMethod, declaredClass: ArkClass | null, baseType: ClassType): Type[] | undefined {
+        let realTypes;
+        if (method.getDeclaringArkClass() === declaredClass) {
+            realTypes = baseType.getRealGenericTypes();
+        } else if (declaredClass?.getRealTypes()) {
+            realTypes = declaredClass?.getRealTypes();
+        } else if (declaredClass?.hasComponentDecorator()) {
+            realTypes = [new ClassType(declaredClass?.getSignature())];
+        }
+        return realTypes;
+    }
+
+    public static replaceMethodSignature(init: MethodSignature, declared: MethodSignature): MethodSignature {
+        const className = init.getDeclaringClassSignature().getClassName();
+        let classSignature;
+        if (declared.getDeclaringClassSignature().getClassName().endsWith('Interface')) {
+            classSignature = new AliasClassSignature(className, declared.getDeclaringClassSignature());
+        }
+        let newSubSignature;
+        if (classSignature || newSubSignature) {
+            return new MethodSignature(classSignature ?? declared.getDeclaringClassSignature(),
+                newSubSignature ?? declared.getMethodSubSignature());
+        }
+        return declared;
     }
 
     private static processForEach(arg: Value, baseType: ArrayType, scene: Scene): void {
@@ -514,7 +556,7 @@ export class IRInference {
                 if (baseType instanceof UnionType) {
                     baseType.getTypes().forEach(t => deepInfer(t, classSignature));
                 } else {
-                    deepInfer(rightType, classSignature);
+                    deepInfer(rightType.getBaseType(), classSignature);
                 }
             }
             const leftOp = lastStmt.getLeftOp();

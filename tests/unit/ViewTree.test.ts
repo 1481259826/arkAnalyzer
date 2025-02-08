@@ -126,6 +126,7 @@ function testNamespaceClassViewTree(scene: Scene, namespace: string, clsName: st
 
 describe('control-contentslot Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-contentslot'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -138,6 +139,7 @@ describe('control-contentslot Test', () => {
 
 describe('control-foreach Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-foreach'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -162,6 +164,7 @@ describe('control-foreach Test', () => {
 
 describe('control-ifelse Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-ifelse'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -182,6 +185,7 @@ describe('control-ifelse Test', () => {
 
 describe('control-lazyforeach Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-lazyforeach'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -194,6 +198,7 @@ describe('control-lazyforeach Test', () => {
 
 describe('control-repeat Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/control-repeat'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -210,6 +215,7 @@ describe('control-repeat Test', () => {
 
 describe('builder Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builder'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -286,6 +292,7 @@ describe('builder Test', () => {
 
 describe('builderParam Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/builderparam'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -311,6 +318,7 @@ describe('builderParam Test', () => {
 
 describe('localstorage Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/localstorage'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -326,6 +334,7 @@ describe('localstorage Test', () => {
 
 describe('normal Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/normal'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
@@ -383,6 +392,7 @@ describe('normal Test', () => {
 
 describe('project Test', () => {
     let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.buildFromJson(path.join(__dirname, '../../tests/resources/viewtree/project/test-config.json'));
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);

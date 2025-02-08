@@ -173,6 +173,19 @@ export class ClassSignature {
     }
 }
 
+export class AliasClassSignature extends ClassSignature {
+    private readonly aliasName: string;
+
+    constructor(aliasName: string, signature: ClassSignature) {
+        super(signature.getClassName(), signature.getDeclaringFileSignature(), signature.getDeclaringNamespaceSignature());
+        this.aliasName = aliasName;
+    }
+
+    public getClassName() {
+        return this.aliasName;
+    }
+}
+
 export type BaseSignature = ClassSignature | NamespaceSignature;
 
 export class FieldSignature {
