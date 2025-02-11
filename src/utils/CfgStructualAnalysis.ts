@@ -811,7 +811,7 @@ export class AbstractFlowGraph {
     }
 
     private findNaturalTrapRegion(nodes: Set<AbstractNode>): NaturalTrapRegion | undefined {
-        let findTrap: NaturalTrapRegion | undefined = undefined;
+        let findTrap: NaturalTrapRegion | undefined;
         for (const node of nodes) {
             if (!this.structOf.has(node)) {
                 return undefined;
