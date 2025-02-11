@@ -1493,6 +1493,18 @@
                 "type": {
                   "_": "StringType"
                 }
+              },
+              {
+                "name": "%2",
+                "type": {
+                  "_": "StringType"
+                }
+              },
+              {
+                "name": "%3",
+                "type": {
+                  "_": "StringType"
+                }
               }
             ],
             "cfg": {
@@ -1684,7 +1696,51 @@
                       "_": "AssignStmt",
                       "left": {
                         "_": "Local",
-                        "name": "%1",
+                        "name": "%2",
+                        "type": {
+                          "_": "StringType"
+                        }
+                      },
+                      "right": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
+                          "_": "Local",
+                          "name": "input",
+                          "type": {
+                            "_": "UnionType",
+                            "types": [
+                              {
+                                "_": "StringType"
+                              },
+                              {
+                                "_": "NumberType"
+                              }
+                            ]
+                          }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "",
+                            "declaringFile": {
+                              "projectName": "%unk",
+                              "fileName": "%unk"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "toString",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "StringType"
+                          }
+                        },
+                        "args": []
+                      }
+                    },
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "%3",
                         "type": {
                           "_": "StringType"
                         }
@@ -1701,17 +1757,9 @@
                         },
                         "right": {
                           "_": "Local",
-                          "name": "input",
+                          "name": "%2",
                           "type": {
-                            "_": "UnionType",
-                            "types": [
-                              {
-                                "_": "StringType"
-                              },
-                              {
-                                "_": "NumberType"
-                              }
-                            ]
+                            "_": "StringType"
                           }
                         }
                       }
@@ -1720,7 +1768,7 @@
                       "_": "ReturnStmt",
                       "arg": {
                         "_": "Local",
-                        "name": "%1",
+                        "name": "%3",
                         "type": {
                           "_": "StringType"
                         }
@@ -1745,16 +1793,8 @@
                         }
                       },
                       "right": {
-                        "_": "BinopExpr",
-                        "op": "+",
-                        "left": {
-                          "_": "Constant",
-                          "value": "String input: ",
-                          "type": {
-                            "_": "StringType"
-                          }
-                        },
-                        "right": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
                           "_": "Local",
                           "name": "input",
                           "type": {
@@ -1768,6 +1808,50 @@
                               }
                             ]
                           }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "",
+                            "declaringFile": {
+                              "projectName": "%unk",
+                              "fileName": "%unk"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "toString",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "StringType"
+                          }
+                        },
+                        "args": []
+                      }
+                    },
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "%1",
+                        "type": {
+                          "_": "StringType"
+                        }
+                      },
+                      "right": {
+                        "_": "BinopExpr",
+                        "op": "+",
+                        "left": {
+                          "_": "Constant",
+                          "value": "String input: ",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        },
+                        "right": {
+                          "_": "Local",
+                          "name": "%0",
+                          "type": {
+                            "_": "StringType"
+                          }
                         }
                       }
                     },
@@ -1775,7 +1859,7 @@
                       "_": "ReturnStmt",
                       "arg": {
                         "_": "Local",
-                        "name": "%0",
+                        "name": "%1",
                         "type": {
                           "_": "StringType"
                         }
@@ -2117,12 +2201,12 @@
             "returnType": {
               "_": "ClassType",
               "signature": {
+                "name": "Student",
                 "declaringFile": {
-                  "fileName": "sample.ts",
-                  "projectName": "save"
+                  "projectName": "save",
+                  "fileName": "sample.ts"
                 },
-                "declaringNamespace": null,
-                "name": "Student"
+                "declaringNamespace": null
               }
             }
           },
@@ -2494,6 +2578,18 @@
                 "type": {
                   "_": "StringType"
                 }
+              },
+              {
+                "name": "%6",
+                "type": {
+                  "_": "StringType"
+                }
+              },
+              {
+                "name": "%7",
+                "type": {
+                  "_": "StringType"
+                }
               }
             ],
             "cfg": {
@@ -2629,22 +2725,30 @@
                         }
                       },
                       "right": {
-                        "_": "BinopExpr",
-                        "op": "+",
-                        "left": {
-                          "_": "Constant",
-                          "value": "Hello, my name is ",
-                          "type": {
-                            "_": "StringType"
-                          }
-                        },
-                        "right": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
                           "_": "Local",
                           "name": "%0",
                           "type": {
                             "_": "StringType"
                           }
-                        }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "",
+                            "declaringFile": {
+                              "projectName": "%unk",
+                              "fileName": "%unk"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "toString",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "StringType"
+                          }
+                        },
+                        "args": []
                       }
                     },
                     {
@@ -2657,22 +2761,30 @@
                         }
                       },
                       "right": {
-                        "_": "BinopExpr",
-                        "op": "+",
-                        "left": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
                           "_": "Local",
-                          "name": "%2",
+                          "name": "%1",
                           "type": {
+                            "_": "NumberType"
+                          }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "",
+                            "declaringFile": {
+                              "projectName": "%unk",
+                              "fileName": "%unk"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "toString",
+                          "parameters": [],
+                          "returnType": {
                             "_": "StringType"
                           }
                         },
-                        "right": {
-                          "_": "Constant",
-                          "value": " and I am ",
-                          "type": {
-                            "_": "StringType"
-                          }
-                        }
+                        "args": []
                       }
                     },
                     {
@@ -2688,17 +2800,17 @@
                         "_": "BinopExpr",
                         "op": "+",
                         "left": {
-                          "_": "Local",
-                          "name": "%3",
+                          "_": "Constant",
+                          "value": "Hello, my name is ",
                           "type": {
                             "_": "StringType"
                           }
                         },
                         "right": {
                           "_": "Local",
-                          "name": "%1",
+                          "name": "%2",
                           "type": {
-                            "_": "NumberType"
+                            "_": "StringType"
                           }
                         }
                       }
@@ -2724,6 +2836,62 @@
                         },
                         "right": {
                           "_": "Constant",
+                          "value": " and I am ",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "%6",
+                        "type": {
+                          "_": "StringType"
+                        }
+                      },
+                      "right": {
+                        "_": "BinopExpr",
+                        "op": "+",
+                        "left": {
+                          "_": "Local",
+                          "name": "%5",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        },
+                        "right": {
+                          "_": "Local",
+                          "name": "%3",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "%7",
+                        "type": {
+                          "_": "StringType"
+                        }
+                      },
+                      "right": {
+                        "_": "BinopExpr",
+                        "op": "+",
+                        "left": {
+                          "_": "Local",
+                          "name": "%6",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        },
+                        "right": {
+                          "_": "Constant",
                           "value": " years old.",
                           "type": {
                             "_": "StringType"
@@ -2735,7 +2903,7 @@
                       "_": "ReturnStmt",
                       "arg": {
                         "_": "Local",
-                        "name": "%5",
+                        "name": "%7",
                         "type": {
                           "_": "StringType"
                         }
@@ -3238,6 +3406,18 @@
                 "type": {
                   "_": "StringType"
                 }
+              },
+              {
+                "name": "%5",
+                "type": {
+                  "_": "StringType"
+                }
+              },
+              {
+                "name": "%6",
+                "type": {
+                  "_": "StringType"
+                }
               }
             ],
             "cfg": {
@@ -3377,22 +3557,30 @@
                         }
                       },
                       "right": {
-                        "_": "BinopExpr",
-                        "op": "+",
-                        "left": {
-                          "_": "Constant",
-                          "value": "Area: ",
-                          "type": {
-                            "_": "StringType"
-                          }
-                        },
-                        "right": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
                           "_": "Local",
                           "name": "%0",
                           "type": {
                             "_": "NumberType"
                           }
-                        }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "",
+                            "declaringFile": {
+                              "projectName": "%unk",
+                              "fileName": "%unk"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "toString",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "StringType"
+                          }
+                        },
+                        "args": []
                       }
                     },
                     {
@@ -3405,11 +3593,75 @@
                         }
                       },
                       "right": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
+                          "_": "Local",
+                          "name": "%1",
+                          "type": {
+                            "_": "NumberType"
+                          }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "",
+                            "declaringFile": {
+                              "projectName": "%unk",
+                              "fileName": "%unk"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "toString",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "StringType"
+                          }
+                        },
+                        "args": []
+                      }
+                    },
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "%4",
+                        "type": {
+                          "_": "StringType"
+                        }
+                      },
+                      "right": {
+                        "_": "BinopExpr",
+                        "op": "+",
+                        "left": {
+                          "_": "Constant",
+                          "value": "Area: ",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        },
+                        "right": {
+                          "_": "Local",
+                          "name": "%2",
+                          "type": {
+                            "_": "StringType"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "%5",
+                        "type": {
+                          "_": "StringType"
+                        }
+                      },
+                      "right": {
                         "_": "BinopExpr",
                         "op": "+",
                         "left": {
                           "_": "Local",
-                          "name": "%2",
+                          "name": "%4",
                           "type": {
                             "_": "StringType"
                           }
@@ -3427,7 +3679,7 @@
                       "_": "AssignStmt",
                       "left": {
                         "_": "Local",
-                        "name": "%4",
+                        "name": "%6",
                         "type": {
                           "_": "StringType"
                         }
@@ -3437,16 +3689,16 @@
                         "op": "+",
                         "left": {
                           "_": "Local",
-                          "name": "%3",
+                          "name": "%5",
                           "type": {
                             "_": "StringType"
                           }
                         },
                         "right": {
                           "_": "Local",
-                          "name": "%1",
+                          "name": "%3",
                           "type": {
-                            "_": "NumberType"
+                            "_": "StringType"
                           }
                         }
                       }
@@ -3455,7 +3707,7 @@
                       "_": "ReturnStmt",
                       "arg": {
                         "_": "Local",
-                        "name": "%4",
+                        "name": "%6",
                         "type": {
                           "_": "StringType"
                         }
@@ -3760,12 +4012,12 @@
             "returnType": {
               "_": "ClassType",
               "signature": {
+                "name": "Circle",
                 "declaringFile": {
-                  "fileName": "sample.ts",
-                  "projectName": "save"
+                  "projectName": "save",
+                  "fileName": "sample.ts"
                 },
-                "declaringNamespace": null,
-                "name": "Circle"
+                "declaringNamespace": null
               }
             }
           },

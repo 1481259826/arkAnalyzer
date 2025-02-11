@@ -16,8 +16,8 @@
 import { assert, describe, expect, it, vi } from 'vitest';
 import path from 'path';
 import { ArkClass, ClassType, CONSTRUCTOR_NAME, MethodSignature, Scene, SceneConfig, TypeInference } from '../../src';
-import { testMethodStmts } from './ArkIRTransformer.test';
 import { OperandOriginalPositions_Expect_IR } from '../resources/inferType/IRChange/OperandOriginalPositionsExpect';
+import { testMethodStmts } from './common';
 
 describe('StaticSingleAssignmentFormer Test', () => {
     let config: SceneConfig = new SceneConfig();

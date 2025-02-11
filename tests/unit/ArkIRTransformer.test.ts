@@ -18,17 +18,13 @@ import path from 'path';
 import {
     ANONYMOUS_METHOD_PREFIX,
     ArkMethod,
-    DEFAULT_ARK_CLASS_NAME,
     ArkStaticFieldRef,
-    DEFAULT_ARK_METHOD_NAME,
     GlobalRef,
     Local,
-    ModelUtils,
     NAME_DELIMITER,
     NAME_PREFIX,
     Scene,
     SceneConfig,
-    Stmt,
     Value,
 } from '../../src';
 import {
@@ -41,7 +37,8 @@ import {
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
     CompoundAssignment_Expect_IR,
-    Declaration_Expect_IR, Destructuring_Expect_IR,
+    Declaration_Expect_IR,
+    Destructuring_Expect_IR,
 } from '../resources/arkIRTransformer/assignment/AssignmentExpectIR';
 import {
     ArrowFunction_Expect_IR,
@@ -71,68 +68,9 @@ import {
     UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
+import { assertStmtsEqual, testFileStmts, testMethodStmts } from './common';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
-
-export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any[],
-                                className: string = DEFAULT_ARK_CLASS_NAME,
-                                methodName: string = DEFAULT_ARK_METHOD_NAME): void {
-    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(fileName));
-    const arkMethod = arkFile?.getClassWithName(className)?.getMethods()
-        .find((method) => (method.getName() === methodName));
-    const stmts = arkMethod?.getCfg()?.getStmts();
-    if (!stmts) {
-        assert.isDefined(stmts);
-        return;
-    }
-    assertStmtsEqual(stmts, expectStmts);
-}
-
-function testFileStmts(scene: Scene, filePath: string, expectFileStmts: any): void {
-    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
-    if (!arkFile) {
-        assert.isDefined(arkFile);
-        return;
-    }
-    const methods = ModelUtils.getAllMethodsInFile(arkFile);
-    for (const expectMethod of expectFileStmts.methods) {
-        const expectMethodName = expectMethod.name;
-        const method = methods.find((method) => method.getName() === expectMethodName);
-        if (!method) {
-            assert.isDefined(method);
-            continue;
-        }
-        const stmts = method.getCfg()?.getStmts();
-        if (!stmts) {
-            assert.isDefined(stmts);
-            continue;
-        }
-        assertStmtsEqual(stmts, expectMethod.stmts);
-    }
-}
-
-function assertStmtsEqual(stmts: Stmt[], expectStmts: any[]): void {
-    expect(stmts.length).toEqual(expectStmts.length);
-    for (let i = 0; i < stmts.length; i++) {
-        expect(stmts[i].toString()).toEqual(expectStmts[i].text);
-
-        if (expectStmts[i].operandOriginalPositions === undefined) {
-            continue;
-        }
-        const operandOriginalPositions: any[] = [];
-        for (const operand of stmts[i].getDefAndUses()) {
-            const operandOriginalPosition = stmts[i].getOperandOriginalPosition(operand);
-            if (operandOriginalPosition) {
-                operandOriginalPositions.push(
-                    [operandOriginalPosition.getFirstLine(), operandOriginalPosition.getFirstCol(),
-                        operandOriginalPosition.getLastLine(), operandOriginalPosition.getLastCol()]);
-            } else {
-                operandOriginalPositions.push(operandOriginalPosition);
-            }
-        }
-        expect(operandOriginalPositions).toEqual(expectStmts[i].operandOriginalPositions);
-    }
-}
 
 function testMethodOverload(scene: Scene, filePath: string, methodName: string, expectMethod: any): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));

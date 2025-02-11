@@ -38,7 +38,7 @@ class Animal {
     this._name = theName;
   }
   public move(distanceInMeters: number) {
-    logger.info(this._name + ' moved ' + distanceInMeters + 'm.');
+    logger.info(this._name.toString() + ' moved ' + distanceInMeters.toString() + 'm.');
   }
   get name(): string | undefined {
     return this._name;
