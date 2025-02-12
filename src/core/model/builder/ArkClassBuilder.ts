@@ -341,7 +341,7 @@ function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpressi
             const arkField = buildProperty2ArkField(property, sourceFile, cls);
             if (ts.isPropertyAssignment(property)) {
                 getInitStmts(instanceIRTransformer, arkField, property.initializer);
-                instanceFieldInitializerStmts.push(...arkField.getInitializer());
+                arkField.getInitializer().forEach(stmt => instanceFieldInitializerStmts.push(stmt));
             }
         } else {
             let arkMethod = new ArkMethod();
@@ -394,18 +394,18 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
             if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
                 if (arkField.isStatic()) {
                     getInitStmts(staticIRTransformer, arkField, member.initializer);
-                    staticFieldInitializerStmts.push(...arkField.getInitializer());
+                    arkField.getInitializer().forEach(stmt => staticFieldInitializerStmts.push(stmt));
                 } else {
                     if (!instanceIRTransformer)
                         console.log(clsNode.getText(sourceFile));
                     getInitStmts(instanceIRTransformer, arkField, member.initializer);
-                    instanceFieldInitializerStmts.push(...arkField.getInitializer());
+                    arkField.getInitializer().forEach(stmt => instanceFieldInitializerStmts.push(stmt));
                 }
             }
         } else if (ts.isEnumMember(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
             getInitStmts(staticIRTransformer, arkField, member.initializer);
-            staticFieldInitializerStmts.push(...arkField.getInitializer());
+            arkField.getInitializer().forEach(stmt => staticFieldInitializerStmts.push(stmt));
         } else if (ts.isIndexSignatureDeclaration(member)) {
             buildIndexSignature2ArkField(member, sourceFile, cls);
         } else if (ts.isSemicolonClassElement(member)) {
@@ -450,11 +450,11 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?:
             valueOriginalPositions: initPositions,
             stmts: initStmts,
         } = transformer.tsNodeToValueAndStmts(initNode);
-        stmts.push(...initStmts);
+        initStmts.forEach(stmt => stmts.push(stmt));
         if (IRUtils.moreThanOneAddress(initValue)) {
             ({ value: initValue, valueOriginalPositions: initPositions, stmts: initStmts } =
                 transformer.generateAssignStmtForValue(initValue, initPositions));
-            stmts.push(...initStmts);
+            initStmts.forEach(stmt => stmts.push(stmt));
         }
 
         const fieldRef = new ArkInstanceFieldRef(transformer.getThisLocal(), field.getSignature());

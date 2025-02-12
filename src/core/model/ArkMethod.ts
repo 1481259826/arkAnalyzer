@@ -455,7 +455,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         let stmts: Stmt[] = [];
         if (this.getCfg()) {
             const cfg = this.getCfg() as Cfg;
-            stmts.push(...cfg.getStmts());
+            cfg.getStmts().forEach(stmt => stmts.push(stmt));
         }
         let results: Value[] = [];
         for (let stmt of stmts) {
@@ -476,7 +476,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         let stmts: Stmt[] = [];
         if (this.getCfg()) {
             const cfg = this.getCfg() as Cfg;
-            stmts.push(...cfg.getStmts());
+            cfg.getStmts().forEach(stmt => stmts.push(stmt));
         }
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt) {

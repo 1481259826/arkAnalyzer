@@ -1107,7 +1107,7 @@ export class CfgBuilder {
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
-        stmts.push(...arkIRTransformer.prebuildStmts());
+        arkIRTransformer.prebuildStmts().forEach(stmt => stmts.push(stmt));
         const expressionBodyNode = (this.astRoot as ts.ArrowFunction).body as ts.Expression;
         const expressionBodyStmts: Stmt[] = [];
         let {
@@ -1115,20 +1115,20 @@ export class CfgBuilder {
             valueOriginalPositions: expressionBodyPositions,
             stmts: tempStmts,
         } = arkIRTransformer.tsNodeToValueAndStmts(expressionBodyNode);
-        expressionBodyStmts.push(...tempStmts);
+        tempStmts.forEach(stmt => expressionBodyStmts.push(stmt));
         if (IRUtils.moreThanOneAddress(expressionBodyValue)) {
             ({
                 value: expressionBodyValue,
                 valueOriginalPositions: expressionBodyPositions,
                 stmts: tempStmts,
             } = arkIRTransformer.generateAssignStmtForValue(expressionBodyValue, expressionBodyPositions));
-            expressionBodyStmts.push(...tempStmts);
+            tempStmts.forEach(stmt => expressionBodyStmts.push(stmt));
         }
         const returnStmt = new ArkReturnStmt(expressionBodyValue);
         returnStmt.setOperandOriginalPositions([expressionBodyPositions[0], ...expressionBodyPositions]);
         expressionBodyStmts.push(returnStmt);
         arkIRTransformer.mapStmtsToTsStmt(expressionBodyStmts, expressionBodyNode);
-        stmts.push(...expressionBodyStmts);
+        expressionBodyStmts.forEach(stmt => stmts.push(stmt));
         const cfg = new Cfg();
         const blockInCfg = new BasicBlock();
         blockInCfg.setId(0);
@@ -1165,7 +1165,7 @@ export class CfgBuilder {
             // build block in Cfg
             const stmtsInBlock: Stmt[] = [];
             if (i === 0) {
-                stmtsInBlock.push(...arkIRTransformer.prebuildStmts());
+                arkIRTransformer.prebuildStmts().forEach(stmt => stmtsInBlock.push(stmt));
             }
             const stmtsCnt = this.blocks[i].stmts.length;
             if (this.blocks[i].stmts[stmtsCnt - 1].type === 'tryStatement') {
@@ -1558,7 +1558,7 @@ export class CfgBuilder {
                 } else {
                     const blockBuilderBeforeCondition = blockBuilder.lasts[0];
                     const blockBeforeCondition = blockBuilderToCfgBlock.get(blockBuilderBeforeCondition) as BasicBlock;
-                    blockBeforeCondition?.getStmts().push(...stmtsInsertBeforeCondition);
+                    stmtsInsertBeforeCondition.forEach(stmt => blockBeforeCondition?.getStmts().push(stmt));
                 }
                 if (dummyInitializerStmtIdx !== -1 && ifStmtIdx !== stmtsCnt - 1) {
                     // put incrementor statements into block which reenters condition
@@ -1625,7 +1625,7 @@ export class CfgBuilder {
         blockBuilderInsertBeforeCondition.lasts.push(...collectedBlockBuilders);
         blockBuilderInsertBeforeCondition.nexts.push(conditionBlockBuilder);
         const blockInsertBeforeCondition = new BasicBlock();
-        blockInsertBeforeCondition.getStmts().push(...stmtsInsertBeforeCondition);
+        stmtsInsertBeforeCondition.forEach(stmt => blockInsertBeforeCondition.getStmts().push(stmt));
         blockInsertBeforeCondition.getPredecessors().push(...collectedBlocks);
         blockInsertBeforeCondition.addSuccessorBlock(block);
 
@@ -1714,7 +1714,7 @@ export class CfgBuilder {
             // put incrementor statements into prev reenter block
             const blockReenterCondition = blockBuilderToCfgBlock.get(
                 blockBuildersReenterCondition[0]) as BasicBlock;
-            blockReenterCondition?.getStmts().push(...stmtsReenterCondition);
+            stmtsReenterCondition.forEach(stmt => blockReenterCondition?.getStmts().push(stmt));
         }
     }
 

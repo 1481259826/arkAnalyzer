@@ -72,7 +72,7 @@ export class SourceMethod extends SourceBase {
         const stmts: Stmt[] = [];
         const cfg = this.method.getCfg();
         if (cfg) {
-            stmts.push(...cfg.getStmts().reverse());
+            cfg.getStmts().reverse().forEach(stmt => stmts.push(stmt));
         }
         for (const stmt of stmts) {
             if (stmt.getOriginPositionInfo().getLineNo() > 0) {
