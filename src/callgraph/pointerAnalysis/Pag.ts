@@ -856,7 +856,7 @@ export class Pag extends BaseExplicitGraph {
         return ndId;
     }
     public getOrNewNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
-        let nodeId = undefined;
+        let nodeId;
         // Value
         if (!(v instanceof ExportInfo)) {
             nodeId = this.hasCtxNode(cid, v);

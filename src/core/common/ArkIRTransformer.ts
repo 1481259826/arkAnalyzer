@@ -708,6 +708,8 @@ export class ArkIRTransformer {
                 return RelationalBinaryOperator.StrictEquality;
             case ts.SyntaxKind.ExclamationEqualsEqualsToken:
                 return RelationalBinaryOperator.StrictInequality;
+            default:
+                ;
         }
         return null;
     }

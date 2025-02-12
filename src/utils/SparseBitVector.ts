@@ -446,7 +446,9 @@ export class SparseBitVector {
         return changed;
     }
 
-    // Dump as string
+    /**
+     * Dump as string.
+     */
     toString(): string {
         let ar = [...this];
         return ar.toString();
