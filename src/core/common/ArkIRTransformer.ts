@@ -14,7 +14,6 @@
  */
 
 import {
-    AbstractExpr,
     AbstractInvokeExpr,
     AliasTypeExpr,
     ArkCastExpr,
@@ -232,43 +231,65 @@ export class ArkIRTransformer {
     }
 
     private expressionStatementToStmts(expressionStatement: ts.ExpressionStatement): Stmt[] {
-        return this.expressionToStmts(expressionStatement.expression);
-    }
-
-    public expressionToStmts(expression: ts.Expression): Stmt[] {
+        const exprNode = expressionStatement.expression;
         const {
             value: exprValue,
             valueOriginalPositions: exprPositions,
             stmts: stmts,
-        } = this.tsNodeToValueAndStmts(expression);
+        } = this.tsNodeToValueAndStmts(exprNode);
         if (exprValue instanceof AbstractInvokeExpr) {
-            const invokeStmt = new ArkInvokeStmt(exprValue);
-            invokeStmt.setOperandOriginalPositions(exprPositions);
-            stmts.push(invokeStmt);
-
-            let hasRepeat: boolean = false;
-            for (const stmt of stmts) {
-                if ((stmt instanceof ArkAssignStmt) && (stmt.getRightOp() instanceof ArkStaticInvokeExpr)) {
-                    const rightOp = stmt.getRightOp() as ArkStaticInvokeExpr;
-                    if (rightOp.getMethodSignature().getMethodSubSignature().getMethodName() === COMPONENT_REPEAT) {
-                        const createMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_CREATE_FUNCTION);
-                        const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, rightOp.getArgs());
-                        stmt.setRightOp(createInvokeExpr);
-                        hasRepeat = true;
-                    }
-                }
-            }
-            if (hasRepeat) {
-                const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_POP_FUNCTION);
-                const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
-                const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
-                stmts.push(popInvokeStmt);
-            }
-        } else if (exprValue instanceof AbstractExpr) {
+            this.addInvokeStmts(exprValue, exprPositions, stmts);
+        } else if (this.shouldGenerateExtraAssignStmt(exprNode)) {
             const { stmts: exprStmts } = this.generateAssignStmtForValue(exprValue, exprPositions);
             exprStmts.forEach(stmt => stmts.push(stmt));
         }
         return stmts;
+    }
+
+    private addInvokeStmts(invokeExpr: AbstractInvokeExpr, exprPositions: FullPosition[], stmts: Stmt[]): void {
+        const invokeStmt = new ArkInvokeStmt(invokeExpr);
+        invokeStmt.setOperandOriginalPositions(exprPositions);
+        stmts.push(invokeStmt);
+
+        let hasRepeat: boolean = false;
+        for (const stmt of stmts) {
+            if ((stmt instanceof ArkAssignStmt) && (stmt.getRightOp() instanceof ArkStaticInvokeExpr)) {
+                const rightOp = stmt.getRightOp() as ArkStaticInvokeExpr;
+                if (rightOp.getMethodSignature().getMethodSubSignature().getMethodName() === COMPONENT_REPEAT) {
+                    const createMethodSignature =
+                        ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_CREATE_FUNCTION);
+                    const createInvokeExpr = new ArkStaticInvokeExpr(createMethodSignature, rightOp.getArgs());
+                    stmt.setRightOp(createInvokeExpr);
+                    hasRepeat = true;
+                }
+            }
+        }
+        if (hasRepeat) {
+            const popMethodSignature = ArkSignatureBuilder.buildMethodSignatureFromClassNameAndMethodName(COMPONENT_REPEAT, COMPONENT_POP_FUNCTION);
+            const popInvokeExpr = new ArkStaticInvokeExpr(popMethodSignature, []);
+            const popInvokeStmt = new ArkInvokeStmt(popInvokeExpr);
+            stmts.push(popInvokeStmt);
+        }
+    }
+
+    private shouldGenerateExtraAssignStmt(expression: ts.Expression): boolean {
+        if (ts.isParenthesizedExpression(expression)) {
+            return this.shouldGenerateExtraAssignStmt(expression.expression);
+        }
+        if ((ts.isBinaryExpression(expression) && (expression.operatorToken.kind === ts.SyntaxKind.FirstAssignment ||
+                                                   ArkValueTransformer.isCompoundAssignmentOperator(expression.operatorToken.kind))) ||
+            ts.isEtsComponentExpression(expression) || ts.isVoidExpression(expression) ||
+            ts.isNewExpression(expression) || ts.isCallExpression(expression) ||
+            (ts.isPrefixUnaryExpression(expression) &&
+             (expression.operator === ts.SyntaxKind.PlusPlusToken ||
+              expression.operator === ts.SyntaxKind.MinusMinusToken)) ||
+            (ts.isPostfixUnaryExpression(expression) &&
+             (expression.operator === ts.SyntaxKind.PlusPlusToken ||
+              expression.operator === ts.SyntaxKind.MinusMinusToken))) {
+            return false;
+        }
+
+        return true;
     }
 
     private typeAliasDeclarationToStmts(typeAliasDeclaration: ts.TypeAliasDeclaration): Stmt[] {

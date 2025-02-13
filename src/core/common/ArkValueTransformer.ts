@@ -97,22 +97,6 @@ export class ArkValueTransformer {
     private aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]> = new Map();
     private builderMethodContextFlag = false;
 
-    private static compoundAssignmentOperators = new Set([ts.SyntaxKind.PlusEqualsToken,
-        ts.SyntaxKind.MinusEqualsToken,
-        ts.SyntaxKind.AsteriskAsteriskEqualsToken,
-        ts.SyntaxKind.AsteriskEqualsToken,
-        ts.SyntaxKind.SlashEqualsToken,
-        ts.SyntaxKind.PercentEqualsToken,
-        ts.SyntaxKind.AmpersandEqualsToken,
-        ts.SyntaxKind.BarEqualsToken,
-        ts.SyntaxKind.CaretEqualsToken,
-        ts.SyntaxKind.LessThanLessThanEqualsToken,
-        ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
-        ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
-        ts.SyntaxKind.BarBarEqualsToken,
-        ts.SyntaxKind.AmpersandAmpersandEqualsToken,
-        ts.SyntaxKind.QuestionQuestionEqualsToken]);
-
     constructor(arkIRTransformer: ArkIRTransformer, sourceFile: ts.SourceFile, declaringMethod: ArkMethod) {
         this.arkIRTransformer = arkIRTransformer;
         this.sourceFile = sourceFile;
@@ -963,7 +947,10 @@ export class ArkValueTransformer {
     }
 
     private voidExpressionToValueAndStmts(voidExpression: ts.VoidExpression): ValueAndStmts {
-        const stmts = this.arkIRTransformer.expressionToStmts(voidExpression.expression);
+        const { value: exprValue, valueOriginalPositions: exprPositions, stmts: stmts } = this.tsNodeToValueAndStmts(
+            voidExpression.expression);
+        const { stmts: exprStmts } = this.arkIRTransformer.generateAssignStmtForValue(exprValue, exprPositions);
+        exprStmts.forEach(stmt => stmts.push(stmt));
         return { value: ValueUtil.getUndefinedConst(), valueOriginalPositions: [FullPosition.DEFAULT], stmts: stmts };
     }
 
@@ -1170,7 +1157,7 @@ export class ArkValueTransformer {
             const rightOpNode = binaryExpression.right;
             const declarationType = UnknownType.getInstance();
             return this.assignmentToValueAndStmts(leftOpNode, rightOpNode, false, false, declarationType, true);
-        } else if (ArkValueTransformer.compoundAssignmentOperators.has(operatorToken.kind)) {
+        } else if (ArkValueTransformer.isCompoundAssignmentOperator(operatorToken.kind)) {
             return this.compoundAssignmentToValueAndStmts(binaryExpression);
         }
         const stmts: Stmt[] = [];
@@ -1587,5 +1574,26 @@ export class ArkValueTransformer {
         const declaringClass = this.declaringMethod.getDeclaringArkClass();
         buildArkMethodFromArkClass(functionTypeNode, declaringClass, anonymousMethod, this.sourceFile);
         return new FunctionType(anonymousMethod.getSignature());
+    }
+
+    public static isCompoundAssignmentOperator(operator: ts.SyntaxKind): boolean {
+        const compoundAssignmentOperators = [
+            ts.SyntaxKind.PlusEqualsToken,
+            ts.SyntaxKind.MinusEqualsToken,
+            ts.SyntaxKind.AsteriskAsteriskEqualsToken,
+            ts.SyntaxKind.AsteriskEqualsToken,
+            ts.SyntaxKind.SlashEqualsToken,
+            ts.SyntaxKind.PercentEqualsToken,
+            ts.SyntaxKind.AmpersandEqualsToken,
+            ts.SyntaxKind.BarEqualsToken,
+            ts.SyntaxKind.CaretEqualsToken,
+            ts.SyntaxKind.LessThanLessThanEqualsToken,
+            ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+            ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+            ts.SyntaxKind.BarBarEqualsToken,
+            ts.SyntaxKind.AmpersandAmpersandEqualsToken,
+            ts.SyntaxKind.QuestionQuestionEqualsToken,
+        ];
+        return compoundAssignmentOperators.includes(operator);
     }
 }
