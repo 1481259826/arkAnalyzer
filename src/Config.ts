@@ -42,6 +42,7 @@ export interface SceneOptions {
     supportFileExts?: string[];
     ignoreFileNames?: string[];
     enableLeadingComments?: boolean;
+    enableTrailingComments?:boolean
     tsconfig?: string;
     isScanAbc?: boolean;
     [option: string]: SceneOptionsValue;

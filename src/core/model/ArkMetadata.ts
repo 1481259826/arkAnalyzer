@@ -13,11 +13,15 @@
  * limitations under the License.
  */
 
+import { FullPosition } from '../base/Position';
+
 export enum ArkMetadataKind {
     LEADING_COMMENTS,
+    TRAILING_COMMENTS,
 }
 
-export type ArkMetadataType = string[];
+export interface ArkMetadataType {
+}
 
 /**
  * ArkMetadata
@@ -41,5 +45,22 @@ export class ArkMetadata {
             this.metadata = new Map();
         }
         this.metadata.set(kind, value);
+    }
+}
+
+export type CommentItem = {
+    content: string,
+    position: FullPosition
+};
+
+export class CommentsMetadata implements ArkMetadataType {
+    private comments: CommentItem[] = [];
+
+    constructor(comments: CommentItem[]) {
+        this.comments = comments;
+    }
+
+    public getComments(): CommentItem[] {
+        return this.comments;
     }
 }

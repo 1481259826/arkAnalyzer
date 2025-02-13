@@ -15,7 +15,7 @@
 
 import { ExportInfo, ExportType } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
-import { ArkMetadataKind } from '../../core/model/ArkMetadata';
+import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { SourceBase } from './SourceBase';
 
 export class SourceExportInfo extends SourceBase {
@@ -32,10 +32,13 @@ export class SourceExportInfo extends SourceBase {
 
     public dump(): string {
         this.printer.clear();
-        (this.info.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || []).forEach((comment) => {
-            this.printer.writeIndent().writeLine(comment);
-        });
-
+        const commentsMetadata = this.info.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                this.printer.writeIndent().writeLine(comment.content);
+            });
+        }
         if (
             !this.info.getFrom() && (this.info.isExport() ||
                 this.info.getExportClauseType() === ExportType.LOCAL ||
@@ -83,9 +86,13 @@ export class SourceImportInfo extends SourceBase {
     }
 
     public dump(): string {
-        (this.info.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || []).forEach((comment) => {
-            this.printer.writeIndent().writeLine(comment);
-        });
+        const commentsMetadata = this.info.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                this.printer.writeIndent().writeLine(comment.content);
+            });
+        }
         if (this.info.getImportType() === 'Identifier') {
             // sample: import fs from 'fs'
             this.printer

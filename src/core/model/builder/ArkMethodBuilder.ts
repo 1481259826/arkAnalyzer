@@ -137,7 +137,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     }
     checkAndUpdateMethod(mtd, declaringClass);
     declaringClass.addMethod(mtd);
-    IRUtils.setLeadingComments(mtd, methodNode, sourceFile, mtd.getDeclaringArkFile().getScene().getOptions());
+    IRUtils.setComments(mtd, methodNode, sourceFile, mtd.getDeclaringArkFile().getScene().getOptions());
 }
 
 function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod): string {

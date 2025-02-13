@@ -82,7 +82,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
         field.setExclamationToken(true);
     }
-    IRUtils.setLeadingComments(field, member, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
+    IRUtils.setComments(field, member, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
     cls.addField(field);
     return field;
 }
@@ -104,7 +104,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     const fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, field), field);
     const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, true);
     field.setSignature(fieldSignature);
-    IRUtils.setLeadingComments(field, member, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
+    IRUtils.setComments(field, member, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
     cls.addField(field);
 }
 

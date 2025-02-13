@@ -45,7 +45,7 @@ import { CLASS_CATEGORY_COMPONENT, SourceUtils } from './SourceUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
 import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
-import { ArkMetadataKind } from '../../core/model/ArkMetadata';
+import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { ImportInfo } from '../../core/model/ArkImport';
 import { ArkMethod } from '../../core/model/ArkMethod';
 
@@ -107,10 +107,13 @@ export abstract class SourceStmt implements Dump {
 
     protected dumpTs(): string {
         let content: string[] = [];
-        let comments = (this.original.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[]) || [];
-        comments.forEach((v) => {
-            content.push(`${this.printer.getIndent()}${v}\n`);
-        });
+        const commentsMetadata = this.original.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                content.push(`${this.printer.getIndent()}${comment.content}\n`);
+            });
+        }
         if (this.text.length > 0) {
             content.push(`${this.printer.getIndent()}${this.text}\n`);
         }

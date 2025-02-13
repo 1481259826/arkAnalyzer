@@ -72,7 +72,8 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
                 .exportFrom(exportFrom)
                 .originTsPosition(originTsPosition)
                 .declaringArkFile(arkFile)
-                .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
+                .setLeadingComments(IRUtils.getCommentsMetadata(node, sourceFile, arkFile.getScene().getOptions(), true))
+                .setTrailingComments(IRUtils.getCommentsMetadata(node, sourceFile, arkFile.getScene().getOptions(), false))
                 .modifiers(modifiers);
             if (element.propertyName && ts.isIdentifier(element.propertyName)) {
                 builder.nameBeforeAs(element.propertyName.text);
@@ -89,7 +90,8 @@ function buildExportDeclaration(node: ts.ExportDeclaration, sourceFile: ts.Sourc
         .tsSourceCode(tsSourceCode)
         .exportFrom(exportFrom)
         .declaringArkFile(arkFile)
-        .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()))
+        .setLeadingComments(IRUtils.getCommentsMetadata(node, sourceFile, arkFile.getScene().getOptions(), true))
+        .setTrailingComments(IRUtils.getCommentsMetadata(node, sourceFile, arkFile.getScene().getOptions(), false))
         .originTsPosition(originTsPosition);
     if (node.exportClause && ts.isNamespaceExport(node.exportClause) && ts.isIdentifier(node.exportClause.name)) { // just like: export * as xx from './yy'
         exportInfos.push(builder1.exportClauseName(node.exportClause.name.text).build());
@@ -119,7 +121,8 @@ function buildExportAssignment(node: ts.ExportAssignment, sourceFile: ts.SourceF
         .originTsPosition(originTsPosition)
         .declaringArkFile(arkFile)
         .exportClauseName(DEFAULT)
-        .setLeadingComments(IRUtils.getLeadingComments(node, sourceFile, arkFile.getScene().getOptions()));
+        .setLeadingComments(IRUtils.getCommentsMetadata(node, sourceFile, arkFile.getScene().getOptions(), true))
+        .setTrailingComments(IRUtils.getCommentsMetadata(node, sourceFile, arkFile.getScene().getOptions(), false))
 
     if (ts.isNewExpression(node.expression) && ts.isClassExpression(node.expression.expression)) {
         let cls: ArkClass = new ArkClass();

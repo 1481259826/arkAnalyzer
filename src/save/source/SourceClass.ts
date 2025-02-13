@@ -23,7 +23,7 @@ import { SourceUtils } from './SourceUtils';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { FieldCategory } from '../../core/model/ArkField';
-import { ArkMetadataKind } from '../../core/model/ArkMetadata';
+import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 
 /**
  * @category save
@@ -48,9 +48,13 @@ export class SourceClass extends SourceBase {
 
     public dump(): string {
         this.printer.clear();
-        (this.cls.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || []).forEach((comment) => {
-            this.printer.writeIndent().writeLine(comment);
-        });
+        const commentsMetadata = this.cls.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                this.printer.writeIndent().writeLine(comment.content);
+            });
+        }
         if (this.cls.getCategory() === ClassCategory.OBJECT) {
             return this.dumpObject();
         }

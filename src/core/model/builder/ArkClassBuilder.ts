@@ -155,7 +155,7 @@ export function buildNormalArkClass(clsNode: ClassLikeNode, cls: ArkClass, sourc
         default:
             ;
     }
-    IRUtils.setLeadingComments(cls, clsNode, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
+    IRUtils.setComments(cls, clsNode, sourceFile, cls.getDeclaringArkFile().getScene().getOptions());
 }
 
 function init4InstanceInitMethod(cls: ArkClass) {

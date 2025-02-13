@@ -23,7 +23,7 @@ import { SourceTransformer } from './SourceTransformer';
 import { SourceUtils } from './SourceUtils';
 import { Stmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
-import { ArkMetadataKind } from '../../core/model/ArkMetadata';
+import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 
 /**
  * @category save
@@ -49,9 +49,13 @@ export class SourceMethod extends SourceBase {
 
     public dump(): string {
         this.printer.clear();
-        (this.method.getMetadata(ArkMetadataKind.LEADING_COMMENTS) || []).forEach((comment) => {
-            this.printer.writeIndent().writeLine(comment);
-        });
+        const commentsMetadata = this.method.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                this.printer.writeIndent().writeLine(comment.content);
+            });
+        }
         if (!this.method.isDefaultArkMethod()) {
             this.printMethod(this.method);
         } else {
