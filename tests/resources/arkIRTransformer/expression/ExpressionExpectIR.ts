@@ -392,84 +392,133 @@ export const NewExpression_Expect_IR = {
 };
 
 export const LiteralExpression_Expect_IR = {
-    stmts: [
-        {
-            text: 'this = this: @expression/LiteralExpressionTest.ts: %dflt',
-            operandOriginalPositions: [
-                null, null,
-            ],
-        },
+    stmts: [{
+        text: 'this = this: @expression/LiteralExpressionTest.ts: %dflt',
+        operandOriginalPositions: [null, null],
+    },
         {
             text: '%0 = newarray (number)[3]',
-            operandOriginalPositions: [
-                [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1],
-            ],
+            operandOriginalPositions: [[16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1]],
         },
         {
             text: '%0[0] = 1',
-            operandOriginalPositions: [
-                [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 15, 16, 16],
-            ],
+            operandOriginalPositions: [[16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 15, 16, 16]],
         },
         {
             text: '%0[1] = 2',
-            operandOriginalPositions: [
-                [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 18, 16, 19],
-            ],
+            operandOriginalPositions: [[16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 18, 16, 19]],
         },
         {
             text: '%0[2] = 3',
-            operandOriginalPositions: [
-                [16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 21, 16, 22],
-            ],
+            operandOriginalPositions: [[16, 14, 16, 23], [16, 14, 16, 23], [-1, -1, -1, -1], [16, 21, 16, 22]],
         },
         {
             text: 'arr1 = %0',
-            operandOriginalPositions: [
-                [16, 7, 16, 11], [16, 14, 16, 23],
-            ],
+            operandOriginalPositions: [[16, 7, 16, 11], [16, 14, 16, 23]],
         },
         {
             text: '%1 = newarray (any)[0]',
-            operandOriginalPositions: [
-                [17, 14, 17, 16], [17, 14, 17, 16], [-1, -1, -1, -1],
-            ],
+            operandOriginalPositions: [[17, 14, 17, 16], [17, 14, 17, 16], [-1, -1, -1, -1]],
         },
         {
             text: 'arr2 = %1',
-            operandOriginalPositions: [
-                [17, 7, 17, 11], [17, 14, 17, 16],
-            ],
+            operandOriginalPositions: [[17, 7, 17, 11], [17, 14, 17, 16]],
         },
         {
             text: '%2 = newarray (number|string)[3]',
-            operandOriginalPositions: [
-                [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1],
-            ],
+            operandOriginalPositions: [[18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1]],
         },
         {
             text: '%2[0] = 1',
-            operandOriginalPositions: [
-                [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 13, 18, 14],
-            ],
+            operandOriginalPositions: [[18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 13, 18, 14]],
         },
         {
             text: '%2[1] = 2',
-            operandOriginalPositions: [
-                [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 16, 18, 17],
-            ],
+            operandOriginalPositions: [[18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 16, 18, 17]],
         },
         {
             text: '%2[2] = \'3\'',
-            operandOriginalPositions: [
-                [18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 19, 18, 22],
-            ],
+            operandOriginalPositions: [[18, 12, 18, 23], [18, 12, 18, 23], [-1, -1, -1, -1], [18, 19, 18, 22]],
         },
         {
             text: 'arr3 = %2',
-            operandOriginalPositions: [
-                [18, 5, 18, 9], [18, 12, 18, 23],
-            ],
+            operandOriginalPositions: [[18, 5, 18, 9], [18, 12, 18, 23]],
+        },
+        {
+            text: 'noSubstitutionTemplateLiteral = \'no substitution template literal\'',
+            operandOriginalPositions: [[21, 7, 21, 36], [21, 39, 21, 73]],
+        },
+        {
+            text: 'placeholder1 = 1',
+            operandOriginalPositions: [[22, 7, 22, 19], [22, 30, 22, 31]],
+        },
+        {
+            text: '%3 = instanceinvoke placeholder1.<@%unk/%unk: .toString()>()',
+            operandOriginalPositions: [[23, 40, 23, 52], [23, 40, 23, 52], [23, 40, 23, 52]],
+        },
+        {
+            text: '%4 = \'raw text1, \' + %3',
+            operandOriginalPositions: [[23, 26, 23, 52], [23, 26, 23, 52], [23, 26, 23, 40], [23, 40, 23, 52]],
+        },
+        {
+            text: 'templateLiteral1 = %4',
+            operandOriginalPositions: [[23, 7, 23, 23], [23, 26, 23, 52]],
+        },
+        {
+            text: 'placeholder2 = \'placeholder2\'',
+            operandOriginalPositions: [[24, 7, 24, 19], [24, 30, 24, 44]],
+        },
+        {
+            text: '%5 = instanceinvoke placeholder2.<@%unk/%unk: .toString()>()',
+            operandOriginalPositions: [[25, 29, 25, 41], [25, 29, 25, 41], [25, 29, 25, 41]],
+        },
+        {
+            text: '%6 = %5 + \', raw text2\'',
+            operandOriginalPositions: [[25, 29, 25, 54], [25, 29, 25, 54], [25, 29, 25, 41], [25, 41, 25, 54]],
+        },
+        {
+            text: 'templateLiteral2 = %6',
+            operandOriginalPositions: [[25, 7, 25, 23], [25, 29, 25, 54]],
+        },
+        {
+            text: 'placeholder3 = 3',
+            operandOriginalPositions: [[32, 7, 32, 19], [32, 30, 32, 31]],
+        },
+        {
+            text: 'placeholder4 = \'placeholder4\'',
+            operandOriginalPositions: [[33, 7, 33, 19], [33, 30, 33, 44]],
+        },
+        {
+            text: '%7 = newarray (string)[3]',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+        },
+        {
+            text: '%7[0] = \'raw text3, \'',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [34, 21, 34, 35]],
+        },
+        {
+            text: '%7[1] = \' raw text4 \'',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [34, 47, 34, 61]],
+        },
+        {
+            text: '%7[2] = \'.\'',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [34, 73, 34, 76]],
+        },
+        {
+            text: '%8 = newarray (any)[2]',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+        },
+        {
+            text: '%8[0] = placeholder3',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [34, 35, 34, 47]],
+        },
+        {
+            text: '%8[1] = placeholder4',
+            operandOriginalPositions: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [34, 61, 34, 73]],
+        },
+        {
+            text: 'output = staticinvoke <@expression/LiteralExpressionTest.ts: %dflt.myTag(any, any[])>(%7, %8)',
+            operandOriginalPositions: [[34, 7, 34, 13], [34, 16, 34, 76], [-1, -1, -1, -1], [-1, -1, -1, -1]],
         },
         {
             text: 'return',

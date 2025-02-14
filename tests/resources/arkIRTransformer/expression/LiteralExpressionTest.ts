@@ -16,3 +16,20 @@
 const arr1 = [1, 2, 3];
 const arr2 = [];
 let arr3 = [1, 2, '3'];
+
+// Template literals
+const noSubstitutionTemplateLiteral = `no substitution template literal`;
+const placeholder1: number = 1;
+const templateLiteral1 = `raw text1, ${placeholder1}`;
+const placeholder2: string = 'placeholder2';
+const templateLiteral2 = `${placeholder2}, raw text2`;
+
+// Tagged templates
+function myTag(strings: any, ...optionalParams: any[]): void {
+    console.log(strings, optionalParams);
+}
+
+const placeholder3: number = 3;
+const placeholder4: string = 'placeholder4';
+const output = myTag`raw text3, ${placeholder3} raw text4 ${placeholder4}.`;
+

@@ -26,7 +26,7 @@ export const EMPTY_STRING = '';
 
 export class ValueUtil {
     private static readonly NumberConstantCache: Map<number, Constant> = new Map();
-    private static readonly EMPTY_STRING_CONSTANT = new StringConstant(EMPTY_STRING);
+    public static readonly EMPTY_STRING_CONSTANT = new StringConstant(EMPTY_STRING);
 
     public static getOrCreateNumberConst(n: number): Constant {
         let constant = this.NumberConstantCache.get(n);

@@ -13,8 +13,45 @@
  * limitations under the License.
  */
 
-import { BasicBlock } from '../../src';
+import { BasicBlock, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, ModelUtils, Scene, Stmt } from '../../src';
 import { assert, expect } from 'vitest';
+
+export function testFileStmts(scene: Scene, filePath: string, expectFileStmts: any): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    if (!arkFile) {
+        assert.isDefined(arkFile);
+        return;
+    }
+    const methods = ModelUtils.getAllMethodsInFile(arkFile);
+    for (const expectMethod of expectFileStmts.methods) {
+        const expectMethodName = expectMethod.name;
+        const method = methods.find((method) => method.getName() === expectMethodName);
+        if (!method) {
+            assert.isDefined(method);
+            continue;
+        }
+        const stmts = method.getCfg()?.getStmts();
+        if (!stmts) {
+            assert.isDefined(stmts);
+            continue;
+        }
+        assertStmtsEqual(stmts, expectMethod.stmts);
+    }
+}
+
+export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any[],
+                                className: string = DEFAULT_ARK_CLASS_NAME,
+                                methodName: string = DEFAULT_ARK_METHOD_NAME): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(fileName));
+    const arkMethod = arkFile?.getClassWithName(className)?.getMethods()
+        .find((method) => (method.getName() === methodName));
+    const stmts = arkMethod?.getCfg()?.getStmts();
+    if (!stmts) {
+        assert.isDefined(stmts);
+        return;
+    }
+    assertStmtsEqual(stmts, expectStmts);
+}
 
 export function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]): void {
     expect(blocks.size).toEqual(expectBlocks.length);
@@ -48,5 +85,28 @@ export function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]):
             succes.push(succBlock.getId());
         });
         expect(succes).toEqual(expectBlocks[i].succes);
+    }
+}
+
+export function assertStmtsEqual(stmts: Stmt[], expectStmts: any[]): void {
+    expect(stmts.length).toEqual(expectStmts.length);
+    for (let i = 0; i < stmts.length; i++) {
+        expect(stmts[i].toString()).toEqual(expectStmts[i].text);
+
+        if (expectStmts[i].operandOriginalPositions === undefined) {
+            continue;
+        }
+        const operandOriginalPositions: any[] = [];
+        for (const operand of stmts[i].getDefAndUses()) {
+            const operandOriginalPosition = stmts[i].getOperandOriginalPosition(operand);
+            if (operandOriginalPosition) {
+                operandOriginalPositions.push(
+                    [operandOriginalPosition.getFirstLine(), operandOriginalPosition.getFirstCol(),
+                        operandOriginalPosition.getLastLine(), operandOriginalPosition.getLastCol()]);
+            } else {
+                operandOriginalPositions.push(operandOriginalPosition);
+            }
+        }
+        expect(operandOriginalPositions).toEqual(expectStmts[i].operandOriginalPositions);
     }
 }

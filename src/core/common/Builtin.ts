@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { ClassSignature, FileSignature } from '../model/ArkSignature';
-import { ClassType } from '../base/Type';
+import { ClassSignature, FileSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
+import { ClassType, StringType } from '../base/Type';
 
 export class Builtin {
     // built-in classes
@@ -53,6 +53,10 @@ export class Builtin {
     public static ITERATOR_CLASS_TYPE = new ClassType(this.ITERATOR_CLASS_SIGNATURE);
     public static ITERATOR_RESULT_CLASS_TYPE = new ClassType(this.ITERATOR_RESULT_CLASS_SIGNATURE);
 
+    // constants for string
+    public static TO_STRING = 'toString';
+    public static TO_STRING_METHOD_SIGNATURE = new MethodSignature(ClassSignature.DEFAULT,
+        new MethodSubSignature(this.TO_STRING, [], StringType.getInstance(), false));
 
     private static buildBuiltInClasses(): Set<string> {
         const builtInClasses = new Set<string>();
