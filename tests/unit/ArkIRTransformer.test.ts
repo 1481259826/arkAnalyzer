@@ -33,7 +33,7 @@ import {
 } from '../../src';
 import {
     BinaryExpression_Expect_IR,
-    CallExpression_Expect_IR,
+    CallExpression_Expect_IR, ExpressionStatements_Expect_IR,
     LiteralExpression_Expect_IR,
     NewExpression_Expect_IR,
     Operator_Expect_IR,
@@ -432,6 +432,10 @@ describe('expression Test', () => {
 
     it('test call expression', async () => {
         testMethodStmts(scene, 'CallExpressionTest.ts', CallExpression_Expect_IR.stmts);
+    });
+
+    it('test expression statement', async () => {
+        testMethodStmts(scene, 'ExpressionStatementsTest.ts', ExpressionStatements_Expect_IR.stmts);
     });
 });
 
