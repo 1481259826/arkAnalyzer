@@ -115,3 +115,8 @@ export * from './utils/FileUtils';
 export * from './utils/getAllFiles';
 export * from './utils/json5parser';
 export * from './utils/pathTransfer';
+export * from './utils/AstTreeUtils';
+
+//ohos-typescript
+import ts from 'ohos-typescript';
+export { ts };
