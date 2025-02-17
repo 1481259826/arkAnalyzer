@@ -16,11 +16,10 @@
 import { LineColPosition } from '../base/Position';
 import { ArkFile } from './ArkFile';
 import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
-import { DEFAULT } from "../common/TSConst";
+import { DEFAULT } from '../common/TSConst';
 import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
-import { ArkMetadataKind } from './ArkMetadata';
-
+import { ArkMetadataKind, CommentsMetadata } from './ArkMetadata';
 
 export type ExportSignature = NamespaceSignature | ClassSignature | MethodSignature | LocalSignature;
 
@@ -177,9 +176,16 @@ export class ExportInfo extends ArkBaseModel implements FromInfo {
             return this;
         }
 
-        public setLeadingComments(comments: string[]): ArkExportBuilder {
-            if (comments.length > 0) {
-                this.exportInfo.setMetadata(ArkMetadataKind.LEADING_COMMENTS, comments);
+        public setLeadingComments(commentsMetadata: CommentsMetadata): ArkExportBuilder {
+            if (commentsMetadata.getComments().length > 0) {
+                this.exportInfo.setMetadata(ArkMetadataKind.LEADING_COMMENTS, commentsMetadata);
+            }
+            return this;
+        }
+
+        public setTrailingComments(commentsMetadata: CommentsMetadata): ArkExportBuilder {
+            if (commentsMetadata.getComments().length > 0) {
+                this.exportInfo.setMetadata(ArkMetadataKind.TRAILING_COMMENTS, commentsMetadata);
             }
             return this;
         }

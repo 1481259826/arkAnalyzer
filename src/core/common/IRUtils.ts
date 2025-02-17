@@ -19,12 +19,12 @@ import { Value } from '../base/Value';
 import { Scene } from '../../Scene';
 import ts from 'ohos-typescript';
 import { SceneOptions } from '../../Config';
-import { ArkMetadataKind } from '../model/ArkMetadata';
+import { ArkMetadataKind, CommentItem, CommentsMetadata } from '../model/ArkMetadata';
 import { Stmt } from '../base/Stmt';
 import { ArkBaseModel } from '../model/ArkBaseModel';
+import { FullPosition } from '../base/Position';
 import { Local } from '../base/Local';
 import { NAME_PREFIX } from './Const';
-import { FullPosition } from '../base/Position';
 
 export class IRUtils {
     public static moreThanOneAddress(value: Value): boolean {
@@ -52,29 +52,46 @@ export class IRUtils {
         }
     }
 
-    public static setLeadingComments(
-        metadata: Stmt | ArkBaseModel,
-        node: ts.Node,
-        sourceFile: ts.SourceFile,
-        options: SceneOptions
-    ): void {
-        let comments = this.getLeadingComments(node, sourceFile, options);
-        if (comments.length > 0) {
-            metadata.setMetadata(ArkMetadataKind.LEADING_COMMENTS, comments);
+    public static setComments(metadata: Stmt | ArkBaseModel,
+                              node: ts.Node,
+                              sourceFile: ts.SourceFile,
+                              options: SceneOptions): void {
+        const leadingCommentsMetadata = this.getCommentsMetadata(node, sourceFile, options, true);
+        if (leadingCommentsMetadata.getComments().length > 0) {
+            metadata.setMetadata(ArkMetadataKind.LEADING_COMMENTS, leadingCommentsMetadata);
+        }
+
+        const trailingCommentsMetadata = this.getCommentsMetadata(node, sourceFile, options, false);
+        if (trailingCommentsMetadata.getComments().length > 0) {
+            metadata.setMetadata(ArkMetadataKind.TRAILING_COMMENTS, trailingCommentsMetadata);
         }
     }
 
-    public static getLeadingComments(node: ts.Node, sourceFile: ts.SourceFile, options: SceneOptions): string[] {
-        let comments: string[] = [];
-        if (!options.enableLeadingComments) {
-            return comments;
+    public static getCommentsMetadata(node: ts.Node, sourceFile: ts.SourceFile, options: SceneOptions,
+                                      isLeading: boolean): CommentsMetadata {
+        const comments: CommentItem[] = [];
+        if ((isLeading && !options.enableLeadingComments) || (!isLeading && !options.enableTrailingComments)) {
+            return new CommentsMetadata(comments);
         }
-        const commentRanges = ts.getLeadingCommentRanges(node.getFullText(sourceFile), 0) || [];
+
+        const commentRanges = (isLeading ? ts.getLeadingCommentRanges(sourceFile.text, node.pos)
+            : ts.getTrailingCommentRanges(sourceFile.text, node.end)) || []; // node.pos is the start position of
+                                                                             // leading comment, while node.end is the
+                                                                             // end position of the statement
+        const getPosition = (pos: number, end: number): FullPosition => {
+            const start = ts.getLineAndCharacterOfPosition(sourceFile, pos);
+            const endPos = ts.getLineAndCharacterOfPosition(sourceFile, end);
+            return new FullPosition(start.line + 1, start.character + 1, endPos.line + 1, endPos.character + 1);
+        };
+
         for (const range of commentRanges) {
-            const comment = node.getFullText(sourceFile).slice(range.pos, range.end).replace(/\r\n/g, '\n');
-            comments.push(comment);
+            comments.push({
+                content: sourceFile.text.substring(range.pos, range.end).replace(/\r\n/g, '\n'),
+                position: getPosition(range.pos, range.end),
+            });
         }
-        return comments;
+
+        return new CommentsMetadata(comments);
     }
 
     public static isTempLocal(value: Value): boolean {

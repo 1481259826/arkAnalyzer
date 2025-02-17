@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArkMetadataKind } from '../../core/model/ArkMetadata';
+import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { Dump, SourceBase } from './SourceBase';
 import { SourceClass } from './SourceClass';
@@ -37,17 +37,18 @@ export class SourceNamespace extends SourceBase {
     }
 
     public dump(): string {
-        (this.ns.getMetadata(ArkMetadataKind.LEADING_COMMENTS) as string[] || []).forEach((comment) => {
-            this.printer.writeIndent().writeLine(comment);
-        });
-        this.printer
-            .writeIndent()
-            .writeSpace(this.modifiersToString(this.ns.getModifiers()))
+        const commentsMetadata = this.ns.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                this.printer.writeIndent().writeLine(comment.content);
+            });
+        }
+        this.printer.writeIndent().writeSpace(this.modifiersToString(this.ns.getModifiers()))
             .writeLine(`namespace ${this.ns.getName()} {`);
         this.printer.incIndent();
 
         let items: Dump[] = [];
-
         // print class
         for (let cls of this.ns.getClasses()) {
             if (SourceUtils.isAnonymousClass(cls.getName())) {
@@ -56,11 +57,7 @@ export class SourceNamespace extends SourceBase {
             if (cls.isDefaultArkClass()) {
                 for (let method of cls.getMethods()) {
                     if (method.isDefaultArkMethod()) {
-                        items.push(
-                            ...new SourceMethod(
-                                method,
-                                this.printer.getIndent()
-                            ).dumpDefaultMethod()
+                        items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod(),
                         );
                     } else if (
                         !SourceUtils.isAnonymousMethod(method.getName())
@@ -74,12 +71,10 @@ export class SourceNamespace extends SourceBase {
                 items.push(new SourceClass(cls, this.printer.getIndent()));
             }
         }
-
         // print namespace
         for (let childNs of this.ns.getNamespaces()) {
             items.push(new SourceNamespace(childNs, this.printer.getIndent()));
         }
-
         // print exportInfos
         for (let exportInfo of this.ns.getExportInfos()) {
             items.push(
@@ -91,10 +86,8 @@ export class SourceNamespace extends SourceBase {
         items.forEach((v): void => {
             this.printer.write(v.dump());
         });
-
         this.printer.decIndent();
         this.printer.writeIndent().writeLine('}');
-
         return this.printer.toString();
     }
 }

@@ -52,7 +52,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
         let importInfo = new ImportInfo();
         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers);
         importInfo.setTsSourceCode(tsSourceCode);
-        IRUtils.setLeadingComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
+        IRUtils.setComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
         importInfos.push(importInfo);
     }
 
@@ -63,7 +63,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
         let importInfo = new ImportInfo();
         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers);
         importInfo.setTsSourceCode(tsSourceCode);
-        IRUtils.setLeadingComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
+        IRUtils.setComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
         importInfos.push(importInfo);
     }
 
@@ -78,13 +78,13 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
                         let importInfo = new ImportInfo();
                         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers, element.propertyName.text);
                         importInfo.setTsSourceCode(tsSourceCode);
-                        IRUtils.setLeadingComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
+                        IRUtils.setComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
                         importInfos.push(importInfo);
                     } else {
                         let importInfo = new ImportInfo();
                         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers);
                         importInfo.setTsSourceCode(tsSourceCode);
-                        IRUtils.setLeadingComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
+                        IRUtils.setComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
                         importInfos.push(importInfo);
                     }
                 }
@@ -101,7 +101,7 @@ function buildImportDeclarationNode(node: ts.ImportDeclaration, sourceFile: ts.S
             let nameBeforeAs = '*';
             importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers, nameBeforeAs);
             importInfo.setTsSourceCode(tsSourceCode);
-            IRUtils.setLeadingComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
+            IRUtils.setComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
             importInfos.push(importInfo);
         }
     }
@@ -126,7 +126,7 @@ function buildImportEqualsDeclarationNode(node: ts.ImportEqualsDeclaration, sour
         let importInfo = new ImportInfo();
         importInfo.build(importClauseName, importType, importFrom, originTsPosition, modifiers);
         importInfo.setTsSourceCode(tsSourceCode);
-        IRUtils.setLeadingComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
+        IRUtils.setComments(importInfo, node, sourceFile, arkFile.getScene().getOptions());
         importInfos.push(importInfo);
     }
     return importInfos;

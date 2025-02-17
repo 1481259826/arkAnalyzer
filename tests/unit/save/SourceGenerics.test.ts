@@ -48,7 +48,6 @@ interface Lengthwise {
 }
 function loggingIdentity<T>(arg: T): T {
   logger.info(arg.length);
-  // Now we know it has a .length property, so no more error
   return arg;
 }
 declare interface BreakPointTypeOption<T> {

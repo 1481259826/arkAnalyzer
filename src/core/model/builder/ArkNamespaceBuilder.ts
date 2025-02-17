@@ -83,7 +83,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
     else {
         logger.warn("JSDocNamespaceDeclaration found.");
     }
-    IRUtils.setLeadingComments(ns, node, sourceFile, ns.getDeclaringArkFile().getScene().getOptions());
+    IRUtils.setComments(ns, node, sourceFile, ns.getDeclaringArkFile().getScene().getOptions());
 }
 
 // TODO: check and update

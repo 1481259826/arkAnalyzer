@@ -17,9 +17,9 @@ import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
 import { ArkBody } from '../src/core/model/ArkBody';
-import { ArkInstanceFieldRef, PrinterBuilder, Stmt } from '../src';
+import { PrinterBuilder, Stmt } from '../src';
 import { ModelUtils } from '../src/core/common/ModelUtils';
-import { INSTANCE_INIT_METHOD_NAME } from '../src/core/common/Const';
+import { ArkMetadataKind, CommentsMetadata } from '../src/core/model/ArkMetadata';
 
 const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
@@ -30,7 +30,7 @@ class ArkIRTransformerTest {
         logger.error('testStmtsOfSimpleProject start');
 
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        const sceneConfig: SceneConfig = new SceneConfig();
+        const sceneConfig: SceneConfig = new SceneConfig({ enableTrailingComments: true, enableLeadingComments: true });
         sceneConfig.buildFromProjectDir(projectDir);
 
         const scene = new Scene();
@@ -69,6 +69,7 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddressStmt of cfg.getStmts()) {
             logger.error(`text: '${threeAddressStmt.toString()}'`);
+            this.printMetadata(threeAddressStmt);
         }
     }
 
@@ -85,6 +86,25 @@ class ArkIRTransformerTest {
             }
         }
         logger.error(`operandOriginalPositions: [${operandOriginalPositions.join('], [')}]`);
+    }
+
+    public printMetadata(stmt: Stmt): void {
+        const leadingCommentsMetadata = stmt.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (leadingCommentsMetadata instanceof CommentsMetadata) {
+            const comments = leadingCommentsMetadata.getComments();
+            for (const comment of comments) {
+                logger.error(`leading comment content: ${comment.content}`);
+                logger.error(`leading comment position: ${comment.position.getFirstLine()}:${comment.position.getFirstCol()}-${comment.position.getLastLine()}:${comment.position.getLastCol()}`);
+            }
+        }
+        const trailingCommentsMetadata = stmt.getMetadata(ArkMetadataKind.TRAILING_COMMENTS);
+        if (trailingCommentsMetadata instanceof CommentsMetadata) {
+            const comments = trailingCommentsMetadata.getComments();
+            for (const comment of comments) {
+                logger.error(`trailing comment content: ${comment.content}`);
+                logger.error(`trailing comment position: ${comment.position.getFirstLine()}:${comment.position.getFirstCol()}-${comment.position.getLastLine()}:${comment.position.getLastCol()}`);
+            }
+        }
     }
 
     private printScene(scene: Scene): void {
@@ -127,20 +147,17 @@ class ArkIRTransformerTest {
     public simpleTest() {
         logger.error('simpleTest start');
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
-        const sceneConfig: SceneConfig = new SceneConfig();
+        const sceneConfig: SceneConfig = new SceneConfig({ enableTrailingComments: true, enableLeadingComments: true });
         sceneConfig.buildFromProjectDir(projectDir);
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
 
         const cfg = scene.getFiles().find((file) => file.getName().endsWith(`main.ts`))
             ?.getClassWithName('Main')
-            ?.getMethodWithName(INSTANCE_INIT_METHOD_NAME)?.getBody()?.getCfg();
+            ?.getMethodWithName('foo')?.getBody()?.getCfg();
         if (cfg) {
-            const thisLocal1 = cfg.getStmts()[0].getDef();
-            const thisLocal2 = (cfg.getStmts()[1].getDef() as ArkInstanceFieldRef).getBase();
-            if (thisLocal1) {
-                logger.log(`thisLocal1 equal to thisLocal2: ${thisLocal1 === thisLocal2}`);
-            }
+            const stmts = cfg.getStmts();
+            console.log(stmts);
         } else {
             logger.log(`cfg is undefined`);
         }
