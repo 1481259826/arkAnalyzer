@@ -56,9 +56,9 @@ function doValidation(scene: Scene): void {
     //   element[0] is expected value
     //   element[1] is actual value
     const obj = {
-        filesNumber: [279],
-        classesNumber: [1806],
-        methodsNumber: [6054],
+        filesNumber: [261],
+        classesNumber: [1740],
+        methodsNumber: [5766],
         customComponentsNumber: [1130]
     }
 
