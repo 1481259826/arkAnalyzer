@@ -13,21 +13,28 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
+import { SceneConfig, Sdk } from "../src/Config";
 import { DummyMainCreater } from "../src/core/common/DummyMainCreater";
 import { Scene } from "../src/Scene";
 
+const sdk: Sdk = {
+    name: '',
+    path: 'tests/resources/Sdk',
+    moduleName: ''
+};
 
-const config_path = "tests\\resources\\ifds\\TiantAnalysis\\ifdsTestConfig.json";
-// const config_path = "tests\\resources\\typeInference\\ohapps.json";
-let config: SceneConfig = new SceneConfig();
-config.buildFromJson(config_path);
-// config.buildFromProjectDir("tests/resources")
-const scene = new Scene();
-scene.buildBasicInfo(config);
-scene.buildScene4HarmonyProject();
-// scene.buildSceneFromProjectDir(config);
-scene.inferTypes()
+function buildScene(projectPath: string): Scene {
+    let config: SceneConfig = new SceneConfig();
+    config.buildConfig(projectPath, projectPath, [sdk]);
+    config.buildFromProjectDir(projectPath);
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+    return scene;
+}
+
+
+const scene = buildScene('tests/resources/dummyMain/normal')
 const creater = new DummyMainCreater(scene);
 creater.createDummyMain();
 let d = creater.getDummyMain()

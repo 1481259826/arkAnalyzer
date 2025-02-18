@@ -26,11 +26,12 @@ import { DataflowSolver } from './DataflowSolver';
 import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { FileSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkClass } from '../model/ArkClass';
-import { Cfg } from '../graph/Cfg';
 import { LocalEqual, RefEqual } from './Util';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../common/Const';
 import { ArkField } from '../model/ArkField';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 export class UndefinedVariableChecker extends DataflowProblem<Value> {
     zeroValue: Constant = new Constant('undefined', UndefinedType.getInstance());
@@ -73,26 +74,7 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
             getDataFacts(dataFact: Value): Set<Value> {
                 let ret: Set<Value> = new Set();
                 if (checkerInstance.getEntryPoint() === srcStmt && checkerInstance.getZeroValue() === dataFact) {
-                    let entryMethod = checkerInstance.getEntryMethod();
-                    const parameters =  [...(entryMethod.getCfg() as Cfg).getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
-                    for (let i = 0;i < parameters.length;i++) {
-                        const para  = parameters[i].getDef();
-                        if (para)
-                            ret.add(para);
-                    }
                     ret.add(checkerInstance.getZeroValue());
-
-                    // 加入所有的全局变量和静态属性（may analysis）
-                    const staticFields = entryMethod.getDeclaringArkClass().getStaticFields(checkerInstance.classMap);
-                    for (const field of staticFields) {
-                        const initializer = field.getInitializer()
-                        if (initializer.length === 1 && initializer[0] instanceof ArkAssignStmt && initializer[0].getRightOp() === undefined) {
-                            ret.add(new ArkStaticFieldRef(field.getSignature()));
-                        }
-                    }
-                    for (const local of entryMethod.getDeclaringArkClass().getGlobalVariable(checkerInstance.globalVariableMap)) {
-                        ret.add(local);
-                    }
                     return ret;
                 }
                 if (srcStmt instanceof ArkAssignStmt ) {
@@ -122,9 +104,9 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
             const base = rightOp.getBase();
             if (base === dataFact || !base.getDeclaringStmt() && base.getName() === dataFact.toString()) {
                 this.outcomes.push(new Outcome(rightOp, ass));
-                console.log('undefined base');
-                console.log(srcStmt.toString());
-                console.log(srcStmt.getOriginPositionInfo().toString());
+                logger.info('undefined base');
+                logger.info(srcStmt.toString());
+                logger.info(srcStmt.getOriginPositionInfo().toString());
             }
         } else if (dataFact instanceof ArkInstanceFieldRef && rightOp === dataFact.getBase()) {
             const field = new ArkInstanceFieldRef(srcStmt.getLeftOp() as Local, dataFact.getFieldSignature());

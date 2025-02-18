@@ -13,18 +13,14 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
 import { Scene } from '../../Scene';
 import {
     COMPONENT_LIFECYCLE_METHOD_NAME,
-    getAbilities,
     getCallbackMethodFromStmt,
     LIFECYCLE_METHOD_NAME,
 } from '../../utils/entryMethodUtils';
 import { Constant } from '../base/Constant';
 import {
-    AbstractInvokeExpr,
     ArkConditionExpr,
     ArkInstanceInvokeExpr,
     ArkNewExpr,
@@ -33,23 +29,19 @@ import {
 } from '../base/Expr';
 import { Local } from '../base/Local';
 import { ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnVoidStmt } from '../base/Stmt';
-import { ClassType, NumberType, Type, UnclearReferenceType } from '../base/Type';
+import { ClassType, NumberType, Type } from '../base/Type';
 import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkBody } from '../model/ArkBody';
 import { ArkClass } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
-import { ArkNamespace } from '../model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { CONSTRUCTOR_NAME } from './TSConst';
-import { fetchDependenciesFromFile } from '../../utils/json5parser';
-import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { checkAndUpdateMethod } from '../model/builder/ArkMethodBuilder';
 import { ValueUtil } from './ValueUtil';
 
-const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 /**
 收集所有的onCreate，onStart等函数，构造一个虚拟函数，具体为：
@@ -82,7 +74,6 @@ export class DummyMainCreater {
     private dummyMain: ArkMethod = new ArkMethod();
     private scene: Scene;
     private tempLocalIndex: number = 0;
-    private builtInClass: Map<string, ArkClass> = new Map;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -91,17 +82,8 @@ export class DummyMainCreater {
         this.entryMethods = this.getMethodsFromAllAbilities();
         this.entryMethods.push(...this.getEntryMethodsFromComponents());
         this.entryMethods.push(...this.getCallbackMethods());
-        this.buildBuiltInClass();
     }
 
-    private buildBuiltInClass() {
-        for (const sdkFile of this.scene.getSdkArkFiles()) {
-            if (sdkFile.getName() === 'api\\@ohos.app.ability.Want.d.ts') {
-                const arkClass = sdkFile.getClassWithName('Want')!;
-                this.builtInClass.set('Want', arkClass);
-            }
-        }
-    }
 
     public setEntryMethods(methods: ArkMethod[]): void {
         this.entryMethods = methods;
@@ -179,10 +161,7 @@ export class DummyMainCreater {
                 continue;
             }
             let clsType = local.getType() as ClassType
-            let cls = this.scene.getClass(clsType.getClassSignature());
-            if (!cls) {
-                continue;
-            }
+            let cls = this.scene.getClass(clsType.getClassSignature())!;
             const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(clsType));
             firstBlock.addStmt(assStmt);
             let consMtd = cls.getMethodWithName(CONSTRUCTOR_NAME);
@@ -213,7 +192,7 @@ export class DummyMainCreater {
         let lastBlocks: BasicBlock[] = [whileBlock];
 
         let count = 0;
-        for (const method of this.entryMethods) {
+        for (let method of this.entryMethods) {
             count++;
             const condition = new ArkConditionExpr(countLocal, new Constant(count.toString(), NumberType.getInstance()), RelationalBinaryOperator.Equality);
             const ifStmt = new ArkIfStmt(condition);
@@ -230,7 +209,6 @@ export class DummyMainCreater {
             let paramIdx = 0;
             for (const param of method.getParameters()) {
                 let paramType: Type | undefined = param.getType();
-                let checkMethod = method;
                 // In ArkIR from abc scenario, param type is undefined in some cases
                 // Then try to get it from super class(SDK)
                 // TODO - need handle method overload to get the correct method
@@ -239,7 +217,7 @@ export class DummyMainCreater {
                     let methodInSuperCls = superCls?.getMethodWithName(method.getName());
                     if (methodInSuperCls) {
                         paramType = methodInSuperCls.getParameters().at(paramIdx)?.getType();
-                        checkMethod = methodInSuperCls;
+                        method = methodInSuperCls;
                     }
                 }
                 const paramLocal = new Local('temp' + this.tempLocalIndex++, paramType);
@@ -247,24 +225,11 @@ export class DummyMainCreater {
                 if (paramType instanceof ClassType) {
                     const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(paramType));
                     invokeBlock.addStmt(assStmt);
-                } else if (paramType instanceof UnclearReferenceType) {
-                    const arkClass = this.getArkClassFromParamType(paramType.getName(), checkMethod.getDeclaringArkFile());
-                    if (arkClass) {
-                        const classType = new ClassType(arkClass.getSignature());
-                        paramLocal.setType(classType);
-                        const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(classType));
-                        invokeBlock.addStmt(assStmt);
-                    }
                 }
                 paramIdx++;
             }
-            const local = this.classLocalMap.get(method);
-            let invokeExpr: AbstractInvokeExpr;
-            if (local) {
-                invokeExpr = new ArkInstanceInvokeExpr(local, method.getSignature(), paramLocals);
-            } else {
-                invokeExpr = new ArkStaticInvokeExpr(method.getSignature(), paramLocals);
-            }
+            const local = this.classLocalMap.get(method)!;
+            let invokeExpr = new ArkInstanceInvokeExpr(local, method.getSignature(), paramLocals);
             const invokeStmt = new ArkInvokeStmt(invokeExpr);
             invokeBlock.addStmt(invokeStmt);
             dummyCfg.addBlock(invokeBlock);
@@ -284,28 +249,6 @@ export class DummyMainCreater {
         returnBlock.addPredecessorBlock(whileBlock);
 
         return dummyCfg;
-    }
-
-    private getArkClassFromParamType(name: string, file: ArkFile): ArkClass | null {
-        if (name.includes('.')) {
-            const nsName = name.split('.')[0];
-            const clsName = name.split('.')[1];
-            const importInfo = file.getImportInfoBy(nsName);
-            const arkExport = importInfo?.getLazyExportInfo()?.getArkExport();
-            if (arkExport instanceof ArkNamespace) {
-                const arkClass = arkExport.getClassWithName(clsName);
-                if (arkClass) {
-                    return arkClass;
-                }
-            }
-        } else {
-            const importInfo = file.getImportInfoBy(name);
-            const arkExport = importInfo?.getLazyExportInfo()?.getArkExport();
-            if (arkExport instanceof ArkClass) {
-                return arkExport;
-            }
-        }
-        return null;
     }
 
     private addCfg2Stmt() {
@@ -345,9 +288,12 @@ export class DummyMainCreater {
 
     private classInheritsAbility(arkClass: ArkClass): boolean {
         const ABILITY_BASE_CLASSES = ['UIExtensionAbility', 'Ability', 'FormExtensionAbility', 'UIAbility', 'BackupExtensionAbility'];
+        if (ABILITY_BASE_CLASSES.includes(arkClass.getSuperClassName())) {
+            return true;
+        }
         let superClass = arkClass.getSuperClass();
         while (superClass) {
-            if (ABILITY_BASE_CLASSES.includes(superClass.getName())) {
+            if (ABILITY_BASE_CLASSES.includes(superClass.getSuperClassName())) {
                 return true;
             }
             superClass = superClass.getSuperClass();
@@ -364,84 +310,7 @@ export class DummyMainCreater {
             });
         return methods;
     }
-
-    public getEntryMethodsFromModuleJson5(): ArkMethod[] {
-        const projectDir = this.scene.getRealProjectDir();
-
-        const buildProfile = path.join(projectDir, 'build-profile.json5');
-        if (!fs.existsSync(buildProfile)) {
-            logger.error(`${buildProfile} is not exists.`);
-            return [];
-        }
-
-        const abilities: ArkClass[] = [];
-        const buildProfileConfig = fetchDependenciesFromFile(buildProfile);
-        let modules: Array<any> | undefined;
-        if (buildProfileConfig instanceof Object) {
-            Object.entries(buildProfileConfig).forEach(([k, v]) => {
-                if (k === 'modules' && Array.isArray(v)) {
-                    modules = v;
-                    return;
-                }
-            });
-        }
-        if (Array.isArray(modules)) {
-            for (const module of modules) {
-                const modulePath = path.join(projectDir, module.srcPath);
-                let moduleAbilities = this.getAbilitiesByParseModuleJson(modulePath);
-                abilities.push(...moduleAbilities);
-            }
-        }
-
-        const entryMethods: ArkMethod[] = [];
-        for (const ability of abilities) {
-            const abilityEntryMethods: ArkMethod[] = [];
-            let cls: ArkClass = ability;
-            for (const method of cls.getMethods()) {
-                if (method.isPrivate()) {
-                    continue;
-                }
-                for (const mtd of abilityEntryMethods) {
-                    if (mtd.getName() === method.getName()) {
-                        continue;
-                    }
-                }
-                if (LIFECYCLE_METHOD_NAME.includes(method.getName()) && !entryMethods.includes(method)) {
-                    abilityEntryMethods.push(method);
-                }
-            }
-            entryMethods.push(...abilityEntryMethods);
-        }
-        return entryMethods;
-    }
-
-    public getAbilitiesByParseModuleJson(modulePath: string): ArkClass[] {
-        const jsonPath = path.join(modulePath, '/src/main/module.json5');
-
-        let abilities: ArkClass[] = [];
-        const ABILITY_NAMES = ['abilities', 'extensionAbilities'];
-        try {
-            const config = fetchDependenciesFromFile(jsonPath);
-            const configModule = config.module;
-            if (configModule instanceof Object) {
-                Object.entries(configModule).forEach(([k, v]) => {
-                    if (ABILITY_NAMES.includes(k)) {
-                        const moduleAbilities = getAbilities(v, modulePath, this.scene);
-                        for (const ability of moduleAbilities) {
-                            if (!abilities.includes(ability)) {
-                                abilities.push(ability);
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (err) {
-            logger.error(err);
-        }
-
-        return abilities;
-    }
-
+    
     public getCallbackMethods(): ArkMethod[] {
         const callbackMethods: ArkMethod[] = [];
         this.scene.getMethods().forEach(method => {

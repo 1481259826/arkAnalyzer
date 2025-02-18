@@ -68,7 +68,7 @@ describe("SceneManager Test", () => {
 
     it('get exsit case', () => {
         let file = new FileSignature('dataflow', 'Edge.ts');
-        let clazz = new ClassSignature('Edge', file);
+        let clazz = new ClassSignature('PathEdge', file);
         let res = sceneManager.getExtendedClasses(clazz);
         expect(res.length).toBe(1);
         assert.equal(clazz.toString(), res[0].getSignature().toString());

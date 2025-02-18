@@ -15,22 +15,26 @@
 
 import { SceneConfig } from '../src/Config';
 import { Scene } from '../src/Scene';
+import { DummyMainCreater } from '../src/core/common/DummyMainCreater';
 import { ArkBody } from '../src/core/model/ArkBody';
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
         let config: SceneConfig = new SceneConfig();
-        config.buildFromProjectDir("tests/resources/type")
+        config.buildFromProjectDir("tests/resources/dummyMain/normal")
         const scene = new Scene();
         scene.buildBasicInfo(config);
         scene.buildSceneFromProjectDir(config);
         scene.inferTypes();
-        return scene
+        return scene;
     }
 
     public testLocalTypes() {
         let scene = this.buildScene();
-        console.log(scene);
+        const creater = new DummyMainCreater(scene);
+        creater.createDummyMain();
+        let d = creater.getDummyMain();
+        console.log(d);
     }
 
     public printStmts(body: ArkBody): void {

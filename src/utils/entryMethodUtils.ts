@@ -13,9 +13,7 @@
  * limitations under the License.
  */
 
-import path from 'path';
 import { Scene } from '../Scene';
-import { ArkClass } from '../core/model/ArkClass';
 import { ArkMethod } from '../core/model/ArkMethod';
 import { Stmt } from '../core/base/Stmt';
 import { FunctionType } from '../core/base/Type';
@@ -91,31 +89,6 @@ export interface AbilityMessage {
     srcEntry: string;
     name: string;
     srcEntrance: string;
-}
-
-export function getAbilities(abilities: AbilityMessage[], modulePath: string, scene: Scene): ArkClass[] {
-    const abilitiyClasses: ArkClass[] = [];
-    for (const ability of abilities) {
-        let entry = '';
-        if (ability.srcEntry) {
-            entry = ability.srcEntry;
-        } else if (ability.srcEntrance) {
-            entry = ability.srcEntrance;
-        }
-        const filePath = path.join(modulePath, 'src', 'main', entry);
-        for (const file of scene.getFiles()) {
-            if (file.getFilePath() === filePath) {
-                for (const arkClass of file.getClasses()) {
-                    if (ability.name.includes(arkClass.getName()) && arkClass.isExported()) {
-                        abilitiyClasses.push(arkClass);
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-    }
-    return abilitiyClasses;
 }
 
 export function getCallbackMethodFromStmt(stmt: Stmt, scene: Scene): ArkMethod | null {

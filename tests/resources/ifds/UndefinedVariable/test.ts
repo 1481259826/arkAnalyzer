@@ -35,16 +35,38 @@ class t{
     }
 }
 
-function U2(){
+function u1(): void {
+    let t1 = getUndefined();
+    printUndefined(t1);
+}
+
+function u2(): void {
     let t1 = new t();
     t1.print();
 }
 
-function U3(){
+function u3(): void {
     let t1 = new t();
     print(t1);
 }
 
-function print(tp:t){
+function u4(): void {
+    [0, 1].forEach(() => {
+        let t1 = new t();
+        t1.print();
+    });
+}
+
+function getUndefined(): undefined {
+    return undefined;
+}
+
+function printUndefined(tp: t | undefined): void {
+    if (tp) {
+        tp.print();
+    }
+}
+
+function print(tp:t): void {
     console.log(tp.p.pp);
 }
