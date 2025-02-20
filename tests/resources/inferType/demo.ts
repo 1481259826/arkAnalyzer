@@ -77,3 +77,9 @@ declare namespace outer {
 function testDoubleNamespace(): void {
     outer.inner.TestClass.request();
 }
+
+type ResponseType = 'string' | 'object';
+
+function ResponseType(type: ResponseType) {
+
+}

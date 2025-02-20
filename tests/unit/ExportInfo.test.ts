@@ -98,7 +98,7 @@ describe("export Test", () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
-        assert.equal(file?.getImportInfos().length, 2);
+        assert.equal(file?.getImportInfos().length, 3);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
     })
@@ -161,6 +161,16 @@ describe("export Test", () => {
             })
         })
         expect(unknownCount).lessThanOrEqual(9);
+    })
+
+    it('file case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+        const file = projectScene.getFile(fileId);
+        const stmts = file?.getClassWithName('test')?.getMethodWithName('type')?.getCfg()?.getStmts();
+        assert.isNotEmpty(stmts);
+        if (stmts) {
+            assert.equal(stmts[3].toString(), 'be = @etsSdk/api/@ohos.base.d.ts: %dflt.[static]BusinessError');
+        }
     })
 })
 

@@ -15,6 +15,7 @@
 
 import * as t from './exportSample';
 import hilog from '@ohos.hilog';
+import file from '@ohos.base';
 
 export function cc() {
     t.testing();
@@ -31,6 +32,7 @@ class test {
     public type() {
         let a: t.MyType = 'type';
         type ss = t.MyType;
+        let be = file.BusinessError;
     }
 }
 

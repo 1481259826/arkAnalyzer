@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-import path from 'path';
-
 export const ETS_COMPILER_OPTIONS = {
     ets: {
         emitDecorators: [
@@ -1020,11 +1018,9 @@ export const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([
     COMPONENT_REPEAT,
 ]);
 
-export const COMPONENT_PATH: string = path.sep + 'component' + path.sep;
+
 export const COMPONENT_COMMON: string = 'Common';
 export const COMPONENT_INSTANCE: string = 'Instance';
-export const API_INTERNAL: string = path.sep + '@internal' + path.sep;
-export const API_COMMON: string = path.sep + 'common' + path.sep;
 
 export const COMPONENT_ATTRIBUTE: string = 'Attribute';
 export const CALL_BACK: string = 'Callback';

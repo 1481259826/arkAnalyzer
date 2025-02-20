@@ -475,6 +475,7 @@ export class ModelUtils {
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
 let moduleMap: Map<string, ModulePath> | undefined;
 const fileSuffixArray = ['.ets', '.ts', '.d.ets', '.d.ts'];
+export const sdkImportMap: Map<string, ArkFile> = new Map<string, ArkFile>();
 
 /**
  * find arkFile by from info
@@ -499,7 +500,12 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
             return arkFile;
         }
     }
+
     //sdk path
+    const file = sdkImportMap.get(from);
+    if (file) {
+        return file;
+    }
     const scene = im.getDeclaringArkFile().getScene();
     for (const sdk of scene.getProjectSdkMap().values()) {
         const arkFile = getArkFileFormMap(sdk.name, processSdkPath(sdk, from), scene);
@@ -593,21 +599,11 @@ export function findArkExportInFile(name: string, declaringArkFile: ArkFile): Ar
 }
 
 function processSdkPath(sdk: Sdk, formPath: string): string {
-    let dir;
-    if (formPath.startsWith('@ohos.') || formPath.startsWith('@hms.') || formPath.startsWith('@system.')) {
-        dir = 'api';
-    } else if (formPath.startsWith('@kit.')) {
-        dir = 'kits';
-    } else if (formPath.startsWith('@arkts.')) {
-        dir = 'arkts';
-    } else {
-        let originPath = path.join(sdk.path, formPath);
-        if (FileUtils.isDirectory(originPath)) {
-            formPath = path.join(formPath, FileUtils.getIndexFileName(originPath));
-        }
-        return `${formPath}`;
+    let originPath = path.join(sdk.path, formPath);
+    if (FileUtils.isDirectory(originPath)) {
+        formPath = path.join(formPath, FileUtils.getIndexFileName(originPath));
     }
-    return `${dir}/${formPath}`;
+    return `${formPath}`;
 }
 
 function getArkFileFromScene(im: FromInfo, originPath: string) {
@@ -645,7 +641,7 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
         return exportInfo;
     }
 
-    if (fromInfo.isDefault()) {
+    if (exportName === DEFAULT) {
         exportInfo = file.getExportInfos().find(p => p.isDefault());
         if (exportInfo) {
             file.addExportInfo(exportInfo, DEFAULT);
@@ -657,10 +653,9 @@ function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
         exportInfo = buildDefaultExportInfo(fromInfo, file);
         file.addExportInfo(exportInfo, ALL);
     } else if (/\.d\.e?ts$/.test(file.getName())) {
-        const declare = findArkExportInFile(fromInfo.getOriginName(), file);
-        if (declare) {
-            exportInfo = buildDefaultExportInfo(fromInfo, file, declare);
-        }
+        let declare = exportName === DEFAULT ? undefined
+            : findArkExportInFile(fromInfo.getOriginName(), file) || undefined;
+        exportInfo = buildDefaultExportInfo(fromInfo, file, declare);
     }
 
     return exportInfo;

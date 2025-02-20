@@ -48,7 +48,11 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | undefined;
     private classSignature!: ClassSignature;
-
+    /**
+     * The keys of the `heritageClasses` map represent the names of superclass and interfaces.
+     * The superclass name is placed first; if it does not exist, an empty string `''` will occupy this position.
+     * The values of the `heritageClasses` map will be replaced with `ArkClass` or `null` during type inference.
+     */
     private heritageClasses: Map<string, ArkClass | null | undefined> = new Map<string, ArkClass | null | undefined>();
 
     private genericsTypes?: GenericType[];
