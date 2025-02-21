@@ -981,8 +981,12 @@ export class PagBuilder {
             let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
             let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
 
-            this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
-            srcNodes.push(srcNode.getID());
+            if (realContainerFieldPagNode) {
+                // In some cases, the value of a variable of array type may not be an explicit array object,
+                // and the value of `realContainerFieldPagNode` will be undefined.
+                this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
+                srcNodes.push(srcNode.getID());
+            }
         };
 
         if (IsCollectionSetAdd(calleeMethod.getSignature())) {

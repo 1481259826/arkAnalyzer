@@ -634,7 +634,7 @@ export class Pag extends BaseExplicitGraph {
         }
     }
 
-    public getOrClonePagContainerFieldNode(basePt: NodeID, src?: PagArrayNode, base?: Local): PagInstanceFieldNode {
+    public getOrClonePagContainerFieldNode(basePt: NodeID, src?: PagArrayNode, base?: Local): PagInstanceFieldNode | undefined {
         let baseNode = this.getNode(basePt) as PagNode;
         if (baseNode instanceof PagNewContainerExprNode) {
             // check if Array Ref real node has been created or not, if not: create a real Array Ref node
@@ -659,9 +659,17 @@ export class Pag extends BaseExplicitGraph {
             baseNode.addElementNode(fieldNode.getID());
             fieldNode.setBasePt(basePt);
             return fieldNode;
+        } else if (baseNode instanceof PagNewExprNode) {
+            // In some cases, the value of a variable of array type may not be an explicit array object.
+            // For example, it could be a return value of a function (assuming that the call depth has
+            // exceeded the k-limit).
+            // In such situation, the `baseNode` will be a PagNewExprNode instead of a PagNewContainerExprNode,
+            // and a warning will be raised.
+            logger.warn(`[PTA]: Trying to clone an array from a PagNewExprNode instead of a PagNewContainerExprNode`);
         } else {
             throw new Error(`Error clone array field node ${baseNode.getValue()}`);
         }
+        return undefined;
     }
 
     public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
