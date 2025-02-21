@@ -456,7 +456,7 @@ class TreeNodeStack {
         let parent = this.getParent();
         node.parent = parent;
         this.stack.push(node);
-        if (parent === null) {
+        if (parent === null || parent === undefined) {
             this.root = node;
         } else {
             parent.children.push(node);
