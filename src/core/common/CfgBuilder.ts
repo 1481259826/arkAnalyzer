@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1034,7 +1034,8 @@ export class CfgBuilder {
         if (ts.isSourceFile(this.astRoot)) {
             stmts = [...this.astRoot.statements];
         } else if (ts.isFunctionDeclaration(this.astRoot) || ts.isMethodDeclaration(this.astRoot) || ts.isConstructorDeclaration(this.astRoot)
-            || ts.isGetAccessorDeclaration(this.astRoot) || ts.isSetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)) {
+            || ts.isGetAccessorDeclaration(this.astRoot) || ts.isSetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot)
+            || ts.isClassStaticBlockDeclaration(this.astRoot)) {
             if (this.astRoot.body) {
                 stmts = [...this.astRoot.body.statements];
             } else {

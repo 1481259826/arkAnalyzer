@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,27 @@
  * limitations under the License.
  */
 
-import { BasicBlock, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, ModelUtils, Scene, Stmt } from '../../src';
+import {
+    BasicBlock,
+    DEFAULT_ARK_CLASS_NAME,
+    DEFAULT_ARK_METHOD_NAME,
+    ModelUtils,
+    Scene,
+    SceneConfig,
+    Stmt,
+} from '../../src';
 import { assert, expect } from 'vitest';
+
+export function buildScene(projectPath: string, needInferTypes: boolean = true) {
+    const config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir(projectPath);
+    const scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    if (needInferTypes) {
+        scene.inferTypes();
+    }
+    return scene;
+}
 
 export function testFileStmts(scene: Scene, filePath: string, expectFileStmts: any): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
@@ -41,7 +60,7 @@ export function testFileStmts(scene: Scene, filePath: string, expectFileStmts: a
 
 export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any[],
                                 className: string = DEFAULT_ARK_CLASS_NAME,
-                                methodName: string = DEFAULT_ARK_METHOD_NAME): void {
+                                methodName: string = DEFAULT_ARK_METHOD_NAME, assertPos: boolean = true): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(fileName));
     const arkMethod = arkFile?.getClassWithName(className)?.getMethods()
         .find((method) => (method.getName() === methodName));
@@ -50,7 +69,7 @@ export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any
         assert.isDefined(stmts);
         return;
     }
-    assertStmtsEqual(stmts, expectStmts);
+    assertStmtsEqual(stmts, expectStmts, assertPos);
 }
 
 export function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]): void {
@@ -88,12 +107,15 @@ export function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]):
     }
 }
 
-export function assertStmtsEqual(stmts: Stmt[], expectStmts: any[]): void {
+export function assertStmtsEqual(stmts: Stmt[], expectStmts: any[], assertPos: boolean = true): void {
     expect(stmts.length).toEqual(expectStmts.length);
     for (let i = 0; i < stmts.length; i++) {
         expect(stmts[i].toString()).toEqual(expectStmts[i].text);
 
         if (expectStmts[i].operandOriginalPositions === undefined) {
+            continue;
+        }
+        if (!assertPos) {
             continue;
         }
         const operandOriginalPositions: any[] = [];
