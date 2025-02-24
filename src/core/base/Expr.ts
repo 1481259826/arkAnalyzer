@@ -18,6 +18,7 @@ import { BasicBlock } from '../graph/BasicBlock';
 import { MethodSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
+    AliasType,
     ArrayType,
     BooleanType,
     ClassType,
@@ -963,6 +964,7 @@ export type AliasTypeOriginalModel = Type | ImportInfo | Local | ArkClass | ArkM
 export class AliasTypeExpr extends AbstractExpr {
     private originalObject: AliasTypeOriginalModel;
     private readonly transferWithTypeOf: boolean = false;
+    private realGenericTypes?: Type[];
 
     constructor(originalObject: AliasTypeOriginalModel, transferWithTypeOf?: boolean) {
         super();
@@ -984,6 +986,14 @@ export class AliasTypeExpr extends AbstractExpr {
         return this.transferWithTypeOf;
     }
 
+    public setRealGenericTypes(realGenericTypes: Type[]): void {
+        this.realGenericTypes = realGenericTypes;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
+    }
+
     public getType(): Type {
         function getTypeOfImportInfo(importInfo: ImportInfo): Type {
             const arkExport = importInfo.getLazyExportInfo()?.getArkExport();
@@ -996,13 +1006,13 @@ export class AliasTypeExpr extends AbstractExpr {
         const operator = this.getOriginalObject();
         if (!this.getTransferWithTypeOf()) {
             if (operator instanceof Type) {
-                return operator;
+                return TypeInference.replaceTypeWithReal(operator, this.getRealGenericTypes());
             }
             if (operator instanceof ImportInfo) {
                 return getTypeOfImportInfo(operator);
             }
             if (operator instanceof ArkClass) {
-                return new ClassType(operator.getSignature(), operator.getGenericsTypes());
+                return TypeInference.replaceTypeWithReal(new ClassType(operator.getSignature(), operator.getGenericsTypes()), this.getRealGenericTypes());
             }
             return UnknownType.getInstance();
         }
@@ -1014,10 +1024,10 @@ export class AliasTypeExpr extends AbstractExpr {
             return operator.getType();
         }
         if (operator instanceof ArkClass) {
-            return new ClassType(operator.getSignature(), operator.getGenericsTypes());
+            return TypeInference.replaceTypeWithReal(new ClassType(operator.getSignature(), operator.getGenericsTypes()), this.getRealGenericTypes());
         }
         if (operator instanceof ArkMethod) {
-            return new FunctionType(operator.getSignature(), operator.getGenericTypes());
+            return TypeInference.replaceTypeWithReal(new FunctionType(operator.getSignature(), operator.getGenericTypes()), this.getRealGenericTypes());
         }
         return UnknownType.getInstance();
     }
@@ -1041,6 +1051,9 @@ export class AliasTypeExpr extends AbstractExpr {
         }
 
         const typeObject = this.getOriginalObject();
+        if (typeObject instanceof AliasType && this.getRealGenericTypes()) {
+            return `${typeOf}${typeObject.getSignature().toString()}<${this.getRealGenericTypes()!.join(',')}>`;
+        }
         if (typeObject instanceof Type) {
             return `${typeOf}${typeObject.getTypeString()}`;
         }
@@ -1055,7 +1068,14 @@ export class AliasTypeExpr extends AbstractExpr {
             return `${typeOf}${typeObject.toString()}`;
         }
         if (typeObject instanceof ArkClass || typeObject instanceof ArkMethod) {
-            return `${typeOf}${typeObject.getSignature().toString()}`;
+            let res = `${typeOf}${typeObject.getSignature().toString()}`;
+            if (this.getRealGenericTypes() && typeObject instanceof ArkClass) {
+                res += `<${this.getRealGenericTypes()!.join(',')}>`;
+            } else if (this.getRealGenericTypes() && typeObject instanceof ArkMethod) {
+                const genericTypes = this.getRealGenericTypes()!.join(',');
+                res = res.replace('(', `<${genericTypes}>(`).replace(/\([^)]*\)/g, `(${genericTypes})`);
+            }
+            return res
         }
         return `${typeOf}${typeObject.getName()}`;
     }

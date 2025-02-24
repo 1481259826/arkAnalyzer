@@ -580,7 +580,11 @@ export class IRInference {
             } else if (type) {
                 model = type;
             }
+            if (expr.getRealGenericTypes() !== undefined && originalObject instanceof UnclearReferenceType) {
+                expr.setRealGenericTypes(originalObject.getGenericTypes());
+            }
         }
+
         if (AliasTypeExpr.isAliasTypeOriginalModel(model)) {
             expr.setOriginalObject(model);
         }

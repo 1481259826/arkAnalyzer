@@ -447,17 +447,38 @@ export class TupleType extends Type {
     }
 }
 
+/**
+ * alias type
+ * @category core/base/type
+ * @extends Type
+ * @example
+ ```typescript
+ // alias type A is defined without any genericTypes (undefined) or realGenericTypes (undefined)
+ type A = number;
+
+ // alias type B is defined with genericTypes but not instance with realGenericTypes (undefined)
+ type B<T> = T[];
+
+ // alias type could also be defined with another instance generic type such as aliaType, FunctionType and ClassType
+ // genericTypes and realGenericTypes of C are both undefined
+ // originalType of C is an instance of B with genericTypes [T] and realGenericTypes [numberType]
+ type C = B<number>;
+ ```
+ */
 export class AliasType extends Type implements ArkExport {
     private originalType: Type;
     private name: string;
     private signature: LocalSignature;
     protected modifiers?: number;
+    private genericTypes?: GenericType[];
+    private realGenericTypes?: Type[];
 
-    constructor(name: string, originalType: Type, signature: LocalSignature) {
+    constructor(name: string, originalType: Type, signature: LocalSignature, genericTypes?: GenericType[]) {
         super();
         this.name = name;
         this.originalType = originalType;
         this.signature = signature;
+        this.genericTypes = genericTypes;
     }
 
     public getName(): string {
@@ -473,7 +494,12 @@ export class AliasType extends Type implements ArkExport {
     }
 
     public getTypeString(): string {
-        return this.getSignature().toString();
+        let res = this.getSignature().toString();
+        let generic = this.getRealGenericTypes()?.join(',') ?? this.getGenericTypes()?.join(',');
+        if (generic) {
+            res += `<${generic}>`;
+        }
+        return res;
     }
 
     public getExportType(): ExportType {
@@ -514,6 +540,22 @@ export class AliasType extends Type implements ArkExport {
 
     public getSignature(): LocalSignature {
         return this.signature;
+    }
+
+    public setGenericTypes(genericTypes: GenericType[]): void {
+        this.genericTypes = genericTypes;
+    }
+
+    public getGenericTypes(): GenericType[] | undefined {
+        return this.genericTypes;
+    }
+
+    public setRealGenericTypes(realGenericTypes: Type[]): void {
+        this.realGenericTypes = realGenericTypes;
+    }
+
+    public getRealGenericTypes(): Type[] | undefined {
+        return this.realGenericTypes;
     }
 }
 

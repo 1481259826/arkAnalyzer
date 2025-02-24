@@ -57,8 +57,38 @@ function aliasTypeWithLiteralType(): void {
 
 function aliasTypeWithFunctionType(): void {
     type FunctionAliasType = typeof aliasTypeWithLiteralType;
+    type NumberGenericFunction = typeof functionWithGeneric<number>;
+}
+
+function functionWithGeneric<T>(param: T): T {
+    return param;
 }
 
 function aliasTypeWithUnionType(): void {
     type UnionAliasType = A.B.C | numberA;
+}
+
+function aliasTypeWithGenericType(): void {
+    type Generic<T> = T;
+    type GenericNumber = Generic<number>;
+
+    type GenericArray<T> = T[];
+    type GenericArrayNumber = GenericArray<number>;
+
+    type GenericTuple<T, U> = [T, U];
+    type GenericTupleStringNumber = GenericTuple<string, number>;
+
+    type GenericObject<X, Y> = {
+        x: X,
+        y: Y;
+    };
+    type GenericObjectBooleanNumber = GenericObject<boolean, number>;
+}
+
+class ClassWithGeneric<T> {
+    private data: T[];
+}
+
+function aliasTypeWithClassType(): void {
+    type StringClass = ClassWithGeneric<string>;
 }

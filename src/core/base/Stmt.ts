@@ -553,7 +553,7 @@ export class ArkAliasTypeDefineStmt extends Stmt {
     }
 
     public toString(): string {
-        let str = `type ${this.getAliasName()} = ${this.getAliasTypeExpr().toString()}`;
+        let str = `type ${this.getAliasType().toString()} = ${this.getAliasTypeExpr().toString()}`;
         if (this.getAliasType().containsModifier(ModifierType.DECLARE)) {
             str = 'declare ' + str;
         }

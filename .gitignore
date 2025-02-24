@@ -17,3 +17,4 @@ dist/
 *.log
 output
 builtIn/
+arktools/
