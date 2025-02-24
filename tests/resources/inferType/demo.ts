@@ -78,8 +78,8 @@ function testDoubleNamespace(): void {
     outer.inner.TestClass.request();
 }
 
-type ResponseType = 'string' | 'object';
+type responseType = 'string' | 'object';
 
-function ResponseType(type: ResponseType) {
+function responseType(type: responseType): void {
 
 }
