@@ -173,6 +173,9 @@ export class ClassSignature {
     }
 }
 
+/**
+ * `AliasClassSignature` is used to extend `ClassSignature`, preserving the actual name used during invocation.
+ */
 export class AliasClassSignature extends ClassSignature {
     private readonly aliasName: string;
 
@@ -181,7 +184,7 @@ export class AliasClassSignature extends ClassSignature {
         this.aliasName = aliasName;
     }
 
-    public getClassName() {
+    public getAliasName(): string {
         return this.aliasName;
     }
 }

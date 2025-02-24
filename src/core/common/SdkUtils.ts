@@ -15,20 +15,26 @@
 
 import { ArkFile } from '../model/ArkFile';
 import { ArkExport } from '../model/ArkExport';
-import { API_COMMON, API_INTERNAL, COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE, COMPONENT_PATH } from './EtsConst';
+import { COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE } from './EtsConst';
 import { THIS_NAME } from './TSConst';
 import { TEMP_LOCAL_PREFIX } from './Const';
 import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { LocalSignature } from '../model/ArkSignature';
-import { ModelUtils } from './ModelUtils';
+import { ModelUtils, sdkImportMap } from './ModelUtils';
 import { Local } from '../base/Local';
 import { ArkMethod } from '../model/ArkMethod';
+import path from 'path';
 
 export class SdkUtils {
 
     public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file.getFilePath().includes(COMPONENT_PATH) ||
-            file.getFilePath().includes(API_INTERNAL) || file.getFilePath().includes(API_COMMON);
+        const fileName = path.basename(file.getName());
+        if (fileName.startsWith('@')) {
+            sdkImportMap.set(fileName.replace(/\.d\.e?ts$/, ''), file);
+        }
+
+        const isGlobalPath = file.getScene().getOptions().sdkGlobalFolders
+            ?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
         if (!isGlobalPath) {
             return;
         }

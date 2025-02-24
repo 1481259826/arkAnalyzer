@@ -45,6 +45,7 @@ export interface SceneOptions {
     enableTrailingComments?:boolean
     tsconfig?: string;
     isScanAbc?: boolean;
+    sdkGlobalFolders?: string[];
     [option: string]: SceneOptionsValue;
 }
 const CONFIG_FILENAME = 'arkanalyzer.json';

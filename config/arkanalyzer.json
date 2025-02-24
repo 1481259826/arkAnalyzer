@@ -9,5 +9,10 @@
         "node_modules",
         "hvigorfile.ts"
     ],
+  "sdkGlobalFolders": [
+    "component",
+    "@internal",
+    "common"
+  ],
     "tsconfig": "tsconfig.json"
 }

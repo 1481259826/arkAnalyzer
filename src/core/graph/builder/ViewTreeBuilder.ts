@@ -46,7 +46,7 @@ import {
 import { ArkClass, ClassCategory } from '../../model/ArkClass';
 import { ArkField } from '../../model/ArkField';
 import { ArkMethod } from '../../model/ArkMethod';
-import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
+import { AliasClassSignature, ClassSignature, MethodSignature } from '../../model/ArkSignature';
 import { Cfg } from '../Cfg';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
@@ -72,6 +72,7 @@ function backtraceLocalInitValue(value: Local): Local | Value {
 }
 
 type ObjectLiteralMap = Map<ArkField, Value | ObjectLiteralMap>;
+
 function parseObjectLiteral(objectLiteralCls: ArkClass | null, scene: Scene): ObjectLiteralMap {
     let map: ObjectLiteralMap = new Map();
     if (objectLiteralCls?.getCategory() !== ClassCategory.OBJECT) {
@@ -1082,8 +1083,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             node.parseStateValues(this, stmt);
             return node;
         }
-
-        let name = methodSignature.getDeclaringClassSignature().getClassName();
+        const classSignature = methodSignature.getDeclaringClassSignature();
+        let name = classSignature instanceof AliasClassSignature ? classSignature.getAliasName() : classSignature.getClassName();
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
 
         if (this.isCreateFunc(methodName)) {
