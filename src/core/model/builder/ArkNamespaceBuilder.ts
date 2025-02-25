@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,7 +54,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
     // set line and column
     const { line, character } = ts.getLineAndCharacterOfPosition(
         sourceFile,
-        node.getStart(sourceFile)
+        node.getStart(sourceFile),
     );
     ns.setLine(line + 1);
     ns.setColumn(character + 1);
@@ -66,22 +66,19 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
         if (ts.isModuleBlock(node.body)) {
             buildNamespaceMembers(node.body, ns, sourceFile);
         }
-        // NamespaceDeclaration extends ModuleDeclaration
+            // NamespaceDeclaration extends ModuleDeclaration
         //TODO: Check
         else if (ts.isModuleDeclaration(node.body)) {
-            logger.warn("This ModuleBody is an NamespaceDeclaration.");
+            logger.warn('This ModuleBody is an NamespaceDeclaration.');
             let childNs: ArkNamespace = new ArkNamespace();
-            buildArkNamespace(node.body, ns, childNs, sourceFile)
+            buildArkNamespace(node.body, ns, childNs, sourceFile);
+        } else if (ts.isIdentifier(node.body)) {
+            logger.warn('ModuleBody is Identifier.');
+        } else {
+            logger.warn('JSDocNamespaceDeclaration found.');
         }
-        else if (ts.isIdentifier(node.body)) {
-            logger.warn("ModuleBody is Identifier.");
-        }
-        else {
-            logger.warn("JSDocNamespaceDeclaration found.");
-        }
-    }
-    else {
-        logger.warn("JSDocNamespaceDeclaration found.");
+    } else {
+        logger.warn('JSDocNamespaceDeclaration found.');
     }
     IRUtils.setComments(ns, node, sourceFile, ns.getDeclaringArkFile().getScene().getOptions());
 }
@@ -89,22 +86,17 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
 // TODO: check and update
 function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, sourceFile: ts.SourceFile) {
     const statements = node.statements;
+    const nestedNamespaces: ArkNamespace[] = [];
     statements.forEach((child) => {
         if (
             ts.isModuleDeclaration(child)
-            //child.kind === ts.SyntaxKind.ModuleDeclaration
         ) {
             let childNs: ArkNamespace = new ArkNamespace();
             childNs.setDeclaringArkNamespace(namespace);
             childNs.setDeclaringArkFile(namespace.getDeclaringArkFile());
 
             buildArkNamespace(child, namespace, childNs, sourceFile);
-            namespace.addNamespace(childNs);
-
-            if (childNs.isExported()) {
-                namespace.addExportInfo(buildExportInfo(childNs, namespace.getDeclaringArkFile(),
-                    LineColPosition.buildFromNode(child, sourceFile)));
-            }
+            nestedNamespaces.push(childNs);
         } else if (
             ts.isClassDeclaration(child) ||
             ts.isInterfaceDeclaration(child) ||
@@ -123,7 +115,7 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
         }
         // TODO: Check
         else if (ts.isMethodDeclaration(child)) {
-            logger.warn("This is a MethodDeclaration in ArkNamespace.");
+            logger.warn('This is a MethodDeclaration in ArkNamespace.');
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, namespace.getDefaultClass(), mthd, sourceFile);
@@ -152,6 +144,15 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
             // join default method
         }
     });
+
+    const nestedMergedNameSpaces = mergeNameSpaces(nestedNamespaces);
+    nestedMergedNameSpaces.forEach(nestedNameSpace => {
+        namespace.addNamespace(nestedNameSpace);
+        if (nestedNameSpace.isExport()) {
+            const linCol = new LineColPosition(nestedNameSpace.getLine(), nestedNameSpace.getColumn());
+            namespace.addExportInfo(buildExportInfo(nestedNameSpace, namespace.getDeclaringArkFile(), linCol));
+        }
+    });
 }
 
 function genDefaultArkClass(ns: ArkNamespace, node: ts.ModuleDeclaration, sourceFile: ts.SourceFile) {
@@ -160,4 +161,35 @@ function genDefaultArkClass(ns: ArkNamespace, node: ts.ModuleDeclaration, source
     buildDefaultArkClassFromArkNamespace(ns, defaultClass, node, sourceFile);
     ns.setDefaultClass(defaultClass);
     ns.addArkClass(defaultClass);
+}
+
+
+export function mergeNameSpaces(arkNamespaces: ArkNamespace[]): ArkNamespace[] {
+    const namespaceMap = new Map<string, ArkNamespace>();
+    for (let i = 0; i < arkNamespaces.length; i++) {
+        const currNamespace = arkNamespaces[i];
+        const currName = currNamespace.getName();
+        if (namespaceMap.has(currName)) {
+            const prevNamespace = namespaceMap.get(currName)!;
+            const nestedPrevNamespaces = prevNamespace.getNamespaces();
+            const nestedCurrNamespaces = currNamespace.getNamespaces();
+            const nestedMergedNameSpaces = mergeNameSpaces([...nestedPrevNamespaces, ...nestedCurrNamespaces]);
+            nestedMergedNameSpaces.forEach(nestedNameSpace => {
+                prevNamespace.addNamespace(nestedNameSpace);
+            });
+            const classes = currNamespace.getClasses();
+            classes.forEach(cls => {
+                prevNamespace.addArkClass(cls);
+            });
+            const preSourceCodes = prevNamespace.getCodes();
+            const currSourceCodes = currNamespace.getCodes();
+            prevNamespace.setCodes([...preSourceCodes, ...currSourceCodes]);
+            const prevLineColPairs = prevNamespace.getLineColPairs();
+            const currLineColPairs = currNamespace.getLineColPairs();
+            prevNamespace.setLineCols([...prevLineColPairs, ...currLineColPairs]);
+        } else {
+            namespaceMap.set(currName, currNamespace);
+        }
+    }
+    return [...namespaceMap.values()];
 }
