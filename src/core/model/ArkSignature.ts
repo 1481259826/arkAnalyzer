@@ -26,7 +26,8 @@ export type Signature =
     | ClassSignature
     | MethodSignature
     | FieldSignature
-    | LocalSignature;
+    | LocalSignature
+    | AliasTypeSignature;
 
 export interface ArkSignature {
     getSignature(): Signature;
@@ -373,6 +374,28 @@ export class MethodSignature {
 }
 
 export class LocalSignature {
+    private name: string;
+    private declaringMethodSignature: MethodSignature;
+
+    constructor(name: string, declaringMethodSignature: MethodSignature) {
+        this.name = name;
+        this.declaringMethodSignature = declaringMethodSignature;
+    }
+
+    public getName(): string {
+        return this.name;
+    }
+
+    public getDeclaringMethodSignature(): MethodSignature {
+        return this.declaringMethodSignature;
+    }
+
+    public toString(): string {
+        return this.declaringMethodSignature.toString() + '#' + this.name;
+    }
+}
+
+export class AliasTypeSignature {
     private name: string;
     private declaringMethodSignature: MethodSignature;
 

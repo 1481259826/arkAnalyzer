@@ -92,3 +92,23 @@ class ClassWithGeneric<T> {
 function aliasTypeWithClassType(): void {
     type StringClass = ClassWithGeneric<string>;
 }
+
+type ParamType<T> = T;
+
+function intersectionTypeWithGeneric(param: ClassWithGeneric<string> & ParamType<number>): ParamType<boolean> {
+    type interType = ClassWithGeneric<string> & typeof functionWithGeneric<number>;
+    type Generic<T> = T;
+    type GenericArray<T> = T[];
+    let interLocal: Generic<string> & GenericArray<boolean>;
+    return true;
+}
+
+class IntersectionClassWithGeneric {
+    fieldA: ClassWithGeneric<string> & ParamType<string>;
+}
+
+type GlobalType<T> = T;
+
+function globalType(): void {
+    type GlobalTypeBoolean = GlobalType<boolean>;
+}

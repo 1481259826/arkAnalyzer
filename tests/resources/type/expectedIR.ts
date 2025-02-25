@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -760,5 +760,31 @@ export const SourceAliasTypeWithGenericType = `function aliasTypeWithGenericType
 
 export const SourceAliasTypeWithClassType = `function aliasTypeWithClassType(): void {
   type StringClass = ClassWithGeneric<string>;
+}
+`;
+
+export const SourceIntersectionTypeForDefaultMethod = `type IntersectionType = string & number & void;
+type ComplicatedType = string | ((number & any) & (string | void));
+type IC = IA & IB;
+type A = {name: string, age: number};
+type B = {name: string, gender: 'male' | 'female'};
+type C = A & B;
+type Person = {name: string, age: number};
+type Employee = Person & {employeeId: number};
+type CanEatAndSleep = CanEat & CanSleep;
+let student: A & B = {name: 'abc', age: 12, gender: 'male'};
+`;
+
+export const SourceIntersectionTypeForFunction = `function animal(property: CanEat & CanSleep): A & B {
+  property.eat();
+  property.sleep();
+  return {name: 'abc', age: 12, gender: 'male'};
+}
+`;
+
+export const SourceIntersectionTypeForClass = `class Inter {
+  private fieldA: string & number;
+  fieldB: A & B;
+  static fieldC: Employee & (number | boolean);
 }
 `;

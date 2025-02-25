@@ -34,6 +34,7 @@ import {
     ClassType,
     FunctionType,
     GenericType,
+    IntersectionType,
     NeverType,
     NullType,
     NumberType,
@@ -120,7 +121,7 @@ export class TypeInference {
         if (leftOpType instanceof ClassType &&
             leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             type = TypeInference.inferUnclearRefName(leftOpType.getClassSignature().getClassName(), declaringArkClass);
-        } else if (leftOpType instanceof UnionType) {
+        } else if (leftOpType instanceof UnionType || leftOpType instanceof IntersectionType) {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let newType = this.inferUnclearedType(types[i], declaringArkClass);
@@ -318,13 +319,14 @@ export class TypeInference {
     }
 
     public static isUnclearType(type: Type | null | undefined): boolean {
+        // TODO: For UnionType, IntersectionType and TupleType, it should recurse check every item of them.
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType
             || type instanceof NullType || type instanceof UndefinedType) {
             return true;
         } else if (type instanceof ClassType
             && type.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             return true;
-        } else if (type instanceof UnionType) {
+        } else if (type instanceof UnionType || type instanceof IntersectionType) {
             return !!type.getTypes().find(t => t instanceof UnclearReferenceType);
         } else if (type instanceof ArrayType) {
             return (type.getBaseType() instanceof UnclearReferenceType);
@@ -449,11 +451,7 @@ export class TypeInference {
             return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
         }
         let type = this.inferUnclearRefName(urType.getName(), arkClass);
-        if (type instanceof AliasType) {
-            return type;
-        }
         return type ? this.replaceTypeWithReal(type, realTypes) : null;
-
     }
 
     /**
@@ -631,6 +629,10 @@ export class TypeInference {
             const types: Type[] = [];
             type.flatType().forEach(t => types.push(this.replaceTypeWithReal(t, realTypes)));
             return new UnionType(types, this.replaceTypeWithReal(type.getCurrType(), realTypes));
+        } else if (type instanceof IntersectionType && realTypes) {
+            const types: Type[] = [];
+            type.getTypes().forEach(t => types.push(this.replaceTypeWithReal(t, realTypes)));
+            return new IntersectionType(types);
         } else if (type instanceof ArrayType && realTypes) {
             const replacedBaseType = this.replaceTypeWithReal(type.getBaseType(), realTypes);
             return new ArrayType(replacedBaseType, type.getDimension());

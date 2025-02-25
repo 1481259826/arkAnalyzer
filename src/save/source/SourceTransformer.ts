@@ -45,6 +45,7 @@ import {
     ClassType,
     FunctionType,
     GenericType,
+    IntersectionType,
     LiteralType,
     PrimitiveType,
     StringType,
@@ -367,8 +368,8 @@ export class SourceTransformer {
             return type.getName();
         }
 
-        if (type instanceof UnionType) {
-            return this.unionType2string(type);
+        if (type instanceof UnionType || type instanceof IntersectionType) {
+            return this.multipleType2string(type);
         }
 
         if (type instanceof UnknownType) {
@@ -422,12 +423,20 @@ export class SourceTransformer {
         return `${literalName}`;
     }
 
-    private unionType2string(type: UnionType): string {
+    private multipleType2string(type: UnionType | IntersectionType): string {
         let typesStr: string[] = [];
         for (const member of type.getTypes()) {
-            typesStr.push(this.typeToString(member));
+            if (member instanceof UnionType || member instanceof IntersectionType) {
+                typesStr.push(`(${this.typeToString(member)})`);
+            } else {
+                typesStr.push(this.typeToString(member));
+            }
         }
-        return typesStr.join(' | ');
+        if (type instanceof UnionType) {
+            return typesStr.join(' | ');
+        } else {
+            return typesStr.join(' & ');
+        }
     }
 
     private arrayType2string(type: ArrayType): string {
