@@ -49,6 +49,7 @@ import {
     LiteralType,
     PrimitiveType,
     StringType,
+    TupleType,
     Type,
     UnclearReferenceType,
     UnionType,
@@ -386,6 +387,9 @@ export class SourceTransformer {
         if (type instanceof ArrayType) {
             return this.arrayType2string(type);
         }
+        if (type instanceof TupleType) {
+            return this.tupleType2string(type);
+        }
 
         if (type instanceof FunctionType) {
             let methodSignature = type.getMethodSignature();
@@ -440,6 +444,7 @@ export class SourceTransformer {
     }
 
     private arrayType2string(type: ArrayType): string {
+        const readonly = type.getReadonly() ? 'readonly ' : '';
         const dimensions: string[] = [];
         for (let i = 0; i < type.getDimension(); i++) {
             dimensions.push('[]');
@@ -449,7 +454,16 @@ export class SourceTransformer {
         if (baseType instanceof UnionType) {
             return `(${this.typeToString(baseType)})${dimensions.join('')}`;
         }
-        return `${this.typeToString(baseType)}${dimensions.join('')}`;
+        return `${readonly}${this.typeToString(baseType)}${dimensions.join('')}`;
+    }
+
+    private tupleType2string(type: TupleType): string {
+        const readonly = type.getReadonly() ? 'readonly ' : '';
+        let typesStr: string[] = [];
+        for (const member of type.getTypes()) {
+            typesStr.push(this.typeToString(member));
+        }
+        return `${readonly}[${typesStr.join(', ')}]`;
     }
 
     private unclearReferenceType2string(type: UnclearReferenceType): string {

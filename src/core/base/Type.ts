@@ -436,6 +436,7 @@ export class ClassType extends Type {
 export class ArrayType extends Type {
     private baseType: Type;
     private dimension: number;
+    private readonly?: boolean;
 
     constructor(baseType: Type, dimension: number) {
         super();
@@ -459,8 +460,19 @@ export class ArrayType extends Type {
         return this.dimension;
     }
 
+    public setReadonly(readonly: boolean): void {
+        this.readonly = readonly;
+    }
+
+    public getReadonly(): boolean | undefined {
+        return this.readonly;
+    }
+
     public getTypeString(): string {
         const strs: string[] = [];
+        if (this.getReadonly()) {
+            strs.push('readonly ');
+        }
         if (this.baseType instanceof UnionType) {
             strs.push('(' + this.baseType.toString() + ')');
         } else if (this.baseType) {
@@ -475,6 +487,7 @@ export class ArrayType extends Type {
 
 export class TupleType extends Type {
     private types: Type[];
+    private readonly?: boolean;
 
     constructor(types: Type[]) {
         super();
@@ -485,7 +498,18 @@ export class TupleType extends Type {
         return this.types;
     }
 
+    public setReadonly(readonly: boolean): void {
+        this.readonly = readonly;
+    }
+
+    public getReadonly(): boolean | undefined {
+        return this.readonly;
+    }
+
     public getTypeString(): string {
+        if (this.getReadonly()) {
+            return 'readonly [' + this.types.join(', ') + ']';
+        }
         return '[' + this.types.join(', ') + ']';
     }
 }

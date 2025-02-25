@@ -121,7 +121,7 @@ export class TypeInference {
         if (leftOpType instanceof ClassType &&
             leftOpType.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             type = TypeInference.inferUnclearRefName(leftOpType.getClassSignature().getClassName(), declaringArkClass);
-        } else if (leftOpType instanceof UnionType || leftOpType instanceof IntersectionType) {
+        } else if (leftOpType instanceof UnionType || leftOpType instanceof IntersectionType || leftOpType instanceof TupleType) {
             let types = leftOpType.getTypes();
             for (let i = 0; i < types.length; i++) {
                 let newType = this.inferUnclearedType(types[i], declaringArkClass);

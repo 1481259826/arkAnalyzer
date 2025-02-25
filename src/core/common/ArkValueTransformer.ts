@@ -1554,6 +1554,8 @@ export class ArkValueTransformer {
                 return this.resolveTypeQueryNode(type as ts.TypeQueryNode);
             case ts.SyntaxKind.ParenthesizedType:
                 return this.resolveTypeNode((type as ts.ParenthesizedTypeNode).type);
+            case ts.SyntaxKind.TypeOperator:
+                return this.resolveTypeOperatorNode(type as ts.TypeOperatorNode);
             default:
                 return UnknownType.getInstance();
         }
@@ -1573,6 +1575,26 @@ export class ArkValueTransformer {
             }
         }
         return new UnclearReferenceType(exprName, genericTypes);
+    }
+
+    private resolveTypeOperatorNode(typeOperatorNode: ts.TypeOperatorNode): Type {
+        switch (typeOperatorNode.operator) {
+            case ts.SyntaxKind.ReadonlyKeyword: {
+                let type = this.resolveTypeNode(typeOperatorNode.type);
+                if (type instanceof ArrayType || type instanceof TupleType) {
+                    type.setReadonly(true);
+                }
+                return type;
+            }
+            case ts.SyntaxKind.KeyOfKeyword: {
+                return UnknownType.getInstance();
+            }
+            case ts.SyntaxKind.UniqueKeyword: {
+                return UnknownType.getInstance();
+            }
+            default:
+                return UnknownType.getInstance();
+        }
     }
 
     public static resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode, sourceFile: ts.SourceFile): Type {
