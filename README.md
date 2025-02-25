@@ -40,22 +40,22 @@
 
 ### Leader
 
-- [lilicoding](https://gitee.com/lilicoding)
+- [lilicoding](https://gitcode.com/lilicoding)
 
 
 ### Committers列表
-- [kubigao](https://gitee.com/kubigao)
-- [yifei-xue](https://gitee.com/yifei_xue)
-- [kubrick-hjh](https://gitee.com/kubrick-hjh)
+- [kubigao](https://gitcode.com/kubigao)
+- [yifei-xue](https://gitcode.com/yifei-xue)
+- [kubrick-hjh](https://gitcode.com/kubrick-hjh)
 - [speed9](https://gitee.com/speeds)
-- [bbsun](https://gitee.com/bbsun)
-- [chn](https://gitee.com/chn)
-- [Elouan](https://gitee.com/Elouan)
-- [Rnine](https://gitee.com/Rnine)
+- [bbsun](https://gitcode.com/bbsun)
+- [chn](https://gitcode.com/chn)
+- [Elouan](https://gitcode.com/Elouan)
+- [Rnine](https://gitcode.com/Rnine1)
 - [workspace_cb](https://gitee.com/workspace_cb)
 - [longyuC](https://gitee.com/longyuC)
-- [xyji95](https://gitee.com/xyji95)
-- [xulingyun-red](https://gitee.com/xulingyun-red)
+- [xyji95](https://gitcode.com/xyji95)
+- [xulingyun](https://gitcode.com/muya318)
 
 
 ### 会议
