@@ -23,24 +23,35 @@ import {
     Scene,
     SceneConfig, SourceMethodPrinter,
     Stmt,
-    Local, ArkField, ArkClass,
+    Local, ArkField, ArkClass, ArkMethod, FunctionType,
 } from '../../src';
 import {
     AliasTypeMultiRef,
     AliasTypeOfBoolean,
     AliasTypeOfClassA,
-    AliasTypeOfClassB, AliasTypeOfFunctionType,
+    AliasTypeOfClassB,
+    AliasTypeOfFunctionType,
+    AliasTypeOfGenericArrayType, AliasTypeOfGenericArrayTypeWithNumber, AliasTypeOfGenericClassType,
+    AliasTypeOfGenericFunctionType, AliasTypeOfGenericObjectType, AliasTypeOfGenericObjectWithBooleanNumber,
+    AliasTypeOfGenericTupleType, AliasTypeOfGenericTupleTypeWithNumber,
+    AliasTypeOfGenericType, AliasTypeOfGenericTypeWithNumber,
     AliasTypeOfLiteralType,
     AliasTypeOfMultiQualifier,
     AliasTypeOfMultiTypeQuery,
-    AliasTypeOfNumberA, AliasTypeOfObjectA,
+    AliasTypeOfNumberA,
+    AliasTypeOfObjectA,
     AliasTypeOfQueryOfLiteralType,
     AliasTypeOfSingleTypeQuery,
-    AliasTypeOfString, AliasTypeOfUnionType, AliasTypeOfWholeExports,
-    AliasTypeRef, SourceAliasTypeWithFunctionType,
-    SourceAliasTypeWithImport, SourceAliasTypeWithLiteralType,
+    AliasTypeOfString,
+    AliasTypeOfUnionType,
+    AliasTypeOfWholeExports,
+    AliasTypeRef, SourceAliasTypeWithClassType,
+    SourceAliasTypeWithFunctionType, SourceAliasTypeWithGenericType,
+    SourceAliasTypeWithImport,
+    SourceAliasTypeWithLiteralType,
     SourceAliasTypeWithReference,
-    SourceAliasTypeWithTypeQuery, SourceAliasTypeWithUnionType,
+    SourceAliasTypeWithTypeQuery,
+    SourceAliasTypeWithUnionType,
     SourceSimpleAliasType,
 } from '../resources/type/expectedIR';
 
@@ -54,10 +65,16 @@ function buildScene(): Scene {
 }
 
 function compareAliasType(aliasType: AliasType, expectIR: any): void {
-    assert.equal(aliasType!.getOriginalType().toString(), expectIR.originalType);
-    assert.equal(aliasType!.getName(), expectIR.name);
-    assert.equal(aliasType!.getModifiers(), expectIR.modifiers);
-    assert.equal(aliasType!.getSignature().toString(), expectIR.signature);
+    const originalType = aliasType.getOriginalType();
+    assert.equal(originalType.toString(), expectIR.originalType);
+    if (originalType instanceof FunctionType) {
+        assert.equal(originalType.getRealGenericTypes()?.toString(), expectIR.functionTypeRealGenericTypes);
+    }
+    assert.equal(aliasType.getName(), expectIR.name);
+    assert.equal(aliasType.getModifiers(), expectIR.modifiers);
+    assert.equal(aliasType.getSignature().toString(), expectIR.signature);
+    assert.equal(aliasType.getGenericTypes()?.toString(), expectIR.genericTypes);
+    assert.equal(aliasType.getRealGenericTypes()?.toString(), expectIR.rawGenericTypes);
 }
 
 function compareTypeAliasStmt(stmt: Stmt, expectIR: any): void {
@@ -101,12 +118,11 @@ function compareTypeAliasExpr(expr: AliasTypeExpr, expectedExpr: any): void {
     } else if (originalObject instanceof Local) {
         assert.equal(originalObject.getType().getTypeString(), expectedExpr.originalObject.typeString);
         assert.equal(originalObject.getDeclaringStmt()?.toString(), expectedExpr.originalObject.declaringStmt);
-    } else if (originalObject instanceof ArkField) {
-        assert.equal(originalObject.getSignature().toString(), expectedExpr.originalObject.signature);
-    } else if (originalObject instanceof ArkClass) {
+    } else if (originalObject instanceof ArkField || originalObject instanceof ArkClass || originalObject instanceof ArkMethod) {
         assert.equal(originalObject.getSignature().toString(), expectedExpr.originalObject.signature);
     }
     assert.equal(expr.getTransferWithTypeOf(), expectedExpr.transferWithTypeOf);
+    assert.equal(expr.getRealGenericTypes()?.toString(), expectedExpr.realGenericTypes);
     assert.equal(expr.toString(), expectedExpr.toString);
 }
 
@@ -461,6 +477,20 @@ describe('Alias Type With Function Type Test', () => {
             compareTypeAliasStmt(stmts![1], AliasTypeOfFunctionType.stmt);
         }
     });
+
+    it('alias type of GenericFunctionType', () => {
+        const alias = aliasTypeMap?.get('NumberGenericFunction');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericFunctionType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericFunctionType.aliasType);
+        }
+
+        if (AliasTypeOfGenericFunctionType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 3);
+            compareTypeAliasStmt(stmts![2], AliasTypeOfGenericFunctionType.stmt);
+        }
+    });
 });
 
 describe('Alias Type With Union Type Test', () => {
@@ -479,6 +509,152 @@ describe('Alias Type With Union Type Test', () => {
             assert.isDefined(stmts);
             assert.isAtLeast(stmts!.length, 2);
             compareTypeAliasStmt(stmts![1], AliasTypeOfUnionType.stmt);
+        }
+    });
+});
+
+describe('Alias Type With Generic Type Test', () => {
+    const method = defaultClass?.getMethodWithName('aliasTypeWithGenericType');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
+
+    it('alias type of GenericType', () => {
+        const alias = aliasTypeMap?.get('Generic');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericType.aliasType);
+        }
+
+        if (AliasTypeOfGenericType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfGenericType.stmt);
+        }
+    });
+
+    it('alias type of GenericTypeWithNumber', () => {
+        const alias = aliasTypeMap?.get('GenericNumber');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericTypeWithNumber.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericTypeWithNumber.aliasType);
+        }
+
+        if (AliasTypeOfGenericTypeWithNumber.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 3);
+            compareTypeAliasStmt(stmts![2], AliasTypeOfGenericTypeWithNumber.stmt);
+        }
+
+        assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), 'number');
+    });
+
+    it('alias type of GenericArrayType', () => {
+        const alias = aliasTypeMap?.get('GenericArray');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericArrayType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericArrayType.aliasType);
+        }
+
+        if (AliasTypeOfGenericArrayType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 4);
+            compareTypeAliasStmt(stmts![3], AliasTypeOfGenericArrayType.stmt);
+        }
+    });
+
+    it('alias type of GenericArrayTypeWithNumber', () => {
+        const alias = aliasTypeMap?.get('GenericArrayNumber');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericArrayTypeWithNumber.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericArrayTypeWithNumber.aliasType);
+        }
+
+        if (AliasTypeOfGenericArrayTypeWithNumber.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 5);
+            compareTypeAliasStmt(stmts![4], AliasTypeOfGenericArrayTypeWithNumber.stmt);
+        }
+
+        assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), 'number[]');
+    });
+
+    it('alias type of GenericTupleType', () => {
+        const alias = aliasTypeMap?.get('GenericTuple');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericTupleType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericTupleType.aliasType);
+        }
+
+        if (AliasTypeOfGenericTupleType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 6);
+            compareTypeAliasStmt(stmts![5], AliasTypeOfGenericTupleType.stmt);
+        }
+    });
+
+    it('alias type of GenericTupleTypeWithStringNumber', () => {
+        const alias = aliasTypeMap?.get('GenericTupleStringNumber');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericTupleTypeWithNumber.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericTupleTypeWithNumber.aliasType);
+        }
+
+        if (AliasTypeOfGenericTupleTypeWithNumber.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 7);
+            compareTypeAliasStmt(stmts![6], AliasTypeOfGenericTupleTypeWithNumber.stmt);
+        }
+
+        assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), '[string, number]');
+    });
+
+    it('alias type of GenericObjectType', () => {
+        const alias = aliasTypeMap?.get('GenericObject');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericObjectType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericObjectType.aliasType);
+        }
+
+        if (AliasTypeOfGenericObjectType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 8);
+            compareTypeAliasStmt(stmts![7], AliasTypeOfGenericObjectType.stmt);
+        }
+    });
+
+    it('alias type of GenericObjectTypeWithBooleanNumber', () => {
+        const alias = aliasTypeMap?.get('GenericObjectBooleanNumber');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericObjectWithBooleanNumber.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericObjectWithBooleanNumber.aliasType);
+        }
+
+        if (AliasTypeOfGenericObjectWithBooleanNumber.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 9);
+            compareTypeAliasStmt(stmts![8], AliasTypeOfGenericObjectWithBooleanNumber.stmt);
+        }
+
+        assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), '@type/test.ts: %AC$0<boolean,number>');
+    });
+});
+
+describe('Alias Type With Generic Class Test', () => {
+    const method = defaultClass?.getMethodWithName('aliasTypeWithClassType');
+    const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+    const stmts = method?.getBody()?.getCfg().getStmts();
+
+    it('alias type of GenericClass', () => {
+        const alias = aliasTypeMap?.get('StringClass');
+        assert.isDefined(alias);
+        if (AliasTypeOfGenericClassType.aliasType !== undefined) {
+            compareAliasType(alias![0], AliasTypeOfGenericClassType.aliasType);
+        }
+
+        if (AliasTypeOfGenericClassType.stmt !== undefined) {
+            assert.isDefined(stmts);
+            assert.isAtLeast(stmts!.length, 2);
+            compareTypeAliasStmt(stmts![1], AliasTypeOfGenericClassType.stmt);
         }
     });
 });
@@ -562,5 +738,25 @@ describe('Save to TS Test', () => {
         let printer = new SourceMethodPrinter(arkMethod!);
         let source = printer.dump();
         assert.equal(source, SourceAliasTypeWithUnionType);
+    });
+
+    it('case8: method aliasTypeWithGenericType', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithGenericType');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithGenericType);
+    });
+
+    it('case9: method aliasTypeWithClassType', () => {
+        assert.isDefined(arkFile);
+        let arkMethod = arkFile!.getDefaultClass().getMethodWithName('aliasTypeWithClassType');
+        assert.isDefined(arkMethod);
+
+        let printer = new SourceMethodPrinter(arkMethod!);
+        let source = printer.dump();
+        assert.equal(source, SourceAliasTypeWithClassType);
     });
 });

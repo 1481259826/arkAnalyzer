@@ -822,10 +822,26 @@ export class SourceTypeAliasStmt extends SourceStmt {
         if (expr.getTransferWithTypeOf()) {
             typeOf = 'typeof ';
         }
-        let typeObject = expr.getOriginalObject();
 
+        let realGenericTypes = '';
+        if (expr.getRealGenericTypes()) {
+            let types = expr.getRealGenericTypes()!.join(', ');
+            if (types) {
+                realGenericTypes = `<${types}>`;
+            }
+        }
+
+        let genericTypes = '';
+        if (this.aliasType.getGenericTypes()) {
+            let types = this.aliasType.getGenericTypes()!.join(', ');
+            if (types) {
+                genericTypes = `<${types}>`;
+            }
+        }
+
+        let typeObject = expr.getOriginalObject();
         if (typeObject instanceof Type) {
-            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${this.transformer.typeToString(typeObject)};`);
+            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`);
             return;
         }
         if (typeObject instanceof ImportInfo) {
@@ -833,23 +849,34 @@ export class SourceTypeAliasStmt extends SourceStmt {
             if (typeObject.getImportClauseName() !== '') {
                 exprStr = `${exprStr}.${typeObject.getImportClauseName()}`;
             }
-            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${exprStr};`);
+            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${exprStr}${realGenericTypes};`);
             return;
         }
         if (typeObject instanceof Local) {
-            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${this.transformer.valueToString(typeObject)};`);
+            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.valueToString(typeObject)}${realGenericTypes};`);
             return;
         }
         if (typeObject instanceof ArkClass) {
-            let name = SourceUtils.getStaticInvokeClassFullName(typeObject.getSignature());
-            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${name};`);
+            let classTS = this.generateClassTS(typeObject);
+            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${classTS}${realGenericTypes};`);
             return;
         }
         if (typeObject instanceof ArkMethod) {
-            this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${typeObject.getName()};`);
+            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${typeObject.getName()}${realGenericTypes};`);
             return;
         }
-        this.setText(`${modifier}type ${this.aliasType.getName()} = ${typeOf}${typeObject.getName()};`);
+        this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${typeObject.getName()}${realGenericTypes};`);
+    }
+
+    private generateClassTS(arkClass: ArkClass): string {
+        let res = '';
+        let classType = new ClassType(arkClass.getSignature());
+        if (arkClass.getCategory() === ClassCategory.TYPE_LITERAL || arkClass.getCategory() === ClassCategory.OBJECT) {
+            res = this.transformer.literalObjectToString(classType);
+        } else {
+            res = this.transformer.typeToString(classType);
+        }
+        return res;
     }
 }
 

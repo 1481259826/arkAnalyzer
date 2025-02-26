@@ -14,10 +14,10 @@
  */
 
 import {
-    AliasType,
+    AliasType, ArrayType,
     ArkAliasTypeDefineStmt, ArkClass, ArkField, BooleanType,
     DEFAULT_ARK_CLASS_NAME, ImportInfo, Local, LiteralType, StringType, ArkMethod,
-    UnionType,
+    UnionType, GenericType, TupleType
 } from '../../../src';
 
 export const AliasTypeOfBoolean = {
@@ -37,7 +37,7 @@ export const AliasTypeOfBoolean = {
             transferWithTypeOf: false,
             toString: 'boolean'
         },
-        toString: 'type BooleanAliasType = boolean',
+        toString: 'type @type/test.ts: %dflt.simpleAliasType()#BooleanAliasType = boolean',
         line: 19,
         column: 5,
         operandColumns: [[10, 26], [29, 36]]
@@ -61,7 +61,7 @@ export const AliasTypeOfString = {
             transferWithTypeOf: false,
             toString: 'string'
         },
-        toString: 'type StringAliasType = string',
+        toString: 'type @type/test.ts: %dflt.simpleAliasType()#StringAliasType = string',
         line: 20,
         column: 5,
         operandColumns: [[10, 25], [28, 34]]
@@ -89,7 +89,7 @@ export const AliasTypeOfClassA = {
             transferWithTypeOf: false,
             toString: 'import(\'./exportExample\').ClassA'
         },
-        toString: 'type ClassAType = import(\'./exportExample\').ClassA',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithImport()#ClassAType = import(\'./exportExample\').ClassA',
         line: 28,
         column: 5,
         operandColumns: [[10, 20], [23, 55]]
@@ -117,7 +117,7 @@ export const AliasTypeOfClassB = {
             transferWithTypeOf: false,
             toString: 'import(\'./exportExample\').default'
         },
-        toString: 'type ClassBType = import(\'./exportExample\').default',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithImport()#ClassBType = import(\'./exportExample\').default',
         line: 29,
         column: 5,
         operandColumns: [[10, 20], [23, 56]]
@@ -145,7 +145,7 @@ export const AliasTypeOfNumberA = {
             transferWithTypeOf: false,
             toString: 'import(\'./exportExample\').numberA'
         },
-        toString: 'type NumberAType = import(\'./exportExample\').numberA',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithImport()#NumberAType = import(\'./exportExample\').numberA',
         line: 30,
         column: 5,
         operandColumns: [[10, 21], [24, 57]]
@@ -173,7 +173,7 @@ export const AliasTypeOfMultiQualifier = {
             transferWithTypeOf: false,
             toString: 'import(\'./exportExample\').A.B.C'
         },
-        toString: 'type MultiQualifierType = import(\'./exportExample\').A.B.C',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithImport()#MultiQualifierType = import(\'./exportExample\').A.B.C',
         line: 31,
         column: 5,
         operandColumns: [[10, 28], [31, 62]]
@@ -201,7 +201,7 @@ export const AliasTypeOfObjectA = {
             transferWithTypeOf: true,
             toString: 'typeof import(\'./exportExample\').objectA'
         },
-        toString: 'type ObjectAType = typeof import(\'./exportExample\').objectA',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithImport()#ObjectAType = typeof import(\'./exportExample\').objectA',
         line: 33,
         column: 5,
         operandColumns: [[10, 21], [24, 64]]
@@ -226,7 +226,7 @@ export const AliasTypeOfWholeExports = {
             transferWithTypeOf: true,
             toString: 'typeof import(\'./exportExample\')'
         },
-        toString: 'type WholeExportsType = typeof import(\'./exportExample\')',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithImport()#WholeExportsType = typeof import(\'./exportExample\')',
         line: 34,
         column: 5,
         operandColumns: [[10, 26], [29, 61]]
@@ -251,7 +251,7 @@ export const AliasTypeOfSingleTypeQuery = {
             transferWithTypeOf: true,
             toString: 'typeof objectA'
         },
-        toString: 'type SingleTypeQuery = typeof objectA',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithTypeQuery()#SingleTypeQuery = typeof objectA',
         line: 43,
         column: 5,
         operandColumns: [[10, 25], [28, 42]]
@@ -276,7 +276,7 @@ export const AliasTypeOfMultiTypeQuery = {
             transferWithTypeOf: true,
             toString: 'typeof c'
         },
-        toString: 'type MultiTypeQuery = typeof c',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithTypeQuery()#MultiTypeQuery = typeof c',
         line: 44,
         column: 5,
         operandColumns: [[10, 24], [27, 47]]
@@ -300,7 +300,7 @@ export const AliasTypeRef = {
             transferWithTypeOf: false,
             toString: '@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
         },
-        toString: 'type ReferType = @type/exportExample.ts: %dflt.[static]%dflt()#numberA',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithReference()#ReferType = @type/exportExample.ts: %dflt.[static]%dflt()#numberA',
         line: 48,
         column: 5,
         operandColumns: [[10, 19], [22, 29]]
@@ -324,7 +324,7 @@ export const AliasTypeMultiRef = {
             transferWithTypeOf: false,
             toString: '@type/exportExample.ts: A.B.C'
         },
-        toString: 'type MultiReferType = @type/exportExample.ts: A.B.C',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithReference()#MultiReferType = @type/exportExample.ts: A.B.C',
         line: 49,
         column: 5,
         operandColumns: [[10, 24], [27, 32]]
@@ -348,7 +348,7 @@ export const AliasTypeOfLiteralType = {
             transferWithTypeOf: false,
             toString: '\'123\''
         },
-        toString: 'declare type ABC = \'123\'',
+        toString: 'declare type @type/test.ts: %dflt.aliasTypeWithLiteralType()#ABC = \'123\'',
         line: 53,
         column: 5,
         operandColumns: [[18, 21], [24, 29]]
@@ -373,7 +373,7 @@ export const AliasTypeOfQueryOfLiteralType = {
             transferWithTypeOf: true,
             toString: 'typeof a'
         },
-        toString: 'type XYZ = typeof a',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithLiteralType()#XYZ = typeof a',
         line: 55,
         column: 5,
         operandColumns: [[10, 13], [16, 24]]
@@ -392,15 +392,43 @@ export const AliasTypeOfFunctionType = {
         typeAliasExpr: {
             originalObject: {
                 instanceof: ArkMethod,
-                toString: '@type/test.ts: %dflt.aliasTypeWithLiteralType()'
+                signature: '@type/test.ts: %dflt.aliasTypeWithLiteralType()'
             },
             transferWithTypeOf: true,
             toString: 'typeof @type/test.ts: %dflt.aliasTypeWithLiteralType()'
         },
-        toString: 'type FunctionAliasType = typeof @type/test.ts: %dflt.aliasTypeWithLiteralType()',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithFunctionType()#FunctionAliasType = typeof @type/test.ts: %dflt.aliasTypeWithLiteralType()',
         line: 59,
         column: 5,
         operandColumns: [[10, 27], [30, 61]]
+    }
+};
+
+export const AliasTypeOfGenericFunctionType = {
+    aliasType: {
+        name: 'NumberGenericFunction',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithFunctionType()#NumberGenericFunction`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.functionWithGeneric(T)',
+        functionTypeRealGenericTypes: ['number'],
+        genericTypes: undefined,
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArkMethod,
+                signature: '@type/test.ts: %dflt.functionWithGeneric(T)'
+            },
+            transferWithTypeOf: true,
+            realGenericTypes: ['number'],
+            toString: 'typeof @type/test.ts: %dflt.functionWithGeneric<number>(number)'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithFunctionType()#NumberGenericFunction = typeof @type/test.ts: %dflt.functionWithGeneric<number>(number)',
+        line: 60,
+        column: 5,
+        operandColumns: [[10, 31], [34, 68]]
     }
 };
 
@@ -421,10 +449,253 @@ export const AliasTypeOfUnionType = {
             transferWithTypeOf: false,
             toString: '@type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA'
         },
-        toString: 'type UnionAliasType = @type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA',
-        line: 63,
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithUnionType()#UnionAliasType = @type/exportExample.ts: A.B.C|@type/exportExample.ts: %dflt.[static]%dflt()#numberA',
+        line: 68,
         column: 5,
         operandColumns: [[10, 24], [27, 42]]
+    }
+};
+
+export const AliasTypeOfGenericType = {
+    aliasType: {
+        name: 'Generic',
+        signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithGenericType()#Generic`,
+        modifiers: 0,
+        originalType: 'T',
+        genericTypes: ['T'],
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: GenericType,
+                toString: 'T'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: undefined,
+            toString: 'T'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#Generic<T> = T',
+        line: 72,
+        column: 5,
+        operandColumns: [[10, 17], [23, 24]]
+    }
+};
+
+export const AliasTypeOfGenericTypeWithNumber = {
+    aliasType: {
+        name: 'GenericNumber',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericNumber`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.aliasTypeWithGenericType()#Generic<number>',
+        genericTypes: undefined,
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: AliasType,
+                toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#Generic<T>'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: ['number'],
+            toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#Generic<number>'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericNumber = @type/test.ts: %dflt.aliasTypeWithGenericType()#Generic<number>',
+        line: 73,
+        column: 5,
+        operandColumns: [[10, 23], [26, 41]]
+    }
+};
+
+export const AliasTypeOfGenericArrayType = {
+    aliasType: {
+        name: 'GenericArray',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArray`,
+        modifiers: 0,
+        originalType: 'T[]',
+        genericTypes: ['T'],
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArrayType,
+                toString: 'T[]'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: undefined,
+            toString: 'T[]'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArray<T> = T[]',
+        line: 75,
+        column: 5,
+        operandColumns: [[10, 22], [28, 31]]
+    }
+};
+
+export const AliasTypeOfGenericArrayTypeWithNumber = {
+    aliasType: {
+        name: 'GenericArrayNumber',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArrayNumber`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArray<number>',
+        genericTypes: undefined,
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: AliasType,
+                toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArray<T>'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: ['number'],
+            toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArray<number>'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArrayNumber = @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericArray<number>',
+        line: 76,
+        column: 5,
+        operandColumns: [[10, 28], [31, 51]]
+    }
+};
+
+export const AliasTypeOfGenericTupleType = {
+    aliasType: {
+        name: 'GenericTuple',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTuple`,
+        modifiers: 0,
+        originalType: '[T, U]',
+        genericTypes: ['T', 'U'],
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: TupleType,
+                toString: '[T, U]'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: undefined,
+            toString: '[T, U]'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTuple<T,U> = [T, U]',
+        line: 78,
+        column: 5,
+        operandColumns: [[10, 22], [31, 37]]
+    }
+};
+
+export const AliasTypeOfGenericTupleTypeWithNumber = {
+    aliasType: {
+        name: 'GenericTupleStringNumber',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTupleStringNumber`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTuple<string,number>',
+        genericTypes: undefined,
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: AliasType,
+                toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTuple<T,U>'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: ['string', 'number'],
+            toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTuple<string,number>'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTupleStringNumber = @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericTuple<string,number>',
+        line: 79,
+        column: 5,
+        operandColumns: [[10, 34], [37, 65]]
+    }
+};
+
+export const AliasTypeOfGenericObjectType = {
+    aliasType: {
+        name: 'GenericObject',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %AC$0<X,Y>',
+        genericTypes: ['X', 'Y'],
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArkClass,
+                signature: '@type/test.ts: %AC$0',
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: undefined,
+            toString: '@type/test.ts: %AC$0'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<X,Y> = @type/test.ts: %AC$0',
+        line: 81,
+        column: 5,
+        operandColumns: [[10, 23], [32, 6]]
+    }
+};
+
+export const AliasTypeOfGenericObjectWithBooleanNumber = {
+    aliasType: {
+        name: 'GenericObjectBooleanNumber',
+        signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObjectBooleanNumber`,
+        modifiers: 0,
+        originalType: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<boolean,number>',
+        genericTypes: undefined,
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: AliasType,
+                toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<X,Y>'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: ['boolean', 'number'],
+            toString: '@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<boolean,number>'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObjectBooleanNumber = @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<boolean,number>',
+        line: 85,
+        column: 5,
+        operandColumns: [[10, 36], [39, 69]]
+    }
+};
+
+export const AliasTypeOfGenericClassType = {
+    aliasType: {
+        name: 'StringClass',
+        signature: `@type/test.ts: %dflt.aliasTypeWithClassType()#StringClass`,
+        modifiers: 0,
+        originalType: '@type/test.ts: ClassWithGeneric<string>',
+        genericTypes: undefined,
+        realGenericTypes: undefined,
+    },
+    stmt: {
+        instanceof: ArkAliasTypeDefineStmt,
+        typeAliasExpr: {
+            originalObject: {
+                instanceof: ArkClass,
+                signature: '@type/test.ts: ClassWithGeneric'
+            },
+            transferWithTypeOf: false,
+            realGenericTypes: 'string',
+            toString: '@type/test.ts: ClassWithGeneric<string>'
+        },
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithClassType()#StringClass = @type/test.ts: ClassWithGeneric<string>',
+        line: 93,
+        column: 5,
+        operandColumns: [[10, 21], [24, 48]]
     }
 };
 
@@ -466,10 +737,28 @@ export const SourceAliasTypeWithLiteralType = `function aliasTypeWithLiteralType
 
 export const SourceAliasTypeWithFunctionType = `function aliasTypeWithFunctionType(): void {
   type FunctionAliasType = typeof aliasTypeWithLiteralType;
+  type NumberGenericFunction = typeof functionWithGeneric<number>;
 }
 `;
 
 export const SourceAliasTypeWithUnionType = `function aliasTypeWithUnionType(): void {
   type UnionAliasType = A.B.C | numberA;
+}
+`;
+
+export const SourceAliasTypeWithGenericType = `function aliasTypeWithGenericType(): void {
+  type Generic<T> = T;
+  type GenericNumber = Generic<number>;
+  type GenericArray<T> = T[];
+  type GenericArrayNumber = GenericArray<number>;
+  type GenericTuple<T, U> = [T, U];
+  type GenericTupleStringNumber = GenericTuple<string, number>;
+  type GenericObject<X, Y> = {x: X, y: Y};
+  type GenericObjectBooleanNumber = GenericObject<boolean, number>;
+}
+`;
+
+export const SourceAliasTypeWithClassType = `function aliasTypeWithClassType(): void {
+  type StringClass = ClassWithGeneric<string>;
 }
 `;

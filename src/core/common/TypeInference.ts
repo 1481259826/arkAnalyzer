@@ -37,7 +37,7 @@ import {
     NeverType,
     NullType,
     NumberType,
-    StringType,
+    StringType, TupleType,
     Type,
     UnclearReferenceType,
     UndefinedType,
@@ -449,6 +449,9 @@ export class TypeInference {
             return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
         }
         let type = this.inferUnclearRefName(urType.getName(), arkClass);
+        if (type instanceof AliasType) {
+            return type;
+        }
         return type ? this.replaceTypeWithReal(type, realTypes) : null;
 
     }
@@ -617,16 +620,24 @@ export class TypeInference {
             const replacedTypes = type.getRealGenericTypes()?.map(g => this.replaceTypeWithReal(g, realTypes)) ?? realTypes;
             return replacedTypes && replacedTypes.length > 0 ? new FunctionType(type.getMethodSignature(), replacedTypes) : type;
         } else if (type instanceof AliasType && realTypes) {
-            let lastAlias = type;
-            let originalType;
-            while ((originalType = lastAlias.getOriginalType()) instanceof AliasType) {
-                lastAlias = originalType;
+            const newObjectType = this.replaceTypeWithReal(type.getOriginalType(), realTypes);
+            const replacedTypes = type.getRealGenericTypes()?.map(g => this.replaceTypeWithReal(g, realTypes)) ?? realTypes;
+            if (replacedTypes.length > 0) {
+                const newAliasType = new AliasType(type.getName(), newObjectType, type.getSignature(), type.getGenericTypes());
+                newAliasType.setRealGenericTypes(replacedTypes);
+                return newAliasType;
             }
-            lastAlias.setOriginalType(this.replaceTypeWithReal(originalType, realTypes));
         } else if (type instanceof UnionType && realTypes) {
             const types: Type[] = [];
             type.flatType().forEach(t => types.push(this.replaceTypeWithReal(t, realTypes)));
             return new UnionType(types, this.replaceTypeWithReal(type.getCurrType(), realTypes));
+        } else if (type instanceof ArrayType && realTypes) {
+            const replacedBaseType = this.replaceTypeWithReal(type.getBaseType(), realTypes);
+            return new ArrayType(replacedBaseType, type.getDimension());
+        } else if (type instanceof TupleType && realTypes) {
+            let replacedTypes: Type[] = [];
+            type.getTypes().forEach(t => { replacedTypes.push(this.replaceTypeWithReal(t, realTypes)) });
+            return new TupleType(replacedTypes);
         } else if (type instanceof GenericType) {
             const realType = realTypes?.[type.getIndex()] ?? type.getDefaultType() ?? type.getConstraint();
             if (realType) {

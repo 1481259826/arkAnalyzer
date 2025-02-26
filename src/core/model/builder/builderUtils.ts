@@ -15,6 +15,7 @@
 
 import ts, { HeritageClause, ParameterDeclaration, TypeNode, TypeParameterDeclaration } from 'ohos-typescript';
 import {
+    AliasType,
     ArrayType,
     ClassType,
     FunctionType,
@@ -271,15 +272,19 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
     return parameters;
 }
 
-export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField): Type {
+export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField | AliasType): Type {
     function replace(urType: UnclearReferenceType): Type {
         const typeName = urType.getName();
         let gType;
-        if (arkInstance instanceof ArkMethod) {
+        if (arkInstance instanceof AliasType) {
             gType = arkInstance.getGenericTypes()?.find(f => f.getName() === typeName);
-        }
-        if (!gType) {
-            gType = arkInstance.getDeclaringArkClass().getGenericsTypes()?.find(f => f.getName() === typeName);
+        } else {
+            if (arkInstance instanceof ArkMethod) {
+                gType = arkInstance.getGenericTypes()?.find(f => f.getName() === typeName);
+            }
+            if (!gType) {
+                gType = arkInstance.getDeclaringArkClass().getGenericsTypes()?.find(f => f.getName() === typeName);
+            }
         }
         if (gType) {
             return gType;
@@ -296,13 +301,20 @@ export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField):
 
     if (type instanceof UnclearReferenceType) {
         return replace(type);
-    } else if (type instanceof UnionType) {
+    } else if (type instanceof ClassType && arkInstance instanceof AliasType) {
+        type.setRealGenericTypes(arkInstance.getGenericTypes());
+    } else if (type instanceof UnionType || type instanceof TupleType) {
         const types = type.getTypes();
         for (let i = 0; i < types.length; i++) {
             const mayType = types[i];
             if (mayType instanceof UnclearReferenceType) {
                 types[i] = replace(mayType);
             }
+        }
+    } else if (type instanceof ArrayType) {
+        const baseType = type.getBaseType();
+        if (baseType instanceof UnclearReferenceType) {
+            type.setBaseType(replace(baseType));
         }
     }
     return type;

@@ -39,7 +39,7 @@ import {
     ArkThrowStmt,
     Stmt,
 } from '../base/Stmt';
-import { AliasType, BooleanType, ClassType, UnclearReferenceType, UnknownType } from '../base/Type';
+import { AliasType, BooleanType, ClassType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
 import { ValueUtil } from './ValueUtil';
 import {
     ClassSignature,
@@ -64,7 +64,7 @@ import { FullPosition, LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { DEFAULT } from './TSConst';
-import { buildModifiers } from '../model/builder/builderUtils';
+import { buildGenericType, buildModifiers, buildTypeParameters } from '../model/builder/builderUtils';
 import { ArkValueTransformer } from './ArkValueTransformer';
 import { ImportInfo } from '../model/ArkImport';
 import { TypeInference } from './TypeInference';
@@ -297,6 +297,14 @@ export class ArkIRTransformer {
         const rightOp = typeAliasDeclaration.type;
         let rightType = this.arkValueTransformer.resolveTypeNode(rightOp);
 
+        const aliasType = new AliasType(aliasName, rightType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        if (typeAliasDeclaration.typeParameters) {
+            const genericTypes = buildTypeParameters(typeAliasDeclaration.typeParameters, this.sourceFile, this.declaringMethod);
+            aliasType.setGenericTypes(genericTypes);
+            aliasType.setOriginalType(buildGenericType(rightType, aliasType));
+            rightType = aliasType.getOriginalType();
+        }
+
         let expr: AliasTypeExpr;
         if (ts.isImportTypeNode(rightOp)) {
             expr = this.resolveImportTypeNode(rightOp);
@@ -304,6 +312,7 @@ export class ArkIRTransformer {
             if (typeObject instanceof ImportInfo && typeObject.getLazyExportInfo() !== null) {
                 const arkExport = typeObject.getLazyExportInfo()!.getArkExport();
                 rightType = TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
+                aliasType.setOriginalType(rightType);
             }
         } else if (ts.isTypeQueryNode(rightOp)) {
             const localName = rightOp.exprName.getText(this.sourceFile);
@@ -314,11 +323,34 @@ export class ArkIRTransformer {
             } else {
                 expr = new AliasTypeExpr(originalLocal, true);
             }
+        } else if (ts.isTypeReferenceNode(rightOp) && rightType instanceof UnclearReferenceType) {
+            const existAliasType = this.getAliasTypeMap().get(rightType.getName());
+            if (existAliasType) {
+                expr = new AliasTypeExpr(existAliasType[0], false);
+            } else {
+                expr = new AliasTypeExpr(rightType, false);
+            }
         } else {
             expr = new AliasTypeExpr(rightType, false);
+
+            // 对于type A = {x:1, y:2}语句，当前阶段即可精确获取ClassType类型，需找到对应的ArkClass作为originalObject
+            // 对于其他情况此处为UnclearReferenceTye并由类型推导进行查找和处理
+            if (rightType instanceof ClassType) {
+                const classObject = ModelUtils.getClassWithName(rightType.getClassSignature().getClassName(), this.declaringMethod.getDeclaringArkClass());
+                if (classObject) {
+                    expr.setOriginalObject(classObject);
+                }
+            }
         }
 
-        const aliasType = new AliasType(aliasName, rightType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        if ((ts.isTypeQueryNode(rightOp) || ts.isTypeReferenceNode(rightOp)) && rightOp.typeArguments) {
+            let realGenericTypes: Type[] = [];
+            rightOp.typeArguments.forEach(typeArgument => {
+                realGenericTypes.push(this.arkValueTransformer.resolveTypeNode(typeArgument));
+            });
+            expr.setRealGenericTypes(realGenericTypes);
+        }
+
         const modifiers = typeAliasDeclaration.modifiers ? buildModifiers(typeAliasDeclaration) : 0;
         aliasType.setModifiers(modifiers);
 
