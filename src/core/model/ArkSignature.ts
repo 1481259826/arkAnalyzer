@@ -184,8 +184,12 @@ export class AliasClassSignature extends ClassSignature {
         this.aliasName = aliasName;
     }
 
-    public getAliasName(): string {
+    public getClassName(): string {
         return this.aliasName;
+    }
+
+    public getOriginName(): string {
+        return super.getClassName();
     }
 }
 

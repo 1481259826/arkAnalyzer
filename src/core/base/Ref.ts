@@ -261,7 +261,7 @@ export class ArkParameterRef extends AbstractRef {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        if (arkMethod.isAnonymousMethod() && (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType)) {
+        if (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType) {
             const type1 = arkMethod.getSignature().getMethodSubSignature().getParameters()[this.index]?.getType();
             if (!TypeInference.isUnclearType(type1)) {
                 this.paramType = type1;

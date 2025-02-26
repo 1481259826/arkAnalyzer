@@ -46,7 +46,7 @@ import {
 import { ArkClass, ClassCategory } from '../../model/ArkClass';
 import { ArkField } from '../../model/ArkField';
 import { ArkMethod } from '../../model/ArkMethod';
-import { AliasClassSignature, ClassSignature, MethodSignature } from '../../model/ArkSignature';
+import { ClassSignature, MethodSignature } from '../../model/ArkSignature';
 import { Cfg } from '../Cfg';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ViewTree, ViewTreeNode } from '../ViewTree';
@@ -1083,8 +1083,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             node.parseStateValues(this, stmt);
             return node;
         }
-        const classSignature = methodSignature.getDeclaringClassSignature();
-        let name = classSignature instanceof AliasClassSignature ? classSignature.getAliasName() : classSignature.getClassName();
+
+        let name = methodSignature.getDeclaringClassSignature().getClassName();
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
 
         if (this.isCreateFunc(methodName)) {
