@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -599,63 +599,54 @@ export const CallExpression_Expect_IR = {
     stmts: [
         {
             text: 'this = this: @expression/CallExpressionTest.ts: %dflt',
-            operandOriginalPositions: [
-                null, null,
-            ],
+            operandOriginalPositions: [null, null],
         },
         {
             text: 'instanceinvoke a1.<@%unk/%unk: .call1()>()',
-            operandOriginalPositions: [
-                [17, 1, 17, 11], [17, 1, 17, 3],
-            ],
+            operandOriginalPositions: [[17, 1, 17, 11], [17, 1, 17, 3]],
         },
         {
             text: 'a2 = instanceinvoke a3.<@%unk/%unk: .call2()>()',
-            operandOriginalPositions: [
-                [18, 5, 18, 7], [18, 10, 18, 20], [18, 10, 18, 12],
-            ],
+            operandOriginalPositions: [[18, 5, 18, 7], [18, 10, 18, 20], [18, 10, 18, 12]],
         },
         {
             text: 'a4 = instanceinvoke a3.<@%unk/%unk: .call3()>(para1, para2)',
-            operandOriginalPositions: [
-                [19, 5, 19, 7], [19, 10, 19, 32], [19, 10, 19, 12], [19, 19, 19, 24], [19, 26, 19, 31],
-            ],
+            operandOriginalPositions: [[19, 5, 19, 7], [19, 10, 19, 32], [19, 10, 19, 12], [19, 19, 19, 24],
+                [19, 26, 19, 31]],
+        },
+        {
+            text: '%0 = a3.<@%unk/%unk: .field1>',
+            operandOriginalPositions: [[20, 10, 20, 19], [20, 10, 20, 19], [20, 10, 20, 12]],
+        },
+        {
+            text: 'instanceinvoke a4.<@%unk/%unk: .call4()>(%0)',
+            operandOriginalPositions: [[20, 1, 20, 20], [20, 1, 20, 3], [20, 10, 20, 19]],
         },
         {
             text: 'staticinvoke <@%unk/%unk: .call10()>()',
-            operandOriginalPositions: [
-                [22, 1, 22, 9],
-            ],
+            operandOriginalPositions: [[23, 1, 23, 9]],
         },
         {
             text: 'a20 = staticinvoke <@%unk/%unk: .call20()>()',
-            operandOriginalPositions: [
-                [23, 5, 23, 8], [23, 11, 23, 19],
-            ],
+            operandOriginalPositions: [[24, 5, 24, 8], [24, 11, 24, 19]],
         },
         {
             text: 'a40 = staticinvoke <@%unk/%unk: .call30()>(para10, para20)',
-            operandOriginalPositions: [
-                [24, 5, 24, 8], [24, 11, 24, 33], [24, 18, 24, 24], [24, 26, 24, 32],
-            ],
+            operandOriginalPositions: [[25, 5, 25, 8], [25, 11, 25, 33], [25, 18, 25, 24], [25, 26, 25, 32]],
         },
         {
-            text: '%0 = staticinvoke <@%unk/%unk: .call200()>()',
-            operandOriginalPositions: [
-                [27, 12, 27, 21], [27, 12, 27, 21],
-            ],
+            text: '%1 = staticinvoke <@%unk/%unk: .call200()>()',
+            operandOriginalPositions: [[28, 12, 28, 21], [28, 12, 28, 21]],
         },
         {
-            text: 'a200 = instanceinvoke %0.<@%unk/%unk: .call300()>(para100, para200)',
-            operandOriginalPositions: [
-                [27, 5, 27, 9], [27, 12, 27, 47], [27, 12, 27, 21], [27, 30, 27, 37], [27, 39, 27, 46],
-            ],
+            text: 'a200 = instanceinvoke %1.<@%unk/%unk: .call300()>(para100, para200)',
+            operandOriginalPositions: [[28, 5, 28, 9], [28, 12, 28, 47], [28, 12, 28, 21], [28, 30, 28, 37],
+                [28, 39, 28, 46]],
         },
         {
             text: 'return',
             operandOriginalPositions: [],
-        },
-    ],
+        },],
 };
 
 export const ExpressionStatements_Expect_IR = {
