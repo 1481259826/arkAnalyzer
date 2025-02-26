@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -444,7 +444,10 @@ export class IRInference {
 
     private static inferLocal(base: Local, arkMethod: ArkMethod): void {
         const arkClass = arkMethod.getDeclaringArkClass();
-        if (base.getName() === THIS_NAME && arkClass.isAnonymousClass()) {
+        if (base.getName() === THIS_NAME) {
+            if (!arkClass.isAnonymousClass()) {
+                base.setType(new ClassType(arkClass.getSignature(), arkClass.getGenericsTypes()));
+            }
             return;
         }
         let baseType: Type | null | undefined = base.getType();

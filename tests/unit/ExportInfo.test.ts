@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,7 @@
 
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
-import { ArkClass, FileSignature, Local, Scene, SceneConfig } from '../../src';
+import { AliasClassSignature, ArkClass, FileSignature, Local, Scene, SceneConfig } from '../../src';
 import { ArkExport, ExportInfo } from '../../src/core/model/ArkExport';
 import { ArkBaseModel, ModifierType } from '../../src/core/model/ArkBaseModel';
 import {
@@ -147,6 +147,19 @@ describe("export Test", () => {
         const arkExport = projectScene.getFile(fileId)?.getImportInfoBy('lottie')
             ?.getLazyExportInfo()?.getArkExport();
         assert.isTrue(arkExport instanceof Local);
+    });
+
+    it('get class case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
+        const stmt = projectScene.getFile(fileId)?.getClassWithName('BlurEffectsExample')
+            ?.getMethodWithName('build')?.getCfg()?.getStmts()[5];
+        assert.isDefined(stmt);
+        const classSignature = stmt?.getInvokeExpr()?.getMethodSignature().getDeclaringClassSignature();
+        assert.isTrue(classSignature instanceof AliasClassSignature);
+        if (classSignature) {
+            assert.isNotNull(projectScene.getClass(classSignature));
+        }
+
     });
 
     it('all case', () => {

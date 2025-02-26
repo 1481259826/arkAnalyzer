@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,7 +18,7 @@ import { ArkExport, ExportInfo } from './ArkExport';
 import { ImportInfo } from './ArkImport';
 import { ArkClass } from './ArkClass';
 import { ArkNamespace } from './ArkNamespace';
-import { ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
+import { AliasClassSignature, ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
 import { ALL } from "../common/TSConst";
 
 export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
@@ -153,7 +153,8 @@ export class ArkFile {
      * @returns A class. If there is no class, the return will be a **null**.
      */
     public getClass(classSignature: ClassSignature): ArkClass | null {
-        const className = classSignature.getClassName();
+        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName()
+            : classSignature.getClassName();
         return this.getClassWithName(className);
     }
 
@@ -221,13 +222,13 @@ export class ArkFile {
      ```typescript
      // abc.ts ArkFile
      export class A {
-         ...
+     ...
      }
 
      export namespace B {
-         export namespace C {
-             export class D {}
-         }
+     export namespace C {
+     export class D {}
+     }
      }
 
      // xyz.ts call getExportInfoBy

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -204,7 +204,10 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private getHeritageClass(heritageClassName: string): ArkClass | null {
         let superClass = this.heritageClasses.get(heritageClassName);
         if (superClass === undefined) {
-            const type = TypeInference.inferUnclearRefName(heritageClassName, this);
+            let type = TypeInference.inferUnclearRefName(heritageClassName, this);
+            if (type) {
+                type = TypeInference.replaceAliasType(type);
+            }
             if (type instanceof ClassType &&
                 (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
                 superClass.addExtendedClass(this);

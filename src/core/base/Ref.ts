@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -261,7 +261,7 @@ export class ArkParameterRef extends AbstractRef {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        if (arkMethod.isAnonymousMethod() && (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType)) {
+        if (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType) {
             const type1 = arkMethod.getSignature().getMethodSubSignature().getParameters()[this.index]?.getType();
             if (!TypeInference.isUnclearType(type1)) {
                 this.paramType = type1;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,7 @@ import { ArkExport, ExportInfo, ExportType } from './ArkExport';
 import { ArkClass } from './ArkClass';
 import { ArkFile } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
-import { ClassSignature, NamespaceSignature } from './ArkSignature';
+import { AliasClassSignature, ClassSignature, NamespaceSignature } from './ArkSignature';
 import { ALL } from "../common/TSConst";
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
@@ -133,7 +133,8 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
     }
 
     public getClass(classSignature: ClassSignature): ArkClass | null {
-        const className = classSignature.getClassName();
+        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName()
+            : classSignature.getClassName();
         return this.getClassWithName(className);
     }
 
