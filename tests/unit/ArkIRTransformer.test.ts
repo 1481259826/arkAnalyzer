@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,12 +24,12 @@ import {
     NAME_DELIMITER,
     NAME_PREFIX,
     Scene,
-    SceneConfig,
     Value,
 } from '../../src';
 import {
     BinaryExpression_Expect_IR,
-    CallExpression_Expect_IR, ExpressionStatements_Expect_IR,
+    CallExpression_Expect_IR,
+    ExpressionStatements_Expect_IR,
     LiteralExpression_Expect_IR,
     NewExpression_Expect_IR,
     Operator_Expect_IR,
@@ -68,7 +68,7 @@ import {
     UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
-import { assertStmtsEqual, testFileStmts, testMethodStmts } from './common';
+import { assertStmtsEqual, buildScene, testFileStmts, testMethodStmts } from './common';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
@@ -336,17 +336,8 @@ function testMethodClosure(arkMethod: ArkMethod, expectMethod: any): void {
     assertMethodBodyBuilderEqual(arkMethod, expectMethod.bodyBuilder);
 }
 
-function buildScene(folderName: string) {
-    let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(BASE_DIR, folderName));
-    let scene = new Scene();
-    scene.buildSceneFromProjectDir(config);
-    scene.inferTypes();
-    return scene;
-}
-
 describe('expression Test', () => {
-    const scene = buildScene('expression');
+    const scene = buildScene(path.join(BASE_DIR, 'expression'));
 
     it('test binary expression', async () => {
         testMethodStmts(scene, 'BinaryExpressionTest.ts', BinaryExpression_Expect_IR.stmts);
@@ -378,7 +369,7 @@ describe('expression Test', () => {
 });
 
 describe('assignment Test', () => {
-    const scene = buildScene('assignment');
+    const scene = buildScene(path.join(BASE_DIR, 'assignment'));
 
     it('test declaration', async () => {
         testMethodStmts(scene, 'DeclarationTest.ts', Declaration_Expect_IR.stmts);
@@ -394,7 +385,7 @@ describe('assignment Test', () => {
 });
 
 describe('function Test', () => {
-    const scene = buildScene('function');
+    const scene = buildScene(path.join(BASE_DIR, 'function'));
 
     it('test arrow function', async () => {
         testFileStmts(scene, 'ArrowFunctionTest.ts', ArrowFunction_Expect_IR);
@@ -430,7 +421,7 @@ describe('function Test', () => {
 });
 
 describe('closure Test', () => {
-    const scene = buildScene('function');
+    const scene = buildScene(path.join(BASE_DIR, 'function'));
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith('ClosureParamsTest.ts'));
 
     it('basic test nested function with no closures', async () => {

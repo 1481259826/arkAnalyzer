@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,24 +24,28 @@ import {
     buildArkMethodFromArkClass,
     buildDefaultArkMethodFromArkClass,
     buildInitMethod,
-    checkAndUpdateMethod
+    checkAndUpdateMethod,
 } from './ArkMethodBuilder';
 import { buildDecorators, buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
-import { ArkAssignStmt, Stmt } from '../../base/Stmt';
+import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
 import { ArkInstanceFieldRef } from '../../base/Ref';
 import {
     ANONYMOUS_CLASS_DELIMITER,
     ANONYMOUS_CLASS_PREFIX,
     DEFAULT_ARK_CLASS_NAME,
     INSTANCE_INIT_METHOD_NAME,
+    STATIC_BLOCK_METHOD_NAME_PREFIX,
     STATIC_INIT_METHOD_NAME,
 } from '../../common/Const';
 import { IRUtils } from '../../common/IRUtils';
-import { ClassSignature, MethodSignature } from '../ArkSignature';
+import { ClassSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { FullPosition } from '../../base/Position';
+import { VoidType } from '../../base/Type';
+import { BodyBuilder } from '../../common/BodyBuilder';
+import { ArkStaticInvokeExpr } from '../../base/Expr';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClassBuilder');
 
@@ -377,6 +381,7 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
         return;
     }
     buildMethodsForClass(clsNode, cls, sourceFile);
+    const staticBlockMethodSignatures = buildStaticBlocksForClass(clsNode, cls, sourceFile);
     let instanceIRTransformer: ArkIRTransformer;
     let staticIRTransformer: ArkIRTransformer;
     if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
@@ -386,28 +391,33 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     if (ts.isEnumDeclaration(clsNode)) {
         staticIRTransformer = new ArkIRTransformer(sourceFile, cls.getStaticInitMethod());
     }
-    const staticFieldInitializerStmts: Stmt[] = [];
-    const instanceFieldInitializerStmts: Stmt[] = [];
+    const staticInitStmts: Stmt[] = [];
+    const instanceInitStmts: Stmt[] = [];
+    let staticBlockId = 0;
     clsNode.members.forEach((member) => {
         if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
             if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
                 if (arkField.isStatic()) {
                     getInitStmts(staticIRTransformer, arkField, member.initializer);
-                    arkField.getInitializer().forEach(stmt => staticFieldInitializerStmts.push(stmt));
+                    arkField.getInitializer().forEach(stmt => staticInitStmts.push(stmt));
                 } else {
                     if (!instanceIRTransformer)
                         console.log(clsNode.getText(sourceFile));
                     getInitStmts(instanceIRTransformer, arkField, member.initializer);
-                    arkField.getInitializer().forEach(stmt => instanceFieldInitializerStmts.push(stmt));
+                    arkField.getInitializer().forEach(stmt => instanceInitStmts.push(stmt));
                 }
             }
         } else if (ts.isEnumMember(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
             getInitStmts(staticIRTransformer, arkField, member.initializer);
-            arkField.getInitializer().forEach(stmt => staticFieldInitializerStmts.push(stmt));
+            arkField.getInitializer().forEach(stmt => staticInitStmts.push(stmt));
         } else if (ts.isIndexSignatureDeclaration(member)) {
             buildIndexSignature2ArkField(member, sourceFile, cls);
+        } else if (ts.isClassStaticBlockDeclaration(member)) {
+            const currStaticBlockMethodSig = staticBlockMethodSignatures[staticBlockId++];
+            const staticBlockInvokeExpr = new ArkStaticInvokeExpr(currStaticBlockMethodSig, []);
+            staticInitStmts.push(new ArkInvokeStmt(staticBlockInvokeExpr));
         } else if (ts.isSemicolonClassElement(member)) {
             logger.debug('Skip these members.');
         } else {
@@ -415,11 +425,11 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
         }
     });
     if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
-        buildInitMethod(cls.getInstanceInitMethod(), instanceFieldInitializerStmts, instanceIRTransformer!.getThisLocal());
-        buildInitMethod(cls.getStaticInitMethod(), staticFieldInitializerStmts, staticIRTransformer!.getThisLocal());
+        buildInitMethod(cls.getInstanceInitMethod(), instanceInitStmts, instanceIRTransformer!.getThisLocal());
+        buildInitMethod(cls.getStaticInitMethod(), staticInitStmts, staticIRTransformer!.getThisLocal());
     }
     if (ts.isEnumDeclaration(clsNode)) {
-        buildInitMethod(cls.getStaticInitMethod(), staticFieldInitializerStmts, staticIRTransformer!.getThisLocal());
+        buildInitMethod(cls.getStaticInitMethod(), staticInitStmts, staticIRTransformer!.getThisLocal());
     }
 }
 
@@ -440,6 +450,37 @@ function buildMethodsForClass(clsNode: ClassLikeNodeWithMethod, cls: ArkClass, s
             }
         }
     });
+}
+
+function buildStaticBlocksForClass(clsNode: ClassLikeNodeWithMethod, cls: ArkClass,
+                                       sourceFile: ts.SourceFile): MethodSignature[] {
+    let staticInitBlockId = 0;
+    const staticBlockMethodSignatures: MethodSignature[] = [];
+    clsNode.members.forEach((member) => {
+        if (ts.isClassStaticBlockDeclaration(member)) {
+            const staticBlockMethod = new ArkMethod();
+            staticBlockMethod.setDeclaringArkClass(cls);
+            staticBlockMethod.setIsGeneratedFlag(true);
+            staticBlockMethod.setCode(member.getText(sourceFile));
+            const methodName = STATIC_BLOCK_METHOD_NAME_PREFIX + staticInitBlockId++;
+            const methodSubSignature = new MethodSubSignature(methodName, [], VoidType.getInstance(), true);
+            const methodSignature = new MethodSignature(cls.getSignature(), methodSubSignature);
+            staticBlockMethodSignatures.push(methodSignature);
+            staticBlockMethod.setImplementationSignature(methodSignature);
+            const { line, character } = ts.getLineAndCharacterOfPosition(
+                sourceFile,
+                member.getStart(sourceFile),
+            );
+            staticBlockMethod.setLine(line + 1);
+            staticBlockMethod.setColumn(character + 1);
+
+            let bodyBuilder = new BodyBuilder(staticBlockMethod.getSignature(), member, staticBlockMethod, sourceFile);
+            staticBlockMethod.setBodyBuilder(bodyBuilder);
+
+            cls.addMethod(staticBlockMethod);
+        }
+    });
+    return staticBlockMethodSignatures;
 }
 
 function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?: ts.Node) {

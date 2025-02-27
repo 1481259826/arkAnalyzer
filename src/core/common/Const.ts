@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,6 +28,7 @@ export const ANONYMOUS_CLASS_DELIMITER = NAME_DELIMITER;
 export const DEFAULT_ARK_METHOD_NAME = NAME_PREFIX + DEFAULT_NAME;
 export const INSTANCE_INIT_METHOD_NAME = NAME_PREFIX + 'instInit';
 export const STATIC_INIT_METHOD_NAME = NAME_PREFIX + 'statInit';
+export const STATIC_BLOCK_METHOD_NAME_PREFIX = NAME_PREFIX + 'statBlock';
 export const ANONYMOUS_METHOD_PREFIX = NAME_PREFIX + 'AM';
 export const CALL_SIGNATURE_NAME = 'create';
 
