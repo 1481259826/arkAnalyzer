@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,16 +14,17 @@
  */
 
 import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
-import { Dump, SourceBase } from './SourceBase';
+import { SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceField } from './SourceField';
 import { SourceMethod } from './SourceMethod';
 import { SourceTransformer } from './SourceTransformer';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
 import { INSTANCE_INIT_METHOD_NAME, STATIC_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { FieldCategory } from '../../core/model/ArkField';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
+import { Dump } from '../base/BasePrinter';
 
 /**
  * @category save
@@ -68,9 +69,9 @@ export class SourceClass extends SourceBase {
         this.printer
             .writeIndent()
             .writeSpace(this.modifiersToString(this.cls.getModifiers()))
-            .write(`${SourceUtils.classOriginTypeToString.get(this.cls.getCategory())} `);
+            .write(`${PrinterUtils.classOriginTypeToString.get(this.cls.getCategory())} `);
 
-        if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
+        if (!PrinterUtils.isAnonymousClass(this.cls.getName())) {
             this.printer.write(this.cls.getName());
         }
         const genericsTypes = this.cls.getGenericsTypes();
@@ -98,7 +99,7 @@ export class SourceClass extends SourceBase {
 
         this.printer.decIndent();
         this.printer.writeIndent().write('}');
-        if (!SourceUtils.isAnonymousClass(this.cls.getName())) {
+        if (!PrinterUtils.isAnonymousClass(this.cls.getName())) {
             this.printer.writeLine('');
         }
         return this.printer.toString();
@@ -108,8 +109,8 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            let name = SourceUtils.escape(field.getName());
-            if (SourceUtils.isIdentifierText(field.getName())) {
+            let name = PrinterUtils.escape(field.getName());
+            if (PrinterUtils.isIdentifierText(field.getName())) {
                 this.printer.write(name);
             } else {
                 this.printer.write(`'${name}'`);
@@ -132,8 +133,8 @@ export class SourceClass extends SourceBase {
         this.printer.write('{');
 
         this.cls.getFields().forEach((field, index, array) => {
-            let name = SourceUtils.escape(field.getName());
-            if (SourceUtils.isIdentifierText(field.getName())) {
+            let name = PrinterUtils.escape(field.getName());
+            if (PrinterUtils.isIdentifierText(field.getName())) {
                 this.printer.write(`${name}: ${this.transformer.typeToString(field.getType())}`);
             } else {
                 this.printer.write(`'${name}': ${this.transformer.typeToString(field.getType())}`);
@@ -150,13 +151,13 @@ export class SourceClass extends SourceBase {
     protected printMethods(): Dump[] {
         let items: Dump[] = [];
         for (let method of this.cls.getMethods()) {
-            if (method.isGenerated() || (SourceUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree())) {
+            if (method.isGenerated() || (PrinterUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree())) {
                 continue;
             }
 
             if (method.isDefaultArkMethod()) {
                 items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod());
-            } else if (!SourceUtils.isAnonymousMethod(method.getName())) {
+            } else if (!PrinterUtils.isAnonymousMethod(method.getName())) {
                 items.push(new SourceMethod(method, this.printer.getIndent()));
             }
         }

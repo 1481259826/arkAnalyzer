@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-import { Decorator } from '../../core/base/Decorator';
-import { Printer } from '../Printer';
 import { ArkFile } from '../../core/model/ArkFile';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
@@ -23,16 +21,11 @@ import { ArkCodeBuffer } from '../ArkStream';
 import { Local } from '../../core/base/Local';
 import { TransformerContext } from './SourceTransformer';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
-import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
-
-export interface Dump {
-    getLine(): number;
-    dump(): string;
-}
+import { BasePrinter } from '../base/BasePrinter';
 
 export abstract class SourceBase
-    extends Printer
-    implements Dump, TransformerContext
+    extends BasePrinter
+    implements TransformerContext
 {
     protected arkFile: ArkFile;
     protected inBuilder: boolean = false;
@@ -70,19 +63,6 @@ export abstract class SourceBase
         return this.inBuilder;
     }
 
-    public abstract getLine(): number;
-
-    protected printDecorator(docorator: Decorator[]): void {
-        docorator.forEach((value) => {
-            this.printer.writeIndent().writeLine(`@${value.getContent()}`);
-        });
-    }
-
-    protected modifiersToString(modifiers: number): string {
-        let modifiersStr: string[] = modifiers2stringArray(modifiers);
-        return modifiersStr.join(' ');
-    }
-
     protected resolveKeywordType(keywordStr: string): string {
         // 'NumberKeyword | NullKeyword |
         let types: string[] = [];
@@ -102,16 +82,4 @@ export abstract class SourceBase
         return types.join(' | ');
     }
 
-    protected resolveMethodName(name: string): string {
-        if (name === '_Constructor') {
-            return 'constructor';
-        }
-        if (name.startsWith('Get-')) {
-            return name.replace('Get-', 'get ');
-        }
-        if (name.startsWith('Set-')) {
-            return name.replace('Set-', 'set ');
-        }
-        return name;
-    }
 }

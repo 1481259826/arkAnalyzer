@@ -20,6 +20,7 @@ import { DotFilePrinter } from './DotPrinter';
 import { SourceFilePrinter } from './source/SourceFilePrinter';
 import { Printer } from './Printer';
 import { JsonPrinter } from './JsonPrinter';
+import { ArkIRFilePrinter } from './arkir/ArkIRFilePrinter';
 
 /**
  * @example
@@ -98,6 +99,23 @@ export class PrinterBuilder {
         fs.mkdirSync(path.dirname(filename), { recursive: true });
 
         let printer: Printer = new JsonPrinter(arkFile);
+        PrinterBuilder.dump(printer, filename);
+    }
+
+    public dumpToIR(
+        arkFile: ArkFile,
+        output: string | undefined = undefined
+    ): void {
+        let filename = output;
+        if (filename === undefined) {
+            filename = path.join(this.getOutputDir(arkFile), arkFile.getName());
+        }
+        
+        filename += '.IR';
+        
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
+
+        let printer: Printer = new ArkIRFilePrinter(arkFile);
         PrinterBuilder.dump(printer, filename);
     }
 }
