@@ -69,3 +69,16 @@ describe('DummyMainTest3', () => {
         expect([...creater.getDummyMain().getCfg()!.getBlocks().entries()][3][1].getStmts().length).eq(2);
     });
 });
+
+describe('DummyMainTest4', () => {
+    const scene = buildScene('tests/resources/dummyMain/entry_methods_order');
+    const creater = new DummyMainCreater(scene);
+    creater.createDummyMain();
+
+    it('case4: Entry Method Order', () => {
+        expect(creater.getCallbackMethods().length).eq(3);
+        expect(creater.getCallbackMethods()[0].getName()).eq(`%AM0$foo`);
+        expect(creater.getCallbackMethods()[1].getName()).eq(`%AM0$goo`);
+        expect(creater.getCallbackMethods()[2].getName()).eq(`%AM0$build`);
+    });
+});

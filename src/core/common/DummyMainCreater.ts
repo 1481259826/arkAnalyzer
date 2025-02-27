@@ -112,9 +112,10 @@ export class DummyMainCreater {
         checkAndUpdateMethod(this.dummyMain, dummyMainClass);
         dummyMainClass.addMethod(this.dummyMain);
 
+        let defaultMethods: ArkMethod[] = [];
         for (const method of this.entryMethods) {
             if (method.getDeclaringArkClass().isDefaultArkClass()) {
-                this.classLocalMap.set(method, null);
+                defaultMethods.push(method);
             } else {
                 const declaringArkClass = method.getDeclaringArkClass();
                 let newLocal: Local | null = null;
@@ -130,6 +131,9 @@ export class DummyMainCreater {
                 }
                 this.classLocalMap.set(method, newLocal);
             }
+        }
+        for (const defaultMethod of defaultMethods) {
+            this.classLocalMap.set(defaultMethod, null);
         }
         const localSet = new Set(Array.from(this.classLocalMap.values()).filter((value): value is Local => value !== null));
         const dummyBody = new ArkBody(localSet, this.createDummyMainCfg());
