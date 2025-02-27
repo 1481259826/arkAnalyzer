@@ -2047,7 +2047,22 @@
           "modifiers": 0,
           "decorators": [],
           "body": {
-            "locals": [],
+            "locals": [
+              {
+                "name": "this",
+                "type": {
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Student",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
+                }
+              }
+            ],
             "cfg": {
               "blocks": [
                 {
@@ -2115,7 +2130,22 @@
           "modifiers": 0,
           "decorators": [],
           "body": {
-            "locals": [],
+            "locals": [
+              {
+                "name": "this",
+                "type": {
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Student",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
+                }
+              }
+            ],
             "cfg": {
               "blocks": [
                 {
@@ -3188,7 +3218,22 @@
           "modifiers": 0,
           "decorators": [],
           "body": {
-            "locals": [],
+            "locals": [
+              {
+                "name": "this",
+                "type": {
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Shape",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
+                }
+              }
+            ],
             "cfg": {
               "blocks": [
                 {
@@ -3256,7 +3301,22 @@
           "modifiers": 0,
           "decorators": [],
           "body": {
-            "locals": [],
+            "locals": [
+              {
+                "name": "this",
+                "type": {
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Shape",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
+                }
+              }
+            ],
             "cfg": {
               "blocks": [
                 {
@@ -3872,7 +3932,22 @@
           "modifiers": 0,
           "decorators": [],
           "body": {
-            "locals": [],
+            "locals": [
+              {
+                "name": "this",
+                "type": {
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Circle",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
+                }
+              }
+            ],
             "cfg": {
               "blocks": [
                 {
@@ -3940,7 +4015,22 @@
           "modifiers": 0,
           "decorators": [],
           "body": {
-            "locals": [],
+            "locals": [
+              {
+                "name": "this",
+                "type": {
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Circle",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
+                }
+              }
+            ],
             "cfg": {
               "blocks": [
                 {

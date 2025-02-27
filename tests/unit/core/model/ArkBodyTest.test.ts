@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  */
 
 import path from 'path';
-import { Scene, SceneConfig } from '../../../../src';
+import { ArkClass, INSTANCE_INIT_METHOD_NAME, Scene, SceneConfig, STATIC_INIT_METHOD_NAME } from '../../../../src';
 import { assert, describe, expect, it } from 'vitest';
 import { Trap } from '../../../../src/core/base/Trap';
 import {
@@ -26,6 +26,7 @@ import {
     TRAP_EXPECT_CASE6,
 } from '../../../resources/model/body/trap/TrapExpect';
 import { assertBlocksEqual } from '../../common';
+import { Local_Expect_In_Generated_Method } from '../../../resources/model/body/local/LocalExpect';
 
 const BASE_DIR = path.join(__dirname, '../../../../tests/resources/model/body');
 
@@ -54,6 +55,14 @@ describe('trap Test', () => {
 
     it('trap case6', async () => {
         testTraps(scene, 'TrapTest.ts', 'case6', TRAP_EXPECT_CASE6.traps);
+    });
+});
+
+describe('Local Test', () => {
+    const scene = buildScene('local');
+
+    it('locals in generated method', async () => {
+        assertLocalsInGeneratedMethodEqual(scene, 'LocalsInGeneratedMethod.ts', 'Case1', Local_Expect_In_Generated_Method.case1);
     });
 });
 
@@ -118,4 +127,39 @@ function generateExpectTrapHashCode(trap: any): string {
         blockIds.push(tryBlock.id);
     }
     return blockIds.sort().join(',');
+}
+
+function assertLocalsInGeneratedMethodEqual(scene: Scene, filePath: string, className: string, expectLocals: any[]): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkClass = arkFile?.getClasses().find((cls) => cls.getName() === className);
+    assert.isTrue(arkClass instanceof ArkClass);
+
+    const expectMethodLocals = new Map<string, any>();
+    for (const methodItem of expectLocals) {
+        expectMethodLocals.set(methodItem.methodName, methodItem.locals);
+    }
+
+    const staticInitMethod = arkClass!.getStaticInitMethod();
+    const staticInitLocalsMap = staticInitMethod.getBody()?.getLocals();
+    assert.isDefined(staticInitLocalsMap);
+    const staticInitLocals = [];
+    for (const local of staticInitLocalsMap?.values() || []) {
+        staticInitLocals.push({
+            name: local.getName(),
+            type: local.getType().toString(),
+        });
+    }
+    expect(staticInitLocals).toEqual(expectMethodLocals.get(STATIC_INIT_METHOD_NAME));
+
+    const InstanceInitMethod = arkClass!.getInstanceInitMethod();
+    const InstanceInitLocalsMap = InstanceInitMethod.getBody()?.getLocals();
+    assert.isDefined(InstanceInitLocalsMap);
+    const InstanceInitLocals = [];
+    for (const local of InstanceInitLocalsMap?.values() || []) {
+        InstanceInitLocals.push({
+            name: local.getName(),
+            type: local.getType().toString(),
+        });
+    }
+    expect(InstanceInitLocals).toEqual(expectMethodLocals.get(INSTANCE_INIT_METHOD_NAME));
 }
