@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -474,7 +474,6 @@ export class ModelUtils {
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
 let moduleMap: Map<string, ModulePath> | undefined;
-const fileSuffixArray = ['.ets', '.ts', '.d.ets', '.d.ts'];
 export const sdkImportMap: Map<string, ArkFile> = new Map<string, ArkFile>();
 
 /**
@@ -623,6 +622,10 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
 function getArkFileFormMap(projectName: string, filePath: string, scene: Scene): ArkFile | null {
     if (/\.e?ts$/.test(filePath)) {
         return scene.getFile(new FileSignature(projectName, filePath));
+    }
+    const fileSuffixArray = scene.getOptions().supportFileExts;
+    if (!fileSuffixArray) {
+        return null;
     }
     for (const suffix of fileSuffixArray) {
         const arkFile = scene.getFile(new FileSignature(projectName, filePath + suffix));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,7 +37,8 @@ import {
     NeverType,
     NullType,
     NumberType,
-    StringType, TupleType,
+    StringType,
+    TupleType,
     Type,
     UnclearReferenceType,
     UndefinedType,
@@ -160,7 +161,12 @@ export class TypeInference {
         }
         signatures.forEach(s => {
             s.getMethodSubSignature().getParameters().forEach(p => {
-                const type = TypeInference.inferUnclearedType(p.getType(), arkClass);
+                let type;
+                if (p.getName() === 'value' && arkClass.hasComponentDecorator() && arkMethod.getName() === CONSTRUCTOR_NAME) {
+                    type = this.parseArkExport2Type(arkClass);
+                } else {
+                    type = TypeInference.inferUnclearedType(p.getType(), arkClass);
+                }
                 if (type) {
                     p.setType(type);
                 }
@@ -448,10 +454,7 @@ export class TypeInference {
         if (urType.getName() === Builtin.ARRAY) {
             return new ArrayType(realTypes[0] ?? AnyType.getInstance(), 1);
         }
-        let type = this.inferUnclearRefName(urType.getName(), arkClass);
-        if (type instanceof AliasType) {
-            return type;
-        }
+        const type = this.inferUnclearRefName(urType.getName(), arkClass);
         return type ? this.replaceTypeWithReal(type, realTypes) : null;
 
     }
@@ -636,7 +639,9 @@ export class TypeInference {
             return new ArrayType(replacedBaseType, type.getDimension());
         } else if (type instanceof TupleType && realTypes) {
             let replacedTypes: Type[] = [];
-            type.getTypes().forEach(t => { replacedTypes.push(this.replaceTypeWithReal(t, realTypes)) });
+            type.getTypes().forEach(t => {
+                replacedTypes.push(this.replaceTypeWithReal(t, realTypes))
+            });
             return new TupleType(replacedTypes);
         } else if (type instanceof GenericType) {
             const realType = realTypes?.[type.getIndex()] ?? type.getDefaultType() ?? type.getConstraint();
