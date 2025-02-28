@@ -18,8 +18,8 @@ import { ArkClass } from './ArkClass';
 import { ArkFile } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
 import { AliasClassSignature, ClassSignature, NamespaceSignature } from './ArkSignature';
-import { ALL } from "../common/TSConst";
-import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
+import { ALL } from '../common/TSConst';
+import { getColNo, getLineNo, LineCol, setCol, setLine, setLineCol } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
 
@@ -27,8 +27,8 @@ import { ArkError } from '../common/ArkError';
  * @category core/model
  */
 export class ArkNamespace extends ArkBaseModel implements ArkExport {
-    private code: string = ''
-    private lineCol: LineCol = 0;
+    private sourceCodes: string[] = [''];
+    private lineCols: LineCol[] = [];
 
     private declaringArkFile!: ArkFile;
     private declaringArkNamespace: ArkNamespace | null = null;
@@ -85,27 +85,61 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
     }
 
     public getCode() {
-        return this.code;
+        return this.sourceCodes[0];
     }
 
-    public setCode(code: string) {
-        this.code = code;
+    public setCode(sourceCode: string) {
+        this.sourceCodes[0] = sourceCode;
+    }
+
+    /*
+     * Get multiple sourceCodes when the arkNamespace is merged from multiple namespace with the same name
+     */
+    public getCodes(): string[] {
+        return this.sourceCodes;
+    }
+
+    /*
+     * Set multiple sourceCodes when the arkNamespace is merged from multiple namespace with the same name
+     */
+    public setCodes(sourceCodes: string[]): void {
+        this.sourceCodes = [];
+        this.sourceCodes.push(...sourceCodes);
+    }
+
+    public addCode(sourceCode: string): void {
+        this.sourceCodes.push(sourceCode);
     }
 
     public getLine() {
-        return getLineNo(this.lineCol);
+        return getLineNo(this.lineCols[0]);
     }
 
     public setLine(line: number) {
-        this.lineCol = setLine(this.lineCol, line);
+        this.lineCols[0] = setLine(this.lineCols[0], line);
     }
 
     public getColumn() {
-        return getColNo(this.lineCol);
+        return getColNo(this.lineCols[0]);
     }
 
     public setColumn(column: number) {
-        this.lineCol = setCol(this.lineCol, column);
+        this.lineCols[0] = setCol(this.lineCols[0], column);
+    }
+
+    public getLineColPairs(): [number, number][] {
+        const lineColPairs: [number, number][] = [];
+        this.lineCols.forEach(lineCol => {
+            lineColPairs.push([getLineNo(lineCol), getColNo(lineCol)]);
+        });
+        return lineColPairs;
+    }
+
+    public setLineCols(lineColPairs: [number, number][]): void {
+        this.lineCols = [];
+        lineColPairs.forEach(lineColPair => {
+            this.lineCols.push(setLineCol(lineColPair[0], lineColPair[1]));
+        });
     }
 
     public getDeclaringInstance() {
@@ -156,7 +190,7 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
             if (key !== ALL || value.getFrom()) {
                 exportInfos.push(value);
             }
-        })
+        });
         return exportInfos;
     }
 
