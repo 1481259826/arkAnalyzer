@@ -16,7 +16,6 @@
 import { ArkClass } from '../../core/model/ArkClass';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { BasePrinter, Dump } from '../base/BasePrinter';
-import { PrinterUtils } from '../base/PrinterUtils';
 import { ArkIRFieldPrinter } from './ArkIRFieldPrinter';
 import { ArkIRMethodPrinter } from './ArkIRMethodPrinter';
 
@@ -42,19 +41,19 @@ export class ArkIRClassPrinter extends BasePrinter {
         if (commentsMetadata instanceof CommentsMetadata) {
             this.printComments(commentsMetadata);
         }
-    
+
         this.printDecorator(this.cls.getDecorators());
         // print export class name<> + extends c0 implements x1, x2 {
         this.printer
             .writeIndent()
             .writeSpace(this.modifiersToString(this.cls.getModifiers()))
-            .write(`${PrinterUtils.classOriginTypeToString.get(this.cls.getCategory())} `);
+            .write(`${this.classOriginTypeToString(this.cls.getCategory())} `);
 
         this.printer.write(this.cls.getName());
 
         const genericsTypes = this.cls.getGenericsTypes();
         if (genericsTypes) {
-            this.printer.write(`<${genericsTypes.map((v)=> v.toString()).join(', ')}>`);
+            this.printer.write(`<${genericsTypes.map((v) => v.toString()).join(', ')}>`);
         }
         if (this.cls.getSuperClassName() && !this.cls.hasComponentDecorator()) {
             this.printer.write(` extends ${this.cls.getSuperClassName()}`);
@@ -95,7 +94,7 @@ export class ArkIRClassPrinter extends BasePrinter {
         if (staticInitMethod.getImplementationSignature()) {
             items.push(new ArkIRMethodPrinter(this.cls.getStaticInitMethod(), this.printer.getIndent()));
         }
-        
+
         return items;
     }
 

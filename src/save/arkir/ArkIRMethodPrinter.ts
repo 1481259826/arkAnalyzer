@@ -17,7 +17,7 @@ import { UnknownType } from '../../core/base/Type';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ArkCodeBuffer } from '../ArkStream';
 
-import { Stmt } from '../../core/base/Stmt';
+import { ArkIfStmt, Stmt } from '../../core/base/Stmt';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { BasePrinter } from '../base/BasePrinter';
 import { Cfg } from '../../core/graph/Cfg';
@@ -149,20 +149,28 @@ export class ArkIRMethodPrinter extends BasePrinter {
     }
 
     private printBasicBlock(block: BasicBlock): void {
+        let successors = block.getSuccessors();
+
         this.printer.writeIndent().writeLine(`label${block.getId()}:`);
         this.printer.incIndent();
-        block.getStmts().map((stmt) => {
-            this.printer.writeIndent().writeLine(stmt.toString());
-        });
 
-        let successors = block.getSuccessors();
         if (successors.length === 1) {
+            block.getStmts().map((stmt) => {
+                this.printer.writeIndent().writeLine(stmt.toString());
+            });
             this.printer.writeIndent().writeLine(`goto label${successors[0].getId()}`);
         } else if (successors.length === 2) {
-            this.printer.incIndent();
-            this.printer.writeIndent().writeLine(`true goto label${successors[0].getId()}`);
-            this.printer.writeIndent().writeLine(`false goto label${successors[1].getId()}`);
-            this.printer.decIndent();
+            for (const stmt of block.getStmts()) {
+                if (stmt instanceof ArkIfStmt) {
+                    this.printer.writeIndent().writeLine(`${stmt.toString()} goto label${successors[0].getId()} label${successors[1].getId()}`);
+                } else {
+                    this.printer.writeIndent().writeLine(stmt.toString());
+                }
+            }
+        } else {
+            block.getStmts().map((stmt) => {
+                this.printer.writeIndent().writeLine(stmt.toString());
+            });
         }
 
         this.printer.decIndent().writeLine('');

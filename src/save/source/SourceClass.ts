@@ -69,7 +69,7 @@ export class SourceClass extends SourceBase {
         this.printer
             .writeIndent()
             .writeSpace(this.modifiersToString(this.cls.getModifiers()))
-            .write(`${PrinterUtils.classOriginTypeToString.get(this.cls.getCategory())} `);
+            .write(`${this.classOriginTypeToString(this.cls.getCategory())} `);
 
         if (!PrinterUtils.isAnonymousClass(this.cls.getName())) {
             this.printer.write(this.cls.getName());

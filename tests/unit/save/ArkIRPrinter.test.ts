@@ -29,9 +29,7 @@ const CASE1_EXPECT = `class %dflt {
       goto label1
 
     label1:
-      if i < 10
-        true goto label2
-        false goto label3
+      if i < 10 goto label2 label3
 
     label2:
       %1 = myPerson.<@%unk/%unk: .age>
@@ -60,16 +58,12 @@ const CASE1_EXPECT = `class %dflt {
 
     label1:
       %1 = sampleData.<@%unk/%unk: .length>
-      if i < %1
-        true goto label2
-        false goto label13
+      if i < %1 goto label2 label13
 
     label2:
       %2 = sampleData[i]
       %3 = %2 % 2
-      if %3 === 0
-        true goto label3
-        false goto label4
+      if %3 === 0 goto label3 label4
 
     label3:
       %4 = sampleData[i]
@@ -91,9 +85,7 @@ const CASE1_EXPECT = `class %dflt {
 
     label6:
       %10 = sampleData[i]
-      if count < %10
-        true goto label7
-        false goto label15
+      if count < %10 goto label7 label15
 
     label7:
       %11 = instanceinvoke count.<@%unk/%unk: .toString()>()
@@ -103,14 +95,10 @@ const CASE1_EXPECT = `class %dflt {
       goto label6
 
     label8:
-      if j < 5
-        true goto label9
-        false goto label17
+      if j < 5 goto label9 label17
 
     label9:
-      if j === 2
-        true goto label16
-        false goto label10
+      if j === 2 goto label16 label10
 
     label10:
       %13 = instanceinvoke j.<@%unk/%unk: .toString()>()
@@ -119,9 +107,7 @@ const CASE1_EXPECT = `class %dflt {
       goto label16
 
     label11:
-      if k < 3
-        true goto label12
-        false goto label14
+      if k < 3 goto label12 label14
 
     label12:
       %15 = instanceinvoke k.<@%unk/%unk: .toString()>()
@@ -129,10 +115,8 @@ const CASE1_EXPECT = `class %dflt {
       instanceinvoke logger.<@%unk/%unk: .info()>(%16)
       %17 = 'Department name: ' + k
       instanceinvoke logger.<@%unk/%unk: .info()>(%17)
-      if k === 1
+      if k === 1 goto label14 label11
       k = k + 1
-        true goto label14
-        false goto label11
 
     label13:
       return
@@ -182,9 +166,7 @@ const CASE1_EXPECT = `class %dflt {
       goto label1
 
     label1:
-      if k < x
-        true goto label2
-        false goto label3
+      if k < x goto label2 label3
 
     label2:
       y = y + k
@@ -262,9 +244,7 @@ const CASE1_EXPECT = `class %dflt {
       %2 = max === rRGB
       %3 = gRGB >= bRGB
       %4 = %2 && %3
-      if %4 != 0
-        true goto label1
-        false goto label2
+      if %4 != 0 goto label1 label2
 
     label1:
       %5 = gRGB - bRGB
@@ -278,9 +258,7 @@ const CASE1_EXPECT = `class %dflt {
       %9 = max === rRGB
       %10 = gRGB < bRGB
       %11 = %9 && %10
-      if %11 != 0
-        true goto label3
-        false goto label4
+      if %11 != 0 goto label3 label4
 
     label3:
       %12 = gRGB - bRGB
@@ -291,9 +269,7 @@ const CASE1_EXPECT = `class %dflt {
       goto label4
 
     label4:
-      if max === gRGB
-        true goto label5
-        false goto label6
+      if max === gRGB goto label5 label6
 
     label5:
       %16 = bRGB - rRGB
@@ -304,9 +280,7 @@ const CASE1_EXPECT = `class %dflt {
       goto label6
 
     label6:
-      if max === bRGB
-        true goto label7
-        false goto label8
+      if max === bRGB goto label7 label8
 
     label7:
       %20 = rRGB - gRGB
@@ -317,18 +291,14 @@ const CASE1_EXPECT = `class %dflt {
       goto label8
 
     label8:
-      if bHSB >= 0.4
-        true goto label9
-        false goto label10
+      if bHSB >= 0.4 goto label9 label10
 
     label9:
       bHSB = 0.3
       goto label13
 
     label10:
-      if bHSB >= 0.2
-        true goto label11
-        false goto label12
+      if bHSB >= 0.2 goto label11 label12
 
     label11:
       bHSB = bHSB - 0.1

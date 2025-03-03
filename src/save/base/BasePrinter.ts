@@ -15,12 +15,24 @@
 
 import { Decorator } from '../../core/base/Decorator';
 import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
+import { ClassCategory } from '../../core/model/ArkClass';
 import { CommentsMetadata } from '../../core/model/ArkMetadata';
 import { Printer } from '../Printer';
+import { PrinterUtils } from './PrinterUtils';
 
 export interface Dump {
     getLine(): number;
     dump(): string;
+}
+
+export interface PrinterOptions {
+    pureTs: boolean; // struct 转成class
+    noMethodBody: boolean; // 仅输出函数原型，不输出函数体
+}
+
+let printerOptions: PrinterOptions = { pureTs: false, noMethodBody: false };
+export function setPrinterOptions(options: PrinterOptions): void {
+    printerOptions = { ...printerOptions, ...options };
 }
 
 export abstract class BasePrinter extends Printer implements Dump {
@@ -58,5 +70,19 @@ export abstract class BasePrinter extends Printer implements Dump {
             return name.replace('Set-', 'set ');
         }
         return name;
+    }
+
+    protected classOriginTypeToString(clsCategory: ClassCategory): string {
+        if (printerOptions.pureTs) {
+            if (clsCategory === ClassCategory.STRUCT) {
+                clsCategory = ClassCategory.CLASS;
+            }
+        }
+
+        return PrinterUtils.classOriginTypeToString.get(clsCategory)!;
+    }
+
+    public static getPrinterOptions(): PrinterOptions {
+        return printerOptions;
     }
 }

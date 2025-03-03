@@ -53,15 +53,6 @@ export class PrinterUtils {
         [CLASS_CATEGORY_COMPONENT, 'component'],
     ]);
 
-    public static setPureTs(pureTs: boolean = true): void {
-        // pure ts not support struct
-        if (pureTs) {
-            this.classOriginTypeToString.set(ClassCategory.STRUCT, 'class');
-        } else {
-            this.classOriginTypeToString.set(ClassCategory.STRUCT, 'struct');
-        }
-    }
-
     public static isAnonymousClass(name: string): boolean {
         return name.startsWith(ANONYMOUS_CLASS_PREFIX);
     }

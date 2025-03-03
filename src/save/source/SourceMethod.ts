@@ -96,7 +96,7 @@ export class SourceMethod extends SourceBase {
         this.printDecorator(method.getDecorators());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
-        if (!method.getBody()) {
+        if (!method.getBody() || SourceMethod.getPrinterOptions().noMethodBody) {
             this.printer.writeLine(';');
             return;
         }
