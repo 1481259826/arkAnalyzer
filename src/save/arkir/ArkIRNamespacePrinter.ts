@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,21 +15,19 @@
 
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
-import { SourceBase } from './SourceBase';
-import { SourceClass } from './SourceClass';
-import { SourceMethod } from './SourceMethod';
-import { PrinterUtils } from '../base/PrinterUtils';
-import { Dump } from '../base/BasePrinter';
+
+import { BasePrinter, Dump } from '../base/BasePrinter';
+import { ArkIRClassPrinter } from './ArkIRClassPrinter';
 import { ExportPrinter } from '../base/ExportPrinter';
 
 /**
  * @category save
  */
-export class SourceNamespace extends SourceBase {
+export class ArkIRNamespacePrinter extends BasePrinter {
     ns: ArkNamespace;
 
     public constructor(ns: ArkNamespace, indent: string = '') {
-        super(ns.getDeclaringArkFile(), indent);
+        super(indent);
         this.ns = ns;
     }
 
@@ -52,29 +50,13 @@ export class SourceNamespace extends SourceBase {
         let items: Dump[] = [];
         // print class
         for (let cls of this.ns.getClasses()) {
-            if (PrinterUtils.isAnonymousClass(cls.getName())) {
-                continue;
-            }
-            if (cls.isDefaultArkClass()) {
-                for (let method of cls.getMethods()) {
-                    if (method.isDefaultArkMethod()) {
-                        items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod(),
-                        );
-                    } else if (
-                        !PrinterUtils.isAnonymousMethod(method.getName())
-                    ) {
-                        items.push(
-                            new SourceMethod(method, this.printer.getIndent())
-                        );
-                    }
-                }
-            } else {
-                items.push(new SourceClass(cls, this.printer.getIndent()));
-            }
+            
+            items.push(new ArkIRClassPrinter(cls, this.printer.getIndent()));
+            
         }
         // print namespace
         for (let childNs of this.ns.getNamespaces()) {
-            items.push(new SourceNamespace(childNs, this.printer.getIndent()));
+            items.push(new ArkIRNamespacePrinter(childNs, this.printer.getIndent()));
         }
         // print exportInfos
         for (let exportInfo of this.ns.getExportInfos()) {

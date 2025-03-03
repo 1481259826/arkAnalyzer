@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,7 +20,7 @@ import { SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceStmt } from './SourceStmt';
 import { SourceTransformer } from './SourceTransformer';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
 import { Stmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
@@ -96,7 +96,7 @@ export class SourceMethod extends SourceBase {
         this.printDecorator(method.getDecorators());
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
-        if (!method.getBody()) {
+        if (!method.getBody() || SourceMethod.getPrinterOptions().noMethodBody) {
             this.printer.writeLine(';');
             return;
         }
@@ -107,7 +107,7 @@ export class SourceMethod extends SourceBase {
         this.printer.decIndent();
 
         this.printer.writeIndent();
-        if (SourceUtils.isAnonymousMethod(method.getName())) {
+        if (PrinterUtils.isAnonymousMethod(method.getName())) {
             this.printer.write('}');
         } else {
             this.printer.writeLine('}');
@@ -122,7 +122,7 @@ export class SourceMethod extends SourceBase {
     protected methodProtoToString(method: ArkMethod): string {
         let code = new ArkCodeBuffer();
         code.writeSpace(this.modifiersToString(method.getModifiers()));
-        if (!SourceUtils.isAnonymousMethod(method.getName())) {
+        if (!PrinterUtils.isAnonymousMethod(method.getName())) {
             if (method.getDeclaringArkClass()?.isDefaultArkClass()) {
                 code.writeSpace('function');
             }
@@ -160,7 +160,7 @@ export class SourceMethod extends SourceBase {
         if (method.getName() !== 'constructor' && !(returnType instanceof UnknownType)) {
             code.write(`: ${this.transformer.typeToString(returnType)}`);
         }
-        if (SourceUtils.isAnonymousMethod(method.getName())) {
+        if (PrinterUtils.isAnonymousMethod(method.getName())) {
             code.write(' =>');
         }
         return code.toString();

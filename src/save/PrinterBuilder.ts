@@ -20,6 +20,9 @@ import { DotFilePrinter } from './DotPrinter';
 import { SourceFilePrinter } from './source/SourceFilePrinter';
 import { Printer } from './Printer';
 import { JsonPrinter } from './JsonPrinter';
+import { ArkIRFilePrinter } from './arkir/ArkIRFilePrinter';
+import { Scene } from '../Scene';
+import { PrinterOptions, setPrinterOptions } from './base/BasePrinter';
 
 /**
  * @example
@@ -99,5 +102,71 @@ export class PrinterBuilder {
 
         let printer: Printer = new JsonPrinter(arkFile);
         PrinterBuilder.dump(printer, filename);
+    }
+
+    public dumpToIR(
+        arkFile: ArkFile,
+        output: string | undefined = undefined
+    ): void {
+        let filename = output;
+        if (filename === undefined) {
+            filename = path.join(this.getOutputDir(arkFile), arkFile.getName());
+        }
+        
+        filename += '.ir';
+        
+        fs.mkdirSync(path.dirname(filename), { recursive: true });
+
+        let printer: Printer = new ArkIRFilePrinter(arkFile);
+        PrinterBuilder.dump(printer, filename);
+    }
+}
+
+/**
+ * @example
+ * // dump scene
+ * let scenePrinter = new ScenePrinter(scene, 'output');
+ * scenePrinter.dumpToTs();
+ * scenePrinter.dumpToIR();
+ *
+ * @category save
+ */
+export class ScenePrinter {
+    scene: Scene;
+    outputDir: string;
+    printer: PrinterBuilder;
+
+    constructor(scene: Scene, outputDir: string, option?: PrinterOptions) {
+        this.scene = scene;
+        this.outputDir = outputDir;
+        this.printer = new PrinterBuilder(outputDir);
+        if (option) {
+            setPrinterOptions(option);
+        }
+    }
+
+    public dumpToDot() {
+        for (let f of this.scene.getFiles()) {
+            this.printer.dumpToDot(f);
+        }
+    }
+
+    public dumpToTs() {
+        for (let f of this.scene.getFiles()) {
+            let relativePath = path.relative(f.getProjectDir(), f.getFilePath());
+            this.printer.dumpToTs(f, path.join(this.outputDir, relativePath));
+        }
+    }
+
+    public dumpToJson() {
+        for (let f of this.scene.getFiles()) {
+            this.printer.dumpToJson(f);
+        }
+    }
+
+    public dumpToIR() {
+        for (let f of this.scene.getFiles()) {
+            this.printer.dumpToIR(f);
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,7 +43,7 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ArkFile } from '../../core/model/ArkFile';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ModelUtils } from '../../core/common/ModelUtils';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceBody');
@@ -127,7 +127,7 @@ export class SourceBody implements StmtPrinterContext {
     }
 
     public transTemp2Code(temp: Local): string {
-        if (this.tempCodeMap.has(temp.getName()) && SourceUtils.isTemp(temp.getName())) {
+        if (this.tempCodeMap.has(temp.getName()) && PrinterUtils.isTemp(temp.getName())) {
             this.tempVisitor.add(temp.getName());
             return this.tempCodeMap.get(temp.getName())!;
         }

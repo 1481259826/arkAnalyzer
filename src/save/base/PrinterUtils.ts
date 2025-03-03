@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,11 +38,11 @@ import { ArkNamespace } from '../../core/model/ArkNamespace';
 import ts from 'ohos-typescript';
 import { TEMP_LOCAL_PREFIX } from '../../core/common/Const';
 
-const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceUtils');
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PrinterUtils');
 
 export const CLASS_CATEGORY_COMPONENT = 100;
 
-export class SourceUtils {
+export class PrinterUtils {
     public static classOriginTypeToString = new Map<number, string>([
         [ClassCategory.CLASS, 'class'],
         [ClassCategory.STRUCT, 'struct'],
@@ -139,7 +139,7 @@ export class SourceUtils {
         visitor.add(invokeExpr);
         let base = invokeExpr.getBase();
         if (!(base instanceof Local)) {
-            logger.error(`SourceUtils->isComponentAttributeInvoke illegal invoke expr ${invokeExpr}`);
+            logger.error(`PrinterUtils->isComponentAttributeInvoke illegal invoke expr ${invokeExpr}`);
             return false;
         }
         let stmt = base.getDeclaringStmt();
@@ -149,11 +149,11 @@ export class SourceUtils {
 
         let rightOp = stmt.getRightOp();
         if (rightOp instanceof ArkInstanceInvokeExpr) {
-            return SourceUtils.isComponentAttributeInvoke(rightOp, visitor);
+            return PrinterUtils.isComponentAttributeInvoke(rightOp, visitor);
         }
 
         if (rightOp instanceof ArkStaticInvokeExpr) {
-            return SourceUtils.isComponentCreate(rightOp);
+            return PrinterUtils.isComponentCreate(rightOp);
         }
 
         return false;
@@ -196,7 +196,7 @@ export class SourceUtils {
         }
 
         let className = classSignature.getClassName();
-        if (className && className.length > 0 && !SourceUtils.isDefaultClass(className)) {
+        if (className && className.length > 0 && !PrinterUtils.isDefaultClass(className)) {
             code.push(className);
         }
         return code.join('.');

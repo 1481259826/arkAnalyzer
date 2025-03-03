@@ -68,6 +68,7 @@ type ClassLikeNodeWithMethod =
 
 export function buildDefaultArkClassFromArkFile(arkFile: ArkFile, defaultClass: ArkClass, astRoot: ts.SourceFile) {
     defaultClass.setDeclaringArkFile(arkFile);
+    defaultClass.setCategory(ClassCategory.CLASS);
     buildDefaultArkClass(defaultClass, astRoot);
 }
 
