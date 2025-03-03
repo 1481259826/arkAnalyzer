@@ -833,10 +833,7 @@ export class SourceTypeAliasStmt extends SourceStmt {
 
         let genericTypes = '';
         if (this.aliasType.getGenericTypes()) {
-            let types = this.aliasType.getGenericTypes()!.join(', ');
-            if (types) {
-                genericTypes = `<${types}>`;
-            }
+            genericTypes = `<${this.transformer.typeArrayToString(this.aliasType.getGenericTypes()!)}>`;
         }
 
         let typeObject = expr.getOriginalObject();
