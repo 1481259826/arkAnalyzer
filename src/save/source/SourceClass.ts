@@ -49,19 +49,21 @@ export class SourceClass extends SourceBase {
 
     public dump(): string {
         this.printer.clear();
-        const commentsMetadata = this.cls.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
-        if (commentsMetadata instanceof CommentsMetadata) {
-            const comments = commentsMetadata.getComments();
-            comments.forEach((comment) => {
-                this.printer.writeIndent().writeLine(comment.content);
-            });
-        }
+
         if (this.cls.getCategory() === ClassCategory.OBJECT) {
             return this.dumpObject();
         }
 
         if (this.cls.getCategory() === ClassCategory.TYPE_LITERAL) {
             return this.dumpTypeLiteral();
+        }
+
+        const commentsMetadata = this.cls.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
+        if (commentsMetadata instanceof CommentsMetadata) {
+            const comments = commentsMetadata.getComments();
+            comments.forEach((comment) => {
+                this.printer.writeIndent().writeLine(comment.content);
+            });
         }
 
         this.printDecorator(this.cls.getDecorators());
@@ -151,7 +153,10 @@ export class SourceClass extends SourceBase {
     protected printMethods(): Dump[] {
         let items: Dump[] = [];
         for (let method of this.cls.getMethods()) {
-            if (method.isGenerated() || (PrinterUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree())) {
+            if (
+                method.isGenerated() ||
+                (PrinterUtils.isConstructorMethod(method.getName()) && this.cls.hasViewTree())
+            ) {
                 continue;
             }
 

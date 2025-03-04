@@ -465,7 +465,7 @@ export class SourceTransformer {
         }
         let genericTypes = type.getRealGenericTypes();
         if (genericTypes && genericTypes.length > 0) {
-            return `${name}<${genericTypes.join(', ')}>`;
+            return `${name}${this.genericTypesToString(genericTypes)}`;
         }
         return name;
     }
