@@ -14,7 +14,7 @@
  */
 
 import { ClassType, Type, UnknownType } from '../../base/Type';
-import { BodyBuilder } from '../../common/BodyBuilder';
+import { BodyBuilder } from './BodyBuilder';
 import { buildViewTree } from '../../graph/builder/ViewTreeBuilder';
 import { ArkClass, ClassCategory } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';

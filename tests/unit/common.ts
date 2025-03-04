@@ -72,6 +72,18 @@ export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any
     assertStmtsEqual(stmts, expectStmts, assertPos);
 }
 
+export function testBlocks(scene: Scene, filePath: string, methodName: string, expectBlocks: any[]): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
+    const arkMethod = arkFile?.getDefaultClass().getMethods()
+        .find((method) => (method.getName() === methodName));
+    const blocks = arkMethod?.getCfg()?.getBlocks();
+    if (!blocks) {
+        assert.isDefined(blocks);
+        return;
+    }
+    assertBlocksEqual(blocks, expectBlocks);
+}
+
 export function assertBlocksEqual(blocks: Set<BasicBlock>, expectBlocks: any[]): void {
     expect(blocks.size).toEqual(expectBlocks.length);
 

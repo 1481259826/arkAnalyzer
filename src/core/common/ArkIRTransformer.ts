@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -459,6 +459,11 @@ export class ArkIRTransformer {
             } = this.arkValueTransformer.conditionToValueAndStmts(forStatement.condition);
             conditionStmts.forEach(stmt => stmts.push(stmt));
             stmts.push(new ArkIfStmt(conditionValue as ArkConditionExpr));
+        } else {
+            // The omitted condition always evaluates to true.
+            const trueConstant = ValueUtil.getBooleanConstant(true);
+            const conditionExpr = new ArkConditionExpr(trueConstant, trueConstant, RelationalBinaryOperator.Equality);
+            stmts.push(new ArkIfStmt(conditionExpr));
         }
         if (forStatement.incrementor) {
             this.tsNodeToValueAndStmts(forStatement.incrementor).stmts.forEach(stmt => stmts.push(stmt));
