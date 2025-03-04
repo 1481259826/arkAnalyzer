@@ -812,33 +812,21 @@ export class SourceTypeAliasStmt extends SourceStmt {
     }
 
     public transfer2ts(): void {
-        let modifier = '';
         let modifiersArray: string[] = modifiers2stringArray(this.aliasType.getModifiers());
-        if (modifiersArray.length > 0) {
-            modifier = `${modifiersArray.join(' ')} `;
-        }
+        let modifier = modifiersArray.length > 0 ? `${modifiersArray.join(' ')} ` : '';
+
         const expr = (this.original as ArkAliasTypeDefineStmt).getAliasTypeExpr();
-        let typeOf = '';
-        if (expr.getTransferWithTypeOf()) {
-            typeOf = 'typeof ';
-        }
-
-        let realGenericTypes = '';
-        if (expr.getRealGenericTypes()) {
-            let types = expr.getRealGenericTypes()!.join(', ');
-            if (types) {
-                realGenericTypes = `<${types}>`;
-            }
-        }
-
-        let genericTypes = '';
-        if (this.aliasType.getGenericTypes()) {
-            genericTypes = `<${this.transformer.typeArrayToString(this.aliasType.getGenericTypes()!)}>`;
-        }
+        let typeOf = expr.getTransferWithTypeOf() ? 'typeof ' : '';
+        let realGenericTypes = expr.getRealGenericTypes() ? `<${expr.getRealGenericTypes()!.join(', ')}>` : '';
+        let genericTypes = this.aliasType.getGenericTypes() ? `<${this.transformer.typeArrayToString(this.aliasType.getGenericTypes()!)}>` : '';
 
         let typeObject = expr.getOriginalObject();
         if (typeObject instanceof Type) {
-            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`);
+            if (typeObject instanceof AliasType) {
+                this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${typeObject.getName()}${realGenericTypes};`);
+            } else {
+                this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`);
+            }
             return;
         }
         if (typeObject instanceof ImportInfo) {

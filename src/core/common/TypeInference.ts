@@ -326,12 +326,26 @@ export class TypeInference {
         } else if (type instanceof ClassType
             && type.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             return true;
-        } else if (type instanceof UnionType || type instanceof IntersectionType) {
-            return !!type.getTypes().find(t => t instanceof UnclearReferenceType);
+        } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
+            return !!type.getTypes().find(t => this.hasUnclearReferenceType(t));
         } else if (type instanceof ArrayType) {
-            return (type.getBaseType() instanceof UnclearReferenceType);
+            return this.hasUnclearReferenceType(type.getBaseType());
         } else if (type instanceof AliasType) {
-            return (type.getOriginalType() instanceof UnclearReferenceType);
+            return this.hasUnclearReferenceType(type.getOriginalType());
+        }
+        return false;
+    }
+
+    // This is the temporally function to check unclearReferenceType recursively and can be removed after typeInfer supports multiple candidate types.
+    private static hasUnclearReferenceType(type: Type): boolean {
+        if (type instanceof UnclearReferenceType) {
+            return true;
+        } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
+            return !!type.getTypes().find(t => this.hasUnclearReferenceType(t));
+        } else if (type instanceof ArrayType) {
+            return this.hasUnclearReferenceType(type.getBaseType());
+        } else if (type instanceof AliasType) {
+            return this.hasUnclearReferenceType(type.getOriginalType());
         }
         return false;
     }

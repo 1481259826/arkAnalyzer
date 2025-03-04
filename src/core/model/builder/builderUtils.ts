@@ -475,7 +475,7 @@ function buildTypeFromTypeOperator(typeOperatorNode: ts.TypeOperatorNode, source
             const typeNode = typeOperatorNode.type;
             let type = tsNode2Type(typeNode, sourceFile, arkInstance);
             if (type instanceof ArrayType || type instanceof TupleType) {
-                type.setReadonly(true)
+                type.setReadonlyFlag(true);
             }
             return type;
         }

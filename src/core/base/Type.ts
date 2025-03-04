@@ -433,10 +433,23 @@ export class ClassType extends Type {
     }
 }
 
+/**
+ * Array type
+ * @category core/base/type
+ * @extends Type
+ * @example
+ ```typescript
+ // baseType is number, dimension is 1, readonlyFlag is true
+ let a: readonly number[] = [1, 2, 3];
+
+ // baseType is number, dimension is 1, readonlyFlag is undefined
+ let a: number[] = [1, 2, 3];
+ ```
+ */
 export class ArrayType extends Type {
     private baseType: Type;
     private dimension: number;
-    private readonly?: boolean;
+    private readonlyFlag?: boolean;
 
     constructor(baseType: Type, dimension: number) {
         super();
@@ -460,20 +473,20 @@ export class ArrayType extends Type {
         return this.dimension;
     }
 
-    public setReadonly(readonly: boolean): void {
-        this.readonly = readonly;
+    public setReadonlyFlag(readonlyFlag: boolean): void {
+        this.readonlyFlag = readonlyFlag;
     }
 
-    public getReadonly(): boolean | undefined {
-        return this.readonly;
+    public getReadonlyFlag(): boolean | undefined {
+        return this.readonlyFlag;
     }
 
     public getTypeString(): string {
         const strs: string[] = [];
-        if (this.getReadonly()) {
+        if (this.getReadonlyFlag()) {
             strs.push('readonly ');
         }
-        if (this.baseType instanceof UnionType) {
+        if (this.baseType instanceof UnionType || this.baseType instanceof IntersectionType) {
             strs.push('(' + this.baseType.toString() + ')');
         } else if (this.baseType) {
             strs.push(this.baseType.toString());
@@ -485,9 +498,22 @@ export class ArrayType extends Type {
     }
 }
 
+/**
+ * Tuple type
+ * @category core/base/type
+ * @extends Type
+ * @example
+ ```typescript
+ // types are number and string, dimension is 1, readonlyFlag is true
+ let a: readonly number[] = [1, 2, 3];
+
+ // baseType is number, dimension is 1, readonlyFlag is undefined
+ let a: number[] = [1, 2, 3];
+ ```
+ */
 export class TupleType extends Type {
     private types: Type[];
-    private readonly?: boolean;
+    private readonlyFlag?: boolean;
 
     constructor(types: Type[]) {
         super();
@@ -498,16 +524,16 @@ export class TupleType extends Type {
         return this.types;
     }
 
-    public setReadonly(readonly: boolean): void {
-        this.readonly = readonly;
+    public setReadonlyFlag(readonlyFlag: boolean): void {
+        this.readonlyFlag = readonlyFlag;
     }
 
-    public getReadonly(): boolean | undefined {
-        return this.readonly;
+    public getReadonlyFlag(): boolean | undefined {
+        return this.readonlyFlag;
     }
 
     public getTypeString(): string {
-        if (this.getReadonly()) {
+        if (this.getReadonlyFlag()) {
             return 'readonly [' + this.types.join(', ') + ']';
         }
         return '[' + this.types.join(', ') + ']';

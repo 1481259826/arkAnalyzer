@@ -1582,7 +1582,7 @@ export class ArkValueTransformer {
             case ts.SyntaxKind.ReadonlyKeyword: {
                 let type = this.resolveTypeNode(typeOperatorNode.type);
                 if (type instanceof ArrayType || type instanceof TupleType) {
-                    type.setReadonly(true);
+                    type.setReadonlyFlag(true);
                 }
                 return type;
             }

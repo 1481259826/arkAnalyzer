@@ -408,7 +408,7 @@ export class SourceTransformer {
         }
 
         if (type instanceof AliasType) {
-            return type.getName();
+            return this.aliasType2string(type);
         }
 
         if (!type) {
@@ -444,26 +444,40 @@ export class SourceTransformer {
     }
 
     private arrayType2string(type: ArrayType): string {
-        const readonly = type.getReadonly() ? 'readonly ' : '';
+        const readonly = type.getReadonlyFlag() ? 'readonly ' : '';
         const dimensions: string[] = [];
         for (let i = 0; i < type.getDimension(); i++) {
             dimensions.push('[]');
         }
 
         let baseType = type.getBaseType();
-        if (baseType instanceof UnionType) {
-            return `(${this.typeToString(baseType)})${dimensions.join('')}`;
+        if (baseType instanceof UnionType || baseType instanceof IntersectionType) {
+            return `${readonly}(${this.typeToString(baseType)})${dimensions.join('')}`;
         }
         return `${readonly}${this.typeToString(baseType)}${dimensions.join('')}`;
     }
 
     private tupleType2string(type: TupleType): string {
-        const readonly = type.getReadonly() ? 'readonly ' : '';
+        const readonly = type.getReadonlyFlag() ? 'readonly ' : '';
         let typesStr: string[] = [];
         for (const member of type.getTypes()) {
             typesStr.push(this.typeToString(member));
         }
         return `${readonly}[${typesStr.join(', ')}]`;
+    }
+
+    private aliasType2string(type: AliasType): string {
+        let typesStr: string[] = [];
+        let genericTypes = type.getRealGenericTypes() ?? type.getGenericTypes();
+        if (genericTypes) {
+            for (const gType of genericTypes) {
+                typesStr.push(this.typeToString(gType));
+            }
+        }
+        if (typesStr.length > 0) {
+            return `${type.getName()}<${typesStr.join(', ')}>`;
+        }
+        return type.getName();
     }
 
     private unclearReferenceType2string(type: UnclearReferenceType): string {

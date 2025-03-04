@@ -26,8 +26,8 @@ import {
     Scene,
     SceneConfig, SourceMethodPrinter,
     Stmt,
-    Local, ArkField, ArkClass, ArkMethod, FunctionType, SourceFilePrinter,
-    IntersectionType, SourceClassPrinter,
+    Local, ArkField, ArkClass, ArkMethod, FunctionType,
+    IntersectionType, SourceClassPrinter, ArkAssignStmt,
 } from '../../src';
 import {
     AliasTypeMultiRef,
@@ -35,10 +35,16 @@ import {
     AliasTypeOfClassA,
     AliasTypeOfClassB,
     AliasTypeOfFunctionType,
-    AliasTypeOfGenericArrayType, AliasTypeOfGenericArrayTypeWithNumber, AliasTypeOfGenericClassType,
-    AliasTypeOfGenericFunctionType, AliasTypeOfGenericObjectType, AliasTypeOfGenericObjectWithBooleanNumber,
-    AliasTypeOfGenericTupleType, AliasTypeOfGenericTupleTypeWithNumber,
-    AliasTypeOfGenericType, AliasTypeOfGenericTypeWithNumber,
+    AliasTypeOfGenericArrayType,
+    AliasTypeOfGenericArrayTypeWithNumber,
+    AliasTypeOfGenericClassType,
+    AliasTypeOfGenericFunctionType,
+    AliasTypeOfGenericObjectType,
+    AliasTypeOfGenericObjectWithBooleanNumber,
+    AliasTypeOfGenericTupleType,
+    AliasTypeOfGenericTupleTypeWithNumber,
+    AliasTypeOfGenericType,
+    AliasTypeOfGenericTypeWithNumber,
     AliasTypeOfLiteralType,
     AliasTypeOfMultiQualifier,
     AliasTypeOfMultiTypeQuery,
@@ -49,17 +55,22 @@ import {
     AliasTypeOfString,
     AliasTypeOfUnionType,
     AliasTypeOfWholeExports,
-    AliasTypeRef, SourceAliasTypeWithClassType,
-    SourceAliasTypeWithFunctionType, SourceAliasTypeWithGenericType,
+    AliasTypeRef,
+    SourceAliasTypeWithClassType,
+    SourceAliasTypeWithFunctionType,
+    SourceAliasTypeWithGenericType,
     SourceAliasTypeWithImport,
     SourceAliasTypeWithLiteralType,
     SourceAliasTypeWithReference,
     SourceAliasTypeWithTypeQuery,
     SourceAliasTypeWithUnionType,
     SourceIntersectionTypeForClass,
-    SourceIntersectionTypeForDefaultMethod, SourceIntersectionTypeForFunction,
-    SourceFileWithTypeOperator,
+    SourceIntersectionTypeForDefaultMethod,
+    SourceIntersectionTypeForFunction,
     SourceSimpleAliasType,
+    SourceBasicReadonlyClassWithTypeOperator,
+    SourceReadonlyOfReferenceTypeClassWithTypeOperator,
+    SourceReadonlyOfGenericTypeClassWithTypeOperator,
 } from '../resources/type/expectedIR';
 
 function buildScene(): Scene {
@@ -136,6 +147,31 @@ function compareTypeAliasExpr(expr: AliasTypeExpr, expectedExpr: any): void {
 let projectScene = buildScene();
 const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
 const defaultClass = projectScene.getFile(fileId)?.getDefaultClass();
+
+describe('Special Test', () => {
+    it('Special check for function isUnclearType', () => {
+        const typeStr = '@type/exportExample.ts: A.B.C|null';
+        const specialClass = projectScene.getFile(fileId)?.getClassWithName('SpecialForIsUnclearCheck');
+
+        const fieldA = specialClass?.getFieldWithName('A');
+        assert.isDefined(fieldA);
+        assert.isNotNull(fieldA);
+        assert.equal(fieldA!.getType().toString(), typeStr);
+        const stmtA = specialClass?.getMethodWithName('testA')?.getBody()?.getCfg().getStmts()[1];
+        assert.isDefined(stmtA);
+        assert.equal((stmtA! as ArkAssignStmt).getLeftOp().getType().toString(), typeStr);
+        assert.equal((stmtA! as ArkAssignStmt).getRightOp().getType().toString(), typeStr);
+
+        const fieldB = specialClass?.getStaticFieldWithName('B');
+        assert.isDefined(fieldB);
+        assert.isNotNull(fieldB);
+        assert.equal(fieldB!.getType().toString(), typeStr);
+        const stmtB = specialClass?.getStaticMethodWithName('testB')?.getBody()?.getCfg().getStmts()[1];
+        assert.isDefined(stmtB);
+        assert.equal((stmtB! as ArkAssignStmt).getLeftOp().getType().toString(), typeStr);
+        assert.equal((stmtB! as ArkAssignStmt).getRightOp().getType().toString(), typeStr);
+    });
+});
 
 describe('Simple Alias Type Test', () => {
     const method = defaultClass?.getMethodWithName('simpleAliasType');
@@ -792,7 +828,7 @@ describe('Readonly Type With Basic Type Test', () => {
         const field = basicClass?.getFieldWithName('fieldA');
         assert.isDefined(field);
         assert.equal(field!.getType().toString(), 'readonly string[]');
-        assert.equal((field!.getType() as ArrayType).getReadonly(), true);
+        assert.equal((field!.getType() as ArrayType).getReadonlyFlag(), true);
     });
 
     it('method param and return type with readonly', () => {
@@ -800,12 +836,12 @@ describe('Readonly Type With Basic Type Test', () => {
         const param = method?.getParameters()[0];
         assert.isDefined(param);
         assert.equal(param!.getType().toString(), 'readonly [number, string]');
-        assert.equal((param!.getType() as TupleType).getReadonly(), true);
+        assert.equal((param!.getType() as TupleType).getReadonlyFlag(), true);
 
         const returnType = method?.getReturnType();
         assert.isDefined(returnType);
         assert.equal(returnType!.toString(), 'readonly boolean[]');
-        assert.equal((returnType as TupleType).getReadonly(), true);
+        assert.equal((returnType as TupleType).getReadonlyFlag(), true);
     });
 
     it('variable with readonly', () => {
@@ -814,39 +850,57 @@ describe('Readonly Type With Basic Type Test', () => {
         const tupleLocal = method?.getBody()?.getLocals().get('readonlyTupleLocal');
         assert.isDefined(tupleLocal);
         assert.equal(tupleLocal!.getType().toString(), 'readonly [number, string]');
-        assert.equal((tupleLocal!.getType() as TupleType).getReadonly(), true);
+        assert.equal((tupleLocal!.getType() as TupleType).getReadonlyFlag(), true);
 
         const arrayLocal = method?.getBody()?.getLocals().get('readonlyArrayLocal');
         assert.isDefined(arrayLocal);
         assert.equal(arrayLocal!.getType().toString(), 'readonly number[]');
-        assert.equal((arrayLocal!.getType() as ArrayType).getReadonly(), true);
+        assert.equal((arrayLocal!.getType() as ArrayType).getReadonlyFlag(), true);
 
         const unionLocal = method?.getBody()?.getLocals().get('readonlyUnionLocal');
         assert.isDefined(unionLocal);
         assert.equal(unionLocal!.getType().toString(), 'readonly number[]|readonly [number, string]');
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), true);
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonly(), true);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), true);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
+
+        const intersectionLocal = method?.getBody()?.getLocals().get('readonlyIntersectionLocal');
+        assert.isDefined(intersectionLocal);
+        assert.equal(intersectionLocal!.getType().toString(), 'readonly number[]&readonly [number, string]');
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[0] as ArrayType).getReadonlyFlag(), true);
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
     });
 
     it('alias type with readonly', () => {
         const aliases = basicClass?.getMethodWithName('readonlyAliasType')?.getBody()?.getAliasTypeMap();
         const aliasA = aliases?.get('A');
         const aliasB = aliases?.get('B');
+        const aliasC = aliases?.get('C');
+        const aliasD = aliases?.get('D');
         assert.isDefined(aliasA);
         assert.equal(aliasA![0].getOriginalType().toString(), 'readonly string[]');
-        assert.equal((aliasA![0].getOriginalType() as ArrayType).getReadonly(), true);
+        assert.equal((aliasA![0].getOriginalType() as ArrayType).getReadonlyFlag(), true);
 
         assert.isDefined(aliasB);
         assert.equal(aliasB![0].getOriginalType().toString(), 'readonly string[]|readonly [number, string]');
-        assert.equal(((aliasB![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), true);
-        assert.equal(((aliasB![0].getOriginalType() as UnionType).getTypes()[1] as TupleType).getReadonly(), true);
+        assert.equal(((aliasB![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), true);
+        assert.equal(((aliasB![0].getOriginalType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
+
+        assert.isDefined(aliasC);
+        assert.equal(aliasC![0].getOriginalType().toString(), 'readonly string[]&readonly [number, string]');
+        assert.equal(((aliasC![0].getOriginalType() as IntersectionType).getTypes()[0] as ArrayType).getReadonlyFlag(), true);
+        assert.equal(((aliasC![0].getOriginalType() as IntersectionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
+
+        assert.isDefined(aliasD);
+        assert.equal(aliasD![0].getOriginalType().toString(), 'readonly (string&number)[]&readonly (string|number)[]');
+        assert.equal(((aliasD![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), true);
+        assert.equal(((aliasD![0].getOriginalType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
     });
 
     it('without readonly', () => {
         const field = basicClass?.getFieldWithName('fieldB');
         assert.isDefined(field);
         assert.equal(field!.getType().toString(), 'boolean[]');
-        assert.equal((field!.getType() as ArrayType).getReadonly(), undefined);
+        assert.equal((field!.getType() as ArrayType).getReadonlyFlag(), undefined);
 
         const variableMethdod = basicClass?.getMethodWithName('readonlyVariable');
         const aliasMethdod = basicClass?.getMethodWithName('readonlyAliasType');
@@ -854,40 +908,52 @@ describe('Readonly Type With Basic Type Test', () => {
         const param = aliasMethdod?.getParameters()[0];
         assert.isDefined(param);
         assert.equal(param!.getType().toString(), '[number, string]');
-        assert.equal((param!.getType() as TupleType).getReadonly(), undefined);
+        assert.equal((param!.getType() as TupleType).getReadonlyFlag(), undefined);
 
         const returnType = aliasMethdod?.getReturnType();
         assert.isDefined(returnType);
         assert.equal(returnType!.toString(), 'string[]');
-        assert.equal((returnType as TupleType).getReadonly(), undefined);
+        assert.equal((returnType as TupleType).getReadonlyFlag(), undefined);
 
         const tupleLocal = variableMethdod?.getBody()?.getLocals().get('tupleLocal');
         assert.isDefined(tupleLocal);
         assert.equal(tupleLocal!.getType().toString(), '[number, string]');
-        assert.equal((tupleLocal!.getType() as TupleType).getReadonly(), undefined);
+        assert.equal((tupleLocal!.getType() as TupleType).getReadonlyFlag(), undefined);
 
         const arrayLocal = variableMethdod?.getBody()?.getLocals().get('arrayLocal');
         assert.isDefined(arrayLocal);
         assert.equal(arrayLocal!.getType().toString(), 'number[]');
-        assert.equal((arrayLocal!.getType() as ArrayType).getReadonly(), undefined);
+        assert.equal((arrayLocal!.getType() as ArrayType).getReadonlyFlag(), undefined);
 
         const unionLocal = variableMethdod?.getBody()?.getLocals().get('unionLocal');
         assert.isDefined(unionLocal);
         assert.equal(unionLocal!.getType().toString(), 'number[]|[number, string]');
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), undefined);
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonly(), undefined);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), undefined);
+
+        const intersectionLocal = variableMethdod?.getBody()?.getLocals().get('intersectionLocal');
+        assert.isDefined(intersectionLocal);
+        assert.equal(intersectionLocal!.getType().toString(), 'number[]&[number, string]');
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[1] as TupleType).getReadonlyFlag(), undefined);
 
         const aliases = aliasMethdod?.getBody()?.getAliasTypeMap();
-        const aliasC = aliases?.get('C');
-        const aliasD = aliases?.get('D');
-        assert.isDefined(aliasC);
-        assert.equal(aliasC![0].getOriginalType().toString(), 'string[]');
-        assert.equal((aliasC![0].getOriginalType() as ArrayType).getReadonly(), undefined);
+        const aliasE = aliases?.get('E');
+        const aliasF = aliases?.get('F');
+        const aliasG = aliases?.get('G');
+        assert.isDefined(aliasE);
+        assert.equal(aliasE![0].getOriginalType().toString(), 'string[]');
+        assert.equal((aliasE![0].getOriginalType() as ArrayType).getReadonlyFlag(), undefined);
 
-        assert.isDefined(aliasD);
-        assert.equal(aliasD![0].getOriginalType().toString(), 'string[]|[number, string]');
-        assert.equal(((aliasD![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), undefined);
-        assert.equal(((aliasD![0].getOriginalType() as UnionType).getTypes()[1] as TupleType).getReadonly(), undefined);
+        assert.isDefined(aliasF);
+        assert.equal(aliasF![0].getOriginalType().toString(), 'string[]|[number, string]');
+        assert.equal(((aliasF![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((aliasF![0].getOriginalType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), undefined);
+
+        assert.isDefined(aliasG);
+        assert.equal(aliasG![0].getOriginalType().toString(), 'string[]&[number, string]');
+        assert.equal(((aliasG![0].getOriginalType() as IntersectionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((aliasG![0].getOriginalType() as IntersectionType).getTypes()[1] as TupleType).getReadonlyFlag(), undefined);
     });
 });
 
@@ -900,12 +966,12 @@ describe('Readonly Type With Reference Type Test', () => {
         const fieldA = referenceClass?.getFieldWithName('fieldA');
         assert.isDefined(fieldA);
         assert.equal(fieldA!.getType().toString(), `readonly ${aliasAStr}[]`);
-        assert.equal((fieldA!.getType() as ArrayType).getReadonly(), true);
+        assert.equal((fieldA!.getType() as ArrayType).getReadonlyFlag(), true);
 
         const fieldB = referenceClass?.getFieldWithName('fieldB');
         assert.isDefined(fieldB);
-        assert.equal(fieldB!.getType().toString(), `readonly [${aliasAStr}, Boolean]`);
-        assert.equal((fieldB!.getType() as TupleType).getReadonly(), true);
+        assert.equal(fieldB!.getType().toString(), `readonly [${aliasAStr}, boolean]`);
+        assert.equal((fieldB!.getType() as TupleType).getReadonlyFlag(), true);
     });
 
     it('method param and return type with readonly', () => {
@@ -913,12 +979,12 @@ describe('Readonly Type With Reference Type Test', () => {
         const param = method?.getParameters()[0];
         assert.isDefined(param);
         assert.equal(param!.getType().toString(), `readonly [${aliasAStr}, string]`);
-        assert.equal((param!.getType() as TupleType).getReadonly(), true);
+        assert.equal((param!.getType() as TupleType).getReadonlyFlag(), true);
 
         const returnType = method?.getReturnType();
         assert.isDefined(returnType);
         assert.equal(returnType!.toString(), `readonly ${aliasAStr}[]`);
-        assert.equal((returnType as TupleType).getReadonly(), true);
+        assert.equal((returnType as TupleType).getReadonlyFlag(), true);
     });
 
     it('variable with readonly', () => {
@@ -928,18 +994,24 @@ describe('Readonly Type With Reference Type Test', () => {
         const tupleLocal = method?.getBody()?.getLocals().get('readonlyTupleLocal');
         assert.isDefined(tupleLocal);
         assert.equal(tupleLocal!.getType().toString(), `readonly [number, ${aliasBStr}]`);
-        assert.equal((tupleLocal!.getType() as TupleType).getReadonly(), true);
+        assert.equal((tupleLocal!.getType() as TupleType).getReadonlyFlag(), true);
 
         const arrayLocal = method?.getBody()?.getLocals().get('readonlyArrayLocal');
         assert.isDefined(arrayLocal);
         assert.equal(arrayLocal!.getType().toString(), `readonly ${aliasBStr}[]`);
-        assert.equal((arrayLocal!.getType() as ArrayType).getReadonly(), true);
+        assert.equal((arrayLocal!.getType() as ArrayType).getReadonlyFlag(), true);
 
         const unionLocal = method?.getBody()?.getLocals().get('readonlyUnionLocal');
         assert.isDefined(unionLocal);
         assert.equal(unionLocal!.getType().toString(), `number[]|readonly ${aliasAStr}[]`);
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), undefined);
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonly(), true);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
+
+        const intersectionLocal = method?.getBody()?.getLocals().get('readonlyIntersectionLocal');
+        assert.isDefined(intersectionLocal);
+        assert.equal(intersectionLocal!.getType().toString(), `number[]&readonly ${aliasAStr}[]`);
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
     });
 
     it('alias type with readonly', () => {
@@ -947,73 +1019,88 @@ describe('Readonly Type With Reference Type Test', () => {
         const aliasB = aliases?.get('B');
         assert.isDefined(aliasB);
         assert.equal(aliasB![0].getOriginalType().toString(), `readonly ${aliasAStr}[]|string`);
-        assert.equal(((aliasB![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), true);
+        assert.equal(((aliasB![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), true);
     });
 });
 
 describe('Readonly Type With Generic Reference Type Test', () => {
     const fileId = new FileSignature(projectScene.getProjectName(), 'typeOperator.ts');
     const referenceClass = projectScene.getFile(fileId)?.getClassWithName('ReadonlyOfGenericType');
-    const aliasCStr = '@type/typeOperator.ts: %dflt.[static]%dflt()#C<T>';
+    const aliasCBooleanStr = '@type/typeOperator.ts: %dflt.[static]%dflt()#C<boolean>';
+    const aliasCStringStr = '@type/typeOperator.ts: %dflt.[static]%dflt()#C<string>';
+    const aliasCNumberStr = '@type/typeOperator.ts: %dflt.[static]%dflt()#C<number>';
 
     it('class field with readonly', () => {
         const fieldA = referenceClass?.getFieldWithName('fieldA');
         assert.isDefined(fieldA);
-        assert.equal(fieldA!.getType().toString(), `readonly ${aliasCStr}[]`);
-        // assert.equal(((fieldA!.getType() as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), 'Boolean');
-        assert.equal((fieldA!.getType() as ArrayType).getReadonly(), true);
+        assert.equal(fieldA!.getType().toString(), `readonly ${aliasCBooleanStr}[]`);
+        assert.equal(((fieldA!.getType() as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), 'boolean');
+        assert.equal((fieldA!.getType() as ArrayType).getReadonlyFlag(), true);
 
         const fieldB = referenceClass?.getFieldWithName('fieldB');
         assert.isDefined(fieldB);
-        assert.equal(fieldB!.getType().toString(), `readonly [${aliasCStr}, Boolean]`);
-        // assert.equal(((fieldB!.getType() as TupleType).getTypes()[0] as AliasType).getRealGenericTypes()?.toString(), 'Boolean');
-        assert.equal((fieldB!.getType() as TupleType).getReadonly(), true);
+        assert.equal(fieldB!.getType().toString(), `readonly [${aliasCBooleanStr}, boolean]`);
+        assert.equal(((fieldB!.getType() as TupleType).getTypes()[0] as AliasType).getRealGenericTypes()?.toString(), 'boolean');
+        assert.equal((fieldB!.getType() as TupleType).getReadonlyFlag(), true);
     });
 
     it('method param and return type with readonly', () => {
         const method = referenceClass?.getMethodWithName('readonlyVariable');
         const param = method?.getParameters()[0];
         assert.isDefined(param);
-        assert.equal(param!.getType().toString(), `readonly [${aliasCStr}, string]`);
-        // assert.equal(((param!.getType() as TupleType).getTypes()[0] as AliasType).getRealGenericTypes()?.toString(), 'string');
-        assert.equal((param!.getType() as TupleType).getReadonly(), true);
+        assert.equal(param!.getType().toString(), `readonly [${aliasCStringStr}, string]`);
+        assert.equal(((param!.getType() as TupleType).getTypes()[0] as AliasType).getRealGenericTypes()?.toString(), 'string');
+        assert.equal((param!.getType() as TupleType).getReadonlyFlag(), true);
 
         const returnType = method?.getReturnType();
         assert.isDefined(returnType);
-        assert.equal(returnType!.toString(), `readonly ${aliasCStr}[]`);
-        // assert.equal(((returnType as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), 'Boolean');
-        assert.equal((returnType as TupleType).getReadonly(), true);
+        assert.equal(returnType!.toString(), `readonly ${aliasCBooleanStr}[]`);
+        assert.equal(((returnType as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), 'boolean');
+        assert.equal((returnType as TupleType).getReadonlyFlag(), true);
     });
 
     it('variable with readonly', () => {
         const method = referenceClass?.getMethodWithName('readonlyVariable');
-        const aliasDStr = `@type/typeOperator.ts: ReadonlyOfGenericType.readonlyVariable(readonly [${aliasCStr}, string])#D`;
+        const methodSignatureStr = `@type/typeOperator.ts: ReadonlyOfGenericType.readonlyVariable(readonly [${aliasCStringStr}, string])`;
 
         const tupleLocal = method?.getBody()?.getLocals().get('readonlyTupleLocal');
         assert.isDefined(tupleLocal);
-        assert.equal(tupleLocal!.getType().toString(), `readonly [${aliasDStr}, string]`);
-        assert.equal((tupleLocal!.getType() as TupleType).getReadonly(), true);
+        assert.equal(tupleLocal!.getType().toString(), `readonly [${methodSignatureStr}#D, string]`);
+        const tuple0 = (tupleLocal!.getType() as TupleType).getTypes()[0];
+        const tuple0Union0 = (((tuple0 as AliasType).getOriginalType() as UnionType).getTypes()[0] as ArrayType).getBaseType();
+        assert.equal((tuple0Union0 as AliasType).getRealGenericTypes()?.toString(), 'number');
+        assert.equal((tupleLocal!.getType() as TupleType).getReadonlyFlag(), true);
 
         const arrayLocal = method?.getBody()?.getLocals().get('readonlyArrayLocal');
         assert.isDefined(arrayLocal);
-        assert.equal(arrayLocal!.getType().toString(), `readonly ${aliasDStr}[]`);
-        assert.equal((arrayLocal!.getType() as ArrayType).getReadonly(), true);
+        assert.equal(arrayLocal!.getType().toString(), `readonly ${methodSignatureStr}#D[]`);
+        assert.equal((arrayLocal!.getType() as ArrayType).getReadonlyFlag(), true);
 
         const unionLocal = method?.getBody()?.getLocals().get('readonlyUnionLocal');
         assert.isDefined(unionLocal);
-        assert.equal(unionLocal!.getType().toString(), `number[]|readonly ${aliasCStr}[]`);
-        // assert.equal((((unionLocal!.getType() as TupleType).getTypes()[1] as ArrayType).getBaseType() as AliasType).getRealGenericTypes(), 'string');
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), undefined);
-        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonly(), true);
+        assert.equal(unionLocal!.getType().toString(), `number[]|readonly ${aliasCStringStr}[]`);
+        const union1 = (unionLocal!.getType() as UnionType).getTypes()[1];
+        assert.equal(((union1 as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), 'string');
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal(((unionLocal!.getType() as UnionType).getTypes()[1] as TupleType).getReadonlyFlag(), true);
+
+        const intersectionLocal = method?.getBody()?.getLocals().get('readonlyIntersectionLocal');
+        assert.isDefined(intersectionLocal);
+        assert.equal(intersectionLocal!.getType().toString(), `number[]&readonly ${aliasCStringStr}[]`);
+        const intersection1 = (intersectionLocal!.getType() as IntersectionType).getTypes()[1];
+        assert.equal(((intersection1 as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), 'string');
+        assert.equal(((intersectionLocal!.getType() as IntersectionType).getTypes()[0] as ArrayType).getReadonlyFlag(), undefined);
+        assert.equal((intersection1 as ArrayType).getReadonlyFlag(), true);
     });
 
     it('alias type with readonly', () => {
         const aliases = referenceClass?.getMethodWithName('readonlyVariable')?.getBody()?.getAliasTypeMap();
         const aliasD = aliases?.get('D');
         assert.isDefined(aliasD);
-        assert.equal(aliasD![0].getOriginalType().toString(), `readonly ${aliasCStr}[]|string`);
-        assert.equal((((aliasD![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getBaseType() as AliasType).getRealGenericTypes(), `number`);
-        assert.equal(((aliasD![0].getOriginalType() as UnionType).getTypes()[0] as ArrayType).getReadonly(), true);
+        assert.equal(aliasD![0].getOriginalType().toString(), `readonly ${aliasCNumberStr}[]|string`);
+        const union0 = (aliasD![0].getOriginalType() as UnionType).getTypes()[0];
+        assert.equal(((union0 as ArrayType).getBaseType() as AliasType).getRealGenericTypes()?.toString(), `number`);
+        assert.equal((union0 as ArrayType).getReadonlyFlag(), true);
     });
 });
 
@@ -1147,13 +1234,36 @@ describe('Save to TS Test', () => {
         assert.equal(source, SourceIntersectionTypeForClass);
     });
 
-    it('case11: file typeOperator', () => {
-        let arkFile = scene.getFiles().find((value) => {
+    it('case11: class BasicReadonly of typeOperator', () => {
+        const arkFile = scene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
-        assert.isDefined(arkFile);
-        let printer = new SourceFilePrinter(arkFile!);
+        const arkClass = arkFile?.getClassWithName('BasicReadonly');
+        assert.isDefined(arkClass);
+        const printer = new SourceClassPrinter(arkClass!);
         let source = printer.dump();
-        assert.equal(source, SourceFileWithTypeOperator);
+        assert.equal(source, SourceBasicReadonlyClassWithTypeOperator);
+    });
+
+    it('case12: class ReadonlyOfReferenceType of typeOperator', () => {
+        const arkFile = scene.getFiles().find((value) => {
+            return value.getName() === 'typeOperator.ts';
+        });
+        const arkClass = arkFile?.getClassWithName('ReadonlyOfReferenceType');
+        assert.isDefined(arkClass);
+        const printer = new SourceClassPrinter(arkClass!);
+        let source = printer.dump();
+        assert.equal(source, SourceReadonlyOfReferenceTypeClassWithTypeOperator);
+    });
+
+    it('case13: class ReadonlyOfGenericType of typeOperator', () => {
+        const arkFile = scene.getFiles().find((value) => {
+            return value.getName() === 'typeOperator.ts';
+        });
+        const arkClass = arkFile?.getClassWithName('ReadonlyOfGenericType');
+        assert.isDefined(arkClass);
+        const printer = new SourceClassPrinter(arkClass!);
+        let source = printer.dump();
+        assert.equal(source, SourceReadonlyOfGenericTypeClassWithTypeOperator);
     });
 });
