@@ -411,6 +411,8 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
     } else if (ts.isParenthesizedTypeNode(typeNode)) {
         return tsNode2Type(typeNode.type, sourceFile, arkInstance);
+    } else if (ts.isTypeOperatorNode(typeNode)) {
+        return buildTypeFromTypeOperator(typeNode as ts.TypeOperatorNode, sourceFile, arkInstance);
     } else if (typeNode.kind === ts.SyntaxKind.ObjectKeyword) {
         return new ClassType(Builtin.OBJECT_CLASS_SIGNATURE);
     } else {
@@ -464,4 +466,24 @@ export function buildTypeFromPreStr(preStr: string) {
             postStr = preStr;
     }
     return TypeInference.buildTypeFromStr(postStr);
+}
+
+function buildTypeFromTypeOperator(typeOperatorNode: ts.TypeOperatorNode, sourceFile: ts.SourceFile,
+                                   arkInstance: ArkMethod | ArkClass | ArkField): Type {
+    switch (typeOperatorNode.operator) {
+        case (ts.SyntaxKind.ReadonlyKeyword): {
+            const typeNode = typeOperatorNode.type;
+            let type = tsNode2Type(typeNode, sourceFile, arkInstance);
+            if (type instanceof ArrayType || type instanceof TupleType) {
+                type.setReadonlyFlag(true);
+            }
+            return type;
+        }
+        case (ts.SyntaxKind.UniqueKeyword):
+            return UnknownType.getInstance();
+        case (ts.SyntaxKind.KeyOfKeyword):
+            return UnknownType.getInstance();
+        default:
+            return UnknownType.getInstance();
+    }
 }

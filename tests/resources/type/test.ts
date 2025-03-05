@@ -112,3 +112,16 @@ type GlobalType<T> = T;
 function globalType(): void {
     type GlobalTypeBoolean = GlobalType<boolean>;
 }
+
+class SpecialForIsUnclearCheck {
+    A: A.B.C | null;
+    static B: A.B.C | null;
+
+    testA(): void {
+        this.A?.abc();
+    }
+
+    static testB(): void {
+        this.B?.abc();
+    }
+}

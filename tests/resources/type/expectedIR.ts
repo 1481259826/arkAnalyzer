@@ -788,3 +788,50 @@ export const SourceIntersectionTypeForClass = `class Inter {
   static fieldC: Employee & (number | boolean);
 }
 `;
+
+export const SourceBasicReadonlyClassWithTypeOperator = `class BasicReadonly {
+  fieldA: readonly string[] = ['a', 'b'];
+  fieldB: boolean[] = [false];
+  readonlyVariable(param: readonly [number, string]): readonly boolean[] {
+    let tupleLocal: [number, string] = [123, '123'];
+    let readonlyTupleLocal: readonly [number, string] = [123, '123'];
+    let arrayLocal: number[] = [123, 345];
+    let readonlyArrayLocal: readonly number[] = [123, 345];
+    return [true];
+  }
+  readonlyAliasType(param: [number, string]): string[] {
+    type A = readonly string[];
+    type B = readonly string[] | readonly [number, string];
+    type C = readonly string[] & readonly [number, string];
+    type D = readonly (string & number)[] & readonly (string | number)[];
+    type E = string[];
+    type F = string[] | [number, string];
+    type G = string[] & [number, string];
+    return ['hello', 'world'];
+  }
+}
+`;
+
+export const SourceReadonlyOfReferenceTypeClassWithTypeOperator = `class ReadonlyOfReferenceType {
+  fieldA: readonly A[] = [true, false];
+  fieldB: readonly [A, boolean] = [true, false];
+  readonlyVariable(param: readonly [A, string]): readonly A[] {
+    type B = readonly A[] | string;
+    let readonlyTupleLocal: readonly [number, B] = [123, '123'];
+    let readonlyArrayLocal: readonly B[] = [[true], '123'];
+    return [true];
+  }
+}
+`;
+
+export const SourceReadonlyOfGenericTypeClassWithTypeOperator = `class ReadonlyOfGenericType {
+  fieldA: readonly C<boolean>[] = [true, false];
+  fieldB: readonly [C<boolean>, boolean] = [true, false];
+  readonlyVariable(param: readonly [C<string>, string]): readonly C<boolean>[] {
+    type D = readonly C<number>[] | string;
+    let readonlyUnionLocal: number[] | readonly C<string>[] = [123];
+    let readonlyIntersectionLocal: number[] & readonly C<string>[] = [123];
+    return [true];
+  }
+}
+`;
