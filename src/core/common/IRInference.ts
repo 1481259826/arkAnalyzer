@@ -577,9 +577,15 @@ export class IRInference {
             model = ModelUtils.findArkModelByRefName(originalObject.getName(), arkMethod.getDeclaringArkClass());
         } else if (originalObject instanceof Type) {
             const type = TypeInference.inferUnclearedType(originalObject, arkMethod.getDeclaringArkClass());
+
+            // If original Object is ClassType, AliasType or UnclearReferenceType with real generic types,
+            // the type after infer should be revert back to the object itself.
             if (type instanceof ClassType) {
                 const scene = arkMethod.getDeclaringArkFile().getScene();
                 model = ModelUtils.findArkModelBySignature(type.getClassSignature(), scene);
+            } else if (type instanceof AliasType) {
+                const scene = arkMethod.getDeclaringArkFile().getScene();
+                model = ModelUtils.findArkModelBySignature(type.getSignature(), scene);
             } else if (type) {
                 model = type;
             }

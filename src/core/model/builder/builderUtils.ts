@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import {
     ClassType,
     FunctionType,
     GenericType,
+    IntersectionType,
     TupleType,
     Type,
     UnclearReferenceType,
@@ -345,12 +346,16 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
             let parameterTypeStr = referenceNodeName.text;
             return new UnclearReferenceType(parameterTypeStr, genericTypes);
         }
-    } else if (ts.isUnionTypeNode(typeNode)) {
-        let unionTypePara: Type[] = [];
+    } else if (ts.isUnionTypeNode(typeNode) || ts.isIntersectionTypeNode(typeNode)) {
+        let multipleTypePara: Type[] = [];
         typeNode.types.forEach((tmpType) => {
-            unionTypePara.push(tsNode2Type(tmpType, sourceFile, arkInstance));
+            multipleTypePara.push(tsNode2Type(tmpType, sourceFile, arkInstance));
         });
-        return new UnionType(unionTypePara);
+        if (ts.isUnionTypeNode(typeNode)) {
+            return new UnionType(multipleTypePara);
+        } else {
+            return new IntersectionType(multipleTypePara);
+        }
     } else if (ts.isLiteralTypeNode(typeNode)) {
         return ArkValueTransformer.resolveLiteralTypeNode(typeNode, sourceFile);
     } else if (ts.isTypeLiteralNode(typeNode)) {

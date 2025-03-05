@@ -42,9 +42,9 @@ import {
 import { AliasType, BooleanType, ClassType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
 import { ValueUtil } from './ValueUtil';
 import {
+    AliasTypeSignature,
     ClassSignature,
     FieldSignature,
-    LocalSignature,
     MethodSignature,
     MethodSubSignature,
 } from '../model/ArkSignature';
@@ -297,7 +297,7 @@ export class ArkIRTransformer {
         const rightOp = typeAliasDeclaration.type;
         let rightType = this.arkValueTransformer.resolveTypeNode(rightOp);
 
-        const aliasType = new AliasType(aliasName, rightType, new LocalSignature(aliasName, this.declaringMethod.getSignature()));
+        const aliasType = new AliasType(aliasName, rightType, new AliasTypeSignature(aliasName, this.declaringMethod.getSignature()));
         if (typeAliasDeclaration.typeParameters) {
             const genericTypes = buildTypeParameters(typeAliasDeclaration.typeParameters, this.sourceFile, this.declaringMethod);
             aliasType.setGenericTypes(genericTypes);
@@ -305,43 +305,7 @@ export class ArkIRTransformer {
             rightType = aliasType.getOriginalType();
         }
 
-        let expr: AliasTypeExpr;
-        if (ts.isImportTypeNode(rightOp)) {
-            expr = this.resolveImportTypeNode(rightOp);
-            const typeObject = expr.getOriginalObject();
-            if (typeObject instanceof ImportInfo && typeObject.getLazyExportInfo() !== null) {
-                const arkExport = typeObject.getLazyExportInfo()!.getArkExport();
-                rightType = TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
-                aliasType.setOriginalType(rightType);
-            }
-        } else if (ts.isTypeQueryNode(rightOp)) {
-            const localName = rightOp.exprName.getText(this.sourceFile);
-            const originalLocal = Array.from(this.arkValueTransformer.getLocals()).find(local =>
-                local.getName() === localName);
-            if (originalLocal === undefined || rightType instanceof UnclearReferenceType) {
-                expr = new AliasTypeExpr(new Local(localName, rightType), true);
-            } else {
-                expr = new AliasTypeExpr(originalLocal, true);
-            }
-        } else if (ts.isTypeReferenceNode(rightOp) && rightType instanceof UnclearReferenceType) {
-            const existAliasType = this.getAliasTypeMap().get(rightType.getName());
-            if (existAliasType) {
-                expr = new AliasTypeExpr(existAliasType[0], false);
-            } else {
-                expr = new AliasTypeExpr(rightType, false);
-            }
-        } else {
-            expr = new AliasTypeExpr(rightType, false);
-
-            // 对于type A = {x:1, y:2}语句，当前阶段即可精确获取ClassType类型，需找到对应的ArkClass作为originalObject
-            // 对于其他情况此处为UnclearReferenceTye并由类型推导进行查找和处理
-            if (rightType instanceof ClassType) {
-                const classObject = ModelUtils.getClassWithName(rightType.getClassSignature().getClassName(), this.declaringMethod.getDeclaringArkClass());
-                if (classObject) {
-                    expr.setOriginalObject(classObject);
-                }
-            }
-        }
+        let expr = this.generateAliasTypeExpr(rightOp, aliasType);
 
         if ((ts.isTypeQueryNode(rightOp) || ts.isTypeReferenceNode(rightOp)) && rightOp.typeArguments) {
             let realGenericTypes: Type[] = [];
@@ -363,6 +327,55 @@ export class ArkIRTransformer {
         this.getAliasTypeMap().set(aliasName, [aliasType, aliasTypeDefineStmt]);
 
         return [aliasTypeDefineStmt];
+    }
+
+    private generateAliasTypeExpr(rightOp: ts.TypeNode, aliasType: AliasType): AliasTypeExpr {
+        let rightType = aliasType.getOriginalType();
+        let expr: AliasTypeExpr;
+        if (ts.isImportTypeNode(rightOp)) {
+            expr = this.resolveImportTypeNode(rightOp);
+            const typeObject = expr.getOriginalObject();
+            if (typeObject instanceof ImportInfo && typeObject.getLazyExportInfo() !== null) {
+                const arkExport = typeObject.getLazyExportInfo()!.getArkExport();
+                rightType = TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
+                aliasType.setOriginalType(rightType);
+            }
+        } else if (ts.isTypeQueryNode(rightOp)) {
+            const localName = rightOp.exprName.getText(this.sourceFile);
+            const originalLocal = Array.from(this.arkValueTransformer.getLocals()).find(local =>
+                local.getName() === localName);
+            if (originalLocal === undefined || rightType instanceof UnclearReferenceType) {
+                expr = new AliasTypeExpr(new Local(localName, rightType), true);
+            } else {
+                expr = new AliasTypeExpr(originalLocal, true);
+            }
+        } else if (ts.isTypeReferenceNode(rightOp)) {
+            // For type A = B<number> stmt and B is also an alias type with the same scope of A,
+            // rightType here is AliasType with real generic type number.
+            // The originalObject in expr should be the object without real generic type, so try to find it in this scope.
+            if (rightType instanceof AliasType) {
+                const existAliasType = this.getAliasTypeMap().get(rightType.getName());
+                if (existAliasType) {
+                    expr = new AliasTypeExpr(existAliasType[0], false);
+                } else {
+                    expr = new AliasTypeExpr(rightType, false);
+                }
+            } else {
+                expr = new AliasTypeExpr(rightType, false);
+            }
+        } else {
+            expr = new AliasTypeExpr(rightType, false);
+
+            // 对于type A = {x:1, y:2}语句，当前阶段即可精确获取ClassType类型，需找到对应的ArkClass作为originalObject
+            // 对于其他情况此处为UnclearReferenceTye并由类型推导进行查找和处理
+            if (rightType instanceof ClassType) {
+                const classObject = ModelUtils.getClassWithName(rightType.getClassSignature().getClassName(), this.declaringMethod.getDeclaringArkClass());
+                if (classObject) {
+                    expr.setOriginalObject(classObject);
+                }
+            }
+        }
+        return expr;
     }
 
     private resolveImportTypeNode(importTypeNode: ts.ImportTypeNode): AliasTypeExpr {

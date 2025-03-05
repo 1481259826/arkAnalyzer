@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,12 @@
  * limitations under the License.
  */
 
-import { ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
+import {
+    AliasTypeSignature,
+    ClassSignature,
+    MethodSignature,
+    NamespaceSignature,
+} from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
@@ -250,9 +255,18 @@ export class UnionType extends Type {
     }
 
     public getTypeString(): string {
-        return this.types.join('|');
+        let typesString: string[] = [];
+        this.getTypes().forEach((t) => {
+            if (t instanceof UnionType || t instanceof IntersectionType) {
+                typesString.push(`(${t.toString()})`);
+            } else {
+                typesString.push(t.toString());
+            }
+        });
+        return typesString.join('|');
     }
 
+    // TODO: Need to remove this function because of IntersectionType has been added.
     public flatType(): Type[] {
         const result: Type[] = [];
         this.types.forEach(t => {
@@ -263,6 +277,35 @@ export class UnionType extends Type {
             }
         });
         return result;
+    }
+}
+
+/**
+ * intersection type
+ * @category core/base/type
+ */
+export class IntersectionType extends Type {
+    private types: Type[];
+
+    constructor(types: Type[]) {
+        super();
+        this.types = [...types];
+    }
+
+    public getTypes(): Type[] {
+        return this.types;
+    }
+
+    public getTypeString(): string {
+        let typesString: string[] = [];
+        this.getTypes().forEach((t) => {
+            if (t instanceof UnionType || t instanceof IntersectionType) {
+                typesString.push(`(${t.toString()})`);
+            } else {
+                typesString.push(t.toString());
+            }
+        });
+        return typesString.join('&');
     }
 }
 
@@ -468,12 +511,12 @@ export class TupleType extends Type {
 export class AliasType extends Type implements ArkExport {
     private originalType: Type;
     private name: string;
-    private signature: LocalSignature;
+    private signature: AliasTypeSignature;
     protected modifiers?: number;
     private genericTypes?: GenericType[];
     private realGenericTypes?: Type[];
 
-    constructor(name: string, originalType: Type, signature: LocalSignature, genericTypes?: GenericType[]) {
+    constructor(name: string, originalType: Type, signature: AliasTypeSignature, genericTypes?: GenericType[]) {
         super();
         this.name = name;
         this.originalType = originalType;
@@ -538,7 +581,7 @@ export class AliasType extends Type implements ArkExport {
         this.modifiers &= MODIFIER_TYPE_MASK ^ modifier;
     }
 
-    public getSignature(): LocalSignature {
+    public getSignature(): AliasTypeSignature {
         return this.signature;
     }
 

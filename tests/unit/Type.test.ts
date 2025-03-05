@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,7 @@ import {
     SceneConfig, SourceMethodPrinter,
     Stmt,
     Local, ArkField, ArkClass, ArkMethod, FunctionType,
+    IntersectionType, SourceClassPrinter,
 } from '../../src';
 import {
     AliasTypeMultiRef,
@@ -52,6 +53,8 @@ import {
     SourceAliasTypeWithReference,
     SourceAliasTypeWithTypeQuery,
     SourceAliasTypeWithUnionType,
+    SourceIntersectionTypeForClass,
+    SourceIntersectionTypeForDefaultMethod, SourceIntersectionTypeForFunction,
     SourceSimpleAliasType,
 } from '../resources/type/expectedIR';
 
@@ -637,6 +640,18 @@ describe('Alias Type With Generic Type Test', () => {
 
         assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), '@type/test.ts: %AC$0<boolean,number>');
     });
+
+    it('alias type of Generic in return type', () => {
+        const returnType = defaultClass?.getMethodWithName('intersectionTypeWithGeneric')?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), '@type/test.ts: %dflt.[static]%dflt()#ParamType<boolean>');
+    });
+
+    it('alias type of global type', () => {
+        const alias = defaultClass?.getMethodWithName('globalType')?.getBody()?.getAliasTypeMap()?.get('GlobalTypeBoolean');
+        assert.isDefined(alias);
+        assert.equal(alias![1].getExprs()[0].getOriginalObject().toString(), '@type/test.ts: %dflt.[static]%dflt()#GlobalType<T>');
+    });
 });
 
 describe('Alias Type With Generic Class Test', () => {
@@ -656,6 +671,112 @@ describe('Alias Type With Generic Class Test', () => {
             assert.isAtLeast(stmts!.length, 2);
             compareTypeAliasStmt(stmts![1], AliasTypeOfGenericClassType.stmt);
         }
+    });
+});
+
+describe('Intersection Type With Generic Test', () => {
+
+    it('intersection type in Function', () => {
+        const method = defaultClass?.getMethodWithName('intersectionTypeWithGeneric');
+        const methodParamString = '@type/test.ts: ClassWithGeneric<string>&@type/test.ts: %dflt.[static]%dflt()#ParamType<number>';
+        const methodSignatureString = `@type/test.ts: %dflt.intersectionTypeWithGeneric(${methodParamString})`;
+
+        const param = method?.getSubSignature().getParameters()[0];
+        assert.isDefined(param);
+        assert.equal(param?.getType().toString(), methodParamString);
+
+        const aliasTypeMap = method?.getBody()?.getAliasTypeMap();
+        assert.isDefined(aliasTypeMap);
+        assert.isNotNull(aliasTypeMap);
+        const originalType1 = aliasTypeMap?.get('interType')![0].getOriginalType();
+        assert.isDefined(originalType1);
+        assert.equal(originalType1!.toString(), '@type/test.ts: ClassWithGeneric<string>&@type/test.ts: %dflt.functionWithGeneric(T)');
+        assert.equal(((originalType1 as IntersectionType).getTypes()[1] as FunctionType).getRealGenericTypes()?.toString(), 'number');
+
+        const local = method?.getBody()?.getLocals().get('interLocal');
+        assert.isDefined(local);
+        assert.equal(local!.getType().toString(), `${methodSignatureString}#Generic<string>&${methodSignatureString}#GenericArray<boolean>`);
+    });
+
+    it('intersection type in Class Field', () => {
+        const fields = projectScene.getFile(fileId)?.getClassWithName('IntersectionClassWithGeneric')?.getFields();
+        const fieldA = fields?.find(f => f.getName() === 'fieldA');
+        assert.isDefined(fieldA);
+        assert.equal(fieldA!.getType().toString(), '@type/test.ts: ClassWithGeneric<string>&@type/test.ts: %dflt.[static]%dflt()#ParamType<string>');
+    });
+});
+
+describe('Intersection Type Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'intersectionType.ts');
+    const defaultClass = projectScene.getFile(fileId)?.getDefaultClass();
+    const method = defaultClass?.getDefaultArkMethod();
+
+    const aliasTypeAStr = '@type/intersectionType.ts: %dflt.[static]%dflt()#A';
+    const aliasTypeBStr = '@type/intersectionType.ts: %dflt.[static]%dflt()#B';
+    const classCanEatStr = '@type/intersectionType.ts: CanEat';
+    const classCanSleepStr = '@type/intersectionType.ts: CanSleep';
+
+    it('case1: simple intersection', () => {
+        const alias = method?.getBody()?.getAliasTypeMap()?.get('IntersectionType');
+        assert.isDefined(alias);
+        assert.equal(alias![0].getOriginalType().toString(), 'string&number&void');
+    });
+
+    it('case2: complicated intersection', () => {
+        const alias = method?.getBody()?.getAliasTypeMap()?.get('ComplicatedType');
+        assert.isDefined(alias);
+        assert.equal(alias![0].getOriginalType().toString(), 'string|((number&any)&(string|void))');
+    });
+
+    it('case3: interface intersection', () => {
+        const alias = method?.getBody()?.getAliasTypeMap()?.get('IC');
+        assert.isDefined(alias);
+        assert.equal(alias![0].getOriginalType().toString(), '@type/intersectionType.ts: IA&@type/intersectionType.ts: IB');
+    });
+
+    it('case4: alias type intersection', () => {
+        const alias = method?.getBody()?.getAliasTypeMap()?.get('C');
+        assert.isDefined(alias);
+        assert.equal(alias![0].getOriginalType().toString(), `${aliasTypeAStr}&${aliasTypeBStr}`);
+    });
+
+    it('case5: alias type and anonymous class intersection', () => {
+        const alias = method?.getBody()?.getAliasTypeMap()?.get('Employee');
+        assert.isDefined(alias);
+        assert.equal(alias![0].getOriginalType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Person&@type/intersectionType.ts: %AC$3');
+    });
+
+    it('case6: class intersection', () => {
+        const alias = method?.getBody()?.getAliasTypeMap()?.get('CanEatAndSleep');
+        assert.isDefined(alias);
+        assert.equal(alias![0].getOriginalType().toString(), `${classCanEatStr}&${classCanSleepStr}`);
+    });
+
+    it('case7: variable declaration with type intersection', () => {
+        const local = method?.getBody()?.getLocals()?.get('student');
+        assert.isDefined(local);
+        assert.equal(local!.getType().toString(), `${aliasTypeAStr}&${aliasTypeBStr}`);
+    });
+
+    it('case8: method params with class intersection', () => {
+        const params = defaultClass?.getMethodWithName('animal')?.getSubSignature().getParameters();
+        assert.isDefined(params);
+        assert.equal(params![0].getType().toString(), `${classCanEatStr}&${classCanSleepStr}`);
+    });
+
+    it('case9: method return type with type intersection', () => {
+        const returnType = defaultClass?.getMethodWithName('animal')?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `${aliasTypeAStr}&${aliasTypeBStr}`);
+    });
+
+    it('case10: class field with class intersection', () => {
+        const fields = projectScene.getFile(fileId)?.getClassWithName('Inter')?.getFields();
+        assert.isDefined(fields);
+        assert.equal(fields![0].getType().toString(), 'string&number');
+        assert.equal(fields![1].getType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#A&@type/intersectionType.ts: %dflt.[static]%dflt()#B');
+        assert.equal(fields![2].getType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Employee&(number|boolean)');
+        assert.equal(((fields![2].getType() as IntersectionType).getTypes()[0] as AliasType).getOriginalType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Person&@type/intersectionType.ts: %AC$3');
     });
 });
 
@@ -758,5 +879,34 @@ describe('Save to TS Test', () => {
         let printer = new SourceMethodPrinter(arkMethod!);
         let source = printer.dump();
         assert.equal(source, SourceAliasTypeWithClassType);
+    });
+
+    it('case10: intersection type', () => {
+        let arkFile = scene.getFiles().find((value) => {
+            return value.getName() === 'intersectionType.ts';
+        });
+        let defaultMethod = arkFile?.getDefaultClass().getDefaultArkMethod();
+        assert.isDefined(defaultMethod);
+        assert.isNotNull(defaultMethod);
+
+        let defaultPrinter = new SourceMethodPrinter(defaultMethod!);
+        let defaultSource = defaultPrinter.dump();
+        assert.equal(defaultSource, SourceIntersectionTypeForDefaultMethod);
+
+        let method = arkFile?.getDefaultClass().getMethodWithName('animal');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+
+        let functionPrinter = new SourceMethodPrinter(method!);
+        let functionSource = functionPrinter.dump();
+        assert.equal(functionSource, SourceIntersectionTypeForFunction);
+
+        let interClass = arkFile?.getClassWithName('Inter');
+        assert.isDefined(interClass);
+        assert.isNotNull(interClass);
+
+        let classPrinter = new SourceClassPrinter(interClass!);
+        let source = classPrinter.dump();
+        assert.equal(source, SourceIntersectionTypeForClass);
     });
 });

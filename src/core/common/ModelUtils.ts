@@ -19,6 +19,7 @@ import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
 import {
+    AliasTypeSignature,
     ClassSignature,
     FieldSignature,
     FileSignature,
@@ -465,6 +466,9 @@ export class ModelUtils {
         } else if (signature instanceof LocalSignature) {
             const declare = scene.getMethod(signature.getDeclaringMethodSignature());
             return declare?.getBody()?.getLocals().get(signature.getName()) ?? declare?.getBody()?.getAliasTypeByName(signature.getName()) ?? null;
+        } else if (signature instanceof AliasTypeSignature) {
+            const declare = scene.getMethod(signature.getDeclaringMethodSignature());
+            return declare?.getBody()?.getAliasTypeByName(signature.getName()) ?? null;
         }
         return null;
     }
