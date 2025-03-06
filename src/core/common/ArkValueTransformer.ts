@@ -84,6 +84,7 @@ import { TEMP_LOCAL_PREFIX } from './Const';
 import { ArkIRTransformer, DummyStmt, ValueAndStmts } from './ArkIRTransformer';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { TypeInference } from './TypeInference';
+import { KeyofTypeExpr, TypeQueryExpr } from '../base/TypeExpr';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkValueTransformer');
 
@@ -1562,32 +1563,47 @@ export class ArkValueTransformer {
     }
 
     private resolveTypeQueryNode(typeQueryNode: ts.TypeQueryNode): Type {
-        const exprName = typeQueryNode.exprName.getText(this.sourceFile);
-        const local = this.locals.get(exprName);
-        if (local !== undefined) {
-            return local.getType();
-        }
-
         const genericTypes: Type[] = [];
         if (typeQueryNode.typeArguments) {
             for (const typeArgument of typeQueryNode.typeArguments) {
                 genericTypes.push(this.resolveTypeNode(typeArgument));
             }
         }
-        return new UnclearReferenceType(exprName, genericTypes);
+
+        const exprNameNode = typeQueryNode.exprName;
+        let opValue: Value;
+        if (ts.isQualifiedName(exprNameNode)) {
+            if (exprNameNode.left.getText(this.sourceFile) === THIS_NAME) {
+                const fieldName = exprNameNode.right.getText(this.sourceFile);
+                const fieldSignature = this.declaringMethod.getDeclaringArkClass().getFieldWithName(fieldName)?.getSignature() ??
+                    ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
+                const baseLocal = this.locals.get(THIS_NAME) ??
+                    new Local(THIS_NAME, new ClassType(this.declaringMethod.getDeclaringArkClass().getSignature(), genericTypes));
+                opValue = new ArkInstanceFieldRef(baseLocal, fieldSignature);
+            } else {
+                const exprName = exprNameNode.getText(this.sourceFile);
+                opValue = new Local(exprName, UnknownType.getInstance());
+            }
+        } else {
+            const exprName = exprNameNode.escapedText.toString();
+            opValue = this.locals.get(exprName) ?? this.globals?.get(exprName) ?? new Local(exprName, UnknownType.getInstance());
+        }
+
+        return new TypeQueryExpr(opValue, genericTypes);
     }
 
     private resolveTypeOperatorNode(typeOperatorNode: ts.TypeOperatorNode): Type {
+        let type = this.resolveTypeNode(typeOperatorNode.type);
+
         switch (typeOperatorNode.operator) {
             case ts.SyntaxKind.ReadonlyKeyword: {
-                let type = this.resolveTypeNode(typeOperatorNode.type);
                 if (type instanceof ArrayType || type instanceof TupleType) {
                     type.setReadonlyFlag(true);
                 }
                 return type;
             }
             case ts.SyntaxKind.KeyOfKeyword: {
-                return UnknownType.getInstance();
+                return new KeyofTypeExpr(type);
             }
             case ts.SyntaxKind.UniqueKeyword: {
                 return UnknownType.getInstance();

@@ -27,7 +27,7 @@ import {
     SceneConfig, SourceMethodPrinter,
     Stmt,
     Local, ArkField, ArkClass, ArkMethod, FunctionType,
-    IntersectionType, SourceClassPrinter, ArkAssignStmt,
+    IntersectionType, SourceClassPrinter, ArkAssignStmt, ClassType,
 } from '../../src';
 import {
     AliasTypeMultiRef,
@@ -71,7 +71,11 @@ import {
     SourceBasicReadonlyClassWithTypeOperator,
     SourceReadonlyOfReferenceTypeClassWithTypeOperator,
     SourceReadonlyOfGenericTypeClassWithTypeOperator,
+    SourceBasicKeyofClassWithTypeOperator,
+    SourceAllKeyofObjectClassWithTypeOperator,
+    SourceKeyofWithGenericClassWithTypeOperator,
 } from '../resources/type/expectedIR';
+import { KeyofTypeExpr, TypeQueryExpr } from '../../src/core/base/TypeExpr';
 
 function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
@@ -730,8 +734,8 @@ describe('Intersection Type With Generic Test', () => {
         assert.isNotNull(aliasTypeMap);
         const originalType1 = aliasTypeMap?.get('interType')![0].getOriginalType();
         assert.isDefined(originalType1);
-        assert.equal(originalType1!.toString(), '@type/test.ts: ClassWithGeneric<string>&@type/test.ts: %dflt.functionWithGeneric(T)');
-        assert.equal(((originalType1 as IntersectionType).getTypes()[1] as FunctionType).getRealGenericTypes()?.toString(), 'number');
+        assert.equal(originalType1!.toString(), '@type/test.ts: ClassWithGeneric<string>&typeof @type/test.ts: %dflt.functionWithGeneric(T)<number>');
+        assert.equal(((originalType1 as IntersectionType).getTypes()[1] as TypeQueryExpr).getGenerateTypes()?.toString(), 'number');
 
         const local = method?.getBody()?.getLocals().get('interLocal');
         assert.isDefined(local);
@@ -1104,6 +1108,293 @@ describe('Readonly Type With Generic Reference Type Test', () => {
     });
 });
 
+describe('Keyof Type With Basic Type Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'typeOperator.ts');
+    const basicClass = projectScene.getFile(fileId)?.getClassWithName('BasicKeyof');
+    const personTypeStr = '@type/typeOperator.ts: %dflt.[static]%dflt()#PersonType';
+    const personStr = 'person';
+    const thisReturnValueStr = 'this.<@type/typeOperator.ts: BasicKeyof.returnValue>';
+    const thisAgeKeyStr = 'this.<@type/typeOperator.ts: BasicKeyof.ageKey>';
+
+    it('keyof class field', () => {
+        const fieldNameKey = basicClass?.getFieldWithName('nameKey');
+        assert.isDefined(fieldNameKey);
+        assert.equal(fieldNameKey!.getType().toString(), `keyof ${personTypeStr}`);
+        const ageNameKey = basicClass?.getFieldWithName('ageKey');
+        assert.isDefined(ageNameKey);
+        assert.equal(ageNameKey!.getType().toString(), `keyof typeof ${personStr}`);
+        const returnValueKey = basicClass?.getFieldWithName('returnValue');
+        assert.isDefined(returnValueKey);
+        assert.equal(returnValueKey!.getType().toString(), personTypeStr);
+        assert.equal((returnValueKey!.getInitializer()[0] as ArkAssignStmt).getRightOp().getType().toString(), personTypeStr);
+    });
+
+    it('keyof object type', () => {
+        const method = basicClass?.getMethodWithName('keyofObjectType');
+
+        const param = method?.getParameters()[0];
+        assert.isDefined(param);
+        assert.equal(param!.getType().toString(), `keyof ${personTypeStr}`);
+
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `keyof ${personTypeStr}[]`);
+
+        const aliases = method?.getBody()?.getAliasTypeMap();
+        const aliasPersonKeys = aliases?.get('PersonKeys');
+        assert.isDefined(aliasPersonKeys);
+        assert.equal(aliasPersonKeys![0].getOriginalType().toString(), `keyof ${personTypeStr}`);
+
+        const p1Local = method?.getBody()?.getLocals().get('p1');
+        assert.isDefined(p1Local);
+        assert.equal(p1Local!.getType().toString(), `@type/typeOperator.ts: BasicKeyof.keyofObjectType(keyof ${personTypeStr})#PersonKeys`);
+        const p2Local = method?.getBody()?.getLocals().get('p2');
+        assert.isDefined(p2Local);
+        assert.equal(p2Local!.getType().toString(), `keyof ${personTypeStr}`);
+    });
+
+    it('keyof with typeof of object value', () => {
+        const method = basicClass?.getMethodWithName('keyofWithTypeof');
+
+        const param1 = method?.getParameters()[0];
+        assert.isDefined(param1);
+        assert.equal(param1!.getType().toString(), `keyof typeof ${personStr}`);
+        assert.equal((((param1!.getType() as KeyofTypeExpr).getOpType() as TypeQueryExpr).getOpValue() as Local).getType().toString(), personTypeStr);
+
+        const param2 = method?.getParameters()[1];
+        assert.isDefined(param2);
+        assert.equal(param2!.getType().toString(), `keyof typeof ${thisAgeKeyStr}`);
+
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `keyof typeof ${thisReturnValueStr}`);
+
+        const aliases = method?.getBody()?.getAliasTypeMap();
+        const aliasPersonKeys = aliases?.get('PersonKeys');
+        assert.isDefined(aliasPersonKeys);
+        assert.equal(aliasPersonKeys![0].getOriginalType().toString(), `keyof typeof ${personStr}`);
+        assert.equal(aliasPersonKeys![1].getExprs()[0].getOriginalObject().toString(), `keyof typeof ${personStr}`);
+        const aliasTypeQueryExpr = (aliasPersonKeys![1].getExprs()[0].getOriginalObject() as KeyofTypeExpr).getOpType();
+        assert.equal(((aliasTypeQueryExpr as TypeQueryExpr).getOpValue() as Local).getType().toString(), personTypeStr);
+
+        const p1Local = method?.getBody()?.getLocals().get('p1');
+        assert.isDefined(p1Local);
+        assert.equal(p1Local!.getType().toString(), `keyof typeof ${personStr}`);
+        assert.equal((p1Local!.getDeclaringStmt() as ArkAssignStmt).getRightOp().toString(), 'this.<@type/typeOperator.ts: BasicKeyof.nameKey>');
+
+        const p2Local = method?.getBody()?.getLocals().get('p2');
+        assert.isDefined(p2Local);
+        assert.equal(p2Local!.getType().toString(), `keyof typeof ${thisReturnValueStr}`);
+    });
+});
+
+describe('Keyof Type With Different Types Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'typeOperator.ts');
+    const objectClass = projectScene.getFile(fileId)?.getClassWithName('AllKeyofObject');
+
+    it('keyof primitive type', () => {
+        const aliases = objectClass?.getMethodWithName('keyofPrimitiveType')?.getBody()?.getAliasTypeMap();
+        const aliasA = aliases?.get('A');
+        assert.isDefined(aliasA);
+        assert.equal(aliasA![0].getOriginalType().toString(), 'keyof any');
+        const aliasB = aliases?.get('B');
+        assert.isDefined(aliasB);
+        assert.equal(aliasB![0].getOriginalType().toString(), 'keyof boolean');
+        const aliasC = aliases?.get('C');
+        assert.isDefined(aliasC);
+        assert.equal(aliasC![0].getOriginalType().toString(), 'keyof number');
+        const aliasD = aliases?.get('D');
+        assert.isDefined(aliasD);
+        assert.equal(aliasD![0].getOriginalType().toString(), 'keyof string');
+        const aliasE = aliases?.get('E');
+        assert.isDefined(aliasE);
+        assert.equal(aliasE![0].getOriginalType().toString(), 'keyof null');
+        const aliasF = aliases?.get('F');
+        assert.isDefined(aliasF);
+        assert.equal(aliasF![0].getOriginalType().toString(), 'keyof undefined');
+        const aliasG = aliases?.get('G');
+        assert.isDefined(aliasG);
+        assert.equal(aliasG![0].getOriginalType().toString(), 'keyof void');
+        const aliasH = aliases?.get('H');
+        assert.isDefined(aliasH);
+        assert.equal(aliasH![0].getOriginalType().toString(), 'keyof never');
+    });
+
+    it('keyof other object', () => {
+        const aliases = objectClass?.getMethodWithName('keyofOtherTypes')?.getBody()?.getAliasTypeMap();
+
+        const classKeys = aliases?.get('ClassKeys');
+        assert.isDefined(classKeys);
+        assert.equal(classKeys![0].getOriginalType().toString(), 'keyof @type/typeOperator.ts: BasicKeyof');
+
+        const interfaceKeys = aliases?.get('InterfaceKeys');
+        assert.isDefined(interfaceKeys);
+        assert.equal(interfaceKeys![0].getOriginalType().toString(), 'keyof @type/typeOperator.ts: PersonInterface');
+
+        const arrayKeys = aliases?.get('ArrayKeys');
+        assert.isDefined(arrayKeys);
+        assert.equal(arrayKeys![0].getOriginalType().toString(), 'keyof string[]');
+
+        const tupleKeys = aliases?.get('TupleKeys');
+        assert.isDefined(tupleKeys);
+        assert.equal(tupleKeys![0].getOriginalType().toString(), 'keyof [string, number]');
+
+        const enumKeys = aliases?.get('EnumKeys');
+        assert.isDefined(enumKeys);
+        assert.equal(enumKeys![0].getOriginalType().toString(), 'keyof typeof @type/typeOperator.ts: Color');
+        const enumTypeQueryExpr = (enumKeys![0].getOriginalType() as KeyofTypeExpr).getOpType();
+        assert.equal(((enumTypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), '@type/typeOperator.ts: Color');
+
+        const literalKeys = aliases?.get('LiteralKeys');
+        assert.isDefined(literalKeys);
+        const className = ((literalKeys![0].getOriginalType() as KeyofTypeExpr).getOpType() as ClassType).getClassSignature().getClassName();
+        const ACClass = projectScene.getFile(fileId)?.getClassWithName(className);
+        assert.isDefined(ACClass);
+        assert.isNotNull(ACClass);
+        assert.isDefined(ACClass!.getFieldWithName('a'));
+        assert.isNotNull(ACClass!.getFieldWithName('b'));
+
+        const unionKeys = aliases?.get('UnionKeys');
+        assert.isDefined(unionKeys);
+        assert.equal(unionKeys![0].getOriginalType().toString(), 'keyof (@type/typeOperator.ts: AllKeyofObject.keyofOtherTypes()#A|@type/typeOperator.ts: AllKeyofObject.keyofOtherTypes()#B)');
+    });
+});
+
+describe('Keyof Type With Generic Type Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'typeOperator.ts');
+    const basicClass = projectScene.getFile(fileId)?.getClassWithName('KeyofWithGeneric');
+    const genericClassNumber = '@type/typeOperator.ts: GenericClass<number>';
+    const genericClassA = '@type/typeOperator.ts: GenericClass<@type/typeOperator.ts: %dflt.[static]%dflt()#A>';
+    const genericClass = '@type/typeOperator.ts: GenericClass';
+    const genericTypeRealStr = '@type/typeOperator.ts: %dflt.[static]%dflt()#PersonGenericType<string,number>';
+    const personGenericStr = 'personGeneric';
+
+    it('keyof class field', () => {
+        const fieldNameKey = basicClass?.getFieldWithName('nameKey');
+        assert.isDefined(fieldNameKey);
+        assert.isNotNull(fieldNameKey);
+        assert.equal(fieldNameKey!.getType().toString(), `keyof ${genericTypeRealStr}`);
+
+        const fieldGenericKey = basicClass?.getFieldWithName('genericKey');
+        assert.isDefined(fieldGenericKey);
+        assert.isNotNull(fieldGenericKey);
+        assert.equal(fieldGenericKey!.getType().toString(), `keyof typeof ${genericClassNumber}`);
+
+        const fieldReferGenericKey = basicClass?.getFieldWithName('referGenericKey');
+        assert.isDefined(fieldReferGenericKey);
+        assert.isNotNull(fieldReferGenericKey);
+        assert.equal(fieldReferGenericKey!.getType().toString(), `keyof typeof ${genericClassA}`);
+    });
+
+    it('keyof object type', () => {
+        const method = basicClass?.getMethodWithName('keyofObjectType');
+
+        const param = method?.getParameters()[0];
+        assert.isDefined(param);
+        assert.equal(param!.getType().toString(), `keyof ${genericTypeRealStr}`);
+
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `keyof ${genericTypeRealStr}[]`);
+
+        const aliases = method?.getBody()?.getAliasTypeMap();
+        const aliasPersonKeys = aliases?.get('PersonKeys');
+        assert.isDefined(aliasPersonKeys);
+        assert.equal(aliasPersonKeys![0].getOriginalType().toString(), `keyof ${genericTypeRealStr}`);
+
+        const p1Local = method?.getBody()?.getLocals().get('p1');
+        assert.isDefined(p1Local);
+        assert.equal(p1Local!.getType().toString(), `@type/typeOperator.ts: KeyofWithGeneric.keyofObjectType(keyof ${genericTypeRealStr})#PersonKeys`);
+        const p2Local = method?.getBody()?.getLocals().get('p2');
+        assert.isDefined(p2Local);
+        assert.equal(p2Local!.getType().toString(), `keyof ${genericTypeRealStr}`);
+    });
+
+    it('keyof with typeof of object value', () => {
+        const method = basicClass?.getMethodWithName('keyofWithTypeof');
+
+        const param1 = method?.getParameters()[0];
+        assert.isDefined(param1);
+        assert.equal(param1!.getType().toString(), `keyof typeof ${personGenericStr}`);
+        assert.equal((((param1!.getType() as KeyofTypeExpr).getOpType() as TypeQueryExpr).getOpValue() as Local).getType().toString(), genericTypeRealStr);
+
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `keyof typeof ${personGenericStr}`);
+
+        const aliases = method?.getBody()?.getAliasTypeMap();
+        const aliasPersonKeys = aliases?.get('PersonKeys');
+        assert.isDefined(aliasPersonKeys);
+        assert.equal(aliasPersonKeys![0].getOriginalType().toString(), `keyof typeof ${personGenericStr}`);
+        assert.equal(aliasPersonKeys![1].getExprs()[0].getOriginalObject().toString(), `keyof typeof ${personGenericStr}`);
+        const aliasTypeQueryExpr = (aliasPersonKeys![1].getExprs()[0].getOriginalObject() as KeyofTypeExpr).getOpType();
+        assert.equal(((aliasTypeQueryExpr as TypeQueryExpr).getOpValue() as Local).getType().toString(), genericTypeRealStr);
+
+        const p1Local = method?.getBody()?.getLocals().get('p1');
+        assert.isDefined(p1Local);
+        assert.equal(p1Local!.getType().toString(), `keyof typeof ${personGenericStr}`);
+        assert.equal((p1Local!.getDeclaringStmt() as ArkAssignStmt).getRightOp().toString(), 'this.<@type/typeOperator.ts: KeyofWithGeneric.nameKey>');
+    });
+
+    it('keyof with typeof of generic class', () => {
+        const method = basicClass?.getMethodWithName('typeofWithGeneric');
+
+        const param1 = method?.getParameters()[0];
+        assert.isDefined(param1);
+        assert.equal(param1!.getType().toString(), `keyof typeof ${genericClassNumber}`);
+        const param1TypeQueryExpr = (param1!.getType() as KeyofTypeExpr).getOpType();
+        assert.equal(((param1TypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), genericClass);
+
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `keyof typeof ${genericClassNumber}`);
+        const returnTypeQueryExpr = (returnType! as KeyofTypeExpr).getOpType();
+        assert.equal(((returnTypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), genericClass);
+
+        const aliases = method?.getBody()?.getAliasTypeMap();
+        const aliasPersonKeys = aliases?.get('PersonKeys');
+        assert.isDefined(aliasPersonKeys);
+        const aliasOriginalObject = aliasPersonKeys![0].getOriginalType();
+        assert.equal(aliasOriginalObject.toString(), `keyof typeof ${genericClassNumber}`);
+        const aliasTypeQueryExpr = (aliasOriginalObject as KeyofTypeExpr).getOpType();
+        assert.equal(((aliasTypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), genericClass);
+
+        const p1Local = method?.getBody()?.getLocals().get('p1');
+        assert.isDefined(p1Local);
+        assert.equal(p1Local!.getType().toString(), `keyof typeof ${genericClassNumber}`);
+        assert.equal((p1Local!.getDeclaringStmt() as ArkAssignStmt).getRightOp().toString(), 'this.<@type/typeOperator.ts: KeyofWithGeneric.genericKey>');
+    });
+
+    it('keyof with typeof of reference generic type', () => {
+        const method = basicClass?.getMethodWithName('typeofWithReferGeneric');
+
+        const param1 = method?.getParameters()[0];
+        assert.isDefined(param1);
+        assert.equal(param1!.getType().toString(), `keyof typeof ${genericClassA}`);
+        const param1TypeQueryExpr = (param1!.getType() as KeyofTypeExpr).getOpType();
+        assert.equal(((param1TypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), genericClass);
+
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), `keyof typeof ${genericClassA}`);
+        const returnTypeQueryExpr = (returnType! as KeyofTypeExpr).getOpType();
+        assert.equal(((returnTypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), genericClass);
+
+        const aliases = method?.getBody()?.getAliasTypeMap();
+        const aliasPersonKeys = aliases?.get('PersonKeys');
+        assert.isDefined(aliasPersonKeys);
+        const aliasOriginalObject = aliasPersonKeys![0].getOriginalType();
+        assert.equal(aliasOriginalObject.toString(), `keyof typeof ${genericClassA}`);
+        const aliasTypeQueryExpr = (aliasOriginalObject as KeyofTypeExpr).getOpType();
+        assert.equal(((aliasTypeQueryExpr as TypeQueryExpr).getOpValue() as ArkClass).getSignature().toString(), genericClass);
+
+        const p1Local = method?.getBody()?.getLocals().get('p1');
+        assert.isDefined(p1Local);
+        assert.equal(p1Local!.getType().toString(), `keyof typeof ${genericClassA}`);
+        assert.equal((p1Local!.getDeclaringStmt() as ArkAssignStmt).getRightOp().toString(), 'this.<@type/typeOperator.ts: KeyofWithGeneric.genericKey>');
+    });
+});
+
 describe('Save to TS Test', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../resources/type'));
@@ -1265,5 +1556,38 @@ describe('Save to TS Test', () => {
         const printer = new SourceClassPrinter(arkClass!);
         let source = printer.dump();
         assert.equal(source, SourceReadonlyOfGenericTypeClassWithTypeOperator);
+    });
+
+    it('case14: class BasicKeyof of typeOperator', () => {
+        const arkFile = scene.getFiles().find((value) => {
+            return value.getName() === 'typeOperator.ts';
+        });
+        const arkClass = arkFile?.getClassWithName('BasicKeyof');
+        assert.isDefined(arkClass);
+        const printer = new SourceClassPrinter(arkClass!);
+        let source = printer.dump();
+        assert.equal(source, SourceBasicKeyofClassWithTypeOperator);
+    });
+
+    it('case15: class AllKeyofObject of typeOperator', () => {
+        const arkFile = scene.getFiles().find((value) => {
+            return value.getName() === 'typeOperator.ts';
+        });
+        const arkClass = arkFile?.getClassWithName('AllKeyofObject');
+        assert.isDefined(arkClass);
+        const printer = new SourceClassPrinter(arkClass!);
+        let source = printer.dump();
+        assert.equal(source, SourceAllKeyofObjectClassWithTypeOperator);
+    });
+
+    it('case16: class KeyofWithGeneric of typeOperator', () => {
+        const arkFile = scene.getFiles().find((value) => {
+            return value.getName() === 'typeOperator.ts';
+        });
+        const arkClass = arkFile?.getClassWithName('KeyofWithGeneric');
+        assert.isDefined(arkClass);
+        const printer = new SourceClassPrinter(arkClass!);
+        let source = printer.dump();
+        assert.equal(source, SourceKeyofWithGenericClassWithTypeOperator);
     });
 });

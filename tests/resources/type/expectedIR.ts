@@ -835,3 +835,74 @@ export const SourceReadonlyOfGenericTypeClassWithTypeOperator = `class ReadonlyO
   }
 }
 `;
+
+export const SourceBasicKeyofClassWithTypeOperator = `class BasicKeyof {
+  private nameKey: keyof PersonType = 'name';
+  private ageKey: keyof typeof person = 'age';
+  private returnValue: PersonType = person;
+  keyofObjectType(property: keyof PersonType): (keyof PersonType)[] {
+    type PersonKeys = keyof PersonType;
+    let p1: PersonKeys = this.nameKey;
+    let p2: keyof PersonType = 'age';
+    return [p1, p2];
+  }
+  keyofWithTypeof(property1: keyof typeof person, property2: keyof typeof this.ageKey): keyof typeof this.returnValue {
+    type PersonKeys = keyof typeof person;
+    let p1: keyof typeof person = this.nameKey;
+    return p1;
+  }
+}
+`;
+
+export const SourceAllKeyofObjectClassWithTypeOperator = `class AllKeyofObject {
+  keyofPrimitiveType(): void {
+    type A = keyof any;
+    type B = keyof boolean;
+    type C = keyof number;
+    type D = keyof string;
+    type E = keyof null;
+    type F = keyof undefined;
+    type G = keyof void;
+    type H = keyof never;
+  }
+  keyofOtherTypes(): void {
+    type ClassKeys = keyof BasicKeyof;
+    type InterfaceKeys = keyof PersonInterface;
+    type ArrayKeys = keyof string[];
+    type TupleKeys = keyof [string, number];
+    type EnumKeys = keyof typeof Color;
+    type LiteralKeys = keyof {a: 1, b: 2};
+    type A = {a: string};
+    type B = {b: number};
+    type UnionKeys = keyof (A | B);
+  }
+}
+`;
+
+export const SourceKeyofWithGenericClassWithTypeOperator = `class KeyofWithGeneric {
+  private nameKey: keyof PersonGenericType<string, number> = 'name';
+  private genericKey: keyof typeof GenericClass<number> = 'prototype';
+  private referGenericKey: keyof typeof GenericClass<A> = 'prototype';
+  keyofObjectType(property: keyof PersonGenericType<string, number>): (keyof PersonGenericType<string, number>)[] {
+    type PersonKeys = keyof PersonGenericType<string, number>;
+    let p1: PersonKeys = this.nameKey;
+    let p2: keyof PersonGenericType<string, number> = 'age';
+    return [p1, p2];
+  }
+  keyofWithTypeof(property1: keyof typeof personGeneric): keyof typeof personGeneric {
+    type PersonKeys = keyof typeof personGeneric;
+    let p1: keyof typeof personGeneric = this.nameKey;
+    return p1;
+  }
+  typeofWithGeneric(property1: keyof typeof GenericClass<number>): keyof typeof GenericClass<number> {
+    type PersonKeys = keyof typeof GenericClass<number>;
+    let p1: keyof typeof GenericClass<number> = this.genericKey;
+    return p1;
+  }
+  typeofWithReferGeneric(property1: keyof typeof GenericClass<A>): keyof typeof GenericClass<A> {
+    type PersonKeys = keyof typeof GenericClass<A>;
+    let p1: keyof typeof GenericClass<A> = this.genericKey;
+    return p1;
+  }
+}
+`;

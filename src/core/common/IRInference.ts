@@ -25,7 +25,7 @@ import {
     Type,
     UnclearReferenceType,
     UndefinedType,
-    UnionType
+    UnionType, UnknownType,
 } from '../base/Type';
 import { Local } from '../base/Local';
 import { TypeInference } from './TypeInference';
@@ -74,6 +74,8 @@ import {
 } from './Const';
 import { ValueUtil } from './ValueUtil';
 import { ArkFile } from '../model/ArkFile';
+import { AbstractTypeExpr, KeyofTypeExpr, TypeQueryExpr } from '../base/TypeExpr';
+import { ArkBaseModel } from '../model/ArkBaseModel';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'IRInference');
 
@@ -442,7 +444,7 @@ export class IRInference {
         }
     }
 
-    private static inferLocal(base: Local, arkMethod: ArkMethod): void {
+    public static inferLocal(base: Local, arkMethod: ArkMethod): void {
         const arkClass = arkMethod.getDeclaringArkClass();
         if (base.getName() === THIS_NAME) {
             if (!arkClass.isAnonymousClass()) {
@@ -575,6 +577,9 @@ export class IRInference {
         let model;
         if (originalObject instanceof Local) {
             model = ModelUtils.findArkModelByRefName(originalObject.getName(), arkMethod.getDeclaringArkClass());
+        } else if (originalObject instanceof AbstractTypeExpr) {
+            originalObject.inferType(arkMethod);
+            model = originalObject;
         } else if (originalObject instanceof Type) {
             const type = TypeInference.inferUnclearedType(originalObject, arkMethod.getDeclaringArkClass());
 
@@ -598,5 +603,62 @@ export class IRInference {
             expr.setOriginalObject(model);
         }
         return expr;
+    }
+
+    public static inferTypeQueryExpr(expr: TypeQueryExpr, arkMethod: ArkMethod): void {
+        let gTypes = expr.getGenerateTypes();
+        if (gTypes) {
+            for (let i = 0; i < gTypes.length; i++) {
+                const newType = TypeInference.inferUnclearedType(gTypes[i], arkMethod.getDeclaringArkClass());
+                if (newType) {
+                    gTypes[i] = newType;
+                }
+            }
+        }
+
+        const opValue = expr.getOpValue();
+        let opValueType;
+        if (opValue instanceof ArkBaseModel) {
+            opValueType = ModelUtils.parseArkBaseModel2Type(opValue) ?? UnknownType.getInstance();
+        } else {
+            opValueType = opValue.getType();
+        }
+
+        if (!TypeInference.isUnclearType(opValueType)) {
+            return;
+        }
+        if (opValue instanceof Local) {
+            const newOpValueType = TypeInference.inferUnclearRefName(opValue.getName(), arkMethod.getDeclaringArkClass());
+            const scene = arkMethod.getDeclaringArkFile().getScene();
+            if (newOpValueType instanceof ClassType) {
+                const newOpValue = ModelUtils.findArkModelBySignature(newOpValueType.getClassSignature(), scene);
+                if (newOpValue instanceof ArkBaseModel) {
+                    expr.setOpValue(newOpValue);
+                }
+            } else if (newOpValueType instanceof FunctionType) {
+                const newOpValue = ModelUtils.findArkModelBySignature(newOpValueType.getMethodSignature(), scene);
+                if (newOpValue instanceof ArkBaseModel) {
+                    expr.setOpValue(newOpValue);
+                }
+            } else {
+                this.inferLocal(opValue, arkMethod);
+            }
+        } else if (opValue instanceof AbstractRef || opValue instanceof AbstractExpr) {
+            expr.setOpValue(opValue.inferType(arkMethod));
+        }
+    }
+
+    public static inferKeyofTypeExpr(expr: KeyofTypeExpr, arkMethod: ArkMethod): void {
+        const opType = expr.getOpType();
+        if (TypeInference.isUnclearType(opType)) {
+            if (opType instanceof TypeQueryExpr) {
+                this.inferTypeQueryExpr(opType, arkMethod);
+            } else {
+                const type = TypeInference.inferUnclearedType(opType, arkMethod.getDeclaringArkClass());
+                if (type) {
+                    expr.setOpType(type);
+                }
+            }
+        }
     }
 }
