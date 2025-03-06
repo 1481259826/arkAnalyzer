@@ -29,11 +29,13 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType, PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode } from './Pag';
-import { PtsSet } from './PtsDS';
+import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType,
+    PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode } from './Pag';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
+import { IPtsCollection } from './PtsDS';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
 import { IsCollectionAPI, IsCollectionMapSet, IsCollectionSetAdd } from './PTAUtils';
+import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -67,7 +69,7 @@ export class PagBuilder {
     private sdkMethodParamValueMap: Map<FuncID, Value[]> = new Map();
     private fakeSdkMethodParamDeclaringStmt: Stmt = new ArkAssignStmt(new Local(""), new Local(""));
     private funcHandledThisRound: Set<FuncID> = new Set();
-    private updatedNodesThisRound: Map<NodeID, PtsSet<NodeID>> = new Map()
+    private updatedNodesThisRound: Map<NodeID, IPtsCollection<NodeID>> = new Map()
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
     private globalThisValue: Local = new Local(GLOBAL_THIS_NAME);
     private globalThisPagNode?: PagGlobalThisNode;
@@ -630,8 +632,9 @@ export class PagBuilder {
         return callee;
     }
 
-    public addUpdatedNode(nodeID: NodeID, diffPT: PtsSet<NodeID>) {
-        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new PtsSet();
+    public addUpdatedNode(nodeID: NodeID, diffPT: IPtsCollection<NodeID>) {
+        let ptaConfig = PointerAnalysisConfig.getInstance();
+        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new ptaConfig.ptsCollectionCtor();
         updatedNode.union(diffPT);
         this.updatedNodesThisRound.set(nodeID, updatedNode);
     }
@@ -1393,12 +1396,12 @@ export class PagBuilder {
         logger.trace("[add dynamic callsite] " + cs.callStmt.toString() + ":  " + cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString());
     }
 
-    public setPtForNode(node: NodeID, pts: PtsSet<NodeID> | undefined): void {
+    public setPtForNode(node: NodeID, pts: IPtsCollection<NodeID> | undefined): void {
         if (!pts) {
             return;
         }
 
-        (this.pag.getNode(node) as PagNode).setPointTo(pts.getProtoPtsSet());
+        (this.pag.getNode(node) as PagNode).setPointTo(pts);
     }
 
     public getRealThisLocal(input: Local, funcId: FuncID): Local {

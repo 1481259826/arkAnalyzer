@@ -30,6 +30,8 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
 import { IsCollectionClass } from './PTAUtils';
+import { IPtsCollection } from './PtsDS';
+import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export type PagNodeType = Value;
@@ -122,7 +124,7 @@ export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
     private stmt: Stmt | undefined; // stmt is just used for graph print
-    private pointTo: Set<NodeID>;
+    private pointTo: IPtsCollection<NodeID>;
 
     private addressInEdges!: PagEdgeSet;
     private addressOutEdges!: PagEdgeSet;
@@ -146,7 +148,8 @@ export class PagNode extends BaseNode {
         this.cid = cid;
         this.value = value;
         this.stmt = s;
-        this.pointTo = new Set<NodeID>;
+        let ptaConfig = PointerAnalysisConfig.getInstance();
+        this.pointTo = new ptaConfig.ptsCollectionCtor();
     }
 
     public getBasePt(): NodeID {
@@ -270,18 +273,18 @@ export class PagNode extends BaseNode {
     }
 
     public getValue(): Value {
-        return this.value
+        return this.value;
     }
 
-    public getPointTo(): Set<NodeID> {
-        return this.pointTo
+    public getPointTo(): IPtsCollection<NodeID> {
+        return this.pointTo;
     }
 
     public addPointToElement(node: NodeID) {
-        this.pointTo.add(node)
+        this.pointTo.insert(node);
     }
 
-    public setPointTo(pts: Set<NodeID>): void {
+    public setPointTo(pts: IPtsCollection<NodeID>): void {
         this.pointTo = pts;
     }
 
@@ -514,7 +517,7 @@ export class PagNewContainerExprNode extends PagNode {
             return this.elementNode;
         }
         return undefined;
-    }
+   }
 }
 
 export class PagParamNode extends PagNode {

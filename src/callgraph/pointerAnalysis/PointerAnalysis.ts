@@ -29,7 +29,7 @@ import { PTAStat } from '../common/Statistics';
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode, PagArrayNode } from './Pag';
 import { PagBuilder } from './PagBuilder';
 import { PointerAnalysisConfig } from './PointerAnalysisConfig';
-import { DiffPTData, PtsSet } from './PtsDS';
+import { DiffPTData, IPtsCollection } from './PtsDS';
 import { Local } from '../../core/base/Local';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -37,7 +37,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export class PointerAnalysis extends AbstractAnalysis {
     private pag: Pag;
     private pagBuilder: PagBuilder;
-    private ptd: DiffPTData<NodeID, NodeID, PtsSet<NodeID>>;
+    private ptd: DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>;
     private entries!: FuncID[];
     private worklist!: NodeID[];
     // record all updated nodes
@@ -49,7 +49,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         super(s)
         this.pag = p;
         this.cg = cg;
-        this.ptd = new DiffPTData<NodeID, NodeID, PtsSet<NodeID>>(PtsSet);
+        this.ptd = new DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>(config.ptsCollectionCtor);
         this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat(this);
@@ -62,7 +62,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         cgBuilder.buildDirectCallGraphForScene();
         let pag = new Pag();
         if (!config) {
-            config = new PointerAnalysisConfig(1, "out/", false, false);
+            config = PointerAnalysisConfig.create(1, "out/", false, false)
         }
 
         const dummyMainCreator = new DummyMainCreater(projectScene);
@@ -249,7 +249,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         return true;
     }
 
-    private handleFieldInEdges(fieldNode: PagNode, diffPts: PtsSet<number>): void {
+    private handleFieldInEdges(fieldNode: PagNode, diffPts: IPtsCollection<number>): void {
         fieldNode.getIncomingEdge().forEach((edge) => {
             if (edge.getKind() !== PagEdgeKind.Write) {
                 return;
@@ -276,7 +276,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         });
     }
 
-    private handleFieldOutEdges(fieldNode: PagNode, diffPts: PtsSet<number>): void {
+    private handleFieldOutEdges(fieldNode: PagNode, diffPts: IPtsCollection<number>): void {
         fieldNode.getOutgoingEdges().forEach((edge) => {
             if (edge.getKind() !== PagEdgeKind.Load) {
                 return;
@@ -374,7 +374,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         return changed;
     }
 
-    private processDynCallSite(node: PagLocalNode, pts: PtsSet<NodeID>, processedCallSites: Set<DynCallSite>): boolean {
+    private processDynCallSite(node: PagLocalNode, pts: IPtsCollection<NodeID>, processedCallSites: Set<DynCallSite>): boolean {
         let changed: boolean = false;
         let dynCallSites = node.getRelatedDynCallSites();
 
@@ -395,7 +395,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         return changed;
     }
 
-    private processUnknownCallSite(node: PagLocalNode, pts: PtsSet<NodeID>): boolean {
+    private processUnknownCallSite(node: PagLocalNode, pts: IPtsCollection<NodeID>): boolean {
         let changed: boolean = false;
         let unknownCallSites = node.getRelatedUnknownCallSites();
 
@@ -547,11 +547,11 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         let findSameType = false;
         let pts = node.getPointTo();
-        if (pts.size === 0) {
+        if (pts.count() === 0) {
             return;
         }
 
-        pts.forEach(pt => {
+        for(let pt of pts) {
             let ptNode = this.pag.getNode(pt) as PagNode;
             let type = ptNode.getValue().getType();
             if (type.toString() !== origType.toString()) {
@@ -563,7 +563,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             } else {
                 findSameType = true;
             }
-        })
+        }
 
         // If find pts to original type, 
         // need add original type back since it is a correct type

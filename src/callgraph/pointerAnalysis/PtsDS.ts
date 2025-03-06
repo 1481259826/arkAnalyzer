@@ -13,12 +13,10 @@
  * limitations under the License.
  */
 
-interface Idx {
-    //TODO: if need define?
-}
+import { SparseBitVector } from "../../utils/SparseBitVector";
 
-interface IPtsCollection<T extends Idx> {
-    //new(): this; 
+type Idx = number
+export interface IPtsCollection<T extends Idx> {
     contains(elem: T): boolean;
     insert(elem: T): boolean;
     remove(elem: T): boolean;
@@ -30,7 +28,17 @@ interface IPtsCollection<T extends Idx> {
     isEmpty(): boolean;
     superset(other: this): boolean;
     intersect(other: this): boolean;
+    getProtoPtsSet(): any; 
     [Symbol.iterator](): IterableIterator<T>;
+}
+
+export function createPtsCollectionCtor<T extends Idx>(type: PtsCollectionType): new () => IPtsCollection<T> {
+    if (type === PtsCollectionType.Set) {
+        return PtsSet<T>;
+    } else if (type === PtsCollectionType.BitVector) {
+        return PtsBV<T>;
+    }
+    throw new Error(`Unsupported pts collection type: ${type}`);
 }
 
 /*
@@ -39,9 +47,6 @@ interface IPtsCollection<T extends Idx> {
 export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     pts: Set<T>;
 
-    // static new<T extends Idx>(this: new () => PtsSet<T>): PtsSet<T> {
-    //     return new this();
-    // }
     constructor() {
         this.pts = new Set();
     }
@@ -94,7 +99,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         this.pts.clear();
     }
 
-     count(): number {
+    count(): number {
         return this.pts.size;
     }
 
@@ -122,7 +127,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         return false;
     }
 
-    public getProtoPtsSet(): Set<T> {
+    getProtoPtsSet(): Set<T> {
         return this.pts;
     }
 
@@ -131,11 +136,90 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     }
 }
 
+export class PtsBV<T extends Idx> implements IPtsCollection<T> {
+    pts: SparseBitVector;
+
+    constructor() {
+        this.pts = new SparseBitVector();
+    }
+
+    contains(elem: T): boolean {
+        return this.pts.test(elem);
+    }
+
+    insert(elem: T): boolean {
+        this.pts.set(elem);
+        return true;
+    }
+
+    remove(elem: T): boolean {
+        this.pts.reset(elem);
+        return true;
+    }
+
+    clone(): this {
+        let cloned = new PtsBV<T>();
+        cloned.pts = this.pts.clone();
+        return cloned as this;
+    }
+
+    union(other: this): boolean {
+        return this.pts.unionWith(other.pts);
+    }
+
+    subtract(other: this): boolean {
+        return this.pts.subtractWith(other.pts);
+    }
+
+    clear(): void {
+        this.pts.clear();
+    }
+
+    count(): number {
+        return this.pts.count();
+    }
+
+    isEmpty(): boolean {
+        return this.pts.isEmpty();
+    }
+
+    // If current collection is a super set of other
+    superset(other: this): boolean {
+        for (const elem of other.pts) {
+            if (!this.pts.test(elem)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // If current collection is intersect with other
+    intersect(other: this): boolean {
+        for (const elem of other.pts) {
+            if (this.pts.test(elem)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    getProtoPtsSet(): SparseBitVector {
+        return this.pts;
+    }
+
+    [Symbol.iterator](): IterableIterator<T> {
+        return this.pts[Symbol.iterator]() as IterableIterator<T>;
+    }
+}
+
+export enum PtsCollectionType { Set, BitVector };
 export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
+
+
     diffPtsMap: Map<K, DS>;
     propaPtsMap: Map<K, DS>;
 
-    constructor(private DSCreator: new() => DS) {
+    constructor(private DSCreator: (new () => DS)) {
         this.diffPtsMap = new Map();
         this.propaPtsMap = new Map();
     }
