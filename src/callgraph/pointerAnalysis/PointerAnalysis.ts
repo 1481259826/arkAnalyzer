@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -111,6 +111,10 @@ export class PointerAnalysis extends AbstractAnalysis {
         if (this.config.unhandledFuncDump) {
             this.dumpUnhandledFunctions();
         }
+    }
+
+    public getPTD(): DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>> {
+        return this.ptd;
     }
 
     public getStat(): string {
@@ -485,7 +489,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             if (processedNodes.has(valueNodeID)) {
                 continue;
             }
-    
+
             this.processRelatedNode(valueNodeID, workListNodes, processedNodes);
         }
 
@@ -499,10 +503,10 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private processRelatedNode(valueNodeID: NodeID, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
         let valueNode = this.pag.getNode(valueNodeID) as PagNode;
-    
+
         this.addIncomingEdgesToWorkList(valueNode, workListNodes, processedNodes);
         this.addOutgoingEdgesToWorkList(valueNode, workListNodes, processedNodes);
-    
+
         processedNodes.add(valueNodeID);
     }
 
@@ -517,7 +521,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             });
         }
     }
-    
+
     private addOutgoingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
         let outCopyEdges = valueNode.getOutgoingCopyEdges();
         if (outCopyEdges) {
@@ -551,7 +555,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             return;
         }
 
-        for(let pt of pts) {
+        for (let pt of pts) {
             let ptNode = this.pag.getNode(pt) as PagNode;
             let type = ptNode.getValue().getType();
             if (type.toString() !== origType.toString()) {
@@ -628,9 +632,9 @@ export class PointerAnalysis extends AbstractAnalysis {
     public mergeInstanceFieldMap(src: Map<number, number[]>, dst: Map<number, number[]>): Map<number, number[]> {
         dst.forEach((value, key) => {
             if (src.has(key)) {
-              src.set(key, [...src.get(key)!, ...value]);
+                src.set(key, [...src.get(key)!, ...value]);
             } else {
-              src.set(key, value);
+                src.set(key, value);
             }
         });
         return src;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,8 +29,10 @@ import { ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
-import { Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType,
-    PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode } from './Pag';
+import {
+    Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType,
+    PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode
+} from './Pag';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
@@ -519,7 +521,7 @@ export class PagBuilder {
                 .getMethodSubSignature().getMethodName()!;
 
             let base = locals.get(calleeName);
-            
+
             if (base) {
                 let baseNodeIDs = this.pag.getNodesByValue(base);
                 if (!baseNodeIDs) {
@@ -594,25 +596,25 @@ export class PagBuilder {
                 return callee;
             }
             let tempCallee;
-    
+
             // try to get callee by MethodSignature
             if (value instanceof ArkNewExpr) {
                 // get class signature
                 let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
                 let cls;
-    
+
                 cls = this.scene.getClass(clsSig) as ArkClass;
-    
+
                 while (!tempCallee && cls) {
                     tempCallee = cls.getMethodWithName(calleeName);
                     cls = cls.getSuperClass();
                 }
-    
+
                 if (!tempCallee) {
                     tempCallee = this.scene.getMethod(ivkExpr!.getMethodSignature());
                 }
             }
-    
+
             if (!tempCallee && cs.args) {
                 // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
                 // return empty node when {o_2} come in
@@ -880,7 +882,7 @@ export class PagBuilder {
         if (!this.sdkMethodParamValueMap.has(calleeNode.getID())) {
             this.buildSDKFuncPag(calleeNode.getID());
         }
-        
+
         this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod);
         srcNodes.push(...this.addSDKMethodParamPagEdge(cs, callerCid, calleeCid, calleeNode.getID()));
         return srcNodes
@@ -924,7 +926,7 @@ export class PagBuilder {
 
                 if (arg instanceof Local && arg.getType() instanceof FunctionType) {
                     // TODO: cannot find value
-                    paramValue = this.sdkMethodParamValueMap.get(funcID)![i];   
+                    paramValue = this.sdkMethodParamValueMap.get(funcID)![i];
                 } else {
                     continue;
                 }
@@ -953,12 +955,12 @@ export class PagBuilder {
                                 []
                             )
                         );
-    
+
                         // create new DynCallSite
                         let sdkParamCallSite = new DynCallSite(funcID, sdkParamInvokeStmt, undefined, undefined);
                         dstPagNode.addRelatedDynCallSite(sdkParamCallSite);
                     }
-                    
+
                     this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
                     srcNodes.push(srcPagNode.getID());
                 }
@@ -1336,11 +1338,11 @@ export class PagBuilder {
     private stmtIsCreateAddressObj(stmt: ArkAssignStmt): boolean {
         let lhOp = stmt.getLeftOp();
         let rhOp = stmt.getRightOp();
-        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) || 
+        if ((rhOp instanceof ArkNewExpr || rhOp instanceof ArkNewArrayExpr) ||
             (lhOp instanceof Local && (
                 (rhOp instanceof Local && rhOp.getType() instanceof FunctionType &&
                     rhOp.getDeclaringStmt() === null) ||
-                (rhOp instanceof AbstractFieldRef && rhOp.getType() instanceof FunctionType))) || 
+                (rhOp instanceof AbstractFieldRef && rhOp.getType() instanceof FunctionType))) ||
             (rhOp instanceof Local && rhOp.getName() === GLOBAL_THIS_NAME && rhOp.getDeclaringStmt() == null)
         ) {
             return true;
@@ -1482,7 +1484,7 @@ export class PagBuilder {
         // Export a local
         // Add a InterProcedural edge
         if (dst instanceof Local) {
-            let e: InterProceduralEdge = {src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy};
+            let e: InterProceduralEdge = { src: src, dst: dst, kind: PagEdgeKind.InterProceduralCopy };
             interFuncPag.addToInterProceduralEdgeSet(e);
             this.addExportVariableMap(src, dst as Local);
         } else if (dst instanceof ArkInstanceFieldRef) {
@@ -1530,7 +1532,7 @@ export class PagBuilder {
 
             declaringNameSpace = declaringNameSpace.getDeclaringArkNamespace() ?? undefined;
         }
-        
+
         // file check
         let declaringFile = arkMethod.getDeclaringArkFile();
         let fileLocals = declaringFile.getDefaultClass()

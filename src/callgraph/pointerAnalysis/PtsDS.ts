@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,7 +20,7 @@ export interface IPtsCollection<T extends Idx> {
     contains(elem: T): boolean;
     insert(elem: T): boolean;
     remove(elem: T): boolean;
-    clone(): this; 
+    clone(): this;
     union(other: this): boolean;
     subtract(other: this): boolean;
     clear(): void;
@@ -28,10 +28,13 @@ export interface IPtsCollection<T extends Idx> {
     isEmpty(): boolean;
     superset(other: this): boolean;
     intersect(other: this): boolean;
-    getProtoPtsSet(): any; 
+    getProtoPtsSet(): any;
     [Symbol.iterator](): IterableIterator<T>;
 }
 
+/*
+ * Return PtsSet or PtsBV 's constructor by input type
+ */
 export function createPtsCollectionCtor<T extends Idx>(type: PtsCollectionType): new () => IPtsCollection<T> {
     if (type === PtsCollectionType.Set) {
         return PtsSet<T>;
@@ -71,7 +74,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         return true;
     }
 
-    clone():this {
+    clone(): this {
         let clonedSet = new PtsSet<T>();
         clonedSet.pts = new Set<T>(this.pts);
         // TODO: need validate
@@ -214,10 +217,8 @@ export class PtsBV<T extends Idx> implements IPtsCollection<T> {
 
 export enum PtsCollectionType { Set, BitVector };
 export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
-
-
-    diffPtsMap: Map<K, DS>;
-    propaPtsMap: Map<K, DS>;
+    private diffPtsMap: Map<K, DS>;
+    private propaPtsMap: Map<K, DS>;
 
     constructor(private DSCreator: (new () => DS)) {
         this.diffPtsMap = new Map();
@@ -239,7 +240,7 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         return diff.insert(elem);
     }
 
-    resetElem(v:K): boolean {
+    resetElem(v: K): boolean {
         let propa = this.propaPtsMap.get(v);
         if (propa) {
             this.diffPtsMap.set(v, propa.clone());
@@ -310,6 +311,10 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         return this.propaPtsMap.get(v);
     }
 
+    getAllPropaPts(): Map<K, DS> {
+        return this.propaPtsMap;
+    }
+
     getPropaPtsMut(v: K): DS {
         if (!this.propaPtsMap.has(v)) {
             this.propaPtsMap.set(v, new this.DSCreator());
@@ -319,8 +324,8 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
 
     flush(v: K): void {
         if (!this.diffPtsMap.has(v)) return;
-        let diff = this.diffPtsMap.get(v)!; 
-        let propa = this.getPropaPtsMut(v); 
+        let diff = this.diffPtsMap.get(v)!;
+        let propa = this.getPropaPtsMut(v);
         // do not clear origin propa, only copy the pt and add it to diff
         propa.union(diff);
         diff.clear();
@@ -349,11 +354,10 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         if (!dstPropa) {
             return srcDiff.clone();
         }
-    
+
         let result = srcDiff.clone();
-    
+
         result.subtract(dstPropa);
         return result;
     }
 }
-
