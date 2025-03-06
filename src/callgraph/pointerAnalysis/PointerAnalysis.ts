@@ -62,7 +62,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         cgBuilder.buildDirectCallGraphForScene();
         let pag = new Pag();
         if (!config) {
-            config = PointerAnalysisConfig.create(1, "out/", false, false)
+            config = PointerAnalysisConfig.create(1, 'out/', false, false);
         }
 
         const dummyMainCreator = new DummyMainCreater(projectScene);

@@ -15,7 +15,7 @@
 
 import * as fs from 'fs';
 import { createPtsCollectionCtor, IPtsCollection, PtsCollectionType } from './PtsDS';
-import { NodeID } from '../../core/graph/GraphTraits';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 
 export class PointerAnalysisConfig {
     private static instance: PointerAnalysisConfig;
@@ -35,7 +35,7 @@ export class PointerAnalysisConfig {
     constructor(kLimit: number, outputDirectory: string, detectTypeDiff: boolean = false,
         dotDump: boolean = false, unhandledFuncDump: boolean = false, ptsCoType = PtsCollectionType.Set) {
         if (kLimit > 5) {
-            throw new Error("K Limit too large");
+            throw new Error('K Limit too large');
         }
         this.kLimit = kLimit;
         this.outputDirectory = outputDirectory;
@@ -66,7 +66,7 @@ export class PointerAnalysisConfig {
      */
     public static getInstance(): PointerAnalysisConfig {
         if (!PointerAnalysisConfig.instance) {
-            throw new Error("PTA config: instance is not existing")
+            throw new Error('PTA config: instance is not existing');
         }
         return PointerAnalysisConfig.instance;
     }

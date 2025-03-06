@@ -25,7 +25,7 @@ let sdk: Sdk = {
     moduleName: ''
 };
 
-function test(type: PtsCollectionType) {
+function test(type: PtsCollectionType): PointerAnalysis {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir('./tests/resources/pta/ExportNew');
     config.getSdksObj().push(sdk);
@@ -60,7 +60,6 @@ describe('DataDSTest', () => {
             for (let id of set) {
                 expect(bv!.contains(id)).eq(true);
             }
-        })
-
+        });
     });
 });

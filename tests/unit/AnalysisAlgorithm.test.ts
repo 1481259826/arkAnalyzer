@@ -34,7 +34,7 @@ describe("PointerAnalysisAlgorithm Test", () => {
 
     let pag = new Pag();
     let entry = cg.getEntries()
-    let ptaConfig = PointerAnalysisConfig.create(2, "./out", true, true)
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true)
     let pta = new PointerAnalysis(pag, cg, scene, ptaConfig)
     pta.setEntries(entry)
     it('normal case', () => {

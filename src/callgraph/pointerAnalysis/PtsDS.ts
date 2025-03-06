@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { SparseBitVector } from "../../utils/SparseBitVector";
+import { SparseBitVector } from '../../utils/SparseBitVector';
 
-type Idx = number
+type Idx = number;
 export interface IPtsCollection<T extends Idx> {
     contains(elem: T): boolean;
     insert(elem: T): boolean;

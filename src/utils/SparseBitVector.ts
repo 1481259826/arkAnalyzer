@@ -341,7 +341,7 @@ export class SparseBitVector {
     // Clone, return a deep copied object
     clone(): SparseBitVector {
         const newVector = new SparseBitVector(this.elementSize);
-        for (const [idx ,element] of this.elements) {
+        for (const [idx, element] of this.elements) {
             const newElement = new SparseBitVectorElement(this.elementSize);
             newElement.setWord(element.clone());
 
