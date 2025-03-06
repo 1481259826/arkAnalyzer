@@ -44,7 +44,7 @@ import { ClassSignature, MethodSignature, MethodSubSignature } from '../ArkSigna
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { FullPosition } from '../../base/Position';
 import { VoidType } from '../../base/Type';
-import { BodyBuilder } from '../../common/BodyBuilder';
+import { BodyBuilder } from './BodyBuilder';
 import { ArkStaticInvokeExpr } from '../../base/Expr';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClassBuilder');

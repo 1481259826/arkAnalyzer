@@ -68,7 +68,13 @@ import {
     UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
-import { assertStmtsEqual, buildScene, testFileStmts, testMethodStmts } from './common';
+import { assertStmtsEqual, buildScene, testBlocks, testFileStmts, testMethodStmts } from './common';
+import {
+    FOR_STATEMENT_EXPECT_CASE1,
+    FOR_STATEMENT_EXPECT_CASE2,
+    FOR_STATEMENT_EXPECT_CASE3,
+    FOR_STATEMENT_EXPECT_CASE4, FOR_STATEMENT_EXPECT_CASE5, FOR_STATEMENT_EXPECT_CASE6,
+} from '../resources/arkIRTransformer/loopStatement/LoopExpect';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
@@ -283,7 +289,7 @@ function assertMethodSignatureEqual(method: ArkMethod, expectMethod?: any): void
     const declareSignatures = method.getDeclareSignatures();
     const expectDeclareSignatures = expectMethod.methodDeclareSignatures;
     if (expectDeclareSignatures === null) {
-            assert.isNull(declareSignatures);
+        assert.isNull(declareSignatures);
     } else if (expectDeclareSignatures !== undefined) {
         assert.isNotNull(declareSignatures);
         assert.equal(declareSignatures?.length, expectDeclareSignatures.length);
@@ -382,6 +388,20 @@ describe('assignment Test', () => {
     it('test destructuring', async () => {
         testMethodStmts(scene, 'DestructuringSample.ts', Destructuring_Expect_IR.stmts);
     });
+});
+
+describe('loop statement Test', () => {
+    const scene = buildScene(path.join(BASE_DIR, 'loopStatement'));
+
+    it('for statement', async () => {
+        testBlocks(scene, 'ForStatementSample.ts', 'case1', FOR_STATEMENT_EXPECT_CASE1.blocks);
+        testBlocks(scene, 'ForStatementSample.ts', 'case2', FOR_STATEMENT_EXPECT_CASE2.blocks);
+        testBlocks(scene, 'ForStatementSample.ts', 'case3', FOR_STATEMENT_EXPECT_CASE3.blocks);
+        testBlocks(scene, 'ForStatementSample.ts', 'case4', FOR_STATEMENT_EXPECT_CASE4.blocks);
+        testBlocks(scene, 'ForStatementSample.ts', 'case5', FOR_STATEMENT_EXPECT_CASE5.blocks);
+        testBlocks(scene, 'ForStatementSample.ts', 'case6', FOR_STATEMENT_EXPECT_CASE6.blocks);
+    });
+
 });
 
 describe('function Test', () => {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,7 +27,7 @@ import {
     Stmt,
     ValueUtil,
 } from '../../../../src/index';
-import { assert, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import path from 'path';
 import {
     CONDITIONAL_OPERATOR_EXPECT_CASE1,
@@ -38,11 +38,12 @@ import {
     CONDITIONAL_OPERATOR_EXPECT_CASE6,
     CONDITIONAL_OPERATOR_EXPECT_CASE7,
 } from '../../../resources/cfg/conditionalOperator/ConditionalOperatorExpect';
-import { assertBlocksEqual } from '../../common';
 import {
     SWITCH_EXPECT_CASE1,
     SWITCH_EXPECT_CASE10,
-    SWITCH_EXPECT_CASE11, SWITCH_EXPECT_CASE12, SWITCH_EXPECT_CASE13,
+    SWITCH_EXPECT_CASE11,
+    SWITCH_EXPECT_CASE12,
+    SWITCH_EXPECT_CASE13,
     SWITCH_EXPECT_CASE2,
     SWITCH_EXPECT_CASE3,
     SWITCH_EXPECT_CASE4,
@@ -53,6 +54,7 @@ import {
     SWITCH_EXPECT_CASE9,
 } from '../../../resources/cfg/switch/SwitchExpect';
 import { LOOP_EXPECT_CASE1, LOOP_EXPECT_CASE2 } from '../../../resources/cfg/loop/LoopExpect';
+import { testBlocks } from '../../common';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
@@ -168,16 +170,4 @@ function buildScene(folderName: string): Scene {
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     return scene;
-}
-
-function testBlocks(scene: Scene, filePath: string, methodName: string, expectBlocks: any[]): void {
-    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
-    const arkMethod = arkFile?.getDefaultClass().getMethods()
-        .find((method) => (method.getName() === methodName));
-    const blocks = arkMethod?.getCfg()?.getBlocks();
-    if (!blocks) {
-        assert.isDefined(blocks);
-        return;
-    }
-    assertBlocksEqual(blocks, expectBlocks);
 }
