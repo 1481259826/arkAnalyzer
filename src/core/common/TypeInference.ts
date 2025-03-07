@@ -62,6 +62,7 @@ import { EMPTY_STRING } from './ValueUtil';
 import { ImportInfo } from '../model/ArkImport';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
 import { IRInference } from './IRInference';
+import { AbstractTypeExpr, KeyofTypeExpr, TypeQueryExpr } from '../base/TypeExpr';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TypeInference');
 
@@ -75,6 +76,7 @@ export class TypeInference {
             arkClass.getMethodWithName(CONSTRUCTOR_NAME);
         for (const stmt of stmts) {
             if (method) {
+                this.resolveTypeExprsInStmt(stmt, method);
                 this.resolveExprsInStmt(stmt, method);
                 this.resolveFieldRefsInStmt(stmt, method);
                 this.resolveArkAssignStmt(stmt, method);
@@ -161,10 +163,7 @@ export class TypeInference {
         }
         signatures.forEach(s => {
             s.getMethodSubSignature().getParameters().forEach(p => {
-                const type = TypeInference.inferUnclearedType(p.getType(), arkClass);
-                if (type) {
-                    p.setType(type);
-                }
+                this.inferParameterType(p, arkMethod);
             });
             this.inferSignatureReturnType(s, arkMethod);
         });
@@ -175,6 +174,7 @@ export class TypeInference {
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
+                this.resolveTypeExprsInStmt(stmt, arkMethod);
                 this.resolveExprsInStmt(stmt, arkMethod);
                 this.resolveFieldRefsInStmt(stmt, arkMethod);
                 this.resolveArkAssignStmt(stmt, arkMethod);
@@ -213,6 +213,15 @@ export class TypeInference {
         }
         if (stmt instanceof ArkAliasTypeDefineStmt && this.isUnclearType(stmt.getAliasType().getOriginalType())) {
             stmt.getAliasType().setOriginalType(stmt.getAliasTypeExpr().getType());
+        }
+    }
+
+    /**
+     * infer value type for TypeExprs in stmt which specify the type such as TypeQueryExpr
+     */
+    private static resolveTypeExprsInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
+        for (let typeExpr of stmt.getTypeExprs()) {
+            typeExpr.inferType(arkMethod);
         }
     }
 
@@ -286,14 +295,21 @@ export class TypeInference {
             rightType = this.inferUnclearedType(rightType, arkClass);
             if (rightType) {
                 this.setValueType(rightOp, rightType);
+            } else {
+                if (rightOp instanceof Local) {
+                    IRInference.inferLocal(rightOp, arkMethod);
+                    rightType = rightOp.getType();
+                }
             }
         }
         const leftOp = stmt.getLeftOp();
         let leftType: Type | null | undefined = leftOp.getType();
         if (this.isUnclearType(leftType)) {
-            leftType = this.inferUnclearedType(leftType, arkClass);
-            if (!leftType && !this.isUnclearType(rightType)) {
+            const newLeftType = this.inferUnclearedType(leftType, arkClass);
+            if (!newLeftType && !this.isUnclearType(rightType)) {
                 leftType = rightType;
+            } else if (newLeftType) {
+                leftType = newLeftType;
             }
         }
         if (leftType && !this.isUnclearType(leftType)) {
@@ -331,7 +347,11 @@ export class TypeInference {
         } else if (type instanceof ArrayType) {
             return this.hasUnclearReferenceType(type.getBaseType());
         } else if (type instanceof AliasType) {
-            return this.hasUnclearReferenceType(type.getOriginalType());
+            return this.isUnclearType(type.getOriginalType());
+        } else if (type instanceof KeyofTypeExpr) {
+            return this.isUnclearType(type.getOpType());
+        } else if (type instanceof TypeQueryExpr) {
+            return this.isUnclearType(type.getType());
         }
         return false;
     }
@@ -346,6 +366,10 @@ export class TypeInference {
             return this.hasUnclearReferenceType(type.getBaseType());
         } else if (type instanceof AliasType) {
             return this.hasUnclearReferenceType(type.getOriginalType());
+        } else if (type instanceof KeyofTypeExpr) {
+            return this.hasUnclearReferenceType(type.getOpType());
+        } else if (type instanceof TypeQueryExpr) {
+            return this.hasUnclearReferenceType(type.getType());
         }
         return false;
     }
@@ -401,6 +425,18 @@ export class TypeInference {
         return value.getType();
     }
 
+    private static inferParameterType(param: MethodParameter, arkMethod: ArkMethod): void {
+        let pType = param.getType();
+        const type = TypeInference.inferUnclearedType(pType, arkMethod.getDeclaringArkClass());
+        if (type) {
+            param.setType(type);
+        } else {
+            if (pType instanceof AbstractTypeExpr) {
+                pType.inferType(arkMethod);
+            }
+        }
+    }
+
     public static inferSignatureReturnType(oldSignature: MethodSignature, arkMethod: ArkMethod): void {
         if (oldSignature.getMethodSubSignature().getMethodName() === CONSTRUCTOR_NAME) {
             const newReturnType = new ClassType(oldSignature.getDeclaringClassSignature());
@@ -411,6 +447,17 @@ export class TypeInference {
         if (!this.isUnclearType(currReturnType)) {
             return;
         }
+
+        if (currReturnType instanceof AbstractTypeExpr) {
+            currReturnType.inferType(arkMethod);
+            return;
+        }
+
+        if (currReturnType instanceof ArrayType && currReturnType.getBaseType() instanceof AbstractTypeExpr) {
+            (currReturnType.getBaseType() as AbstractTypeExpr).inferType(arkMethod);
+            return;
+        }
+
         const newReturnType = this.inferUnclearedType(currReturnType, arkMethod.getDeclaringArkClass());
         if (newReturnType) {
             oldSignature.getMethodSubSignature().setReturnType(newReturnType);

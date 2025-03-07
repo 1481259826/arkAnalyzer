@@ -69,6 +69,11 @@ import {
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { AbstractTypeExpr, KeyofTypeExpr, TypeQueryExpr } from '../../core/base/TypeExpr';
+import { ArkBaseModel } from '../../core/model/ArkBaseModel';
+import { ArkField } from '../../core/model/ArkField';
+import { ExportInfo } from '../../core/model/ArkExport';
+import { ImportInfo } from '../../core/model/ArkImport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
@@ -365,7 +370,7 @@ export class SourceTransformer {
             return this.literalType2string(type);
         }
 
-        if (type instanceof PrimitiveType) {
+        if (type instanceof PrimitiveType || type instanceof GenericType) {
             return type.getName();
         }
 
@@ -403,12 +408,16 @@ export class SourceTransformer {
             return this.unclearReferenceType2string(type);
         }
 
-        if (type instanceof GenericType) {
-            return type.getName();
-        }
-
         if (type instanceof AliasType) {
             return this.aliasType2string(type);
+        }
+
+        if (type instanceof KeyofTypeExpr) {
+            return this.keyofTypeExpr2string(type);
+        }
+
+        if (type instanceof TypeQueryExpr) {
+            return this.typeQueryExpr2string(type);
         }
 
         if (!type) {
@@ -451,7 +460,7 @@ export class SourceTransformer {
         }
 
         let baseType = type.getBaseType();
-        if (baseType instanceof UnionType || baseType instanceof IntersectionType) {
+        if (baseType instanceof UnionType || baseType instanceof IntersectionType || baseType instanceof AbstractTypeExpr) {
             return `${readonly}(${this.typeToString(baseType)})${dimensions.join('')}`;
         }
         return `${readonly}${this.typeToString(baseType)}${dimensions.join('')}`;
@@ -478,6 +487,32 @@ export class SourceTransformer {
             return `${type.getName()}<${typesStr.join(', ')}>`;
         }
         return type.getName();
+    }
+
+    private keyofTypeExpr2string(type: KeyofTypeExpr): string {
+        if (type.getOpType() instanceof UnionType || type.getOpType() instanceof IntersectionType) {
+            return `keyof (${this.typeToString(type.getOpType())})`;
+        }
+        return `keyof ${this.typeToString(type.getOpType())}`;
+    }
+
+    private typeQueryExpr2string(type: TypeQueryExpr): string {
+        const gTypes = type.getGenerateTypes();
+        const genericStr = this.genericTypesToString(gTypes);
+        const opValue = type.getOpValue();
+        if (opValue instanceof ArkBaseModel) {
+            if (opValue instanceof ArkClass || opValue instanceof ArkMethod || opValue instanceof ArkNamespace || opValue instanceof ArkField) {
+                return `typeof ${opValue.getName()}${genericStr}`;
+            } else if (opValue instanceof ExportInfo) {
+                return `typeof ${opValue.getExportClauseName()}${genericStr}`;
+            } else if (opValue instanceof ImportInfo) {
+                return `typeof ${opValue.getImportClauseName()}${genericStr}`;
+            } else {
+                return `typeof *invalid*`;
+            }
+        } else {
+            return `typeof ${this.valueToString(opValue)}${genericStr}`;
+        }
     }
 
     private unclearReferenceType2string(type: UnclearReferenceType): string {

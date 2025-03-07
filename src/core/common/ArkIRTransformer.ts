@@ -68,6 +68,7 @@ import { buildGenericType, buildModifiers, buildTypeParameters } from '../model/
 import { ArkValueTransformer } from './ArkValueTransformer';
 import { ImportInfo } from '../model/ArkImport';
 import { TypeInference } from './TypeInference';
+import { AbstractTypeExpr } from '../base/TypeExpr';
 
 export type ValueAndStmts = {
     value: Value,
@@ -296,6 +297,9 @@ export class ArkIRTransformer {
         const aliasName = typeAliasDeclaration.name.text;
         const rightOp = typeAliasDeclaration.type;
         let rightType = this.arkValueTransformer.resolveTypeNode(rightOp);
+        if (rightType instanceof AbstractTypeExpr) {
+            rightType = rightType.getType();
+        }
 
         const aliasType = new AliasType(aliasName, rightType, new AliasTypeSignature(aliasName, this.declaringMethod.getSignature()));
         if (typeAliasDeclaration.typeParameters) {

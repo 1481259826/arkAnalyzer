@@ -37,10 +37,11 @@ import path from 'path';
 import { Sdk } from '../../Config';
 import { ALL, DEFAULT, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
-import { AnnotationNamespaceType, ClassType } from '../base/Type';
+import { AnnotationNamespaceType, ClassType, FunctionType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
 import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
+import { ArkBaseModel } from '../model/ArkBaseModel';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -473,6 +474,21 @@ export class ModelUtils {
         return null;
     }
 
+    public static parseArkBaseModel2Type(arkBaseModel: ArkBaseModel): Type | null {
+        if (arkBaseModel instanceof ArkClass) {
+            return new ClassType(arkBaseModel.getSignature(), arkBaseModel.getGenericsTypes());
+        } else if (arkBaseModel instanceof ArkNamespace) {
+            return AnnotationNamespaceType.getInstance(arkBaseModel.getSignature());
+        } else if (arkBaseModel instanceof ArkMethod) {
+            return new FunctionType(arkBaseModel.getSignature());
+        } else if (arkBaseModel instanceof ArkField) {
+            if (arkBaseModel.getType() instanceof UnknownType || arkBaseModel.getType() instanceof UnclearReferenceType) {
+                return null;
+            }
+            return arkBaseModel.getType();
+        }
+        return null;
+    }
 }
 
 
