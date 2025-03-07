@@ -1,5 +1,6 @@
+
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +14,10 @@
  * limitations under the License.
  */
 
-import { describe, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { SceneConfig, Scene, CallGraph, CallGraphBuilder, Pag, PointerAnalysis, PointerAnalysisConfig } from '../../../src';
 import { Sdk } from '../../../src/Config';
-import { assert } from 'vitest';
+import { PtsCollectionType } from '../../../src/callgraph/pointerAnalysis/PtsDS';
 
 let sdk: Sdk = {
     name: 'ohos',
@@ -24,10 +25,11 @@ let sdk: Sdk = {
     moduleName: ''
 };
 
-describe('ContainerAddTest', () => {
+function test(type: PtsCollectionType): PointerAnalysis {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir('./tests/resources/pta/Container');
+    config.buildFromProjectDir('./tests/resources/pta/ExportNew');
     config.getSdksObj().push(sdk);
+
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
     scene.inferTypes();
@@ -39,29 +41,25 @@ describe('ContainerAddTest', () => {
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
-    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true);
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true, false, type);
     let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
     pta.setEntries(debugfunc);
     pta.start();
+    return pta;
+}
 
-    let setMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'SetTest')
-    .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
-    let mapMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'MapTest')
-    .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
-
-    it('case1: Set.add(<T>)', () => {
-        let setLocal = setMethod[0]?.getBody()?.getLocals().get('ele')!;
-        let relatedNodes = pta.getRelatedNodes(setLocal);
-        assert(
-            Array.from(relatedNodes).some(element => element.toString() === 'set.<@container/lib.es2015.collection.d.ts: container.field>')
-        );
-    });
-
-    it('case1: Map.set(K, V))', () => {
-        let mapLocal = mapMethod[0]?.getBody()?.getLocals().get('ele')!;
-        let relatedNodes = pta.getRelatedNodes(mapLocal);
-        assert(
-            Array.from(relatedNodes).some(element => element.toString() === 'map.<@container/lib.es2015.collection.d.ts: container.field>')
-        );
+describe('DataDSTest', () => {
+    it('case1', () => {
+        let ptaSet = test(PtsCollectionType.Set);
+        let ptaBV = test(PtsCollectionType.BitVector)
+        let propaSet = ptaSet.getPTD().getAllPropaPts();
+        let propaBV = ptaBV.getPTD().getAllPropaPts();
+        expect(propaSet.size).eq(propaBV.size);
+        propaSet.forEach((set, k) => {
+            let bv = propaBV.get(k);
+            for (let id of set) {
+                expect(bv!.contains(id)).eq(true);
+            }
+        });
     });
 });

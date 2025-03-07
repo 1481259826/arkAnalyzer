@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,6 +30,8 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
 import { IsCollectionClass } from './PTAUtils';
+import { IPtsCollection } from './PtsDS';
+import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export type PagNodeType = Value;
@@ -122,7 +124,7 @@ export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
     private stmt: Stmt | undefined; // stmt is just used for graph print
-    private pointTo: Set<NodeID>;
+    private pointTo: IPtsCollection<NodeID>;
 
     private addressInEdges!: PagEdgeSet;
     private addressOutEdges!: PagEdgeSet;
@@ -146,7 +148,8 @@ export class PagNode extends BaseNode {
         this.cid = cid;
         this.value = value;
         this.stmt = s;
-        this.pointTo = new Set<NodeID>;
+        let ptaConfig = PointerAnalysisConfig.getInstance();
+        this.pointTo = new ptaConfig.ptsCollectionCtor();
     }
 
     public getBasePt(): NodeID {
@@ -270,18 +273,18 @@ export class PagNode extends BaseNode {
     }
 
     public getValue(): Value {
-        return this.value
+        return this.value;
     }
 
-    public getPointTo(): Set<NodeID> {
-        return this.pointTo
+    public getPointTo(): IPtsCollection<NodeID> {
+        return this.pointTo;
     }
 
     public addPointToElement(node: NodeID) {
-        this.pointTo.add(node)
+        this.pointTo.insert(node);
     }
 
-    public setPointTo(pts: Set<NodeID>): void {
+    public setPointTo(pts: IPtsCollection<NodeID>): void {
         this.pointTo = pts;
     }
 
@@ -397,7 +400,7 @@ export class PagLocalNode extends PagNode {
         this.propertyName = propertyName;
     }
 
-    public getStorage(): {StorageType: StorageType, PropertyName: string} {
+    public getStorage(): { StorageType: StorageType, PropertyName: string } {
         return {
             StorageType: this.storageType!,
             PropertyName: this.propertyName!
@@ -647,8 +650,8 @@ export class Pag extends BaseExplicitGraph {
             if (src) {
                 fieldNode = this.getOrClonePagNode(src, basePt);
             } else if (base) {
-                const containerFieldSignature = new FieldSignature('field', 
-                    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')), 
+                const containerFieldSignature = new FieldSignature('field',
+                    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')),
                     new UnclearReferenceType(''));
                 fieldNode = this.getOrClonePagNode(
                     // TODO: cid check
@@ -675,7 +678,7 @@ export class Pag extends BaseExplicitGraph {
     public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
         let id: NodeID = this.nodeNum;
         let pagNode: PagNode;
-    
+
         if (value instanceof Local) {
             pagNode = this.handleLocalNode(id, cid, value, stmt);
         } else if (value instanceof ArkInstanceFieldRef) {
@@ -695,10 +698,10 @@ export class Pag extends BaseExplicitGraph {
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
-    
+
         this.addNode(pagNode!);
         this.addContextOrExportInfoMap(refresh, cid, id, value, pagNode, stmt);
-    
+
         return pagNode!;
     }
 
@@ -712,15 +715,15 @@ export class Pag extends BaseExplicitGraph {
             return new PagLocalNode(id, cid, value, stmt);
         }
     }
-    
+
     private handleInstanceFieldNode(id: NodeID, cid: ContextID, value: ArkInstanceFieldRef, stmt?: Stmt): PagNode {
         return this.createFieldNode(id, cid, value, stmt);
     }
-    
+
     private handleStaticFieldNode(id: NodeID, cid: ContextID, value: ArkStaticFieldRef, stmt?: Stmt): PagNode {
         return this.createFieldNode(id, cid, value, stmt);
     }
-    
+
     private createFieldNode(id: NodeID, cid: ContextID, value: any, stmt?: Stmt): PagNode {
         if (value.getType() instanceof FunctionType) {
             return new PagFuncNode(id, cid, value, stmt, (value.getType() as FunctionType).getMethodSignature());
@@ -728,7 +731,7 @@ export class Pag extends BaseExplicitGraph {
             return value instanceof ArkStaticFieldRef ? new PagStaticFieldNode(id, cid, value, stmt) : new PagInstanceFieldNode(id, cid, value, stmt);
         }
     }
-    
+
     private handleNewExprNode(id: NodeID, cid: ContextID, value: ArkNewExpr, stmt?: Stmt): PagNode {
         const classSignature = value.getClassType().getClassSignature();
         if (IsCollectionClass(classSignature)) {
@@ -737,8 +740,8 @@ export class Pag extends BaseExplicitGraph {
             return new PagNewExprNode(id, cid, value, stmt);
         }
     }
-    
-    private addContextOrExportInfoMap(refresh: boolean, cid: ContextID, id: NodeID, 
+
+    private addContextOrExportInfoMap(refresh: boolean, cid: ContextID, id: NodeID,
         value: PagNodeType, pagNode: PagNode, stmt?: Stmt): void {
         if (!(value instanceof ExportInfo)) {
             this.addContextMap(refresh, cid, id, value, stmt!, pagNode!);
@@ -746,7 +749,7 @@ export class Pag extends BaseExplicitGraph {
             this.addExportInfoMap(id, value);
         }
     }
-    
+
     private addExportInfoMap(id: NodeID, v: ExportInfo): void {
         this.ExportInfoToIdMap = this.ExportInfoToIdMap ?? new Map();
         this.ExportInfoToIdMap.set(v, id);
@@ -1013,7 +1016,7 @@ export class FuncPag {
 
 export class InterFuncPag {
     private interFuncEdges: Set<InterProceduralEdge>;
-    
+
     constructor() {
         this.interFuncEdges = new Set();
     }
