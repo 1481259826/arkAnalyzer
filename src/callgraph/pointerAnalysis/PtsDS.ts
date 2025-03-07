@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,16 +13,14 @@
  * limitations under the License.
  */
 
-interface Idx {
-    //TODO: if need define?
-}
+import { SparseBitVector } from '../../utils/SparseBitVector';
 
-interface IPtsCollection<T extends Idx> {
-    //new(): this; 
+type Idx = number;
+export interface IPtsCollection<T extends Idx> {
     contains(elem: T): boolean;
     insert(elem: T): boolean;
     remove(elem: T): boolean;
-    clone(): this; 
+    clone(): this;
     union(other: this): boolean;
     subtract(other: this): boolean;
     clear(): void;
@@ -30,7 +28,20 @@ interface IPtsCollection<T extends Idx> {
     isEmpty(): boolean;
     superset(other: this): boolean;
     intersect(other: this): boolean;
+    getProtoPtsSet(): any;
     [Symbol.iterator](): IterableIterator<T>;
+}
+
+/*
+ * Return PtsSet or PtsBV 's constructor by input type
+ */
+export function createPtsCollectionCtor<T extends Idx>(type: PtsCollectionType): new () => IPtsCollection<T> {
+    if (type === PtsCollectionType.Set) {
+        return PtsSet<T>;
+    } else if (type === PtsCollectionType.BitVector) {
+        return PtsBV<T>;
+    }
+    throw new Error(`Unsupported pts collection type: ${type}`);
 }
 
 /*
@@ -39,9 +50,6 @@ interface IPtsCollection<T extends Idx> {
 export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     pts: Set<T>;
 
-    // static new<T extends Idx>(this: new () => PtsSet<T>): PtsSet<T> {
-    //     return new this();
-    // }
     constructor() {
         this.pts = new Set();
     }
@@ -66,7 +74,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         return true;
     }
 
-    clone():this {
+    clone(): this {
         let clonedSet = new PtsSet<T>();
         clonedSet.pts = new Set<T>(this.pts);
         // TODO: need validate
@@ -94,7 +102,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         this.pts.clear();
     }
 
-     count(): number {
+    count(): number {
         return this.pts.size;
     }
 
@@ -122,7 +130,7 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
         return false;
     }
 
-    public getProtoPtsSet(): Set<T> {
+    getProtoPtsSet(): Set<T> {
         return this.pts;
     }
 
@@ -131,11 +139,88 @@ export class PtsSet<T extends Idx> implements IPtsCollection<T> {
     }
 }
 
-export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
-    diffPtsMap: Map<K, DS>;
-    propaPtsMap: Map<K, DS>;
+export class PtsBV<T extends Idx> implements IPtsCollection<T> {
+    pts: SparseBitVector;
 
-    constructor(private DSCreator: new() => DS) {
+    constructor() {
+        this.pts = new SparseBitVector();
+    }
+
+    contains(elem: T): boolean {
+        return this.pts.test(elem);
+    }
+
+    insert(elem: T): boolean {
+        this.pts.set(elem);
+        return true;
+    }
+
+    remove(elem: T): boolean {
+        this.pts.reset(elem);
+        return true;
+    }
+
+    clone(): this {
+        let cloned = new PtsBV<T>();
+        cloned.pts = this.pts.clone();
+        return cloned as this;
+    }
+
+    union(other: this): boolean {
+        return this.pts.unionWith(other.pts);
+    }
+
+    subtract(other: this): boolean {
+        return this.pts.subtractWith(other.pts);
+    }
+
+    clear(): void {
+        this.pts.clear();
+    }
+
+    count(): number {
+        return this.pts.count();
+    }
+
+    isEmpty(): boolean {
+        return this.pts.isEmpty();
+    }
+
+    // If current collection is a super set of other
+    superset(other: this): boolean {
+        for (const elem of other.pts) {
+            if (!this.pts.test(elem)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // If current collection is intersect with other
+    intersect(other: this): boolean {
+        for (const elem of other.pts) {
+            if (this.pts.test(elem)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    getProtoPtsSet(): SparseBitVector {
+        return this.pts;
+    }
+
+    [Symbol.iterator](): IterableIterator<T> {
+        return this.pts[Symbol.iterator]() as IterableIterator<T>;
+    }
+}
+
+export enum PtsCollectionType { Set, BitVector };
+export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
+    private diffPtsMap: Map<K, DS>;
+    private propaPtsMap: Map<K, DS>;
+
+    constructor(private DSCreator: (new () => DS)) {
         this.diffPtsMap = new Map();
         this.propaPtsMap = new Map();
     }
@@ -155,7 +240,7 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         return diff.insert(elem);
     }
 
-    resetElem(v:K): boolean {
+    resetElem(v: K): boolean {
         let propa = this.propaPtsMap.get(v);
         if (propa) {
             this.diffPtsMap.set(v, propa.clone());
@@ -226,6 +311,10 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         return this.propaPtsMap.get(v);
     }
 
+    getAllPropaPts(): Map<K, DS> {
+        return this.propaPtsMap;
+    }
+
     getPropaPtsMut(v: K): DS {
         if (!this.propaPtsMap.has(v)) {
             this.propaPtsMap.set(v, new this.DSCreator());
@@ -235,8 +324,8 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
 
     flush(v: K): void {
         if (!this.diffPtsMap.has(v)) return;
-        let diff = this.diffPtsMap.get(v)!; 
-        let propa = this.getPropaPtsMut(v); 
+        let diff = this.diffPtsMap.get(v)!;
+        let propa = this.getPropaPtsMut(v);
         // do not clear origin propa, only copy the pt and add it to diff
         propa.union(diff);
         diff.clear();
@@ -265,11 +354,10 @@ export class DiffPTData<K, D extends Idx, DS extends IPtsCollection<D>> {
         if (!dstPropa) {
             return srcDiff.clone();
         }
-    
+
         let result = srcDiff.clone();
-    
+
         result.subtract(dstPropa);
         return result;
     }
 }
-

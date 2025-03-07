@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,7 +30,7 @@ import {
     buildExportVariableStatement,
     isExported,
 } from './ArkExportBuilder';
-import { buildArkNamespace } from './ArkNamespaceBuilder';
+import { buildArkNamespace, mergeNameSpaces } from './ArkNamespaceBuilder';
 import { ArkClass } from '../ArkClass';
 import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
@@ -64,7 +64,7 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
         ts.ScriptTarget.Latest,
         true,
         undefined,
-        ETS_COMPILER_OPTIONS
+        ETS_COMPILER_OPTIONS,
     );
     genDefaultArkClass(arkFile, sourceFile);
     buildArkFile(arkFile, sourceFile);
@@ -79,17 +79,16 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
  */
 function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
     const statements = astRoot.statements;
+    const namespaces: ArkNamespace[] = [];
     statements.forEach((child) => {
         if (
             ts.isModuleDeclaration(child)
-            //child.kind === ts.SyntaxKind.ModuleDeclaration
         ) {
             let ns: ArkNamespace = new ArkNamespace();
             ns.setDeclaringArkFile(arkFile);
 
             buildArkNamespace(child, arkFile, ns, astRoot);
-            arkFile.addNamespace(ns);
-
+            namespaces.push(ns);
             if (ns.isExported()) {
                 arkFile.addExportInfo(buildExportInfo(ns, arkFile, LineColPosition.buildFromNode(child, astRoot)));
             }
@@ -98,9 +97,6 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             ts.isInterfaceDeclaration(child) ||
             ts.isEnumDeclaration(child) ||
             ts.isStructDeclaration(child)
-            //child.kind === ts.SyntaxKind.ClassDeclaration
-            //child.kind === ts.SyntaxKind.InterfaceDeclaration
-            //child.kind === ts.SyntaxKind.EnumDeclaration
         ) {
             let cls: ArkClass = new ArkClass();
 
@@ -113,7 +109,7 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
         }
         // TODO: Check
         else if (ts.isMethodDeclaration(child)) {
-            logger.warn("This is a MethodDeclaration in ArkFile.");
+            logger.warn('This is a MethodDeclaration in ArkFile.');
             let mthd: ArkMethod = new ArkMethod();
 
             buildArkMethodFromArkClass(child, arkFile.getDefaultClass(), mthd, astRoot);
@@ -152,6 +148,14 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
         }
     });
 
+    const mergedNameSpaces = mergeNameSpaces(namespaces);
+    mergedNameSpaces.forEach(mergedNameSpace => {
+        arkFile.addNamespace(mergedNameSpace);
+        if (mergedNameSpace.isExport()) {
+            const linCol = new LineColPosition(mergedNameSpace.getLine(), mergedNameSpace.getColumn());
+            arkFile.addExportInfo(buildExportInfo(mergedNameSpace, arkFile, linCol));
+        }
+    });
 }
 
 function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {

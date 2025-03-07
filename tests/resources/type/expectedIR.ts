@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -760,5 +760,149 @@ export const SourceAliasTypeWithGenericType = `function aliasTypeWithGenericType
 
 export const SourceAliasTypeWithClassType = `function aliasTypeWithClassType(): void {
   type StringClass = ClassWithGeneric<string>;
+}
+`;
+
+export const SourceIntersectionTypeForDefaultMethod = `type IntersectionType = string & number & void;
+type ComplicatedType = string | ((number & any) & (string | void));
+type IC = IA & IB;
+type A = {name: string, age: number};
+type B = {name: string, gender: 'male' | 'female'};
+type C = A & B;
+type Person = {name: string, age: number};
+type Employee = Person & {employeeId: number};
+type CanEatAndSleep = CanEat & CanSleep;
+let student: A & B = {name: 'abc', age: 12, gender: 'male'};
+`;
+
+export const SourceIntersectionTypeForFunction = `function animal(property: CanEat & CanSleep): A & B {
+  property.eat();
+  property.sleep();
+  return {name: 'abc', age: 12, gender: 'male'};
+}
+`;
+
+export const SourceIntersectionTypeForClass = `class Inter {
+  private fieldA: string & number;
+  fieldB: A & B;
+  static fieldC: Employee & (number | boolean);
+}
+`;
+
+export const SourceBasicReadonlyClassWithTypeOperator = `class BasicReadonly {
+  fieldA: readonly string[] = ['a', 'b'];
+  fieldB: boolean[] = [false];
+  readonlyVariable(param: readonly [number, string]): readonly boolean[] {
+    let tupleLocal: [number, string] = [123, '123'];
+    let readonlyTupleLocal: readonly [number, string] = [123, '123'];
+    let arrayLocal: number[] = [123, 345];
+    let readonlyArrayLocal: readonly number[] = [123, 345];
+    return [true];
+  }
+  readonlyAliasType(param: [number, string]): string[] {
+    type A = readonly string[];
+    type B = readonly string[] | readonly [number, string];
+    type C = readonly string[] & readonly [number, string];
+    type D = readonly (string & number)[] & readonly (string | number)[];
+    type E = string[];
+    type F = string[] | [number, string];
+    type G = string[] & [number, string];
+    return ['hello', 'world'];
+  }
+}
+`;
+
+export const SourceReadonlyOfReferenceTypeClassWithTypeOperator = `class ReadonlyOfReferenceType {
+  fieldA: readonly A[] = [true, false];
+  fieldB: readonly [A, boolean] = [true, false];
+  readonlyVariable(param: readonly [A, string]): readonly A[] {
+    type B = readonly A[] | string;
+    let readonlyTupleLocal: readonly [number, B] = [123, '123'];
+    let readonlyArrayLocal: readonly B[] = [[true], '123'];
+    return [true];
+  }
+}
+`;
+
+export const SourceReadonlyOfGenericTypeClassWithTypeOperator = `class ReadonlyOfGenericType {
+  fieldA: readonly C<boolean>[] = [true, false];
+  fieldB: readonly [C<boolean>, boolean] = [true, false];
+  readonlyVariable(param: readonly [C<string>, string]): readonly C<boolean>[] {
+    type D = readonly C<number>[] | string;
+    let readonlyUnionLocal: number[] | readonly C<string>[] = [123];
+    let readonlyIntersectionLocal: number[] & readonly C<string>[] = [123];
+    return [true];
+  }
+}
+`;
+
+export const SourceBasicKeyofClassWithTypeOperator = `class BasicKeyof {
+  private nameKey: keyof PersonType = 'name';
+  private ageKey: keyof typeof person = 'age';
+  private returnValue: PersonType = person;
+  keyofObjectType(property: keyof PersonType): (keyof PersonType)[] {
+    type PersonKeys = keyof PersonType;
+    let p1: PersonKeys = this.nameKey;
+    let p2: keyof PersonType = 'age';
+    return [p1, p2];
+  }
+  keyofWithTypeof(property1: keyof typeof person, property2: keyof typeof this.ageKey): keyof typeof this.returnValue {
+    type PersonKeys = keyof typeof person;
+    let p1: keyof typeof person = this.nameKey;
+    return p1;
+  }
+}
+`;
+
+export const SourceAllKeyofObjectClassWithTypeOperator = `class AllKeyofObject {
+  keyofPrimitiveType(): void {
+    type A = keyof any;
+    type B = keyof boolean;
+    type C = keyof number;
+    type D = keyof string;
+    type E = keyof null;
+    type F = keyof undefined;
+    type G = keyof void;
+    type H = keyof never;
+  }
+  keyofOtherTypes(): void {
+    type ClassKeys = keyof BasicKeyof;
+    type InterfaceKeys = keyof PersonInterface;
+    type ArrayKeys = keyof string[];
+    type TupleKeys = keyof [string, number];
+    type EnumKeys = keyof typeof Color;
+    type LiteralKeys = keyof {a: 1, b: 2};
+    type A = {a: string};
+    type B = {b: number};
+    type UnionKeys = keyof (A | B);
+  }
+}
+`;
+
+export const SourceKeyofWithGenericClassWithTypeOperator = `class KeyofWithGeneric {
+  private nameKey: keyof PersonGenericType<string, number> = 'name';
+  private genericKey: keyof typeof GenericClass<number> = 'prototype';
+  private referGenericKey: keyof typeof GenericClass<A> = 'prototype';
+  keyofObjectType(property: keyof PersonGenericType<string, number>): (keyof PersonGenericType<string, number>)[] {
+    type PersonKeys = keyof PersonGenericType<string, number>;
+    let p1: PersonKeys = this.nameKey;
+    let p2: keyof PersonGenericType<string, number> = 'age';
+    return [p1, p2];
+  }
+  keyofWithTypeof(property1: keyof typeof personGeneric): keyof typeof personGeneric {
+    type PersonKeys = keyof typeof personGeneric;
+    let p1: keyof typeof personGeneric = this.nameKey;
+    return p1;
+  }
+  typeofWithGeneric(property1: keyof typeof GenericClass<number>): keyof typeof GenericClass<number> {
+    type PersonKeys = keyof typeof GenericClass<number>;
+    let p1: keyof typeof GenericClass<number> = this.genericKey;
+    return p1;
+  }
+  typeofWithReferGeneric(property1: keyof typeof GenericClass<A>): keyof typeof GenericClass<A> {
+    type PersonKeys = keyof typeof GenericClass<A>;
+    let p1: keyof typeof GenericClass<A> = this.genericKey;
+    return p1;
+  }
 }
 `;

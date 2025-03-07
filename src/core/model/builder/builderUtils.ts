@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import {
     ClassType,
     FunctionType,
     GenericType,
+    IntersectionType,
     TupleType,
     Type,
     UnclearReferenceType,
@@ -42,6 +43,12 @@ import { buildNormalArkClassFromArkMethod } from './ArkClassBuilder';
 import { Builtin } from '../../common/Builtin';
 import { modifierKind2Enum } from '../ArkBaseModel';
 import { ArkValueTransformer } from '../../common/ArkValueTransformer';
+import { KeyofTypeExpr, TypeQueryExpr } from '../../base/TypeExpr';
+import { THIS_NAME } from '../../common/TSConst';
+import { ArkSignatureBuilder } from './ArkSignatureBuilder';
+import { ArkInstanceFieldRef } from '../../base/Ref';
+import { Local } from '../../base/Local';
+import { Value } from '../../base/Value';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'builderUtils');
 
@@ -345,12 +352,16 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
             let parameterTypeStr = referenceNodeName.text;
             return new UnclearReferenceType(parameterTypeStr, genericTypes);
         }
-    } else if (ts.isUnionTypeNode(typeNode)) {
-        let unionTypePara: Type[] = [];
+    } else if (ts.isUnionTypeNode(typeNode) || ts.isIntersectionTypeNode(typeNode)) {
+        let multipleTypePara: Type[] = [];
         typeNode.types.forEach((tmpType) => {
-            unionTypePara.push(tsNode2Type(tmpType, sourceFile, arkInstance));
+            multipleTypePara.push(tsNode2Type(tmpType, sourceFile, arkInstance));
         });
-        return new UnionType(unionTypePara);
+        if (ts.isUnionTypeNode(typeNode)) {
+            return new UnionType(multipleTypePara);
+        } else {
+            return new IntersectionType(multipleTypePara);
+        }
     } else if (ts.isLiteralTypeNode(typeNode)) {
         return ArkValueTransformer.resolveLiteralTypeNode(typeNode, sourceFile);
     } else if (ts.isTypeLiteralNode(typeNode)) {
@@ -406,6 +417,10 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
         return new ArrayType(tsNode2Type((typeNode as ts.ArrayTypeNode).elementType, sourceFile, arkInstance), 1);
     } else if (ts.isParenthesizedTypeNode(typeNode)) {
         return tsNode2Type(typeNode.type, sourceFile, arkInstance);
+    } else if (ts.isTypeOperatorNode(typeNode)) {
+        return buildTypeFromTypeOperator(typeNode as ts.TypeOperatorNode, sourceFile, arkInstance);
+    } else if (ts.isTypeQueryNode(typeNode)) {
+        return buildTypeFromTypeQuery(typeNode as ts.TypeQueryNode, sourceFile, arkInstance);
     } else if (typeNode.kind === ts.SyntaxKind.ObjectKeyword) {
         return new ClassType(Builtin.OBJECT_CLASS_SIGNATURE);
     } else {
@@ -459,4 +474,67 @@ export function buildTypeFromPreStr(preStr: string) {
             postStr = preStr;
     }
     return TypeInference.buildTypeFromStr(postStr);
+}
+
+function buildTypeFromTypeOperator(typeOperatorNode: ts.TypeOperatorNode, sourceFile: ts.SourceFile,
+                                   arkInstance: ArkMethod | ArkClass | ArkField): Type {
+    const typeNode = typeOperatorNode.type;
+    let type = tsNode2Type(typeNode, sourceFile, arkInstance);
+
+    switch (typeOperatorNode.operator) {
+        case (ts.SyntaxKind.ReadonlyKeyword): {
+            if (type instanceof ArrayType || type instanceof TupleType) {
+                type.setReadonlyFlag(true);
+            }
+            return type;
+        }
+        case (ts.SyntaxKind.KeyOfKeyword):
+            return new KeyofTypeExpr(type);
+        case (ts.SyntaxKind.UniqueKeyword):
+            return UnknownType.getInstance();
+        default:
+            return UnknownType.getInstance();
+    }
+}
+
+function buildTypeFromTypeQuery(typeQueryNode: ts.TypeQueryNode, sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass | ArkField): Type {
+    const exprNameNode = typeQueryNode.exprName;
+    let opValue: Value;
+    if (ts.isQualifiedName(exprNameNode)) {
+        if (exprNameNode.left.getText(sourceFile) === THIS_NAME) {
+            const fieldName = exprNameNode.right.getText(sourceFile);
+            if (arkInstance instanceof ArkMethod) {
+                const fieldSignature = arkInstance.getDeclaringArkClass().getFieldWithName(fieldName)?.getSignature() ??
+                    ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
+                const baseLocal = arkInstance.getBody()?.getLocals().get(THIS_NAME) ??
+                    new Local(THIS_NAME, new ClassType(arkInstance.getDeclaringArkClass().getSignature(),
+                        arkInstance.getDeclaringArkClass().getGenericsTypes()));
+                opValue = new ArkInstanceFieldRef(baseLocal, fieldSignature);
+            } else if (arkInstance instanceof ArkClass) {
+                const fieldSignature = arkInstance.getFieldWithName(fieldName)?.getSignature() ??
+                    ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
+                const baseLocal = new Local(THIS_NAME, new ClassType(arkInstance.getSignature(), arkInstance.getGenericsTypes()));
+                opValue = new ArkInstanceFieldRef(baseLocal, fieldSignature);
+            } else {
+                const fieldSignature = arkInstance.getSignature();
+                const baseLocal = new Local(THIS_NAME, new ClassType(arkInstance.getDeclaringArkClass().getSignature(),
+                    arkInstance.getDeclaringArkClass().getGenericsTypes()));
+                opValue = new ArkInstanceFieldRef(baseLocal, fieldSignature);
+            }
+        } else {
+            const exprName = exprNameNode.getText(sourceFile);
+            opValue = new Local(exprName, UnknownType.getInstance());
+        }
+    } else {
+        const exprName = exprNameNode.escapedText.toString();
+        opValue = new Local(exprName, UnknownType.getInstance());
+    }
+
+    let expr = new TypeQueryExpr(opValue);
+    if (typeQueryNode.typeArguments) {
+        for (const typeArgument of typeQueryNode.typeArguments) {
+            expr.addGenericType(tsNode2Type(typeArgument, sourceFile, arkInstance));
+        }
+    }
+    return expr;
 }

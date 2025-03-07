@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,7 @@ import { ViewTree } from '../graph/ViewTree';
 import { ArkBody } from './ArkBody';
 import { ArkClass, ClassCategory } from './ArkClass';
 import { MethodSignature } from './ArkSignature';
-import { BodyBuilder } from '../common/BodyBuilder';
+import { BodyBuilder } from './builder/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';

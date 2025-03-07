@@ -64,8 +64,16 @@ class SparseBitVectorElement {
         return this.bits[idx];
     }
 
+    clone(): Word {
+        return new Uint32Array(this.bits);
+    }
+
     get elementSize(): number {
         return this.ELEMENT_SIZE;
+    }
+
+    get bitWordNum(): number {
+        return this.BITWORDS_NUM;
     }
 
     // Check if the element is empty (all bits are zero)
@@ -78,6 +86,10 @@ class SparseBitVectorElement {
         const wordIndex = Math.floor(bitIdx / BITWORD_SIZE);
         const bitOffset = bitIdx % BITWORD_SIZE;
         this.bits[wordIndex] |= (1 << bitOffset);
+    }
+
+    setWord(word: Word): void {
+        this.bits = word;
     }
 
     // Reset a bit at the given index
@@ -183,6 +195,23 @@ class SparseBitVectorElement {
         return changed;
     }
 
+    // Subtract another SparseBitVectorElement from this one.
+    subtractWith(rhs: SparseBitVectorElement): boolean {
+        let changed = false;
+        // Perform subtraction: this = this & ~rhs
+        for (let i = 0; i < this.bits.length; i++) {
+            const oldWord = this.bits[i];
+            this.bits[i] &= ~rhs.bits[i];
+
+            // If any bit was changed, mark as changed
+            if (this.bits[i] !== oldWord) {
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
     // Count the number of set bits in a word
     countBitsV2(word: number): number {
         let count = 0;
@@ -255,6 +284,7 @@ export class SparseBitVector {
     constructor(elementsSize: number = 128) {
         this.ELEMENT_SIZE = elementsSize;
     }
+
     get elementSize(): number {
         return this.ELEMENT_SIZE;
     }
@@ -303,6 +333,24 @@ export class SparseBitVector {
         }
     }
 
+    // Clear all elements
+    clear(): void {
+        this.elements.clear();
+    }
+
+    // Clone, return a deep copied object
+    clone(): SparseBitVector {
+        const newVector = new SparseBitVector(this.elementSize);
+        for (const [idx, element] of this.elements) {
+            const newElement = new SparseBitVectorElement(this.elementSize);
+            newElement.setWord(element.clone());
+
+            newVector.elems.set(idx, newElement);
+        }
+
+        return newVector;
+    }
+
     // Find the first set bit in the vector
     findFirst(): number {
         if (this.elements.size === 0) return -1;
@@ -329,7 +377,7 @@ export class SparseBitVector {
         return this.elements.size === 0;
     }
 
-    [Symbol.iterator](): Iterator<number> {
+    [Symbol.iterator](): IterableIterator<number> {
         let iter = this.elements.entries();
         let next = iter.next();
         const elementSize = this.ELEMENT_SIZE;
@@ -338,7 +386,10 @@ export class SparseBitVector {
             return {
                 next() {
                     return { value: undefined, done: true };
-                }
+                },
+                [Symbol.iterator]() {
+                    return this; // Make the iterator itself iterable
+                },
             };
         }
         let bitIndex = element[1].findFirst();
@@ -357,7 +408,10 @@ export class SparseBitVector {
                     return { value: v, done: false };
                 }
                 return { value: undefined, done: true };
-            }
+            },
+            [Symbol.iterator]() {
+                return this; // Make the iterator itself iterable
+            },
         };
     }
 
@@ -447,8 +501,37 @@ export class SparseBitVector {
     }
 
     /**
-     * Dump as string.
+     * Subtract another SparseBitVector from this one.
+     * This operation modifies the current SparseBitVector in place.
+     * Return True if the current SparseBitVector was modified, false otherwise.
      */
+    subtractWith(rhs: SparseBitVector): boolean {
+        if (this.elementSize !== rhs.elementSize || this.isEmpty() || rhs.isEmpty()) {
+            return false;
+        }
+
+        let needDeleteIdx: Set<number> = new Set();
+        let changed = false;
+        for (const [elementIndex, element] of this.elements) {
+            const rhsElement = rhs.elements.get(elementIndex);
+
+            if (rhsElement) {
+                changed = element.subtractWith(rhsElement) || changed;
+                if (element.isEmpty()) {
+                    needDeleteIdx.add(elementIndex);
+                }
+            }
+        }
+
+        if (needDeleteIdx.size > 0) {
+            needDeleteIdx.forEach(idx => this.elements.delete(idx));
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    // Dump as string
     toString(): string {
         let ar = [...this];
         return ar.toString();

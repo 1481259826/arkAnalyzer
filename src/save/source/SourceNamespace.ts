@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,11 +15,12 @@
 
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
-import { Dump, SourceBase } from './SourceBase';
+import { SourceBase } from './SourceBase';
 import { SourceClass } from './SourceClass';
 import { SourceMethod } from './SourceMethod';
-import { SourceExportInfo } from './SourceModule';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
+import { Dump } from '../base/BasePrinter';
+import { ExportPrinter } from '../base/ExportPrinter';
 
 /**
  * @category save
@@ -51,7 +52,7 @@ export class SourceNamespace extends SourceBase {
         let items: Dump[] = [];
         // print class
         for (let cls of this.ns.getClasses()) {
-            if (SourceUtils.isAnonymousClass(cls.getName())) {
+            if (PrinterUtils.isAnonymousClass(cls.getName())) {
                 continue;
             }
             if (cls.isDefaultArkClass()) {
@@ -60,7 +61,7 @@ export class SourceNamespace extends SourceBase {
                         items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod(),
                         );
                     } else if (
-                        !SourceUtils.isAnonymousMethod(method.getName())
+                        !PrinterUtils.isAnonymousMethod(method.getName())
                     ) {
                         items.push(
                             new SourceMethod(method, this.printer.getIndent())
@@ -78,7 +79,7 @@ export class SourceNamespace extends SourceBase {
         // print exportInfos
         for (let exportInfo of this.ns.getExportInfos()) {
             items.push(
-                new SourceExportInfo(exportInfo, this.printer.getIndent())
+                new ExportPrinter(exportInfo, this.printer.getIndent())
             );
         }
 

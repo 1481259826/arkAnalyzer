@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,16 +38,16 @@ import { Value } from '../../core/base/Value';
 import { BasicBlock } from '../../core/graph/BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkCodeBuffer } from '../ArkStream';
-import { Dump } from './SourceBase';
 import { StmtReader } from './SourceBody';
 import { SourceTransformer, TransformerContext } from './SourceTransformer';
-import { CLASS_CATEGORY_COMPONENT, SourceUtils } from './SourceUtils';
+import { CLASS_CATEGORY_COMPONENT, PrinterUtils } from '../base/PrinterUtils';
 import { ValueUtil } from '../../core/common/ValueUtil';
 import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { modifiers2stringArray } from '../../core/model/ArkBaseModel';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { ImportInfo } from '../../core/model/ArkImport';
 import { ArkMethod } from '../../core/model/ArkMethod';
+import { Dump } from '../base/BasePrinter';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceStmt');
 const IGNOR_TYPES = new Set<string>(['any', 'Map', 'Set']);
@@ -143,7 +143,7 @@ export abstract class SourceStmt implements Dump {
             return false;
         }
 
-        return SourceUtils.isTemp(value.getName());
+        return PrinterUtils.isTemp(value.getName());
     }
 }
 
@@ -186,11 +186,11 @@ export class SourceAssignStmt extends SourceStmt {
             this.transferRightNewExpr();
         } else if (this.leftOp instanceof Local && this.rightOp instanceof ArkNewArrayExpr) {
             this.transferRightNewArrayExpr();
-        } else if (this.rightOp instanceof ArkStaticInvokeExpr && SourceUtils.isComponentCreate(this.rightOp)) {
+        } else if (this.rightOp instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentCreate(this.rightOp)) {
             this.transferRightComponentCreate();
         } else if (
             this.rightOp instanceof ArkInstanceInvokeExpr &&
-            SourceUtils.isComponentAttributeInvoke(this.rightOp)
+            PrinterUtils.isComponentAttributeInvoke(this.rightOp)
         ) {
             this.transferRightComponentAttribute();
         } else {
@@ -216,7 +216,7 @@ export class SourceAssignStmt extends SourceStmt {
         let leftOpType = this.leftOp.getType();
         if (leftOpType instanceof ClassType) {
             let name = leftOpType.getClassSignature().getClassName();
-            if (SourceUtils.isAnonymousClass(name)) {
+            if (PrinterUtils.isAnonymousClass(name)) {
                 this.leftTypeCode = 'any';
             } else {
                 this.leftTypeCode = name;
@@ -236,7 +236,7 @@ export class SourceAssignStmt extends SourceStmt {
 
         if (this.context.hasTempVisit(this.leftCode)) {
             this.setText('');
-        } else if (SourceUtils.isTemp(this.leftCode)) {
+        } else if (PrinterUtils.isTemp(this.leftCode)) {
             this.setText(`${this.rightCode};`);
         } else {
             if (
@@ -282,7 +282,7 @@ export class SourceAssignStmt extends SourceStmt {
         if (!cls) {
             return undefined;
         }
-        return SourceUtils.getOriginType(cls);
+        return PrinterUtils.getOriginType(cls);
     }
 
     /**
@@ -366,7 +366,7 @@ export class SourceAssignStmt extends SourceStmt {
             let stmt = this.context.getStmtReader().next();
             if (stmt instanceof ArkInvokeStmt) {
                 let expr = stmt.getInvokeExpr();
-                if (expr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentPop(expr)) {
+                if (expr instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentPop(expr)) {
                     this.setText(`${this.rightCode}`);
                     this.dumpType = AssignStmtDumpType.NORMAL;
                     return;
@@ -396,16 +396,16 @@ export class SourceInvokeStmt extends SourceStmt {
         let code = '';
         let isAttr = false;
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
-            if (SourceUtils.isComponentPop(invokeExpr)) {
+            if (PrinterUtils.isComponentPop(invokeExpr)) {
                 code = '}';
                 isAttr = true;
             } else {
                 code = this.transformer.staticInvokeExprToString(invokeExpr);
-                isAttr = SourceUtils.isComponentIfElseInvoke(invokeExpr);
+                isAttr = PrinterUtils.isComponentIfElseInvoke(invokeExpr);
             }
         } else if (invokeExpr instanceof ArkInstanceInvokeExpr) {
             code = this.transformer.instanceInvokeExprToString(invokeExpr);
-            isAttr = SourceUtils.isComponentAttributeInvoke(invokeExpr);
+            isAttr = PrinterUtils.isComponentAttributeInvoke(invokeExpr);
         }
 
         if (code.length > 0 && !isAttr) {
@@ -418,8 +418,8 @@ export class SourceInvokeStmt extends SourceStmt {
     protected beforeDump(): void {
         let invokeExpr = this.original.getInvokeExpr();
         if (
-            (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentPop(invokeExpr)) ||
-            (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentIfElseInvoke(invokeExpr))
+            (invokeExpr instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentPop(invokeExpr)) ||
+            (invokeExpr instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentIfElseInvoke(invokeExpr))
         ) {
             this.printer.decIndent();
             return;
@@ -428,7 +428,7 @@ export class SourceInvokeStmt extends SourceStmt {
 
     protected afterDump(): void {
         let invokeExpr = this.original.getInvokeExpr();
-        if (invokeExpr instanceof ArkStaticInvokeExpr && SourceUtils.isComponentIfElseInvoke(invokeExpr)) {
+        if (invokeExpr instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentIfElseInvoke(invokeExpr)) {
             this.printer.incIndent();
             return;
         }
@@ -623,7 +623,7 @@ export class SourceWhileStmt extends SourceStmt {
                 continue;
             }
             if (
-                SourceUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Addition) &&
+                PrinterUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Addition) &&
                 (stmt.getLeftOp() as Local).getName() === value.getName()
             ) {
                 this.context.setSkipStmt(stmt);
@@ -631,7 +631,7 @@ export class SourceWhileStmt extends SourceStmt {
             }
 
             if (
-                SourceUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Subtraction) &&
+                PrinterUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Subtraction) &&
                 (stmt.getLeftOp() as Local).getName() === value.getName()
             ) {
                 this.context.setSkipStmt(stmt);
@@ -812,36 +812,21 @@ export class SourceTypeAliasStmt extends SourceStmt {
     }
 
     public transfer2ts(): void {
-        let modifier = '';
         let modifiersArray: string[] = modifiers2stringArray(this.aliasType.getModifiers());
-        if (modifiersArray.length > 0) {
-            modifier = `${modifiersArray.join(' ')} `;
-        }
+        let modifier = modifiersArray.length > 0 ? `${modifiersArray.join(' ')} ` : '';
+
         const expr = (this.original as ArkAliasTypeDefineStmt).getAliasTypeExpr();
-        let typeOf = '';
-        if (expr.getTransferWithTypeOf()) {
-            typeOf = 'typeof ';
-        }
-
-        let realGenericTypes = '';
-        if (expr.getRealGenericTypes()) {
-            let types = expr.getRealGenericTypes()!.join(', ');
-            if (types) {
-                realGenericTypes = `<${types}>`;
-            }
-        }
-
-        let genericTypes = '';
-        if (this.aliasType.getGenericTypes()) {
-            let types = this.aliasType.getGenericTypes()!.join(', ');
-            if (types) {
-                genericTypes = `<${types}>`;
-            }
-        }
+        let typeOf = expr.getTransferWithTypeOf() ? 'typeof ' : '';
+        let realGenericTypes = expr.getRealGenericTypes() ? `<${expr.getRealGenericTypes()!.join(', ')}>` : '';
+        let genericTypes = this.aliasType.getGenericTypes() ? `<${this.transformer.typeArrayToString(this.aliasType.getGenericTypes()!)}>` : '';
 
         let typeObject = expr.getOriginalObject();
         if (typeObject instanceof Type) {
-            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`);
+            if (typeObject instanceof AliasType) {
+                this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${typeObject.getName()}${realGenericTypes};`);
+            } else {
+                this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`);
+            }
             return;
         }
         if (typeObject instanceof ImportInfo) {

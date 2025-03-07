@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,27 +13,27 @@
  * limitations under the License.
  */
 
-import { ArkBody } from '../model/ArkBody';
-import { ArkMethod } from '../model/ArkMethod';
-import { FieldSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
-import { CfgBuilder } from './CfgBuilder';
+import { ArkBody } from '../ArkBody';
+import { ArkMethod } from '../ArkMethod';
+import { FieldSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
+import { CfgBuilder } from '../../graph/builder/CfgBuilder';
 import * as ts from 'ohos-typescript';
-import { Local } from '../base/Local';
-import { MethodParameter } from '../model/builder/ArkMethodBuilder';
-import { LEXICAL_ENV_NAME_PREFIX, NAME_DELIMITER, NAME_PREFIX } from './Const';
-import { ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef, GlobalRef } from '../base/Ref';
-import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../base/Stmt';
+import { Local } from '../../base/Local';
+import { MethodParameter } from './ArkMethodBuilder';
+import { LEXICAL_ENV_NAME_PREFIX, NAME_DELIMITER, NAME_PREFIX } from '../../common/Const';
+import { ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef, GlobalRef } from '../../base/Ref';
+import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt } from '../../base/Stmt';
 import {
-    LexicalEnvType,
-    FunctionType,
-    ClosureType,
-    UnclearReferenceType,
-    UnionType,
-    Type,
     AliasType,
     ArrayType,
-} from '../base/Type';
-import { AbstractInvokeExpr, ArkPtrInvokeExpr } from '../base/Expr';
+    ClosureType,
+    FunctionType,
+    LexicalEnvType,
+    Type,
+    UnclearReferenceType,
+    UnionType,
+} from '../../base/Type';
+import { AbstractInvokeExpr, ArkPtrInvokeExpr } from '../../base/Expr';
 
 export class BodyBuilder {
     private cfgBuilder: CfgBuilder;
@@ -46,7 +46,7 @@ export class BodyBuilder {
     public build(): ArkBody | null {
         this.cfgBuilder.buildCfgBuilder();
         if (!this.cfgBuilder.isBodyEmpty()) {
-            const { cfg, locals, globals, aliasTypeMap, traps } = this.cfgBuilder.buildCfgAndOriginalCfg();
+            const { cfg, locals, globals, aliasTypeMap, traps } = this.cfgBuilder.buildCfg();
             if (globals !== null) {
                 this.setGlobals(globals);
             }

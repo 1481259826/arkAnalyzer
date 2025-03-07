@@ -22,8 +22,9 @@ import { FullPosition, LineColPosition } from './Position';
 import { ArkMetadata, ArkMetadataKind, ArkMetadataType } from '../model/ArkMetadata';
 import { StmtDefReplacer } from '../common/StmtDefReplacer';
 import { IRUtils } from '../common/IRUtils';
-import { AliasType } from './Type';
+import { AliasType, ArrayType, IntersectionType, TupleType, Type, UnionType } from './Type';
 import { ModifierType } from '../model/ArkBaseModel';
+import { AbstractTypeExpr } from './TypeExpr';
 
 /**
  * @category core/base/stmt
@@ -182,6 +183,17 @@ export abstract class Stmt {
             }
         }
         return exprs;
+    }
+
+    public getTypeExprs(): AbstractTypeExpr[] {
+        let typeExprs: AbstractTypeExpr[] = [];
+        for (const value of this.getDefAndUses()) {
+            const valueType = value.getType();
+            if (valueType instanceof AbstractTypeExpr) {
+                typeExprs.push(valueType);
+            }
+        }
+        return typeExprs;
     }
 
     public containsArrayRef(): boolean {
@@ -565,5 +577,27 @@ export class ArkAliasTypeDefineStmt extends Stmt {
 
     public getExprs(): AliasTypeExpr[] {
         return [this.getAliasTypeExpr()];
+    }
+
+    public getTypeExprs(): AbstractTypeExpr[] {
+        function getTypeExprsInType(originalObject: Type): AbstractTypeExpr[] {
+            let typeExprs: AbstractTypeExpr[] = [];
+            if (originalObject instanceof AbstractTypeExpr) {
+                typeExprs.push(originalObject);
+            } else if (originalObject instanceof ArrayType) {
+                typeExprs.push(...getTypeExprsInType(originalObject.getBaseType()));
+            } else if (originalObject instanceof UnionType || originalObject instanceof IntersectionType || originalObject instanceof TupleType) {
+                for (const member of originalObject.getTypes()) {
+                    typeExprs.push(...getTypeExprsInType(member));
+                }
+            }
+            return typeExprs;
+        }
+
+        const originalObject = this.getAliasTypeExpr().getOriginalObject();
+        if (originalObject instanceof Type) {
+            return getTypeExprsInType(originalObject);
+        }
+        return [];
     }
 }

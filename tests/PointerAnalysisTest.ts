@@ -20,6 +20,7 @@ import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilde
 import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
 import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
 import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
+import { PtsCollectionType } from "../src/callgraph/pointerAnalysis/PtsDS";
 import { Local } from "../src/core/base/Local";
 import { ArkThisRef } from "../src/core/base/Ref";
 import { ArkAssignStmt } from "../src/core/base/Stmt";
@@ -95,7 +96,7 @@ function runProject(output: string) {
     projectScene.buildScene4HarmonyProject()
     projectScene.inferTypes();
 
-    let ptaConfig = new PointerAnalysisConfig(2, output, true, true, true)
+    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true)
     let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
     printStat(pta);
 }
@@ -116,7 +117,7 @@ function runDir(output: string) {
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
-    let ptaConfig = new PointerAnalysisConfig(2, output, true, true)
+    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtsCollectionType.BitVector)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries(debugfunc);
     pta.start();

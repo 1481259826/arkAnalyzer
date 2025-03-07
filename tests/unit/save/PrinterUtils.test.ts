@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,9 +20,10 @@ import { Scene } from '../../../src/Scene';
 import path from 'path';
 import { SourceClassPrinter } from '../../../src';
 import { SourceTransformer } from '../../../src/save/source/SourceTransformer';
-import { SourceUtils } from '../../../src/save/source/SourceUtils';
+import { PrinterUtils } from '../../../src/save/base/PrinterUtils';
 
-describe('SourceUtilsTest', () => {
+
+describe('PrinterUtilsTest', () => {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
@@ -75,14 +76,14 @@ describe('SourceUtilsTest', () => {
     });
 
     it('isIdentifierText', () => {
-        expect(SourceUtils.isIdentifierText('ab\'')).eq(false);
-        expect(SourceUtils.isIdentifierText('123')).eq(false);
-        expect(SourceUtils.isIdentifierText('abc')).eq(true);
-        expect(SourceUtils.isIdentifierText('+')).eq(false);
+        expect(PrinterUtils.isIdentifierText('ab\'')).eq(false);
+        expect(PrinterUtils.isIdentifierText('123')).eq(false);
+        expect(PrinterUtils.isIdentifierText('abc')).eq(true);
+        expect(PrinterUtils.isIdentifierText('+')).eq(false);
     })
 
     it('escape', () => {
-        expect(SourceUtils.escape('ab\'')).eq('ab\\\'');
+        expect(PrinterUtils.escape('ab\'')).eq('ab\\\'');
     })
 
 });

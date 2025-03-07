@@ -46,6 +46,7 @@ import {
     BooleanType,
     ClassType,
     FunctionType,
+    IntersectionType,
     LiteralType,
     NeverType,
     NullType,
@@ -82,6 +83,8 @@ import { Constant } from '../base/Constant';
 import { TEMP_LOCAL_PREFIX } from './Const';
 import { ArkIRTransformer, DummyStmt, ValueAndStmts } from './ArkIRTransformer';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { TypeInference } from './TypeInference';
+import { KeyofTypeExpr, TypeQueryExpr } from '../base/TypeExpr';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkValueTransformer');
 
@@ -1524,6 +1527,11 @@ export class ArkValueTransformer {
                 (type as ts.UnionTypeNode).types.forEach(t => mayTypes.push(this.resolveTypeNode(t)));
                 return new UnionType(mayTypes);
             }
+            case ts.SyntaxKind.IntersectionType: {
+                const intersectionTypes: Type[] = [];
+                (type as ts.IntersectionTypeNode).types.forEach(t => intersectionTypes.push(this.resolveTypeNode(t)));
+                return new IntersectionType(intersectionTypes);
+            }
             case ts.SyntaxKind.TupleType: {
                 const types: Type[] = [];
                 (type as ts.TupleTypeNode).elements.forEach(element => {
@@ -1545,25 +1553,64 @@ export class ArkValueTransformer {
                 return UnknownType.getInstance();
             case ts.SyntaxKind.TypeQuery:
                 return this.resolveTypeQueryNode(type as ts.TypeQueryNode);
+            case ts.SyntaxKind.ParenthesizedType:
+                return this.resolveTypeNode((type as ts.ParenthesizedTypeNode).type);
+            case ts.SyntaxKind.TypeOperator:
+                return this.resolveTypeOperatorNode(type as ts.TypeOperatorNode);
             default:
                 return UnknownType.getInstance();
         }
     }
 
     private resolveTypeQueryNode(typeQueryNode: ts.TypeQueryNode): Type {
-        const exprName = typeQueryNode.exprName.getText(this.sourceFile);
-        const local = this.locals.get(exprName);
-        if (local !== undefined) {
-            return local.getType();
-        }
-
         const genericTypes: Type[] = [];
         if (typeQueryNode.typeArguments) {
             for (const typeArgument of typeQueryNode.typeArguments) {
                 genericTypes.push(this.resolveTypeNode(typeArgument));
             }
         }
-        return new UnclearReferenceType(exprName, genericTypes);
+
+        const exprNameNode = typeQueryNode.exprName;
+        let opValue: Value;
+        if (ts.isQualifiedName(exprNameNode)) {
+            if (exprNameNode.left.getText(this.sourceFile) === THIS_NAME) {
+                const fieldName = exprNameNode.right.getText(this.sourceFile);
+                const fieldSignature = this.declaringMethod.getDeclaringArkClass().getFieldWithName(fieldName)?.getSignature() ??
+                    ArkSignatureBuilder.buildFieldSignatureFromFieldName(fieldName);
+                const baseLocal = this.locals.get(THIS_NAME) ??
+                    new Local(THIS_NAME, new ClassType(this.declaringMethod.getDeclaringArkClass().getSignature(), genericTypes));
+                opValue = new ArkInstanceFieldRef(baseLocal, fieldSignature);
+            } else {
+                const exprName = exprNameNode.getText(this.sourceFile);
+                opValue = new Local(exprName, UnknownType.getInstance());
+            }
+        } else {
+            const exprName = exprNameNode.escapedText.toString();
+            opValue = this.locals.get(exprName) ?? this.globals?.get(exprName) ?? new Local(exprName, UnknownType.getInstance());
+        }
+
+        return new TypeQueryExpr(opValue, genericTypes);
+    }
+
+    private resolveTypeOperatorNode(typeOperatorNode: ts.TypeOperatorNode): Type {
+        let type = this.resolveTypeNode(typeOperatorNode.type);
+
+        switch (typeOperatorNode.operator) {
+            case ts.SyntaxKind.ReadonlyKeyword: {
+                if (type instanceof ArrayType || type instanceof TupleType) {
+                    type.setReadonlyFlag(true);
+                }
+                return type;
+            }
+            case ts.SyntaxKind.KeyOfKeyword: {
+                return new KeyofTypeExpr(type);
+            }
+            case ts.SyntaxKind.UniqueKeyword: {
+                return UnknownType.getInstance();
+            }
+            default:
+                return UnknownType.getInstance();
+        }
     }
 
     public static resolveLiteralTypeNode(literalTypeNode: ts.LiteralTypeNode, sourceFile: ts.SourceFile): Type {
@@ -1632,23 +1679,32 @@ export class ArkValueTransformer {
     }
 
     private resolveTypeReferenceNode(typeReferenceNode: ts.TypeReferenceNode): Type {
-        const typeReferenceFullName = typeReferenceNode.getText(this.sourceFile);
-        const aliasTypeAndPosition = this.aliasTypeMap.get(typeReferenceFullName);
-        if (!aliasTypeAndPosition) {
+        const typeReferenceFullName = typeReferenceNode.typeName.getText(this.sourceFile);
+        const aliasTypeAndStmt = this.aliasTypeMap.get(typeReferenceFullName);
+
+        const genericTypes: Type[] = [];
+        if (typeReferenceNode.typeArguments) {
+            for (const typeArgument of typeReferenceNode.typeArguments) {
+                genericTypes.push(this.resolveTypeNode(typeArgument));
+            }
+        }
+
+        if (!aliasTypeAndStmt) {
             const typeName = typeReferenceNode.typeName.getText(this.sourceFile);
             const local = this.locals.get(typeName);
             if (local !== undefined) {
                 return local.getType();
             }
-            const genericTypes: Type[] = [];
-            if (typeReferenceNode.typeArguments) {
-                for (const typeArgument of typeReferenceNode.typeArguments) {
-                    genericTypes.push(this.resolveTypeNode(typeArgument));
-                }
-            }
             return new UnclearReferenceType(typeName, genericTypes);
         } else {
-            return aliasTypeAndPosition[0];
+            if (genericTypes.length > 0) {
+                const oldAlias = aliasTypeAndStmt[0];
+                let alias = new AliasType(oldAlias.getName(), TypeInference.replaceTypeWithReal(oldAlias.getOriginalType(), genericTypes),
+                    oldAlias.getSignature(), oldAlias.getGenericTypes());
+                alias.setRealGenericTypes(genericTypes);
+                return alias;
+            }
+            return aliasTypeAndStmt[0];
         }
     }
 

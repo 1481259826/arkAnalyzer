@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,9 +32,7 @@ const CASE1_EXPECT = `/*
  * limitations under the License.
  */
 import * as validator3 from './classes';
-import validator4 from './classes';
-import {ZipCodeValidator} from './classes';
-import {ZipCodeValidator as ZCV} from './classes';
+import validator4, {ZipCodeValidator, ZipCodeValidator as ZCV} from './classes';
 let myValidator1: ZipCodeValidator = new ZipCodeValidator();
 let myValidator2: ZCV = new ZCV();
 let myValidator3: validator3.ZipCodeValidator = new validator3.ZipCodeValidator();

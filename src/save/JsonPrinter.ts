@@ -79,10 +79,10 @@ import { MethodParameter } from '../core/model/builder/ArkMethodBuilder';
 import { ImportInfo } from '../core/model/ArkImport';
 import { ExportInfo } from '../core/model/ArkExport';
 import {
+    AliasTypeSignature,
     ClassSignature,
     FieldSignature,
     FileSignature,
-    LocalSignature,
     MethodSignature,
     NamespaceSignature,
 } from '../core/model/ArkSignature';
@@ -304,7 +304,7 @@ export class JsonPrinter extends Printer {
                 _: 'AliasType',
                 name: type.getName(),
                 originalType: this.serializeType(type.getOriginalType()),
-                signature: this.serializeLocalSignature(type.getSignature()),
+                signature: this.serializeAliasTypeSignature(type.getSignature()),
             };
         } else if (type instanceof AnnotationNamespaceType) {
             return {
@@ -376,7 +376,7 @@ export class JsonPrinter extends Printer {
         };
     }
 
-    private serializeLocalSignature(signature: LocalSignature): object {
+    private serializeAliasTypeSignature(signature: AliasTypeSignature): object {
         return {
             name: signature.getName(),
             method: this.serializeMethodSignature(signature.getDeclaringMethodSignature()),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,7 +37,7 @@ import { ArkMethod } from '../../core/model/ArkMethod';
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 import { ArkCodeBuffer } from '../ArkStream';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
 import { SourceMethod } from './SourceMethod';
 import {
     AliasType,
@@ -45,9 +45,11 @@ import {
     ClassType,
     FunctionType,
     GenericType,
+    IntersectionType,
     LiteralType,
     PrimitiveType,
     StringType,
+    TupleType,
     Type,
     UnclearReferenceType,
     UnionType,
@@ -67,6 +69,11 @@ import {
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
+import { AbstractTypeExpr, KeyofTypeExpr, TypeQueryExpr } from '../../core/base/TypeExpr';
+import { ArkBaseModel } from '../../core/model/ArkBaseModel';
+import { ArkField } from '../../core/model/ArkField';
+import { ExportInfo } from '../../core/model/ArkExport';
+import { ImportInfo } from '../../core/model/ArkImport';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
@@ -115,7 +122,7 @@ export class SourceTransformer {
         });
         let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
 
-        if (SourceUtils.isComponentAttributeInvoke(invokeExpr) && this.context.isInBuilderMethod()) {
+        if (PrinterUtils.isComponentAttributeInvoke(invokeExpr) && this.context.isInBuilderMethod()) {
             return `.${methodName}${genericCode}(${args.join(', ')})`;
         }
 
@@ -125,12 +132,12 @@ export class SourceTransformer {
     public staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr): string {
         let methodSignature = invokeExpr.getMethodSignature();
         let method = this.context.getMethod(methodSignature);
-        if (method && SourceUtils.isAnonymousMethod(method.getName())) {
+        if (method && PrinterUtils.isAnonymousMethod(method.getName())) {
             return this.anonymousMethodToString(method, this.context.getPrinter().getIndent());
         }
 
         let classSignature = methodSignature.getDeclaringClassSignature();
-        let className = SourceUtils.getStaticInvokeClassFullName(classSignature, this.context.getDeclaringArkNamespace());
+        let className = PrinterUtils.getStaticInvokeClassFullName(classSignature, this.context.getDeclaringArkNamespace());
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
         let args: string[] = [];
         invokeExpr.getArgs().forEach((v) => {
@@ -153,14 +160,14 @@ export class SourceTransformer {
                 }
             }
 
-            if (SourceUtils.isComponentCreate(invokeExpr)) {
+            if (PrinterUtils.isComponentCreate(invokeExpr)) {
                 if (className === COMPONENT_IF) {
                     return `if (${args.join(', ')})`;
                 }
                 return `${className}${genericCode}(${args.join(', ')})`;
             }
 
-            if (SourceUtils.isComponentIfBranchInvoke(invokeExpr)) {
+            if (PrinterUtils.isComponentIfBranchInvoke(invokeExpr)) {
                 let arg0 = invokeExpr.getArg(0) as Constant;
                 if (arg0.getValue() === '0') {
                     return ``;
@@ -169,7 +176,7 @@ export class SourceTransformer {
                 }
             }
 
-            if (SourceUtils.isComponentPop(invokeExpr)) {
+            if (PrinterUtils.isComponentPop(invokeExpr)) {
                 return '}';
             }
         }
@@ -203,7 +210,7 @@ export class SourceTransformer {
 
     public static constToString(value: Constant): string {
         if (value.getType().toString() === 'string') {
-            return `'${SourceUtils.escape(value.getValue())}'`;
+            return `'${PrinterUtils.escape(value.getValue())}'`;
         } else {
             return value.getValue();
         }
@@ -282,7 +289,7 @@ export class SourceTransformer {
             if (
                 index instanceof Constant &&
                 index.getType() instanceof StringType &&
-                SourceUtils.isTemp(index.getValue())
+                PrinterUtils.isTemp(index.getValue())
             ) {
                 return `${this.valueToString(value.getBase())}[${this.valueToString(new Local(index.getValue()))}]`;
             }
@@ -312,14 +319,14 @@ export class SourceTransformer {
         }
 
         if (value instanceof Local) {
-            if (SourceUtils.isAnonymousMethod(value.getName())) {
+            if (PrinterUtils.isAnonymousMethod(value.getName())) {
                 let methodSignature = (value.getType() as FunctionType).getMethodSignature();
                 let anonymousMethod = this.context.getMethod(methodSignature);
                 if (anonymousMethod) {
                     return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
                 }
             }
-            if (SourceUtils.isAnonymousClass(value.getName())) {
+            if (PrinterUtils.isAnonymousClass(value.getName())) {
                 let clsSignature = (value.getType() as ClassType).getClassSignature();
                 let cls = this.context.getClass(clsSignature);
                 if (cls) {
@@ -332,7 +339,7 @@ export class SourceTransformer {
                 operator === NormalBinaryOperator.Multiplication ||
                 operator === NormalBinaryOperator.Remainder
             ) {
-                if (SourceUtils.isTemp(value.getName())) {
+                if (PrinterUtils.isTemp(value.getName())) {
                     let stmt = value.getDeclaringStmt();
                     if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
                         return `(${this.context.transTemp2Code(value)})`;
@@ -349,7 +356,7 @@ export class SourceTransformer {
 
     public literalObjectToString(type: ClassType): string {
         let name = type.getClassSignature().getClassName();
-        if (SourceUtils.isAnonymousClass(name)) {
+        if (PrinterUtils.isAnonymousClass(name)) {
             let cls = this.context.getClass(type.getClassSignature());
             if (cls) {
                 return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
@@ -363,12 +370,12 @@ export class SourceTransformer {
             return this.literalType2string(type);
         }
 
-        if (type instanceof PrimitiveType) {
+        if (type instanceof PrimitiveType || type instanceof GenericType) {
             return type.getName();
         }
 
-        if (type instanceof UnionType) {
-            return this.unionType2string(type);
+        if (type instanceof UnionType || type instanceof IntersectionType) {
+            return this.multipleType2string(type);
         }
 
         if (type instanceof UnknownType) {
@@ -385,11 +392,14 @@ export class SourceTransformer {
         if (type instanceof ArrayType) {
             return this.arrayType2string(type);
         }
+        if (type instanceof TupleType) {
+            return this.tupleType2string(type);
+        }
 
         if (type instanceof FunctionType) {
             let methodSignature = type.getMethodSignature();
             let method = this.context.getMethod(methodSignature);
-            if (method && SourceUtils.isAnonymousMethod(method.getName())) {
+            if (method && PrinterUtils.isAnonymousMethod(method.getName())) {
                 return new SourceMethod(method).toArrowFunctionTypeString();
             }
         }
@@ -398,12 +408,16 @@ export class SourceTransformer {
             return this.unclearReferenceType2string(type);
         }
 
-        if (type instanceof GenericType) {
-            return type.getName();
+        if (type instanceof AliasType) {
+            return this.aliasType2string(type);
         }
 
-        if (type instanceof AliasType) {
-            return type.getName();
+        if (type instanceof KeyofTypeExpr) {
+            return this.keyofTypeExpr2string(type);
+        }
+
+        if (type instanceof TypeQueryExpr) {
+            return this.typeQueryExpr2string(type);
         }
 
         if (!type) {
@@ -422,41 +436,99 @@ export class SourceTransformer {
         return `${literalName}`;
     }
 
-    private unionType2string(type: UnionType): string {
+    private multipleType2string(type: UnionType | IntersectionType): string {
         let typesStr: string[] = [];
         for (const member of type.getTypes()) {
-            typesStr.push(this.typeToString(member));
+            if (member instanceof UnionType || member instanceof IntersectionType) {
+                typesStr.push(`(${this.typeToString(member)})`);
+            } else {
+                typesStr.push(this.typeToString(member));
+            }
         }
-        return typesStr.join(' | ');
+        if (type instanceof UnionType) {
+            return typesStr.join(' | ');
+        } else {
+            return typesStr.join(' & ');
+        }
     }
 
     private arrayType2string(type: ArrayType): string {
+        const readonly = type.getReadonlyFlag() ? 'readonly ' : '';
         const dimensions: string[] = [];
         for (let i = 0; i < type.getDimension(); i++) {
             dimensions.push('[]');
         }
 
         let baseType = type.getBaseType();
-        if (baseType instanceof UnionType) {
-            return `(${this.typeToString(baseType)})${dimensions.join('')}`;
+        if (baseType instanceof UnionType || baseType instanceof IntersectionType || baseType instanceof AbstractTypeExpr) {
+            return `${readonly}(${this.typeToString(baseType)})${dimensions.join('')}`;
         }
-        return `${this.typeToString(baseType)}${dimensions.join('')}`;
+        return `${readonly}${this.typeToString(baseType)}${dimensions.join('')}`;
+    }
+
+    private tupleType2string(type: TupleType): string {
+        const readonly = type.getReadonlyFlag() ? 'readonly ' : '';
+        let typesStr: string[] = [];
+        for (const member of type.getTypes()) {
+            typesStr.push(this.typeToString(member));
+        }
+        return `${readonly}[${typesStr.join(', ')}]`;
+    }
+
+    private aliasType2string(type: AliasType): string {
+        let typesStr: string[] = [];
+        let genericTypes = type.getRealGenericTypes() ?? type.getGenericTypes();
+        if (genericTypes) {
+            for (const gType of genericTypes) {
+                typesStr.push(this.typeToString(gType));
+            }
+        }
+        if (typesStr.length > 0) {
+            return `${type.getName()}<${typesStr.join(', ')}>`;
+        }
+        return type.getName();
+    }
+
+    private keyofTypeExpr2string(type: KeyofTypeExpr): string {
+        if (type.getOpType() instanceof UnionType || type.getOpType() instanceof IntersectionType) {
+            return `keyof (${this.typeToString(type.getOpType())})`;
+        }
+        return `keyof ${this.typeToString(type.getOpType())}`;
+    }
+
+    private typeQueryExpr2string(type: TypeQueryExpr): string {
+        const gTypes = type.getGenerateTypes();
+        const genericStr = this.genericTypesToString(gTypes);
+        const opValue = type.getOpValue();
+        if (opValue instanceof ArkBaseModel) {
+            if (opValue instanceof ArkClass || opValue instanceof ArkMethod || opValue instanceof ArkNamespace || opValue instanceof ArkField) {
+                return `typeof ${opValue.getName()}${genericStr}`;
+            } else if (opValue instanceof ExportInfo) {
+                return `typeof ${opValue.getExportClauseName()}${genericStr}`;
+            } else if (opValue instanceof ImportInfo) {
+                return `typeof ${opValue.getImportClauseName()}${genericStr}`;
+            } else {
+                return `typeof *invalid*`;
+            }
+        } else {
+            return `typeof ${this.valueToString(opValue)}${genericStr}`;
+        }
     }
 
     private unclearReferenceType2string(type: UnclearReferenceType): string {
         let genericTypes = type.getGenericTypes();
         if (genericTypes.length > 0) {
-            return `${type.getName()}<${genericTypes.join(', ')}>`;
+            return `${type.getName()}<${genericTypes.map((value)=>this.typeToString(value)).join(', ')}>`;
         }
         return type.getName();
     }
 
     private classType2string(type: ClassType): string {
-        const name = SourceUtils.getStaticInvokeClassFullName(type.getClassSignature());
-        if (SourceUtils.isDefaultClass(name)) {
+        const name = PrinterUtils.getStaticInvokeClassFullName(type.getClassSignature());
+        if (PrinterUtils.isDefaultClass(name)) {
             return 'any';
         }
-        if (SourceUtils.isAnonymousClass(name)) {
+        if (PrinterUtils.isAnonymousClass(name)) {
             let cls = this.context.getClass(type.getClassSignature());
             if (cls && cls.getCategory() === ClassCategory.TYPE_LITERAL) {
                 return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
@@ -465,7 +537,7 @@ export class SourceTransformer {
         }
         let genericTypes = type.getRealGenericTypes();
         if (genericTypes && genericTypes.length > 0) {
-            return `${name}<${genericTypes.join(', ')}>`;
+            return `${name}${this.genericTypesToString(genericTypes)}`;
         }
         return name;
     }

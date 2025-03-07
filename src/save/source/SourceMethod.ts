@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,10 +20,12 @@ import { SourceBase } from './SourceBase';
 import { SourceBody } from './SourceBody';
 import { SourceStmt } from './SourceStmt';
 import { SourceTransformer } from './SourceTransformer';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
 import { Stmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
+import { getLineNo } from '../../core/base/Position';
+import { MethodSignature } from '../../core/model/ArkSignature';
 
 /**
  * @category save
@@ -66,6 +68,9 @@ export class SourceMethod extends SourceBase {
 
     public getLine(): number {
         let line = this.method.getLine();
+        if (line === null && this.method.getDeclareLineCols()) {
+            line = getLineNo(this.method.getDeclareLineCols()![0]);
+        }
         if (line === null) {
             line = 0;
         }
@@ -76,7 +81,9 @@ export class SourceMethod extends SourceBase {
         const stmts: Stmt[] = [];
         const cfg = this.method.getCfg();
         if (cfg) {
-            cfg.getStmts().reverse().forEach(stmt => stmts.push(stmt));
+            cfg.getStmts()
+                .reverse()
+                .forEach((stmt) => stmts.push(stmt));
         }
         for (const stmt of stmts) {
             if (stmt.getOriginPositionInfo().getLineNo() > 0) {
@@ -94,10 +101,24 @@ export class SourceMethod extends SourceBase {
 
     private printMethod(method: ArkMethod): void {
         this.printDecorator(method.getDecorators());
-        this.printer.writeIndent().write(this.methodProtoToString(method));
+
+        let implementationSig = method.getImplementationSignature();
+
+        if (this.method.getDeclareSignatures()) {
+            for (const methodSig of this.method.getDeclareSignatures()!) {
+                this.printer.writeIndent().writeLine(`${this.methodProtoToString(methodSig)};`);
+            }
+        }
+
+        if (!implementationSig) {
+            return;
+        }
+
+        this.printer.writeIndent().write(this.methodProtoToString(implementationSig!));
+
         // abstract function no body
-        if (!method.getBody()) {
-            this.printer.writeLine(';');
+        if (SourceMethod.getPrinterOptions().noMethodBody) {
+            this.printer.writeIndent().writeLine(`;`);
             return;
         }
 
@@ -107,7 +128,7 @@ export class SourceMethod extends SourceBase {
         this.printer.decIndent();
 
         this.printer.writeIndent();
-        if (SourceUtils.isAnonymousMethod(method.getName())) {
+        if (PrinterUtils.isAnonymousMethod(method.getName())) {
             this.printer.write('}');
         } else {
             this.printer.writeLine('}');
@@ -119,48 +140,50 @@ export class SourceMethod extends SourceBase {
         this.printer.write(srcBody.dump());
     }
 
-    protected methodProtoToString(method: ArkMethod): string {
+    private methodProtoToString(methodSig: MethodSignature): string {
         let code = new ArkCodeBuffer();
-        code.writeSpace(this.modifiersToString(method.getModifiers()));
-        if (!SourceUtils.isAnonymousMethod(method.getName())) {
-            if (method.getDeclaringArkClass()?.isDefaultArkClass()) {
+        code.writeSpace(this.modifiersToString(this.method.getModifiers()));
+        if (!PrinterUtils.isAnonymousMethod(methodSig.getMethodSubSignature().getMethodName())) {
+            if (this.method.getDeclaringArkClass()?.isDefaultArkClass()) {
                 code.writeSpace('function');
             }
-            if (method.getAsteriskToken()) {
+            if (this.method.getAsteriskToken()) {
                 code.writeSpace('*');
             }
-            code.write(this.resolveMethodName(method.getName()));
+            code.write(this.resolveMethodName(methodSig.getMethodSubSignature().getMethodName()));
         }
-        const genericTypes = method.getGenericTypes();
+
+        const genericTypes = this.method.getGenericTypes();
         if (genericTypes && genericTypes.length > 0) {
-            let
-                typeParameters: string[] = [];
-            genericTypes.forEach((genericType) => {
-                typeParameters.push(this.transformer.typeToString(genericType));
-            });
             code.write(`<${this.transformer.typeArrayToString(genericTypes)}>`);
         }
 
         let parameters: string[] = [];
-        method.getParameters().forEach((parameter) => {
-            let str: string = parameter.getName();
-            if (parameter.hasDotDotDotToken()) {
-                str = `...${parameter.getName()}`;
-            }
-            if (parameter.isOptional()) {
-                str += '?';
-            }
-            if (parameter.getType()) {
-                str += ': ' + this.transformer.typeToString(parameter.getType());
-            }
-            parameters.push(str);
-        });
+        methodSig
+            .getMethodSubSignature()
+            .getParameters()
+            .forEach((parameter) => {
+                let str: string = parameter.getName();
+                if (parameter.hasDotDotDotToken()) {
+                    str = `...${parameter.getName()}`;
+                }
+                if (parameter.isOptional()) {
+                    str += '?';
+                }
+                if (parameter.getType()) {
+                    str += ': ' + this.transformer.typeToString(parameter.getType());
+                }
+                parameters.push(str);
+            });
         code.write(`(${parameters.join(', ')})`);
-        const returnType = method.getReturnType();
-        if (method.getName() !== 'constructor' && !(returnType instanceof UnknownType)) {
+        const returnType = methodSig.getMethodSubSignature().getReturnType();
+        if (
+            methodSig.getMethodSubSignature().getMethodName() !== 'constructor' &&
+            !(returnType instanceof UnknownType)
+        ) {
             code.write(`: ${this.transformer.typeToString(returnType)}`);
         }
-        if (SourceUtils.isAnonymousMethod(method.getName())) {
+        if (PrinterUtils.isAnonymousMethod(methodSig.getMethodSubSignature().getMethodName())) {
             code.write(' =>');
         }
         return code.toString();

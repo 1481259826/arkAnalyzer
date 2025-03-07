@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,13 +33,14 @@
  * }
  */
 import { ArkFile } from '../../core/model/ArkFile';
-import { Printer } from '../Printer';
-import { Dump } from './SourceBase';
+import { Dump } from '../base/BasePrinter';
 import { SourceClass } from './SourceClass';
 import { SourceMethod } from './SourceMethod';
-import { SourceExportInfo, SourceImportInfo } from './SourceModule';
 import { SourceNamespace } from './SourceNamespace';
-import { SourceUtils } from './SourceUtils';
+import { PrinterUtils } from '../base/PrinterUtils';
+import { printImports } from '../base/ImportPrinter';
+import { ExportPrinter } from '../base/ExportPrinter';
+import { Printer } from '../Printer';
 
 /**
  * @category save
@@ -56,9 +57,8 @@ export class SourceFilePrinter extends Printer {
     public dump(): string {
         this.printer.clear();
         // print imports
-        for (let info of this.arkFile.getImportInfos()) {
-            this.items.push(new SourceImportInfo(info));
-        }
+        this.items.push(...printImports(this.arkFile.getImportInfos(), this.printer.getIndent()));
+
         // print namespace
         for (let ns of this.arkFile.getNamespaces()) {
             this.items.push(new SourceNamespace(ns));
@@ -76,18 +76,18 @@ export class SourceFilePrinter extends Printer {
                             ).dumpDefaultMethod()
                         );
                     } else if (
-                        !SourceUtils.isAnonymousMethod(method.getName())
+                        !PrinterUtils.isAnonymousMethod(method.getName())
                     ) {
                         this.items.push(new SourceMethod(method));
                     }
                 }
-            } else if (!SourceUtils.isAnonymousClass(cls.getName())) {
+            } else if (!PrinterUtils.isAnonymousClass(cls.getName())) {
                 this.items.push(new SourceClass(cls));
             }
         }
         // print export
         for (let info of this.arkFile.getExportInfos()) {
-            this.items.push(new SourceExportInfo(info));
+            this.items.push(new ExportPrinter(info));
         }
 
         this.items.sort((a, b) => a.getLine() - b.getLine());
