@@ -47,17 +47,18 @@
  *
  */
 
-export type Word = Uint32Array;
-const BITWORD_SIZE = 32; // bits of a Word 
+export type Word = Uint16Array;
+const BITWORD_SIZE = 16; // bits of a Word 
+const DEFAULT_SIZE = 64;
 class SparseBitVectorElement {
     private ELEMENT_SIZE; // bits of element. Default as 128
     private BITWORDS_NUM;// number of words
     private bits: Word;
 
-    constructor(elementSize: number = 128) {
+    constructor(elementSize: number = DEFAULT_SIZE) {
         this.ELEMENT_SIZE = elementSize;
         this.BITWORDS_NUM = Math.ceil(this.ELEMENT_SIZE / BITWORD_SIZE);
-        this.bits = new Uint32Array(this.BITWORDS_NUM);
+        this.bits = new Uint16Array(this.BITWORDS_NUM);
     }
 
     word(idx: number): number {
@@ -65,7 +66,7 @@ class SparseBitVectorElement {
     }
 
     clone(): Word {
-        return new Uint32Array(this.bits);
+        return new Uint16Array(this.bits);
     }
 
     get elementSize(): number {
@@ -281,7 +282,7 @@ export class SparseBitVector {
     // key is actually the element index (normally it is in element)
     private elements: Map<number, SparseBitVectorElement> = new Map();
 
-    constructor(elementsSize: number = 128) {
+    constructor(elementsSize: number = DEFAULT_SIZE) {
         this.ELEMENT_SIZE = elementsSize;
     }
 
