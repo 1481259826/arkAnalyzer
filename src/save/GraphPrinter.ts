@@ -14,8 +14,8 @@
  */
 
 import { BaseEdge, BaseNode, NodeID } from '../core/graph/BaseExplicitGraph';
-import { GraphTraits } from '../core/graph/GraphTraits'
-import { Printer } from "./Printer";
+import { GraphTraits } from '../core/graph/GraphTraits';
+import { Printer } from './Printer';
 
 function escapeStr(input: string): string {
     let str = input;

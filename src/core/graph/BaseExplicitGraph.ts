@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {Kind, NodeID, GraphTraits} from './GraphTraits'
+import { Kind, NodeID, GraphTraits } from './GraphTraits';
 
 export {Kind, NodeID};
 export abstract class BaseEdge {

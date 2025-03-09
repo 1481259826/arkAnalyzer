@@ -129,7 +129,7 @@ class ReachingDefFlowGraph extends BaseImplicitGraph<RDNode> implements FlowGrap
                 if (!head) {
                     return;
                 }
-                let t = this.nodeToIdMap?.get(terminate)!;
+                let t = this.nodeToIdMap?.get(terminate!)!;
                 let h = this.nodeToIdMap?.get(head)!;
                 // Terminate's succ
                 let succ = this.succMap.get(t) ?? [];
@@ -173,7 +173,7 @@ export class ReachingDefTransferFunction implements TransferFunction<NodeID, DFN
         return result;
     }
 
-    private initGenKill(g: ReachingDefFlowGraph) {
+    private initGenKill(g: ReachingDefFlowGraph): void {
         let genValue2Nodes: Map<Value, DFNodeCollection> = new Map();
         // Init Gen
         g.getNodeToIdMap().forEach((id, node) => {

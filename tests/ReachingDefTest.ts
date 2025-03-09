@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License"); * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -32,7 +32,9 @@ function runDir(): Scene {
 let scene = runDir();
 scene.getMethods().forEach((m) => {
     let methodName = m.getName();
-    if (methodName === '%dflt') return;
+    if (methodName === '%dflt') {
+        return;
+    }
     let problem = new ReachingDefProblem(m);
     let solver = new MFPDataFlowSolver();
     let s = solver.calculateMopSolutionForwards(problem);
