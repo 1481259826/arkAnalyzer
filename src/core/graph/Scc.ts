@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-import { NodeID, BaseNode, GraphTraits } from './BaseExplicitGraph';
+import { BaseNode } from './BaseExplicitGraph';
+import { NodeID, GraphTraits } from './GraphTraits';
 
 type NodeSet = Set<NodeID>;
 type NodeStack = NodeID[];
@@ -56,7 +57,7 @@ class NodeSCCInfo {
  *   Wave Propagation and Deep Propagation for pointer Analysis
  *   CGO 2009
  */
-export class SCCDetection<Graph extends GraphTraits> {
+export class SCCDetection<Graph extends GraphTraits<BaseNode>> {
     // graph G = (V, E)
     private _G: Graph;
     // counter
@@ -152,7 +153,7 @@ export class SCCDetection<Graph extends GraphTraits> {
         this.setVisited(v);
 
         let node = this.getNode(v);
-        node.getOutgoingEdges().forEach(e => {
+        node.getOutgoingEdges().forEach((e) => {
             let w: NodeID = e.getDstID();
             if (!this.isVisited(w)) {
                 this.visit(w);

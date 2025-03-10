@@ -14,8 +14,8 @@
  */
 
 /**
- * SparseBitVector is a LLVM-interfaces-like data structure designed to efficiently 
- * represent and manipulate large sets of integers where the majority of the elements 
+ * SparseBitVector is a LLVM-interfaces-like data structure designed to efficiently
+ * represent and manipulate large sets of integers where the majority of the elements
  * are unset (i.e., sparse). It is particularly useful in scenarios where memory efficiency
  * is critical, and the set of integers contains large gaps between set bits.
  *
@@ -32,11 +32,11 @@
  * - **Iterable**: Provides an iterator to traverse all set bits in stored order.
  * - **Dynamic Resizing**: Automatically adjusts its internal structure as bits are set
  *   or reset.
- * 
+ *
  * Perforceman VS Array
  * - **Random Store**         2.5:1
  * - **Continuous Store**       1:1
- * - **Random Test**            1:6 
+ * - **Random Test**            1:6
  * - **Continuous Test**        1:1
  * - **Random Iterator**        4:1
  * - **Continuous Iterator**    2:1
@@ -47,17 +47,18 @@
  *
  */
 
-export type Word = Uint32Array;
-const BITWORD_SIZE = 32; // bits of a Word 
+export type Word = Uint16Array;
+const BITWORD_SIZE = 16; // bits of a Word
+const DEFAULT_SIZE = 64;
 class SparseBitVectorElement {
     private ELEMENT_SIZE; // bits of element. Default as 128
-    private BITWORDS_NUM;// number of words
+    private BITWORDS_NUM; // number of words
     private bits: Word;
 
-    constructor(elementSize: number = 128) {
+    constructor(elementSize: number = DEFAULT_SIZE) {
         this.ELEMENT_SIZE = elementSize;
         this.BITWORDS_NUM = Math.ceil(this.ELEMENT_SIZE / BITWORD_SIZE);
-        this.bits = new Uint32Array(this.BITWORDS_NUM);
+        this.bits = new Uint16Array(this.BITWORDS_NUM);
     }
 
     word(idx: number): number {
@@ -65,7 +66,7 @@ class SparseBitVectorElement {
     }
 
     clone(): Word {
-        return new Uint32Array(this.bits);
+        return new Uint16Array(this.bits);
     }
 
     get elementSize(): number {
@@ -85,7 +86,7 @@ class SparseBitVectorElement {
     set(bitIdx: number): void {
         const wordIndex = Math.floor(bitIdx / BITWORD_SIZE);
         const bitOffset = bitIdx % BITWORD_SIZE;
-        this.bits[wordIndex] |= (1 << bitOffset);
+        this.bits[wordIndex] |= 1 << bitOffset;
     }
 
     setWord(word: Word): void {
@@ -119,7 +120,7 @@ class SparseBitVectorElement {
     // Count the number of set bits in this element
     count(): number {
         let numBits = 0;
-        this.bits.forEach(word => {
+        this.bits.forEach((word) => {
             numBits += this.countBits(word);
         });
         return numBits;
@@ -232,7 +233,7 @@ class SparseBitVectorElement {
         // Step 2: Group bits into 4-bit chunks and add
         v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
         // Step 3: Group bits into 8-bit chunks and add
-        v = (v + (v >> 4)) & 0xF0F0F0F;
+        v = (v + (v >> 4)) & 0xf0f0f0f;
         // Step 4: Multiply by a magic number to sum all 8-bit chunks into the highest byte
         v = (v * 0x1010101) >> 24;
 
@@ -281,7 +282,7 @@ export class SparseBitVector {
     // key is actually the element index (normally it is in element)
     private elements: Map<number, SparseBitVectorElement> = new Map();
 
-    constructor(elementsSize: number = 128) {
+    constructor(elementsSize: number = DEFAULT_SIZE) {
         this.ELEMENT_SIZE = elementsSize;
     }
 
@@ -426,8 +427,12 @@ export class SparseBitVector {
         let rhsElems = rhs.elems;
         for (let p of this.elements) {
             let rhsElem = rhsElems.get(p[0]);
-            if (!rhsElem) { return false; }
-            if (!rhsElem.equals(p[1])) { return false; }
+            if (!rhsElem) {
+                return false;
+            }
+            if (!rhsElem.equals(p[1])) {
+                return false;
+            }
         }
         return true;
     }
@@ -493,7 +498,7 @@ export class SparseBitVector {
         }
 
         if (needDeleteIdx.size > 0) {
-            needDeleteIdx.forEach(idx => this.elements.delete(idx));
+            needDeleteIdx.forEach((idx) => this.elements.delete(idx));
             changed = true;
         }
 
@@ -524,7 +529,7 @@ export class SparseBitVector {
         }
 
         if (needDeleteIdx.size > 0) {
-            needDeleteIdx.forEach(idx => this.elements.delete(idx));
+            needDeleteIdx.forEach((idx) => this.elements.delete(idx));
             changed = true;
         }
 
