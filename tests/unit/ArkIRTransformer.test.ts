@@ -58,6 +58,18 @@ import {
     ClosureFunction_Expect_IR,
     ClosureNamespaceClassMethod_Expect_IR,
     ClosureNamespaceFunction_Expect_IR,
+    MultipleAnonymousMethod1_Expect_IR,
+    MultipleAnonymousMethod2_Expect_IR, MultipleAnonymousMethod3_Expect_IR, MultipleAnonymousMethod4_Expect_IR, MultipleCallMethod4_Expect_IR,
+    MultipleNested111Method1_Expect_IR,
+    MultipleNested11Method1_Expect_IR,
+    MultipleNested1Method1_Expect_IR,
+    MultipleNested222Method1_Expect_IR,
+    MultipleNested22Method1_Expect_IR,
+    MultipleNested2Method1_Expect_IR,
+    MultipleNested33Method1_Expect_IR,
+    MultipleNested3Method1_Expect_IR, MultipleNestedInNestedMethod4_Expect_IR, MultipleNestedMethod4_Expect_IR,
+    MultipleOuterMethod1_Expect_IR,
+    MultipleOuterMethod2_Expect_IR, MultipleOuterMethod3_Expect_IR, MultipleOuterMethod4_Expect_IR,
     NoOverloadMethod_Expect_IR,
     NoOverloadMethodWithBody2_Expect_IR,
     NoOverloadMethodWithBody_Expect_IR,
@@ -493,6 +505,7 @@ describe('closure Test', () => {
         assert.isDefined(outerMethod);
         testMethodClosure(outerMethod!, BasicOuterMethod4_Expect_IR);
 
+        // TODO: 此处的callMethod(3)应该是ptrInvoke，args需要加入闭包变量，当前错误识别成statcInvoke，args中缺失闭包变量。需类型推导时处理
         const callMethod = arkFile?.getDefaultClass().getMethods().find((method) => (method.getName() === 'callMethod4'));
         assert.isDefined(callMethod);
         testMethodClosure(callMethod!, CallMethod4_Expect_IR);
@@ -540,5 +553,96 @@ describe('closure Test', () => {
         const arkMethod = arkNS?.getClassWithName('ClosureClass')?.getMethods().find((method) => (method.getName() === methodName));
         assert.isDefined(arkMethod);
         testMethodClosure(arkMethod as ArkMethod, ClosureNamespaceClassMethod_Expect_IR);
+    });
+});
+
+describe('multiple closure Test', () => {
+    const scene = buildScene(path.join(BASE_DIR, 'function'));
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith('ClosureParamsTest.ts'));
+    const multipleTestClass = arkFile?.getClassWithName('MultipleNestedTest');
+
+    it('basic test for function declaration', async () => {
+        const outerMethod = multipleTestClass?.getMethods().find((method) => (method.getName() === 'outerMethod1'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, MultipleOuterMethod1_Expect_IR);
+
+        const nested1Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested1Method1$outerMethod1'));
+        assert.isDefined(nested1Method);
+        testMethodClosure(nested1Method!, MultipleNested1Method1_Expect_IR);
+
+        const nested2Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested2Method1$%nested1Method1$outerMethod1'));
+        assert.isDefined(nested2Method);
+        testMethodClosure(nested2Method!, MultipleNested2Method1_Expect_IR);
+
+        const nested3Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested3Method1$%nested2Method1$%nested1Method1$outerMethod1'));
+        assert.isDefined(nested3Method);
+        testMethodClosure(nested3Method!, MultipleNested3Method1_Expect_IR);
+
+        const nested11Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested11Method1$outerMethod1'));
+        assert.isDefined(nested11Method);
+        testMethodClosure(nested11Method!, MultipleNested11Method1_Expect_IR);
+
+        const nested22Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested22Method1$%nested11Method1$outerMethod1'));
+        assert.isDefined(nested22Method);
+        testMethodClosure(nested22Method!, MultipleNested22Method1_Expect_IR);
+
+        const nested33Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested33Method1$%nested11Method1$outerMethod1'));
+        assert.isDefined(nested33Method);
+        testMethodClosure(nested33Method!, MultipleNested33Method1_Expect_IR);
+
+        const nested111Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested111Method1$outerMethod1'));
+        assert.isDefined(nested111Method);
+        testMethodClosure(nested111Method!, MultipleNested111Method1_Expect_IR);
+
+        const nested222Method = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nested222Method1$%nested111Method1$outerMethod1'));
+        assert.isDefined(nested222Method);
+        testMethodClosure(nested222Method!, MultipleNested222Method1_Expect_IR);
+    });
+
+    it('anonymous nested function declared in forEach', async () => {
+        const outerMethod = multipleTestClass?.getMethods().find((method) => (method.getName() === 'outerMethod2'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, MultipleOuterMethod2_Expect_IR);
+
+        const anonymousMethod1 = multipleTestClass?.getMethods().find((method) => (method.getName() === '%AM1$outerMethod2'));
+        assert.isDefined(anonymousMethod1);
+        testMethodClosure(anonymousMethod1!, MultipleAnonymousMethod1_Expect_IR);
+
+        const anonymousMethod2 = multipleTestClass?.getMethods().find((method) => (method.getName() === '%AM2$%AM1$outerMethod2'));
+        assert.isDefined(anonymousMethod2);
+        testMethodClosure(anonymousMethod2!, MultipleAnonymousMethod2_Expect_IR);
+    });
+
+    it('ptr invoke anonymous nested function', async () => {
+        const outerMethod = multipleTestClass?.getMethods().find((method) => (method.getName() === 'outerMethod3'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, MultipleOuterMethod3_Expect_IR);
+
+        const anonymousMethod3 = multipleTestClass?.getMethods().find((method) => (method.getName() === '%AM3$outerMethod3'));
+        assert.isDefined(anonymousMethod3);
+        testMethodClosure(anonymousMethod3!, MultipleAnonymousMethod3_Expect_IR);
+
+        const anonymousMethod4 = multipleTestClass?.getMethods().find((method) => (method.getName() === '%AM4$%AM3$outerMethod3'));
+        assert.isDefined(anonymousMethod4);
+        testMethodClosure(anonymousMethod4!, MultipleAnonymousMethod4_Expect_IR);
+    });
+
+    it('return nested function', async () => {
+        const outerMethod = multipleTestClass?.getMethods().find((method) => (method.getName() === 'outerMethod4'));
+        assert.isDefined(outerMethod);
+        testMethodClosure(outerMethod!, MultipleOuterMethod4_Expect_IR);
+
+        const nestedMethod4 = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nestedMethod4$outerMethod4'));
+        assert.isDefined(nestedMethod4);
+        testMethodClosure(nestedMethod4!, MultipleNestedMethod4_Expect_IR);
+
+        const nestedInNestedMethod4 = multipleTestClass?.getMethods().find((method) => (method.getName() === '%nestedInNestedMethod4$%nestedMethod4$outerMethod4'));
+        assert.isDefined(nestedInNestedMethod4);
+        testMethodClosure(nestedInNestedMethod4!, MultipleNestedInNestedMethod4_Expect_IR);
+
+        // TODO: 此处的callMethod(3)应该是ptrInvoke，args需要加入闭包变量，当前错误识别成statcInvoke，args中缺失闭包变量。需类型推导时处理
+        const callMethod = multipleTestClass?.getMethods().find((method) => (method.getName() === 'callMethod4'));
+        assert.isDefined(callMethod);
+        testMethodClosure(callMethod!, MultipleCallMethod4_Expect_IR);
     });
 });

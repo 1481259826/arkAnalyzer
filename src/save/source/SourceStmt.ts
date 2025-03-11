@@ -22,7 +22,7 @@ import {
     NormalBinaryOperator,
 } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
-import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../../core/base/Ref';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef } from '../../core/base/Ref';
 import {
     ArkAliasTypeDefineStmt,
     ArkAssignStmt,
@@ -173,7 +173,7 @@ export class SourceAssignStmt extends SourceStmt {
         if (
             (this.leftOp instanceof Local && this.leftOp.getName() === 'this') ||
             (this.rightOp instanceof Constant && this.rightOp.getValue() === 'undefined') ||
-            this.rightOp instanceof ArkParameterRef
+            this.rightOp instanceof ArkParameterRef || this.rightOp instanceof ClosureFieldRef
         ) {
             this.setText('');
             this.dumpType = AssignStmtDumpType.NORMAL;

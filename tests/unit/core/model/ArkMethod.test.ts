@@ -64,8 +64,7 @@ describe('Nested Method with Function Declaration Statement', () => {
        const global = method!.getBody()?.getUsedGlobals()?.get('innerInnerFunction1');
        assert.isDefined(global);
 
-       // TODO： the type should be FunctionType after inferType support
-       expect(global!.getType().toString()).toEqual('unknown');
+       expect(global!.getType().toString()).toEqual('@method/method.ts: %dflt.%innerInnerFunction1$%innerFunction1$outerFunction1()');
     });
 
     it('test nested method in nested method', async () => {
@@ -78,7 +77,10 @@ describe('Nested Method with Function Declaration Statement', () => {
             'instanceinvoke console.<@%unk/%unk: .log()>(\'This is nested function in nested function with function declaration.\')');
         const locals = method?.getBody()?.getLocals();
         assert.isDefined(locals);
-        expect((locals as Map<string, Local>).size).toEqual(2);
+        expect((locals as Map<string, Local>).size).toEqual(1);
+        const globals = method?.getBody()?.getUsedGlobals();
+        assert.isDefined(globals);
+        expect(globals!.size).toEqual(1);
     });
 
     it('test outer method', async() => {
@@ -93,8 +95,7 @@ describe('Nested Method with Function Declaration Statement', () => {
         const global = method!.getBody()?.getUsedGlobals()?.get('innerFunction1');
         assert.isDefined(global);
 
-        // TODO： the type should be FunctionType after inferType support
-        expect(global!.getType().toString()).toEqual('unknown');
+        expect(global!.getType().toString()).toEqual('@method/method.ts: %dflt.%innerFunction1$outerFunction1()');
     });
 });
 
@@ -212,8 +213,7 @@ describe('Recursive Method', () => {
         const global = method!.getBody()?.getUsedGlobals()?.get('factorial');
         assert.isDefined(global);
 
-        // TODO： the type should be FunctionType after inferType support
-        expect(global!.getType().toString()).toEqual('unknown');
+        expect(global!.getType().toString()).toEqual('@method/method.ts: %dflt.%factorial$outerFunction5(number)');
 
         expect(method!.getReturnType().toString()).toEqual('number');
     })
@@ -271,8 +271,7 @@ describe('Nested Method in Class', () => {
         innerFunction1Value = globals!.get('innerFunction1');
         assert.isDefined(innerFunction1Value);
 
-        // TODO： the type should be FunctionType after inferType support
-        expect(innerFunction1Value!.getType().toString()).toEqual('unknown');
+        expect(innerFunction1Value!.getType().toString()).toEqual('@method/method.ts: NestedTestClass.%innerFunction1$outerMethod()');
         const innerFunction2Local = locals?.get('innerFunction2');
         assert.isDefined(innerFunction2Local);
         expect(innerFunction2Local!.getType().toString()).toEqual('@method/method.ts: NestedTestClass.%AM1$outerMethod()');

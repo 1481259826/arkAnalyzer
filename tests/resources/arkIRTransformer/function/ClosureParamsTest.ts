@@ -134,3 +134,79 @@ namespace closureNamespace {
         }
     }
 }
+
+class MultipleNestedTest {
+    public listeners: number[][] = [[]];
+
+    outerMethod1(x: string): number {
+        const a = 3;
+        const b = 'xyz';
+        function nested1Method1(b: number): number {
+            const c = 'xyz';
+            function nested2Method1(c: number): number {
+                function nested3Method1(): number {
+                    return a + b + c;
+                }
+                return nested3Method1();
+            }
+            return nested2Method1(1);
+        }
+
+        function nested11Method1(b: number): number {
+            const c = 'xyz';
+            function nested22Method1(c: number): number {
+                return b + c;
+            }
+            function nested33Method1(): string {
+                return x;
+            }
+            return nested22Method1(1);
+        }
+
+        function nested111Method1(b: number): number {
+            const c = 'xyz';
+            function nested222Method1(c: number): number {
+                return b + c;
+            }
+            return nested222Method1(1);
+        }
+        return nested1Method1(2);
+    }
+
+    outerMethod2(a: number): void {
+        const x = 123;
+        this.listeners.forEach(listener => {
+            listener.forEach(item => {
+                console.log(a + item);
+                console.log(listener.length);
+            });
+        });
+    }
+
+    outerMethod3(a: string): void {
+        let nestedMethod3 = function(): void {
+            const b = 'abc';
+            const x = 123;
+            let nestedInNestedMethod3 = function(): void {
+                console.log(a + b);
+            };
+            nestedInNestedMethod3();
+        };
+        nestedMethod3();
+    }
+
+    outerMethod4(): (a: number) => void {
+        const b = 3;
+        return function nestedMethod4(a: number): () => void {
+            const x = 123;
+            return function nestedInNestedMethod4(): void {
+                a += b;
+            };
+        };
+    }
+
+    callMethod4(): void {
+        let callMethod = this.outerMethod4();
+        callMethod(3);
+    }
+}
