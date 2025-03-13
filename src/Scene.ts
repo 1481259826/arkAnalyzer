@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -91,6 +91,9 @@ export class Scene {
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
     private options!: SceneOptions;
     private indexPathArray = ['Index.ets', 'Index.ts', 'Index.d.ets', 'Index.d.ts', 'index.ets', 'index.ts', 'index.d.ets', 'index.d.ts'];
+
+    private unhandledFilePaths: string[] = [];
+    private unhandledSdkFilePaths: string[] = [];
 
     constructor() {
     }
@@ -312,10 +315,16 @@ export class Scene {
     private genArkFiles() {
         this.projectFiles.forEach((file) => {
             logger.info('=== parse file:', file);
-            let arkFile: ArkFile = new ArkFile();
-            arkFile.setScene(this);
-            buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
-            this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
+            try {
+                const arkFile: ArkFile = new ArkFile();
+                arkFile.setScene(this);
+                buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
+                this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
+            } catch (error) {
+                logger.error('Error parsing file:', file, error);
+                this.unhandledFilePaths.push(file);
+                return;
+            }
         });
         this.buildAllMethodBody();
         this.addDefaultConstructors();
@@ -334,8 +343,11 @@ export class Scene {
             return;
         }
         const fileSignature = new FileSignature(this.getProjectName(), path.relative(this.getRealProjectDir(), projectFile));
-        if (!this.filesMap.has(fileSignature.toMapKey()) && !this.isRepeatBuildFile(projectFile)) {
-            let arkFile = new ArkFile();
+        if (this.filesMap.has(fileSignature.toMapKey()) || this.isRepeatBuildFile(projectFile)) {
+            return;
+        }
+        try {
+            const arkFile = new ArkFile();
             arkFile.setScene(this);
             buildArkFileFromFile(projectFile, this.getRealProjectDir(), arkFile, this.getProjectName());
             for (const [modulePath, moduleName] of this.modulePath2NameMap) {
@@ -345,13 +357,16 @@ export class Scene {
                 }
             }
             this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
-
             const importInfos = arkFile.getImportInfos();
-            let repeatFroms: string[] = [];
+            const repeatFroms: string[] = [];
             this.findDependencyFiles(importInfos, arkFile, repeatFroms);
 
             const exportInfos = arkFile.getExportInfos();
             this.findDependencyFiles(exportInfos, arkFile, repeatFroms);
+        } catch (error) {
+            logger.error('Error parsing file:', projectFile, error);
+            this.unhandledFilePaths.push(projectFile);
+            return;
         }
     }
 
@@ -543,22 +558,29 @@ export class Scene {
         const allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         allFiles.forEach((file) => {
             logger.info('=== parse sdk file:', file);
-            let arkFile: ArkFile = new ArkFile();
-            arkFile.setScene(this);
-            buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
-            ModelUtils.getAllClassesInFile(arkFile).forEach(cls => {
-                cls.getDefaultArkMethod()?.buildBody();
-                cls.getDefaultArkMethod()?.freeBodyBuilder();
-            });
-            const fileSig = arkFile.getFileSignature().toMapKey();
-            this.sdkArkFilesMap.set(fileSig, arkFile);
-            SdkUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
+            try {
+                const arkFile: ArkFile = new ArkFile();
+                arkFile.setScene(this);
+                buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
+                ModelUtils.getAllClassesInFile(arkFile).forEach(cls => {
+                    cls.getDefaultArkMethod()?.buildBody();
+                    cls.getDefaultArkMethod()?.freeBodyBuilder();
+                });
+                const fileSig = arkFile.getFileSignature().toMapKey();
+                this.sdkArkFilesMap.set(fileSig, arkFile);
+                SdkUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
+            } catch (error) {
+                logger.error('Error parsing file:', file, error);
+                this.unhandledSdkFilePaths.push(file);
+                return;
+            }
         });
     }
 
     /**
-     * Build the scene for harmony project. It resolves the file path of the project first, and then fetches dependencies from this file.
-     * Next, build a `ModuleScene` for this project to generate {@link ArkFile}. Finally, it build bodies of all methods, generate extended classes, and add DefaultConstructors.
+     * Build the scene for harmony project. It resolves the file path of the project first, and then fetches
+     * dependencies from this file. Next, build a `ModuleScene` for this project to generate {@link ArkFile}. Finally,
+     * it build bodies of all methods, generate extended classes, and add DefaultConstructors.
      */
     public buildScene4HarmonyProject() {
         this.buildOhPkgContentMap();
@@ -687,6 +709,20 @@ export class Scene {
         }
     }
 
+    /*
+     * Returns the absolute file paths that cannot be handled currently.
+     */
+    public getUnhandledFilePaths(): string[] {
+        return this.unhandledFilePaths;
+    }
+
+    /*
+     * Returns the absolute sdk file paths that cannot be handled currently.
+     */
+    public getUnhandledSdkFilePaths(): string[] {
+        return this.unhandledSdkFilePaths;
+    }
+
     public setFile(file: ArkFile): void {
         this.filesMap.set(file.getFileSignature().toMapKey(), file);
     }
@@ -696,7 +732,8 @@ export class Scene {
     }
 
     /**
-     * Get files of a {@link Scene}. Generally, a project includes several ets/ts files that define the different class. We need to generate {@link ArkFile} objects from these ets/ts files.
+     * Get files of a {@link Scene}. Generally, a project includes several ets/ts files that define the different
+     * class. We need to generate {@link ArkFile} objects from these ets/ts files.
      * @returns The array of {@link ArkFile} from `scene.filesMap.values()`.
      * @example
      * 1. In inferSimpleTypes() to check arkClass and arkMethod.
@@ -953,10 +990,10 @@ export class Scene {
 
     /**
      * Infer type for each non-default method. It infers the type of each field/local/reference.
-     * For example, the statement `let b = 5;`, the type of local `b` is `NumberType`; and for the statement `let s = 'hello';`, the type of local `s` is `StringType`. The detailed types are defined in the Type.ts file.
+     * For example, the statement `let b = 5;`, the type of local `b` is `NumberType`; and for the statement `let s =
+     * 'hello';`, the type of local `s` is `StringType`. The detailed types are defined in the Type.ts file.
      * @example
      * 1. Infer the type of each class field and method field.
-
      ```typescript
      const scene = new Scene();
      scene.buildSceneFromProjectDir(sceneConfig);
@@ -1335,12 +1372,18 @@ export class ModuleScene {
     private genArkFiles(supportFileExts: string[]) {
         getAllFiles(this.modulePath, supportFileExts, this.projectScene.getOptions().ignoreFileNames).forEach((file) => {
             logger.info('=== parse file:', file);
-            let arkFile: ArkFile = new ArkFile();
-            arkFile.setScene(this.projectScene);
-            arkFile.setModuleScene(this);
-            buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,
-                this.projectScene.getProjectName());
-            this.projectScene.setFile(arkFile);
+            try {
+                const arkFile: ArkFile = new ArkFile();
+                arkFile.setScene(this.projectScene);
+                arkFile.setModuleScene(this);
+                buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,
+                    this.projectScene.getProjectName());
+                this.projectScene.setFile(arkFile);
+            } catch (error) {
+                logger.error('Error parsing file:', file, error);
+                this.projectScene.getUnhandledFilePaths().push(file);
+                return;
+            }
         });
     }
 }
