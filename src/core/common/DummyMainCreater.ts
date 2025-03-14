@@ -21,6 +21,7 @@ import {
 } from '../../utils/entryMethodUtils';
 import { Constant } from '../base/Constant';
 import {
+    AbstractInvokeExpr,
     ArkConditionExpr,
     ArkInstanceInvokeExpr,
     ArkNewExpr,
@@ -114,7 +115,7 @@ export class DummyMainCreater {
 
         let defaultMethods: ArkMethod[] = [];
         for (const method of this.entryMethods) {
-            if (method.getDeclaringArkClass().isDefaultArkClass()) {
+            if (method.getDeclaringArkClass().isDefaultArkClass() || method.isStatic()) {
                 defaultMethods.push(method);
             } else {
                 const declaringArkClass = method.getDeclaringArkClass();
@@ -126,7 +127,7 @@ export class DummyMainCreater {
                     }
                 }
                 if (!newLocal) {
-                    newLocal = new Local('temp' + this.tempLocalIndex, new ClassType(declaringArkClass.getSignature()));
+                    newLocal = new Local('%' + this.tempLocalIndex, new ClassType(declaringArkClass.getSignature()));
                     this.tempLocalIndex++;
                 }
                 this.classLocalMap.set(method, newLocal);
@@ -142,12 +143,7 @@ export class DummyMainCreater {
         this.scene.addToMethodsMap(this.dummyMain);
     }
 
-    private createDummyMainCfg(): Cfg {
-        const dummyCfg = new Cfg();
-        dummyCfg.setDeclaringMethod(this.dummyMain);
-
-        const firstBlock = new BasicBlock();
-
+    private addStaticInit(dummyCfg: Cfg, firstBlock: BasicBlock): void {
         let isStartingStmt = true;
         for (const method of this.scene.getStaticInitMethods()) {
             const staticInvokeExpr = new ArkStaticInvokeExpr(method.getSignature(), []);
@@ -158,43 +154,55 @@ export class DummyMainCreater {
             }
             firstBlock.addStmt(invokeStmt);
         }
+    }
 
+    private addClassInit(firstBlock: BasicBlock): void {
         const locals = Array.from(new Set(this.classLocalMap.values()));
         for (const local of locals) {
             if (!local) {
                 continue;
             }
-            let clsType = local.getType() as ClassType
+            let clsType = local.getType() as ClassType;
             let cls = this.scene.getClass(clsType.getClassSignature())!;
             const assStmt = new ArkAssignStmt(local!, new ArkNewExpr(clsType));
             firstBlock.addStmt(assStmt);
+            local.setDeclaringStmt(assStmt);
             let consMtd = cls.getMethodWithName(CONSTRUCTOR_NAME);
             if (consMtd) {
-                let ivkExpr = new ArkInstanceInvokeExpr(local, consMtd.getSignature(), [])
+                let ivkExpr = new ArkInstanceInvokeExpr(local, consMtd.getSignature(), []);
                 let ivkStmt = new ArkInvokeStmt(ivkExpr);
                 firstBlock.addStmt(ivkStmt);
             }
         }
+    }
 
-        const countLocal = new Local('count', NumberType.getInstance());
-        const zero = ValueUtil.getOrCreateNumberConst(0);
-        const countAssignStmt = new ArkAssignStmt(countLocal, zero);
+    private addParamInit(method: ArkMethod, paramLocals: Local[], invokeBlock: BasicBlock): void {
+        let paramIdx = 0;
+        for (const param of method.getParameters()) {
+            let paramType: Type | undefined = param.getType();
+            // In ArkIR from abc scenario, param type is undefined in some cases
+            // Then try to get it from super class(SDK)
+            // TODO - need handle method overload to get the correct method
+            if (!paramType) {
+                let superCls = method.getDeclaringArkClass().getSuperClass();
+                let methodInSuperCls = superCls?.getMethodWithName(method.getName());
+                if (methodInSuperCls) {
+                    paramType = methodInSuperCls.getParameters().at(paramIdx)?.getType();
+                    method = methodInSuperCls;
+                }
+            }
+            const paramLocal = new Local('%' + this.tempLocalIndex++, paramType);
+            paramLocals.push(paramLocal);
+            if (paramType instanceof ClassType) {
+                const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(paramType));
+                invokeBlock.addStmt(assStmt);
+            }
+            paramIdx++;
+        }
+    }
 
-        const truE = ValueUtil.getBooleanConstant(true);
-        const conditionTrue = new ArkConditionExpr(truE, zero, RelationalBinaryOperator.Equality);
-        const whileStmt = new ArkIfStmt(conditionTrue);
-        firstBlock.addStmt(countAssignStmt);
-
-        dummyCfg.addBlock(firstBlock);
-        dummyCfg.setStartingStmt(firstBlock.getStmts()[0]);
-
-        const whileBlock = new BasicBlock();
-        whileBlock.addStmt(whileStmt);
-        dummyCfg.addBlock(whileBlock);
-        firstBlock.addSuccessorBlock(whileBlock);
-        whileBlock.addPredecessorBlock(firstBlock);
+    private addBranches(whileBlock: BasicBlock, countLocal: Local, dummyCfg: Cfg): void {
         let lastBlocks: BasicBlock[] = [whileBlock];
-
         let count = 0;
         for (let method of this.entryMethods) {
             count++;
@@ -207,33 +215,16 @@ export class DummyMainCreater {
                 ifBlock.addPredecessorBlock(block);
                 block.addSuccessorBlock(ifBlock);
             }
-
             const invokeBlock = new BasicBlock();
             const paramLocals: Local[] = [];
-            let paramIdx = 0;
-            for (const param of method.getParameters()) {
-                let paramType: Type | undefined = param.getType();
-                // In ArkIR from abc scenario, param type is undefined in some cases
-                // Then try to get it from super class(SDK)
-                // TODO - need handle method overload to get the correct method
-                if (!paramType) {
-                    let superCls = method.getDeclaringArkClass().getSuperClass();
-                    let methodInSuperCls = superCls?.getMethodWithName(method.getName());
-                    if (methodInSuperCls) {
-                        paramType = methodInSuperCls.getParameters().at(paramIdx)?.getType();
-                        method = methodInSuperCls;
-                    }
-                }
-                const paramLocal = new Local('temp' + this.tempLocalIndex++, paramType);
-                paramLocals.push(paramLocal);
-                if (paramType instanceof ClassType) {
-                    const assStmt = new ArkAssignStmt(paramLocal, new ArkNewExpr(paramType));
-                    invokeBlock.addStmt(assStmt);
-                }
-                paramIdx++;
+            this.addParamInit(method, paramLocals, invokeBlock);
+            const local = this.classLocalMap.get(method);
+            let invokeExpr: AbstractInvokeExpr;
+            if (local) {
+                invokeExpr = new ArkInstanceInvokeExpr(local, method.getSignature(), paramLocals);
+            } else {
+                invokeExpr = new ArkStaticInvokeExpr(method.getSignature(), paramLocals);
             }
-            const local = this.classLocalMap.get(method)!;
-            let invokeExpr = new ArkInstanceInvokeExpr(local, method.getSignature(), paramLocals);
             const invokeStmt = new ArkInvokeStmt(invokeExpr);
             invokeBlock.addStmt(invokeStmt);
             dummyCfg.addBlock(invokeBlock);
@@ -245,13 +236,35 @@ export class DummyMainCreater {
             block.addSuccessorBlock(whileBlock);
             whileBlock.addPredecessorBlock(block);
         }
+    }
+
+    private createDummyMainCfg(): Cfg {
+        const dummyCfg = new Cfg();
+        dummyCfg.setDeclaringMethod(this.dummyMain);
+        const firstBlock = new BasicBlock();
+        this.addStaticInit(dummyCfg, firstBlock);
+        this.addClassInit(firstBlock);
+        const countLocal = new Local('count', NumberType.getInstance());
+        const zero = ValueUtil.getOrCreateNumberConst(0);
+        const countAssignStmt = new ArkAssignStmt(countLocal, zero);
+        const truE = ValueUtil.getBooleanConstant(true);
+        const conditionTrue = new ArkConditionExpr(truE, zero, RelationalBinaryOperator.Equality);
+        const whileStmt = new ArkIfStmt(conditionTrue);
+        firstBlock.addStmt(countAssignStmt);
+        dummyCfg.addBlock(firstBlock);
+        dummyCfg.setStartingStmt(firstBlock.getStmts()[0]);
+        const whileBlock = new BasicBlock();
+        whileBlock.addStmt(whileStmt);
+        dummyCfg.addBlock(whileBlock);
+        firstBlock.addSuccessorBlock(whileBlock);
+        whileBlock.addPredecessorBlock(firstBlock);
+        this.addBranches(whileBlock, countLocal, dummyCfg);
         const returnStmt = new ArkReturnVoidStmt();
         const returnBlock = new BasicBlock();
         returnBlock.addStmt(returnStmt);
         dummyCfg.addBlock(returnBlock);
         whileBlock.addSuccessorBlock(returnBlock);
         returnBlock.addPredecessorBlock(whileBlock);
-
         return dummyCfg;
     }
 
