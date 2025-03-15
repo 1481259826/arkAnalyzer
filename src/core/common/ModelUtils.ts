@@ -37,7 +37,14 @@ import path from 'path';
 import { Sdk } from '../../Config';
 import { ALL, DEFAULT, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
-import { AnnotationNamespaceType, ClassType, FunctionType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
+import {
+    AnnotationNamespaceType,
+    ClassType,
+    FunctionType,
+    Type,
+    UnclearReferenceType,
+    UnknownType
+} from '../base/Type';
 import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
@@ -390,8 +397,16 @@ export class ModelUtils {
         const start = parentName.indexOf(NAME_DELIMITER);
         let invokeMethod;
         if (start < 0) {
-            const cls = arkMethod.getDeclaringArkClass();
-            invokeMethod = cls.getDefaultArkMethod() ?? cls.getDeclaringArkFile().getDefaultClass()?.getDefaultArkMethod();
+            const className = arkMethod.getDeclaringArkClass().getName();
+            const outerStart = className.indexOf(NAME_DELIMITER);
+            const outerEnd = className.lastIndexOf('.');
+            if (outerStart > -1 && outerEnd > -1) {
+                invokeMethod = arkMethod.getDeclaringArkFile().getClassWithName(className.substring(outerStart + 1, outerEnd))
+                    ?.getMethodWithName(className.substring(outerEnd + 1));
+            } else {
+                const cls = arkMethod.getDeclaringArkClass();
+                invokeMethod = cls.getDefaultArkMethod() ?? cls.getDeclaringArkFile().getDefaultClass()?.getDefaultArkMethod();
+            }
         } else {
             parentName = parentName.substring(start + 1);
             invokeMethod = arkMethod.getDeclaringArkClass().getMethodWithName(parentName);

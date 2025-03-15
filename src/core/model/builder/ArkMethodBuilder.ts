@@ -104,6 +104,7 @@ export function buildArkMethodFromArkClass(methodNode: MethodLikeNode, declaring
     const methodName = buildMethodName(methodNode, declaringClass, sourceFile, declaringMethod);
     const methodParameters: MethodParameter[] = [];
     buildParameters(methodNode.parameters, mtd, sourceFile).forEach((parameter) => {
+        buildGenericType(parameter.getType(), mtd);
         methodParameters.push(parameter);
     });
     let returnType = UnknownType.getInstance();

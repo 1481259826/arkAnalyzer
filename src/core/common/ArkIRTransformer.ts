@@ -69,6 +69,8 @@ import { ArkValueTransformer } from './ArkValueTransformer';
 import { ImportInfo } from '../model/ArkImport';
 import { TypeInference } from './TypeInference';
 import { AbstractTypeExpr } from '../base/TypeExpr';
+import { buildNormalArkClassFromArkMethod } from '../model/builder/ArkClassBuilder';
+import { ArkClass } from '../model/ArkClass';
 
 export type ValueAndStmts = {
     value: Value,
@@ -174,6 +176,8 @@ export class ArkIRTransformer {
             stmts = this.functionDeclarationToStmts(node);
         } else if (ts.isExportAssignment(node)) {
             stmts = this.expressionInExportToStmts(node.expression);
+        } else if (ts.isClassDeclaration(node)) {
+            stmts = this.classDeclarationToStmts(node);
         }
 
         this.mapStmtsToTsStmt(stmts, node);
@@ -194,6 +198,17 @@ export class ArkIRTransformer {
             ModelUtils.implicitArkUIBuilderMethods.add(arkMethod);
         }
         buildArkMethodFromArkClass(functionDeclarationNode, declaringClass, arkMethod, this.sourceFile, this.declaringMethod);
+        return [];
+    }
+
+    private classDeclarationToStmts(node: ts.ClassDeclaration): Stmt[] {
+        const cls = new ArkClass();
+        const declaringArkNamespace = this.declaringMethod.getDeclaringArkClass().getDeclaringArkNamespace();
+        if (declaringArkNamespace) {
+            cls.setDeclaringArkNamespace(declaringArkNamespace);
+        }
+        cls.setDeclaringArkFile(this.declaringMethod.getDeclaringArkFile());
+        buildNormalArkClassFromArkMethod(node, cls, this.sourceFile, this.declaringMethod);
         return [];
     }
 
@@ -278,15 +293,15 @@ export class ArkIRTransformer {
             return this.shouldGenerateExtraAssignStmt(expression.expression);
         }
         if ((ts.isBinaryExpression(expression) && (expression.operatorToken.kind === ts.SyntaxKind.FirstAssignment ||
-                                                   ArkValueTransformer.isCompoundAssignmentOperator(expression.operatorToken.kind))) ||
+                ArkValueTransformer.isCompoundAssignmentOperator(expression.operatorToken.kind))) ||
             ts.isEtsComponentExpression(expression) || ts.isVoidExpression(expression) ||
             ts.isNewExpression(expression) || ts.isCallExpression(expression) ||
             (ts.isPrefixUnaryExpression(expression) &&
-             (expression.operator === ts.SyntaxKind.PlusPlusToken ||
-              expression.operator === ts.SyntaxKind.MinusMinusToken)) ||
+                (expression.operator === ts.SyntaxKind.PlusPlusToken ||
+                    expression.operator === ts.SyntaxKind.MinusMinusToken)) ||
             (ts.isPostfixUnaryExpression(expression) &&
-             (expression.operator === ts.SyntaxKind.PlusPlusToken ||
-              expression.operator === ts.SyntaxKind.MinusMinusToken))) {
+                (expression.operator === ts.SyntaxKind.PlusPlusToken ||
+                    expression.operator === ts.SyntaxKind.MinusMinusToken))) {
             return false;
         }
 
