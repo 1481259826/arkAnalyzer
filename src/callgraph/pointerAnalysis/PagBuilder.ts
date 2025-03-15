@@ -168,7 +168,9 @@ export class PagBuilder {
         let fpag = new FuncPag();
         for (let stmt of cfg.getStmts()) {
             if (stmt instanceof ArkAssignStmt) {
-                this.handleValueFromExternalScope(stmt.getRightOp(), funcID);
+                stmt.getRightOp().getUses().forEach((v) => {
+                    this.handleValueFromExternalScope(v, funcID);
+                });
                 // Add non-call edges
                 let kind = this.getEdgeKindForAssignStmt(stmt);
                 if (kind !== PagEdgeKind.Unknown) {

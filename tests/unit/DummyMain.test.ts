@@ -66,7 +66,7 @@ describe('DummyMainTest3', () => {
 
     it('case3: LifeCycle Params', () => {
         expect(creater.getMethodsFromAllAbilities().length).eq(2);
-        expect([...creater.getDummyMain().getCfg()!.getBlocks().entries()][3][1].getStmts().length).eq(2);
+        expect([...creater.getDummyMain().getCfg()!.getBlocks()][3].getStmts().length).eq(2);
     });
 });
 
@@ -80,5 +80,15 @@ describe('DummyMainTest4', () => {
         expect(creater.getCallbackMethods()[0].getName()).eq(`%AM0$foo`);
         expect(creater.getCallbackMethods()[1].getName()).eq(`%AM0$goo`);
         expect(creater.getCallbackMethods()[2].getName()).eq(`%AM0$build`);
+    });
+});
+
+describe('DummyMainTest5', () => {
+    const scene = buildScene('tests/resources/dummyMain/static');
+    const creater = new DummyMainCreater(scene);
+    creater.createDummyMain();
+
+    it('case5: static method', () => {
+        expect(creater.getMethodsFromAllAbilities().length).eq(2);
     });
 });

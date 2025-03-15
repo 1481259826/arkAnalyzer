@@ -13,14 +13,9 @@
  * limitations under the License.
  */
 
-export type NodeID = number;
-export type Kind = number;
+import { Kind, NodeID, GraphTraits } from './GraphTraits';
 
-export interface GraphTraits {
-    nodesItor(): IterableIterator<BaseNode>;
-    getGraphName(): string;
-    getNode(id: NodeID): BaseNode | undefined;
-}
+export {Kind, NodeID};
 export abstract class BaseEdge {
     private src: BaseNode;
     private dst: BaseNode;
@@ -138,7 +133,7 @@ export abstract class BaseNode {
     public abstract getDotLabel(): string;
 }
 
-export abstract class BaseExplicitGraph implements GraphTraits {
+export abstract class BaseExplicitGraph implements GraphTraits<BaseNode> {
     protected edgeNum: number = 0;
     protected nodeNum: number = 0;
     protected idToNodeMap: Map<NodeID, BaseNode>;

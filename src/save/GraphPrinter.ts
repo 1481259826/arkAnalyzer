@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-import { BaseEdge, BaseNode, GraphTraits, NodeID } from "../core/graph/BaseExplicitGraph";
-import { Printer } from "./Printer";
+import { BaseEdge, BaseNode, NodeID } from '../core/graph/BaseExplicitGraph';
+import { GraphTraits } from '../core/graph/GraphTraits';
+import { Printer } from './Printer';
 
 function escapeStr(input: string): string {
     let str = input;
@@ -61,7 +62,7 @@ function escapeStr(input: string): string {
     return str;
 }
 
-export class GraphPrinter<GraphType extends GraphTraits> extends Printer {
+export class GraphPrinter<GraphType extends GraphTraits<BaseNode>> extends Printer {
     graph: GraphType;
     title!: string;
     startID: NodeID | undefined = undefined;
