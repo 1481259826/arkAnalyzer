@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,7 +32,17 @@ export enum LOG_MODULE_TYPE {
 }
 
 export default class ConsoleLogger {
-    public static configure(logFilePath: string, arkanalyzer_level: LOG_LEVEL = LOG_LEVEL.ERROR, tool_level: LOG_LEVEL = LOG_LEVEL.INFO): void {
+    public static configure(logFilePath: string,
+                            arkanalyzer_level: LOG_LEVEL = LOG_LEVEL.ERROR,
+                            tool_level: LOG_LEVEL = LOG_LEVEL.INFO,
+                            use_console: boolean = false): void {
+        let appendersTypes: string[] = [];
+        if (logFilePath) {
+            appendersTypes.push('file');
+        }
+        if (!appendersTypes.length || use_console) {
+            appendersTypes.push('console');
+        }
         configure({
             appenders: {
                 file: {
@@ -51,7 +61,7 @@ export default class ConsoleLogger {
                     type: 'console',
                     layout: {
                         type: 'pattern',
-                        pattern: '[%d] [%p] [%z] [ArkAnalyzer] - %m',
+                        pattern: '[%d] [%p] [%z] [%X{module}] - [%X{tag}] %m',
                     },
                 },
             },
@@ -62,12 +72,12 @@ export default class ConsoleLogger {
                     enableCallStack: false,
                 },
                 ArkAnalyzer: {
-                    appenders: ['file'],
+                    appenders: appendersTypes,
                     level: arkanalyzer_level,
                     enableCallStack: true,
                 },
                 Tool: {
-                    appenders: ['file'],
+                    appenders: appendersTypes,
                     level: tool_level,
                     enableCallStack: true,
                 },
