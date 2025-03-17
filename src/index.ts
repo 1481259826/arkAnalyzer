@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -115,6 +115,9 @@ export * from './utils/getAllFiles';
 export * from './utils/json5parser';
 export * from './utils/pathTransfer';
 export * from './utils/AstTreeUtils';
+export { LOG_LEVEL, LOG_MODULE_TYPE } from './utils/logger';
+export { default as Logger } from './utils/logger';
+
 
 //ohos-typescript
 import ts from 'ohos-typescript';

@@ -21,7 +21,7 @@
   "dependencies": {
     "commander": "11.0.0",
     "log4js": "6.7.1",
-    "ohos-typescript": "^4.9.5-r6"
+    "ohos-typescript": "^4.9.5-r4"
   },
   "bundledDependencies": [
     "ohos-typescript"

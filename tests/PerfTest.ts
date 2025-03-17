@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,15 +13,14 @@
  * limitations under the License.
  */
 import path from 'path';
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
+import { SceneConfig } from '../src';
+import { Scene } from '../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../src';
 import { Sdk } from '../src/Config'
 import * as perf_hooks from 'perf_hooks';
 
-const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger(LOG_MODULE_TYPE.DEFAULT, 'PerfTest');
-Logger.configure(logPath, LOG_LEVEL.ERROR, LOG_LEVEL.ERROR);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'PerfTest');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 let PROJECT_ROOT: string | undefined;
 let PROJECT_NAME: string | undefined;
 let Sdks: Sdk[] = [];
