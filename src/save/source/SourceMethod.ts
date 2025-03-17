@@ -26,6 +26,7 @@ import { ArkNamespace } from '../../core/model/ArkNamespace';
 import { ArkMetadataKind, CommentsMetadata } from '../../core/model/ArkMetadata';
 import { getLineNo } from '../../core/base/Position';
 import { MethodSignature } from '../../core/model/ArkSignature';
+import { LEXICAL_ENV_NAME_PREFIX } from '../../core/common/Const';
 
 /**
  * @category save
@@ -173,7 +174,10 @@ export class SourceMethod extends SourceBase {
                 if (parameter.getType()) {
                     str += ': ' + this.transformer.typeToString(parameter.getType());
                 }
-                parameters.push(str);
+                if (!str.startsWith(LEXICAL_ENV_NAME_PREFIX))
+                {
+                    parameters.push(str);
+                }
             });
         code.write(`(${parameters.join(', ')})`);
         const returnType = methodSig.getMethodSubSignature().getReturnType();

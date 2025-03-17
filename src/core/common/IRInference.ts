@@ -436,6 +436,9 @@ export class IRInference {
                 if ((firstStmt instanceof ArkAssignStmt) && (firstStmt.getRightOp() instanceof ArkParameterRef)) {
                     const parameterRef = firstStmt.getRightOp() as ArkParameterRef;
                     parameterRef.setType(baseType.getBaseType());
+                    const argMethodParams = argMethod.getSignature().getMethodSubSignature().getParameters();
+                    const actualParam = argMethodParams[argMethodParams.length - 1];
+                    actualParam.setType(baseType.getBaseType());
                 }
                 TypeInference.inferTypeInMethod(argMethod);
             }

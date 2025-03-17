@@ -404,8 +404,12 @@ export const BasicOuterMethod_Expect_IR = {
             {
                 name: 'nestedMethod',
                 instanceof: GlobalRef,
-                // TODO: 此处需要找到对应的ref
-                ref: null,
+                ref: {
+                    instanceof: ArkStaticFieldRef,
+                    declaringSignature: '@function/ClosureParamsTest.ts: BasicTest',
+                    fieldName: '%nestedMethod$basicMethod',
+                    type: '@function/ClosureParamsTest.ts: BasicTest.%nestedMethod$basicMethod()',
+                },
                 usedStmts: [
                     {
                         text: 'staticinvoke <@%unk/%unk: .nestedMethod()>()'
@@ -546,8 +550,7 @@ export const BasicNestedMethod2_Expect_IR = {
         toString: '@function/ClosureParamsTest.ts: BasicTest.basicOuterMethod2(number)'
     },
     methodSignature: {
-        // TODO: 此处unknown类型可以从class的field类型获取，需要类型推导处理
-        toString: `@function/ClosureParamsTest.ts: BasicTest.%AM0$basicOuterMethod2([index], unknown)`,
+        toString: `@function/ClosureParamsTest.ts: BasicTest.%AM0$basicOuterMethod2([index], number)`,
     },
     bodyBuilder: undefined,
     body: {
@@ -569,6 +572,18 @@ export const BasicNestedMethod2_Expect_IR = {
                 type: 'number',
                 declaringStmt: {
                     text: `index = %closures0.index`
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = index + listener'
+                    }
+                ]
+            },
+            {
+                name: 'listener',
+                type: 'number',
+                declaringStmt: {
+                    text: `listener = parameter1: number`
                 },
                 usedStmts: [
                     {
@@ -616,7 +631,7 @@ export const BasicOuterMethod2_Expect_IR = {
             },
             {
                 name: '%AM0$basicOuterMethod2',
-                type: 'closures: @function/ClosureParamsTest.ts: BasicTest.%AM0$basicOuterMethod2([index], unknown)',
+                type: 'closures: @function/ClosureParamsTest.ts: BasicTest.%AM0$basicOuterMethod2([index], number)',
                 declaringStmt: null,
                 usedStmts: [
                     {
@@ -900,7 +915,6 @@ export const CallMethod4_Expect_IR = {
             {
                 name: 'basicOuterMethod4',
                 instanceof: GlobalRef,
-                // TODO: 此处需要类型推导时进行处理
                 ref: null,
                 usedStmts: [
                     {
@@ -1455,6 +1469,1252 @@ export const ClosureNamespaceClassMethod_Expect_IR = {
                     }
                 ]
             },
+        ]
+    }
+};
+
+export const MultipleOuterMethod1_Expect_IR = {
+    outerMethod: undefined,
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod1(string)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `x`,
+                type: 'string',
+                declaringStmt: {
+                    text: 'x = parameter0: string'
+                },
+                usedStmts: []
+            },
+            {
+                name: 'a',
+                type: 'number',
+                declaringStmt: {
+                    text: `a = 3`
+                },
+                usedStmts: []
+            },
+            {
+                name: 'b',
+                type: 'string',
+                declaringStmt: {
+                    text: `b = 'xyz'`
+                },
+                usedStmts: []
+            },
+            {
+                name: '%closures0',
+                type: '[a]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested1Method1$outerMethod1([a], number)>(%closures0, 2)'
+                    }
+                ]
+            },
+            {
+                name: '%closures3',
+                type: '[x]',
+                declaringStmt: null,
+                usedStmts: []
+            }
+        ],
+        globals: [
+            {
+                name: 'nested1Method1',
+                instanceof: GlobalRef,
+                ref: {
+                    instanceof: ArkStaticFieldRef,
+                    declaringSignature: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+                    fieldName: '%nested1Method1$outerMethod1',
+                    type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nested1Method1$outerMethod1([a], number)',
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested1Method1$outerMethod1([a], number)>(%closures0, 2)'
+                    }
+                ]
+            }
+        ],
+        stmts: [
+            {
+                text: 'x = parameter0: string',
+            },
+            {
+                text: 'this = this: @function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+            {
+                text: 'a = 3',
+            },
+            {
+                text: `b = 'xyz'`,
+            },
+            {
+                text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested1Method1$outerMethod1([a], number)>(%closures0, 2)',
+            },
+            {
+                text: 'return %0',
+            }
+        ]
+    }
+};
+
+export const MultipleNested1Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod1(string)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested1Method1$outerMethod1([a], number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures0`,
+                type: '[a]',
+                declaringStmt: {
+                    text: '%closures0 = parameter0: [a]'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = %closures0.a'
+                    }
+                ]
+            },
+            {
+                name: `a`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = %closures0.a'
+                },
+                usedStmts: []
+            },
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = parameter1: number'
+                },
+                usedStmts: []
+            },
+            {
+                name: `c`,
+                type: 'string',
+                declaringStmt: {
+                    text: `c = 'xyz'`
+                },
+                usedStmts: []
+            },
+            {
+                name: `%closures1`,
+                type: '[a, b]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested2Method1$%nested1Method1$outerMethod1([a, b], number)>(%closures1, 1)'
+                    }
+                ]
+            },
+        ],
+        globals: [
+            {
+                name: 'nested2Method1',
+                instanceof: GlobalRef,
+                ref: {
+                    instanceof: ArkStaticFieldRef,
+                    declaringSignature: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+                    fieldName: '%nested2Method1$%nested1Method1$outerMethod1',
+                    type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nested2Method1$%nested1Method1$outerMethod1([a, b], number)',
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested2Method1$%nested1Method1$outerMethod1([a, b], number)>(%closures1, 1)'
+                    }
+                ]
+            }
+        ],
+    }
+};
+
+export const MultipleNested2Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nested1Method1$outerMethod1([a], number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested2Method1$%nested1Method1$outerMethod1([a, b], number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures1`,
+                type: '[a, b]',
+                declaringStmt: {
+                    text: '%closures1 = parameter0: [a, b]'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = %closures1.a'
+                    },
+                    {
+                        text: 'b = %closures1.b'
+                    }
+                ]
+            },
+            {
+                name: `a`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = %closures1.a'
+                },
+                usedStmts: []
+            },
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = %closures1.b'
+                },
+                usedStmts: []
+            },
+            {
+                name: `c`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'c = parameter1: number'
+                },
+                usedStmts: []
+            },
+            {
+                name: `%closures2`,
+                type: '[a, b, c]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested3Method1$%nested2Method1$%nested1Method1$outerMethod1([a, b, c])>(%closures2)'
+                    }
+                ]
+            },
+        ],
+        globals: [
+            {
+                name: 'nested3Method1',
+                instanceof: GlobalRef,
+                ref: {
+                    instanceof: ArkStaticFieldRef,
+                    declaringSignature: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+                    fieldName: '%nested3Method1$%nested2Method1$%nested1Method1$outerMethod1',
+                    type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nested3Method1$%nested2Method1$%nested1Method1$outerMethod1([a, b, c])',
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested3Method1$%nested2Method1$%nested1Method1$outerMethod1([a, b, c])>(%closures2)'
+                    }
+                ]
+            }
+        ],
+    }
+};
+
+export const MultipleNested3Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nested2Method1$%nested1Method1$outerMethod1([a, b], number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested3Method1$%nested2Method1$%nested1Method1$outerMethod1([a, b, c])`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures2`,
+                type: '[a, b, c]',
+                declaringStmt: {
+                    text: '%closures2 = parameter0: [a, b, c]'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = %closures2.a'
+                    },
+                    {
+                        text: 'b = %closures2.b'
+                    },
+                    {
+                        text: 'c = %closures2.c'
+                    }
+                ]
+            },
+            {
+                name: `a`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = %closures2.a'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = a + b'
+                    }
+                ]
+            },
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = %closures2.b'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = a + b'
+                    }
+                ]
+            },
+            {
+                name: `c`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'c = %closures2.c'
+                },
+                usedStmts: [
+                    {
+                        text: '%1 = %0 + c'
+                    }
+                ]
+            },
+        ],
+        globals: undefined
+    }
+};
+
+export const MultipleNested11Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod1(string)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested11Method1$outerMethod1([x], number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures3`,
+                type: '[x]',
+                declaringStmt: {
+                    text: '%closures3 = parameter0: [x]'
+                },
+                usedStmts: [
+                    {
+                        text: 'x = %closures3.x'
+                    }
+                ]
+            },
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = parameter1: number'
+                },
+                usedStmts: []
+            },
+            {
+                name: `c`,
+                type: 'string',
+                declaringStmt: {
+                    text: `c = 'xyz'`
+                },
+                usedStmts: []
+            },
+            {
+                name: `%closures4`,
+                type: '[b]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested22Method1$%nested11Method1$outerMethod1([b], number)>(%closures4, 1)'
+                    }
+                ]
+            },
+            {
+                name: `%closures5`,
+                type: '[x]',
+                declaringStmt: null,
+                usedStmts: []
+            },
+        ],
+        globals: [
+            {
+                name: 'nested22Method1',
+                instanceof: GlobalRef,
+                ref: {
+                    instanceof: ArkStaticFieldRef,
+                    declaringSignature: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+                    fieldName: '%nested22Method1$%nested11Method1$outerMethod1',
+                    type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nested22Method1$%nested11Method1$outerMethod1([b], number)',
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested22Method1$%nested11Method1$outerMethod1([b], number)>(%closures4, 1)'
+                    }
+                ]
+            }
+        ],
+    }
+};
+
+export const MultipleNested22Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nested11Method1$outerMethod1([x], number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested22Method1$%nested11Method1$outerMethod1([b], number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures4`,
+                type: '[b]',
+                declaringStmt: {
+                    text: '%closures4 = parameter0: [b]'
+                },
+                usedStmts: [
+                    {
+                        text: 'b = %closures4.b'
+                    }
+                ]
+            },
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = %closures4.b'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = b + c'
+                    }
+                ]
+            },
+            {
+                name: `c`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'c = parameter1: number'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = b + c'
+                    }
+                ]
+            },
+        ],
+        globals: undefined
+    }
+};
+
+export const MultipleNested33Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nested11Method1$outerMethod1([x], number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested33Method1$%nested11Method1$outerMethod1([x])`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures5`,
+                type: '[x]',
+                declaringStmt: {
+                    text: '%closures5 = parameter0: [x]'
+                },
+                usedStmts: [
+                    {
+                        text: 'x = %closures5.x'
+                    }
+                ]
+            },
+            {
+                name: `x`,
+                type: 'string',
+                declaringStmt: {
+                    text: 'x = %closures5.x'
+                },
+                usedStmts: [
+                    {
+                        text: 'return x'
+                    }
+                ]
+            },
+        ],
+        globals: undefined
+    }
+};
+
+export const MultipleNested111Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod1(string)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested111Method1$outerMethod1(number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = parameter0: number'
+                },
+                usedStmts: []
+            },
+            {
+                name: `c`,
+                type: 'string',
+                declaringStmt: {
+                    text: `c = 'xyz'`
+                },
+                usedStmts: []
+            },
+            {
+                name: `%closures6`,
+                type: '[b]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested222Method1$%nested111Method1$outerMethod1([b], number)>(%closures6, 1)'
+                    }
+                ]
+            }
+        ],
+        globals: [
+            {
+                name: 'nested222Method1',
+                instanceof: GlobalRef,
+                ref: {
+                    instanceof: ArkStaticFieldRef,
+                    declaringSignature: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+                    fieldName: '%nested222Method1$%nested111Method1$outerMethod1',
+                    type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nested222Method1$%nested111Method1$outerMethod1([b], number)',
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nested222Method1$%nested111Method1$outerMethod1([b], number)>(%closures6, 1)'
+                    }
+                ]
+            }
+        ],
+    }
+};
+
+export const MultipleNested222Method1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nested111Method1$outerMethod1(number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%nested222Method1$%nested111Method1$outerMethod1([b], number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `%closures6`,
+                type: '[b]',
+                declaringStmt: {
+                    text: '%closures6 = parameter0: [b]'
+                },
+                usedStmts: [
+                    {
+                        text: 'b = %closures6.b'
+                    }
+                ]
+            },
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = %closures6.b'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = b + c'
+                    }
+                ]
+            },
+            {
+                name: `c`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'c = parameter1: number'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = b + c'
+                    }
+                ]
+            },
+        ],
+        globals: undefined
+    }
+};
+
+export const MultipleOuterMethod2_Expect_IR = {
+    outerMethod: undefined,
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod2(number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `a`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = parameter0: number'
+                },
+                usedStmts: []
+            },
+            {
+                name: 'x',
+                type: 'number',
+                declaringStmt: {
+                    text: `x = 123`
+                },
+                usedStmts: []
+            },
+            {
+                name: '%closures0',
+                type: '[a]',
+                declaringStmt: null,
+                usedStmts: []
+            },
+            {
+                name: '%AM1$outerMethod2',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%AM1$outerMethod2([a], number[])',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke %0.<@%unk/%unk: .forEach()>(%AM1$outerMethod2)'
+                    }
+                ]
+            }
+        ],
+        globals: null,
+        stmts: [
+            {
+                text: 'a = parameter0: number',
+            },
+            {
+                text: 'this = this: @function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+            {
+                text: 'x = 123',
+            },
+            {
+                text: '%0 = this.<@function/ClosureParamsTest.ts: MultipleNestedTest.listeners>',
+            },
+            {
+                text: 'instanceinvoke %0.<@%unk/%unk: .forEach()>(%AM1$outerMethod2)',
+            },
+            {
+                text: 'return',
+            }
+        ]
+    }
+};
+
+export const MultipleAnonymousMethod1_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod2(number)'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%AM1$outerMethod2([a], number[])`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: '%closures0',
+                type: '[a]',
+                declaringStmt: {
+                    text: '%closures0 = parameter0: [a]'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = %closures0.a'
+                    }
+                ]
+            },
+            {
+                name: 'a',
+                type: 'number',
+                declaringStmt: {
+                    text: `a = %closures0.a`
+                },
+                usedStmts: []
+            },
+            {
+                name: 'listener',
+                type: 'number[]',
+                declaringStmt: {
+                    text: 'listener = parameter1: number[]'
+                },
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke listener.<@%unk/%unk: .forEach()>(%AM2$%AM1$outerMethod2)'
+                    }
+                ]
+            },
+            {
+                name: '%closures1',
+                type: '[a, listener]',
+                declaringStmt: undefined,
+                usedStmts: []
+            },
+            {
+                name: '%AM2$%AM1$outerMethod2',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%AM2$%AM1$outerMethod2([a, listener], number)',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke listener.<@%unk/%unk: .forEach()>(%AM2$%AM1$outerMethod2)'
+                    }
+                ]
+            }
+        ],
+        globals: null
+    }
+};
+
+export const MultipleAnonymousMethod2_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%AM1$outerMethod2([a], number[])'
+    },
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.%AM2$%AM1$outerMethod2([a, listener], number)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: '%closures1',
+                type: '[a, listener]',
+                declaringStmt: {
+                    text: '%closures1 = parameter0: [a, listener]'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = %closures1.a'
+                    },
+                    {
+                        text: 'listener = %closures1.listener'
+                    }
+                ]
+            },
+            {
+                name: 'a',
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = %closures1.a'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = a + item'
+                    }
+                ]
+            },
+            {
+                name: 'listener',
+                type: 'number[]',
+                declaringStmt: {
+                    text: 'listener = %closures1.listener'
+                },
+                usedStmts: [
+                    {
+                        text: '%1 = listener.<@%unk/%unk: .length>'
+                    }
+                ]
+            },
+            {
+                name: 'item',
+                type: 'number',
+                declaringStmt: {
+                    text: 'item = parameter1: number'
+                },
+                usedStmts: [
+                    {
+                        text: '%0 = a + item'
+                    }
+                ]
+            },
+        ],
+        globals: [
+            {
+                name: 'console',
+                instanceof: GlobalRef,
+                ref: null,
+                usedStmts: [
+                    {
+                        text: 'instanceinvoke console.<@%unk/%unk: .log()>(%0)'
+                    },
+                    {
+                        text: 'instanceinvoke console.<@%unk/%unk: .log()>(%1)'
+                    }
+                ]
+            }
+        ]
+    }
+};
+
+export const MultipleOuterMethod3_Expect_IR = {
+    outerMethod: undefined,
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod3(string)`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `a`,
+                type: 'string',
+                declaringStmt: {
+                    text: 'a = parameter0: string'
+                },
+                usedStmts: []
+            },
+            {
+                name: '%closures0',
+                type: '[a]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'ptrinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])>(%closures0)'
+                    }
+                ]
+            },
+            {
+                name: '%AM3$outerMethod3',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'nestedMethod3 = %AM3$outerMethod3'
+                    }
+                ]
+            },
+            {
+                name: 'nestedMethod3',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])',
+                declaringStmt: {
+                    text: 'nestedMethod3 = %AM3$outerMethod3'
+                },
+                usedStmts: [
+                    {
+                        text: 'ptrinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])>(%closures0)'
+                    }
+                ]
+            }
+        ],
+        globals: null,
+        stmts: [
+            {
+                text: 'a = parameter0: string',
+            },
+            {
+                text: 'this = this: @function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+            {
+                text: 'nestedMethod3 = %AM3$outerMethod3',
+            },
+            {
+                text: 'ptrinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])>(%closures0)',
+            },
+            {
+                text: 'return',
+            }
+        ]
+    }
+};
+
+export const MultipleAnonymousMethod3_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod3(string)',
+    },
+    methodSignature: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])',
+        methodSubSignature: {
+            parameters: [
+                {
+                    name: '%closures0',
+                    type: '[a]'
+                }
+            ],
+            returnType: 'void'
+        }
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: '%closures0',
+                type: '[a]',
+                declaringStmt: {
+                    text: '%closures0 = parameter0: [a]'
+                },
+                usedStmts: [
+                    {
+                        text: `a = %closures0.a`
+                    }
+                ]
+            },
+            {
+                name: 'a',
+                type: 'string',
+                declaringStmt: {
+                    text: 'a = %closures0.a'
+                },
+            },
+            {
+                name: 'this',
+                type: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+            {
+                name: 'b',
+                type: 'string',
+                declaringStmt: {
+                    text: `b = 'abc'`
+                },
+            },
+            {
+                name: 'x',
+                type: 'number',
+                declaringStmt: {
+                    text: `x = 123`
+                },
+            },
+            {
+                name: '%closures1',
+                type: '[a, b]',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: `ptrinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%AM4$%AM3$outerMethod3([a, b])>(%closures1)`
+                    }
+                ]
+            },
+            {
+                name: 'nestedInNestedMethod3',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%AM4$%AM3$outerMethod3([a, b])',
+                declaringStmt: {
+                    text: 'nestedInNestedMethod3 = %AM4$%AM3$outerMethod3'
+                },
+                usedStmts: [
+                    {
+                        text: 'ptrinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%AM4$%AM3$outerMethod3([a, b])>(%closures1)'
+                    }
+                ]
+            }
+        ],
+        globals: undefined
+    }
+};
+
+export const MultipleAnonymousMethod4_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%AM3$outerMethod3([a])',
+    },
+    methodSignature: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%AM4$%AM3$outerMethod3([a, b])',
+        methodSubSignature: {
+            parameters: [
+                {
+                    name: '%closures1',
+                    type: '[a, b]'
+                }
+            ],
+            returnType: 'void'
+        }
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: '%closures1',
+                type: '[a, b]',
+                declaringStmt: {
+                    text: '%closures1 = parameter0: [a, b]'
+                },
+                usedStmts: [
+                    {
+                        text: `a = %closures1.a`
+                    },
+                    {
+                        text: `b = %closures1.b`
+                    }
+                ]
+            },
+            {
+                name: 'a',
+                type: 'string',
+                declaringStmt: {
+                    text: 'a = %closures1.a'
+                },
+                usedStmts: [
+                    {
+                        text: `%0 = a + b`
+                    }
+                ]
+            },
+            {
+                name: 'b',
+                type: 'string',
+                declaringStmt: {
+                    text: `b = %closures1.b`
+                },
+                usedStmts: [
+                    {
+                        text: `%0 = a + b`
+                    }
+                ]
+            },
+            {
+                name: 'this',
+                type: '@function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+        ],
+        globals:{
+            name: 'console',
+            instanceof: GlobalRef,
+            ref: null,
+            usedStmts: [
+                {
+                    text: 'instanceinvoke console.<@%unk/%unk: .log()>(%0)'
+                }
+            ]
+        }
+    }
+};
+
+export const MultipleOuterMethod4_Expect_IR = {
+    outerMethod: undefined,
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod4()`,
+        methodSubSignature: {
+            returnType: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)'
+        }
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: `b`,
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = 3'
+                },
+                usedStmts: []
+            },
+            {
+                name: '%closures0',
+                type: '[b]',
+                declaringStmt: null,
+                usedStmts: []
+            },
+            {
+                name: '%nestedMethod4$outerMethod4',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'return %nestedMethod4$outerMethod4'
+                    }
+                ]
+            },
+        ],
+        globals: null,
+        stmts: [
+            {
+                text: 'this = this: @function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+            {
+                text: 'b = 3',
+            },
+            {
+                text: 'return %nestedMethod4$outerMethod4',
+            }
+        ]
+    }
+};
+
+export const MultipleNestedMethod4_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod4()',
+    },
+    methodSignature: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)',
+        methodSubSignature: {
+            parameters: [
+                {
+                    name: '%closures0',
+                    type: '[b]'
+                },
+                {
+                    name: 'a',
+                    type: 'number'
+                }
+            ],
+            returnType: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nestedInNestedMethod4$%nestedMethod4$outerMethod4([a, b])'
+        }
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: '%closures0',
+                type: '[b]',
+                declaringStmt: {
+                    text: '%closures0 = parameter0: [b]'
+                },
+                usedStmts: [
+                    {
+                        text: `b = %closures0.b`
+                    }
+                ]
+            },
+            {
+                name: 'b',
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = %closures0.b'
+                },
+            },
+            {
+                name: 'a',
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = parameter1: number'
+                },
+            },
+            {
+                name: '%closures1',
+                type: '[a, b]',
+                declaringStmt: null,
+                usedStmts: []
+            },
+            {
+                name: '%nestedInNestedMethod4$%nestedMethod4$outerMethod4',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nestedInNestedMethod4$%nestedMethod4$outerMethod4([a, b])',
+                declaringStmt: null,
+                usedStmts: [
+                    {
+                        text: 'return %nestedInNestedMethod4$%nestedMethod4$outerMethod4'
+                    }
+                ]
+            },
+        ]
+    }
+};
+
+export const MultipleNestedInNestedMethod4_Expect_IR = {
+    outerMethod: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)',
+    },
+    methodSignature: {
+        toString: '@function/ClosureParamsTest.ts: MultipleNestedTest.%nestedInNestedMethod4$%nestedMethod4$outerMethod4([a, b])',
+        methodSubSignature: {
+            parameters: [
+                {
+                    name: '%closures1',
+                    type: '[a, b]'
+                }
+            ],
+            returnType: 'void'
+        }
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: '%closures1',
+                type: '[a, b]',
+                declaringStmt: {
+                    text: '%closures1 = parameter0: [a, b]'
+                },
+                usedStmts: [
+                    {
+                        text: `a = %closures1.a`
+                    },
+                    {
+                        text: `b = %closures1.b`
+                    }
+                ]
+            },
+            {
+                name: 'a',
+                type: 'number',
+                declaringStmt: {
+                    text: 'a = %closures1.a'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = a + b'
+                    }
+                ]
+            },
+            {
+                name: 'b',
+                type: 'number',
+                declaringStmt: {
+                    text: 'b = %closures1.b'
+                },
+                usedStmts: [
+                    {
+                        text: 'a = a + b'
+                    }
+                ]
+            }
+        ]
+    }
+};
+
+export const MultipleCallMethod4_Expect_IR = {
+    outerMethod: undefined,
+    methodSignature: {
+        toString: `@function/ClosureParamsTest.ts: MultipleNestedTest.callMethod4()`,
+    },
+    bodyBuilder: undefined,
+    body: {
+        locals: [
+            {
+                name: 'callMethod',
+                type: 'closures: @function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)',
+                declaringStmt: {
+                    text: 'callMethod = instanceinvoke this.<@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod4()>()'
+                },
+                usedStmts: [
+                    {
+                        text: 'staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)>(3)'
+                    }
+                ]
+            }
+        ],
+        globals: undefined,
+        stmts: [
+            {
+                text: 'this = this: @function/ClosureParamsTest.ts: MultipleNestedTest',
+            },
+            {
+                text: 'callMethod = instanceinvoke this.<@function/ClosureParamsTest.ts: MultipleNestedTest.outerMethod4()>()'
+            },
+            {
+                text: 'staticinvoke <@function/ClosureParamsTest.ts: MultipleNestedTest.%nestedMethod4$outerMethod4([b], number)>(3)'
+            },
+            {
+                text: 'return',
+            }
         ]
     }
 };
