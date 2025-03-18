@@ -15,7 +15,7 @@
 
 import { ArkFile } from '../model/ArkFile';
 import { ArkExport, ExportInfo } from '../model/ArkExport';
-import { COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE } from './EtsConst';
+import { COMPONENT_ATTRIBUTE } from './EtsConst';
 import { GLOBAL_THIS_NAME, THIS_NAME } from './TSConst';
 import { TEMP_LOCAL_PREFIX } from './Const';
 import { ArkClass, ClassCategory } from '../model/ArkClass';
@@ -56,7 +56,7 @@ export class SdkUtils {
         const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();
         defaultArkMethod?.getBody()?.getLocals().forEach(local => {
             const name = local.getName();
-            if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX) && !name.endsWith(COMPONENT_INSTANCE)) {
+            if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX)) {
                 this.loadGlobalLocal(local, defaultArkMethod, globalMap);
             }
         });

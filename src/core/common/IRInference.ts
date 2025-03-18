@@ -54,7 +54,7 @@ import {
 import { CONSTRUCTOR_NAME, FUNCTION, IMPORT, THIS_NAME } from './TSConst';
 import { Builtin } from './Builtin';
 import { ArkBody } from '../model/ArkBody';
-import { ArkAssignStmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkInvokeStmt } from '../base/Stmt';
 import {
     AbstractFieldRef,
     AbstractRef,
@@ -220,13 +220,28 @@ export class IRInference {
             return expr;
         }
 
-        let result = this.inferInvokeExpr(expr, baseType, methodName, scene);
+        let result = this.inferInvokeExpr(expr, baseType, methodName, scene)
+            ?? this.processExtendFunc(expr, arkMethod, methodName);
         if (result) {
             this.inferArgs(result, arkMethod);
             return result;
         }
         logger.warn('invoke ArkInstanceInvokeExpr MethodSignature type fail: ', expr.toString());
         return expr;
+    }
+
+    private static processExtendFunc(expr: AbstractInvokeExpr, arkMethod: ArkMethod, methodName: string): AbstractInvokeExpr | null {
+        const type = TypeInference.inferBaseType(methodName, arkMethod.getDeclaringArkClass());
+        if (type instanceof FunctionType) {
+            const methodSignature = type.getMethodSignature();
+            const endStmt = arkMethod.getDeclaringArkFile().getScene().getMethod(methodSignature)?.getCfg()?.getStmts().at(-2);
+            if (endStmt instanceof ArkInvokeStmt) {
+                methodSignature.getMethodSubSignature().setReturnType(endStmt.getInvokeExpr().getType());
+            }
+            expr.setMethodSignature(methodSignature);
+            return expr;
+        }
+        return null;
     }
 
     public static inferFieldRef(ref: ArkInstanceFieldRef, arkMethod: ArkMethod): AbstractRef {
@@ -356,15 +371,17 @@ export class IRInference {
                 }
             }
         } else if (baseType instanceof FunctionType) {
-            const funcInterface = scene.getSdkGlobal(FUNCTION);
-            if (funcInterface instanceof ArkClass) {
-                const method = ModelUtils.findPropertyInClass(methodName, funcInterface);
-                if (method instanceof ArkMethod) {
-                    expr.setRealGenericTypes([baseType]);
-                    expr.setMethodSignature(method.getSignature());
-                }
-            } else {
+            if (methodName === CALL_SIGNATURE_NAME) {
                 expr.setMethodSignature(baseType.getMethodSignature());
+            } else {
+                const funcInterface = scene.getSdkGlobal(FUNCTION);
+                if (funcInterface instanceof ArkClass) {
+                    const method = ModelUtils.findPropertyInClass(methodName, funcInterface);
+                    if (method instanceof ArkMethod) {
+                        expr.setRealGenericTypes([baseType]);
+                        expr.setMethodSignature(method.getSignature());
+                    }
+                }
             }
             return expr;
         } else if (baseType instanceof ArrayType) {

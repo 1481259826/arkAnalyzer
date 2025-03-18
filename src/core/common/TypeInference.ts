@@ -54,7 +54,7 @@ import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ALL, CONSTRUCTOR_NAME, GLOBAL_THIS_NAME, PROMISE, SUPER_NAME } from './TSConst';
+import { ALL, CONSTRUCTOR_NAME, GLOBAL_THIS_NAME, PROMISE, SUPER_NAME, THIS_NAME } from './TSConst';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { MethodSignature, MethodSubSignature, NamespaceSignature } from '../model/ArkSignature';
@@ -318,6 +318,8 @@ export class TypeInference {
             } else if (newLeftType) {
                 leftType = newLeftType;
             }
+        } else if (leftOp instanceof Local && leftOp.getName() === THIS_NAME) {
+            leftType = rightType;
         }
         if (leftType && !this.isUnclearType(leftType)) {
             this.setValueType(leftOp, leftType);
