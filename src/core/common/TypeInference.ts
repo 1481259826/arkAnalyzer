@@ -313,7 +313,7 @@ export class TypeInference {
         TypeInference.resolveLeftOp(stmt, arkClass, rightType, arkMethod);
     }
 
-    private static resolveLeftOp(stmt: ArkAssignStmt, arkClass: ArkClass, rightType: Type | null | undefined, arkMethod: ArkMethod) {
+    private static resolveLeftOp(stmt: ArkAssignStmt, arkClass: ArkClass, rightType: Type | null | undefined, arkMethod: ArkMethod): void {
         const leftOp = stmt.getLeftOp();
         let leftType: Type | null | undefined = leftOp.getType();
         if (this.isUnclearType(leftType)) {

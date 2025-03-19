@@ -160,7 +160,7 @@ export class ClassSignature {
      *
      * @returns The name of the declare class.
      */
-    public getDeclaringClassName() {
+    public getDeclaringClassName(): string {
         if (this.className.startsWith(ANONYMOUS_CLASS_PREFIX)) {
             let temp = this.className;
             do {
