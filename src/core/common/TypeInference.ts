@@ -168,6 +168,7 @@ export class TypeInference {
         });
         const body = arkMethod.getBody();
         if (!body) {
+            signatures.forEach(s => this.inferSignatureReturnType(s, arkMethod));
             return;
         }
         const cfg = body.getCfg();
@@ -309,6 +310,10 @@ export class TypeInference {
                 this.setValueType(rightOp, rightType);
             }
         }
+        TypeInference.resolveLeftOp(stmt, arkClass, rightType, arkMethod);
+    }
+
+    private static resolveLeftOp(stmt: ArkAssignStmt, arkClass: ArkClass, rightType: Type | null | undefined, arkMethod: ArkMethod) {
         const leftOp = stmt.getLeftOp();
         let leftType: Type | null | undefined = leftOp.getType();
         if (this.isUnclearType(leftType)) {
@@ -482,27 +487,35 @@ export class TypeInference {
         if (newReturnType) {
             oldSignature.getMethodSubSignature().setReturnType(newReturnType);
         } else if (arkMethod.getBody()) {
-            const typeMap: Map<string, Type> = new Map();
-            for (let returnValue of arkMethod.getReturnValues()) {
-                const type = returnValue.getType();
-                if (type instanceof UnionType) {
-                    type.flatType().filter(t => !TypeInference.isUnclearType(t)).forEach(t => typeMap.set(t.toString(), t));
-                } else if (!TypeInference.isUnclearType(type)) {
-                    typeMap.set(type.toString(), type);
-                }
-            }
-            if (typeMap.size > 0) {
-                const types: Type[] = Array.from(typeMap.values());
-                let returnType = types.length === 1 ? types[0] : new UnionType(types);
-                if (arkMethod.containsModifier(ModifierType.ASYNC)) {
-                    const promise = arkMethod.getDeclaringArkFile().getScene().getSdkGlobal(PROMISE);
-                    if (promise instanceof ArkClass) {
-                        returnType = new ClassType(promise.getSignature(), [returnType]);
-                    }
-                }
+            const returnType = TypeInference.inferReturnType(arkMethod);
+            if (returnType) {
                 oldSignature.getMethodSubSignature().setReturnType(returnType);
             }
         }
+    }
+
+    private static inferReturnType(arkMethod: ArkMethod): Type | null {
+        const typeMap: Map<string, Type> = new Map();
+        for (let returnValue of arkMethod.getReturnValues()) {
+            const type = returnValue.getType();
+            if (type instanceof UnionType) {
+                type.flatType().filter(t => !TypeInference.isUnclearType(t)).forEach(t => typeMap.set(t.toString(), t));
+            } else if (!TypeInference.isUnclearType(type)) {
+                typeMap.set(type.toString(), type);
+            }
+        }
+        if (typeMap.size > 0) {
+            const types: Type[] = Array.from(typeMap.values());
+            let returnType = types.length === 1 ? types[0] : new UnionType(types);
+            if (arkMethod.containsModifier(ModifierType.ASYNC)) {
+                const promise = arkMethod.getDeclaringArkFile().getScene().getSdkGlobal(PROMISE);
+                if (promise instanceof ArkClass) {
+                    returnType = new ClassType(promise.getSignature(), [returnType]);
+                }
+            }
+            return returnType;
+        }
+        return null;
     }
 
     public static inferGenericType(types: GenericType[] | undefined, arkClass: ArkClass) {

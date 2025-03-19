@@ -15,7 +15,16 @@
 
 import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
-import { AliasClassSignature, ArkClass, FileSignature, Local, Scene, SceneConfig } from '../../src';
+import {
+    AliasClassSignature,
+    ArkClass,
+    ClassType,
+    FileSignature,
+    Local,
+    Scene,
+    SceneConfig,
+    THIS_NAME
+} from '../../src';
 import { ArkExport, ExportInfo } from '../../src/core/model/ArkExport';
 import { ArkBaseModel, ModifierType } from '../../src/core/model/ArkBaseModel';
 import {
@@ -36,9 +45,16 @@ import {
     ExportAllWithAsNameFromThisFile_Expect_IR,
 } from '../resources/exports/from/expectedIR';
 import { DefaultExportObjectLiteral_Expect_IR } from '../resources/exports/objectLiteral/expectedIR';
+import { Sdk } from '../../src/Config';
 
 function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
+    let sdk: Sdk = {
+        name: 'ohos',
+        path: './builtIn/typescript',
+        moduleName: ''
+    };
+    config.getSdksObj().push(sdk);
     config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.getSdksObj().push({
         moduleName: '',
@@ -185,6 +201,46 @@ describe("export Test", () => {
             assert.equal(stmts[3].toString(), 'be = @etsSdk/api/@ohos.base.d.ts: %dflt.[static]BusinessError');
         }
     })
+
+    it('extend function case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
+        const stmt = projectScene.getFile(fileId)?.getClassWithName('BlurEffectsExample')
+            ?.getMethodWithName('build')?.getCfg()?.getStmts()[37];
+        assert.isDefined(stmt);
+        const classType = stmt?.getInvokeExpr()?.getType();
+        assert.isTrue(classType instanceof ClassType);
+        if (classType instanceof ClassType) {
+            assert.equal(classType.getClassSignature().getClassName(), 'TextAttribute');
+        }
+    });
+
+    it('Array map case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
+        const stmt = projectScene.getFile(fileId)?.getDefaultClass()
+            ?.getMethodWithName('testArrayMap')?.getCfg()?.getStmts()[5];
+        assert.isDefined(stmt);
+        const arrayType = stmt?.getInvokeExpr()?.getType();
+        assert.equal(arrayType?.getTypeString(), 'string[]');
+    });
+
+    it('this case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
+        const type = projectScene.getFile(fileId)?.getClassWithName('%AC4$MyComponent.build')
+            ?.getMethodWithName('%instInit')?.getBody()?.getLocals().get(THIS_NAME)?.getType();
+        assert.equal(type?.getTypeString(), '@exports/Lottie_Report.ets: MyComponent');
+
+        const type2 = projectScene.getFile(fileId)?.getClassWithName('MyComponent')
+            ?.getMethodWithName('%AM0$func1')?.getBody()?.getLocals().get(THIS_NAME)?.getType();
+        assert.equal(type2?.getTypeString(), '@exports/Lottie_Report.ets: MyComponent');
+    });
+
+    it('setTimeout case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
+        const stmt = projectScene.getFile(fileId)?.getClassWithName('Foo')
+            ?.getMethodWithName('func')?.getCfg()?.getStmts().at(-2);
+        assert.isDefined(stmt);
+        assert.equal(stmt?.getInvokeExpr()?.getArgs()[0].getType().getTypeString(), '@exports/Lottie_Report.ets: %AC2$%AC1$Foo.%instInit.%instInit.%AM0$%instInit()');
+    });
 })
 
 describe("function Test", () => {
@@ -279,7 +335,7 @@ describe("export ObjectLiteral Test", () => {
         const exportInfo = file?.getExportInfoBy(DefaultExportObjectLiteral_Expect_IR.exportClauseName);
         compareExportInfo(exportInfo, DefaultExportObjectLiteral_Expect_IR);
 
-        const anonymousClass = file?.getClassWithName('%AC$%dflt$%dflt$0');
+        const anonymousClass = file?.getClassWithName('%AC0$%dflt.%dflt');
         assert.isDefined(anonymousClass);
         assert.isNotNull(anonymousClass);
         assert.isTrue((anonymousClass as ArkClass).getFields().some(field => field.getName() === 'data'));

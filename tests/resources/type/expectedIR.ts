@@ -14,10 +14,21 @@
  */
 
 import {
-    AliasType, ArrayType,
-    ArkAliasTypeDefineStmt, ArkClass, ArkField, BooleanType,
-    DEFAULT_ARK_CLASS_NAME, ImportInfo, Local, LiteralType, StringType, ArkMethod,
-    UnionType, GenericType, TupleType
+    AliasType,
+    ArkAliasTypeDefineStmt,
+    ArkClass,
+    ArkField,
+    ArkMethod,
+    ArrayType,
+    BooleanType,
+    DEFAULT_ARK_CLASS_NAME,
+    GenericType,
+    ImportInfo,
+    LiteralType,
+    Local,
+    StringType,
+    TupleType,
+    UnionType
 } from '../../../src';
 
 export const AliasTypeOfBoolean = {
@@ -185,7 +196,7 @@ export const AliasTypeOfObjectA = {
         name: 'ObjectAType',
         signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithImport()#ObjectAType`,
         modifiers: 0,
-        originalType: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
+        originalType: '@type/exportExample.ts: %AC0$%dflt.%dflt'
     },
     stmt: {
         instanceof: ArkAliasTypeDefineStmt,
@@ -194,7 +205,7 @@ export const AliasTypeOfObjectA = {
                 instanceof: ImportInfo,
                 lazyExportInfo: {
                     arkExport: {
-                        signature: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
+                        signature: '@type/exportExample.ts: %AC0$%dflt.%dflt'
                     }
                 },
             },
@@ -238,14 +249,14 @@ export const AliasTypeOfSingleTypeQuery = {
         name: 'SingleTypeQuery',
         signature: `@type/test.ts: ${DEFAULT_ARK_CLASS_NAME}.aliasTypeWithTypeQuery()#SingleTypeQuery`,
         modifiers: 0,
-        originalType: '@type/exportExample.ts: %AC$%dflt$%dflt$0'
+        originalType: '@type/exportExample.ts: %AC0$%dflt.%dflt'
     },
     stmt: {
         instanceof: ArkAliasTypeDefineStmt,
         typeAliasExpr: {
             originalObject: {
                 instanceof: Local,
-                typeString: '@type/exportExample.ts: %AC$%dflt$%dflt$0',
+                typeString: '@type/exportExample.ts: %AC0$%dflt.%dflt',
                 declaringStmt: 'objectA = %0'
             },
             transferWithTypeOf: true,
@@ -271,7 +282,7 @@ export const AliasTypeOfMultiTypeQuery = {
         typeAliasExpr: {
             originalObject: {
                 instanceof: ArkField,
-                signature: '@type/exportExample.ts: %AC$%AC$%AC$%dflt$%dflt$0$%instInit$1$%instInit$2.c'
+                signature: '@type/exportExample.ts: %AC2$%AC1$%AC0$%dflt.%dflt.%instInit.%instInit.c'
             },
             transferWithTypeOf: true,
             toString: 'typeof c'
@@ -623,7 +634,7 @@ export const AliasTypeOfGenericObjectType = {
         name: 'GenericObject',
         signature: `@type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject`,
         modifiers: 0,
-        originalType: '@type/test.ts: %AC$0<X,Y>',
+        originalType: '@type/test.ts: %AC0<X,Y>',
         genericTypes: ['X', 'Y'],
         realGenericTypes: undefined,
     },
@@ -632,13 +643,13 @@ export const AliasTypeOfGenericObjectType = {
         typeAliasExpr: {
             originalObject: {
                 instanceof: ArkClass,
-                signature: '@type/test.ts: %AC$0',
+                signature: '@type/test.ts: %AC0',
             },
             transferWithTypeOf: false,
             realGenericTypes: undefined,
-            toString: '@type/test.ts: %AC$0'
+            toString: '@type/test.ts: %AC0'
         },
-        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<X,Y> = @type/test.ts: %AC$0',
+        toString: 'type @type/test.ts: %dflt.aliasTypeWithGenericType()#GenericObject<X,Y> = @type/test.ts: %AC0',
         line: 81,
         column: 5,
         operandColumns: [[10, 23], [32, 6]]

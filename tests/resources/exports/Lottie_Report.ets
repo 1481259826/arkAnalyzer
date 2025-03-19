@@ -39,6 +39,11 @@ export default class LottieUtils {
 @Component
 struct MyComponent {
     @State w:number = 150
+    @State inputValue: string = '159'
+    build(){
+        Column({ space: this.inputValue });
+    }
+
     func1(){
         animateTo({curve: Curve.Sharp, duration: 1000}, () => {
           this.w = (this.w === 80 ? 150 : 80);
@@ -59,12 +64,51 @@ struct BlurEffectsExample {
 
             Text('backdropBlur').fontSize(15).fontColor(0xCCCCCC).width('90%');
             Text()
-            .width('90%')
-            .height(40)
             .fontSize(16)
+            .itemStyle()
+            .itemTextStyle()
+            .textAnimatable()
             .backdropBlur(3)
             .backgroundImage('/pages/attrs/image/image.jpg')
             .backgroundImageSize({ width: 1200, height: 160 });
         }.width('100%').margin({ top: 5 });
+    }
+}
+
+@Styles
+function itemStyle() {
+  .width(336)
+  .height(621)
+}
+
+@Extend(Text)
+function itemTextStyle() {
+    .fontWeight(500)
+    .opacity(0.4)
+}
+
+@AnimatableExtend(Text)
+function textAnimatable() {
+    .maxLines(500)
+}
+
+function testArrayMap():void {
+    const arr = [1,2,3].map(x=>parse(x));
+    console.log(arr);
+}
+
+function parse(a: number):string {
+    return a.toString();
+}
+
+class Foo {
+    private a = {
+        b: {
+            c: function () {},
+        }
+    }
+
+    func(): void {
+        setTimeout(this.a.b.c.bind(this),1);
     }
 }

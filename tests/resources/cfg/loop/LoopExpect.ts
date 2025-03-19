@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -73,11 +73,11 @@ export const LOOP_EXPECT_CASE2 = {
             id: 0,
             stmts: [
                 'this = this: @loop/LoopSample.ts: %dflt',
-                '%0 = new @loop/LoopSample.ts: %AC$%dflt$case2$0',
-                'instanceinvoke %0.<@loop/LoopSample.ts: %AC$%dflt$case2$0.constructor()>()',
-                '%1 = new @loop/LoopSample.ts: %AC$%dflt$case2$1',
-                'instanceinvoke %1.<@loop/LoopSample.ts: %AC$%dflt$case2$1.constructor()>()',
-                '%2 = newarray (@loop/LoopSample.ts: %AC$%dflt$case2$0|@loop/LoopSample.ts: %AC$%dflt$case2$1)[2]',
+                '%0 = new @loop/LoopSample.ts: %AC0$%dflt.case2',
+                'instanceinvoke %0.<@loop/LoopSample.ts: %AC0$%dflt.case2.constructor()>()',
+                '%1 = new @loop/LoopSample.ts: %AC1$%dflt.case2',
+                'instanceinvoke %1.<@loop/LoopSample.ts: %AC1$%dflt.case2.constructor()>()',
+                '%2 = newarray (@loop/LoopSample.ts: %AC0$%dflt.case2|@loop/LoopSample.ts: %AC1$%dflt.case2)[2]',
                 '%2[0] = %0',
                 '%2[1] = %1',
                 'arr = %2',

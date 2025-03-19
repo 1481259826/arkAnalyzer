@@ -116,7 +116,7 @@ export class SdkUtils {
         });
     }
 
-    public static computeGlobalThis(leftOp: AbstractFieldRef, arkMethod: ArkMethod) {
+    public static computeGlobalThis(leftOp: AbstractFieldRef, arkMethod: ArkMethod): void {
         const globalThis = arkMethod.getDeclaringArkFile().getScene().getSdkGlobal(GLOBAL_THIS_NAME);
         if (globalThis instanceof ArkNamespace) {
             const exportInfo = new ExportInfo.Builder().exportClauseName(leftOp.getFieldName())
