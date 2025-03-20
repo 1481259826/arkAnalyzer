@@ -846,6 +846,7 @@ export class PagBuilder {
              *  but inside foreach will have >= 1 parameters
              */
             if (cs.callStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() === 'forEach') {
+                // container value is the base value of callstmt, its points-to is PagNewContainerExprNode
                 let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
                 let param = params.at(0);
                 if (containerValue && param) {
@@ -855,11 +856,13 @@ export class PagBuilder {
                     for (let pt of basePagNode.getPointTo()) {
                         let newContainerExprPagNode = this.pag.getNode(pt) as PagNewContainerExprNode;
 
+                        // PagNewContainerExprNode's points-to is the element node
                         if (!newContainerExprPagNode || !newContainerExprPagNode.getElementNode()) {
                             continue;
                         }
                         let srcPagNode = this.pag.getNode(newContainerExprPagNode.getElementNode()!) as PagNode;
 
+                        // connect the element node with the value inside foreach
                         this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
                         srcNodes.push(srcPagNode.getID());
                     }
