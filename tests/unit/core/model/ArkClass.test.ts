@@ -14,10 +14,23 @@
  */
 
 import { assert, describe, expect, it } from 'vitest';
-import { ArkClass, ArkMethod, ClassSignature, MethodSignature, Stmt } from '../../../../src';
+import { ArkClass, ArkMethod, ClassSignature, ClassType, MethodSignature, Stmt } from '../../../../src';
 import path from 'path';
 import { assertStmtsEqual, buildScene } from '../../common';
-import { Class_With_Static_Init_Block_Expect } from '../../../resources/model/class/ClassExpect';
+import {
+    Class_With_Static_Init_Block_Expect,
+    ClassWithFieldAndConstructor,
+    ClassWithFieldAndParamConstructor,
+    ClassWithGeneratedConstructor,
+    ClassWithParamProperty,
+    ClassWithSuperConstructor,
+    EnumClass,
+    InterfaceClass,
+    ObjClass, SubObjClass,
+    SubTypeLiteralClass,
+    TypeLiteralClass,
+} from '../../../resources/model/class/ClassExpect';
+import { ArkIRClassPrinter } from '../../../../src/save/arkir/ArkIRClassPrinter';
 
 describe('ArkClass Test', () => {
     const scene = buildScene(path.join(__dirname, '../../../resources/model/class'));
@@ -87,4 +100,131 @@ describe('ArkClass Test', () => {
     });
 });
 
+describe('ArkClass Constructor and Init Method Test', () => {
+    const scene = buildScene(path.join(__dirname, '../../../resources/model/class'));
+    const arkFile = scene.getFiles().find((file) => file.getName() === 'ClassWithConstructor.ts');
 
+    it('class with generated constructor', async () => {
+        const arkClass = arkFile?.getClassWithName('ClassWithNoConstructor');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, ClassWithGeneratedConstructor);
+        assert.isTrue(arkClass?.getMethodWithName('test')?.isPublic());
+    });
+
+    it('class with field and constructor', async () => {
+        const arkClass = arkFile?.getClassWithName('ClassWithNoParamConstructor');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, ClassWithFieldAndConstructor);
+        assert.isTrue(arkClass?.getFieldWithName('a')?.isPublic());
+    });
+
+    it('class with static field and constructor has params', async () => {
+        const arkClass = arkFile?.getClassWithName('ClassWithParamsConstructor');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, ClassWithFieldAndParamConstructor);
+        assert.isTrue(arkClass?.getStaticFieldWithName('a')?.isPublic());
+    });
+
+    it('class with super constructor', async () => {
+        const arkClass = arkFile?.getClassWithName('ClassWithSuperConstructor');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, ClassWithSuperConstructor);
+        assert.isTrue(arkClass?.getFieldWithName('c')?.isPublic());
+    });
+
+    it('class with param property', async () => {
+        const arkClass = arkFile?.getClassWithName('ClassWithParamProperty');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, ClassWithParamProperty);
+    });
+});
+
+describe('ArkClass with Other Category Test', () => {
+    const scene = buildScene(path.join(__dirname, '../../../resources/model/class'));
+    const arkFile = scene.getFiles().find((file) => file.getName() === 'ClassWithOtherCategory.ts');
+
+    it('interface class', async () => {
+        const arkClass = arkFile?.getClassWithName('TestInterface');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, InterfaceClass);
+    });
+
+    it('enum class', async () => {
+        const arkClass = arkFile?.getClassWithName('TestEnum');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        let printer = new ArkIRClassPrinter(arkClass!);
+        let ir = printer.dump();
+        assert.equal(ir, EnumClass);
+    });
+
+    it('type literal class', async () => {
+        const typeLiteral = arkFile?.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName('TestLiteral');
+        assert.isDefined(typeLiteral);
+        assert.isNotNull(typeLiteral);
+
+        assert.isTrue(typeLiteral!.getOriginalType() instanceof ClassType);
+        const className = (typeLiteral!.getOriginalType() as ClassType).getClassSignature().getClassName();
+        const literalClass = arkFile?.getClassWithName(className);
+        assert.isDefined(literalClass);
+        assert.isNotNull(literalClass);
+        let printer = new ArkIRClassPrinter(literalClass!);
+        let ir = printer.dump();
+        assert.equal(ir, TypeLiteralClass);
+
+        const subLiteralClassType = literalClass?.getFieldWithName('b')?.getType();
+        assert.isDefined(subLiteralClassType);
+        assert.isTrue(subLiteralClassType instanceof ClassType);
+        const subClassName = (subLiteralClassType as ClassType).getClassSignature().getClassName();
+        const subLiteralClass = arkFile?.getClassWithName(subClassName);
+        assert.isDefined(subLiteralClass);
+        assert.isNotNull(subLiteralClass);
+        let subClassPrinter = new ArkIRClassPrinter(subLiteralClass!);
+        let subIr = subClassPrinter.dump();
+        assert.equal(subIr, SubTypeLiteralClass);
+    });
+
+    // TODO: Local this in object class is transferred to be default class incorrectly here, correct this UT after that bug fixed
+    it('object class', async () => {
+        const objectClassLocal = arkFile?.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get('testObj');
+        assert.isDefined(objectClassLocal);
+
+        assert.isTrue(objectClassLocal!.getType() instanceof ClassType);
+        const objClassName = (objectClassLocal!.getType() as ClassType).getClassSignature().getClassName();
+        const objClass = arkFile?.getClassWithName(objClassName);
+        assert.isDefined(objClass);
+        assert.isNotNull(objClass);
+        let printer = new ArkIRClassPrinter(objClass!);
+        let ir = printer.dump();
+        assert.equal(ir, ObjClass);
+
+        const subObjClassType = objClass?.getFieldWithName('b')?.getType();
+        assert.isDefined(subObjClassType);
+        assert.isTrue(subObjClassType instanceof ClassType);
+        const subObjClassName = (subObjClassType as ClassType).getClassSignature().getClassName();
+        const subObjClass = arkFile?.getClassWithName(subObjClassName);
+        assert.isDefined(subObjClass);
+        assert.isNotNull(subObjClass);
+        let subClassPrinter = new ArkIRClassPrinter(subObjClass!);
+        let subIr = subClassPrinter.dump();
+        assert.equal(subIr, SubObjClass);
+    });
+});

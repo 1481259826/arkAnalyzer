@@ -780,7 +780,7 @@ export class TypeInference {
     public static inferFunctionType(argType: FunctionType, paramSubSignature: MethodSubSignature | undefined, realTypes: Type[] | undefined): void {
         const returnType = argType.getMethodSignature().getMethodSubSignature().getReturnType();
         const declareType = paramSubSignature?.getReturnType();
-        if (declareType instanceof GenericType && realTypes && !this.isUnclearType(returnType)) {
+        if (declareType instanceof GenericType && realTypes && !this.isUnclearType(returnType) && !(returnType instanceof VoidType)) {
             realTypes[declareType.getIndex()] = returnType;
         }
         const params = paramSubSignature?.getParameters();

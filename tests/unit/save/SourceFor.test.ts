@@ -42,7 +42,7 @@ for (let i of list) {
 for (let i of list) {
   console.info(i);
 }
-list.forEach((i: any) => {
+list.forEach((i: any): void => {
   console.info(i);
 });
 let i: number = 0;

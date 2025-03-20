@@ -74,7 +74,7 @@ import { ArkBaseModel } from '../../core/model/ArkBaseModel';
 import { ArkField } from '../../core/model/ArkField';
 import { ExportInfo } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
-import { BIGINT_KEYWORD } from '../../core/common/TSConst';
+import { BIGINT_KEYWORD, SUPER_NAME } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
@@ -152,7 +152,9 @@ export class SourceTransformer {
                 if (methodName === COMPONENT_CREATE_FUNCTION) {
                     // Anonymous @Builder method
                     if (args.length > 1) {
-                        args[1] = args[1].substring('() => '.length);
+                        // remove the substring '() =>' or '(x, y): type =>' at the beginning of args[1]
+                        const pattern = /^\([^)]*\)\s*:\s*\w*\s*=>\s*/;
+                        args[1] = args[1].replace(pattern, '');
                     }
                     return `${args.join(' ')}`;
                 }
@@ -182,7 +184,7 @@ export class SourceTransformer {
             }
         }
 
-        if (className && className.length > 0) {
+        if (className && className.length > 0 && methodName !== SUPER_NAME) {
             return `${className}.${methodName}${genericCode}(${args.join(', ')})`;
         }
         return `${methodName}${genericCode}(${args.join(', ')})`;

@@ -19,15 +19,17 @@ import path from 'path';
 
 const SourceBasicTest_CASE1_EXPECT = `class Person {
   x: number = 0;
+  public age: number;
   constructor(age: number) {
+    return this;
   }
-  growOld = () => {
+  growOld: () => void  = (): void => {
     this.age = this.age + 1;
   };
   public getAge() {
     return this.age;
   }
-  static wooooof() {
+  static wooooof(): void {
     logger.info('not a person sound');
   }
 }
@@ -43,9 +45,9 @@ const SourceBasicTest_CASE2_EXPECT = `export class SecurityDoor extends Door imp
   alert2(): void {
     logger.info('SecurityDoor alert2');
   }
-  public Members = class  {
+  public Members: Object = class  {
   };
-  public fooo() {
+  public fooo(): void {
     logger.info('This is fooo!');
   }
   constructor(x: number, y: string) {
@@ -53,6 +55,7 @@ const SourceBasicTest_CASE2_EXPECT = `export class SecurityDoor extends Door imp
     this.x = x;
     this.y = y;
     logger.info('This is a constrctor!');
+    return this;
   }
 }
 `;
@@ -68,6 +71,7 @@ const someClass = class <Type> {
   content: Type;
   constructor(value: Type) {
     this.content = value;
+    return this;
   }
 };
 const m: someClass = new someClass('Hello, world');
@@ -83,7 +87,7 @@ const SourceBasicTest_CASE5_EXPECT = `class ExtendedAdder extends Adder {
   // Create a copy of parent before creating our own
   private superAdd = this.add;
   // Now create our override
-  add = (b: string): string => {
+  add: (b: string) => string  = (b: string): string => {
     return this.superAdd(b);
   };
 }
@@ -96,7 +100,7 @@ const SourceBasicTest_CASE6_EXPECT = `async function * yieldTest() {
 }
 `;
 
-const SourceBasicTest_CASE7_EXPECT = `function dealColor(rRGB: number, gRGB: number, bRGB: number) {
+const SourceBasicTest_CASE7_EXPECT = `function dealColor(rRGB: number, gRGB: number, bRGB: number): void {
   let max = Math.max(Math.max(rRGB, gRGB), bRGB);
   let min = Math.min(Math.min(rRGB, gRGB), bRGB);
   let bHSB: number = max / 255;
@@ -125,7 +129,7 @@ const SourceBasicTest_CASE7_EXPECT = `function dealColor(rRGB: number, gRGB: num
 }
 `;
 
-const SourceBasicTest_CASE8_EXPECT = `function specialString(text: string) {
+const SourceBasicTest_CASE8_EXPECT = `function specialString(text: string): void {
   const lrcLineRegex: RegExp = new RegExp('\\\\[\\\\d{2,}:\\\\d{2}((\\\\.|:)\\\\d{2,})\\\\]', 'g');
   const lrcTimeRegex1: RegExp = new RegExp('\\\\[\\\\d{2,}', 'i');
   const lrcTimeRegex2: RegExp = new RegExp('\\\\d{2}\\\\.\\\\d{2,}', 'i');
@@ -137,7 +141,7 @@ const SourceBasicTest_CASE9_EXPECT = `function dotDotDotTokenTest(...args: strin
 }
 `;
 
-const SourceBasicTest_CASE10_EXPECT = `function controlTest() {
+const SourceBasicTest_CASE10_EXPECT = `function controlTest(): void {
   const sampleData: number[] = [1, 2, 3, 4, 5];
   let i: number = 0;
   for (; i < sampleData.length; i = i + 1) {

@@ -38,7 +38,7 @@ import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
 import { IRInference } from './core/common/IRInference';
 import { ImportInfo } from './core/model/ArkImport';
-import { ALL, TSCONFIG_JSON } from './core/common/TSConst';
+import { ALL, CONSTRUCTOR_NAME, TSCONFIG_JSON } from './core/common/TSConst';
 import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
 import { SdkUtils } from './core/common/SdkUtils';
 
@@ -285,7 +285,10 @@ export class Scene {
         for (const file of this.getFiles()) {
             for (const cls of ModelUtils.getAllClassesInFile(file)) {
                 buildDefaultConstructor(cls);
-                addInitInConstructor(cls);
+                const constructor = cls.getMethodWithName(CONSTRUCTOR_NAME);
+                if (constructor !== null) {
+                    addInitInConstructor(constructor);
+                }
             }
         }
     }

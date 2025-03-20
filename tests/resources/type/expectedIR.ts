@@ -943,28 +943,38 @@ type IntersectionType = string & bigint & void;
 `;
 
 export const IRBigIntType = `class %dflt {
-  %dflt() {
-    this = this: @type/bigIntType.ts: %dflt
-    type @type/bigIntType.ts: %dflt.[static]%dflt()#IntersectionType = string&bigint&void
-    return
+  %dflt(): void {
+    label0:
+      this = this: @type/bigIntType.ts: %dflt
+      type @type/bigIntType.ts: %dflt.[static]%dflt()#IntersectionType = string&bigint&void
+      return
   }
-
 }
 class BigIntClass {
-  %statInit() {
-    this = this: @type/bigIntType.ts: BigIntClass
-    return
+  private fieldA: bigint
+  fieldB: number&bigint
+  static fieldC: bigint|number
+
+  %statInit(): void {
+    label0:
+      this = this: @type/bigIntType.ts: BigIntClass
+      return
   }
 
-  private fieldA: bigint;
-  %instInit() {
-    this = this: @type/bigIntType.ts: BigIntClass
-    this.<@type/bigIntType.ts: BigIntClass.fieldA> = 1
-    return
+  constructor(): @type/bigIntType.ts: BigIntClass {
+    label0:
+      this = this: @type/bigIntType.ts: BigIntClass
+      instanceinvoke this.<@type/bigIntType.ts: BigIntClass.%instInit()>()
+      return this
   }
 
-  fieldB: number&bigint;
-  static fieldC: bigint|number;
+  %instInit(): void {
+    label0:
+      this = this: @type/bigIntType.ts: BigIntClass
+      this.<@type/bigIntType.ts: BigIntClass.fieldA> = 1
+      return
+  }
+
   transfer2String(num: number|bigint): string|bigint {
     label0:
       num = parameter0: number|bigint
@@ -986,28 +996,27 @@ class BigIntClass {
     label2:
       %6 = instanceinvoke num.<@%unk/%unk: .toString()>()
       return %6
-
   }
 
   testBitOperator(a: bigint, b: bigint): bigint {
-    a = parameter0: bigint
-    b = parameter1: bigint
-    this = this: @type/bigIntType.ts: BigIntClass
-    %0 = b & a
-    %1 = a ^ %0
-    %2 = b << 1
-    %3 = %2 >> 2
-    c = %1 | %3
-    aa = 123
-    bb = 456
-    %4 = bb & aa
-    %5 = aa ^ %4
-    %6 = bb << aa
-    %7 = %6 >> bb
-    %8 = %7 >>> aa
-    cc = %5 | %8
-    return c
+    label0:
+      a = parameter0: bigint
+      b = parameter1: bigint
+      this = this: @type/bigIntType.ts: BigIntClass
+      %0 = b & a
+      %1 = a ^ %0
+      %2 = b << 1
+      %3 = %2 >> 2
+      c = %1 | %3
+      aa = 123
+      bb = 456
+      %4 = bb & aa
+      %5 = aa ^ %4
+      %6 = bb << aa
+      %7 = %6 >> bb
+      %8 = %7 >>> aa
+      cc = %5 | %8
+      return c
   }
-
 }
 `;

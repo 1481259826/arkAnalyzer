@@ -26,13 +26,14 @@ import { BodyBuilder } from './builder/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
-import { ArkBaseModel } from './ArkBaseModel';
+import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
 import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
 import { Constant } from '../base/Constant';
 import { Local } from '../base/Local';
 import { Language } from './ArkFile';
+import { CONSTRUCTOR_NAME } from '../common/TSConst';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -674,5 +675,20 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     public getQuestionToken(): boolean {
         return this.questionToken;
+    }
+
+    // For class method, if there is no public/private/protected access modifier, it is actually public
+    public isPublic(): boolean {
+        if (!this.containsModifier(ModifierType.PUBLIC) &&
+            !this.containsModifier(ModifierType.PRIVATE) &&
+            !this.containsModifier(ModifierType.PROTECTED) &&
+            !this.getDeclaringArkClass().isDefaultArkClass() &&
+            !this.isGenerated() &&
+            !this.isAnonymousMethod() &&
+            this.getName() !== CONSTRUCTOR_NAME &&
+            this.getDeclaringArkClass().getCategory() === ClassCategory.CLASS) {
+            return true;
+        }
+        return this.containsModifier(ModifierType.PUBLIC);
     }
 }

@@ -36,14 +36,15 @@ class Animal {
   protected _name: string | undefined;
   public constructor(theName: string) {
     this._name = theName;
+    return this;
   }
-  public move(distanceInMeters: number) {
+  public move(distanceInMeters: number): void {
     logger.info(this._name.toString() + ' moved ' + distanceInMeters.toString() + 'm.');
   }
   get name(): string | undefined {
     return this._name;
   }
-  set name(newName: string | undefined) {
+  set name(newName: string | undefined): void {
     this._name = newName;
   }
   public print(a: Animal[]): number | null {
@@ -56,8 +57,9 @@ class Animal {
 class Snake extends Animal {
   constructor(name: string) {
     super(name);
+    return this;
   }
-  move(distanceInMeters: any) {
+  move(distanceInMeters: any): void {
     logger.info('Slithering...');
     super.move(distanceInMeters);
   }
@@ -65,8 +67,9 @@ class Snake extends Animal {
 class Horse extends Animal {
   constructor(name: string) {
     super(name);
+    return this;
   }
-  move(distanceInMeters: any) {
+  move(distanceInMeters: any): void {
     logger.info('Galloping...');
     super.move(distanceInMeters);
   }
@@ -103,30 +106,31 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   roles: string[] = ['user'];
   selectIndex: number = 0;
   role: string = this.roles[this.selectIndex];
-  readonly createdAt = new Date();
+  readonly createdAt: Date = new Date();
   constructor(id: string, name: string) {
     super(id);
     this.name = name;
+    return this;
   }
-  setName(name: string) {
+  setName(name: string): void {
     this.name = name;
   }
-  verifyName: (name: string) =>  = (name: string) => {
+  verifyName: (name: string) => void  = (name: string): void => {
   };
   sync(cb: (result: string) => void ): void {
   }
   get accountID(): string {
     return this.id;
   }
-  set accountID(value: string) {
+  set accountID(value: string): void {
     this.id = value;
   }
-  private makeRequest() {
+  private makeRequest(): void {
   }
-  protected handleRequest() {
+  protected handleRequest(): void {
   }
   private static userCount: number = 0;
-  static registerUser(user: User) {
+  static registerUser(user: User): void {
   }
 }
 `;

@@ -21,14 +21,14 @@ const CASE1_EXPECT = `@Component
 struct HelloGrandsonComponent {
   @Link
   message: string;
-  build() {
+  build(): void {
     Row() {
       Text('HelloGrandsonComponent===' + this.message.toString())
       .fontSize(30)
       .fontWeight(FontWeight.Bold)
     }
   }
-  static build(a: number) {
+  static build(a: number): number {
     if (a != 0) {
       return 1;
     }
@@ -41,7 +41,7 @@ const CASE2_EXPECT = `namespace Case2 {
     paramA1: string = '';
   }
   @Builder
-  function overBuilder($$: Tmp) {
+  function overBuilder($$: Tmp): void {
     Row() {
       Column() {
         Text('overBuilder===' + $$.paramA1.toString())
@@ -53,7 +53,7 @@ const CASE2_EXPECT = `namespace Case2 {
   struct HelloComponent {
     @Link
     message: string;
-    build() {
+    build(): void {
       Row() {
         Text('HelloComponent===' + this.message.toString())
       }
@@ -64,12 +64,12 @@ const CASE2_EXPECT = `namespace Case2 {
   struct BuilderTest {
     @State
     label: string = 'Hello';
-    build() {
+    build(): void {
       Column() {
         // Pass the this.label reference to the overBuilder component when the overBuilder component is called in the Parent component.
         overBuilder({paramA1: this.label});
         Button('Click me')
-        .onClick(() => {
+        .onClick((): void => {
         // After Click me is clicked, the UI text changes from Hello to ArkUI.
         this.label = 'ArkUI';
       })
@@ -81,7 +81,7 @@ const CASE2_EXPECT = `namespace Case2 {
 
 const CASE3_EXPECT = `namespace Case3 {
   @Builder
-  function overBuilder(paramA1: string) {
+  function overBuilder(paramA1: string): void {
     Row() {
       Text('UseStateVarByValue: ' + paramA1.toString() + ' ')
     }
@@ -91,7 +91,7 @@ const CASE3_EXPECT = `namespace Case3 {
   struct BuilderTest {
     @State
     label: string = 'Hello';
-    build() {
+    build(): void {
       Column() {
         overBuilder(this.label);
       }
@@ -106,20 +106,20 @@ struct LazyForEachTest {
   private moved: number[] = [];
   @State
   data: MyDataSource = new MyDataSource();
-  aboutToAppear() {
+  aboutToAppear(): void {
     let i: number = 0;
     while (i <= 20) {
       this.data.pushData(new StringData(new NestedString('Hello ' + i.toString())));
       i = i + 1;
     }
   }
-  build() {
+  build(): void {
     List({space: 3}) {
-      LazyForEach(this.data, (item: StringData, index: number) => {
+      LazyForEach(this.data, (item: StringData, index: number): void => {
       ListItem() {
         ChildComponent({data: item})
       }
-      .onClick(() => {
+      .onClick((): void => {
         item.message = new NestedString(item.message.message + '0');
       })
     }, (item: StringData, index: number) => {
@@ -152,7 +152,7 @@ struct IfElseTest1 {
   toggle: boolean = false;
   @State
   toggleColor: boolean = false;
-  build() {
+  build(): void {
     Column() {
       Text('Before')
       .fontSize(15)
@@ -186,11 +186,11 @@ struct IfElseTest1 {
       Text('After')
       .fontSize(15)
       Button('Toggle Outer')
-      .onClick(() => {
+      .onClick((): void => {
       this.toggle = !this.toggle;
     })
       Button('Toggle Inner')
-      .onClick(() => {
+      .onClick((): void => {
       this.toggleColor = !this.toggleColor;
     })
     }
@@ -203,14 +203,14 @@ const CASE6_EXPECT = `@Entry
 struct BuilderParamTest {
   @State
   text: string = 'header';
-  build() {
+  build(): void {
     Column() {
       CustomContainer({header: this.text}) {
       Column() {
         specificParam('testA', 'testB');
       }
       .backgroundColor(Color.Yellow)
-      .onClick(() => {
+      .onClick((): void => {
         this.text = 'changeHeader';
       })
     }
@@ -224,16 +224,16 @@ const CASE7_EXPECT = `namespace Case2 {
   struct Child {
     label: string = 'Child';
     @Builder
-    customBuilder() {
+    customBuilder(): void {
     }
     @Builder
-    customChangeThisBuilder() {
+    customChangeThisBuilder(): void {
     }
     @BuilderParam
     customBuilderParam: () => void  = this.customBuilder;
     @BuilderParam
     customChangeThisBuilderParam: () => void  = this.customChangeThisBuilder;
-    build() {
+    build(): void {
       Column() {
         this.customBuilderParam();
         this.customChangeThisBuilderParam();
@@ -245,10 +245,10 @@ const CASE7_EXPECT = `namespace Case2 {
   struct BuilderParamTest {
     label: string = 'Parent';
     @Builder
-    componentBuilder() {
+    componentBuilder(): void {
       Text(this.label.toString())
     }
-    build() {
+    build(): void {
       Column() {
         this.componentBuilder();
         Child({customBuilderParam: this.componentBuilder, customChangeThisBuilderParam: (): void => {
@@ -288,7 +288,7 @@ export default class SongItemBuilder {
     if (!this.context != 0) {
       return this.songItem;
     }
-    let rawfileFd = await this.context.resourceManager.getRawFd(songItem.src).catch((error: BusinessError) => {
+    let rawfileFd = await this.context.resourceManager.getRawFd(songItem.src).catch((error: BusinessError): void => {
       Logger.error('resourceManager error code ' + error.code.toString() + ' message ' + error.message.toString());
     });
     if (rawfileFd != 0) {

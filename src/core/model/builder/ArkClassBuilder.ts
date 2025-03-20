@@ -13,20 +13,15 @@
  * limitations under the License.
  */
 
-import { ArkField } from '../ArkField';
+import { ArkField, FieldCategory } from '../ArkField';
 import { ArkFile } from '../ArkFile';
 import { ArkMethod } from '../ArkMethod';
 import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
-import ts from 'ohos-typescript';
+import ts, { ParameterDeclaration } from 'ohos-typescript';
 import { ArkClass, ClassCategory } from '../ArkClass';
-import {
-    buildArkMethodFromArkClass,
-    buildDefaultArkMethodFromArkClass,
-    buildInitMethod,
-    checkAndUpdateMethod,
-} from './ArkMethodBuilder';
-import { buildDecorators, buildHeritageClauses, buildModifiers, buildTypeParameters } from './builderUtils';
+import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod, checkAndUpdateMethod } from './ArkMethodBuilder';
+import { buildDecorators, buildGenericType, buildHeritageClauses, buildModifiers, buildTypeParameters, tsNode2Type } from './builderUtils';
 import { buildGetAccessor2ArkField, buildIndexSignature2ArkField, buildProperty2ArkField } from './ArkFieldBuilder';
 import { ArkIRTransformer } from '../../common/ArkIRTransformer';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
@@ -40,10 +35,10 @@ import {
     STATIC_INIT_METHOD_NAME,
 } from '../../common/Const';
 import { IRUtils } from '../../common/IRUtils';
-import { ClassSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
+import { ClassSignature, FieldSignature, MethodSignature, MethodSubSignature } from '../ArkSignature';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
-import { FullPosition } from '../../base/Position';
-import { VoidType } from '../../base/Type';
+import { FullPosition, LineColPosition } from '../../base/Position';
+import { Type, UnknownType, VoidType } from '../../base/Type';
 import { BodyBuilder } from './BodyBuilder';
 import { ArkStaticInvokeExpr } from '../../base/Expr';
 
@@ -168,6 +163,7 @@ function init4InstanceInitMethod(cls: ArkClass) {
     instanceInit.setDeclaringArkClass(cls);
     instanceInit.setIsGeneratedFlag(true);
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(INSTANCE_INIT_METHOD_NAME);
+    methodSubSignature.setReturnType(VoidType.getInstance());
     const methodSignature = new MethodSignature(instanceInit.getDeclaringArkClass().getSignature(),
         methodSubSignature);
     instanceInit.setImplementationSignature(methodSignature);
@@ -183,6 +179,7 @@ function init4StaticInitMethod(cls: ArkClass) {
     staticInit.setDeclaringArkClass(cls);
     staticInit.setIsGeneratedFlag(true);
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(STATIC_INIT_METHOD_NAME);
+    methodSubSignature.setReturnType(VoidType.getInstance());
     const methodSignature = new MethodSignature(staticInit.getDeclaringArkClass().getSignature(),
         methodSubSignature);
     staticInit.setImplementationSignature(methodSignature);
@@ -422,8 +419,40 @@ function buildMethodsForClass(clsNode: ClassLikeNodeWithMethod, cls: ArkClass, s
             buildArkMethodFromArkClass(member, cls, mthd, sourceFile);
             if (ts.isGetAccessor(member)) {
                 buildGetAccessor2ArkField(member, mthd, sourceFile);
+            } else if (ts.isConstructorDeclaration(member)) {
+                buildParameterProperty2ArkField(member.parameters, cls, sourceFile);
             }
         }
+    });
+}
+
+// params of constructor method may have modifiers such as public or private to directly define class properties with constructor
+function buildParameterProperty2ArkField(params: ts.NodeArray<ParameterDeclaration>, cls: ArkClass, sourceFile: ts.SourceFile): void {
+    if (params.length === 0) {
+        return;
+    }
+    params.forEach((parameter) => {
+        if (parameter.modifiers === undefined || !ts.isIdentifier(parameter.name)) {
+            return;
+        }
+        let field = new ArkField();
+        field.setDeclaringArkClass(cls);
+
+        field.setCode(parameter.getText(sourceFile));
+        field.setCategory(FieldCategory.PARAMETER_PROPERTY);
+        field.setOriginPosition(LineColPosition.buildFromNode(parameter, sourceFile));
+
+        let fieldName = parameter.name.text;
+        let fieldType: Type;
+        if (parameter.type) {
+            fieldType = (buildGenericType(tsNode2Type(parameter.type, sourceFile, field), field));
+        } else {
+            fieldType = UnknownType.getInstance();
+        }
+        const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, false);
+        field.setSignature(fieldSignature);
+        field.setModifiers(buildModifiers(parameter));
+        cls.addField(field);
     });
 }
 
@@ -486,5 +515,8 @@ function getInitStmts(transformer: ArkIRTransformer, field: ArkField, initNode?:
             stmt.setOriginalText(fieldSourceCode);
         }
         field.setInitializer(stmts);
+        if (field.getType() instanceof UnknownType) {
+            field.getSignature().setType(initValue.getType());
+        }
     }
 }

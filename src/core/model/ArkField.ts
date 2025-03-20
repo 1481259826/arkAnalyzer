@@ -15,10 +15,10 @@
 
 import { LineColPosition } from '../base/Position';
 import { Stmt } from '../base/Stmt';
-import { ArkClass } from './ArkClass';
+import { ArkClass, ClassCategory } from './ArkClass';
 import { FieldSignature } from './ArkSignature';
 import { Type } from '../base/Type';
-import { ArkBaseModel } from './ArkBaseModel';
+import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
 import { Language } from './ArkFile';
 
@@ -32,6 +32,7 @@ export enum FieldCategory {
     ENUM_MEMBER = 5,
     INDEX_SIGNATURE = 6,
     GET_ACCESSOR = 7,
+    PARAMETER_PROPERTY = 8,
 }
 
 /**
@@ -147,5 +148,16 @@ export class ArkField extends ArkBaseModel {
 
     public validate(): ArkError {
         return this.validateFields(['category', 'declaringClass', 'fieldSignature']);
+    }
+
+    // For class field, it is default public if there is not any access modify
+    public isPublic(): boolean {
+        if (!this.containsModifier(ModifierType.PUBLIC) &&
+            !this.containsModifier(ModifierType.PRIVATE) &&
+            !this.containsModifier(ModifierType.PROTECTED) &&
+            this.getDeclaringArkClass().getCategory() === ClassCategory.CLASS) {
+            return true;
+        }
+        return this.containsModifier(ModifierType.PUBLIC);
     }
 }

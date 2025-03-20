@@ -59,6 +59,7 @@ export class BreakpointType<T> {
   options: BreakPointTypeOption<T>;
   constructor(option: BreakPointTypeOption<T>) {
     this.options = option;
+    return this;
   }
   getValue(currentPoint: string): T {
     if (currentPoint === 'sm') {

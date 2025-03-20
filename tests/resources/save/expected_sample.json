@@ -33,7 +33,7 @@
             "name": "%dflt",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -2041,7 +2041,7 @@
             "name": "%instInit",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -2124,7 +2124,7 @@
             "name": "%statInit",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -2285,43 +2285,6 @@
                   "predecessors": [],
                   "stmts": [
                     {
-                      "_": "CallStmt",
-                      "expr": {
-                        "_": "InstanceCallExpr",
-                        "instance": {
-                          "_": "Local",
-                          "name": "this",
-                          "type": {
-                            "_": "ClassType",
-                            "signature": {
-                              "name": "Student",
-                              "declaringFile": {
-                                "projectName": "save",
-                                "fileName": "sample.ts"
-                              },
-                              "declaringNamespace": null
-                            }
-                          }
-                        },
-                        "method": {
-                          "declaringClass": {
-                            "name": "Student",
-                            "declaringFile": {
-                              "projectName": "save",
-                              "fileName": "sample.ts"
-                            },
-                            "declaringNamespace": null
-                          },
-                          "name": "%instInit",
-                          "parameters": [],
-                          "returnType": {
-                            "_": "UnknownType"
-                          }
-                        },
-                        "args": []
-                      }
-                    },
-                    {
                       "_": "AssignStmt",
                       "left": {
                         "_": "Local",
@@ -2402,6 +2365,43 @@
                             "declaringNamespace": null
                           }
                         }
+                      }
+                    },
+                    {
+                      "_": "CallStmt",
+                      "expr": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
+                          "_": "Local",
+                          "name": "this",
+                          "type": {
+                            "_": "ClassType",
+                            "signature": {
+                              "name": "Student",
+                              "declaringFile": {
+                                "projectName": "save",
+                                "fileName": "sample.ts"
+                              },
+                              "declaringNamespace": null
+                            }
+                          }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "Student",
+                            "declaringFile": {
+                              "projectName": "save",
+                              "fileName": "sample.ts"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "%instInit",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "VoidType"
+                          }
+                        },
+                        "args": []
                       }
                     },
                     {
@@ -2531,7 +2531,22 @@
                       }
                     },
                     {
-                      "_": "ReturnVoidStmt"
+                      "_": "ReturnStmt",
+                      "arg": {
+                        "_": "Local",
+                        "name": "this",
+                        "type": {
+                          "_": "ClassType",
+                          "signature": {
+                            "name": "Student",
+                            "declaringFile": {
+                              "projectName": "save",
+                              "fileName": "sample.ts"
+                            },
+                            "declaringNamespace": null
+                          }
+                        }
+                      }
                     }
                   ]
                 }
@@ -3212,7 +3227,7 @@
             "name": "%instInit",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -3295,7 +3310,7 @@
             "name": "%statInit",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -3792,7 +3807,15 @@
             "name": "constructor",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "ClassType",
+              "signature": {
+                "name": "Shape",
+                "declaringFile": {
+                  "projectName": "save",
+                  "fileName": "sample.ts"
+                },
+                "declaringNamespace": null
+              }
             }
           },
           "modifiers": 0,
@@ -3802,7 +3825,15 @@
               {
                 "name": "this",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "ClassType",
+                  "signature": {
+                    "name": "Shape",
+                    "declaringFile": {
+                      "projectName": "save",
+                      "fileName": "sample.ts"
+                    },
+                    "declaringNamespace": null
+                  }
                 }
               }
             ],
@@ -3819,7 +3850,15 @@
                         "_": "Local",
                         "name": "this",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "ClassType",
+                          "signature": {
+                            "name": "Shape",
+                            "declaringFile": {
+                              "projectName": "save",
+                              "fileName": "sample.ts"
+                            },
+                            "declaringNamespace": null
+                          }
                         }
                       },
                       "right": {
@@ -3845,7 +3884,15 @@
                           "_": "Local",
                           "name": "this",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "ClassType",
+                            "signature": {
+                              "name": "Shape",
+                              "declaringFile": {
+                                "projectName": "save",
+                                "fileName": "sample.ts"
+                              },
+                              "declaringNamespace": null
+                            }
                           }
                         },
                         "method": {
@@ -3860,14 +3907,29 @@
                           "name": "%instInit",
                           "parameters": [],
                           "returnType": {
-                            "_": "UnknownType"
+                            "_": "VoidType"
                           }
                         },
                         "args": []
                       }
                     },
                     {
-                      "_": "ReturnVoidStmt"
+                      "_": "ReturnStmt",
+                      "arg": {
+                        "_": "Local",
+                        "name": "this",
+                        "type": {
+                          "_": "ClassType",
+                          "signature": {
+                            "name": "Shape",
+                            "declaringFile": {
+                              "projectName": "save",
+                              "fileName": "sample.ts"
+                            },
+                            "declaringNamespace": null
+                          }
+                        }
+                      }
                     }
                   ]
                 }
@@ -3926,7 +3988,7 @@
             "name": "%instInit",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -4009,7 +4071,7 @@
             "name": "%statInit",
             "parameters": [],
             "returnType": {
-              "_": "UnknownType"
+              "_": "VoidType"
             }
           },
           "modifiers": 0,
@@ -4144,43 +4206,6 @@
                   "predecessors": [],
                   "stmts": [
                     {
-                      "_": "CallStmt",
-                      "expr": {
-                        "_": "InstanceCallExpr",
-                        "instance": {
-                          "_": "Local",
-                          "name": "this",
-                          "type": {
-                            "_": "ClassType",
-                            "signature": {
-                              "name": "Circle",
-                              "declaringFile": {
-                                "projectName": "save",
-                                "fileName": "sample.ts"
-                              },
-                              "declaringNamespace": null
-                            }
-                          }
-                        },
-                        "method": {
-                          "declaringClass": {
-                            "name": "Circle",
-                            "declaringFile": {
-                              "projectName": "save",
-                              "fileName": "sample.ts"
-                            },
-                            "declaringNamespace": null
-                          },
-                          "name": "%instInit",
-                          "parameters": [],
-                          "returnType": {
-                            "_": "UnknownType"
-                          }
-                        },
-                        "args": []
-                      }
-                    },
-                    {
                       "_": "AssignStmt",
                       "left": {
                         "_": "Local",
@@ -4235,10 +4260,10 @@
                         "_": "StaticCallExpr",
                         "method": {
                           "declaringClass": {
-                            "name": "",
+                            "name": "Shape",
                             "declaringFile": {
-                              "projectName": "%unk",
-                              "fileName": "%unk"
+                              "projectName": "save",
+                              "fileName": "sample.ts"
                             },
                             "declaringNamespace": null
                           },
@@ -4246,6 +4271,43 @@
                           "parameters": [],
                           "returnType": {
                             "_": "UnknownType"
+                          }
+                        },
+                        "args": []
+                      }
+                    },
+                    {
+                      "_": "CallStmt",
+                      "expr": {
+                        "_": "InstanceCallExpr",
+                        "instance": {
+                          "_": "Local",
+                          "name": "this",
+                          "type": {
+                            "_": "ClassType",
+                            "signature": {
+                              "name": "Circle",
+                              "declaringFile": {
+                                "projectName": "save",
+                                "fileName": "sample.ts"
+                              },
+                              "declaringNamespace": null
+                            }
+                          }
+                        },
+                        "method": {
+                          "declaringClass": {
+                            "name": "Circle",
+                            "declaringFile": {
+                              "projectName": "save",
+                              "fileName": "sample.ts"
+                            },
+                            "declaringNamespace": null
+                          },
+                          "name": "%instInit",
+                          "parameters": [],
+                          "returnType": {
+                            "_": "VoidType"
                           }
                         },
                         "args": []
@@ -4294,7 +4356,22 @@
                       }
                     },
                     {
-                      "_": "ReturnVoidStmt"
+                      "_": "ReturnStmt",
+                      "arg": {
+                        "_": "Local",
+                        "name": "this",
+                        "type": {
+                          "_": "ClassType",
+                          "signature": {
+                            "name": "Circle",
+                            "declaringFile": {
+                              "projectName": "save",
+                              "fileName": "sample.ts"
+                            },
+                            "declaringNamespace": null
+                          }
+                        }
+                      }
                     }
                   ]
                 }
