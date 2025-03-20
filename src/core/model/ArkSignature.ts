@@ -17,7 +17,14 @@ import path from 'path';
 import { transfer2UnixPath } from '../../utils/pathTransfer';
 import { ClassType, Type } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
-import { UNKNOWN_CLASS_NAME, UNKNOWN_FILE_NAME, UNKNOWN_NAMESPACE_NAME, UNKNOWN_PROJECT_NAME } from '../common/Const';
+import {
+    ANONYMOUS_CLASS_PREFIX,
+    NAME_DELIMITER,
+    UNKNOWN_CLASS_NAME,
+    UNKNOWN_FILE_NAME,
+    UNKNOWN_NAMESPACE_NAME,
+    UNKNOWN_PROJECT_NAME
+} from '../common/Const';
 import { CryptoUtils } from '../../utils/crypto_utils';
 
 export type Signature =
@@ -146,6 +153,21 @@ export class ClassSignature {
      * @returns The name of this class.
      */
     public getClassName() {
+        return this.className;
+    }
+
+    /**
+     *
+     * @returns The name of the declare class.
+     */
+    public getDeclaringClassName(): string {
+        if (this.className.startsWith(ANONYMOUS_CLASS_PREFIX)) {
+            let temp = this.className;
+            do {
+                temp = temp.substring(temp.indexOf(NAME_DELIMITER) + 1, temp.lastIndexOf('.'));
+            } while (temp.startsWith(ANONYMOUS_CLASS_PREFIX));
+            return temp;
+        }
         return this.className;
     }
 

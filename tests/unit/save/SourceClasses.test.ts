@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -115,7 +115,7 @@ const SourceClassesTest_CASE3_EXPECT = `class User extends Account implements Up
   };
   sync(cb: (result: string) => void ): void {
   }
-  get accountID() {
+  get accountID(): string {
     return this.id;
   }
   set accountID(value: string) {

@@ -20,7 +20,7 @@ import { ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from '.
 import { Value } from './Value';
 import { TypeInference } from '../common/TypeInference';
 import { ArkMethod } from '../model/ArkMethod';
-import { ANONYMOUS_CLASS_DELIMITER, ANONYMOUS_CLASS_PREFIX } from '../common/Const';
+import { ANONYMOUS_CLASS_PREFIX } from '../common/Const';
 import { Stmt } from './Stmt';
 import { IRInference } from '../common/IRInference';
 
@@ -294,10 +294,9 @@ export class ArkThisRef extends AbstractRef {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        const arkClass = arkMethod.getDeclaringArkClass();
-        const className = this.type.getClassSignature().getClassName();
-        if (className.startsWith(ANONYMOUS_CLASS_PREFIX)) {
-            let type = TypeInference.inferBaseType(className.split(ANONYMOUS_CLASS_DELIMITER)[1], arkClass);
+        const classSignature = this.type.getClassSignature();
+        if (classSignature.getClassName().startsWith(ANONYMOUS_CLASS_PREFIX)) {
+            let type = TypeInference.inferBaseType(classSignature.getDeclaringClassName(), arkMethod.getDeclaringArkClass());
             if (type instanceof ClassType) {
                 this.type = type;
             }

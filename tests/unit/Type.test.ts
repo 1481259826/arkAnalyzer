@@ -16,18 +16,28 @@
 import { assert, describe, it } from 'vitest';
 import path from 'path';
 import {
-    AliasType, AliasTypeExpr,
+    AliasType,
+    AliasTypeExpr,
     ArkAliasTypeDefineStmt,
+    ArkAssignStmt,
+    ArkClass,
+    ArkField,
+    ArkMethod,
     ArrayType,
-    Type,
-    TupleType,
-    UnionType,
-    FileSignature, ImportInfo,
+    ClassType,
+    FileSignature,
+    FunctionType,
+    ImportInfo,
+    IntersectionType,
+    Local,
     Scene,
-    SceneConfig, SourceMethodPrinter,
+    SceneConfig,
+    SourceClassPrinter,
+    SourceMethodPrinter,
     Stmt,
-    Local, ArkField, ArkClass, ArkMethod, FunctionType,
-    IntersectionType, SourceClassPrinter, ArkAssignStmt, ClassType,
+    TupleType,
+    Type,
+    UnionType,
 } from '../../src';
 import {
     AliasTypeMultiRef,
@@ -64,16 +74,16 @@ import {
     SourceAliasTypeWithReference,
     SourceAliasTypeWithTypeQuery,
     SourceAliasTypeWithUnionType,
+    SourceAllKeyofObjectClassWithTypeOperator,
+    SourceBasicKeyofClassWithTypeOperator,
+    SourceBasicReadonlyClassWithTypeOperator,
     SourceIntersectionTypeForClass,
     SourceIntersectionTypeForDefaultMethod,
     SourceIntersectionTypeForFunction,
-    SourceSimpleAliasType,
-    SourceBasicReadonlyClassWithTypeOperator,
-    SourceReadonlyOfReferenceTypeClassWithTypeOperator,
-    SourceReadonlyOfGenericTypeClassWithTypeOperator,
-    SourceBasicKeyofClassWithTypeOperator,
-    SourceAllKeyofObjectClassWithTypeOperator,
     SourceKeyofWithGenericClassWithTypeOperator,
+    SourceReadonlyOfGenericTypeClassWithTypeOperator,
+    SourceReadonlyOfReferenceTypeClassWithTypeOperator,
+    SourceSimpleAliasType,
 } from '../resources/type/expectedIR';
 import { KeyofTypeExpr, TypeQueryExpr } from '../../src/core/base/TypeExpr';
 
@@ -682,7 +692,7 @@ describe('Alias Type With Generic Type Test', () => {
             compareTypeAliasStmt(stmts![8], AliasTypeOfGenericObjectWithBooleanNumber.stmt);
         }
 
-        assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), '@type/test.ts: %AC$0<boolean,number>');
+        assert.equal((alias![0].getOriginalType() as AliasType).getOriginalType().toString(), '@type/test.ts: %AC0<boolean,number>');
     });
 
     it('alias type of Generic in return type', () => {
@@ -787,7 +797,7 @@ describe('Intersection Type Test', () => {
     it('case5: alias type and anonymous class intersection', () => {
         const alias = method?.getBody()?.getAliasTypeMap()?.get('Employee');
         assert.isDefined(alias);
-        assert.equal(alias![0].getOriginalType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Person&@type/intersectionType.ts: %AC$3');
+        assert.equal(alias![0].getOriginalType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Person&@type/intersectionType.ts: %AC3');
     });
 
     it('case6: class intersection', () => {
@@ -820,7 +830,7 @@ describe('Intersection Type Test', () => {
         assert.equal(fields![0].getType().toString(), 'string&number');
         assert.equal(fields![1].getType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#A&@type/intersectionType.ts: %dflt.[static]%dflt()#B');
         assert.equal(fields![2].getType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Employee&(number|boolean)');
-        assert.equal(((fields![2].getType() as IntersectionType).getTypes()[0] as AliasType).getOriginalType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Person&@type/intersectionType.ts: %AC$3');
+        assert.equal(((fields![2].getType() as IntersectionType).getTypes()[0] as AliasType).getOriginalType().toString(), '@type/intersectionType.ts: %dflt.[static]%dflt()#Person&@type/intersectionType.ts: %AC3');
     });
 });
 

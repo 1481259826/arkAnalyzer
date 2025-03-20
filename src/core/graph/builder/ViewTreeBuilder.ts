@@ -24,7 +24,7 @@ import {
     ArkStaticInvokeExpr,
 } from '../../base/Expr';
 import { Local } from '../../base/Local';
-import { ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
+import { ArkArrayRef, ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
 import { ClassType, FunctionType, Type } from '../../base/Type';
 import { Value } from '../../base/Value';
@@ -64,6 +64,8 @@ function backtraceLocalInitValue(value: Local): Local | Value {
         if (rightOp instanceof Local) {
             return backtraceLocalInitValue(rightOp);
         } else if (rightOp instanceof ArkInstanceFieldRef && rightOp.getBase().getName().startsWith(TEMP_LOCAL_PREFIX)) {
+            return backtraceLocalInitValue(rightOp.getBase());
+        } else if (rightOp instanceof ArkArrayRef) {
             return backtraceLocalInitValue(rightOp.getBase());
         }
         return rightOp;

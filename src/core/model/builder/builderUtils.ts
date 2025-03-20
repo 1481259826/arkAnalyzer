@@ -150,11 +150,17 @@ export function buildHeritageClauses(heritageClauses?: ts.NodeArray<HeritageClau
 export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDeclaration>,
                                     sourceFile: ts.SourceFile, arkInstance: ArkMethod | ArkClass): GenericType[] {
     const genericTypes: GenericType[] = [];
-    let index = -1;
+    let index = 0;
+    if (arkInstance instanceof ArkMethod) {
+        const len = arkInstance.getDeclaringArkClass().getGenericsTypes()?.length;
+        if (len) {
+            index = len;
+        }
+    }
     typeParameters.forEach((typeParameter) => {
         const genericType = tsNode2Type(typeParameter, sourceFile, arkInstance);
         if (genericType instanceof GenericType) {
-            genericType.setIndex(++index);
+            genericType.setIndex(index++);
             genericTypes.push(genericType);
         }
 
@@ -322,6 +328,11 @@ export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField |
         const baseType = type.getBaseType();
         if (baseType instanceof UnclearReferenceType) {
             type.setBaseType(replace(baseType));
+        }
+    } else if (type instanceof FunctionType) {
+        const returnType = type.getMethodSignature().getType();
+        if (returnType instanceof UnclearReferenceType) {
+            type.getMethodSignature().getMethodSubSignature().setReturnType(replace(returnType));
         }
     }
     return type;

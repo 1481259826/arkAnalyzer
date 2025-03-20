@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,9 +14,9 @@
  */
 
 import { ArkFile } from '../model/ArkFile';
-import { ArkExport } from '../model/ArkExport';
-import { COMPONENT_ATTRIBUTE, COMPONENT_INSTANCE } from './EtsConst';
-import { THIS_NAME } from './TSConst';
+import { ArkExport, ExportInfo } from '../model/ArkExport';
+import { COMPONENT_ATTRIBUTE } from './EtsConst';
+import { GLOBAL_THIS_NAME, THIS_NAME } from './TSConst';
 import { TEMP_LOCAL_PREFIX } from './Const';
 import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { LocalSignature } from '../model/ArkSignature';
@@ -24,6 +24,10 @@ import { ModelUtils, sdkImportMap } from './ModelUtils';
 import { Local } from '../base/Local';
 import { ArkMethod } from '../model/ArkMethod';
 import path from 'path';
+import { IRInference } from './IRInference';
+import { ClassType } from '../base/Type';
+import { AbstractFieldRef } from '../base/Ref';
+import { ArkNamespace } from '../model/ArkNamespace';
 
 export class SdkUtils {
 
@@ -38,7 +42,7 @@ export class SdkUtils {
         if (!isGlobalPath) {
             return;
         }
-
+        IRInference.inferFile(file);
         ModelUtils.getAllClassesInFile(file).forEach(cls => {
             if (!cls.isAnonymousClass() && !cls.isDefaultArkClass()) {
                 SdkUtils.loadClass(globalMap, cls);
@@ -52,11 +56,12 @@ export class SdkUtils {
         const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();
         defaultArkMethod?.getBody()?.getLocals().forEach(local => {
             const name = local.getName();
-            if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX) && !name.endsWith(COMPONENT_INSTANCE)) {
+            if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX)) {
                 this.loadGlobalLocal(local, defaultArkMethod, globalMap);
             }
         });
         defaultArkMethod?.getBody()?.getAliasTypeMap()?.forEach(a => globalMap.set(a[0].getName(), a[0]));
+        ModelUtils.getAllNamespacesInFile(file).forEach(ns => globalMap.set(ns.getName(), ns));
     }
 
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
@@ -77,11 +82,12 @@ export class SdkUtils {
     private static loadGlobalLocal(local: Local, defaultArkMethod: ArkMethod, globalMap: Map<string, ArkExport>): void {
         const name = local.getName();
         local.setSignature(new LocalSignature(name, defaultArkMethod.getSignature()));
-        if (defaultArkMethod.getDeclaringArkFile().getScene().getOptions().isScanAbc) {
+        const scene = defaultArkMethod.getDeclaringArkFile().getScene();
+        if (scene.getOptions().isScanAbc) {
             const instance = globalMap.get(name + 'Interface');
             const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
             if (attr instanceof ArkClass && instance instanceof ArkClass) {
-                instance.getMethods().forEach(m => attr.addMethod(m));
+                instance.getMethods().filter(m => !instance.getMethodWithName(m.getName())).forEach(m => attr.addMethod(m));
                 globalMap.set(name, attr);
                 return;
             }
@@ -90,6 +96,11 @@ export class SdkUtils {
         const old = globalMap.get(name);
         if (!old) {
             globalMap.set(name, local);
+        } else if (old instanceof ArkClass && local.getType() instanceof ClassType) {
+            const localConstructor = scene.getClass((local.getType() as ClassType).getClassSignature());
+            if (localConstructor) {
+                localConstructor.getMethods().filter(m => !old.getMethodWithName(m.getName())).forEach(m => old.addMethod(m));
+            }
         }
     }
 
@@ -103,5 +114,14 @@ export class SdkUtils {
                 to.addMethod(method);
             }
         });
+    }
+
+    public static computeGlobalThis(leftOp: AbstractFieldRef, arkMethod: ArkMethod): void {
+        const globalThis = arkMethod.getDeclaringArkFile().getScene().getSdkGlobal(GLOBAL_THIS_NAME);
+        if (globalThis instanceof ArkNamespace) {
+            const exportInfo = new ExportInfo.Builder().exportClauseName(leftOp.getFieldName())
+                .arkExport(new Local(leftOp.getFieldName(), leftOp.getType())).build();
+            globalThis.addExportInfo(exportInfo);
+        }
     }
 }

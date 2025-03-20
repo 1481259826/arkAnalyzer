@@ -202,6 +202,9 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     private getHeritageClass(heritageClassName: string): ArkClass | null {
+        if (!heritageClassName) {
+            return null;
+        }
         let superClass = this.heritageClasses.get(heritageClassName);
         if (superClass === undefined) {
             let type = TypeInference.inferUnclearRefName(heritageClassName, this);

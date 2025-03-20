@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,7 +37,14 @@ import path from 'path';
 import { Sdk } from '../../Config';
 import { ALL, DEFAULT, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
-import { AnnotationNamespaceType, ClassType, FunctionType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
+import {
+    AnnotationNamespaceType,
+    ClassType,
+    FunctionType,
+    Type,
+    UnclearReferenceType,
+    UnknownType
+} from '../base/Type';
 import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
@@ -390,8 +397,16 @@ export class ModelUtils {
         const start = parentName.indexOf(NAME_DELIMITER);
         let invokeMethod;
         if (start < 0) {
-            const cls = arkMethod.getDeclaringArkClass();
-            invokeMethod = cls.getDefaultArkMethod() ?? cls.getDeclaringArkFile().getDefaultClass()?.getDefaultArkMethod();
+            const className = arkMethod.getDeclaringArkClass().getName();
+            const outerStart = className.indexOf(NAME_DELIMITER);
+            const outerEnd = className.lastIndexOf('.');
+            if (outerStart > -1 && outerEnd > -1) {
+                invokeMethod = arkMethod.getDeclaringArkFile().getClassWithName(className.substring(outerStart + 1, outerEnd))
+                    ?.getMethodWithName(className.substring(outerEnd + 1));
+            } else {
+                const cls = arkMethod.getDeclaringArkClass();
+                invokeMethod = cls.getDefaultArkMethod() ?? cls.getDeclaringArkFile().getDefaultClass()?.getDefaultArkMethod();
+            }
         } else {
             parentName = parentName.substring(start + 1);
             invokeMethod = arkMethod.getDeclaringArkClass().getMethodWithName(parentName);
@@ -494,7 +509,6 @@ export class ModelUtils {
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ModelUtils');
 let moduleMap: Map<string, ModulePath> | undefined;
-const fileSuffixArray = ['.ets', '.ts', '.d.ets', '.d.ts'];
 export const sdkImportMap: Map<string, ArkFile> = new Map<string, ArkFile>();
 
 /**
@@ -643,6 +657,10 @@ function getArkFileFromScene(im: FromInfo, originPath: string) {
 function getArkFileFormMap(projectName: string, filePath: string, scene: Scene): ArkFile | null {
     if (/\.e?ts$/.test(filePath)) {
         return scene.getFile(new FileSignature(projectName, filePath));
+    }
+    const fileSuffixArray = scene.getOptions().supportFileExts;
+    if (!fileSuffixArray) {
+        return null;
     }
     for (const suffix of fileSuffixArray) {
         const arkFile = scene.getFile(new FileSignature(projectName, filePath + suffix));
