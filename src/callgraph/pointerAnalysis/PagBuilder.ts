@@ -816,12 +816,11 @@ export class PagBuilder {
             .map(stmt => (stmt as ArkAssignStmt).getRightOp());
         let argNum = cs.args?.length;
 
-        if (argNum) {
+        if (argNum === params.length) {
             // add args to parameters edges
             for (let i = 0; i < argNum; i++) {
                 let arg = cs.args?.at(i);
                 let param = params.at(i);
-                // TODO: param type should be ArkParameterRef?
                 if (arg && param) {
                     if (arg instanceof Constant) {
                         continue
@@ -838,6 +837,33 @@ export class PagBuilder {
                     srcNodes.push(srcPagNode.getID());
                 }
                 // TODO: handle other types of parmeters
+            }
+        } else {
+            /**
+             *  process foreach situation 
+             *  e.g. arr.forEach((item) => { ... })
+             *  cs.args is anonymous method local, will have only 1 parameter
+             *  but inside foreach will have >= 1 parameters
+             */
+            if (cs.callStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() === 'forEach') {
+                let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+                let param = params.at(0);
+                if (containerValue && param) {
+                    let basePagNode = this.getOrNewPagNode(callerCid, containerValue, cs.callStmt);
+                    let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
+
+                    for (let pt of basePagNode.getPointTo()) {
+                        let newContainerExprPagNode = this.pag.getNode(pt) as PagNewContainerExprNode;
+
+                        if (!newContainerExprPagNode || !newContainerExprPagNode.getElementNode()) {
+                            continue;
+                        }
+                        let srcPagNode = this.pag.getNode(newContainerExprPagNode.getElementNode()!) as PagNode;
+
+                        this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
+                        srcNodes.push(srcPagNode.getID());
+                    }
+                }
             }
         }
 
