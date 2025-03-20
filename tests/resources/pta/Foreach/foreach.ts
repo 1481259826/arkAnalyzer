@@ -16,7 +16,7 @@
 namespace Foreach {
     class MyCustomSpan {
         id: number;
-        
+
         constructor(id: number) {
             this.id = id;
         }
@@ -25,21 +25,22 @@ namespace Foreach {
     class Test {
         spans: MyCustomSpan[] = [];
 
-        public test() {
+        public test(): void {
             let span = new MyCustomSpan(0);
             this.spans[0] = span;
 
             this.processCustomSpans(this.spans);
         }
 
-        processCustomSpans(spans: MyCustomSpan[]) {
+        processCustomSpans(spans: MyCustomSpan[]): void {
             spans.forEach((spanInner: MyCustomSpan, index: number) => {
-
-            })
+                console.log(spanInner);
+                console.log(index);
+            });
         }
     }
 
-    function main() {
+    function main(): void {
         let test = new Test();
         test.test();
     }
