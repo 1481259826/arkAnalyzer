@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
 const logPath = 'out/ArkAnalyzer.log';
-Logger.configure(logPath, LOG_LEVEL.ERROR, LOG_LEVEL.DEBUG);
+Logger.configure(logPath, LOG_LEVEL.ERROR, LOG_LEVEL.DEBUG, true);
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SceneTest');
-
 
 class SceneTest {
     public testETsWholePipline() {
@@ -35,7 +34,7 @@ class SceneTest {
 
         // build config
         // tests/resources/scene/mainModule
-        const configPath = 'tests\\resources\\scene\\SceneTestConfig.json';
+        const configPath = 'tests/resources/scene/SceneTestConfig.json';
         let sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromJson(configPath);
 
@@ -132,7 +131,7 @@ class SceneTest {
         logger.debug('testEtsProject start');
 
         // build config
-        const configPath = 'tests\\resources\\scene\\SceneTestConfig.json';
+        const configPath = 'tests/resources/scene/SceneTestConfig.json';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromJson(configPath);
 
@@ -147,5 +146,5 @@ class SceneTest {
 
 let sceneTest = new SceneTest();
 sceneTest.testETsWholePipline();
-// sceneTest.testSimpleProject();
-// sceneTest.testEtsProject();
+sceneTest.testSimpleProject();
+sceneTest.testEtsProject();

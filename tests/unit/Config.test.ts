@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,8 @@ describe('SceneConfig Test', () => {
         let config: SceneConfig = new SceneConfig();
         config.buildFromJson('./tests/resources/scene/SceneTestConfig.json');
         assert.equal(config.getTargetProjectName(), 'applications_photos');
-        assert.equal(config.getTargetProjectDirectory(), 'D:\\Codes\\resources\\applications\\applications_photos');
+        console.log(config.getTargetProjectDirectory())
+        assert.equal(config.getTargetProjectDirectory(), 'tests/resources/viewtree/project');
         assert.equal(config.getSdksObj().length, 1);
     })
 
