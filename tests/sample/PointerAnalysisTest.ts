@@ -13,26 +13,25 @@
  * limitations under the License.
  */
 
-import { SceneConfig, Sdk } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { CallGraph } from '../src/callgraph/model/CallGraph';
-import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
-import { Pag } from '../src/callgraph/pointerAnalysis/Pag'
-import { PointerAnalysis } from '../src/callgraph/pointerAnalysis/PointerAnalysis'
-import { PointerAnalysisConfig } from '../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
-import { PtsCollectionType } from "../src/callgraph/pointerAnalysis/PtsDS";
-import { Local } from "../src/core/base/Local";
-import { ArkThisRef } from "../src/core/base/Ref";
-import { ArkAssignStmt } from "../src/core/base/Stmt";
-import Logger, { LOG_LEVEL } from "../src/utils/logger"
+import { SceneConfig, Sdk } from '../../src/Config';
+import { Scene } from '../../src/Scene';
+import { CallGraph } from '../../src/callgraph/model/CallGraph';
+import { CallGraphBuilder } from '../../src/callgraph/model/builder/CallGraphBuilder';
+import { Pag } from '../../src/callgraph/pointerAnalysis/Pag'
+import { PointerAnalysis } from '../../src/callgraph/pointerAnalysis/PointerAnalysis'
+import { PointerAnalysisConfig } from '../../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
+import { PtsCollectionType } from '../../src/callgraph/pointerAnalysis/PtsDS';
+import { Local } from '../../src/core/base/Local';
+import { ArkThisRef } from '../../src/core/base/Ref';
+import { ArkAssignStmt } from '../../src/core/base/Stmt';
+import Logger, { LOG_LEVEL } from '../../src/utils/logger';
 
-
-Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.TRACE)
+Logger.configure('./out/ArkAnalyzer.log', LOG_LEVEL.TRACE)
 let config: SceneConfig = new SceneConfig()
 let sdk: Sdk = {
-    name: "ohos",
-    path: "/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets",
-    moduleName: ""
+    name: 'ohos',
+    path: '/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets',
+    moduleName: ''
 };
 sdk;
 
@@ -42,20 +41,20 @@ function printStat(pta: PointerAnalysis): void {
 
 function dumpIR(scene: Scene) {
     scene.getMethods().forEach(fun => {
-        console.log("\n---\n" + fun.getSignature().toString())
+        console.log('\n---\n' + fun.getSignature().toString())
         if (!fun.getCfg())
             return;
 
-        console.log("{");
+        console.log('{');
         let i = 0;
         fun.getCfg()?.getBlocks().forEach(bb => {
 
             console.log(`  bb${i++}:`)
             bb.getStmts().forEach(stmt => {
-                console.log("    " + stmt.toString());
+                console.log('    ' + stmt.toString());
             })
         })
-        console.log("}")
+        console.log('}')
     });
 }
 
@@ -69,12 +68,11 @@ function printTypeDiff(pta: PointerAnalysis) {
             }
 
             let s = v.getDeclaringStmt()
-            if (s instanceof ArkAssignStmt) {
-                if (s.getLeftOp() instanceof Local && (s.getLeftOp() as Local).getName() === 'this'
-                    && s.getRightOp() instanceof ArkThisRef)
-                    continue;
-
+            if (s instanceof ArkAssignStmt && s.getLeftOp() instanceof Local && (s.getLeftOp() as Local).getName() === 'this'
+                && s.getRightOp() instanceof ArkThisRef) {
+                continue;
             }
+
             if (s) {
                 console.log('Method: ' + s?.getCfg()?.getDeclaringMethod().getSignature().toString());
                 console.log('Declare: ' + s);
@@ -82,9 +80,9 @@ function printTypeDiff(pta: PointerAnalysis) {
         }
 
         console.log(v)
-        console.log("----\n" + v.getType().toString());
+        console.log('----\n' + v.getType().toString());
         for (let t of types) {
-            console.log("  " + t.toString());
+            console.log('  ' + t.toString());
         }
 
     }
@@ -122,10 +120,8 @@ function runDir(output: string) {
     pta.setEntries(debugfunc);
     pta.start();
 
-    cg.dump(output + "/subcg.dot", debugfunc[0])
+    cg.dump(output + '/subcg.dot', debugfunc[0])
     cgBuilder.setEntries()
-    // entry = cg.getEntries();
-    // console.log(entry.length)
 
     dumpIR(projectScene)
     printTypeDiff(pta);
@@ -134,7 +130,7 @@ function runDir(output: string) {
 }
 
 if (false) {
-    runProject("./out");
+    runProject('./out');
 } else {
     runDir('./out')
 }

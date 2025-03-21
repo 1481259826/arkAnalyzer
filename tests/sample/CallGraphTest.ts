@@ -13,42 +13,36 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { MethodSignature } from "../src/core/model/ArkSignature";
-import { CallGraph } from '../src/callgraph/model/CallGraph';
-import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
-import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME } from '../src';
+import { SceneConfig, Scene, DEFAULT_ARK_CLASS_NAME, CallGraph, CallGraphBuilder, MethodSignature } from '../../src';
+
 
 let config: SceneConfig = new SceneConfig()
-// config.buildFromProjectDir('tests/resources/callgraph/test1')
 config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test')
-// config.buildFromJson("./tests/resources/callgraph/callGraphConfigUnix.json");
-// const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG TEST');
+config.buildFromJson('./tests/resources/callgraph/callGraphConfigUnix.json');
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config)
     projectScene.inferTypes()
 
     let entryPoints: MethodSignature[] = []
-    // for (let method of projectScene.getMethods()) {
-    //     entryPoints.push(method.getSignature())
-    // }
+
     entryPoints.push(...
         projectScene.getFiles()
-            .filter(arkFile => arkFile.getName() === "main.ts")
+            .filter(arkFile => arkFile.getName() === 'main.ts')
             .flatMap(arkFile => arkFile.getClasses())
             .filter(arkClass => arkClass.getName() === DEFAULT_ARK_CLASS_NAME)
             .flatMap(arkClass => arkClass.getMethods())
-            .filter(arkMethod => arkMethod.getName() === "main")
+            .filter(arkMethod => arkMethod.getName() === 'main')
             .map(arkMethod => arkMethod.getSignature())
     );
 
     let callGraph = new CallGraph(projectScene)
     let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
-    callGraphBuilder.buildClassHierarchyCallGraph(entryPoints, false)
-    // callGraphBuilder.buildRapidTypeCallGraph(entryPoints, false)
-    callGraph.dump("out/cg/cg.dot")
-    // debugger;
+    if (true) {
+        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints, false)
+    } else {
+        callGraphBuilder.buildRapidTypeCallGraph(entryPoints, false)
+    }
+    callGraph.dump('out/cg/cg.dot');
 }
 runScene(config);
