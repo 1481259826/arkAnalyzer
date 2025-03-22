@@ -28,9 +28,9 @@ export const OperandOriginalPositions_Expect_IR = {
             ],
         },
         {
-            text: 'instanceinvoke %0.<@IRChange/OperandOriginalPositionsTest.ts: Util.constructor()>()',
+            text: '%0 = instanceinvoke %0.<@IRChange/OperandOriginalPositionsTest.ts: Util.constructor()>()',
             operandOriginalPositions: [
-                [46, 22, 46, 32], [46, 22, 46, 32],
+                [46, 22, 46, 32], [46, 22, 46, 32], [46, 22, 46, 32]
             ],
         },
         {
