@@ -13,48 +13,49 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { PrinterBuilder } from '../src/save/PrinterBuilder';
-import { join } from 'path';
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { PrinterBuilder } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
-const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SceneTest');
-Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SaveTest');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
+
 
 function testAppProjectSave() {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromJson(join(__dirname, './AppTestConfig.json'));
+    config.buildFromJson("./tests/samples/AppTestConfig.json");
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
-    logger.error('start ... ');
+    logger.info('start ... ');
     scene.buildScene4HarmonyProject();
     scene.inferTypes();
-    logger.error('end inferTypes ... ');
+    logger.info('end inferTypes ... ');
 
     for (let cls of scene.getClasses()) {
         if (cls.hasComponentDecorator()) {
             cls.getViewTree();
         }
     }
-    logger.error('end build viewtree ... ');
+    logger.info('end build viewtree ... ');
 
-    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out/project'));
+    let printer: PrinterBuilder = new PrinterBuilder('out/project');
     for (let f of scene.getFiles()) {
         printer.dumpToTs(f);
     }
+    logger.info('end dumpToTs ... ');
 }
 
 function testSimpleSave() {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(join(__dirname, 'resources', 'save'));
+    config.buildFromProjectDir('tests/resources/save');
     let scene: Scene = new Scene();
     scene.buildSceneFromProjectDir(config);
-    let printer: PrinterBuilder = new PrinterBuilder(join(__dirname, '..', 'out/save'));
+    let printer: PrinterBuilder = new PrinterBuilder('out/save');
     for (let f of scene.getFiles()) {
         printer.dumpToTs(f);
     }
+    logger.info('testSimpleSave end dumpToTs ... ');
 }
 
 testAppProjectSave();
