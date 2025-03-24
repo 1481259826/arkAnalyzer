@@ -1,17 +1,15 @@
 {
-    "targetProjectName": "TypeInferenceTest",    
-    "targetProjectDirectory": "D:/11study/ohappTest/applications_camera",
-
-
-
-    "logPath": "out/ArkAnalyzer.log",
-    "logLevel": "INFO",
-    
+    "targetProjectName": "TypeInferenceTest",
+    "targetProjectDirectory": "tests/resources/viewtree/project",
     "sdks": [
         {
             "name": "etsSdk",
-            "path": "D:/11study/hwsdk/openharmony/9/ets",
+            "path": "tests/resources/Sdk",
             "moduleName": ""
         }
-    ]
+    ],
+
+    "options": {
+        "enableLeadingComments": true
+    }
 }
