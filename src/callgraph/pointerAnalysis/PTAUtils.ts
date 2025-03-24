@@ -15,6 +15,7 @@
 
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 
+// TODO: deprecate the following functions with new implementation
 export function IsCollectionClass(classSignature: ClassSignature): boolean {
     if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set') ||
         classSignature.toString().endsWith('lib.es2015.collection.d.ts: Map')) {
@@ -42,4 +43,40 @@ export function IsCollectionMapSet(method: MethodSignature): boolean {
         return true;
     }
     return false;
+}
+
+export enum BuiltApiType {
+    SetAdd,
+    MapSet,
+    FunctionCall,
+    FunctionApply,
+    FunctionBind,
+    NotBuiltIn
+}
+
+export function getBuiltInApiType(method: MethodSignature): BuiltApiType {
+    let methodSigStr = method.toString();
+
+    const regex = /lib\.es5\.d\.ts: Function\.(call|apply|bind)\(/;
+
+    if (methodSigStr.endsWith('lib.es2015.collection.d.ts: Set.add(T)')) {
+        return BuiltApiType.SetAdd;
+    } else if (methodSigStr.endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
+        return BuiltApiType.MapSet;
+    } else {
+        const match = methodSigStr.match(regex);
+        if (match) {
+            const functionName = match[1];
+            switch (functionName) {
+                case 'call':
+                    return BuiltApiType.FunctionCall;
+                case 'apply':
+                    return BuiltApiType.FunctionApply;
+                case 'bind':
+                    return BuiltApiType.FunctionBind;
+            }
+        }
+    }
+
+    return BuiltApiType.NotBuiltIn;
 }
