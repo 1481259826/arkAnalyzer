@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,67 +13,70 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { ArkBody } from '../src/core/model/ArkBody';
-import { StaticSingleAssignmentFormer } from '../src/transformer/StaticSingleAssignmentFormer';
-import { DEFAULT_ARK_METHOD_NAME } from '../src';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { ArkBody } from '../../src';
+import { DEFAULT_ARK_METHOD_NAME } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+import { modifiers2stringArray } from '../../src/core/model/ArkBaseModel';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'CfgDot');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
-        const config_path = "tests\\resources\\cfg\\CfgTestConfig.json";
+        const prjDir = "tests/resources/cfg/sample";
         let config: SceneConfig = new SceneConfig();
-        config.buildFromJson(config_path);
-        return new Scene(config);
+        config.buildFromProjectDir(prjDir);
+        let projectScene: Scene = new Scene();
+        projectScene.buildSceneFromProjectDir(config);
+        return projectScene;
     }
 
     public testLocalTypes() {
         let scene = this.buildScene();
         scene.inferTypes();
-        let staticSingleAssignmentFormer = new StaticSingleAssignmentFormer();
         let num = 0;
         for (const arkFile of scene.getFiles()) {
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
-                    if (arkMethod.getModifiers().has("PublicKeyword")) {
+                    if (arkMethod.getModifiers() !== 0) {
                         num++
+                        logger.info(`Methods: ${arkMethod.getName()} with Modifier: ${modifiers2stringArray(arkMethod.getModifiers())}`)
                     }
                 }
             }
         }
-        console.log(num)
+        logger.info(`Num of Methods with Modifier: ${num}`)
     }
 
     public testFunctionReturnType() {
         let scene = this.buildScene();
+        scene.inferTypes();
 
         for (const arkFile of scene.getFiles()) {
-            console.log('=============== arkFile:', arkFile.getName(), ' ================');
+            logger.info('=============== arkFile:', arkFile.getName(), ' ================');
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
                     if (arkMethod.getName() == DEFAULT_ARK_METHOD_NAME) {
                         continue;
                     }
 
-                    console.log(arkMethod.getSubSignature().toString());
+                    logger.info(arkMethod.getSubSignature().toString());
                 }
             }
         }
     }
 
     public printStmts(body: ArkBody): void {
-        console.log('-- threeAddresStmts:');
+        logger.info('-- threeAddresStmts:');
         let cfg = body.getCfg();
         for (const threeAddresStmt of cfg.getStmts()) {
-            console.log(threeAddresStmt.toString());
+            logger.info(threeAddresStmt.toString());
         }
-    }
-
-    public testTypeInference(): void {
-        let scene = this.buildScene();
-        scene.inferTypes();
     }
 }
 
 let typeInferenceTest = new TypeInferenceTest();
 typeInferenceTest.testLocalTypes();
+typeInferenceTest.testFunctionReturnType();
