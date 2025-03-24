@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +13,13 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { DummyMainCreater } from '../src/core/common/DummyMainCreater';
-import { ArkBody } from '../src/core/model/ArkBody';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { DummyMainCreater } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'TypeTest');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 export class TypeInferenceTest {
     public buildScene(): Scene {
@@ -34,17 +37,8 @@ export class TypeInferenceTest {
         const creater = new DummyMainCreater(scene);
         creater.createDummyMain();
         let d = creater.getDummyMain();
-        console.log(d);
+        logger.info(d);
     }
-
-    public printStmts(body: ArkBody): void {
-        console.log('-- threeAddresStmts:');
-        let cfg = body.getCfg();
-        for (const threeAddresStmt of cfg.getStmts()) {
-            console.log(threeAddresStmt.toString());
-        }
-    }
-
 }
 
 let typeInferenceTest = new TypeInferenceTest();
