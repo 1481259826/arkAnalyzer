@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,46 +13,43 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { DEFAULT_ARK_METHOD_NAME } from '../src';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { DEFAULT_ARK_METHOD_NAME } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'desugaring');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 export class Test {
     public buildScene(): Scene {
-        const config_path = "tests\\resources\\desugaring\\desugaring.json";
+        const prjDir = "tests/resources/desugaring";
         let config: SceneConfig = new SceneConfig();
-        config.buildFromJson(config_path);
-        return new Scene(config);
+        config.buildFromProjectDir(prjDir);
+        let projectScene: Scene = new Scene();
+        projectScene.buildSceneFromProjectDir(config);
+        return projectScene;
     }
 
     public test() {
         let scene = this.buildScene();
         scene.inferTypes();
 
-        for (const arkFile of scene.arkFiles) {
+        for (const arkFile of scene.getFiles()) {
             for (const arkClass of arkFile.getClasses()) {
                 for (const arkMethod of arkClass.getMethods()) {
                     if (arkMethod.getName() == DEFAULT_ARK_METHOD_NAME) {
                         continue;
                     }
-                    console.log('*** arkMethod: ', arkMethod.getName());
+                    logger.info('*** arkMethod: ', arkMethod.getName());
 
                     const body = arkMethod.getBody();
-                    for (const stmt of body.getCfg().getStmts()){
-                        console.log(stmt.toString())
+                    for (const stmt of body!.getCfg().getStmts()){
+                        logger.info(stmt.toString())
                     }
-                    
-                    
                 }
             }
         }
-    }
-
-
-
-    public testTypeInference(): void {
-        let scene = this.buildScene();
-        scene.inferTypes();
     }
 }
 
