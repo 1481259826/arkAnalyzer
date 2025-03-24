@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,31 +13,31 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { Value } from '../src/core/base/Value';
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
-import { DEFAULT_ARK_CLASS_NAME } from '../src';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { Value } from '../../src';
+import { DEFAULT_ARK_CLASS_NAME } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'VisibleValueTest');
-const logPath = 'out/ArkAnalyzer.log';
-Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
+
 
 export class VisibleValueTest {
     public buildScene(): Scene {
-        // tests\\resources\\visiblevalue\\mainModule
-        const config_path = "tests\\resources\\visiblevalue\\VisibleValueTestTestConfig.json";
+        const prjDir = "tests/resources/visiblevalue";
         let config: SceneConfig = new SceneConfig();
-        config.buildFromJson(config_path);
-        Logger.setLogLevel(LOG_LEVEL.INFO);
-        return new Scene(config);
+        config.buildFromProjectDir(prjDir);
+        let projectScene: Scene = new Scene();
+        projectScene.buildSceneFromProjectDir(config);
+        return projectScene;
     }
 
     public testSimpleVisibleValue(): void {
         const scene = visibleValueTest.buildScene();
         const visibleValue = scene.getVisibleValue();
 
-        for (const arkFile of scene.arkFiles) {
+        for (const arkFile of scene.getFiles()) {
             visibleValue.updateIntoScope(arkFile);
             this.printVisibleValues(visibleValue.getCurrVisibleValues());
             for (const arkClass of arkFile.getClasses()) {
@@ -51,7 +51,7 @@ export class VisibleValueTest {
                     visibleValue.updateIntoScope(arkMethod);
                     this.printVisibleValues(visibleValue.getCurrVisibleValues());
 
-                    const cfg = arkMethod.getBody().getCfg();
+                    const cfg = arkMethod.getBody()!.getCfg();
                     for (const block of cfg.getBlocks()) {
                         visibleValue.updateIntoScope(block);
                         this.printVisibleValues(visibleValue.getCurrVisibleValues());
@@ -82,7 +82,7 @@ export class VisibleValueTest {
         const scene = visibleValueTest.buildScene();
         const visibleValue = scene.getVisibleValue();
 
-        for (const arkFile of scene.arkFiles) {
+        for (const arkFile of scene.getFiles()) {
             logger.info('=============== arkFile:', arkFile.getName(), '================');
             visibleValue.updateIntoScope(arkFile);
             let scopeChain = visibleValue.getScopeChain();
