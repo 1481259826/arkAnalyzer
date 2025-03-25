@@ -40,7 +40,7 @@ import { Local } from '../../core/base/Local';
 import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkClass } from '../../core/model/ArkClass';
-import { ClassType, FunctionType, StringType } from '../../core/base/Type';
+import { ArrayType, ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant, NullConstant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
@@ -64,7 +64,7 @@ import {
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
-import { BuiltApiType, getBuiltInApiType, IsCollectionAPI, IsCollectionMapSet, IsCollectionSetAdd } from './PTAUtils';
+import { BuiltApiType, getBuiltInApiType, IsCollectionAPI } from './PTAUtils';
 import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -452,145 +452,6 @@ export class PagBuilder {
         return true;
     }
 
-    /**
-     * process Storage API
-     * @returns boolean: check if the cs represent a Storage API, no matter the API will success or fail
-     */
-    private processStorage(cs: CallSite | DynCallSite, calleeCGNode: CallGraphNode, cid: ContextID): boolean {
-        let storageName = calleeCGNode.getMethod().getDeclaringClassSignature().getClassName();
-        let storageType: StorageType = this.getStorageType(storageName, cs, cid);
-
-        // TODO: add other storages
-        if (storageType === StorageType.APP_STORAGE) {
-            let calleeName = calleeCGNode.getMethod().getMethodSubSignature().getMethodName();
-
-            // TODO: complete AppStorage API
-            if (calleeName === 'setOrCreate') {
-                this.processStorageSetOrCreate(cs, cid);
-            } else if (calleeName === 'link') {
-                this.processStorageLink(cs, cid);
-            } else if (calleeName === 'prop') {
-                this.processStorageProp(cs, cid);
-            } else if (calleeName === 'set') {
-                this.processStorageSet(cs, cid);
-            } else if (calleeName === 'get') {
-                this.processStorageGet(cs, cid);
-            }
-            return true;
-        } else if (storageType === StorageType.LOCAL_STORAGE) {
-            // TODO: LocalStorage is not Static
-        }
-
-        return false;
-    }
-
-    private processStorageSetOrCreate(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let propertyStr = this.getPropertyName(cs.args![0]);
-        if (!propertyStr) {
-            return;
-        }
-
-        let propertyName = propertyStr;
-        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        let storageObj = cs.args![1];
-
-        this.addPropertyLinkEdge(propertyNode, storageObj, cid, cs.callStmt, StorageLinkEdgeType.Local2Property);
-    }
-
-    private processStorageLink(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let propertyStr = this.getPropertyName(cs.args![0]);
-        if (!propertyStr) {
-            return;
-        }
-
-        let propertyName = propertyStr;
-        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
-        if (linkedOpNode instanceof PagLocalNode) {
-            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
-        }
-
-        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
-        this.pag.addPagEdge(linkedOpNode, propertyNode, PagEdgeKind.Copy);
-    }
-
-    private processStorageProp(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let propertyStr = this.getPropertyName(cs.args![0]);
-        if (!propertyStr) {
-            return;
-        }
-
-        let propertyName = propertyStr;
-        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
-        if (linkedOpNode instanceof PagLocalNode) {
-            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
-        }
-
-        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
-    }
-
-    private processStorageSet(cs: CallSite | DynCallSite, cid: ContextID): void {
-        let ivkExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
-        if (ivkExpr instanceof ArkInstanceInvokeExpr) {
-            let base = ivkExpr.getBase();
-            let baseNode = this.pag.getOrNewNode(cid, base) as PagLocalNode;
-
-            if (baseNode.isStorageLinked()) {
-                let argsNode = this.pag.getOrNewNode(cid, cs.args![0]) as PagNode;
-
-                this.pag.addPagEdge(argsNode, baseNode, PagEdgeKind.Copy);
-            }
-        } else if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            // TODO: process AppStorage.set()
-        }
-    }
-
-    private processStorageGet(cs: CallSite | DynCallSite, cid: ContextID): void {
-        if (!(cs.callStmt instanceof ArkAssignStmt)) {
-            return;
-        }
-        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-        let ivkExpr = cs.callStmt.getInvokeExpr();
-        let propertyName!: string;
-        if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            let propertyStr = this.getPropertyName(cs.args![0]);
-            if (propertyStr) {
-                propertyName = propertyStr;
-            }
-        } else if (ivkExpr instanceof ArkInstanceInvokeExpr) {
-            let baseNode = this.pag.getOrNewNode(cid, ivkExpr.getBase()) as PagLocalNode;
-            if (baseNode.isStorageLinked()) {
-                propertyName = baseNode.getStorage().PropertyName!;
-            }
-        }
-
-        let propertyNode = this.getPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        if (!propertyNode) {
-            return;
-        }
-
-        this.pag.addPagEdge(
-            propertyNode, this.pag.getOrNewNode(cid, leftOp, cs.callStmt),
-            PagEdgeKind.Copy, cs.callStmt
-        );
-    }
-
-    private getPropertyName(value: Value): string | undefined {
-        if (value instanceof Local) {
-            let type = value.getType();
-            if (type instanceof StringType) {
-                return type.getName();
-            }
-        } else if (value instanceof Constant) {
-            return value.getValue();
-        }
-
-        return undefined;
-    }
-
     public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID) {
         // add dyn callsite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
@@ -680,8 +541,11 @@ export class PagBuilder {
             }
             // update call graph
             // TODO: movo to cgbuilder
-            // TODO: for builtin method, do we need to ignore the builtin method node?
-            // for example: a -> Function.call -> b, real call chain is a -> b
+            
+            /**
+             * TODO: for builtin method, do we need to ignore the builtin method node?
+             * for example: a -> Function.call -> b, real call chain is a -> b
+             */
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
@@ -702,57 +566,13 @@ export class PagBuilder {
                         srcNodes.push(srcBaseNode);
                     }
                 } else {
-                    srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
+                    // srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
                     srcNodes.push(...this.processBuiltInMethodPagCallEdge(staticCS, cid, calleeCid, baseClassPTNode));
                 }
             }
         }
 
         return srcNodes;
-    }
-
-    public processBuiltInMethodPagCallEdge(staticCS: CallSite, cid: ContextID, calleeCid: ContextID, baseClassPTNode: NodeID): NodeID[] {
-        let srcNodes: NodeID[] = [];
-        let callee = this.scene.getMethod(staticCS.callStmt.getInvokeExpr()!.getMethodSignature());
-        let realCallee = this.cg.getArkMethodByFuncID(staticCS.calleeFuncID);
-        if (!callee) {
-            return srcNodes;
-        }
-
-        let builtInType = getBuiltInApiType(callee.getSignature());
-
-        if (builtInType === BuiltApiType.NotBuiltIn || !realCallee) {
-            return srcNodes;
-        }
-
-        if (!(staticCS.args![0] instanceof NullConstant)) { // TODO: seperate the function, method, anonymous method
-            // instance method need to pass this param
-            srcNodes.push(this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID));
-        }
-
-        // TODO: param nums may not equal to args nums
-        switch (builtInType) {
-            case BuiltApiType.FunctionCall:
-                // function.call(thisArg, arg1, arg2, ...)
-                this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
-                srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS, cid, calleeCid));
-                break;
-            
-            case BuiltApiType.FunctionApply:
-                // WIP
-                // TODO: param array resolve
-                // function.apply(thisArg, [argsArray])
-                break;
-
-            case BuiltApiType.FunctionBind:
-                // WIP
-                // function.bind(thisArg, arg1, arg2, ...)
-                // TODO: return value resolve
-                break;
-        }
-
-        return srcNodes;
-        
     }
 
     private getDynamicCallee(ptNode: PagNode, value: Value, ivkExpr: AbstractInvokeExpr, cs: DynCallSite | CallSite): ArkMethod[] {
@@ -812,19 +632,100 @@ export class PagBuilder {
         return callee;
     }
 
-    public addUpdatedNode(nodeID: NodeID, diffPT: IPtsCollection<NodeID>) {
-        let ptaConfig = PointerAnalysisConfig.getInstance();
-        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new ptaConfig.ptsCollectionCtor();
-        updatedNode.union(diffPT);
-        this.updatedNodesThisRound.set(nodeID, updatedNode);
+    public processBuiltInMethodPagCallEdge(staticCS: CallSite, cid: ContextID, calleeCid: ContextID, baseClassPTNode: NodeID): NodeID[] {
+        let srcNodes: NodeID[] = [];
+        let callee = this.scene.getMethod(staticCS.callStmt.getInvokeExpr()!.getMethodSignature());
+        let realCallee = this.cg.getArkMethodByFuncID(staticCS.calleeFuncID);
+        if (!callee) {
+            return srcNodes;
+        }
+
+        let builtInType = getBuiltInApiType(callee.getSignature());
+
+        if (builtInType === BuiltApiType.NotBuiltIn || !realCallee) {
+            return srcNodes;
+        }
+
+        let addThisEdge = () => {
+            if (!(staticCS.args![0] instanceof NullConstant)) { // !!! TODO: seperate the function, method, anonymous method
+                // instance method need to pass this param
+                srcNodes.push(this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID));
+            }
+        }
+
+        switch (builtInType) {
+            case BuiltApiType.SetAdd:
+            case BuiltApiType.MapSet:
+                this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode, builtInType);
+                break;
+
+            case BuiltApiType.FunctionCall:
+                // function.call(thisArg, arg1, arg2, ...)
+                this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
+                srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
+                addThisEdge();
+                break;
+            
+            case BuiltApiType.FunctionApply:
+                // WIP ? 
+                // function.apply(thisArg, [argsArray])
+                this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
+                let callerMethod = this.cg.getArkMethodByFuncID(staticCS.callerFuncID);
+                if (!callerMethod) {
+                    throw new Error("Can not get caller method");
+                }
+                let argsRealValues = this.transferArrayValues(callerMethod, staticCS.args![1]);
+                srcNodes.push(...this.addCallParamPagEdge(realCallee, argsRealValues, staticCS.callStmt, cid, calleeCid, 0));
+                addThisEdge();
+                break;
+
+            case BuiltApiType.FunctionBind:
+                // WIP
+                // function.bind(thisArg, arg1, arg2, ...)
+                /**
+                 * TODO: discuss the return value
+                 * how to reflect the bind behavior on PAG?
+                 */
+                // srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS, cid, calleeCid, 1));
+                // srcNodes.push(...this.addCallReturnPagEdge(realCallee, staticCS, cid, calleeCid));
+                // addThisEdge();
+                break;
+        }
+
+        return srcNodes;
     }
 
-    public getUpdatedNodes() {
-        return this.updatedNodesThisRound;
-    }
+    private processContainerPagCallEdge(cs: CallSite, cid: ContextID, baseClassPTNode: NodeID, type: BuiltApiType): NodeID[] {
+        let srcNodes: NodeID[] = [];
+        let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+        let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
+        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
 
-    public resetUpdatedNodes() {
-        this.updatedNodesThisRound.clear();
+        if (!calleeMethod || !(ptNode instanceof PagNewContainerExprNode)) {
+            return srcNodes;
+        }
+
+        let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+
+        const containerValueProcess = (argIndex: number): void => {
+            let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
+            let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
+
+            if (realContainerFieldPagNode) {
+                // In some cases, the value of a variable of array type may not be an explicit array object,
+                // and the value of `realContainerFieldPagNode` will be undefined.
+                this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
+                srcNodes.push(srcNode.getID());
+            }
+        };
+
+        if (type === BuiltApiType.SetAdd) {
+            containerValueProcess(0);
+        } else if (type === BuiltApiType.MapSet) {
+            containerValueProcess(1);
+        }
+
+        return srcNodes;
     }
 
     public handleUnkownDynamicCall(cs: DynCallSite, cid: ContextID): NodeID[] {
@@ -995,8 +896,97 @@ export class PagBuilder {
         // callee cid will updated if callee is singleton
         calleeCid = calleeCS.cid
 
-        srcNodes.push(...this.addCallParamPagEdge(calleeMethod, cs, callerCid, calleeCid));
+        srcNodes.push(...this.addCallParamPagEdge(calleeMethod, cs.args!, cs.callStmt, callerCid, calleeCid, 0));
+        srcNodes.push(...this.addCallReturnPagEdge(calleeMethod, cs, callerCid, calleeCid));
 
+        return srcNodes;
+    }
+
+    /**
+     * only process the param PAG edge for invoke stmt
+     */
+    private addCallParamPagEdge(calleeMethod: ArkMethod, args: Value[], callStmt: Stmt, callerCid: ContextID, calleeCid: ContextID, offset: number): NodeID[] {
+        let params = calleeMethod.getCfg()!.getStmts()
+            .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
+            .map(stmt => (stmt as ArkAssignStmt).getRightOp());
+
+        let srcNodes: NodeID[] = [];
+
+        /**
+         *  process foreach situation 
+         *  e.g. arr.forEach((item) => { ... })
+         *  cs.args is anonymous method local, will have only 1 parameter
+         *  but inside foreach will have >= 1 parameters
+         */
+        if (callStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() === 'forEach') {
+            srcNodes.push(...this.addForeachParamPagEdge(callerCid, calleeCid, callStmt, params));
+            return srcNodes;
+        }
+
+        // add args to parameters edges
+        for (let i = offset; i <= args.length; i++) {
+            let arg = args.at(i);
+            let param = params.at(i - offset);
+            if (!arg || !param) {
+                return srcNodes;
+            }
+
+            if (arg instanceof Constant || arg instanceof AbstractExpr) {
+                // TODO: handle AbstractExpr
+                continue;
+            }
+
+            // Get or create new PAG node for argument and parameter
+            let srcPagNode = this.getOrNewPagNode(callerCid, arg, callStmt);
+            let dstPagNode = this.getOrNewPagNode(calleeCid, param, callStmt);
+
+            this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, callStmt);
+            srcNodes.push(srcPagNode.getID());
+            // TODO: handle other types of parmeters
+        }
+
+        return srcNodes;
+    }
+
+    /**
+     * temporary solution for foreach
+     * deprecate when foreach is handled by built-in method
+     * connect the element node with the value inside foreach
+     */
+    private addForeachParamPagEdge(callerCid: ContextID, calleeCid: ContextID, callStmt: Stmt, params: Value[]): NodeID[] {
+        // container value is the base value of callstmt, its points-to is PagNewContainerExprNode
+        let srcNodes: NodeID[] = [];
+        let containerValue = (callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+        let param = params.at(0);
+        if (!containerValue || !param) {
+            return srcNodes;
+        }
+        
+        let basePagNode = this.getOrNewPagNode(callerCid, containerValue, callStmt);
+        let dstPagNode = this.getOrNewPagNode(calleeCid, param, callStmt);
+
+        for (let pt of basePagNode.getPointTo()) {
+            let newContainerExprPagNode = this.pag.getNode(pt) as PagNewContainerExprNode;
+
+            // PagNewContainerExprNode's points-to is the element node
+            if (!newContainerExprPagNode || !newContainerExprPagNode.getElementNode()) {
+                continue;
+            }
+            let srcPagNode = this.pag.getNode(newContainerExprPagNode.getElementNode()!) as PagNode;
+
+            // connect the element node with the value inside foreach
+            this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, callStmt);
+            srcNodes.push(srcPagNode.getID());
+        }
+
+        return srcNodes;
+    }
+
+    /**
+     * process the return value PAG edge for invoke stmt
+     */
+    public addCallReturnPagEdge(calleeMethod: ArkMethod, cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
+        let srcNodes: NodeID[] = []
         // add ret to caller edges
         let retStmts = calleeMethod.getReturnStmt();
         // TODO: call statement must be a assignment state
@@ -1038,72 +1028,6 @@ export class PagBuilder {
             return srcNodes;
         }
         srcNodes.push(...this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod));
-        return srcNodes;
-    }
-
-    public addCallParamPagEdge(calleeMethod: ArkMethod, cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
-        let params = calleeMethod.getCfg()!.getStmts()
-            .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
-            .map(stmt => (stmt as ArkAssignStmt).getRightOp());
-
-        let srcNodes: NodeID[] = [];
-        let argNum = cs.args?.length;
-        if (argNum === params.length) { // TODO: cannot judge foreach by args num
-            // add args to parameters edges
-            for (let i = 0; i < argNum; i++) {
-                let arg = cs.args?.at(i);
-                let param = params.at(i);
-                if (!arg || !param) {
-                    return srcNodes;
-                }
-
-                if (arg instanceof Constant || arg instanceof AbstractExpr) {
-                    // TODO: handle AbstractExpr
-                    continue;
-                }
-
-                // Get or create new PAG node for argument and parameter
-                let srcPagNode = this.getOrNewPagNode(callerCid, arg, cs.callStmt);
-                let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
-
-                this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
-                srcNodes.push(srcPagNode.getID());
-                // TODO: handle other types of parmeters
-            }
-        } else {
-            /**
-             *  process foreach situation
-             *  e.g. arr.forEach((item) => { ... })
-             *  cs.args is anonymous method local, will have only 1 parameter
-             *  but inside foreach will have >= 1 parameters
-             */
-            if (!(cs.callStmt.getInvokeExpr()?.getMethodSignature().getMethodSubSignature().getMethodName() === 'forEach')) {
-                return srcNodes;
-            }
-            // container value is the base value of callstmt, its points-to is PagNewContainerExprNode
-            let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
-            let param = params.at(0);
-            if (!containerValue || !param) {
-                return srcNodes;
-            }
-
-            let basePagNode = this.getOrNewPagNode(callerCid, containerValue, cs.callStmt);
-            let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
-
-            for (let pt of basePagNode.getPointTo()) {
-                let newContainerExprPagNode = this.pag.getNode(pt) as PagNewContainerExprNode;
-
-                // PagNewContainerExprNode's points-to is the element node
-                if (!newContainerExprPagNode || !newContainerExprPagNode.getElementNode()) {
-                    continue;
-                }
-                let srcPagNode = this.pag.getNode(newContainerExprPagNode.getElementNode()!) as PagNode;
-
-                // connect the element node with the value inside foreach
-                this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
-                srcNodes.push(srcPagNode.getID());
-            }
-        }
         return srcNodes;
     }
 
@@ -1210,39 +1134,6 @@ export class PagBuilder {
 
             this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
             srcNodes.push(srcPagNode.getID());
-        }
-
-        return srcNodes;
-    }
-
-    private processContainerPagCallEdge(cs: CallSite, cid: ContextID, baseClassPTNode: NodeID): NodeID[] {
-        let srcNodes: NodeID[] = [];
-        let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-        let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
-        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
-
-        if (!calleeMethod || !(ptNode instanceof PagNewContainerExprNode)) {
-            return srcNodes;
-        }
-
-        let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
-
-        const containerValueProcess = (argIndex: number): void => {
-            let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
-            let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
-
-            if (realContainerFieldPagNode) {
-                // In some cases, the value of a variable of array type may not be an explicit array object,
-                // and the value of `realContainerFieldPagNode` will be undefined.
-                this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
-                srcNodes.push(srcNode.getID());
-            }
-        };
-
-        if (IsCollectionSetAdd(calleeMethod.getSignature())) {
-            containerValueProcess(0);
-        } else if (IsCollectionMapSet(calleeMethod.getSignature())) {
-            containerValueProcess(1);
         }
 
         return srcNodes;
@@ -1544,6 +1435,145 @@ export class PagBuilder {
         }
 
         return PagEdgeKind.Unknown;
+    }
+
+    /**
+     * process Storage API
+     * @returns boolean: check if the cs represent a Storage API, no matter the API will success or fail
+     */
+    private processStorage(cs: CallSite | DynCallSite, calleeCGNode: CallGraphNode, cid: ContextID): boolean {
+        let storageName = calleeCGNode.getMethod().getDeclaringClassSignature().getClassName();
+        let storageType: StorageType = this.getStorageType(storageName, cs, cid);
+
+        // TODO: add other storages
+        if (storageType === StorageType.APP_STORAGE) {
+            let calleeName = calleeCGNode.getMethod().getMethodSubSignature().getMethodName();
+
+            // TODO: complete AppStorage API
+            if (calleeName === 'setOrCreate') {
+                this.processStorageSetOrCreate(cs, cid);
+            } else if (calleeName === 'link') {
+                this.processStorageLink(cs, cid);
+            } else if (calleeName === 'prop') {
+                this.processStorageProp(cs, cid);
+            } else if (calleeName === 'set') {
+                this.processStorageSet(cs, cid);
+            } else if (calleeName === 'get') {
+                this.processStorageGet(cs, cid);
+            }
+            return true;
+        } else if (storageType === StorageType.LOCAL_STORAGE) {
+            // TODO: LocalStorage is not Static
+        }
+
+        return false;
+    }
+
+    private processStorageSetOrCreate(cs: CallSite | DynCallSite, cid: ContextID): void {
+        let propertyStr = this.getPropertyName(cs.args![0]);
+        if (!propertyStr) {
+            return;
+        }
+
+        let propertyName = propertyStr;
+        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+        let storageObj = cs.args![1];
+
+        this.addPropertyLinkEdge(propertyNode, storageObj, cid, cs.callStmt, StorageLinkEdgeType.Local2Property);
+    }
+
+    private processStorageLink(cs: CallSite | DynCallSite, cid: ContextID): void {
+        let propertyStr = this.getPropertyName(cs.args![0]);
+        if (!propertyStr) {
+            return;
+        }
+
+        let propertyName = propertyStr;
+        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
+        if (linkedOpNode instanceof PagLocalNode) {
+            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
+        }
+
+        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
+        this.pag.addPagEdge(linkedOpNode, propertyNode, PagEdgeKind.Copy);
+    }
+
+    private processStorageProp(cs: CallSite | DynCallSite, cid: ContextID): void {
+        let propertyStr = this.getPropertyName(cs.args![0]);
+        if (!propertyStr) {
+            return;
+        }
+
+        let propertyName = propertyStr;
+        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
+        if (linkedOpNode instanceof PagLocalNode) {
+            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
+        }
+
+        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
+    }
+
+    private processStorageSet(cs: CallSite | DynCallSite, cid: ContextID): void {
+        let ivkExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
+        if (ivkExpr instanceof ArkInstanceInvokeExpr) {
+            let base = ivkExpr.getBase();
+            let baseNode = this.pag.getOrNewNode(cid, base) as PagLocalNode;
+
+            if (baseNode.isStorageLinked()) {
+                let argsNode = this.pag.getOrNewNode(cid, cs.args![0]) as PagNode;
+
+                this.pag.addPagEdge(argsNode, baseNode, PagEdgeKind.Copy);
+            }
+        } else if (ivkExpr instanceof ArkStaticInvokeExpr) {
+            // TODO: process AppStorage.set()
+        }
+    }
+
+    private processStorageGet(cs: CallSite | DynCallSite, cid: ContextID): void {
+        if (!(cs.callStmt instanceof ArkAssignStmt)) {
+            return;
+        }
+        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
+        let ivkExpr = cs.callStmt.getInvokeExpr();
+        let propertyName!: string;
+        if (ivkExpr instanceof ArkStaticInvokeExpr) {
+            let propertyStr = this.getPropertyName(cs.args![0]);
+            if (propertyStr) {
+                propertyName = propertyStr;
+            }
+        } else if (ivkExpr instanceof ArkInstanceInvokeExpr) {
+            let baseNode = this.pag.getOrNewNode(cid, ivkExpr.getBase()) as PagLocalNode;
+            if (baseNode.isStorageLinked()) {
+                propertyName = baseNode.getStorage().PropertyName!;
+            }
+        }
+
+        let propertyNode = this.getPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
+        if (!propertyNode) {
+            return;
+        }
+
+        this.pag.addPagEdge(
+            propertyNode, this.pag.getOrNewNode(cid, leftOp, cs.callStmt),
+            PagEdgeKind.Copy, cs.callStmt
+        );
+    }
+
+    private getPropertyName(value: Value): string | undefined {
+        if (value instanceof Local) {
+            let type = value.getType();
+            if (type instanceof StringType) {
+                return type.getName();
+            }
+        } else if (value instanceof Constant) {
+            return value.getValue();
+        }
+
+        return undefined;
     }
 
     /**
@@ -1851,5 +1881,42 @@ export class PagBuilder {
         let retriggerNodes = Array.from(this.retriggerNodesList);
         this.retriggerNodesList.clear();
         return retriggerNodes;
+    }
+
+    public addUpdatedNode(nodeID: NodeID, diffPT: IPtsCollection<NodeID>) {
+        let ptaConfig = PointerAnalysisConfig.getInstance();
+        let updatedNode = this.updatedNodesThisRound.get(nodeID) ?? new ptaConfig.ptsCollectionCtor();
+        updatedNode.union(diffPT);
+        this.updatedNodesThisRound.set(nodeID, updatedNode);
+    }
+
+    public getUpdatedNodes() {
+        return this.updatedNodesThisRound;
+    }
+
+    public resetUpdatedNodes() {
+        this.updatedNodesThisRound.clear();
+    }
+
+    private transferArrayValues(method: ArkMethod, arrayLocal: Value): Local[] {
+        if (!(arrayLocal instanceof Local) || !(arrayLocal.getType() instanceof ArrayType)) {
+            return [];
+        }
+
+        /**
+         * TODO: get array element values
+         * need to resolve multi dimension array
+         */
+        const usedValuesInArray = arrayLocal.getUsedStmts().flatMap(stmt => {
+            if (stmt instanceof ArkAssignStmt) {
+                const rightOp = stmt.getRightOp();
+                if (rightOp instanceof Local) {
+                    return rightOp;
+                }
+            }
+            return [];
+        });
+
+        return usedValuesInArray;
     }
 }
