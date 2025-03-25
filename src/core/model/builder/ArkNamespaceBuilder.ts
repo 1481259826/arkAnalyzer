@@ -72,6 +72,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
             logger.warn('This ModuleBody is an NamespaceDeclaration.');
             let childNs: ArkNamespace = new ArkNamespace();
             buildArkNamespace(node.body, ns, childNs, sourceFile);
+            ns.addNamespace(childNs);
         } else if (ts.isIdentifier(node.body)) {
             logger.warn('ModuleBody is Identifier.');
         } else {
