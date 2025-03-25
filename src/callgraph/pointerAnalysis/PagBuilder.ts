@@ -647,7 +647,7 @@ export class PagBuilder {
         }
 
         let addThisEdge = () => {
-            if (!(staticCS.args![0] instanceof NullConstant)) { // !!! TODO: seperate the function, method, anonymous method
+            if (!(staticCS.args![0] instanceof NullConstant) && !(realCallee.isStatic())) { // !!! TODO: seperate the function, method, anonymous method
                 // instance method need to pass this param
                 srcNodes.push(this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID));
             }
@@ -681,10 +681,16 @@ export class PagBuilder {
 
             case BuiltApiType.FunctionBind:
                 // WIP
-                // function.bind(thisArg, arg1, arg2, ...)
+                // let f = function.bind(thisArg, arg1, arg2, ...)
+                // f();
                 /**
                  * TODO: discuss the return value
                  * how to reflect the bind behavior on PAG?
+                 * heapObj -> function
+                 *         -> f 
+                 * or
+                 * heapObj -> function
+                 * newHeapObj -> f
                  */
                 // srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS, cid, calleeCid, 1));
                 // srcNodes.push(...this.addCallReturnPagEdge(realCallee, staticCS, cid, calleeCid));
