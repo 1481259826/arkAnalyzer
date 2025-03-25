@@ -634,7 +634,8 @@ export class PagBuilder {
 
     public processBuiltInMethodPagCallEdge(staticCS: CallSite, cid: ContextID, calleeCid: ContextID, baseClassPTNode: NodeID): NodeID[] {
         let srcNodes: NodeID[] = [];
-        let callee = this.scene.getMethod(staticCS.callStmt.getInvokeExpr()!.getMethodSignature());
+        let ivkExpr = staticCS.callStmt.getInvokeExpr()!;
+        let callee = this.scene.getMethod(ivkExpr.getMethodSignature());
         let realCallee = this.cg.getArkMethodByFuncID(staticCS.calleeFuncID);
         if (!callee) {
             return srcNodes;
@@ -667,7 +668,6 @@ export class PagBuilder {
                 break;
             
             case BuiltApiType.FunctionApply:
-                // WIP ? 
                 // function.apply(thisArg, [argsArray])
                 this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
                 let callerMethod = this.cg.getArkMethodByFuncID(staticCS.callerFuncID);
@@ -691,10 +691,16 @@ export class PagBuilder {
                  * or
                  * heapObj -> function
                  * newHeapObj -> f
+                 * or
+                 * heapObj -> function -> f (following implementation)
                  */
-                // srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS, cid, calleeCid, 1));
-                // srcNodes.push(...this.addCallReturnPagEdge(realCallee, staticCS, cid, calleeCid));
-                // addThisEdge();
+                srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
+                // srcNodes.push(...this.addCallReturnPagEdge(realCallee, staticCS.callStmt, cid, calleeCid));
+                let srcNode = this.getOrNewPagNode(cid, (ivkExpr as ArkInstanceInvokeExpr).getBase() as Local);
+                let dstNode = this.getOrNewPagNode(calleeCid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
+                this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy, staticCS.callStmt);
+                srcNodes.push(srcNode.getID());
+                addThisEdge();
                 break;
         }
 
@@ -903,7 +909,7 @@ export class PagBuilder {
         calleeCid = calleeCS.cid
 
         srcNodes.push(...this.addCallParamPagEdge(calleeMethod, cs.args!, cs.callStmt, callerCid, calleeCid, 0));
-        srcNodes.push(...this.addCallReturnPagEdge(calleeMethod, cs, callerCid, calleeCid));
+        srcNodes.push(...this.addCallReturnPagEdge(calleeMethod, cs.callStmt, callerCid, calleeCid));
 
         return srcNodes;
     }
@@ -991,18 +997,18 @@ export class PagBuilder {
     /**
      * process the return value PAG edge for invoke stmt
      */
-    public addCallReturnPagEdge(calleeMethod: ArkMethod, cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
+    public addCallReturnPagEdge(calleeMethod: ArkMethod, callStmt: Stmt, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
         let srcNodes: NodeID[] = []
         // add ret to caller edges
         let retStmts = calleeMethod.getReturnStmt();
         // TODO: call statement must be a assignment state
-        if (cs.callStmt instanceof ArkAssignStmt) {
-            let retDst = cs.callStmt.getLeftOp();
+        if (callStmt instanceof ArkAssignStmt) {
+            let retDst = callStmt.getLeftOp();
             for (let retStmt of retStmts) {
                 let retValue = (retStmt as ArkReturnStmt).getOp();
                 if (retValue instanceof Local) {
                     let srcPagNode = this.getOrNewPagNode(calleeCid, retValue, retStmt);
-                    let dstPagNode = this.getOrNewPagNode(callerCid, retDst, cs.callStmt);
+                    let dstPagNode = this.getOrNewPagNode(callerCid, retDst, callStmt);
 
                     this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, retStmt);
                 } else if (retValue instanceof Constant) {
