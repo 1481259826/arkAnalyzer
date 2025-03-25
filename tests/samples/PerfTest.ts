@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 import path from 'path';
-import { SceneConfig } from '../src';
-import { Scene } from '../src';
-import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../src';
-import { Sdk } from '../src/Config'
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+import { Sdk } from '../../src/Config'
 import * as perf_hooks from 'perf_hooks';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'PerfTest');
