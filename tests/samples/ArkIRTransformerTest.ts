@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,21 +13,20 @@
  * limitations under the License.
  */
 
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { ArkBody } from '../src/core/model/ArkBody';
-import { PrinterBuilder, Stmt } from '../src';
-import { ModelUtils } from '../src/core/common/ModelUtils';
-import { ArkMetadataKind, CommentsMetadata } from '../src/core/model/ArkMetadata';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { ArkBody } from '../../src';
+import { PrinterBuilder, Stmt } from '../../src';
+import { ModelUtils } from '../../src';
+import { ArkMetadataKind, CommentsMetadata } from '../../src/core/model/ArkMetadata';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
-const logPath = 'out/ArkAnalyzer.log';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
-Logger.configure(logPath, LOG_LEVEL.DEBUG, LOG_LEVEL.DEBUG);
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
-        logger.error('testStmtsOfSimpleProject start');
+        logger.info('testStmtsOfSimpleProject start');
 
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         const sceneConfig: SceneConfig = new SceneConfig({ enableTrailingComments: true, enableLeadingComments: true });
@@ -35,17 +34,17 @@ class ArkIRTransformerTest {
 
         const scene = new Scene();
         scene.buildSceneFromProjectDir(sceneConfig);
-        logger.error('\nbefore inferTypes');
+        logger.info('before inferTypes');
         this.printScene(scene);
         scene.inferTypes();
-        logger.error('\nafter inferTypes');
+        logger.info('after inferTypes');
         this.printScene(scene);
 
-        logger.error('testStmtsOfSimpleProject end\n');
+        logger.info('testStmtsOfSimpleProject end\n');
     }
 
     public testStmtsOfEtsProject() {
-        logger.error('testStmtsOfEtsProject start');
+        logger.info('testStmtsOfEtsProject start\n');
 
         // build config
         const configPath = 'tests/resources/arkIRTransformer/ArkIRTransformerTestConfig.json';
@@ -58,17 +57,17 @@ class ArkIRTransformerTest {
         scene.buildScene4HarmonyProject();
         this.printScene(scene);
         scene.inferTypes();
-        logger.error('\nafter inferTypes');
+        logger.info('\nafter inferTypes');
         this.printScene(scene);
 
-        logger.error('testStmtsOfEtsProject end\n');
+        logger.info('testStmtsOfEtsProject end\n');
     }
 
     private printStmts(body: ArkBody): void {
-        logger.error('--- threeAddressStmts ---');
+        logger.info('--- threeAddressStmts ---');
         const cfg = body.getCfg();
         for (const threeAddressStmt of cfg.getStmts()) {
-            logger.error(`text: '${threeAddressStmt.toString()}'`);
+            logger.info(`text: '${threeAddressStmt.toString()}'`);
             this.printMetadata(threeAddressStmt);
         }
     }
@@ -85,7 +84,7 @@ class ArkIRTransformerTest {
                 operandOriginalPositions.push(operandOriginalPosition);
             }
         }
-        logger.error(`operandOriginalPositions: [${operandOriginalPositions.join('], [')}]`);
+        logger.info(`operandOriginalPositions: [${operandOriginalPositions.join('], [')}]`);
     }
 
     public printMetadata(stmt: Stmt): void {
@@ -93,37 +92,37 @@ class ArkIRTransformerTest {
         if (leadingCommentsMetadata instanceof CommentsMetadata) {
             const comments = leadingCommentsMetadata.getComments();
             for (const comment of comments) {
-                logger.error(`leading comment content: ${comment.content}`);
-                logger.error(`leading comment position: ${comment.position.getFirstLine()}:${comment.position.getFirstCol()}-${comment.position.getLastLine()}:${comment.position.getLastCol()}`);
+                logger.info(`leading comment content: ${comment.content}`);
+                logger.info(`leading comment position: ${comment.position.getFirstLine()}:${comment.position.getFirstCol()}-${comment.position.getLastLine()}:${comment.position.getLastCol()}`);
             }
         }
         const trailingCommentsMetadata = stmt.getMetadata(ArkMetadataKind.TRAILING_COMMENTS);
         if (trailingCommentsMetadata instanceof CommentsMetadata) {
             const comments = trailingCommentsMetadata.getComments();
             for (const comment of comments) {
-                logger.error(`trailing comment content: ${comment.content}`);
-                logger.error(`trailing comment position: ${comment.position.getFirstLine()}:${comment.position.getFirstCol()}-${comment.position.getLastLine()}:${comment.position.getLastCol()}`);
+                logger.info(`trailing comment content: ${comment.content}`);
+                logger.info(`trailing comment position: ${comment.position.getFirstLine()}:${comment.position.getFirstCol()}-${comment.position.getLastLine()}:${comment.position.getLastCol()}`);
             }
         }
     }
 
     private printScene(scene: Scene): void {
         for (const arkFile of scene.getFiles()) {
-            logger.error('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
+            logger.info('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
             for (const arkClass of ModelUtils.getAllClassesInFile(arkFile)) {
-                logger.error('========= arkClass:', arkClass.getSignature().toString(), ' =======');
+                logger.info('========= arkClass:', arkClass.getSignature().toString(), ' =======');
                 for (const arkMethod of arkClass.getMethods(true)) {
-                    logger.error('***** arkMethod: ', arkMethod.getName());
+                    logger.info('***** arkMethod: ', arkMethod.getName());
                     const body = arkMethod.getBody();
                     if (body) {
                         this.printStmts(body);
-                        logger.error('-- locals:');
+                        logger.info('-- locals:');
                         body.getLocals().forEach(local => {
-                            logger.error(`name: ${local.getName()}, type: ${local.getType()}`);
+                            logger.info(`name: ${local.getName()}, type: ${local.getType()}`);
                         });
-                        logger.error('-- usedGlobals:');
+                        logger.info('-- usedGlobals:');
                         body.getUsedGlobals()?.forEach(usedGlobalName => {
-                            logger.error(`name: ${usedGlobalName}`);
+                            logger.info(`name: ${usedGlobalName}`);
                         });
                     }
                 }
@@ -145,7 +144,7 @@ class ArkIRTransformerTest {
     }
 
     public simpleTest() {
-        logger.error('simpleTest start');
+        logger.info('simpleTest start');
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         const sceneConfig: SceneConfig = new SceneConfig({ enableTrailingComments: true, enableLeadingComments: true });
         sceneConfig.buildFromProjectDir(projectDir);
@@ -157,19 +156,18 @@ class ArkIRTransformerTest {
             ?.getMethodWithName('foo')?.getBody()?.getCfg();
         if (cfg) {
             const stmts = cfg.getStmts();
-            console.log(stmts);
+            logger.info(`${stmts}`);
         } else {
-            logger.log(`cfg is undefined`);
+            logger.error(`cfg is undefined`);
         }
 
-        logger.error('simpleTest end');
+        logger.info('simpleTest end');
     }
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
-// arkIRTransformerTest.testSimpleStmt();
 arkIRTransformerTest.testStmtsOfSimpleProject();
 // arkIRTransformerTest.testStmtsOfEtsProject();
-// arkIRTransformerTest.printCfg();
+arkIRTransformerTest.printCfg();
 // arkIRTransformerTest.simpleTest();
 

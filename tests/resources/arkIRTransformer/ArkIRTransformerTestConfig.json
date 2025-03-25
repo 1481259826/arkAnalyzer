@@ -1,15 +1,15 @@
 {
-    "targetProjectName": "applications_photos",
-    "targetProjectDirectory": "D:\\Codes\\resources\\applications\\applications_photos",
-
-    "logPath": "out/ArkAnalyzer.log",
-    "logLevel": "ERROR",
-
+    "targetProjectName": "AppSampleD",
+    "targetProjectDirectory": "tests/resources/viewtree/project",
     "sdks": [
         {
             "name": "etsSdk",
-            "path": "",
+            "path": "tests/resources/Sdk",
             "moduleName": ""
         }
-    ]
+    ],
+
+    "options": {
+        "enableLeadingComments": true
+    }
 }
