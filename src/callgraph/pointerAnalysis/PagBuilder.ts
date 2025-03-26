@@ -674,6 +674,14 @@ export class PagBuilder {
                 if (!callerMethod) {
                     throw new Error("Can not get caller method");
                 }
+                /** 
+                 * TODO: while transfer the args, use the array node or source value node?
+                 * now:
+                 * source value ->     array 
+                 *              ->     param in callee
+                 * or 
+                 * source value ->     array    -> param in callee
+                 */
                 let argsRealValues = this.transferArrayValues(callerMethod, staticCS.args![1]);
                 srcNodes.push(...this.addCallParamPagEdge(realCallee, argsRealValues, staticCS.callStmt, cid, calleeCid, 0));
                 addThisEdge();
