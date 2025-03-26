@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from "../src/Config";
-import { Scene } from "../src/Scene";
-import { ClassSignature } from "../src/core/model/ArkSignature";
-import Logger, {LOG_LEVEL} from "../src/utils/logger"
- 
-Logger.configure("./out/ArkAnalyzer.log", LOG_LEVEL.INFO);
+import { SceneConfig, Scene, ClassSignature } from "../../src";
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'DummyCallTest');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 // let etsSdk: Sdk = {
 //     name: "ohos",
@@ -31,8 +30,8 @@ let config: SceneConfig = new SceneConfig();
 //     [etsSdk], [
 //         "./tests/resources/pta/uiTest/ui_test.ts"
 //     ])
-config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
-// config.buildFromProjectDir('./tests/resources/pta/singleton');
+// config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
+config.buildFromProjectDir('./tests/resources/pta/singleton');
 
 function runScene(config: SceneConfig, output: string) {
     let projectScene: Scene = new Scene();
@@ -52,6 +51,6 @@ function runScene(config: SceneConfig, output: string) {
 
     // let dummyCallCreator = new DummyCallCreator(projectScene)
     // dummyCallCreator.getDummyCallByComponent(classSigs[0])
-    console.log('fin');
+    logger.log('fin');
 }
 runScene(config, './out/applications_camera');
