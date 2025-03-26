@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,14 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import Logger, { LOG_LEVEL, LOG_MODULE_TYPE } from '../src/utils/logger';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
 import * as perf_hooks from 'perf_hooks';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
-const logPath = 'out/ArkAnalyzer.log';
-const logger = Logger.getLogger(LOG_MODULE_TYPE.DEFAULT, 'PerfContrastsTest');
-Logger.configure(logPath, LOG_LEVEL.ERROR, LOG_LEVEL.ERROR);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'DEPTEST');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 const performance = perf_hooks.performance;
 
 class DependencyTest {
