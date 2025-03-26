@@ -22,11 +22,14 @@
 /// Corresponding SDK is OH 4.1 SDK getting from 
 ///     https://gitee.com/openharmony/docs/blob/master/zh-cn/release-notes/OpenHarmony-v4.1-release.md
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
+import { SceneConfig, Scene } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'PIPELINETEST');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 let config: SceneConfig = new SceneConfig();
-config.buildFromJson('./tests/PipelineAppTestConfig.json');
+config.buildFromJson('./tests/resources/PipelineAppTestConfig.json');
 
 function assertObj(obj: Object): void {
     const keys = Object.keys(obj);
@@ -65,7 +68,7 @@ function doValidation(scene: Scene): void {
     let classes = scene.getClasses();
     let files = scene.getFiles();
     let methods = scene.getMethods();
-    console.info(`Actural numbers: File ${files.length}; Class ${classes.length}; Methods ${methods.length}`)
+    logger.info(`Actural numbers: File ${files.length}; Class ${classes.length}; Methods ${methods.length}`)
 
     obj.filesNumber[1] = files.length;
 
@@ -76,8 +79,7 @@ function doValidation(scene: Scene): void {
         process.exit(1);
     }
 
-    console.info('App Testing: All validation passed');
-
+    logger.info('App Testing: All validation passed');
 }
 
 let scene = getScene4Json(config);
