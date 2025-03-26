@@ -11,17 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
-import { ReachingDefProblem } from '../src/core/dataflow/ReachingDef';
-import { MFPDataFlowSolver } from '../src/core/dataflow/GenericDataFlow';
+import { SceneConfig, Scene } from '../../src';
+import { ReachingDefProblem } from '../../src/core/dataflow/ReachingDef';
+import { MFPDataFlowSolver } from '../../src/core/dataflow/GenericDataFlow';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
-Logger.configure('./out/ArkAnalyzer.log', LOG_LEVEL.TRACE);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ReachingDefTest');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
+
 let config: SceneConfig = new SceneConfig();
 
 function runDir(): Scene {
-    config.buildFromProjectDir('./tests/resources/reachingDef');
+    config.buildFromProjectDir('tests/resources/viewtree/project');
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
@@ -39,12 +40,12 @@ scene.getMethods().forEach((m) => {
     let solver = new MFPDataFlowSolver();
     let s = solver.calculateMopSolutionForwards(problem);
 
-    console.log(methodName);
-    console.log(problem);
-    console.log(s);
+    logger.info(methodName);
+    logger.info(problem);
+    logger.info(s);
     s.out.forEach((defs, nodeId) => {
         let str = Array.from(defs).join(', ');
-        console.log('//' + nodeId + ': ' + str);
+        logger.info('//' + nodeId + ': ' + str);
     });
     debugger;
 });
