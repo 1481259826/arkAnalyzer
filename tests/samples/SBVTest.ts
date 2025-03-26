@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { SparseBitVector } from '../src/utils/SparseBitVector';
+import { SparseBitVector } from '../../src/utils/SparseBitVector';
 
 const numOperations = 100000; // Number of operations to perform
 const maxBitIndex = numOperations; // Maximum bit index to test
@@ -336,3 +336,4 @@ if (1) {
 }
 
 test();
+console.log('test finish.')

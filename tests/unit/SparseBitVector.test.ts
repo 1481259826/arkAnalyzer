@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { test } from '../SBVTest';
+import { test } from '../samples/SBVTest';
 
 describe('SparseBitVector Test', () => {
     let ret = test();
