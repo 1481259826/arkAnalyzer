@@ -31,7 +31,7 @@ describe("fetchDependenciesFromFile Test", () => {
     })
 
     it('f case', () => {
-        let filePath = path.join(__dirname, '../sample/sceneBoard.json5');
+        let filePath = path.join(__dirname, '../resources/sample/sceneBoard.json5');
         let map = fetchDependenciesFromFile(filePath);
         expect(Object.entries(map.dependencies as Object).length).greaterThan(3);
         assert.isDefined((map.dependencies as Object).hasOwnProperty('@hw-hmos/abxconvertor'));

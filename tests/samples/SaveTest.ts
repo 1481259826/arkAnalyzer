@@ -24,7 +24,7 @@ Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 function testAppProjectSave() {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromJson("./tests/samples/AppTestConfig.json");
+    config.buildFromJson('./tests/resources/AppTestConfig.json');
     let scene: Scene = new Scene();
     scene.buildBasicInfo(config);
     logger.info('start ... ');

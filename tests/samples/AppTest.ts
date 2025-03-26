@@ -23,7 +23,7 @@ Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 let config: SceneConfig = new SceneConfig();
 
 // build from json
-config.buildFromJson("./tests/samples/AppTestConfig.json");
+config.buildFromJson('./tests/resources/AppTestConfig.json');
 function runScene4Json(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildBasicInfo(config);

@@ -15,10 +15,9 @@
 
 import { SceneConfig, Scene, DEFAULT_ARK_CLASS_NAME, CallGraph, CallGraphBuilder, MethodSignature } from '../../src';
 
-
 let config: SceneConfig = new SceneConfig()
 config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test')
-config.buildFromJson('./tests/resources/callgraph/callGraphConfigUnix.json');
+// config.buildFromJson('./tests/resources/callgraph/callGraphConfigUnix.json');
 function runScene(config: SceneConfig) {
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config)
@@ -43,6 +42,6 @@ function runScene(config: SceneConfig) {
     } else {
         callGraphBuilder.buildRapidTypeCallGraph(entryPoints, false)
     }
-    callGraph.dump('out/cg/cg.dot');
+    callGraph.dump('out/cg.dot');
 }
 runScene(config);
