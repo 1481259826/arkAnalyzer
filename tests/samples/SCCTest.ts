@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { CallGraph, CallGraphNode } from '../src/callgraph/model/CallGraph';
-import { CallGraphBuilder } from '../src/callgraph/model/builder/CallGraphBuilder';
-import Logger, { LOG_LEVEL } from '../src/utils/logger';
-import { SCCDetection } from '../src/core/graph/Scc';
+import { SceneConfig, Scene } from '../../src';
+import { CallGraph, CallGraphNode } from '../../src';
+import { CallGraphBuilder } from '../../src';
+import { SCCDetection } from '../../src';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
-Logger.configure('./out/ArkAnalyzer.log', LOG_LEVEL.TRACE);
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'SCCTEST');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 let config: SceneConfig = new SceneConfig();
 
 function runDir(): CallGraph {
@@ -41,25 +41,26 @@ let scc = new SCCDetection<CallGraph>(cg);
 scc.find();
 
 let topo = scc.getTopoAndCollapsedNodeStack();
-console.log(topo);
+logger.info(topo);
 while (topo.length > 0) {
     let n = topo.pop()!;
 
     let f: CallGraphNode = cg.getNode(n) as CallGraphNode;
-    console.log(f.getMethod().getMethodSubSignature().getMethodName());
+    logger.info(f.getMethod().getMethodSubSignature().getMethodName());
     let subn = scc.getSubNodes(n);
     subn.forEach(s => {
         let f: CallGraphNode = cg.getNode(s) as CallGraphNode;
-        console.log('  ' + f.getMethod().getMethodSubSignature().getMethodName());
+        logger.info('  ' + f.getMethod().getMethodSubSignature().getMethodName());
     });
 }
 
-console.log('===\n');
+logger.info('===\n');
 for (let n of cg.getNodesIter()) {
     let sccNodes = scc.getMySCCNodes(n.getID());
-    console.log((n as CallGraphNode).getMethod().getMethodSubSignature().getMethodName());
+    logger.info((n as CallGraphNode).getMethod().getMethodSubSignature().getMethodName());
 
     for (let sn of sccNodes) {
-        console.log('  ' + (cg.getNode(sn) as CallGraphNode).getMethod().getMethodSubSignature().getMethodName());
+        logger.info('  ' + (cg.getNode(sn) as CallGraphNode).getMethod().getMethodSubSignature().getMethodName());
     }
 }
+logger.info('test finish\n');
