@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,22 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../src/Config';
-import { Scene } from '../src/Scene';
-import { ArkBody } from '../src/core/model/ArkBody';
-import { DataflowProblem, FlowFunction } from '../src/core/dataflow/DataflowProblem';
-import { Local } from '../src/core/base/Local';
-import { Value } from '../src/core/base/Value';
-import { NumberType } from '../src/core/base/Type';
-import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../src/core/base/Stmt';
-import { ArkMethod } from '../src/core/model/ArkMethod';
-import { Constant } from '../src/core/base/Constant';
-import { ModelUtils } from '../src/core/common/ModelUtils';
-import { DataflowSolver } from '../src/core/dataflow/DataflowSolver';
-import { ArkBinopExpr } from '../src/core/base/Expr';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
+import { DataflowProblem, FlowFunction } from '../../src';
+import { Local } from '../../src';
+import { Value } from '../../src';
+import { NumberType } from '../../src';
+import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../../src';
+import { ArkMethod } from '../../src';
+import { Constant } from '../../src';
+import { ModelUtils } from '../../src';
+import { DataflowSolver } from '../../src';
+import { AbstractBinopExpr } from '../../src/core/base/Expr';
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'IFDSTEST');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 /*
 the only statement form in this test case is a = b or a = literal
@@ -69,8 +72,7 @@ class PossibleDivZeroChecker extends DataflowProblem<Local> {
                     if (checkerInstance.getEntryPoint() == srcStmt && checkerInstance.getZeroValue() == dataFact) {
                         // handle zero fact and entry point case
                         let entryMethod = checkerInstance.getEntryMethod();
-                        let body : ArkBody = entryMethod.getBody();
-                        const parameters =  [...entryMethod.getCfg().getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
+                        const parameters =  [...entryMethod.getCfg()!.getBlocks()][0].getStmts().slice(0,entryMethod.getParameters().length);
                         for (let i = 0;i < parameters.length;i++) {
                             const para  = parameters[i].getDef();
                             if (para instanceof Local)
@@ -95,15 +97,15 @@ class PossibleDivZeroChecker extends DataflowProblem<Local> {
                         } else if (rightOp == dataFact) {
                             // case : a = dataFact
                             ret.add(assigned);
-                        } else if (rightOp instanceof ArkBinopExpr) {
-                            let binaryOp : ArkBinopExpr =rightOp as ArkBinopExpr
+                        } else if (rightOp instanceof AbstractBinopExpr) {
+                            let binaryOp : AbstractBinopExpr = rightOp as AbstractBinopExpr
                             if (binaryOp.getOperator() == '/') {
                                 let divisor : Value = binaryOp.getOp2();
                                 let dividend : Value = binaryOp.getOp1();
                                 if (divisor == dataFact || checkerInstance.isLiteralZero(divisor)) {
-                                    console.log("divison isntruction with zero divisor is detected！")
-                                    console.log(srcStmt.toString());
-                                    console.log(srcStmt.getOriginPositionInfo());
+                                    logger.info("divison isntruction with zero divisor is detected!")
+                                    logger.info(srcStmt.toString());
+                                    logger.info(srcStmt.getOriginPositionInfo());
                                 } else if (dividend == dataFact) {
                                     ret.add(assigned);
                                 } else if (dataFact == checkerInstance.getZeroValue() && checkerInstance.isLiteralZero(dividend)) {
@@ -131,19 +133,18 @@ class PossibleDivZeroChecker extends DataflowProblem<Local> {
                 for (let i = 0; i < args.length; i++){
                     if (args[i] == dataFact){
                         // arkmethod的参数类型为ArkParameterRef，不是local，只能通过第一个block的对应位置找到真正参数的定义获取local
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter instanceof Local)
                             ret.add(realParameter)
                     }
                     if (checkerInstance.isLiteralZero(args[i])  && checkerInstance.getZeroValue() == dataFact) {
-                        const realParameter = [...method.getCfg().getBlocks()][0].getStmts()[i].getDef();
+                        const realParameter = [...method.getCfg()!.getBlocks()][0].getStmts()[i].getDef();
                         if (realParameter instanceof Local)
                             ret.add(realParameter)
                     }
                 }
                 return ret;
             }
-
         }
     }
 
@@ -172,7 +173,6 @@ class PossibleDivZeroChecker extends DataflowProblem<Local> {
                 }
                 return ret;
             }
-
         }
     }
 
@@ -185,12 +185,11 @@ class PossibleDivZeroChecker extends DataflowProblem<Local> {
                     ret.add(checkerInstance.getZeroValue());
                 }
                 const defValue = srcStmt.getDef();
-                if (!(defValue && defValue ==dataFact)){
+                if (!(defValue && defValue == dataFact)){
                     ret.add(dataFact);
                 }
                 return ret;
             }
-
         }
     }
 
@@ -201,6 +200,10 @@ class PossibleDivZeroChecker extends DataflowProblem<Local> {
     getZeroValue() : Local {
         return this.zeroValue;
     }
+
+    factEqual(d1: Local, d2: Local): boolean {
+        return d1 === d2;
+    }
 }
 
 class instanceSolver extends DataflowSolver<Local> {
@@ -209,15 +212,17 @@ class instanceSolver extends DataflowSolver<Local> {
     }
 }
 
-
-const config_path = "tests\\resources\\ifds\\project\\ETS2TS.json";
+const prjDir = "tests/resources/ifds/Div0";
 let config: SceneConfig = new SceneConfig();
-config.buildFromJson(config_path);
-const scene = new Scene(config);
+config.buildFromProjectDir(prjDir);
+let scene: Scene = new Scene();
+scene.buildSceneFromProjectDir(config);
+scene.inferTypes();
+
 const defaultMethod = scene.getFiles()[0].getDefaultClass().getDefaultArkMethod();
-const method = ModelUtils.getMethodWithName("main",defaultMethod!);
+const method = ModelUtils.getMethodWithName("main", defaultMethod!);
 if(method){
-    const problem = new PossibleDivZeroChecker([...method.getCfg().getBlocks()][0].getStmts()[method.getParameters().length],method);
+    const problem = new PossibleDivZeroChecker([...method.getCfg()!.getBlocks()][0].getStmts()[method.getParameters().length], method);
     const solver = new instanceSolver(problem, scene);
     solver.solve();
 }
