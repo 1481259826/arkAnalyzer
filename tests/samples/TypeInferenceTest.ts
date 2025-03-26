@@ -23,8 +23,6 @@ import { DEFAULT_ARK_METHOD_NAME } from '../../src';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'TypeInferenceTest');
 Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
-// Logger.configure('out/TypeInferenceTest.log', LOG_LEVEL.WARN, LOG_LEVEL.WARN);
-
 export class TypeInferenceTest {
     public buildScene(): Scene {
         const config_path = "tests/resources/typeInference/ProjectTypeInferenceTestConfig.json";

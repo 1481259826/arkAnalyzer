@@ -336,4 +336,4 @@ if (1) {
 }
 
 test();
-console.log('test finish.')
+console.log('test finish.');

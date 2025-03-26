@@ -108,6 +108,9 @@ class ArkIRTransformerTest {
 
     private printScene(scene: Scene): void {
         for (const arkFile of scene.getFiles()) {
+            if (!arkFile.getFilePath().includes('City.ets')) {
+                continue;
+            }
             logger.info('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
             for (const arkClass of ModelUtils.getAllClassesInFile(arkFile)) {
                 logger.info('========= arkClass:', arkClass.getSignature().toString(), ' =======');
@@ -167,7 +170,7 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 arkIRTransformerTest.testStmtsOfSimpleProject();
-// arkIRTransformerTest.testStmtsOfEtsProject();
+arkIRTransformerTest.testStmtsOfEtsProject();
 arkIRTransformerTest.printCfg();
-// arkIRTransformerTest.simpleTest();
+arkIRTransformerTest.simpleTest();
 

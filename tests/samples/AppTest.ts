@@ -29,6 +29,6 @@ function runScene4Json(config: SceneConfig) {
     projectScene.buildBasicInfo(config);
     projectScene.buildScene4HarmonyProject();
     projectScene.inferTypes();
-    logger.info('runScene4Json exit.')
+    logger.info('runScene4Json exit.');
 }
 runScene4Json(config);
