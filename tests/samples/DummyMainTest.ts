@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
-import { SceneConfig, Sdk } from "../src/Config";
-import { DummyMainCreater } from "../src/core/common/DummyMainCreater";
-import { Scene } from "../src/Scene";
+import { SceneConfig, Sdk } from "../../src/Config";
+import { Scene, DummyMainCreater } from "../../src";
+import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
+const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'DummyMainTest');
+Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 const sdk: Sdk = {
     name: '',
     path: 'tests/resources/Sdk',
@@ -38,4 +40,4 @@ const scene = buildScene('tests/resources/dummyMain/normal')
 const creater = new DummyMainCreater(scene);
 creater.createDummyMain();
 let d = creater.getDummyMain()
-console.log(d)
+logger.info(d)
