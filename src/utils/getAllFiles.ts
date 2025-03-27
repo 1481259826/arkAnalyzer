@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,7 +36,7 @@ export function getAllFiles(
   let ignoreFiles: Set<string> = new Set(ignore);
   // 如果源目录不存在，直接结束程序
   if (!fs.existsSync(srcPath)) {
-    logger.error(`Input directory is not exist, please check!`);
+    logger.error(`Input directory ${srcPath} is not exist, please check!`);
     return filenameArr;
   }
 
