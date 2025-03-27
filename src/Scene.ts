@@ -30,7 +30,7 @@ import { Local } from './core/base/Local';
 import { buildArkFileFromFile } from './core/model/builder/ArkFileBuilder';
 import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
-import { getFileRecursively } from './utils/FileUtils';
+import { FileUtils, getFileRecursively } from './utils/FileUtils';
 import { ArkExport, ExportInfo, ExportType } from './core/model/ArkExport';
 import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
 import { DEFAULT_ARK_CLASS_NAME, STATIC_INIT_METHOD_NAME } from './core/common/Const';
@@ -316,7 +316,7 @@ export class Scene {
         this.projectFiles.forEach((file) => {
             logger.info('=== parse file:', file);
             try {
-                const arkFile: ArkFile = new ArkFile();
+                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file));
                 arkFile.setScene(this);
                 buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
                 this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
@@ -347,7 +347,7 @@ export class Scene {
             return;
         }
         try {
-            const arkFile = new ArkFile();
+            const arkFile = new ArkFile(FileUtils.getFileLanguage(projectFile));
             arkFile.setScene(this);
             buildArkFileFromFile(projectFile, this.getRealProjectDir(), arkFile, this.getProjectName());
             for (const [modulePath, moduleName] of this.modulePath2NameMap) {
@@ -559,7 +559,7 @@ export class Scene {
         allFiles.forEach((file) => {
             logger.info('=== parse sdk file:', file);
             try {
-                const arkFile: ArkFile = new ArkFile();
+                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file));
                 arkFile.setScene(this);
                 buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
                 ModelUtils.getAllClassesInFile(arkFile).forEach(cls => {
@@ -1373,7 +1373,7 @@ export class ModuleScene {
         getAllFiles(this.modulePath, supportFileExts, this.projectScene.getOptions().ignoreFileNames).forEach((file) => {
             logger.info('=== parse file:', file);
             try {
-                const arkFile: ArkFile = new ArkFile();
+                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file));
                 arkFile.setScene(this.projectScene);
                 arkFile.setModuleScene(this);
                 buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,

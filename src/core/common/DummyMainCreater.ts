@@ -14,11 +14,7 @@
  */
 
 import { Scene } from '../../Scene';
-import {
-    COMPONENT_LIFECYCLE_METHOD_NAME,
-    getCallbackMethodFromStmt,
-    LIFECYCLE_METHOD_NAME,
-} from '../../utils/entryMethodUtils';
+import { COMPONENT_LIFECYCLE_METHOD_NAME, getCallbackMethodFromStmt, LIFECYCLE_METHOD_NAME } from '../../utils/entryMethodUtils';
 import { Constant } from '../base/Constant';
 import {
     AbstractInvokeExpr,
@@ -35,7 +31,7 @@ import { BasicBlock } from '../graph/BasicBlock';
 import { Cfg } from '../graph/Cfg';
 import { ArkBody } from '../model/ArkBody';
 import { ArkClass } from '../model/ArkClass';
-import { ArkFile } from '../model/ArkFile';
+import { ArkFile, Language } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ClassSignature, FileSignature, MethodSignature } from '../model/ArkSignature';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
@@ -91,7 +87,7 @@ export class DummyMainCreater {
     }
 
     public createDummyMain(): void {
-        const dummyMainFile = new ArkFile();
+        const dummyMainFile = new ArkFile(Language.UNKNOWN);
         dummyMainFile.setScene(this.scene);
         const dummyMainFileSignature = new FileSignature(this.scene.getProjectName(), '@dummyFile')
         dummyMainFile.setFileSignature(dummyMainFileSignature)

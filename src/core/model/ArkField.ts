@@ -20,6 +20,7 @@ import { FieldSignature } from './ArkSignature';
 import { Type } from '../base/Type';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
+import { Language } from './ArkFile';
 
 
 export enum FieldCategory {
@@ -51,6 +52,13 @@ export class ArkField extends ArkBaseModel {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Returns the program language of the file where this field's class defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkClass().getLanguage();
     }
 
     public getDeclaringArkClass() {

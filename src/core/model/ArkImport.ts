@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArkFile } from './ArkFile';
+import { ArkFile, Language } from './ArkFile';
 import { LineColPosition } from '../base/Position';
 import { ExportInfo, FromInfo } from './ArkExport';
 import { findExportInfo } from "../common/ModelUtils";
@@ -36,6 +36,13 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Returns the program language of the file where this import info defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkFile().getLanguage();
     }
 
     public build(importClauseName: string, importType: string, importFrom: string, originTsPosition: LineColPosition,

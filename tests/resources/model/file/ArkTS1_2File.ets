@@ -13,9 +13,23 @@
  * limitations under the License.
  */
 
-import { A2 } from './ArkTS1_2File';
-import { C1 } from './ArkTS1_1File';
+import { A1 } from './ArkTS1_1File';
 
-interface Main {
-    i: number;
+'use static'
+
+@Component
+struct SubComponent {
+    build() {
+        Column() {
+            Text('This is ArkTS 1.2')
+        }
+    }
+}
+
+export namespace A2 {}
+
+export class C2 {
+    private field2: string;
+
+    public function2(): void {}
 }

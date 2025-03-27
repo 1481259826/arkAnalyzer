@@ -18,6 +18,7 @@ import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './logger';
 import { transfer2UnixPath } from './pathTransfer';
 import { OH_PACKAGE_JSON5 } from '../core/common/EtsConst';
+import { Language } from '../core/model/ArkFile';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'FileUtils');
 
@@ -77,6 +78,17 @@ export class FileUtils {
         return moduleMap;
     }
 
+    public static getFileLanguage(file: string): Language {
+        const extension = path.extname(file).toLowerCase();
+        switch (extension) {
+            case '.ts':
+                return Language.TYPESCRIPT;
+            case '.ets':
+                return Language.ARKTS1_1;
+            default:
+                return Language.UNKNOWN;
+        }
+    }
 }
 
 export class ModulePath {

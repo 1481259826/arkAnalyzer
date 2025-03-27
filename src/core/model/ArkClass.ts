@@ -16,7 +16,7 @@
 import { ClassType, GenericType, Type } from '../base/Type';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkField } from './ArkField';
-import { ArkFile } from './ArkFile';
+import { ArkFile, Language } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
 import { ArkNamespace } from './ArkNamespace';
 import { ClassSignature, FieldSignature, FileSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
@@ -76,6 +76,13 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Returns the program language of the file where this class defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkFile().getLanguage();
     }
 
     /**

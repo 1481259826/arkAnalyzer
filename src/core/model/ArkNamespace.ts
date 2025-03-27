@@ -15,7 +15,7 @@
 
 import { ArkExport, ExportInfo, ExportType } from './ArkExport';
 import { ArkClass } from './ArkClass';
-import { ArkFile } from './ArkFile';
+import { ArkFile, Language } from './ArkFile';
 import { ArkMethod } from './ArkMethod';
 import { AliasClassSignature, ClassSignature, NamespaceSignature } from './ArkSignature';
 import { ALL } from '../common/TSConst';
@@ -49,6 +49,13 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Returns the program language of the file where this namespace defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkFile().getLanguage();
     }
 
     public addNamespace(namespace: ArkNamespace) {
