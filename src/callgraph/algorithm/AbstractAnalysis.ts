@@ -124,7 +124,10 @@ export abstract class AbstractAnalysis {
         }
         cfg.getStmts().forEach((stmt) => {
             if (stmt.containsInvokeExpr()) {
-                this.resolveCall(cgNode.getID(), stmt).forEach(stmt => calleeMethods.push(stmt));
+                this.resolveCall(cgNode.getID(), stmt).forEach((callSite) => {
+                    calleeMethods.push(callSite);
+                    this.cg.addStmtToCallSiteMap(stmt, callSite);
+                });
             }
         })
 
