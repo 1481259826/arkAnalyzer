@@ -566,7 +566,6 @@ export class PagBuilder {
                         srcNodes.push(srcBaseNode);
                     }
                 } else {
-                    // srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
                     srcNodes.push(...this.processBuiltInMethodPagCallEdge(staticCS, cid, calleeCid, baseClassPTNode));
                 }
             }
@@ -654,6 +653,17 @@ export class PagBuilder {
             }
         }
 
+        let  setFunctionThisPt = (srcNode: PagFuncNode) => {
+            let thisInstanceLocal = this.getRealThisLocal(staticCS.args![0] as Local, staticCS.callerFuncID);
+            let thisInstanceNodeID = this.pag.hasCtxNode(cid, thisInstanceLocal);
+
+            if (!thisInstanceNodeID) {
+                return;
+            }
+
+            srcNode.setThisPt(thisInstanceNodeID);
+        }
+
         switch (builtInType) {
             case BuiltApiType.SetAdd:
             case BuiltApiType.MapSet:
@@ -674,14 +684,6 @@ export class PagBuilder {
                 if (!callerMethod) {
                     throw new Error("Can not get caller method");
                 }
-                /** 
-                 * TODO: while transfer the args, use the array node or source value node?
-                 * now:
-                 * source value ->     array 
-                 *              ->     param in callee
-                 * or 
-                 * source value ->     array    -> param in callee
-                 */
                 let argsRealValues = this.transferArrayValues(callerMethod, staticCS.args![1]);
                 srcNodes.push(...this.addCallParamPagEdge(realCallee, argsRealValues, staticCS.callStmt, cid, calleeCid, 0));
                 addThisEdge();
@@ -691,23 +693,16 @@ export class PagBuilder {
                 // WIP
                 // let f = function.bind(thisArg, arg1, arg2, ...)
                 // f();
-                /**
-                 * TODO: discuss the return value
-                 * how to reflect the bind behavior on PAG?
-                 * heapObj -> function
-                 *         -> f 
-                 * or
-                 * heapObj -> function
-                 * newHeapObj -> f
-                 * or
-                 * heapObj -> function -> f (following implementation)
-                 */
-                srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
-                // srcNodes.push(...this.addCallReturnPagEdge(realCallee, staticCS.callStmt, cid, calleeCid));
-                let srcNode = this.getOrNewPagNode(cid, (ivkExpr as ArkInstanceInvokeExpr).getBase() as Local);
-                let dstNode = this.getOrNewPagNode(calleeCid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
+                let srcNode = this.pag.getOrClonePagFuncNode(baseClassPTNode);
+                if (!srcNode) {
+                    return srcNodes;
+                }
+                setFunctionThisPt(srcNode);
+
+                let dstNode = this.getOrNewPagNode(cid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
                 this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy, staticCS.callStmt);
                 srcNodes.push(srcNode.getID());
+                srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
                 addThisEdge();
                 break;
         }

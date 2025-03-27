@@ -346,6 +346,10 @@ export class PagNode extends BaseNode {
             label = label + `\n${(this.value as ArkThisRef).toString()}`;
         }
 
+        if (this.getKind() === PagNodeKind.Function) {
+            label = label + `thisPt:{${((this as unknown) as PagFuncNode).getThisPt()}}`;
+        }
+
         if (this.stmt) {
             label = label + `\n${this.stmt.toString()}`;
             let method = this.stmt.getCfg()?.getDeclaringMethod().getSubSignature().toString();
@@ -527,22 +531,35 @@ export class PagParamNode extends PagNode {
 }
 
 export class PagFuncNode extends PagNode {
-    private methodSignature!: MethodSignature
+    private methodSignature!: MethodSignature;
+    private thisPt!: NodeID;
     // TODO: may add obj interface
 
-    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt, method?: MethodSignature) {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt, method?: MethodSignature, thisInstanceID?: NodeID) {
         super(id, cid, r, PagNodeKind.Function, stmt)
         if (method) {
             this.methodSignature = method;
         }
+
+        if (thisInstanceID) {
+            this.thisPt = thisInstanceID;
+        }
     }
 
     public setMethod(method: MethodSignature) {
-        this.methodSignature = method
+        this.methodSignature = method;
     }
 
     public getMethod(): MethodSignature {
-        return this.methodSignature
+        return this.methodSignature;
+    }
+
+    public setThisPt(thisPt: NodeID) {
+        this.thisPt = thisPt;
+    }
+
+    public getThisPt(): NodeID {
+        return this.thisPt;
     }
 }
 
@@ -673,6 +690,17 @@ export class Pag extends BaseExplicitGraph {
             throw new Error(`Error clone array field node ${baseNode.getValue()}`);
         }
         return undefined;
+    }
+
+    public getOrClonePagFuncNode(basePt: NodeID): PagFuncNode | undefined {
+        let baseNode = this.getNode(basePt) as PagNode;
+        if (baseNode instanceof PagFuncNode) {
+            let fieldNode = this.getOrClonePagNode(baseNode, basePt) as PagFuncNode;
+            return fieldNode;
+        } else {
+            logger.error(`Error clone field node ${baseNode.getValue()}`)
+            return undefined;
+        }
     }
 
     public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
