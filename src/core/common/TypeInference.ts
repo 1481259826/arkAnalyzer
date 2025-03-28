@@ -14,7 +14,7 @@
  */
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
-import { AbstractExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
+import { AbstractExpr, ArkInstanceInvokeExpr, ArkPtrInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { Local } from '../base/Local';
 import {
     AbstractFieldRef,
@@ -217,7 +217,8 @@ export class TypeInference {
     private static resolveExprsInStmt(stmt: Stmt, arkMethod: ArkMethod): void {
         for (const expr of stmt.getExprs()) {
             const newExpr = expr.inferType(arkMethod);
-            if (stmt.containsInvokeExpr() && expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) {
+            if (stmt.containsInvokeExpr() && ((expr instanceof ArkInstanceInvokeExpr && newExpr instanceof ArkStaticInvokeExpr) ||
+                newExpr instanceof ArkPtrInvokeExpr)) {
                 stmt.replaceUse(expr, newExpr);
             }
         }
@@ -359,8 +360,9 @@ export class TypeInference {
         if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType
             || type instanceof NullType || type instanceof UndefinedType) {
             return true;
-        } else if (type instanceof ClassType
-            && type.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+        } else if (type instanceof ClassType && (type.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME ||
+            (type.getClassSignature().getDeclaringFileSignature().getFileName() === Builtin.DUMMY_FILE_NAME &&
+                type.getRealGenericTypes()?.find(t => t instanceof GenericType)))) {
             return true;
         } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
             return !!type.getTypes().find(t => this.hasUnclearReferenceType(t));

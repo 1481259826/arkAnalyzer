@@ -13,11 +13,26 @@
  * limitations under the License.
  */
 
-import { CallGraph, FuncID, CallGraphNode, CallSite, DynCallSite, CallGraphNodeKind } from '../model/CallGraph';
+import { CallGraph, CallGraphNode, CallGraphNodeKind, CallSite, DynCallSite, FuncID } from '../model/CallGraph';
 import { Scene } from '../../Scene'
-import { Stmt, ArkAssignStmt, ArkReturnStmt, ArkInvokeStmt } from '../../core/base/Stmt'
-import { AbstractExpr, AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkPtrInvokeExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
-import { AbstractFieldRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
+import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../../core/base/Stmt'
+import {
+    AbstractExpr,
+    AbstractInvokeExpr,
+    ArkInstanceInvokeExpr,
+    ArkNewArrayExpr,
+    ArkNewExpr,
+    ArkPtrInvokeExpr,
+    ArkStaticInvokeExpr
+} from '../../core/base/Expr';
+import {
+    AbstractFieldRef,
+    ArkArrayRef,
+    ArkInstanceFieldRef,
+    ArkParameterRef,
+    ArkStaticFieldRef,
+    ArkThisRef
+} from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import Logger, { LOG_MODULE_TYPE } from "../../utils/logger";
@@ -30,8 +45,21 @@ import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
 import {
-    Pag, FuncPag, PagEdgeKind, PagLocalNode, PagNode, PagThisRefNode, IntraProceduralEdge, PagFuncNode, StorageType, StorageLinkEdgeType,
-    PagGlobalThisNode, InterFuncPag, InterProceduralEdge, PagNodeType, PagNewContainerExprNode
+    FuncPag,
+    InterFuncPag,
+    InterProceduralEdge,
+    IntraProceduralEdge,
+    Pag,
+    PagEdgeKind,
+    PagFuncNode,
+    PagGlobalThisNode,
+    PagLocalNode,
+    PagNewContainerExprNode,
+    PagNode,
+    PagNodeType,
+    PagThisRefNode,
+    StorageLinkEdgeType,
+    StorageType
 } from './Pag';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
@@ -44,6 +72,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export class CSFuncID {
     public cid: ContextID;
     public funcID: FuncID;
+
     constructor(cid: ContextID, fid: FuncID) {
         this.cid = cid;
         this.funcID = fid;
@@ -480,8 +509,8 @@ export class PagBuilder {
             let base!: Local;
             if (invokeExpr instanceof ArkInstanceInvokeExpr) {
                 base = invokeExpr.getBase();
-            } else if (invokeExpr instanceof ArkPtrInvokeExpr) {
-                base = invokeExpr.getFuncPtrLocal();
+            } else if (invokeExpr instanceof ArkPtrInvokeExpr && invokeExpr.getFuncPtrLocal() instanceof Local) {
+                base = invokeExpr.getFuncPtrLocal() as Local;
             }
             // TODO: check base under different cid
             let baseNodeIDs = this.pag.getNodesByValue(base);
@@ -740,7 +769,7 @@ export class PagBuilder {
     }
 
     private addThisRefCallEdge(baseClassPTNode: NodeID, cid: ContextID,
-        ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID, callerFunID: FuncID): NodeID {
+                               ivkExpr: ArkInstanceInvokeExpr, callee: ArkMethod, calleeCid: ContextID, callerFunID: FuncID): NodeID {
 
         if (!callee || !callee.getCfg()) {
             logger.error(`callee is null`);
@@ -870,7 +899,7 @@ export class PagBuilder {
             }
         } else {
             /**
-             *  process foreach situation 
+             *  process foreach situation
              *  e.g. arr.forEach((item) => { ... })
              *  cs.args is anonymous method local, will have only 1 parameter
              *  but inside foreach will have >= 1 parameters
@@ -884,7 +913,7 @@ export class PagBuilder {
             if (!containerValue || !param) {
                 return srcNodes;
             }
-            
+
             let basePagNode = this.getOrNewPagNode(callerCid, containerValue, cs.callStmt);
             let dstPagNode = this.getOrNewPagNode(calleeCid, param, cs.callStmt);
 
@@ -983,7 +1012,7 @@ export class PagBuilder {
                          * some API param is in the form of anonymous method:
                          *  component/common.d.ts
                          *  declare function animateTo(value: AnimateParam, event: () => void): void;
-                         * 
+                         *
                          * this param fake Value will create PagFuncNode rather than PagLocalNode
                          * when this API is called, the anonymous method pointer will not be able to pass into the fake Value PagNode
                          */
@@ -1292,7 +1321,7 @@ export class PagBuilder {
     }
 
     private funcPagDfs(graph: Map<Value, Value[]>, visited: Set<Value>, currentNode: Value, targetNode: Value,
-        staticFieldFound: boolean): boolean {
+                       staticFieldFound: boolean): boolean {
         if (currentNode === targetNode) {
             return staticFieldFound;
         }
@@ -1343,7 +1372,7 @@ export class PagBuilder {
 
     /**
      * get storageType enum with method's Declaring ClassName
-     * 
+     *
      * @param storageName ClassName that method belongs to, currently support AppStorage and SubscribedAbstractProperty
      * SubscribedAbstractProperty: in following listing, `link1` is infered as ClassType `SubscribedAbstractProperty`,
      * it needs to get PAG node to check the StorageType
@@ -1490,7 +1519,7 @@ export class PagBuilder {
     /**
      * build export edge in internal func pag
      * @param value: Value that need to check if it is from import/export
-     * @param originValue: if Value if InstanceFieldRef, the base will be passed to `value` recursively, 
+     * @param originValue: if Value if InstanceFieldRef, the base will be passed to `value` recursively,
      *                      fieldRef will be passed to `originValue`
      */
     private handleValueFromExternalScope(value: Value, funcID: FuncID, originValue?: Value): void {

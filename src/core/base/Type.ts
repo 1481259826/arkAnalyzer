@@ -13,12 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    AliasTypeSignature,
-    ClassSignature,
-    MethodSignature,
-    NamespaceSignature,
-} from '../model/ArkSignature';
+import { AliasTypeSignature, ClassSignature, MethodSignature, NamespaceSignature, } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
@@ -224,7 +219,7 @@ export class LiteralType extends PrimitiveType {
         return this.literalName;
     }
 
-    public getTypeString():string {
+    public getTypeString(): string {
         return this.literalName.toString();
     }
 }
@@ -656,11 +651,12 @@ export class GenericType extends Type {
     private name: string;
     private defaultType?: Type;
     private constraint?: Type;
-    private index?: number;
+    private index: number;
 
-    constructor(name: string, defaultType?: Type, constraint?: Type) {
+    constructor(name: string, index: number = 0, defaultType?: Type, constraint?: Type) {
         super();
         this.name = name;
+        this.index = index;
         this.defaultType = defaultType;
         this.constraint = constraint;
     }

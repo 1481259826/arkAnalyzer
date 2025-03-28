@@ -19,6 +19,7 @@ import { ClassType, Type } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 import {
     ANONYMOUS_CLASS_PREFIX,
+    LEXICAL_ENV_NAME_PREFIX,
     NAME_DELIMITER,
     UNKNOWN_CLASS_NAME,
     UNKNOWN_FILE_NAME,
@@ -391,7 +392,8 @@ export class MethodSignature {
     }
 
     public getParamLength(): number {
-        return this.methodSubSignature.getParameters().length;
+        return this.methodSubSignature.getParameters()
+            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX)).length;
     }
 }
 

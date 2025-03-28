@@ -23,7 +23,7 @@ import { ClassSignature, FieldSignature, FileSignature, MethodSignature, Namespa
 import { Local } from '../base/Local';
 import { ArkExport, ExportType } from './ArkExport';
 import { TypeInference } from '../common/TypeInference';
-import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
+import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME, NAME_DELIMITER, NAME_PREFIX } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
@@ -376,11 +376,19 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         return this.staticMethods.get(methodName) || null;
     }
 
-    public addMethod(method: ArkMethod) {
+    public addMethod(method: ArkMethod, originName?: string): void {
+        const name = originName ?? method.getName();
         if (method.isStatic()) {
-            this.staticMethods.set(method.getName(), method);
+            this.staticMethods.set(name, method);
         } else {
-            this.methods.set(method.getName(), method);
+            this.methods.set(name, method);
+        }
+        if (!originName && !method.isAnonymousMethod() && name.startsWith(NAME_PREFIX)) {
+            const index = name.indexOf(NAME_DELIMITER);
+            if (index > 1) {
+                const originName = name.substring(1, index);
+                this.addMethod(method, originName);
+            }
         }
     }
 

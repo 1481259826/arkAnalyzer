@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -247,19 +247,19 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 }
 
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
-    private funPtrLocal: Local;
+    private funPtr: Local | AbstractFieldRef;
 
-    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[], realGenericTypes?: Type[]) {
+    constructor(methodSignature: MethodSignature, ptr: Local | AbstractFieldRef, args: Value[], realGenericTypes?: Type[]) {
         super(methodSignature, args, realGenericTypes);
-        this.funPtrLocal = ptr;
+        this.funPtr = ptr;
     }
 
-    public setFunPtrLocal(ptr: Local): void {
-        this.funPtrLocal = ptr;
+    public setFunPtrLocal(ptr: Local | AbstractFieldRef): void {
+        this.funPtr = ptr;
     }
 
-    public getFuncPtrLocal(): Local {
-        return this.funPtrLocal;
+    public getFuncPtrLocal(): Local | AbstractFieldRef {
+        return this.funPtr;
     }
 
     public toString(): string {
@@ -757,6 +757,13 @@ export class ArkTypeOfExpr extends AbstractExpr {
     public toString(): string {
         return 'typeof ' + this.op;
     }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        if (this.op instanceof AbstractRef || this.op instanceof AbstractExpr) {
+            this.op.inferType(arkMethod);
+        }
+        return this;
+    }
 }
 
 export class ArkInstanceOfExpr extends AbstractExpr {
@@ -794,6 +801,19 @@ export class ArkInstanceOfExpr extends AbstractExpr {
 
     public toString(): string {
         return this.op + ' instanceof ' + this.checkType;
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        if (this.op instanceof AbstractRef || this.op instanceof AbstractExpr) {
+            this.op.inferType(arkMethod);
+        }
+        if (TypeInference.isUnclearType(this.checkType)) {
+            const newType = TypeInference.inferUnclearedType(this.checkType, arkMethod.getDeclaringArkClass());
+            if (newType) {
+                this.checkType = newType;
+            }
+        }
+        return this;
     }
 }
 
