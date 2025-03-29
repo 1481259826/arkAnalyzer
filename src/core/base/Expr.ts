@@ -825,9 +825,7 @@ export class ArkInstanceOfExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractExpr {
-        if (this.op instanceof AbstractRef || this.op instanceof AbstractExpr) {
-            this.op.inferType(arkMethod);
-        }
+        TypeInference.inferValueType(this.op, arkMethod);
         if (TypeInference.isUnclearType(this.checkType)) {
             const newType = TypeInference.inferUnclearedType(this.checkType, arkMethod.getDeclaringArkClass());
             if (newType) {

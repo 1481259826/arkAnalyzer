@@ -221,6 +221,17 @@ describe("Infer Array Test", () => {
             assert.equal(stmts[2].toString(), '%3 = %1[%2]');
         }
     })
+
+    it('instance of case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
+        const file = projectScene.getFile(fileId);
+        const stmts = file?.getDefaultClass()?.getMethodWithName('responseType')
+            ?.getCfg()?.getStmts();
+        assert.isDefined(stmts);
+        if (stmts) {
+            assert.equal(stmts[2].toString(), 'if d instanceof @inferType/demo.ts: Test != false');
+        }
+    })
 })
 
 describe("function Test", () => {

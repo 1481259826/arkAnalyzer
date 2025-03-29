@@ -378,7 +378,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     private findNestedDeclareMethod(methodName: string, map: Map<string, ArkMethod>): ArkMethod | null {
         for (const [name, method] of map) {
-            const prefix = `${NAME_PREFIX}${methodName}${NAME_DELIMITER}`
+            const prefix = `${NAME_PREFIX}${methodName}${NAME_DELIMITER}`;
             if (name.startsWith(prefix)) {
                 return method;
             }
