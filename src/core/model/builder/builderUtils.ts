@@ -44,7 +44,16 @@ import { Builtin } from '../../common/Builtin';
 import { modifierKind2Enum } from '../ArkBaseModel';
 import { ArkValueTransformer } from '../../common/ArkValueTransformer';
 import { KeyofTypeExpr, TypeQueryExpr } from '../../base/TypeExpr';
-import { THIS_NAME } from '../../common/TSConst';
+import {
+    ANY_KEYWORD,
+    BIGINT_KEYWORD,
+    BOOLEAN_KEYWORD, NEVER_KEYWORD,
+    NULL_KEYWORD,
+    NUMBER_KEYWORD,
+    STRING_KEYWORD,
+    THIS_NAME,
+    UNDEFINED_KEYWORD, VOID_KEYWORD,
+} from '../../common/TSConst';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { ArkInstanceFieldRef } from '../../base/Ref';
 import { Local } from '../../base/Local';
@@ -443,43 +452,46 @@ export function buildTypeFromPreStr(preStr: string) {
     let postStr = '';
     switch (preStr) {
         case 'BooleanKeyword':
-            postStr = 'boolean';
+            postStr = BOOLEAN_KEYWORD;
             break;
         case 'FalseKeyword':
-            postStr = 'boolean';
+            postStr = BOOLEAN_KEYWORD;
             break;
         case 'TrueKeyword':
-            postStr = 'boolean';
+            postStr = BOOLEAN_KEYWORD;
             break;
         case 'NumberKeyword':
-            postStr = 'number';
+            postStr = NUMBER_KEYWORD;
             break;
         case 'NumericLiteral':
-            postStr = 'number';
+            postStr = NUMBER_KEYWORD;
             break;
         case 'FirstLiteralToken':
-            postStr = 'number';
+            postStr = NUMBER_KEYWORD;
             break;
         case 'StringKeyword':
-            postStr = 'string';
+            postStr = STRING_KEYWORD;
             break;
         case 'StringLiteral':
-            postStr = 'string';
+            postStr = STRING_KEYWORD;
             break;
         case 'UndefinedKeyword':
-            postStr = 'undefined';
+            postStr = UNDEFINED_KEYWORD;
             break;
         case 'NullKeyword':
-            postStr = 'null';
+            postStr = NULL_KEYWORD;
             break;
         case 'AnyKeyword':
-            postStr = 'any';
+            postStr = ANY_KEYWORD;
             break;
         case 'VoidKeyword':
-            postStr = 'void';
+            postStr = VOID_KEYWORD;
             break;
         case 'NeverKeyword':
-            postStr = 'never';
+            postStr = NEVER_KEYWORD;
+            break;
+        case 'BigIntKeyword':
+            postStr = BIGINT_KEYWORD;
             break;
         default:
             postStr = preStr;

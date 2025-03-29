@@ -29,7 +29,7 @@ import {
     AliasType,
     AnnotationNamespaceType,
     AnyType,
-    ArrayType,
+    ArrayType, BigIntType,
     BooleanType,
     ClassType,
     FunctionType,
@@ -54,7 +54,17 @@ import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { ALL, CONSTRUCTOR_NAME, GLOBAL_THIS_NAME, PROMISE, SUPER_NAME, THIS_NAME } from './TSConst';
+import {
+    ALL, ANY_KEYWORD, BIGINT_KEYWORD,
+    BOOLEAN_KEYWORD,
+    CONSTRUCTOR_NAME,
+    GLOBAL_THIS_NAME, NEVER_KEYWORD, NULL_KEYWORD,
+    NUMBER_KEYWORD,
+    PROMISE,
+    STRING_KEYWORD,
+    SUPER_NAME,
+    THIS_NAME, UNDEFINED_KEYWORD, VOID_KEYWORD,
+} from './TSConst';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { MethodSignature, MethodSubSignature, NamespaceSignature } from '../model/ArkSignature';
@@ -411,22 +421,24 @@ export class TypeInference {
     // Deal only with simple situations
     public static buildTypeFromStr(typeStr: string): Type {
         switch (typeStr) {
-            case 'boolean':
+            case BOOLEAN_KEYWORD:
                 return BooleanType.getInstance();
-            case 'number':
+            case NUMBER_KEYWORD:
                 return NumberType.getInstance();
-            case 'string':
+            case STRING_KEYWORD:
                 return StringType.getInstance();
-            case 'undefined':
+            case UNDEFINED_KEYWORD:
                 return UndefinedType.getInstance();
-            case 'null':
+            case NULL_KEYWORD:
                 return NullType.getInstance();
-            case 'any':
+            case ANY_KEYWORD:
                 return AnyType.getInstance();
-            case 'void':
+            case VOID_KEYWORD:
                 return VoidType.getInstance();
-            case 'never':
+            case NEVER_KEYWORD:
                 return NeverType.getInstance();
+            case BIGINT_KEYWORD:
+                return BigIntType.getInstance();
             case 'RegularExpression': {
                 const classSignature = Builtin.REGEXP_CLASS_SIGNATURE;
                 return new ClassType(classSignature);

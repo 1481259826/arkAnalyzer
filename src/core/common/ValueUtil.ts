@@ -14,6 +14,7 @@
  */
 
 import {
+    BigIntConstant,
     BooleanConstant,
     Constant,
     NullConstant,
@@ -35,6 +36,10 @@ export class ValueUtil {
             this.NumberConstantCache.set(n, constant);
         }
         return constant;
+    }
+
+    public static createBigIntConst(bigInt: bigint): BigIntConstant {
+        return new BigIntConstant(bigInt);
     }
 
     public static createStringConst(str: string): Constant {

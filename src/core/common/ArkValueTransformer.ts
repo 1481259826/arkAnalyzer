@@ -43,6 +43,7 @@ import {
     AliasType,
     AnyType,
     ArrayType,
+    BigIntType,
     BooleanType,
     ClassType,
     FunctionType,
@@ -1420,7 +1421,7 @@ export class ArkValueTransformer {
                 constant = ValueUtil.getOrCreateNumberConst(parseFloat((literalNode as ts.NumericLiteral).text));
                 break;
             case ts.SyntaxKind.BigIntLiteral:
-                constant = ValueUtil.getOrCreateNumberConst(parseInt((literalNode as ts.BigIntLiteral).text));
+                constant = ValueUtil.createBigIntConst(BigInt((literalNode as ts.BigIntLiteral).text.slice(0, -1)));
                 break;
             case ts.SyntaxKind.StringLiteral:
                 constant = ValueUtil.createStringConst((literalNode as ts.StringLiteral).text);
@@ -1518,6 +1519,8 @@ export class ArkValueTransformer {
                 return VoidType.getInstance();
             case ts.SyntaxKind.NeverKeyword:
                 return NeverType.getInstance();
+            case ts.SyntaxKind.BigIntKeyword:
+                return BigIntType.getInstance();
             case ts.SyntaxKind.TypeReference:
                 return this.resolveTypeReferenceNode(type as ts.TypeReferenceNode);
             case ts.SyntaxKind.ArrayType:

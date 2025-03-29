@@ -22,7 +22,7 @@ import {
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
-    ANY_KEYWORD,
+    ANY_KEYWORD, BIGINT_KEYWORD,
     BOOLEAN_KEYWORD,
     NEVER_KEYWORD,
     NULL_KEYWORD,
@@ -154,6 +154,22 @@ export class NumberType extends PrimitiveType {
 
     private constructor() {
         super(NUMBER_KEYWORD);
+    }
+
+    public static getInstance() {
+        return this.INSTANCE;
+    }
+}
+
+/**
+ * bigint type
+ * @category core/base/type
+ */
+export class BigIntType extends PrimitiveType {
+    private static readonly INSTANCE = new BigIntType();
+
+    private constructor() {
+        super(BIGINT_KEYWORD);
     }
 
     public static getInstance() {
