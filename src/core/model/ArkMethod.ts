@@ -32,6 +32,7 @@ import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
 import { Constant } from '../base/Constant';
 import { Local } from '../base/Local';
+import { Language } from './ArkFile';
 
 export const arkMethodNodeKind = ['MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor',
     'SetAccessor', 'ArrowFunction', 'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
@@ -63,6 +64,13 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     constructor() {
         super();
+    }
+
+    /**
+     * Returns the program language of the file where this method defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkClass().getLanguage();
     }
 
     public getExportType(): ExportType {

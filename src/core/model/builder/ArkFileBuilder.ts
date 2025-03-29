@@ -16,7 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 import ts from 'ohos-typescript';
-import { ArkFile } from '../ArkFile';
+import { ArkFile, Language } from '../ArkFile';
 import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { buildDefaultArkClassFromArkFile, buildNormalArkClassFromArkFile } from './ArkClassBuilder';
@@ -36,6 +36,7 @@ import { ArkMethod } from '../ArkMethod';
 import { LineColPosition } from '../../base/Position';
 import { ETS_COMPILER_OPTIONS } from '../../common/EtsConst';
 import { FileSignature } from '../ArkSignature';
+import { ARKTS_STATIC_MARK } from '../../common/Const';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFileBuilder');
 
@@ -143,6 +144,8 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
             buildExportVariableStatement(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
         } else if (ts.isTypeAliasDeclaration(child) && isExported(child.modifiers)) {
             buildExportTypeAliasDeclaration(child, astRoot, arkFile).forEach(item => arkFile.addExportInfo(item));
+        } else if (ts.isExpressionStatement(child) && ts.isStringLiteral(child.expression)) {
+            child.expression.text.trim() === ARKTS_STATIC_MARK && arkFile.setLanguage(Language.ARKTS1_2);
         } else {
             logger.info('Child joined default method of arkFile: ', ts.SyntaxKind[child.kind]);
         }

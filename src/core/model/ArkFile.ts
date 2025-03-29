@@ -25,10 +25,18 @@ export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'Inte
     'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
     'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
 
+export enum Language {
+    TYPESCRIPT = 0,
+    ARKTS1_1 = 1,
+    ARKTS1_2 = 2,
+    UNKNOWN = -1,
+}
+
 /**
  * @category core/model
  */
 export class ArkFile {
+    private language: Language;
     private absoluteFilePath: string = '';
     private projectDir: string = '';
     private code: string = '';
@@ -51,7 +59,19 @@ export class ArkFile {
 
     private anonymousClassNumber: number = 0;
 
-    constructor() {
+    constructor(language: Language) {
+        this.language = language;
+    }
+
+    /**
+     * Returns the program language of the file.
+     */
+    public getLanguage(): Language {
+        return this.language;
+    }
+
+    public setLanguage(language: Language): void {
+        this.language = language;
     }
 
     /**

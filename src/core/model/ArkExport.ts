@@ -14,7 +14,7 @@
  */
 
 import { LineColPosition } from '../base/Position';
-import { ArkFile } from './ArkFile';
+import { ArkFile, Language } from './ArkFile';
 import { ArkSignature, ClassSignature, LocalSignature, MethodSignature, NamespaceSignature } from './ArkSignature';
 import { DEFAULT } from '../common/TSConst';
 import { ArkBaseModel, ModifierType } from './ArkBaseModel';
@@ -70,6 +70,13 @@ export class ExportInfo extends ArkBaseModel implements FromInfo {
 
     private constructor() {
         super();
+    }
+
+    /**
+     * Returns the program language of the file where this export info defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkFile().getLanguage();
     }
 
     public getFrom(): string | undefined {
