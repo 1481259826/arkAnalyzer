@@ -310,11 +310,11 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public getRealTypes(): Type[] | undefined {
-        return this.realTypes;
+        return this.realTypes ? Array.from(this.realTypes) : undefined;
     }
 
-    public getGenericsTypes() {
-        return this.genericsTypes;
+    public getGenericsTypes(): GenericType[] | undefined {
+        return this.genericsTypes ? Array.from(this.genericsTypes) : undefined;
     }
 
     public addGenericType(gType: GenericType) {
@@ -369,26 +369,28 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public getMethodWithName(methodName: string): ArkMethod | null {
-        return this.methods.get(methodName) || null;
+        return this.methods.get(methodName) || this.findNestedDeclareMethod(methodName, this.methods);
     }
 
     public getStaticMethodWithName(methodName: string): ArkMethod | null {
-        return this.staticMethods.get(methodName) || null;
+        return this.staticMethods.get(methodName) || this.findNestedDeclareMethod(methodName, this.staticMethods);
     }
 
-    public addMethod(method: ArkMethod, originName?: string): void {
-        const name = originName ?? method.getName();
-        if (method.isStatic()) {
-            this.staticMethods.set(name, method);
-        } else {
-            this.methods.set(name, method);
-        }
-        if (!originName && !method.isAnonymousMethod() && name.startsWith(NAME_PREFIX)) {
-            const index = name.indexOf(NAME_DELIMITER);
-            if (index > 1) {
-                const originName = name.substring(1, index);
-                this.addMethod(method, originName);
+    private findNestedDeclareMethod(methodName: string, map: Map<string, ArkMethod>): ArkMethod | null {
+        for (const [name, method] of map) {
+            const prefix = `${NAME_PREFIX}${methodName}${NAME_DELIMITER}`
+            if (name.startsWith(prefix)) {
+                return method;
             }
+        }
+        return null;
+    }
+
+    public addMethod(method: ArkMethod) {
+        if (method.isStatic()) {
+            this.staticMethods.set(method.getName(), method);
+        } else {
+            this.methods.set(method.getName(), method);
         }
     }
 

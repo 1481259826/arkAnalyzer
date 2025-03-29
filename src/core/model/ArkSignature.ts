@@ -319,13 +319,13 @@ export class MethodSubSignature {
         return this.staticFlag;
     }
 
-    public toString(): string {
+    public toString(ptrName?: string): string {
         let paraStr = "";
         this.getParameterTypes().forEach((parameterType) => {
             paraStr += parameterType.toString() + ", ";
         });
         paraStr = paraStr.replace(/, $/, '');
-        let tmpSig = `${this.getMethodName()}(${paraStr})`;
+        let tmpSig = `${ptrName ?? this.getMethodName()}(${paraStr})`;
         if (this.isStatic()) {
             tmpSig = '[static]' + tmpSig;
         }
@@ -379,8 +379,8 @@ export class MethodSignature {
         return this.methodSubSignature.getReturnType();
     }
 
-    public toString(): string {
-        return this.declaringClassSignature.toString() + '.' + this.methodSubSignature.toString();
+    public toString(ptrName?: string): string {
+        return this.declaringClassSignature.toString() + '.' + this.methodSubSignature.toString(ptrName);
     }
 
     public toMapKey(): string {

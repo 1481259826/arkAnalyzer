@@ -16,7 +16,7 @@
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
-import { ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from './Type';
+import { ArrayType, ClassType, LexicalEnvType, Type, UnknownType } from './Type';
 import { Value } from './Value';
 import { TypeInference } from '../common/TypeInference';
 import { ArkMethod } from '../model/ArkMethod';
@@ -261,18 +261,7 @@ export class ArkParameterRef extends AbstractRef {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        if (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType) {
-            const type1 = arkMethod.getSignature().getMethodSubSignature().getParameters()[this.index]?.getType();
-            if (!TypeInference.isUnclearType(type1)) {
-                this.paramType = type1;
-                return this;
-            }
-        }
-        let type = TypeInference.inferUnclearedType(this.paramType, arkMethod.getDeclaringArkClass());
-        if (type) {
-            this.paramType = type;
-        }
-        return this;
+        return IRInference.inferParameterRef(this, arkMethod);
     }
 
     public getUses(): Value[] {
@@ -417,5 +406,18 @@ export class ClosureFieldRef extends AbstractRef {
 
     public toString(): string {
         return this.base.toString() + '.' + this.getFieldName();
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractRef {
+        if (TypeInference.isUnclearType(this.type)) {
+            let type: Type | undefined = this.base.getType();
+            if (type instanceof LexicalEnvType) {
+                type = type.getClosures().find(c => c.getName() === this.fieldName)?.getType();
+            }
+            if (type && !TypeInference.isUnclearType(type)) {
+                this.type = type;
+            }
+        }
+        return this;
     }
 }

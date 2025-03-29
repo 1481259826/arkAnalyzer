@@ -33,7 +33,7 @@ import {
     UnknownType,
 } from './Type';
 import { Value } from './Value';
-import { AbstractFieldRef, AbstractRef } from './Ref';
+import { AbstractFieldRef, AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from './Ref';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 import { UNKNOWN_FILE_NAME } from '../common/Const';
@@ -246,6 +246,24 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 
 }
 
+/**
+ *     1. Local PtrInvokeExpr
+ *
+ *      ```typescript
+ *      func foo():void {
+ *      }
+ *      let ptr = foo;
+ *      ptr();
+ *      ```
+ *     2. FieldRef PtrInvokeExpr
+ *
+ *      ```typescript
+ *      class A {
+ *          b:()=> void()
+ *      }
+ *      new A().b()
+ *      ```
+ */
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
     private funPtr: Local | AbstractFieldRef;
 
@@ -265,7 +283,15 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
     public toString(): string {
         let strs: string[] = [];
         strs.push('ptrinvoke <');
-        strs.push(this.getMethodSignature().toString());
+        let ptrName: string = '';
+        if (this.funPtr instanceof Local) {
+            ptrName = this.funPtr.getName();
+        } else if (this.funPtr instanceof ArkInstanceFieldRef) {
+            ptrName = this.funPtr.getBase().getName() + '.' + this.funPtr.getFieldName();
+        } else if (this.funPtr instanceof ArkStaticFieldRef) {
+            ptrName = this.funPtr.getFieldName();
+        }
+        strs.push(this.getMethodSignature().toString(ptrName));
         strs.push('>(');
         if (this.getArgs().length > 0) {
             for (const arg of this.getArgs()) {
@@ -276,11 +302,6 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
         }
         strs.push(')');
         return strs.join('');
-    }
-
-    public inferType(arkMethod: ArkMethod): ArkPtrInvokeExpr {
-        // TODO: handle type inference
-        return this;
     }
 
     public getUses(): Value[] {

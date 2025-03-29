@@ -651,12 +651,11 @@ export class GenericType extends Type {
     private name: string;
     private defaultType?: Type;
     private constraint?: Type;
-    private index: number;
+    private index: number = 0;
 
-    constructor(name: string, index: number = 0, defaultType?: Type, constraint?: Type) {
+    constructor(name: string, defaultType?: Type, constraint?: Type) {
         super();
         this.name = name;
-        this.index = index;
         this.defaultType = defaultType;
         this.constraint = constraint;
     }
