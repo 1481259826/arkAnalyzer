@@ -344,7 +344,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         const allMethods = Array.from(this.methods.values())
             .filter(f => !generated && !f.isGenerated() || generated);
         allMethods.push(...this.staticMethods.values());
-        return allMethods;
+        return [...new Set(allMethods)];
     }
 
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
@@ -369,28 +369,31 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public getMethodWithName(methodName: string): ArkMethod | null {
-        return this.methods.get(methodName) || this.findNestedDeclareMethod(methodName, this.methods);
+        return this.methods.get(methodName) || null;
     }
 
     public getStaticMethodWithName(methodName: string): ArkMethod | null {
-        return this.staticMethods.get(methodName) || this.findNestedDeclareMethod(methodName, this.staticMethods);
+        return this.staticMethods.get(methodName) || null;
     }
 
-    private findNestedDeclareMethod(methodName: string, map: Map<string, ArkMethod>): ArkMethod | null {
-        for (const [name, method] of map) {
-            const prefix = `${NAME_PREFIX}${methodName}${NAME_DELIMITER}`;
-            if (name.startsWith(prefix)) {
-                return method;
-            }
-        }
-        return null;
-    }
-
-    public addMethod(method: ArkMethod) {
+    /**
+     * add a method in class.
+     * when a nested method with declare name, add both the declare origin name and signature name
+     * %${declare name}$${outer method name} in class.
+     */
+    public addMethod(method: ArkMethod, originName?: string): void {
+        const name = originName ?? method.getName();
         if (method.isStatic()) {
-            this.staticMethods.set(method.getName(), method);
+            this.staticMethods.set(name, method);
         } else {
-            this.methods.set(method.getName(), method);
+            this.methods.set(name, method);
+        }
+        if (!originName && !method.isAnonymousMethod() && name.startsWith(NAME_PREFIX)) {
+            const index = name.indexOf(NAME_DELIMITER);
+            if (index > 1) {
+                const originName = name.substring(1, index);
+                this.addMethod(method, originName);
+            }
         }
     }
 
