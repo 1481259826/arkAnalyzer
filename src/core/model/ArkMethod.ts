@@ -61,6 +61,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     private isGeneratedFlag: boolean = false;
     private asteriskToken: boolean = false;
+    private questionToken: boolean = false;
 
     constructor() {
         super();
@@ -667,4 +668,11 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return local?.getType() instanceof FunctionType ? local : null;
     }
 
+    public setQuestionToken(questionToken: boolean): void {
+        this.questionToken = questionToken;
+    }
+
+    public getQuestionToken(): boolean {
+        return this.questionToken;
+    }
 }
