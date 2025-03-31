@@ -63,7 +63,7 @@ import {
 } from '../base/Type';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
 import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
-import { MethodSignature } from '../model/ArkSignature';
+import { ClassSignature, FieldSignature, MethodSignature } from '../model/ArkSignature';
 import { Value } from '../base/Value';
 import {
     COMPONENT_CREATE_FUNCTION,
@@ -611,11 +611,27 @@ export class ArkValueTransformer {
                 this.arkIRTransformer.generateAssignStmtForValue(baseValue, basePositions));
             baseStmts.forEach(stmt => stmts.push(stmt));
         }
-        const fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(
-            propertyAccessExpression.name.getText(this.sourceFile));
+
+        const fieldRefPositions = [FullPosition.buildFromNode(propertyAccessExpression, this.sourceFile), ...basePositions];
+
+        // this if for the case: const obj: Object = Object.create(Object.prototype);
+        if (baseValue instanceof Local && baseValue.getName() === Builtin.OBJECT) {
+            this.locals.delete(baseValue.getName());
+            const fieldSignature = new FieldSignature(propertyAccessExpression.name.getText(this.sourceFile),
+                Builtin.OBJECT_CLASS_SIGNATURE, UnknownType.getInstance(), true);
+            const fieldRef = new ArkStaticFieldRef(fieldSignature);
+            return { value: fieldRef, valueOriginalPositions: fieldRefPositions, stmts: stmts };
+        }
+
+        let fieldSignature: FieldSignature;
+        if (baseValue instanceof Local && baseValue.getType() instanceof ClassType) {
+            fieldSignature = new FieldSignature(propertyAccessExpression.name.getText(this.sourceFile),
+                (baseValue.getType() as ClassType).getClassSignature(), UnknownType.getInstance());
+        } else {
+            fieldSignature = ArkSignatureBuilder.buildFieldSignatureFromFieldName(propertyAccessExpression.name.getText(this.sourceFile));
+        }
         const fieldRef = new ArkInstanceFieldRef(baseValue as Local, fieldSignature);
-        const fieldRefPositions = [FullPosition.buildFromNode(propertyAccessExpression,
-            this.sourceFile), ...basePositions];
+
         return { value: fieldRef, valueOriginalPositions: fieldRefPositions, stmts: stmts };
     }
 
@@ -677,22 +693,28 @@ export class ArkValueTransformer {
         let invokeValue: Value;
         let invokeValuePositions: FullPosition[] = [FullPosition.buildFromNode(callExpression, this.sourceFile)];
         const { args, argPositions, realGenericTypes } = argus;
-        if (callerValue instanceof ArkInstanceFieldRef) {
-            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName());
-            invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args, realGenericTypes);
-            invokeValuePositions.push(...callerPositions.slice(1), ...argPositions);
-        } else if (callerValue instanceof ArkStaticFieldRef) {
-            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName());
-            invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
-            invokeValuePositions.push(...argPositions);
+        if (callerValue instanceof AbstractFieldRef) {
+            let methodSignature: MethodSignature;
+            const declareSignature = callerValue.getFieldSignature().getDeclaringSignature();
+            if (declareSignature instanceof ClassSignature) {
+                methodSignature = new MethodSignature(declareSignature, ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(callerValue.getFieldName()));
+            } else {
+                methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName());
+            }
+            if (callerValue instanceof ArkInstanceFieldRef) {
+                invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args, realGenericTypes);
+                invokeValuePositions.push(...callerPositions.slice(1));
+            } else {
+                invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
+            }
         } else if (callerValue instanceof Local) {
             const callerName = callerValue.getName();
             let classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(callerName);
             let cls = ModelUtils.getClass(this.declaringMethod, classSignature);
             if (cls?.hasComponentDecorator() && ts.isCallExpression(callExpression)) {
                 return this.generateCustomViewStmt(callerName, args, argPositions, callExpression, stmts);
-            } else if ((callerName === COMPONENT_FOR_EACH || callerName === COMPONENT_LAZY_FOR_EACH) &&
-                       ts.isCallExpression(callExpression)) { // foreach/lazyforeach will be parsed as ts.callExpression
+            } else if ((callerName === COMPONENT_FOR_EACH || callerName === COMPONENT_LAZY_FOR_EACH) && ts.isCallExpression(callExpression)) {
+                // foreach/lazyforeach will be parsed as ts.callExpression
                 return this.generateSystemComponentStmt(callerName, args, argPositions, callExpression, stmts);
             }
             const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerName);
@@ -701,16 +723,14 @@ export class ArkValueTransformer {
             } else {
                 invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
             }
-            invokeValuePositions.push(...argPositions);
         } else {
             ({ value: callerValue, valueOriginalPositions: callerPositions, stmts: callerStmts } =
                 this.arkIRTransformer.generateAssignStmtForValue(callerValue, callerPositions));
             callerStmts.forEach(stmt => stmts.push(stmt));
-            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(
-                (callerValue as Local).getName());
+            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName((callerValue as Local).getName());
             invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
-            invokeValuePositions.push(...argPositions);
         }
+        invokeValuePositions.push(...argPositions);
         return { value: invokeValue, valueOriginalPositions: invokeValuePositions, stmts: stmts };
     }
 
@@ -801,6 +821,7 @@ export class ArkValueTransformer {
         if (className === Builtin.ARRAY) {
             return this.newArrayExpressionToValueAndStmts(newExpression);
         }
+
         const stmts: Stmt[] = [];
         let realGenericTypes: Type[] | undefined;
         if (newExpression.typeArguments) {
@@ -810,8 +831,13 @@ export class ArkValueTransformer {
             });
         }
 
-        const classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(className);
-        const classType = new ClassType(classSignature, realGenericTypes);
+        let classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(className);
+        let classType = new ClassType(classSignature, realGenericTypes);
+        if (className === Builtin.OBJECT) {
+            classSignature = Builtin.OBJECT_CLASS_SIGNATURE;
+            classType = Builtin.OBJECT_CLASS_TYPE;
+        }
+
         const newExpr = new ArkNewExpr(classType);
         const {
             value: newLocal,
@@ -1683,6 +1709,9 @@ export class ArkValueTransformer {
 
     private resolveTypeReferenceNode(typeReferenceNode: ts.TypeReferenceNode): Type {
         const typeReferenceFullName = typeReferenceNode.typeName.getText(this.sourceFile);
+        if (typeReferenceFullName === Builtin.OBJECT) {
+            return Builtin.OBJECT_CLASS_TYPE;
+        }
         const aliasTypeAndStmt = this.aliasTypeMap.get(typeReferenceFullName);
 
         const genericTypes: Type[] = [];

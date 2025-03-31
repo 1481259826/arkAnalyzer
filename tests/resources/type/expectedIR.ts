@@ -1020,3 +1020,87 @@ class BigIntClass {
   }
 }
 `;
+
+export const SourceIROfObjectType = `class %dflt {
+  foo(obj: @ES2015/BuiltinClass: Object): @ES2015/BuiltinClass: Object {
+    label0:
+      obj = parameter0: @ES2015/BuiltinClass: Object
+      this = this: @type/objectType.ts: %dflt
+      staticinvoke <@ES2015/BuiltinClass: Object.keys()>(obj)
+      instanceinvoke obj.<@ES2015/BuiltinClass: Object.toLocaleString()>()
+      return obj
+  }
+
+  %dflt(): void {
+    label0:
+      this = this: @type/objectType.ts: %dflt
+      %0 = new @ES2015/BuiltinClass: Object
+      instanceinvoke %0.<@ES2015/BuiltinClass: Object.constructor()>()
+      emptyObj = %0
+      a = staticinvoke <@type/objectType.ts: %dflt.foo(@ES2015/BuiltinClass: Object)>(emptyObj)
+      type @type/objectType.ts: %dflt.[static]%dflt()#newObject = @ES2015/BuiltinClass: Object
+      %1 = @ES2015/BuiltinClass: Object.[static]prototype
+      newEmptyObj = staticinvoke <@ES2015/BuiltinClass: Object.create()>(%1)
+      b = staticinvoke <@type/objectType.ts: %dflt.foo(@ES2015/BuiltinClass: Object)>(newEmptyObj)
+      return
+  }
+}
+class ClassA {
+  fieldA: @ES2015/BuiltinClass: Object
+
+  %statInit(): void {
+    label0:
+      this = this: @type/objectType.ts: ClassA
+      return
+  }
+
+  constructor(): @type/objectType.ts: ClassA {
+    label0:
+      this = this: @type/objectType.ts: ClassA
+      instanceinvoke this.<@type/objectType.ts: ClassA.%instInit()>()
+      return this
+  }
+
+  %instInit(): void {
+    label0:
+      this = this: @type/objectType.ts: ClassA
+      %0 = new @type/objectType.ts: %AC0$ClassA.%instInit
+      instanceinvoke %0.<@type/objectType.ts: %AC0$ClassA.%instInit.constructor()>()
+      this.<@type/objectType.ts: ClassA.fieldA> = %0
+      return
+  }
+
+  hasA(): string {
+    label0:
+      this = this: @type/objectType.ts: ClassA
+      %0 = this.<@type/objectType.ts: ClassA.fieldA>
+      %1 = instanceinvoke %0.<@ES2015/BuiltinClass: Object.toLocaleString()>()
+      return %1
+  }
+
+  keys(): void {
+    label0:
+      this = this: @type/objectType.ts: ClassA
+      %0 = this.<@type/objectType.ts: ClassA.fieldA>
+      staticinvoke <@ES2015/BuiltinClass: Object.keys()>(%0)
+      return
+  }
+}
+object %AC0$ClassA.%instInit {
+  a: number
+
+  constructor(): @type/objectType.ts: %AC0$ClassA.%instInit {
+    label0:
+      this = this: @type/objectType.ts: %AC0$ClassA.%instInit
+      instanceinvoke this.<@type/objectType.ts: %AC0$ClassA.%instInit.%instInit()>()
+      return this
+  }
+
+  %instInit(): void {
+    label0:
+      this = this: @type/objectType.ts: %AC0$ClassA.%instInit
+      this.<@type/objectType.ts: ClassA.a> = 1
+      return
+  }
+}
+`;

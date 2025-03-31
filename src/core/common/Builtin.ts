@@ -33,6 +33,7 @@ export class Builtin {
 
     public static BUILT_IN_CLASSES_FILE_SIGNATURE = Builtin.buildBuiltInClassesFileSignature();
     public static OBJECT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.OBJECT);
+    public static OBJECT_CLASS_TYPE = new ClassType(this.OBJECT_CLASS_SIGNATURE);
     public static ARRAY_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ARRAY);
     public static SET_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.SET);
     public static MAP_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.MAP);
@@ -84,5 +85,9 @@ export class Builtin {
         builtInClassSignatureMap.set(this.MAP, this.MAP_CLASS_SIGNATURE);
         builtInClassSignatureMap.set(this.REGEXP, this.REGEXP_CLASS_SIGNATURE);
         return builtInClassSignatureMap;
+    }
+
+    public static isBuiltinClass(className: string): boolean {
+        return this.BUILT_IN_CLASSES.has(className);
     }
 }

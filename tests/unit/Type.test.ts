@@ -21,8 +21,8 @@ import {
     ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkClass,
-    ArkField,
-    ArkMethod,
+    ArkField, ArkInstanceFieldRef, ArkInstanceInvokeExpr, ArkInvokeStmt,
+    ArkMethod, ArkStaticFieldRef, ArkStaticInvokeExpr,
     ArrayType, BigIntType,
     ClassType,
     FileSignature,
@@ -82,7 +82,7 @@ import {
     SourceBigIntType,
     SourceIntersectionTypeForClass,
     SourceIntersectionTypeForDefaultMethod,
-    SourceIntersectionTypeForFunction,
+    SourceIntersectionTypeForFunction, SourceIROfObjectType,
     SourceKeyofWithGenericClassWithTypeOperator,
     SourceReadonlyOfGenericTypeClassWithTypeOperator,
     SourceReadonlyOfReferenceTypeClassWithTypeOperator,
@@ -1727,5 +1727,116 @@ describe('Save to IR Test', () => {
         let printer = new ArkIRFilePrinter(arkFile!);
         let source = printer.dump();
         assert.equal(source, IRBigIntType);
+    });
+});
+
+describe('Object Type Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'objectType.ts');
+    const arkFile = projectScene.getFile(fileId);
+    const classA = arkFile?.getClassWithName('ClassA');
+    const defaultClass = arkFile?.getDefaultClass();
+    const objectTypeStr = '@ES2015/BuiltinClass: Object';
+
+    it('case1: whole ir', () => {
+        assert.isNotNull(arkFile);
+        const printer = new ArkIRFilePrinter(arkFile!);
+        const ir = printer.dump();
+        assert.equal(ir, SourceIROfObjectType);
+    });
+
+    it('case2: class field Type', () => {
+        const fieldA = classA?.getFieldWithName('fieldA');
+        assert.isDefined(fieldA);
+        assert.isNotNull(fieldA);
+        assert.equal(fieldA!.getType().toString(), objectTypeStr);
+    });
+
+    it('case3: method param Type', () => {
+        const params = defaultClass?.getMethodWithName('foo')?.getParameters();
+        assert.isDefined(params);
+        assert.isAtLeast(params!.length, 1);
+        assert.equal(params![0].getType().toString(), objectTypeStr);
+    });
+
+    it('case4: method return Type', () => {
+        const returnType = defaultClass?.getMethodWithName('foo')?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), objectTypeStr);
+    });
+
+    it('case5: method local Type', () => {
+        const localsFoo = defaultClass?.getMethodWithName('foo')?.getBody()?.getLocals();
+        const localObj = localsFoo?.get('obj');
+        assert.isDefined(localObj);
+        assert.equal(localObj!.getType().toString(), objectTypeStr);
+
+        const localsDefault = defaultClass?.getDefaultArkMethod()?.getBody()?.getLocals();
+        const localEmptyObj = localsDefault?.get('emptyObj');
+        assert.isDefined(localEmptyObj);
+        assert.equal(localEmptyObj!.getType().toString(), objectTypeStr);
+        const localA = localsDefault?.get('a');
+        assert.isDefined(localA);
+        assert.equal(localA!.getType().toString(), objectTypeStr);
+        const localB = localsDefault?.get('b');
+        assert.isDefined(localB);
+        assert.equal(localB!.getType().toString(), objectTypeStr);
+        const localNewEmptyObj = localsDefault?.get('newEmptyObj');
+        assert.isDefined(localNewEmptyObj);
+        assert.equal(localNewEmptyObj!.getType().toString(), '@type/objectType.ts: %dflt.[static]%dflt()#newObject');
+        assert.isTrue(localNewEmptyObj!.getType() instanceof AliasType);
+        assert.equal((localNewEmptyObj!.getType() as AliasType).getOriginalType().getTypeString(), objectTypeStr);
+    });
+
+    it('case6: alias Type', () => {
+        const aliasNewObject = defaultClass?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get('newObject');
+        assert.isDefined(aliasNewObject);
+        assert.equal(aliasNewObject![0].getOriginalType().toString(), objectTypeStr);
+        assert.equal(aliasNewObject![1].getExprs()[0].getOriginalObject().toString(), objectTypeStr);
+    });
+
+    it('case7: method invoke expr', () => {
+        const stmtsDefault = defaultClass?.getDefaultArkMethod()?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtsDefault);
+        assert.isAtLeast(stmtsDefault!.length, 7);
+        assert.isTrue(stmtsDefault![6] instanceof ArkAssignStmt);
+        assert.isTrue((stmtsDefault![6] as ArkAssignStmt).getRightOp() instanceof ArkStaticFieldRef);
+        assert.equal(((stmtsDefault![6] as ArkAssignStmt).getRightOp() as ArkStaticFieldRef).getFieldSignature().toString(), `${objectTypeStr}.[static]prototype`);
+        assert.isTrue(stmtsDefault![7] instanceof ArkAssignStmt);
+        assert.isTrue((stmtsDefault![7] as ArkAssignStmt).getRightOp() instanceof ArkStaticInvokeExpr);
+        assert.equal(((stmtsDefault![7] as ArkAssignStmt).getRightOp() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.create()`);
+
+        const stmtsFoo = defaultClass?.getMethodWithName('foo')?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtsFoo);
+        assert.isAtLeast(stmtsFoo!.length, 3);
+        assert.isTrue(stmtsFoo![2] instanceof ArkInvokeStmt);
+        assert.isTrue((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() instanceof ArkStaticInvokeExpr);
+        assert.equal(((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.keys()`);
+
+        assert.isTrue(stmtsFoo![3] instanceof ArkInvokeStmt);
+        assert.isTrue((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() instanceof ArkInstanceInvokeExpr);
+        assert.equal(((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() as ArkInstanceInvokeExpr).getBase().toString(), 'obj');
+        assert.equal(((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() as ArkInstanceInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.toLocaleString()`);
+    });
+
+    it('case8: class field invoke expr', () => {
+        const stmtsKeys = classA?.getMethodWithName('keys')?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtsKeys);
+        assert.isAtLeast(stmtsKeys!.length, 2);
+        assert.isTrue(stmtsKeys![1] instanceof ArkAssignStmt);
+        assert.isTrue((stmtsKeys![1] as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+        assert.equal(((stmtsKeys![1] as ArkAssignStmt).getRightOp() as ArkInstanceFieldRef).getFieldSignature().getType().toString(), objectTypeStr);
+        assert.isTrue(stmtsKeys![2] instanceof ArkInvokeStmt);
+        assert.isTrue((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() instanceof ArkStaticInvokeExpr);
+        assert.equal(((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.keys()`);
+
+        const stmtshasA = classA?.getMethodWithName('hasA')?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtshasA);
+        assert.isAtLeast(stmtshasA!.length, 2);
+        assert.isTrue(stmtshasA![1] instanceof ArkAssignStmt);
+        assert.isTrue((stmtshasA![1] as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+        assert.equal(((stmtshasA![1] as ArkAssignStmt).getRightOp() as ArkInstanceFieldRef).getFieldSignature().getType().toString(), objectTypeStr);
+        assert.isTrue(stmtshasA![2] instanceof ArkAssignStmt);
+        assert.isTrue((stmtshasA![2] as ArkAssignStmt).getRightOp() instanceof ArkInstanceInvokeExpr);
+        assert.equal(((stmtshasA![2] as ArkAssignStmt).getRightOp() as ArkInstanceInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.toLocaleString()`);
     });
 });

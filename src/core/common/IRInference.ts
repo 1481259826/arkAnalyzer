@@ -423,6 +423,9 @@ export class IRInference {
 
     private static inferInvokeExprWithDeclaredClass(expr: AbstractInvokeExpr, baseType: ClassType, methodName: string,
                                                     scene: Scene): AbstractInvokeExpr | null {
+        if (Builtin.isBuiltinClass(baseType.getClassSignature().getClassName())) {
+            expr.setMethodSignature(new MethodSignature(baseType.getClassSignature(), expr.getMethodSignature().getMethodSubSignature()));
+        }
         let declaredClass = scene.getClass(baseType.getClassSignature());
         if (!declaredClass) {
             const globalClass = scene.getSdkGlobal(baseType.getClassSignature().getClassName());
@@ -458,15 +461,12 @@ export class IRInference {
             }
             return expr;
         } else if (methodName === CONSTRUCTOR_NAME) { //sdk隐式构造
-            const subSignature = new MethodSubSignature(methodName, [],
-                new ClassType(baseType.getClassSignature()));
-            const signature = new MethodSignature(baseType.getClassSignature(), subSignature);
-            expr.setMethodSignature(signature);
+            const subSignature = new MethodSubSignature(methodName, [], new ClassType(baseType.getClassSignature()));
+            expr.setMethodSignature(new MethodSignature(baseType.getClassSignature(), subSignature));
             return expr;
         } else if (methodName === Builtin.ITERATOR_NEXT) { //sdk隐式构造
             const returnType = expr.getMethodSignature().getMethodSubSignature().getReturnType();
-            if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature()
-                .getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
+            if (returnType instanceof ClassType && returnType.getClassSignature().getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
                 returnType.setRealGenericTypes(baseType.getRealGenericTypes());
                 return expr;
             }
