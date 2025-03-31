@@ -22,26 +22,26 @@ class ImportTest {
     obj2: Du = et2.obj;
 }
 
-function main() {
+function main(): void {
     test1();
     test2();
     test3();
 }
 
-function test1() {
+function test1(): void {
     let lo = et;
     let lo2 = et2;
     lo.foo();
     lo2.foo();
 }
 
-function test2() {
+function test2(): void {
     let lo2 = new ImportTest()
     let x = lo2.obj;
     let y = lo2.obj2;
 }
 
-function test3() {
+function test3(): void {
     et.foo();
     et2.foo();
 }
