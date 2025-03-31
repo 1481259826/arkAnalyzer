@@ -23,11 +23,16 @@ class ImportTest {
 }
 
 function main() {
+    test1();
+    test2();
+    test3();
+}
+
+function test1() {
     let lo = et;
     let lo2 = et2;
     lo.foo();
     lo2.foo();
-    test2();
 }
 
 function test2() {
