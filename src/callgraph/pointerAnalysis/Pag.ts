@@ -347,7 +347,7 @@ export class PagNode extends BaseNode {
         }
 
         if (this.getKind() === PagNodeKind.Function) {
-            label = label + `thisPt:{${((this as unknown) as PagFuncNode).getThisPt()}}`;
+            label = label + ` thisPt:{${((this as unknown) as PagFuncNode).getThisPt()}}`;
         }
 
         if (this.stmt) {
