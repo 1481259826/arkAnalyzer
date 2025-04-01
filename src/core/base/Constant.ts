@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { BooleanType, NullType, NumberType, StringType, Type, UndefinedType } from './Type';
+import { BigIntType, BooleanType, NullType, NumberType, StringType, Type, UndefinedType } from './Type';
 import { Value } from './Value';
 import { NULL_KEYWORD, UNDEFINED_KEYWORD } from '../common/TSConst';
 
@@ -80,6 +80,12 @@ export class BooleanConstant extends Constant {
 export class NumberConstant extends Constant {
     constructor(value: number) {
         super(value.toString(), NumberType.getInstance());
+    }
+}
+
+export class BigIntConstant extends Constant {
+    constructor(value: bigint) {
+        super(value.toString(), BigIntType.getInstance());
     }
 }
 

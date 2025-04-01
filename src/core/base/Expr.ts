@@ -19,7 +19,7 @@ import { MethodSignature } from '../model/ArkSignature';
 import { Local } from './Local';
 import {
     AliasType,
-    ArrayType,
+    ArrayType, BigIntType,
     BooleanType,
     ClassType,
     FunctionType,
@@ -664,6 +664,9 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
                 }
+                if (op1Type === BigIntType.getInstance() && op2Type === BigIntType.getInstance()) {
+                    type = BigIntType.getInstance();
+                }
                 break;
             case '-':
             case '*':
@@ -671,6 +674,9 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
             case '%':
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
+                }
+                if (op1Type === BigIntType.getInstance() && op2Type === BigIntType.getInstance()) {
+                    type = BigIntType.getInstance();
                 }
                 break;
             case '!=':
@@ -691,6 +697,9 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
             case '^':
             case '<<':
             case '>>':
+                if (op1Type === BigIntType.getInstance() && op2Type === BigIntType.getInstance()) {
+                    type = BigIntType.getInstance();
+                }
             case '>>>':
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();

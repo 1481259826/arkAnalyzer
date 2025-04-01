@@ -917,3 +917,97 @@ export const SourceKeyofWithGenericClassWithTypeOperator = `class KeyofWithGener
   }
 }
 `;
+
+export const SourceBigIntType = `class BigIntClass {
+  private fieldA: bigint = 1n;
+  fieldB: number & bigint;
+  static fieldC: bigint | number;
+  transfer2String(num: number | bigint): string | bigint {
+    if (typeof(num) === 'bigint') {
+      let a: bigint = 10n;
+      const b: bigint = 100n;
+      const c: bigint = this.fieldA + 100n;
+      return ((a + b - c) * a) / b + num;
+    }
+    return num.toString();
+  }
+  testBitOperator(a: bigint, b: bigint): bigint {
+    const c: bigint = a ^ b & a | b << 1n >> 2n;
+    const aa: number = 123;
+    const bb: number = 456;
+    const cc: number = aa ^ bb & aa | bb << aa >> bb >>> aa;
+    return c;
+  }
+}
+type IntersectionType = string & bigint & void;
+`;
+
+export const IRBigIntType = `class %dflt {
+  %dflt() {
+    this = this: @type/bigIntType.ts: %dflt
+    type @type/bigIntType.ts: %dflt.[static]%dflt()#IntersectionType = string&bigint&void
+    return
+  }
+
+}
+class BigIntClass {
+  %statInit() {
+    this = this: @type/bigIntType.ts: BigIntClass
+    return
+  }
+
+  private fieldA: bigint;
+  %instInit() {
+    this = this: @type/bigIntType.ts: BigIntClass
+    this.<@type/bigIntType.ts: BigIntClass.fieldA> = 1
+    return
+  }
+
+  fieldB: number&bigint;
+  static fieldC: bigint|number;
+  transfer2String(num: number|bigint): string|bigint {
+    label0:
+      num = parameter0: number|bigint
+      this = this: @type/bigIntType.ts: BigIntClass
+      if typeof num === 'bigint' goto label1 label2
+
+    label1:
+      a = 10
+      b = 100
+      %0 = this.<@type/bigIntType.ts: BigIntClass.fieldA>
+      c = %0 + 100
+      %1 = a + b
+      %2 = %1 - c
+      %3 = %2 * a
+      %4 = %3 / b
+      %5 = %4 + num
+      return %5
+
+    label2:
+      %6 = instanceinvoke num.<@%unk/%unk: .toString()>()
+      return %6
+
+  }
+
+  testBitOperator(a: bigint, b: bigint): bigint {
+    a = parameter0: bigint
+    b = parameter1: bigint
+    this = this: @type/bigIntType.ts: BigIntClass
+    %0 = b & a
+    %1 = a ^ %0
+    %2 = b << 1
+    %3 = %2 >> 2
+    c = %1 | %3
+    aa = 123
+    bb = 456
+    %4 = bb & aa
+    %5 = aa ^ %4
+    %6 = bb << aa
+    %7 = %6 >> bb
+    %8 = %7 >>> aa
+    cc = %5 | %8
+    return c
+  }
+
+}
+`;

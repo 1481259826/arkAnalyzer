@@ -25,7 +25,7 @@ import {
     AnnotationType,
     AnnotationTypeQueryType,
     AnyType,
-    ArrayType,
+    ArrayType, BigIntType,
     BooleanType,
     ClassType,
     FunctionType,
@@ -246,6 +246,10 @@ export class JsonPrinter extends Printer {
         } else if (type instanceof NumberType) {
             return {
                 _: 'NumberType',
+            };
+        } else if (type instanceof BigIntType) {
+            return {
+                _: 'BigIntType',
             };
         } else if (type instanceof StringType) {
             return {
