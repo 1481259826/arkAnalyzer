@@ -655,13 +655,11 @@ export class PagBuilder {
 
         let  setFunctionThisPt = (srcNode: PagFuncNode) => {
             let thisInstanceLocal = this.getRealThisLocal(staticCS.args![0] as Local, staticCS.callerFuncID);
-            let thisInstanceNodeID = this.pag.hasCtxNode(cid, thisInstanceLocal);
+            let baseThisNode = this.pag.getOrNewNode(cid, thisInstanceLocal);
 
-            if (!thisInstanceNodeID) {
-                return;
+            for (let pt of baseThisNode.getPointTo()) {
+                srcNode.setThisPt(pt); // assume the points to in base node have only 1
             }
-
-            srcNode.setThisPt(thisInstanceNodeID);
         }
 
         switch (builtInType) {

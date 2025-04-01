@@ -695,10 +695,10 @@ export class Pag extends BaseExplicitGraph {
     public getOrClonePagFuncNode(basePt: NodeID): PagFuncNode | undefined {
         let baseNode = this.getNode(basePt) as PagNode;
         if (baseNode instanceof PagFuncNode) {
-            let fieldNode = this.getOrClonePagNode(baseNode, basePt) as PagFuncNode;
-            return fieldNode;
+            let clonedFuncNode = this.getOrClonePagNode(baseNode, basePt) as PagFuncNode;
+            return clonedFuncNode;
         } else {
-            logger.error(`Error clone field node ${baseNode.getValue()}`)
+            logger.error(`Error clone func node ${baseNode.getValue()}`)
             return undefined;
         }
     }
