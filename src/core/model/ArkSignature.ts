@@ -19,6 +19,7 @@ import { ClassType, Type } from '../base/Type';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 import {
     ANONYMOUS_CLASS_PREFIX,
+    LEXICAL_ENV_NAME_PREFIX,
     NAME_DELIMITER,
     UNKNOWN_CLASS_NAME,
     UNKNOWN_FILE_NAME,
@@ -318,13 +319,13 @@ export class MethodSubSignature {
         return this.staticFlag;
     }
 
-    public toString(): string {
+    public toString(ptrName?: string): string {
         let paraStr = "";
         this.getParameterTypes().forEach((parameterType) => {
             paraStr += parameterType.toString() + ", ";
         });
         paraStr = paraStr.replace(/, $/, '');
-        let tmpSig = `${this.getMethodName()}(${paraStr})`;
+        let tmpSig = `${ptrName ?? this.getMethodName()}(${paraStr})`;
         if (this.isStatic()) {
             tmpSig = '[static]' + tmpSig;
         }
@@ -378,8 +379,8 @@ export class MethodSignature {
         return this.methodSubSignature.getReturnType();
     }
 
-    public toString(): string {
-        return this.declaringClassSignature.toString() + '.' + this.methodSubSignature.toString();
+    public toString(ptrName?: string): string {
+        return this.declaringClassSignature.toString() + '.' + this.methodSubSignature.toString(ptrName);
     }
 
     public toMapKey(): string {
@@ -391,7 +392,8 @@ export class MethodSignature {
     }
 
     public getParamLength(): number {
-        return this.methodSubSignature.getParameters().length;
+        return this.methodSubSignature.getParameters()
+            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX)).length;
     }
 }
 

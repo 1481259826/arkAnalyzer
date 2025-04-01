@@ -23,7 +23,7 @@ import { ClassSignature, FieldSignature, FileSignature, MethodSignature, Namespa
 import { Local } from '../base/Local';
 import { ArkExport, ExportType } from './ArkExport';
 import { TypeInference } from '../common/TypeInference';
-import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME } from '../common/Const';
+import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME, NAME_DELIMITER, NAME_PREFIX } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
@@ -317,11 +317,11 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public getRealTypes(): Type[] | undefined {
-        return this.realTypes;
+        return this.realTypes ? Array.from(this.realTypes) : undefined;
     }
 
-    public getGenericsTypes() {
-        return this.genericsTypes;
+    public getGenericsTypes(): GenericType[] | undefined {
+        return this.genericsTypes ? Array.from(this.genericsTypes) : undefined;
     }
 
     public addGenericType(gType: GenericType) {
@@ -351,7 +351,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         const allMethods = Array.from(this.methods.values())
             .filter(f => !generated && !f.isGenerated() || generated);
         allMethods.push(...this.staticMethods.values());
-        return allMethods;
+        return [...new Set(allMethods)];
     }
 
     public getMethod(methodSignature: MethodSignature): ArkMethod | null {
@@ -383,11 +383,24 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         return this.staticMethods.get(methodName) || null;
     }
 
-    public addMethod(method: ArkMethod) {
+    /**
+     * add a method in class.
+     * when a nested method with declare name, add both the declare origin name and signature name
+     * %${declare name}$${outer method name} in class.
+     */
+    public addMethod(method: ArkMethod, originName?: string): void {
+        const name = originName ?? method.getName();
         if (method.isStatic()) {
-            this.staticMethods.set(method.getName(), method);
+            this.staticMethods.set(name, method);
         } else {
-            this.methods.set(method.getName(), method);
+            this.methods.set(name, method);
+        }
+        if (!originName && !method.isAnonymousMethod() && name.startsWith(NAME_PREFIX)) {
+            const index = name.indexOf(NAME_DELIMITER);
+            if (index > 1) {
+                const originName = name.substring(1, index);
+                this.addMethod(method, originName);
+            }
         }
     }
 

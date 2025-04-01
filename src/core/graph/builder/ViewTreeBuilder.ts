@@ -21,6 +21,7 @@ import {
     ArkInstanceInvokeExpr,
     ArkNewExpr,
     ArkNormalBinopExpr,
+    ArkPtrInvokeExpr,
     ArkStaticInvokeExpr,
 } from '../../base/Expr';
 import { Local } from '../../base/Local';
@@ -1161,6 +1162,53 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return undefined;
     }
 
+    private parsePtrInvokeExpr(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt,
+        expr: ArkPtrInvokeExpr
+    ): ViewTreeNodeImpl | undefined {
+        let temp = expr.getFuncPtrLocal();
+        if (temp instanceof Local && local2Node.has(temp)) {
+            let component = local2Node.get(temp);
+            if (
+                component?.name === COMPONENT_REPEAT &&
+                expr.getMethodSignature().getMethodSubSignature().getMethodName() === 'each'
+            ) {
+                let arg = expr.getArg(0);
+                let type = arg.getType();
+                if (type instanceof FunctionType) {
+                    let method = this.findMethod(type.getMethodSignature());
+                    this.buildViewTreeFromCfg(method?.getCfg() as Cfg);
+                }
+                this.pop();
+            } else {
+                component?.addStmt(this, stmt);
+            }
+
+            return component;
+        } else if (temp instanceof ArkInstanceFieldRef) {
+            let name = temp.getBase().getName();
+            if (name.startsWith(TEMP_LOCAL_PREFIX)) {
+                let initValue = backtraceLocalInitValue(temp.getBase());
+                if (initValue instanceof ArkThisRef) {
+                    name = 'this';
+                }
+            }
+
+            let methodName = temp.getFieldName();
+            let field = this.getDeclaringArkClass().getFieldWithName(methodName);
+            if (name === 'this' && field?.hasBuilderParamDecorator()) {
+                return this.addBuilderParamNode(field);
+            }
+
+            let method = this.findMethod(expr.getMethodSignature());
+            if (name === 'this' && method?.hasBuilderDecorator()) {
+                return this.addBuilderNode(method);
+            }
+        }
+        return undefined;
+    }
+
     /**
      * $temp3 = View.create($temp2);
      * $temp4 = View.pop();
@@ -1188,6 +1236,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             component = this.parseStaticInvokeExpr(local2Node, stmt, right);
         } else if (right instanceof ArkInstanceInvokeExpr) {
             component = this.parseInstanceInvokeExpr(local2Node, stmt, right);
+        } else if (right instanceof ArkPtrInvokeExpr) {
+            component = this.parsePtrInvokeExpr(local2Node, stmt, right);
         }
         if (component) {
             local2Node.set(left, component);
@@ -1200,6 +1250,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             this.parseStaticInvokeExpr(local2Node, stmt, expr);
         } else if (expr instanceof ArkInstanceInvokeExpr) {
             this.parseInstanceInvokeExpr(local2Node, stmt, expr);
+        } else if (expr instanceof ArkPtrInvokeExpr) {
+            this.parsePtrInvokeExpr(local2Node, stmt, expr);
         }
     }
 

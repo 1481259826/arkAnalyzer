@@ -49,6 +49,8 @@ import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { ArkBaseModel } from '../model/ArkBaseModel';
+import { ArkAssignStmt } from '../base/Stmt';
+import { ClosureFieldRef } from '../base/Ref';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -380,13 +382,14 @@ export class ModelUtils {
         if (name === THIS_NAME || name.startsWith(TEMP_LOCAL_PREFIX)) {
             return null;
         }
+        const parameter = arkMethod.getParameters().find(p => p.getName() === name);
+        if (parameter) {
+            return new Local(parameter.getName(), parameter.getType());
+        }
         if (times > 0) {
-            const parameter = arkMethod.getParameters().find(p => p.getName() === name);
-            if (parameter) {
-                return new Local(parameter.getName(), parameter.getType());
-            }
             const declaredLocal = arkMethod.getBody()?.getLocals().get(name);
-            if (declaredLocal && declaredLocal.getDeclaringStmt()) {
+            if (declaredLocal && declaredLocal.getDeclaringStmt() instanceof ArkAssignStmt &&
+                !((declaredLocal.getDeclaringStmt() as ArkAssignStmt).getRightOp() instanceof ClosureFieldRef)) {
                 return declaredLocal;
             }
         }
@@ -394,9 +397,8 @@ export class ModelUtils {
         if (parentName === DEFAULT_ARK_METHOD_NAME) {
             return null;
         }
-        const start = parentName.indexOf(NAME_DELIMITER);
-        let invokeMethod;
-        if (start < 0) {
+        let invokeMethod: ArkMethod | null | undefined = arkMethod.getOuterMethod();
+        if (!invokeMethod) {
             const className = arkMethod.getDeclaringArkClass().getName();
             const outerStart = className.indexOf(NAME_DELIMITER);
             const outerEnd = className.lastIndexOf('.');
@@ -407,9 +409,6 @@ export class ModelUtils {
                 const cls = arkMethod.getDeclaringArkClass();
                 invokeMethod = cls.getDefaultArkMethod() ?? cls.getDeclaringArkFile().getDefaultClass()?.getDefaultArkMethod();
             }
-        } else {
-            parentName = parentName.substring(start + 1);
-            invokeMethod = arkMethod.getDeclaringArkClass().getMethodWithName(parentName);
         }
         if (invokeMethod) {
             return this.findDeclaredLocal(local, invokeMethod, ++times);

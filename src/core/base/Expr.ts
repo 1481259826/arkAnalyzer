@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,7 +33,7 @@ import {
     UnknownType,
 } from './Type';
 import { Value } from './Value';
-import { AbstractFieldRef, AbstractRef } from './Ref';
+import { AbstractFieldRef, AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from './Ref';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 import { UNKNOWN_FILE_NAME } from '../common/Const';
@@ -246,26 +246,52 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 
 }
 
+/**
+ *     1. Local PtrInvokeExpr
+ *
+ *      ```typescript
+ *      func foo():void {
+ *      }
+ *      let ptr = foo;
+ *      ptr();
+ *      ```
+ *     2. FieldRef PtrInvokeExpr
+ *
+ *      ```typescript
+ *      class A {
+ *          b:()=> void()
+ *      }
+ *      new A().b()
+ *      ```
+ */
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
-    private funPtrLocal: Local;
+    private funPtr: Local | AbstractFieldRef;
 
-    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[], realGenericTypes?: Type[]) {
+    constructor(methodSignature: MethodSignature, ptr: Local | AbstractFieldRef, args: Value[], realGenericTypes?: Type[]) {
         super(methodSignature, args, realGenericTypes);
-        this.funPtrLocal = ptr;
+        this.funPtr = ptr;
     }
 
-    public setFunPtrLocal(ptr: Local): void {
-        this.funPtrLocal = ptr;
+    public setFunPtrLocal(ptr: Local | AbstractFieldRef): void {
+        this.funPtr = ptr;
     }
 
-    public getFuncPtrLocal(): Local {
-        return this.funPtrLocal;
+    public getFuncPtrLocal(): Local | AbstractFieldRef {
+        return this.funPtr;
     }
 
     public toString(): string {
         let strs: string[] = [];
         strs.push('ptrinvoke <');
-        strs.push(this.getMethodSignature().toString());
+        let ptrName: string = '';
+        if (this.funPtr instanceof Local) {
+            ptrName = this.funPtr.getName();
+        } else if (this.funPtr instanceof ArkInstanceFieldRef) {
+            ptrName = this.funPtr.getBase().getName() + '.' + this.funPtr.getFieldName();
+        } else if (this.funPtr instanceof ArkStaticFieldRef) {
+            ptrName = this.funPtr.getFieldName();
+        }
+        strs.push(this.getMethodSignature().toString(ptrName));
         strs.push('>(');
         if (this.getArgs().length > 0) {
             for (const arg of this.getArgs()) {
@@ -276,11 +302,6 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
         }
         strs.push(')');
         return strs.join('');
-    }
-
-    public inferType(arkMethod: ArkMethod): ArkPtrInvokeExpr {
-        // TODO: handle type inference
-        return this;
     }
 
     public getUses(): Value[] {
@@ -757,6 +778,13 @@ export class ArkTypeOfExpr extends AbstractExpr {
     public toString(): string {
         return 'typeof ' + this.op;
     }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        if (this.op instanceof AbstractRef || this.op instanceof AbstractExpr) {
+            this.op.inferType(arkMethod);
+        }
+        return this;
+    }
 }
 
 export class ArkInstanceOfExpr extends AbstractExpr {
@@ -794,6 +822,17 @@ export class ArkInstanceOfExpr extends AbstractExpr {
 
     public toString(): string {
         return this.op + ' instanceof ' + this.checkType;
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        TypeInference.inferValueType(this.op, arkMethod);
+        if (TypeInference.isUnclearType(this.checkType)) {
+            const newType = TypeInference.inferUnclearedType(this.checkType, arkMethod.getDeclaringArkClass());
+            if (newType) {
+                this.checkType = newType;
+            }
+        }
+        return this;
     }
 }
 
