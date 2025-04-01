@@ -21,7 +21,7 @@ import { initModulePathMap, ModelUtils } from './core/common/ModelUtils';
 import { TypeInference } from './core/common/TypeInference';
 import { VisibleValue } from './core/common/VisibleValue';
 import { ArkClass } from './core/model/ArkClass';
-import { ArkFile } from './core/model/ArkFile';
+import { ArkFile, Language } from './core/model/ArkFile';
 import { ArkMethod } from './core/model/ArkMethod';
 import { ArkNamespace } from './core/model/ArkNamespace';
 import { ClassSignature, FileSignature, MethodSignature, NamespaceSignature } from './core/model/ArkSignature';
@@ -89,6 +89,8 @@ export class Scene {
     private baseUrl?: string | undefined;
 
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
+    private fileLanguages: Map<string, Language> = new Map();
+
     private options!: SceneOptions;
     private indexPathArray = ['Index.ets', 'Index.ts', 'Index.d.ets', 'Index.d.ts', 'index.ets', 'index.ts', 'index.d.ets', 'index.d.ts'];
 
@@ -207,6 +209,7 @@ export class Scene {
             }
         });
 
+        this.fileLanguages = sceneConfig.getFileLanguages();
     }
 
     private parseBuildProfile(): void {
@@ -316,7 +319,7 @@ export class Scene {
         this.projectFiles.forEach((file) => {
             logger.info('=== parse file:', file);
             try {
-                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file));
+                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file, this.fileLanguages));
                 arkFile.setScene(this);
                 buildArkFileFromFile(file, this.realProjectDir, arkFile, this.projectName);
                 this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
@@ -347,7 +350,7 @@ export class Scene {
             return;
         }
         try {
-            const arkFile = new ArkFile(FileUtils.getFileLanguage(projectFile));
+            const arkFile = new ArkFile(FileUtils.getFileLanguage(projectFile, this.fileLanguages));
             arkFile.setScene(this);
             buildArkFileFromFile(projectFile, this.getRealProjectDir(), arkFile, this.getProjectName());
             for (const [modulePath, moduleName] of this.modulePath2NameMap) {
@@ -559,7 +562,7 @@ export class Scene {
         allFiles.forEach((file) => {
             logger.info('=== parse sdk file:', file);
             try {
-                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file));
+                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file, this.fileLanguages));
                 arkFile.setScene(this);
                 buildArkFileFromFile(file, path.normalize(sdkPath), arkFile, sdkName);
                 ModelUtils.getAllClassesInFile(arkFile).forEach(cls => {
@@ -761,6 +764,10 @@ export class Scene {
      */
     public getFiles(): ArkFile[] {
         return Array.from(this.filesMap.values());
+    }
+
+    public getFileLanguages(): Map<string, Language> {
+        return this.fileLanguages;
     }
 
     public getSdkArkFiles(): ArkFile[] {
@@ -1373,7 +1380,7 @@ export class ModuleScene {
         getAllFiles(this.modulePath, supportFileExts, this.projectScene.getOptions().ignoreFileNames).forEach((file) => {
             logger.info('=== parse file:', file);
             try {
-                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file));
+                const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file, this.projectScene.getFileLanguages()));
                 arkFile.setScene(this.projectScene);
                 arkFile.setModuleScene(this);
                 buildArkFileFromFile(file, this.projectScene.getRealProjectDir(), arkFile,
