@@ -53,7 +53,7 @@ import {
     MethodSignature,
     MethodSubSignature
 } from '../model/ArkSignature';
-import { CONSTRUCTOR_NAME, FUNCTION, IMPORT, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, FUNCTION, SUPER_NAME, IMPORT, THIS_NAME } from './TSConst';
 import { Builtin } from './Builtin';
 import { ArkBody } from '../model/ArkBody';
 import { ArkAssignStmt, ArkInvokeStmt } from '../base/Stmt';
@@ -137,6 +137,14 @@ export class IRInference {
             }
             if (type) {
                 expr.getMethodSignature().getMethodSubSignature().setReturnType(type);
+            }
+            return expr;
+        }
+        if (methodName === SUPER_NAME) {
+            const superClass = arkClass.getSuperClass();
+            if (superClass !== null) {
+                const newMethodSignature = new MethodSignature(superClass.getSignature(), expr.getMethodSignature().getMethodSubSignature());
+                expr.setMethodSignature(newMethodSignature);
             }
             return expr;
         }

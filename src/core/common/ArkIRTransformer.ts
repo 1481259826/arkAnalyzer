@@ -39,7 +39,7 @@ import {
     ArkThrowStmt,
     Stmt,
 } from '../base/Stmt';
-import { AliasType, BooleanType, ClassType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
+import { AliasType, BooleanType, ClassType, Type, UnclearReferenceType, UnknownType, VoidType } from '../base/Type';
 import { ValueUtil } from './ValueUtil';
 import {
     AliasTypeSignature,
@@ -63,7 +63,7 @@ import {
 import { FullPosition, LineColPosition } from '../base/Position';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
-import { DEFAULT } from './TSConst';
+import { DEFAULT, PROMISE } from './TSConst';
 import { buildGenericType, buildModifiers, buildTypeParameters } from '../model/builder/builderUtils';
 import { ArkValueTransformer } from './ArkValueTransformer';
 import { ImportInfo } from '../model/ArkImport';
@@ -71,6 +71,7 @@ import { TypeInference } from './TypeInference';
 import { AbstractTypeExpr } from '../base/TypeExpr';
 import { buildNormalArkClassFromArkMethod } from '../model/builder/ArkClassBuilder';
 import { ArkClass } from '../model/ArkClass';
+import { ModifierType } from '../model/ArkBaseModel';
 
 export type ValueAndStmts = {
     value: Value,
@@ -232,8 +233,23 @@ export class ArkIRTransformer {
             const returnStmt = new ArkReturnStmt(exprValue);
             returnStmt.setOperandOriginalPositions(exprPositions);
             stmts.push(returnStmt);
-        } else {
-            stmts.push(new ArkReturnVoidStmt());
+            if (this.declaringMethod.getSubSignature().getReturnType() instanceof UnknownType) {
+                this.declaringMethod.getSubSignature().setReturnType(exprValue.getType());
+            }
+            return stmts;
+        }
+        stmts.push(new ArkReturnVoidStmt());
+        if (this.declaringMethod.getSubSignature().getReturnType() instanceof UnknownType) {
+            if (this.declaringMethod.containsModifier(ModifierType.ASYNC)) {
+                const promise = this.declaringMethod.getDeclaringArkFile().getScene().getSdkGlobal(PROMISE);
+                if (promise instanceof ArkClass) {
+                    this.declaringMethod.getSubSignature().setReturnType(new ClassType(promise.getSignature()));
+                } else {
+                    this.declaringMethod.getSubSignature().setReturnType(new UnclearReferenceType(PROMISE, [VoidType.getInstance()]));
+                }
+            } else {
+                this.declaringMethod.getSubSignature().setReturnType(VoidType.getInstance());
+            }
         }
         return stmts;
     }

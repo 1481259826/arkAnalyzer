@@ -31,12 +31,11 @@ export type PropertyLike = ts.PropertyDeclaration | ts.PropertyAssignment;
 
 export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment
     | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass): ArkField {
+
     let field = new ArkField();
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
     field.setCode(member.getText(sourceFile));
-
     field.setDeclaringArkClass(cls);
-
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
     let fieldName = member.getText(sourceFile);
@@ -57,27 +56,26 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     } else {
         logger.warn("Other type of property name found!");
     }
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
-        let modifiers = buildModifiers(member);
-        field.addModifier(modifiers);
-        field.setDecorators(buildDecorators(member, sourceFile));
-    }
 
     let fieldType: Type = UnknownType.getInstance();
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-        fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
+    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member))) {
+        if (member.modifiers) {
+            field.addModifier(buildModifiers(member));
+        }
+        field.addModifier(0);
+        field.setDecorators(buildDecorators(member, sourceFile));
+        field.setQuestionToken(member.questionToken !== undefined);
+
+        if (member.type) {
+            fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
+        }
     }
+
     if (ts.isEnumMember(member)) {
         field.addModifier(ModifierType.STATIC);
         fieldType = new ClassType(cls.getSignature());
     }
-    const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic());
-    field.setSignature(fieldSignature);
-
-
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.questionToken) {
-        field.setQuestionToken(true);
-    }
+    field.setSignature(new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic()));
 
     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
         field.setExclamationToken(true);

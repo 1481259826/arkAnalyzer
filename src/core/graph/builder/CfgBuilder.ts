@@ -23,13 +23,15 @@ import { ArkMethod } from '../../model/ArkMethod';
 import { ArkIRTransformer, ValueAndStmts } from '../../common/ArkIRTransformer';
 import { ModelUtils } from '../../common/ModelUtils';
 import { IRUtils } from '../../common/IRUtils';
-import { AliasType } from '../../base/Type';
+import { AliasType, ClassType, UnclearReferenceType, UnknownType, VoidType } from '../../base/Type';
 import { Trap } from '../../base/Trap';
 import { GlobalRef } from '../../base/Ref';
 import { LoopBuilder } from './LoopBuilder';
 import { SwitchBuilder } from './SwitchBuilder';
 import { ConditionBuilder } from './ConditionBuilder';
 import { TrapBuilder } from './TrapBuilder';
+import { CONSTRUCTOR_NAME, PROMISE } from '../../common/TSConst';
+import { ModifierType } from '../../model/ArkBaseModel';
 
 class StatementBuilder {
     type: string;
@@ -1156,7 +1158,7 @@ export class CfgBuilder {
                 if (statementBuilder.astNode && statementBuilder.code !== '') {
                     arkIRTransformer.tsNodeToStmts(statementBuilder.astNode).forEach(s => stmtsInBlock.push(s));
                 } else if (statementBuilder.code.startsWith('return')) {
-                    stmtsInBlock.push(new ArkReturnVoidStmt());
+                    stmtsInBlock.push(this.generateReturnStmt(arkIRTransformer));
                 }
             }
             const blockInCfg = new BasicBlock();
@@ -1171,6 +1173,26 @@ export class CfgBuilder {
             blocksContainLoopCondition, blockBuildersBeforeTry, blockBuildersContainSwitch,
             valueAndStmtsOfSwitchAndCasesAll,
         };
+    }
+
+    private generateReturnStmt(arkIRTransformer: ArkIRTransformer): Stmt {
+        if (this.name === CONSTRUCTOR_NAME) {
+            this.declaringMethod.getSubSignature().setReturnType(arkIRTransformer.getThisLocal().getType());
+            return new ArkReturnStmt(arkIRTransformer.getThisLocal());
+        }
+        if (this.declaringMethod.getSubSignature().getReturnType() instanceof UnknownType && !this.declaringMethod.getAsteriskToken()) {
+            if (this.declaringMethod.containsModifier(ModifierType.ASYNC)) {
+                const promise = this.declaringMethod.getDeclaringArkFile().getScene().getSdkGlobal(PROMISE);
+                if (promise instanceof ArkClass) {
+                    this.declaringMethod.getSubSignature().setReturnType(new ClassType(promise.getSignature()));
+                } else {
+                    this.declaringMethod.getSubSignature().setReturnType(new UnclearReferenceType(PROMISE, [VoidType.getInstance()]));
+                }
+            } else {
+                this.declaringMethod.getSubSignature().setReturnType(VoidType.getInstance());
+            }
+        }
+        return new ArkReturnVoidStmt();
     }
 
     private adjustBlocks(

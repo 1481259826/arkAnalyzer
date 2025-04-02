@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { UnknownType } from '../../core/base/Type';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ArkCodeBuffer } from '../ArkStream';
 
@@ -76,7 +75,7 @@ export class ArkIRMethodPrinter extends BasePrinter {
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
         if (!method.getBody()) {
-            this.printer.writeLine(';');
+            this.printer.writeLine('');
             return;
         }
 
@@ -85,7 +84,6 @@ export class ArkIRMethodPrinter extends BasePrinter {
         this.printBody(method);
         this.printer.decIndent();
         this.printer.writeIndent().writeLine('}');
-        this.printer.writeLine('');
     }
 
     private printBody(method: ArkMethod): void {
@@ -128,22 +126,21 @@ export class ArkIRMethodPrinter extends BasePrinter {
         });
         code.write(`(${parameters.join(', ')})`);
         const returnType = method.getReturnType();
-        if (method.getName() !== 'constructor' && !(returnType instanceof UnknownType)) {
-            code.write(`: ${returnType.toString()}`);
-        }
+        code.write(`: ${returnType.toString()}`);
         return code.toString();
     }
 
     private printCfg(cfg: Cfg): void {
         let blocks = cfg.getBlocks();
 
-        if (blocks.size === 1) {
-            cfg.getStmts().map((stmt) => {
-                this.printer.writeIndent().writeLine(stmt.toString());
-            });
-        } else {
-            for (const block of blocks) {
-                this.printBasicBlock(block);
+        let firstBB = true;
+        for (const block of blocks) {
+            if (!firstBB) {
+                this.printer.writeLine('');
+            }
+            this.printBasicBlock(block);
+            if (firstBB) {
+                firstBB = false;
             }
         }
     }
@@ -173,6 +170,6 @@ export class ArkIRMethodPrinter extends BasePrinter {
             });
         }
 
-        this.printer.decIndent().writeLine('');
+        this.printer.decIndent();
     }
 }
