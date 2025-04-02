@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { getAllFiles } from './utils/getAllFiles';
+import { Language } from './core/model/ArkFile';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Config');
 
@@ -62,6 +63,7 @@ export class SceneConfig {
     private sdkFilesMap: Map<string[], string> = new Map<string[], string>();
 
     private projectFiles: string[] = [];
+    private fileLanguages: Map<string, Language> = new Map();
 
     private options: SceneOptions;
 
@@ -97,11 +99,12 @@ export class SceneConfig {
     }
 
     /**
-     * Create a sceneConfig object for a specified project path and set the target project directory to the targetProjectDirectory property of the sceneConfig object.
-     * @param targetProjectDirectory - the target project directory, such as xxx/xxx/xxx, started from project directory.
+     * Create a sceneConfig object for a specified project path and set the target project directory to the
+     * targetProjectDirectory property of the sceneConfig object.
+     * @param targetProjectDirectory - the target project directory, such as xxx/xxx/xxx, started from project
+     *     directory.
      * @example
      * 1. build a sceneConfig object.
-
     ```typescript
     const projectDir = 'xxx/xxx/xxx';
     const sceneConfig: SceneConfig = new SceneConfig();
@@ -118,7 +121,8 @@ export class SceneConfig {
         );
     }
 
-    public buildFromProjectFiles(projectName: string, projectDir: string, filesAndDirectorys: string[], sdks?: Sdk[]): void {
+    public buildFromProjectFiles(projectName: string, projectDir: string, filesAndDirectorys: string[], sdks?: Sdk[],
+                                 languageTags?: Map<string, Language>): void {
         if (sdks) {
             this.sdksObj = sdks;
         }
@@ -129,6 +133,9 @@ export class SceneConfig {
             return;
         }
         filesAndDirectorys.forEach(fileOrDirectory => this.processFilePaths(fileOrDirectory, projectDir));
+        languageTags?.forEach((languageTag, fileOrDirectory) => {
+            this.setLanguageTagForFiles(fileOrDirectory, projectDir, languageTag);
+        });
     }
 
     private processFilePaths(fileOrDirectory: string, projectDir: string): void {
@@ -146,6 +153,23 @@ export class SceneConfig {
             });
         } else {
             this.projectFiles.push(absoluteFilePath);
+        }
+    }
+
+    private setLanguageTagForFiles(fileOrDirectory: string, projectDir: string, languageTag: Language): void {
+        let absoluteFilePath = '';
+        if (fileOrDirectory.includes(projectDir)) {
+            absoluteFilePath = fileOrDirectory;
+        } else {
+            absoluteFilePath = path.join(projectDir, fileOrDirectory);
+        }
+        if (fs.statSync(absoluteFilePath).isDirectory()) {
+            getAllFiles(absoluteFilePath, this.getOptions().supportFileExts!, this.options.ignoreFileNames)
+                .forEach((filePath) => {
+                    this.fileLanguages.set(filePath, languageTag);
+                });
+        } else {
+            this.fileLanguages.set(absoluteFilePath, languageTag);
         }
     }
 
@@ -194,6 +218,10 @@ export class SceneConfig {
 
     public getProjectFiles() {
         return this.projectFiles;
+    }
+
+    public getFileLanguages(): Map<string, Language> {
+        return this.fileLanguages;
     }
 
     public getSdkFiles() {
