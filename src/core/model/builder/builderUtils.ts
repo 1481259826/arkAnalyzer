@@ -370,6 +370,9 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
             return new UnclearReferenceType(parameterTypeStr, genericTypes);
         } else {
             let parameterTypeStr = referenceNodeName.text;
+            if (parameterTypeStr === Builtin.OBJECT) {
+                return Builtin.OBJECT_CLASS_TYPE;
+            }
             return new UnclearReferenceType(parameterTypeStr, genericTypes);
         }
     } else if (ts.isUnionTypeNode(typeNode) || ts.isIntersectionTypeNode(typeNode)) {
@@ -442,7 +445,8 @@ export function tsNode2Type(typeNode: ts.TypeNode | ts.TypeParameterDeclaration,
     } else if (ts.isTypeQueryNode(typeNode)) {
         return buildTypeFromTypeQuery(typeNode as ts.TypeQueryNode, sourceFile, arkInstance);
     } else if (typeNode.kind === ts.SyntaxKind.ObjectKeyword) {
-        return new ClassType(Builtin.OBJECT_CLASS_SIGNATURE);
+        // TODO: type object which is different from Object is needed to support, such as let a: object = {}
+        return new UnclearReferenceType('object');
     } else {
         return buildTypeFromPreStr(ts.SyntaxKind[typeNode.kind]);
     }

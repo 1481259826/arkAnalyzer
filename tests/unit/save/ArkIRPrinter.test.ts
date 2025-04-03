@@ -32,7 +32,7 @@ const CASE1_EXPECT = `class %dflt {
       if i < 10 goto label2 label3
 
     label2:
-      %1 = myPerson.<@%unk/%unk: .age>
+      %1 = myPerson.<@%unk/%unk: Person.age>
       newAge = %1 + i
       instanceinvoke logger.<@%unk/%unk: .info()>(newAge)
       i = i + 1
@@ -150,8 +150,8 @@ const CASE1_EXPECT = `class %dflt {
       instanceinvoke %2.<@%unk/%unk: Error.constructor()>()
       z = %2
       y = staticinvoke <@%unk/%unk: .controlTest()>()
-      a = notPerson.<@%unk/%unk: .age>
-      instanceinvoke notPerson.<@%unk/%unk: .growOld()>()
+      a = notPerson.<@%unk/%unk: Person.age>
+      instanceinvoke notPerson.<@%unk/%unk: Person.growOld()>()
       instanceinvoke Person.<@%unk/%unk: .wooooof()>()
       return
   }
@@ -193,8 +193,8 @@ const CASE1_EXPECT = `class %dflt {
       %0 = new @save/basic.ts: %AC11$%dflt.deleteTest
       instanceinvoke %0.<@save/basic.ts: %AC11$%dflt.deleteTest.constructor()>()
       x = %0
-      bbb = x.<@%unk/%unk: .b>
-      %1 = delete x.<@%unk/%unk: .a>
+      bbb = x.<@save/basic.ts: %AC10.b>
+      %1 = delete x.<@save/basic.ts: %AC10.a>
       %2 = delete bbb[0]
       instanceinvoke logger.<@%unk/%unk: .info()>(x)
       %3 = delete x
@@ -507,7 +507,7 @@ class Person {
   %AM0$%instInit(): void {
     label0:
       this = this: @save/basic.ts: Person
-      %0 = this.<@%unk/%unk: .age>
+      %0 = this.<@save/basic.ts: Person.age>
       %0 = %0 + 1
       return
   }
@@ -515,7 +515,7 @@ class Person {
   public getAge(): unknown {
     label0:
       this = this: @save/basic.ts: Person
-      %0 = this.<@%unk/%unk: .age>
+      %0 = this.<@save/basic.ts: Person.age>
       return %0
   }
 
@@ -582,7 +582,7 @@ class Adder {
     label0:
       b = parameter0: string
       this = this: @save/basic.ts: Adder
-      %0 = this.<@%unk/%unk: .a>
+      %0 = this.<@save/basic.ts: Adder.a>
       %1 = %0 + b
       return %1
   }
@@ -611,7 +611,7 @@ class ExtendedAdder extends Adder {
   %instInit(): void {
     label0:
       this = this: @save/basic.ts: ExtendedAdder
-      %0 = this.<@%unk/%unk: .add>
+      %0 = this.<@save/basic.ts: ExtendedAdder.add>
       this.<@save/basic.ts: ExtendedAdder.superAdd> = %0
       this.<@save/basic.ts: ExtendedAdder.add> = %AM0$%instInit
       return
@@ -621,7 +621,7 @@ class ExtendedAdder extends Adder {
     label0:
       b = parameter0: string
       this = this: @save/basic.ts: ExtendedAdder
-      %0 = instanceinvoke this.<@%unk/%unk: .superAdd()>(b)
+      %0 = instanceinvoke this.<@save/basic.ts: ExtendedAdder.superAdd()>(b)
       return %0
   }
 }
@@ -703,8 +703,8 @@ export class SecurityDoor extends Door implements Alarm, Alarm2 {
       this = this: @save/basic.ts: SecurityDoor
       staticinvoke <@%unk/%unk: .super()>()
       instanceinvoke this.<@save/basic.ts: SecurityDoor.%instInit()>()
-      this.<@%unk/%unk: .x> = x
-      this.<@%unk/%unk: .y> = y
+      this.<@save/basic.ts: SecurityDoor.x> = x
+      this.<@save/basic.ts: SecurityDoor.y> = y
       instanceinvoke logger.<@%unk/%unk: .info()>('This is a constrctor!')
       return this
   }
@@ -749,7 +749,7 @@ class %AC8$%dflt.%dflt<Type> {
       value = parameter0: Type
       this = this: @save/basic.ts: %AC8$%dflt.%dflt
       instanceinvoke this.<@save/basic.ts: %AC8$%dflt.%dflt.%instInit()>()
-      this.<@%unk/%unk: .content> = value
+      this.<@save/basic.ts: %AC8$%dflt.%dflt.content> = value
       return this
   }
 }
@@ -775,7 +775,7 @@ abstract class Animal {
       name = parameter0: string
       this = this: @save/basic.ts: Animal
       instanceinvoke this.<@save/basic.ts: Animal.%instInit()>()
-      this.<@%unk/%unk: .name> = name
+      this.<@save/basic.ts: Animal.name> = name
       return this
   }
 }

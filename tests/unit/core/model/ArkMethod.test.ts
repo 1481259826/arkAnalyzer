@@ -17,7 +17,6 @@ import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../../../src/Scene';
 import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
-import { Builtin } from '../../../../src/core/common/Builtin';
 import { Local, Stmt, Value } from '../../../../src';
 
 let config: SceneConfig = new SceneConfig();
@@ -38,16 +37,16 @@ describe("ArkMethod Test", () => {
             const hasDotDotDotToken = parameter.hasDotDotDotToken();
             expect(hasDotDotDotToken).eq(true);
         }
-    })
+    });
 
     it('test object parameter', async () => {
         let method = arkDefaultClass?.getMethodWithName('testObjectTypeParam');
         let parameter = method?.getParameters().find((param) => param.getName() == 'obj');
         if (parameter) {
             const paramTypeName = parameter.getType().toString();
-            expect(paramTypeName).eq(Builtin.OBJECT_CLASS_SIGNATURE.toString());
+            expect(paramTypeName).eq('object');
         }
-    })
+    });
 });
 
 describe('Nested Method with Function Declaration Statement', () => {

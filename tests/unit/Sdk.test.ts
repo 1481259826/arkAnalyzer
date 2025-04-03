@@ -80,7 +80,7 @@ describe('SDK Global Map Test', () => {
         expect(declareSignatures?.length).toEqual(1);
         expect((declareSignatures as MethodSignature[])[0].toString())
             .toEqual(`@/api/${apiFile}: ${apiCls}.${apiName}(@/api/${apiFile}: ${apiCls}.%AM2(Args))`);
-        expect((declareSignatures as MethodSignature[])[0].getType().toString()).toEqual(`@/api/${apiFile}: WrappedBuilder<Args extends Object[]>`);
+        expect((declareSignatures as MethodSignature[])[0].getType().toString()).toEqual(`@/api/${apiFile}: WrappedBuilder<Args extends @ES2015/BuiltinClass: Object[]>`);
         expect(declareLines).toEqual([3503]);
         expect(declareColumns).toEqual([1]);
     });
