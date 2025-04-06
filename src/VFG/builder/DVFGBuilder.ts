@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License"); * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ArkNormalBinopExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
 import { AbstractFieldRef } from '../../core/base/Ref';
@@ -7,7 +20,7 @@ import { MFPDataFlowSolver } from '../../core/dataflow/GenericDataFlow';
 import { ReachingDefProblem } from '../../core/dataflow/ReachingDef';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { Scene } from '../../Scene';
-import { DVFG } from '../DVFG'
+import { DVFG } from '../DVFG';
 
 export class DVFGBuilder {
     private dvfg: DVFG;
@@ -25,16 +38,18 @@ export class DVFGBuilder {
         let solver = new MFPDataFlowSolver();
         let solution = solver.calculateMopSolutionForwards(problem);
         let fg = problem.flowGraph;
-        // build a map of def 2 stmts 
+        // build a map of def 2 stmts
         let defMap = new Map<Value, Set<Stmt>>();
-        m.getCfg()?.getStmts().forEach((s) => {
-            let def = s.getDef();
-            if(def != null) {
-                let defStmts = defMap.get(def) ?? new Set<Stmt>();
-                defStmts.add(s);
-                defMap.set(def, defStmts);
-            }
-        });
+        m.getCfg()
+            ?.getStmts()
+            .forEach((s) => {
+                let def = s.getDef();
+                if (def != null) {
+                    let defStmts = defMap.get(def) ?? new Set<Stmt>();
+                    defStmts.add(s);
+                    defMap.set(def, defStmts);
+                }
+            });
 
         solution.out.forEach((defs, reach) => {
             let buildForDefs = (v: Value, reachStmt: Stmt) => {
@@ -55,14 +70,14 @@ export class DVFGBuilder {
             //Get uses
             // stmt.getUses() has bug
             // a.f = x    the use currently is a, expect a.f
-            if(reachStmt instanceof ArkAssignStmt) {
+            if (reachStmt instanceof ArkAssignStmt) {
                 let lop = reachStmt.getLeftOp();
                 if (lop instanceof ArkNormalBinopExpr) {
                     let op1 = lop.getOp1();
                     let op2 = lop.getOp2();
                     buildForDefs(op1, reachStmt);
                     buildForDefs(op2, reachStmt);
-                } else if(lop instanceof Local || lop instanceof AbstractFieldRef) {
+                } else if (lop instanceof Local || lop instanceof AbstractFieldRef) {
                     //TODO
                 }
             }
@@ -70,13 +85,10 @@ export class DVFGBuilder {
 
         fg.getNodeToIdMap().forEach((id, stmt) => {
             stmt.getUses();
-
         });
     }
 
-    public getOrNewDVFGNode(stmt: Stmt) {
-
-    }
+    public getOrNewDVFGNode(stmt: Stmt) {}
 
     public addDVFGNodes(): void {}
 
