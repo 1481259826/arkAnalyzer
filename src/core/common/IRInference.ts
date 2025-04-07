@@ -41,7 +41,7 @@ import {
 } from '../base/Expr';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Scene } from '../../Scene';
-import { ArkClass } from '../model/ArkClass';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { findArkExport, ModelUtils } from './ModelUtils';
 import { ArkField } from '../model/ArkField';
 import { CALL_BACK } from './EtsConst';
@@ -53,7 +53,7 @@ import {
     MethodSignature,
     MethodSubSignature
 } from '../model/ArkSignature';
-import { CONSTRUCTOR_NAME, FUNCTION, SUPER_NAME, IMPORT, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, FUNCTION, IMPORT, SUPER_NAME, THIS_NAME } from './TSConst';
 import { Builtin } from './Builtin';
 import { ArkBody } from '../model/ArkBody';
 import { ArkAssignStmt, ArkInvokeStmt } from '../base/Stmt';
@@ -140,6 +140,7 @@ export class IRInference {
             }
             return expr;
         }
+        expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
         if (methodName === SUPER_NAME) {
             const superClass = arkClass.getSuperClass();
             if (superClass !== null) {
@@ -221,7 +222,7 @@ export class IRInference {
             this.processForEach(expr.getArg(0), baseType, scene);
             return expr;
         }
-
+        expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
         let result = this.inferInvokeExpr(expr, baseType, methodName, scene) ??
             this.processExtendFunc(expr, arkMethod, methodName);
         if (result) {
@@ -278,7 +279,6 @@ export class IRInference {
         const len = expr.getArgs().length;
         for (let index = 0; index < len; index++) {
             const arg = expr.getArg(index);
-            TypeInference.inferValueType(arg, arkMethod);
             if (index >= parameters.length) {
                 break;
             }
@@ -567,7 +567,12 @@ export class IRInference {
         const fieldName = ref.getFieldName().replace(/[\"|\']/g, '');
         const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
         let propertyType = propertyAndType?.[1];
-        if (propertyType && TypeInference.isUnclearType(propertyType)) {
+        if (!propertyType) {
+            const newType = TypeInference.inferUnclearRefName(fieldName, arkClass);
+            if (newType) {
+                propertyType = newType;
+            }
+        } else if (TypeInference.isUnclearType(propertyType)) {
             const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
             if (newType) {
                 propertyType = newType;
@@ -577,7 +582,7 @@ export class IRInference {
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
             const property = propertyAndType?.[0];
-            if (property instanceof ArkField) {
+            if (property instanceof ArkField && property.getDeclaringArkClass().getCategory() !== ClassCategory.ENUM) {
                 return property.getSignature();
             }
             staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
@@ -612,6 +617,17 @@ export class IRInference {
             const property = ModelUtils.findPropertyInClass(anonField.getName(), declaredClass);
             if (property instanceof ArkField) {
                 this.assignAnonField(property, anonField, scene, set);
+            } else if (property instanceof ArkMethod) {
+                const type = anonField.getType();
+                if (type instanceof FunctionType) {
+                    const anonMethod = scene.getMethod(type.getMethodSignature());
+                    const parameters = anonMethod?.getSubSignature().getParameters();
+                    if (anonMethod && parameters) {
+                        anonMethod.setImplementationSignature(property.matchMethodSignature(parameters));
+                    }
+                }
+                anonField.setSignature(new FieldSignature(anonField.getName(),
+                    property.getDeclaringArkClass().getSignature(), new FunctionType(property.getSignature())));
             }
         }
         for (const anonMethod of anon.getMethods()) {

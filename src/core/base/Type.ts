@@ -13,11 +13,18 @@
  * limitations under the License.
  */
 
-import { AliasTypeSignature, ClassSignature, MethodSignature, NamespaceSignature, } from '../model/ArkSignature';
+import {
+    AliasTypeSignature,
+    ClassSignature,
+    FieldSignature,
+    MethodSignature,
+    NamespaceSignature,
+} from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
-    ANY_KEYWORD, BIGINT_KEYWORD,
+    ANY_KEYWORD,
+    BIGINT_KEYWORD,
     BOOLEAN_KEYWORD,
     NEVER_KEYWORD,
     NULL_KEYWORD,
@@ -28,6 +35,7 @@ import {
     VOID_KEYWORD,
 } from '../common/TSConst';
 import { Local } from './Local';
+import { Constant } from './Constant';
 
 /**
  * @category core/base/type
@@ -789,5 +797,29 @@ export class LexicalEnvType extends Type {
 
     public getTypeString(): string {
         return `[${this.getClosures().join(', ')}]`;
+    }
+}
+
+export class EnumValueType extends Type {
+    private signature: FieldSignature;
+    private constant?: Constant;
+
+
+    constructor(signature: FieldSignature, constant?: Constant) {
+        super();
+        this.signature = signature;
+        this.constant = constant;
+    }
+
+    public getFieldSignature(): FieldSignature {
+        return this.signature;
+    }
+
+    public getConstant(): Constant | undefined {
+        return this.constant;
+    }
+
+    public getTypeString(): string {
+        return this.signature.toString();
     }
 }

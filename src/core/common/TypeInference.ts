@@ -29,9 +29,11 @@ import {
     AliasType,
     AnnotationNamespaceType,
     AnyType,
-    ArrayType, BigIntType,
+    ArrayType,
+    BigIntType,
     BooleanType,
     ClassType,
+    EnumValueType,
     FunctionType,
     GenericType,
     IntersectionType,
@@ -49,21 +51,27 @@ import {
 } from '../base/Type';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkExport } from '../model/ArkExport';
-import { ArkClass } from '../model/ArkClass';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
 import { ArkNamespace } from '../model/ArkNamespace';
 import {
-    ALL, ANY_KEYWORD, BIGINT_KEYWORD,
+    ALL,
+    ANY_KEYWORD,
+    BIGINT_KEYWORD,
     BOOLEAN_KEYWORD,
     CONSTRUCTOR_NAME,
-    GLOBAL_THIS_NAME, NEVER_KEYWORD, NULL_KEYWORD,
+    GLOBAL_THIS_NAME,
+    NEVER_KEYWORD,
+    NULL_KEYWORD,
     NUMBER_KEYWORD,
     PROMISE,
     STRING_KEYWORD,
     SUPER_NAME,
-    THIS_NAME, UNDEFINED_KEYWORD, VOID_KEYWORD,
+    THIS_NAME,
+    UNDEFINED_KEYWORD,
+    VOID_KEYWORD,
 } from './TSConst';
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
@@ -97,12 +105,12 @@ export class TypeInference {
             return;
         }
         let rightType: Type | undefined;
-        let fieldRef: AbstractFieldRef | undefined;
+        let fieldRef: ArkInstanceFieldRef | undefined;
         const lastStmt = stmts[stmts.length - 1];
         if (lastStmt instanceof ArkAssignStmt) {
             rightType = lastStmt.getRightOp().getType();
-            if (lastStmt.getLeftOp() instanceof AbstractFieldRef) {
-                fieldRef = lastStmt.getLeftOp() as AbstractFieldRef;
+            if (lastStmt.getLeftOp() instanceof ArkInstanceFieldRef) {
+                fieldRef = lastStmt.getLeftOp() as ArkInstanceFieldRef;
             }
         }
         let fieldType;
@@ -645,7 +653,16 @@ export class TypeInference {
             const property = ModelUtils.findPropertyInClass(fieldName, arkClass);
             let propertyType: Type | null = null;
             if (property instanceof ArkField) {
-                propertyType = property.getType();
+                if (arkClass.getCategory() === ClassCategory.ENUM) {
+                    let constant;
+                    const lastStmt = property.getInitializer().at(-1);
+                    if (lastStmt instanceof ArkAssignStmt && lastStmt.getRightOp() instanceof Constant) {
+                        constant = lastStmt.getRightOp() as Constant;
+                    }
+                    propertyType = new EnumValueType(property.getSignature(), constant);
+                } else {
+                    propertyType = property.getType();
+                }
             } else if (property) {
                 propertyType = this.parseArkExport2Type(property);
             }
