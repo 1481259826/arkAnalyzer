@@ -700,8 +700,12 @@ export class PagBuilder {
                 let dstNode = this.getOrNewPagNode(cid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
                 this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy, staticCS.callStmt);
                 srcNodes.push(srcNode.getID());
-                srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
-                addThisEdge();
+                // srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
+                // addThisEdge();
+
+                // store the args and offset in Function node
+                srcNode.setCS(staticCS);
+                srcNode.setArgsOffset(1);
                 break;
         }
 

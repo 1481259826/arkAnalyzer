@@ -533,6 +533,8 @@ export class PagParamNode extends PagNode {
 export class PagFuncNode extends PagNode {
     private methodSignature!: MethodSignature;
     private thisPt!: NodeID;
+    private cs!: CallSite;
+    private argsOffset: number = 0;
     // TODO: may add obj interface
 
     constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt, method?: MethodSignature, thisInstanceID?: NodeID) {
@@ -560,6 +562,22 @@ export class PagFuncNode extends PagNode {
 
     public getThisPt(): NodeID {
         return this.thisPt;
+    }
+
+    public setCS(callsite: CallSite) {
+        this.cs = callsite;
+    }
+
+    public getCS(): CallSite {
+        return this.cs;
+    }
+
+    public setArgsOffset(offset: number) {
+        this.argsOffset = offset;
+    }
+
+    public getArgsOffset(): number {
+        return this.argsOffset;
     }
 }
 
