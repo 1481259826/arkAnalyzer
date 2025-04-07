@@ -209,11 +209,6 @@ export class PagBuilder {
                     continue;
                 }
 
-                if (this.scale === PtaAnalysisScale.MethodLevel) {
-                    continue;
-                    // TODO: handle method return value
-                }
-
                 // handle call
                 let ivkExpr = stmt.getInvokeExpr();
                 if (ivkExpr instanceof ArkStaticInvokeExpr) {
@@ -379,6 +374,7 @@ export class PagBuilder {
                 dstPagNode.setStmt(e.stmt);
             }
 
+            // for demand-driven analysis, add fake parameter heapObj nodes
             if (e.src instanceof ArkParameterRef && this.scale === PtaAnalysisScale.MethodLevel) {
                 let paramObjNodeID = paramNodes?.get(paramRefIndex ++);
                 if (!paramObjNodeID) {
@@ -399,6 +395,10 @@ export class PagBuilder {
             let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
 
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+
+            if (this.scale === PtaAnalysisScale.MethodLevel) {
+                this.addStaticPagCallReturnEdge(cs, cid, calleeCid);
+            }
 
             // process the Storage API(Static)
             if (!this.processStorage(cs, calleeCGNode, cid)) {
@@ -656,6 +656,11 @@ export class PagBuilder {
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
                 let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
+
+                if (this.scale === PtaAnalysisScale.MethodLevel) {
+                    srcNodes.push(...this.addStaticPagCallReturnEdge(staticCS, baseClassPTNode, calleeCid));
+                    continue;
+                }
                 srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
                 srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid));
 
@@ -933,6 +938,24 @@ export class PagBuilder {
         return srcNodes;
     }
 
+    public addStaticPagCallReturnEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
+        if (!calleeCid) {
+            calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID, true);
+        }
+
+        let srcNodes: NodeID[] = []
+        // Add reachable
+
+        let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+        let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
+        if (!calleeMethod) {
+            // TODO: check if nodes need to delete
+            return srcNodes;
+        }
+        srcNodes.push(...this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod));
+        return srcNodes;
+    }
+
     public addCallParamPagEdge(params: Value[], cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let argNum = cs.args?.length;
@@ -1013,15 +1036,16 @@ export class PagBuilder {
             this.buildSDKFuncPag(calleeNode.getID());
         }
 
-        this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod);
+        srcNodes.push(...this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod));
         srcNodes.push(...this.addSDKMethodParamPagEdge(cs, callerCid, calleeCid, calleeNode.getID()));
         return srcNodes
     }
 
-    private addSDKMethodReturnPagEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod): void {
+    private addSDKMethodReturnPagEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod): NodeID[] {
+        let srcNodes: NodeID[] = [];
         let returnType = calleeMethod.getReturnType();
         if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
-            return;
+            return srcNodes;
         }
 
         // check fake heap object exists or not
@@ -1042,6 +1066,8 @@ export class PagBuilder {
         let dstPagNode = this.getOrNewPagNode(callerCid, cs.callStmt.getLeftOp(), cs.callStmt);
 
         this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Address, cs.callStmt);
+        srcNodes.push(srcPagNode.getID());
+        return srcNodes;
     }
 
     private addSDKMethodParamPagEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID, funcID: FuncID): NodeID[] {
