@@ -39,7 +39,8 @@ export class PointerAnalysisConfig {
      *       Use PointerAnalysisConfig.create() for singleton pattern 
      */
     constructor(kLimit: number, outputDirectory: string, detectTypeDiff: boolean = false,
-        dotDump: boolean = false, unhandledFuncDump: boolean = false, analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram, ptsCoType = PtsCollectionType.Set) {
+        dotDump: boolean = false, unhandledFuncDump: boolean = false, 
+        analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram, ptsCoType = PtsCollectionType.Set) {
         if (kLimit > 5) {
             throw new Error('K Limit too large');
         }
@@ -63,8 +64,11 @@ export class PointerAnalysisConfig {
      * The instance can be created multi-times and be overwrited
      */
     public static create(kLimit: number, outputDirectory: string, detectTypeDiff: boolean = false,
-        dotDump: boolean = false, unhandledFuncDump: boolean = false, analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram, ptsCoType = PtsCollectionType.Set): PointerAnalysisConfig {
-        PointerAnalysisConfig.instance = new PointerAnalysisConfig(kLimit, outputDirectory, detectTypeDiff, dotDump, unhandledFuncDump, analysisScale, ptsCoType);
+        dotDump: boolean = false, unhandledFuncDump: boolean = false, 
+        analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram, ptsCoType = PtsCollectionType.Set): PointerAnalysisConfig {
+        PointerAnalysisConfig.instance = new PointerAnalysisConfig(
+            kLimit, outputDirectory, detectTypeDiff, dotDump, unhandledFuncDump, analysisScale, ptsCoType
+        );
         return PointerAnalysisConfig.instance;
     }
 

@@ -130,8 +130,8 @@ function runDir(output: string) {
     printStat(pta);
 }
 
-function runMethod(output: string) {
-    config.buildFromProjectDir('./tests/resources/pta/CallParam');
+function runMethod(output: string): void {
+    config.buildFromProjectDir('./tests/resources/pta/CallField');
     config.getSdksObj().push(sdk);
 
     let projectScene: Scene = new Scene();
@@ -142,9 +142,9 @@ function runMethod(output: string) {
     let cgBuilder = new CallGraphBuilder(cg, projectScene);
     cgBuilder.buildDirectCallGraphForScene();
 
-    let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'foo');
+    let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'setget');
 
-    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtaAnalysisScale.MethodLevel, PtsCollectionType.BitVector)
+    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtaAnalysisScale.MethodLevel, PtsCollectionType.BitVector);
     PointerAnalysis.pointerAnalysisForMethod(projectScene, cg.getArkMethodByFuncID(debugfunc[0]) as ArkMethod, ptaConfig);
 }
 

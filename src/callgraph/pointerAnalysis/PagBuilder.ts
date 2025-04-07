@@ -98,7 +98,7 @@ export class PagBuilder {
     private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     // record the SDK API param, and create fake Values
-    private methodParamValueMap: Map<FuncID, Map<number,Value>> = new Map();
+    private methodParamValueMap: Map<FuncID, Map<number, Value>> = new Map();
     private fakeSdkMethodParamDeclaringStmt: Stmt = new ArkAssignStmt(new Local(""), new Local(""));
     private funcHandledThisRound: Set<FuncID> = new Set();
     private updatedNodesThisRound: Map<NodeID, IPtsCollection<NodeID>> = new Map()
@@ -210,50 +210,9 @@ export class PagBuilder {
                 }
 
                 // handle call
-                let ivkExpr = stmt.getInvokeExpr();
-                if (ivkExpr instanceof ArkStaticInvokeExpr) {
-                    let cs = this.cg.getCallSiteByStmt(stmt);
-                    if (cs) {
-                        // direct call is already existing in CG
-                        // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
-                        fpag.addNormalCallSite(cs);
-                        if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
-                            .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-                            fpag.addUnknownCallSite(cs);
-                            continue;
-                        }
-                    } else {
-                        throw new Error('Can not find static callsite');
-                    }
-                } else if (ivkExpr instanceof ArkInstanceInvokeExpr || ivkExpr instanceof ArkPtrInvokeExpr) {
-                    let ptcs = this.cg.getDynCallsiteByStmt(stmt);
-                    if (ptcs) {
-                        this.addToDynamicCallSite(fpag, ptcs);
-                    }
-                }
+                this.buildInvokeExprInAssignStmt(stmt, fpag);
             } else if (stmt instanceof ArkInvokeStmt && this.scale === PtaAnalysisScale.WholeProgram) {
-                // TODO: discuss if we need a invokeStmt
-
-                let cs = this.cg.getCallSiteByStmt(stmt);
-                if (cs) {
-                    // direct call or constructor call is already existing in CG
-                    // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
-                    // TODO: instance invoke(ptr invoke)
-                    if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
-                        fpag.addUnknownCallSite(cs);
-                    } else {
-                        fpag.addNormalCallSite(cs);
-                    }
-
-                    continue;
-                }
-
-                let dycs = this.cg.getDynCallsiteByStmt(stmt);
-                if (dycs) {
-                    this.addToDynamicCallSite(fpag, dycs);
-                } else {
-                    throw new Error('Can not find callsite by stmt');
-                }
+                this.buildInvokeExprInInvokeStmt(stmt, fpag);
             } else {
                 // TODO: need handle other type of stmt?
             }
@@ -262,6 +221,55 @@ export class PagBuilder {
         this.funcPags.set(funcID, fpag);
         this.pagStat.numTotalFunction++;
         return true;
+    }
+
+    private buildInvokeExprInAssignStmt(stmt: ArkAssignStmt, fpag: FuncPag): void {
+        let ivkExpr = stmt.getInvokeExpr();
+        if (ivkExpr instanceof ArkStaticInvokeExpr) {
+            let cs = this.cg.getCallSiteByStmt(stmt);
+            if (cs) {
+                // direct call is already existing in CG
+                // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
+                fpag.addNormalCallSite(cs);
+                if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
+                    .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+                    fpag.addUnknownCallSite(cs);
+                    return;
+                }
+            } else {
+                throw new Error('Can not find static callsite');
+            }
+        } else if (ivkExpr instanceof ArkInstanceInvokeExpr || ivkExpr instanceof ArkPtrInvokeExpr) {
+            let ptcs = this.cg.getDynCallsiteByStmt(stmt);
+            if (ptcs) {
+                this.addToDynamicCallSite(fpag, ptcs);
+            }
+        }
+    }
+
+    private buildInvokeExprInInvokeStmt(stmt: ArkInvokeStmt, fpag: FuncPag): void {
+        // TODO: discuss if we need a invokeStmt
+
+        let cs = this.cg.getCallSiteByStmt(stmt);
+        if (cs) {
+            // direct call or constructor call is already existing in CG
+            // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
+            // TODO: instance invoke(ptr invoke)
+            if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
+                fpag.addUnknownCallSite(cs);
+            } else {
+                fpag.addNormalCallSite(cs);
+            }
+
+            return;
+        }
+
+        let dycs = this.cg.getDynCallsiteByStmt(stmt);
+        if (dycs) {
+            this.addToDynamicCallSite(fpag, dycs);
+        } else {
+            throw new Error('Can not find callsite by stmt');
+        }
     }
 
     /**
@@ -302,14 +310,14 @@ export class PagBuilder {
 
                 let argInstance: ArkNewExpr = new ArkNewExpr(paramType);
                 paramArr.set(index, argInstance);
-            })
+            });
         } else if (type === 1) {
             // Local
             args.forEach((arg, index) => {
                 let argInstance: Local = new Local(arg.getName(), arg.getType());
                 argInstance.setDeclaringStmt(this.fakeSdkMethodParamDeclaringStmt);
                 paramArr.set(index, argInstance);
-            })
+            });
         }
 
         return paramArr;
@@ -325,7 +333,7 @@ export class PagBuilder {
         value.forEach((v, index) => {
             let paramArkExprNode = this.pag.getOrNewNode(DUMMY_CID, v, this.fakeSdkMethodParamDeclaringStmt);
             paramPagNodes.set(index, paramArkExprNode.getID());
-        })
+        });
 
         return paramPagNodes;
     }
@@ -348,7 +356,7 @@ export class PagBuilder {
         this.addCallsEdgesFromFuncPag(funcPag, cid);
         this.addDynamicCallSite(funcPag, funcID);
         this.addUnknownCallSite(funcPag, funcID);
-        this.handledFunc.add(`${cid}-${funcID}`)
+        this.handledFunc.add(`${cid}-${funcID}`);
     }
 
     /// Add Pag Nodes and Edges in function
@@ -943,7 +951,7 @@ export class PagBuilder {
             calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID, true);
         }
 
-        let srcNodes: NodeID[] = []
+        let srcNodes: NodeID[] = [];
         // Add reachable
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
