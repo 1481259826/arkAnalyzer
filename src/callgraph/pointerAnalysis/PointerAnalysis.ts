@@ -28,9 +28,10 @@ import { DummyMainCreater } from '../../core/common/DummyMainCreater';
 import { PTAStat } from '../common/Statistics';
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode, PagArrayNode } from './Pag';
 import { PagBuilder } from './PagBuilder';
-import { PointerAnalysisConfig } from './PointerAnalysisConfig';
+import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 import { DiffPTData, IPtsCollection } from './PtsDS';
 import { Local } from '../../core/base/Local';
+import { ArkMethod } from '../../core/model/ArkMethod';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -50,7 +51,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         this.pag = p;
         this.cg = cg;
         this.ptd = new DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>(config.ptsCollectionCtor);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit, config.analysisScale);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat(this);
         this.config = config;
@@ -75,6 +76,22 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         let pta = new PointerAnalysis(pag, cg, projectScene, config);
         pta.setEntries([dummyMainMethodID]);
+        pta.start();
+        return pta;
+    }
+
+    static pointerAnalysisForMethod(s: Scene, method: ArkMethod, config?: PointerAnalysisConfig): PointerAnalysis {
+        let cg = new CallGraph(s);
+        let cgBuilder = new CallGraphBuilder(cg, s);
+        cgBuilder.buildDirectCallGraphForScene();
+        let pag = new Pag();
+        if (!config) {
+            config = PointerAnalysisConfig.create(1, 'out/', false, false);
+        }
+
+        let entryMethodID = cg.getCallGraphNodeByMethod(method.getSignature()).getID();
+        let pta = new PointerAnalysis(pag, cg, s, config);
+        pta.setEntries([entryMethodID]);
         pta.start();
         return pta;
     }
@@ -147,7 +164,11 @@ export class PointerAnalysis extends AbstractAnalysis {
             // do pointer transfer
             this.solveWorklist();
             // process dynamic call
-            reanalyzer = this.onTheFlyDynamicCallSolve();
+            if (this.config.analysisScale === PtaAnalysisScale.WholeProgram) {
+                reanalyzer = this.onTheFlyDynamicCallSolve();
+            } else {
+                reanalyzer = false;
+            }
             if (this.config.dotDump) {
                 this.pag.dump(path.join(this.config.outputDirectory, `pta_pag_itor#${this.ptaStat.iterTimes}.dot`));
             }

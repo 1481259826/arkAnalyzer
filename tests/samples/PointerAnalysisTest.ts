@@ -19,18 +19,19 @@ import { CallGraph } from '../../src/callgraph/model/CallGraph';
 import { CallGraphBuilder } from '../../src/callgraph/model/builder/CallGraphBuilder';
 import { Pag } from '../../src/callgraph/pointerAnalysis/Pag'
 import { PointerAnalysis } from '../../src/callgraph/pointerAnalysis/PointerAnalysis'
-import { PointerAnalysisConfig } from '../../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
+import { PtaAnalysisScale, PointerAnalysisConfig } from '../../src/callgraph/pointerAnalysis/PointerAnalysisConfig';
 import { PtsCollectionType } from '../../src/callgraph/pointerAnalysis/PtsDS';
 import { Local } from '../../src/core/base/Local';
 import { ArkThisRef } from '../../src/core/base/Ref';
 import { ArkAssignStmt } from '../../src/core/base/Stmt';
+import { ArkMethod } from '../../src/core/model/ArkMethod';
 import Logger, { LOG_LEVEL } from '../../src/utils/logger';
 
 Logger.configure('./out/ArkAnalyzer.log', LOG_LEVEL.TRACE)
 let config: SceneConfig = new SceneConfig()
 let sdk: Sdk = {
     name: 'ohos',
-    path: '/Users/yangyizhuo/Library/OpenHarmony/Sdk/11/ets',
+    path: '',
     moduleName: ''
 };
 sdk;
@@ -101,7 +102,7 @@ function runProject(output: string) {
 
 
 function runDir(output: string) {
-    config.buildFromProjectDir('./tests/resources/pta/Container');
+    config.buildFromProjectDir('./tests/resources/pta/CallParam');
     config.getSdksObj().push(sdk);
 
     let projectScene: Scene = new Scene();
@@ -115,7 +116,7 @@ function runDir(output: string) {
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
-    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtsCollectionType.BitVector)
+    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries(debugfunc);
     pta.start();
@@ -129,8 +130,36 @@ function runDir(output: string) {
     printStat(pta);
 }
 
-if (false) {
-    runProject('./out');
-} else {
-    runDir('./out')
+function runMethod(output: string) {
+    config.buildFromProjectDir('./tests/resources/pta/CallParam');
+    config.getSdksObj().push(sdk);
+
+    let projectScene: Scene = new Scene();
+    projectScene.buildSceneFromProjectDir(config);
+    projectScene.inferTypes();
+
+    let cg = new CallGraph(projectScene);
+    let cgBuilder = new CallGraphBuilder(cg, projectScene);
+    cgBuilder.buildDirectCallGraphForScene();
+
+    let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'foo');
+
+    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtaAnalysisScale.MethodLevel, PtsCollectionType.BitVector)
+    PointerAnalysis.pointerAnalysisForMethod(projectScene, cg.getArkMethodByFuncID(debugfunc[0]) as ArkMethod, ptaConfig);
+}
+
+let type = 2;
+
+switch (type) {
+    case 1:
+        runDir('./out');
+        break;
+
+    case 2:
+        runMethod('./out');
+        break;
+
+    case 3:
+        runProject('./out');
+        break;
 }
