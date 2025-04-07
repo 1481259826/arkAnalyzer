@@ -89,6 +89,7 @@ class ReachingDefFlowGraph extends BaseImplicitGraph<RDNode> implements FlowGrap
 
         const nodes = cfg.getStmts();
         this.nodeToIdMap = new Map(nodes.map((x, i) => [x, i]));
+        this.idToNodeMap = new Map(nodes.map((x, i) => [i, x]));
         this.nodesInPostOrder = nodes.map((_, i) => i);
 
         this.initSuccPred(nodes, cfg);
