@@ -1099,7 +1099,7 @@ object %AC0$ClassA.%instInit {
   %instInit(): void {
     label0:
       this = this: @type/objectType.ts: %AC0$ClassA.%instInit
-      this.<@type/objectType.ts: ClassA.a> = 1
+      this.<@type/objectType.ts: %AC0$ClassA.%instInit.a> = 1
       return
   }
 }

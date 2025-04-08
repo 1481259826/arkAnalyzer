@@ -226,7 +226,7 @@ describe("export Test", () => {
     it('this case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
         const type = projectScene.getFile(fileId)?.getClassWithName('%AC4$MyComponent.build')
-            ?.getMethodWithName('%instInit')?.getBody()?.getLocals().get(THIS_NAME)?.getType();
+            ?.getMethodWithName('%instInit')?.getBody()?.getUsedGlobals()?.get(THIS_NAME)?.getType();
         assert.equal(type?.getTypeString(), '@exports/Lottie_Report.ets: MyComponent');
 
         const type2 = projectScene.getFile(fileId)?.getClassWithName('MyComponent')
