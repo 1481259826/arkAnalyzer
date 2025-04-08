@@ -28,9 +28,10 @@ import { DummyMainCreater } from '../../core/common/DummyMainCreater';
 import { PTAStat } from '../common/Statistics';
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode, PagArrayNode } from './Pag';
 import { PagBuilder } from './PagBuilder';
-import { PointerAnalysisConfig } from './PointerAnalysisConfig';
+import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 import { DiffPTData, IPtsCollection } from './PtsDS';
 import { Local } from '../../core/base/Local';
+import { ArkMethod } from '../../core/model/ArkMethod';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -50,7 +51,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         this.pag = p;
         this.cg = cg;
         this.ptd = new DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>(config.ptsCollectionCtor);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit, config.analysisScale);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat(this);
         this.config = config;
@@ -75,6 +76,22 @@ export class PointerAnalysis extends AbstractAnalysis {
 
         let pta = new PointerAnalysis(pag, cg, projectScene, config);
         pta.setEntries([dummyMainMethodID]);
+        pta.start();
+        return pta;
+    }
+
+    static pointerAnalysisForMethod(s: Scene, method: ArkMethod, config?: PointerAnalysisConfig): PointerAnalysis {
+        let cg = new CallGraph(s);
+        let cgBuilder = new CallGraphBuilder(cg, s);
+        cgBuilder.buildDirectCallGraphForScene();
+        let pag = new Pag();
+        if (!config) {
+            config = PointerAnalysisConfig.create(1, 'out/', false, false);
+        }
+
+        let entryMethodID = cg.getCallGraphNodeByMethod(method.getSignature()).getID();
+        let pta = new PointerAnalysis(pag, cg, s, config);
+        pta.setEntries([entryMethodID]);
         pta.start();
         return pta;
     }
@@ -147,7 +164,11 @@ export class PointerAnalysis extends AbstractAnalysis {
             // do pointer transfer
             this.solveWorklist();
             // process dynamic call
-            reanalyzer = this.onTheFlyDynamicCallSolve();
+            if (this.config.analysisScale === PtaAnalysisScale.WholeProgram || this.ptaStat.iterTimes === 1 ) {
+                reanalyzer = this.onTheFlyDynamicCallSolve();
+            } else {
+                reanalyzer = false;
+            }
             if (this.config.dotDump) {
                 this.pag.dump(path.join(this.config.outputDirectory, `pta_pag_itor#${this.ptaStat.iterTimes}.dot`));
             }
@@ -157,7 +178,8 @@ export class PointerAnalysis extends AbstractAnalysis {
     /**
      * get newly added Address Edge, and add them to initial WorkList
      */
-    private initWorklist() {
+    private initWorklist(): boolean {
+        let changed: boolean = false;
         for (let e of this.pag.getAddrEdges()) {
             this.ptaStat.numProcessedAddr++;
 
@@ -170,8 +192,10 @@ export class PointerAnalysis extends AbstractAnalysis {
             }
 
             this.worklist.push(dst);
+            changed = true;
         }
         this.pag.resetAddrEdges();
+        return changed;
     }
 
     private solveWorklist(): boolean {
@@ -374,7 +398,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         changed = this.addToReanalyze(srcNodes) || changed;
 
         changed = this.pagBuilder.handleReachable() || changed;
-        this.initWorklist();
+        changed = this.initWorklist() || changed;
         return changed;
     }
 
@@ -512,8 +536,10 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private addIncomingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
         let inCopyEdges = valueNode.getIncomingCopyEdges();
-        if (inCopyEdges) {
-            inCopyEdges.forEach(edge => {
+        let inThisEdges = valueNode.getIncomingThisEdges();
+        let combinedEdges = new Set([...inCopyEdges ?? [], ...inThisEdges ?? []]);
+        if (combinedEdges) {
+            combinedEdges.forEach(edge => {
                 let srcID = edge.getSrcID();
                 if (!processedNodes.has(srcID)) {
                     workListNodes.push(srcID);
@@ -524,8 +550,10 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private addOutgoingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
         let outCopyEdges = valueNode.getOutgoingCopyEdges();
-        if (outCopyEdges) {
-            outCopyEdges.forEach(edge => {
+        let outThisEdges = valueNode.getOutgoingThisEdges();
+        let combinedEdges = new Set([...outCopyEdges ?? [], ...outThisEdges ?? []]);
+        if (combinedEdges) {
+            combinedEdges.forEach(edge => {
                 let dstID = edge.getDstID();
                 if (!processedNodes.has(dstID)) {
                     workListNodes.push(dstID);

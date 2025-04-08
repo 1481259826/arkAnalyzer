@@ -676,7 +676,7 @@ export class Pag extends BaseExplicitGraph {
     }
 
     public addPagNode(cid: ContextID, value: PagNodeType, stmt?: Stmt, refresh: boolean = true): PagNode {
-        let id: NodeID = this.nodeNum;
+        let id: NodeID = this.nodeNum + 1;
         let pagNode: PagNode;
 
         if (value instanceof Local) {
@@ -802,7 +802,7 @@ export class Pag extends BaseExplicitGraph {
      * but point to node info
      */
     public addPagThisRefNode(value: ArkThisRef): PagNode {
-        let id: NodeID = this.nodeNum;
+        let id: NodeID = this.nodeNum + 1;
         let pagNode = new PagThisRefNode(id, value);
         this.addNode(pagNode);
 
@@ -810,7 +810,7 @@ export class Pag extends BaseExplicitGraph {
     }
 
     public addPagThisLocalNode(ptNode: NodeID, value: Local): PagNode {
-        let id: NodeID = this.nodeNum;
+        let id: NodeID = this.nodeNum + 1;
         let pagNode = new PagLocalNode(id, ptNode, value);
         this.addNode(pagNode);
 
