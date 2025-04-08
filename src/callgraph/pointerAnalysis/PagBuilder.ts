@@ -64,7 +64,7 @@ import {
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
-import { BuiltApiType, getBuiltInApiType, IsCollectionAPI } from './PTAUtils';
+import { BuiltApiType, getBuiltInApiType } from './PTAUtils';
 import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
@@ -542,10 +542,6 @@ export class PagBuilder {
             // update call graph
             // TODO: movo to cgbuilder
             
-            /**
-             * TODO: for builtin method, do we need to ignore the builtin method node?
-             * for example: a -> Function.call -> b, real call chain is a -> b
-             */
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
@@ -559,13 +555,20 @@ export class PagBuilder {
                 srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid));
 
                 if (getBuiltInApiType(ivkExpr?.getMethodSignature()!) === BuiltApiType.NotBuiltIn) {
-                    srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid)); // TODO: check if all branch need this stmt
+                    // Dynamic call, Ptr call, normal SDK call
+                    srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid, ptNode));
+
                     // Pass base's pts to callee's this pointer
                     if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkInstanceInvokeExpr) {
                         let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr.getBase(), callee!, calleeCid, cs.callerFuncID);
                         srcNodes.push(srcBaseNode);
+                    } else if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkPtrInvokeExpr) {
+                        this.addThisRefCallEdge(baseClassPTNode, (ptNode as PagFuncNode).getOriginCid(), 
+                            (ptNode as PagFuncNode).getCS().args![0] as Local, callee!, calleeCid, cs.callerFuncID
+                        );
                     }
                 } else {
+                    // special SDK call: Container API, Function API
                     srcNodes.push(...this.processBuiltInMethodPagCallEdge(staticCS, cid, calleeCid, baseClassPTNode));
                 }
             }
@@ -574,6 +577,10 @@ export class PagBuilder {
         return srcNodes;
     }
 
+    /**
+     * all possible callee methods of a dynamic call site
+     * handle both PtrInvokeExpr and InstanceInvokeExpr
+     */
     private getDynamicCallee(ptNode: PagNode, value: Value, ivkExpr: AbstractInvokeExpr, cs: DynCallSite | CallSite): ArkMethod[] {
         let callee: ArkMethod[] = [];
 
@@ -706,6 +713,7 @@ export class PagBuilder {
                 // store the args and offset in Function node
                 srcNode.setCS(staticCS);
                 srcNode.setArgsOffset(1);
+                srcNode.setOriginCid(cid);
                 break;
         }
 
@@ -885,7 +893,7 @@ export class PagBuilder {
      *     ret edges from return values to callsite
      * Return src node
      */
-    public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID): NodeID[] {
+    public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID, ptNode?: PagNode): NodeID[] {
         if (!calleeCid) {
             calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID, true);
         }
@@ -913,7 +921,16 @@ export class PagBuilder {
         // callee cid will updated if callee is singleton
         calleeCid = calleeCS.cid
 
-        srcNodes.push(...this.addCallParamPagEdge(calleeMethod, cs.args!, cs.callStmt, callerCid, calleeCid, 0));
+        let realArgs: Value[] = cs.args ?? [];
+        let argsOffset: number = 0;
+        if (ptNode && ptNode instanceof PagFuncNode && ptNode.getCS()) {
+            // for ptr invoke cloned by Function.bind()
+            realArgs = ptNode.getCS().args ?? [];
+            argsOffset = ptNode.getArgsOffset() ?? 0;
+            callerCid = ptNode.getOriginCid() ?? callerCid;
+        }
+
+        srcNodes.push(...this.addCallParamPagEdge(calleeMethod, realArgs, cs.callStmt, callerCid, calleeCid, argsOffset));
         srcNodes.push(...this.addCallReturnPagEdge(calleeMethod, cs.callStmt, callerCid, calleeCid));
 
         return srcNodes;
@@ -1056,9 +1073,10 @@ export class PagBuilder {
         if (!calleeMethod) {
             return srcNodes;
         }
+        let methodType = getBuiltInApiType(calleeMethod.getSignature());
 
         // block the container SDK
-        if (IsCollectionAPI(calleeMethod.getSignature())) {
+        if (methodType === BuiltApiType.SetAdd || BuiltApiType.MapSet) {
             return srcNodes;
         }
 

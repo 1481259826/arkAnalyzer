@@ -29,7 +29,7 @@ import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
-import { IsCollectionClass } from './PTAUtils';
+import { BuiltApiType, getBuiltInApiType, IsCollectionClass } from './PTAUtils';
 import { IPtsCollection } from './PtsDS';
 import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 
@@ -533,14 +533,18 @@ export class PagParamNode extends PagNode {
 export class PagFuncNode extends PagNode {
     private methodSignature!: MethodSignature;
     private thisPt!: NodeID;
-    private cs!: CallSite;
+    private methodType!: BuiltApiType;
+    // for Function.bind, store the original call message and caller cid
+    private originCallSite!: CallSite;
     private argsOffset: number = 0;
+    private originCid!: ContextID;
     // TODO: may add obj interface
 
     constructor(id: NodeID, cid: ContextID | undefined = undefined, r: Value, stmt?: Stmt, method?: MethodSignature, thisInstanceID?: NodeID) {
         super(id, cid, r, PagNodeKind.Function, stmt)
         if (method) {
             this.methodSignature = method;
+            this.methodType = getBuiltInApiType(method);
         }
 
         if (thisInstanceID) {
@@ -550,6 +554,7 @@ export class PagFuncNode extends PagNode {
 
     public setMethod(method: MethodSignature) {
         this.methodSignature = method;
+        this.methodType = getBuiltInApiType(method);
     }
 
     public getMethod(): MethodSignature {
@@ -565,11 +570,11 @@ export class PagFuncNode extends PagNode {
     }
 
     public setCS(callsite: CallSite) {
-        this.cs = callsite;
+        this.originCallSite = callsite;
     }
 
     public getCS(): CallSite {
-        return this.cs;
+        return this.originCallSite;
     }
 
     public setArgsOffset(offset: number) {
@@ -578,6 +583,18 @@ export class PagFuncNode extends PagNode {
 
     public getArgsOffset(): number {
         return this.argsOffset;
+    }
+
+    public getMethodType(): BuiltApiType {
+        return this.methodType;
+    }
+
+    public setOriginCid(cid: ContextID) {
+        this.originCid = cid;
+    }
+
+    public getOriginCid(): ContextID {
+        return this.originCid;
     }
 }
 

@@ -15,31 +15,9 @@
 
 import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
 
-// TODO: deprecate the following functions with new implementation
 export function IsCollectionClass(classSignature: ClassSignature): boolean {
     if (classSignature.toString().endsWith('lib.es2015.collection.d.ts: Set') ||
         classSignature.toString().endsWith('lib.es2015.collection.d.ts: Map')) {
-        return true;
-    }
-    return false;
-}
-
-export function IsCollectionAPI(method: MethodSignature): boolean {
-    if (IsCollectionSetAdd(method) || IsCollectionMapSet(method)) {
-        return true;
-    }
-    return false;
-}
-
-export function IsCollectionSetAdd(method: MethodSignature): boolean {
-    if (method.toString().endsWith('lib.es2015.collection.d.ts: Set.add(T)')) {
-        return true;
-    }
-    return false;
-}
-
-export function IsCollectionMapSet(method: MethodSignature): boolean {
-    if (method.toString().endsWith('lib.es2015.collection.d.ts: Map.set(K, V)')) {
         return true;
     }
     return false;

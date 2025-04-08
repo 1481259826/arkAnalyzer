@@ -79,6 +79,13 @@ namespace functionType {
         f2_new();
     }
 
+    function ptrInvoke2_bind_return(heapObj1: param, heapObj2: param) {
+        let test_instance = new Test();
+        let f2 = test_instance.test;
+        const f2_new = f2.bind(test_instance, heapObj1, heapObj2);
+        return f2_new;
+    }
+
     function ptrInvoke3_call(heapObj1: param, heapObj2: param) {
         let f2 = Test.testStatic;
         f2.call(Test, heapObj1, heapObj2);
@@ -136,6 +143,8 @@ namespace functionType {
         ptrInvoke2_call(heapObj1, heapObj2);
         ptrInvoke2_apply(heapObj1, heapObj2);
         ptrInvoke2_bind(heapObj1, heapObj2);
+        let b = ptrInvoke2_bind_return(heapObj1, heapObj2);
+        b();
 
         ptrInvoke3_call(heapObj1, heapObj2);
         ptrInvoke3_apply(heapObj1, heapObj2);
