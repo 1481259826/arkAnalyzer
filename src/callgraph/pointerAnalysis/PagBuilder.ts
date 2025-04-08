@@ -661,7 +661,12 @@ export class PagBuilder {
         }
 
         let  setFunctionThisPt = (srcNode: PagFuncNode) => {
-            let thisInstanceLocal = this.getRealThisLocal(staticCS.args![0] as Local, staticCS.callerFuncID);
+            let thisLocal = staticCS.args![0]
+            if (!(thisLocal instanceof Local)) {
+                return;
+            }
+
+            let thisInstanceLocal = this.getRealThisLocal(thisLocal, staticCS.callerFuncID);
             let baseThisNode = this.pag.getOrNewNode(cid, thisInstanceLocal);
 
             for (let pt of baseThisNode.getPointTo()) {

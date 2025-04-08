@@ -48,9 +48,8 @@ function test(): PointerAnalysis {
 }
 
 describe('Function.call Test', () => {
+    let pta = test();
     it('case1: anonymousMethod', () => {
-        let pta = test();
-
         let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
             === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke1_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
         let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
@@ -74,8 +73,6 @@ describe('Function.call Test', () => {
     });
 
     it('case2: class instance method', () => {
-        let pta = test();
-
         let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
             === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke2_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
         let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
@@ -106,8 +103,6 @@ describe('Function.call Test', () => {
     });
 
     it('case3: class static method', () => {
-        let pta = test();
-
         let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
             === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke3_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
         let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
@@ -131,8 +126,6 @@ describe('Function.call Test', () => {
     });
 
     it('case4: function', () => {
-        let pta = test();
-
         let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
             === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke4_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
         let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
