@@ -165,6 +165,7 @@ export class CallGraph extends BaseExplicitGraph {
     private stmtToDynCallSitemap: Map<Stmt, DynCallSite> = new Map();
     private methodToCGNodeMap: Map<string, NodeID> = new Map();
     private callPairToEdgeMap: Map<string, CallGraphEdge> = new Map();
+    private methodToCallSiteMap: Map<FuncID, Set<CallSite>> = new Map();
     private callSiteNum: number = 0;
     // private directCallEdgeNum: number;
     // private inDirectCallEdgeNum: number;
@@ -317,6 +318,35 @@ export class CallGraph extends BaseExplicitGraph {
 
     public getCallSiteByStmt(stmt: Stmt): CallSite | undefined {
         return this.stmtToCallSitemap.get(stmt);
+    }
+
+    public addMethodToCallSiteMap(funcID: FuncID, cs: CallSite): void {
+        if (this.methodToCallSiteMap.has(funcID)) {
+            this.methodToCallSiteMap.get(funcID)!.add(cs);
+        } else {
+            this.methodToCallSiteMap.set(funcID, new Set([cs]));
+        }
+    }
+
+    public getCallSitesByMethod(func: FuncID | MethodSignature): Set<CallSite> {
+        let funcID: FuncID;
+        if (func instanceof MethodSignature) {
+            funcID = this.getCallGraphNodeByMethod(func).getID();
+        } else {
+            funcID = func;
+        }
+
+        return this.methodToCallSiteMap.get(funcID) ?? new Set();
+    }
+
+    public getInvokeStmtByMethod(func: FuncID | MethodSignature): Stmt[] {
+        let callSites = this.getCallSitesByMethod(func);
+        let invokeStmts: Stmt[] = [];
+        callSites.forEach((cs) => {
+            invokeStmts.push(cs.callStmt);
+        });
+
+        return invokeStmts;
     }
 
     public getDynEdges(): Map<Method, Set<Method>> {
