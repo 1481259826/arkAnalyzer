@@ -61,7 +61,7 @@ function arrayLiteral(): void {
     const arr6 = [1, 'hello', new Sample()];
 }
 
-function testEnumValue() {
+function testEnumValue(): void {
     sensor.off(sensor.SensorId.GRAVITY);
     sensor.off(5);
 }

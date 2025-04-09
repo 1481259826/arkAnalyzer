@@ -646,25 +646,23 @@ export class IRInference {
             } else if (property instanceof ArkMethod) {
                 const type = anonField.getType();
                 if (type instanceof FunctionType) {
-                    const anonMethod = scene.getMethod(type.getMethodSignature());
-                    const parameters = anonMethod?.getSubSignature().getParameters();
-                    if (anonMethod && parameters) {
-                        anonMethod.setImplementationSignature(property.matchMethodSignature(parameters));
-                    }
+                    this.assignAnonMethod(scene.getMethod(type.getMethodSignature()), property);
                 }
                 anonField.setSignature(new FieldSignature(anonField.getName(),
                     property.getDeclaringArkClass().getSignature(), new FunctionType(property.getSignature())));
             }
         }
         for (const anonMethod of anon.getMethods()) {
-            const methodSignature = declaredClass.getMethodWithName(anonMethod.getName())
-                ?.matchMethodSignature(anonMethod.getSubSignature().getParameters());
-            if (methodSignature) {
-                anonMethod.setImplementationSignature(methodSignature);
-            }
+            this.assignAnonMethod(anonMethod, declaredClass.getMethodWithName(anonMethod.getName()));
         }
     }
 
+
+    private static assignAnonMethod(anonMethod: ArkMethod | null, declaredMethod: ArkMethod | null): void {
+        if (declaredMethod && anonMethod) {
+            anonMethod.setImplementationSignature(declaredMethod.matchMethodSignature(anonMethod.getSubSignature().getParameters()));
+        }
+    }
 
     private static assignAnonField(property: ArkField, anonField: ArkField, scene: Scene, set: Set<string>): void {
         function deepInfer(anonType: Type, declaredSignature: ClassSignature): void {

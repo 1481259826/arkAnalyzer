@@ -87,7 +87,7 @@ export class SdkUtils {
             const instance = globalMap.get(name + 'Interface');
             const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
             if (attr instanceof ArkClass && instance instanceof ArkClass) {
-                instance.getMethods().filter(m => !instance.getMethodWithName(m.getName())).forEach(m => attr.addMethod(m));
+                instance.getMethods().filter(m => !attr.getMethodWithName(m.getName())).forEach(m => attr.addMethod(m));
                 globalMap.set(name, attr);
                 return;
             }

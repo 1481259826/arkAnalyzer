@@ -270,8 +270,8 @@ export class TypeInference {
         }
         const stmtDef = stmt.getDef();
         if (stmtDef && stmtDef instanceof AbstractRef) {
-            if (arkMethod.getName() === INSTANCE_INIT_METHOD_NAME && stmtDef instanceof ArkInstanceFieldRef
-                && stmtDef.getBase().getName() === THIS_NAME && arkMethod.getDeclaringArkClass().isAnonymousClass()) {
+            if (arkMethod.getName() === INSTANCE_INIT_METHOD_NAME && stmtDef instanceof ArkInstanceFieldRef &&
+                stmtDef.getBase().getName() === THIS_NAME && arkMethod.getDeclaringArkClass().isAnonymousClass()) {
                 return;
             }
             const fieldRef = stmtDef.inferType(arkMethod);
@@ -411,7 +411,7 @@ export class TypeInference {
         return false;
     }
 
-    // This is the temporally function to check unclearReferenceType recursively and can be removed after typeInfer supports multiple candidate types.
+    // This is the temporal function to check unclearReferenceType recursively and can be removed after typeInfer supports multiple candidate types.
     private static hasUnclearReferenceType(type: Type, visited: Set<Type> = new Set()): boolean {
         if (visited.has(type)) {
             return false;
@@ -658,39 +658,15 @@ export class TypeInference {
         }
         let propertyAndType: [any, Type] | null = null;
         if (baseType instanceof ClassType) {
-            const arkClass = declareClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
-            if (!arkClass && fieldName === Builtin.ITERATOR_RESULT_VALUE && baseType.getClassSignature()
+            if (fieldName === Builtin.ITERATOR_RESULT_VALUE && baseType.getClassSignature()
                 .getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
                 const types = baseType.getRealGenericTypes();
                 if (types && types.length > 0) {
-                    propertyAndType = [null, types[0]];
+                    return [null, types[0]];
                 }
+                return null;
             }
-            if (!arkClass) {
-                return propertyAndType;
-            }
-            const property = ModelUtils.findPropertyInClass(fieldName, arkClass);
-            let propertyType: Type | null = null;
-            if (property instanceof ArkField) {
-                if (arkClass.getCategory() === ClassCategory.ENUM) {
-                    let constant;
-                    const lastStmt = property.getInitializer().at(-1);
-                    if (lastStmt instanceof ArkAssignStmt && lastStmt.getRightOp() instanceof Constant) {
-                        constant = lastStmt.getRightOp() as Constant;
-                    }
-                    propertyType = new EnumValueType(property.getSignature(), constant);
-                } else {
-                    propertyType = property.getType();
-                }
-            } else if (property) {
-                propertyType = this.parseArkExport2Type(property);
-            }
-            if (propertyType) {
-                propertyAndType = [property, propertyType];
-            } else if (arkClass.isAnonymousClass()) {
-                const fieldType = this.inferUnclearRefName(fieldName, arkClass);
-                propertyAndType = fieldType ? [null, fieldType] : null;
-            }
+            propertyAndType = this.inferClassFieldType(declareClass, baseType, fieldName);
         } else if (baseType instanceof AnnotationNamespaceType) {
             const namespace = declareClass.getDeclaringArkFile().getScene().getNamespace(baseType.getNamespaceSignature());
             if (namespace) {
@@ -704,6 +680,36 @@ export class TypeInference {
             logger.warn('infer unclear reference type fail: ' + fieldName);
         }
         return propertyAndType;
+    }
+
+    private static inferClassFieldType(declareClass: ArkClass, baseType: ClassType, fieldName: string): [any, Type] | null {
+        const arkClass = declareClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
+        if (!arkClass) {
+            return null;
+        }
+        const property = ModelUtils.findPropertyInClass(fieldName, arkClass);
+        let propertyType: Type | null = null;
+        if (property instanceof ArkField) {
+            if (arkClass.getCategory() === ClassCategory.ENUM) {
+                let constant;
+                const lastStmt = property.getInitializer().at(-1);
+                if (lastStmt instanceof ArkAssignStmt && lastStmt.getRightOp() instanceof Constant) {
+                    constant = lastStmt.getRightOp() as Constant;
+                }
+                propertyType = new EnumValueType(property.getSignature(), constant);
+            } else {
+                propertyType = property.getType();
+            }
+        } else if (property) {
+            propertyType = this.parseArkExport2Type(property);
+        }
+        if (propertyType) {
+            return [property, propertyType];
+        } else if (arkClass.isAnonymousClass()) {
+            const fieldType = this.inferUnclearRefName(fieldName, arkClass);
+            return fieldType ? [null, fieldType] : null;
+        }
+        return null;
     }
 
     /**
@@ -766,6 +772,17 @@ export class TypeInference {
         } else {
             visited.add(type);
         }
+        if (type instanceof GenericType) {
+            const realType = realTypes?.[type.getIndex()] ?? type.getDefaultType() ?? type.getConstraint();
+            return realType ?? type;
+        } else if (type instanceof AnyType) {
+            const realType = realTypes?.[0];
+            return realType ?? type;
+        }
+        return this.replaceRecursiveType(type, realTypes, visited);
+    }
+
+    public static replaceRecursiveType(type: Type, realTypes?: Type[], visited: Set<Type>): Type {
         if (type instanceof ClassType) {
             const replacedTypes = type.getRealGenericTypes()?.map(g => this.replaceTypeWithReal(g, realTypes, visited)) ?? realTypes;
             return replacedTypes && replacedTypes.length > 0 ? new ClassType(type.getClassSignature(), replacedTypes) : type;
@@ -795,16 +812,6 @@ export class TypeInference {
             let replacedTypes: Type[] = [];
             type.getTypes().forEach(t => replacedTypes.push(this.replaceTypeWithReal(t, realTypes, visited)));
             return new TupleType(replacedTypes);
-        } else if (type instanceof GenericType) {
-            const realType = realTypes?.[type.getIndex()] ?? type.getDefaultType() ?? type.getConstraint();
-            if (realType) {
-                return realType;
-            }
-        } else if (type instanceof AnyType) {
-            const realType = realTypes?.[0];
-            if (realType) {
-                return realType;
-            }
         }
         return type;
     }
