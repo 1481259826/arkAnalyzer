@@ -13,12 +13,17 @@
  */
 class A {
   y:number;
+
+  foo(x: number): number {
+    return 2;
+  }
 }
 
-function test1() {
+function test1(): number {
   let a = new A();
-  let x = 10;
+  let x = a.y;
   a.y = 20;
+  x = a.foo(x);
 
   if (a.y > 15) {
     x = 30;
@@ -30,7 +35,7 @@ function test1() {
   return z;
 }
 
-function test2(input: number) {
+function test2(input: number): void {
     let x = 1;
     let y = 2;
     let z = 3;

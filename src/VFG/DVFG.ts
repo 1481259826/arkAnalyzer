@@ -14,6 +14,8 @@
 import { BaseEdge, BaseExplicitGraph, BaseNode, NodeID } from '../core/graph/BaseExplicitGraph';
 import { CallGraph } from '../callgraph/model/CallGraph';
 import { ArkAssignStmt, Stmt } from '../core/base/Stmt';
+import { GraphPrinter } from '../save/GraphPrinter';
+import { PrinterBuilder } from '../save/PrinterBuilder';
 
 /**
  * Direct value flow graph
@@ -75,6 +77,11 @@ export class DVFG extends BaseExplicitGraph {
 
         return true;
     }
+
+    public dump(name: string): void {
+        let printer = new GraphPrinter<this>(this);
+        PrinterBuilder.dump(printer, name);
+    }
 }
 
 export enum DVFGNodeKind {
@@ -91,7 +98,9 @@ export class DVFGNode extends BaseNode {
     }
 
     public getDotLabel(): string {
-        throw new Error('Method not implemented.');
+        let label: string = 'ID: ' + this.getID() + '\n';
+        label = label + this.stmt.toString();
+        return label;
     }
 
     public getStmt(): Stmt {

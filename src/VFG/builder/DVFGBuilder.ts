@@ -11,86 +11,108 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ArkNormalBinopExpr } from '../../core/base/Expr';
-import { Local } from '../../core/base/Local';
+
+import { Constant } from '../../core/base/Constant';
+import { AbstractExpr, AbstractInvokeExpr } from '../../core/base/Expr';
 import { AbstractFieldRef } from '../../core/base/Ref';
-import { ArkAssignStmt, Stmt } from '../../core/base/Stmt';
+import { ArkAssignStmt, ArkInvokeStmt, ArkIfStmt, ArkReturnStmt, ArkThrowStmt, Stmt, ArkReturnVoidStmt, ArkAliasTypeDefineStmt } from '../../core/base/Stmt';
 import { Value } from '../../core/base/Value';
+import { DummyStmt } from '../../core/common/ArkIRTransformer';
 import { MFPDataFlowSolver } from '../../core/dataflow/GenericDataFlow';
 import { ReachingDefProblem } from '../../core/dataflow/ReachingDef';
 import { ArkMethod } from '../../core/model/ArkMethod';
+import { FieldSignature } from '../../core/model/ArkSignature';
 import { Scene } from '../../Scene';
 import { DVFG } from '../DVFG';
 
 export class DVFGBuilder {
     private dvfg: DVFG;
-    // private scene: Scene;
+    private scene: Scene;
 
     constructor(dvfg: DVFG, s: Scene) {
         this.dvfg = dvfg;
-        // this.scene = s;
+        this.scene = s;
     }
 
-    public build() {}
+    public build() {
+        this.scene.getMethods().map(m => this.buildForSingleMethod(m));
+    }
 
     public buildForSingleMethod(m: ArkMethod) {
         let problem = new ReachingDefProblem(m);
         let solver = new MFPDataFlowSolver();
         let solution = solver.calculateMopSolutionForwards(problem);
-        let fg = problem.flowGraph;
-        // build a map of def 2 stmts
-        let defMap = new Map<Value, Set<Stmt>>();
-        m.getCfg()
-            ?.getStmts()
-            .forEach((s) => {
-                let def = s.getDef();
-                if (def != null) {
-                    let defStmts = defMap.get(def) ?? new Set<Stmt>();
-                    defStmts.add(s);
-                    defMap.set(def, defStmts);
-                }
-            });
 
-        solution.out.forEach((defs, reach) => {
-            let buildForDefs = (v: Value, reachStmt: Stmt) => {
-                defMap.get(v)?.forEach((defStmt) => {
-                    let id = fg.getNodeID(defStmt);
-                    // def reaches here
-                    if (defs.test(id)) {
+        let defMap = new Map<Value | FieldSignature, Set<Stmt>>();
+        m.getCfg()!.getStmts().forEach((s) => {
+            let def: Value | FieldSignature | null = s.getDef();
+            if (def != null) {
+                if (def instanceof AbstractFieldRef) {
+                    def = def.getFieldSignature();
+                }
+                let defStmts = defMap.get(def) ?? new Set<Stmt>();
+                defStmts.add(s);
+                defMap.set(def, defStmts);
+            }
+        });
+
+        solution.in.forEach((defs, reach) => {
+            const reachStmt = problem.flowGraph.getNode(reach);
+            this.getStmtUsedValues(reachStmt).forEach(use => {
+                let target: Value | FieldSignature = use;
+                if (target instanceof AbstractFieldRef) {
+                    target = target.getFieldSignature();
+                }
+                defMap.get(target)?.forEach((defStmt) => {
+                    let defId = problem.flowGraph.getNodeID(defStmt);
+                    if (defs.test(defId)) {
                         let srcNode = this.dvfg.getOrNewDVFGNode(defStmt);
                         let dstNode = this.dvfg.getOrNewDVFGNode(reachStmt);
 
                         this.dvfg.addDVFGEdge(srcNode, dstNode);
                     }
                 });
-            };
-
-            let reachStmt = fg.getNode(reach);
-
-            //Get uses
-            // stmt.getUses() has bug
-            // a.f = x    the use currently is a, expect a.f
-            if (reachStmt instanceof ArkAssignStmt) {
-                let lop = reachStmt.getLeftOp();
-                if (lop instanceof ArkNormalBinopExpr) {
-                    let op1 = lop.getOp1();
-                    let op2 = lop.getOp2();
-                    buildForDefs(op1, reachStmt);
-                    buildForDefs(op2, reachStmt);
-                } else if (lop instanceof Local || lop instanceof AbstractFieldRef) {
-                    //TODO
-                }
-            }
-        });
-
-        fg.getNodeToIdMap().forEach((id, stmt) => {
-            stmt.getUses();
+            });
         });
     }
 
-    public getOrNewDVFGNode(stmt: Stmt) {}
+    private getStmtUsedValues(stmt: Stmt): Value[] {
+        if (stmt instanceof ArkAssignStmt) {
+            return this.getUsedValues(stmt.getRightOp());
+        } else if (stmt instanceof ArkInvokeStmt) {
+            return this.getUsedValues(stmt.getInvokeExpr());
+        } else if (stmt instanceof ArkIfStmt) {
+            return this.getUsedValues(stmt.getConditionExpr());
+        } else if (stmt instanceof ArkReturnStmt) {
+            return this.getUsedValues(stmt.getOp());
+        } else if (stmt instanceof ArkThrowStmt) {
+            return this.getUsedValues(stmt.getOp());
+        } else if (stmt instanceof ArkReturnVoidStmt || stmt instanceof ArkAliasTypeDefineStmt || stmt instanceof DummyStmt) {
+            return [];
+        } else {
+            throw new Error('unsupported stmt');
+        }
+    }
 
-    public addDVFGNodes(): void {}
+    private getUsedValues(val: Value): Value[] {
+        if (val instanceof AbstractExpr) {
+            if (val instanceof AbstractInvokeExpr) {
+                return val.getArgs().flatMap((current) => { return this.getUsedValues(current) }, []);
+            } else {
+                return val.getUses().flatMap((current) => { return this.getUsedValues(current) }, []);
+            }
+        }
+        if (val instanceof Constant) {
+            return [];
+        }
+        return [val];
+    }
 
-    public addDVFGEdges(): void {}
+    public getOrNewDVFGNode(stmt: Stmt) {
+        return this.dvfg.getOrNewDVFGNode(stmt);
+    }
+
+    public addDVFGNodes(): void { }
+
+    public addDVFGEdges(): void { }
 }
