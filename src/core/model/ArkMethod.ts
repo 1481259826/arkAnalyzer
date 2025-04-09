@@ -654,7 +654,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         } else if (paramType instanceof EnumValueType) {
             if (argType instanceof EnumValueType) {
                 return paramType.getFieldSignature() === argType.getFieldSignature();
-            } else if (argType.constructor === paramType.getFieldSignature().getType().constructor && arg instanceof Constant) {
+            } else if (argType.constructor === paramType.getConstant()?.getType().constructor && arg instanceof Constant) {
                 return paramType.getConstant()?.getValue() === arg.getValue();
             }
         }

@@ -421,15 +421,15 @@ export class TypeInference {
         if (type instanceof UnclearReferenceType) {
             return true;
         } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
-            return !!type.getTypes().find(t => this.hasUnclearReferenceType(t));
+            return !!type.getTypes().find(t => this.hasUnclearReferenceType(t, visited));
         } else if (type instanceof ArrayType) {
-            return this.hasUnclearReferenceType(type.getBaseType());
+            return this.hasUnclearReferenceType(type.getBaseType(), visited);
         } else if (type instanceof AliasType) {
-            return this.hasUnclearReferenceType(type.getOriginalType());
+            return this.hasUnclearReferenceType(type.getOriginalType(), visited);
         } else if (type instanceof KeyofTypeExpr) {
-            return this.hasUnclearReferenceType(type.getOpType());
+            return this.hasUnclearReferenceType(type.getOpType(), visited);
         } else if (type instanceof TypeQueryExpr) {
-            return this.hasUnclearReferenceType(type.getType());
+            return this.hasUnclearReferenceType(type.getType(), visited);
         }
         return false;
     }
