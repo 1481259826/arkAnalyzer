@@ -779,10 +779,10 @@ export class TypeInference {
             const realType = realTypes?.[0];
             return realType ?? type;
         }
-        return this.replaceRecursiveType(type, realTypes, visited);
+        return this.replaceRecursiveType(type, visited, realTypes);
     }
 
-    public static replaceRecursiveType(type: Type, realTypes?: Type[], visited: Set<Type>): Type {
+    public static replaceRecursiveType(type: Type, visited: Set<Type>, realTypes?: Type[]): Type {
         if (type instanceof ClassType) {
             const replacedTypes = type.getRealGenericTypes()?.map(g => this.replaceTypeWithReal(g, realTypes, visited)) ?? realTypes;
             return replacedTypes && replacedTypes.length > 0 ? new ClassType(type.getClassSignature(), replacedTypes) : type;
