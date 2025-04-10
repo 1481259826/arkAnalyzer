@@ -33,7 +33,6 @@ import {
     BigIntType,
     BooleanType,
     ClassType,
-    EnumValueType,
     FunctionType,
     GenericType,
     IntersectionType,
@@ -51,7 +50,7 @@ import {
 } from '../base/Type';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkExport } from '../model/ArkExport';
-import { ArkClass, ClassCategory } from '../model/ArkClass';
+import { ArkClass } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
@@ -690,16 +689,7 @@ export class TypeInference {
         const property = ModelUtils.findPropertyInClass(fieldName, arkClass);
         let propertyType: Type | null = null;
         if (property instanceof ArkField) {
-            if (arkClass.getCategory() === ClassCategory.ENUM) {
-                let constant;
-                const lastStmt = property.getInitializer().at(-1);
-                if (lastStmt instanceof ArkAssignStmt && lastStmt.getRightOp() instanceof Constant) {
-                    constant = lastStmt.getRightOp() as Constant;
-                }
-                propertyType = new EnumValueType(property.getSignature(), constant);
-            } else {
-                propertyType = property.getType();
-            }
+            propertyType = property.getType();
         } else if (property) {
             propertyType = this.parseArkExport2Type(property);
         }

@@ -43,7 +43,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkClass } from '../model/ArkClass';
 import { findArkExport, ModelUtils } from './ModelUtils';
-import { ArkField, FieldCategory } from '../model/ArkField';
+import { ArkField } from '../model/ArkField';
 import { CALL_BACK } from './EtsConst';
 import {
     AliasClassSignature,
@@ -608,7 +608,7 @@ export class IRInference {
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
             const property = propertyAndType?.[0];
-            if (property instanceof ArkField && property.getCategory() !== FieldCategory.ENUM_MEMBER) {
+            if (property instanceof ArkField) {
                 return property.getSignature();
             }
             staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
