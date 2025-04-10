@@ -226,16 +226,18 @@ export class PagBuilder {
     private buildInvokeExprInAssignStmt(stmt: ArkAssignStmt, fpag: FuncPag): void {
         let ivkExpr = stmt.getInvokeExpr();
         if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            let cs = this.cg.getCallSiteByStmt(stmt);
-            if (cs) {
+            let callSites = this.cg.getCallSiteByStmt(stmt);
+            if (callSites.length !== 0) {
                 // direct call is already existing in CG
                 // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
-                fpag.addNormalCallSite(cs);
-                if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
-                    .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-                    fpag.addUnknownCallSite(cs);
-                    return;
-                }
+                callSites.forEach((cs) => {
+                    fpag.addNormalCallSite(cs);
+                    if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
+                        .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+                        fpag.addUnknownCallSite(cs);
+                        return;
+                    }
+                });
             } else {
                 throw new Error('Can not find static callsite');
             }
@@ -250,16 +252,18 @@ export class PagBuilder {
     private buildInvokeExprInInvokeStmt(stmt: ArkInvokeStmt, fpag: FuncPag): void {
         // TODO: discuss if we need a invokeStmt
 
-        let cs = this.cg.getCallSiteByStmt(stmt);
-        if (cs) {
+        let callSites = this.cg.getCallSiteByStmt(stmt);
+        if (callSites.length !== 0) {
             // direct call or constructor call is already existing in CG
             // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
             // TODO: instance invoke(ptr invoke)
-            if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
-                fpag.addUnknownCallSite(cs);
-            } else {
-                fpag.addNormalCallSite(cs);
-            }
+            callSites.forEach((cs) => {
+                if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
+                    fpag.addUnknownCallSite(cs);
+                } else {
+                    fpag.addNormalCallSite(cs);
+                }
+            })
 
             return;
         }

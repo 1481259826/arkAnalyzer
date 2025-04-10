@@ -161,7 +161,7 @@ export class CallGraph extends BaseExplicitGraph {
     private scene: Scene;
     private idToCallSiteMap: Map<CallSiteID, CallSite> = new Map();
     private callSiteToIdMap: Map<CallSite, CallSiteID> = new Map();
-    private stmtToCallSitemap: Map<Stmt, CallSite> = new Map();
+    private stmtToCallSitemap: Map<Stmt, CallSite[]> = new Map();
     private stmtToDynCallSitemap: Map<Stmt, DynCallSite> = new Map();
     private methodToCGNodeMap: Map<string, NodeID> = new Map();
     private callPairToEdgeMap: Map<string, CallGraphEdge> = new Map();
@@ -310,14 +310,16 @@ export class CallGraph extends BaseExplicitGraph {
 
     public addStmtToCallSiteMap(stmt: Stmt, cs: CallSite): boolean {
         if (this.stmtToCallSitemap.has(stmt)) {
+            let callSites = this.stmtToCallSitemap.get(stmt) ?? [];
+            this.stmtToCallSitemap.set(stmt, [...callSites, cs])
             return false;
         }
-        this.stmtToCallSitemap.set(stmt, cs);
+        this.stmtToCallSitemap.set(stmt, [cs]);
         return true;
     }
 
-    public getCallSiteByStmt(stmt: Stmt): CallSite | undefined {
-        return this.stmtToCallSitemap.get(stmt);
+    public getCallSiteByStmt(stmt: Stmt): CallSite[] {
+        return this.stmtToCallSitemap.get(stmt) ?? [];
     }
 
     public addMethodToCallSiteMap(funcID: FuncID, cs: CallSite): void {
