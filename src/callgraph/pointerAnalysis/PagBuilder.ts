@@ -224,19 +224,14 @@ export class PagBuilder {
     }
 
     private buildInvokeExprInAssignStmt(stmt: ArkAssignStmt, fpag: FuncPag): void {
-        let ivkExpr = stmt.getInvokeExpr();
+        let ivkExpr = stmt.getInvokeExpr()!;
         if (ivkExpr instanceof ArkStaticInvokeExpr) {
             let callSites = this.cg.getCallSiteByStmt(stmt);
             if (callSites.length !== 0) {
                 // direct call is already existing in CG
                 // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
                 callSites.forEach((cs) => {
-                    fpag.addNormalCallSite(cs);
-                    if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
-                        .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-                        fpag.addUnknownCallSite(cs);
-                        return;
-                    }
+                    this.addFuncPagCallSite(fpag, cs, ivkExpr);
                 });
             } else {
                 throw new Error('Can not find static callsite');
@@ -245,6 +240,17 @@ export class PagBuilder {
             let ptcs = this.cg.getDynCallsiteByStmt(stmt);
             if (ptcs) {
                 this.addToDynamicCallSite(fpag, ptcs);
+            }
+        }
+    }
+
+    private addFuncPagCallSite(fpag: FuncPag, cs: CallSite, ivkExpr: AbstractInvokeExpr): void {
+        if (ivkExpr instanceof ArkStaticInvokeExpr) {
+            if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
+                .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
+                fpag.addUnknownCallSite(cs);
+            } else {
+                fpag.addNormalCallSite(cs);
             }
         }
     }
@@ -263,7 +269,7 @@ export class PagBuilder {
                 } else {
                     fpag.addNormalCallSite(cs);
                 }
-            })
+            });
 
             return;
         }
