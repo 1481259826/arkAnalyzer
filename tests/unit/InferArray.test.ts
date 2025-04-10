@@ -229,7 +229,8 @@ describe("Infer Array Test", () => {
             ?.getCfg()?.getStmts();
         assert.isDefined(stmts);
         if (stmts) {
-            assert.equal(stmts[2].toString(), 'if d instanceof @inferType/demo.ts: Test != false');
+            assert.equal(stmts[2].toString(), '%0 = d instanceof @inferType/demo.ts: Test');
+            assert.equal(stmts[3].toString(), 'if %0 != false');
         }
     })
 })

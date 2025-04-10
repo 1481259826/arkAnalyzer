@@ -35,7 +35,7 @@ export class DVFGBuilder {
     }
 
     public build() {
-        this.scene.getMethods().map(m => this.buildForSingleMethod(m));
+        this.scene.getMethods().forEach(m => { if (m.getCfg()) { this.buildForSingleMethod(m) } });
     }
 
     public buildForSingleMethod(m: ArkMethod) {
