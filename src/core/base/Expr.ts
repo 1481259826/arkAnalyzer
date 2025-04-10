@@ -876,11 +876,12 @@ export class ArkCastExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass())
-            ?? this.op.getType();
-        if (!TypeInference.isUnclearType(type)) {
-            this.type = type;
-            IRInference.inferRightWithSdkType(type, this.op.getType(), arkMethod.getDeclaringArkClass());
+        if (TypeInference.isUnclearType(this.getType())) {
+            const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass()) ?? this.op.getType();
+            if (type !== undefined && !TypeInference.isUnclearType(type)) {
+                this.type = type;
+                IRInference.inferRightWithSdkType(type, this.op.getType(), arkMethod.getDeclaringArkClass());
+            }
         }
         return this;
     }
