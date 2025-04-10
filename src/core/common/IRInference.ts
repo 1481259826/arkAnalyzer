@@ -53,7 +53,7 @@ import {
     MethodSignature,
     MethodSubSignature
 } from '../model/ArkSignature';
-import { CONSTRUCTOR_NAME, FUNCTION, SUPER_NAME, IMPORT, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, FUNCTION, IMPORT, SUPER_NAME, THIS_NAME } from './TSConst';
 import { Builtin } from './Builtin';
 import { ArkBody } from '../model/ArkBody';
 import { ArkAssignStmt, ArkInvokeStmt } from '../base/Stmt';
@@ -140,6 +140,7 @@ export class IRInference {
             }
             return expr;
         }
+        expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
         if (methodName === SUPER_NAME) {
             const superClass = arkClass.getSuperClass();
             if (superClass !== null) {
@@ -205,7 +206,7 @@ export class IRInference {
     public static inferInstanceInvokeExpr(expr: ArkInstanceInvokeExpr, arkMethod: ArkMethod): AbstractInvokeExpr {
         const arkClass = arkMethod.getDeclaringArkClass();
         TypeInference.inferRealGenericTypes(expr.getRealGenericTypes(), arkClass);
-        this.inferLocal(expr.getBase(), arkMethod);
+        this.inferBase(expr, arkMethod);
 
         const baseType: Type = TypeInference.replaceAliasType(expr.getBase().getType());
         let methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
@@ -221,7 +222,7 @@ export class IRInference {
             this.processForEach(expr.getArg(0), baseType, scene);
             return expr;
         }
-
+        expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
         let result = this.inferInvokeExpr(expr, baseType, methodName, scene) ??
             this.processExtendFunc(expr, arkMethod, methodName);
         if (result) {
@@ -255,13 +256,13 @@ export class IRInference {
     }
 
     public static inferFieldRef(ref: ArkInstanceFieldRef, arkMethod: ArkMethod): AbstractRef {
-        this.inferLocal(ref.getBase(), arkMethod);
+        this.inferBase(ref, arkMethod);
         const baseType: Type = TypeInference.replaceAliasType(ref.getBase().getType());
         if (baseType instanceof ArrayType && ref.getFieldName() !== 'length') {
             return new ArkArrayRef(ref.getBase(), ValueUtil.createConst(ref.getFieldName()));
         }
-        const arkClass = arkMethod.getDeclaringArkClass();
-        let newFieldSignature = this.generateNewFieldSignature(ref, arkClass, baseType);
+
+        let newFieldSignature = this.generateNewFieldSignature(ref, arkMethod.getDeclaringArkClass(), baseType);
         if (newFieldSignature) {
             if (newFieldSignature.isStatic()) {
                 return new ArkStaticFieldRef(newFieldSignature);
@@ -271,6 +272,43 @@ export class IRInference {
         return ref;
     }
 
+    private static inferBase(instance: ArkInstanceFieldRef | ArkInstanceInvokeExpr, arkMethod: ArkMethod): void {
+        const base = instance.getBase();
+        if (base.getName() === THIS_NAME) {
+            let newBase = this.inferThisLocal(arkMethod);
+            if (newBase) {
+                instance.setBase(newBase);
+            }
+        } else {
+            this.inferLocal(instance.getBase(), arkMethod);
+        }
+    }
+
+    public static inferThisLocal(arkMethod: ArkMethod): Local | null {
+        const arkClass = arkMethod.getDeclaringArkClass();
+        if (!arkClass.isAnonymousClass()) {
+            return null;
+        }
+
+        const value = arkMethod.getBody()?.getUsedGlobals()?.get(THIS_NAME);
+        if (value instanceof Local) {
+            return value;
+        } else {
+            const thisType = TypeInference.inferBaseType(arkClass.getSignature().getDeclaringClassName(), arkClass);
+            if (thisType instanceof ClassType) {
+                const newBase = new Local(THIS_NAME, thisType);
+                let usedGlobals = arkMethod.getBody()?.getUsedGlobals();
+                if (!usedGlobals) {
+                    usedGlobals = new Map();
+                    arkMethod.getBody()?.setUsedGlobals(usedGlobals);
+                }
+                usedGlobals.set(THIS_NAME, newBase);
+                return newBase;
+            }
+        }
+        return null;
+    }
+
     private static inferArgs(expr: AbstractInvokeExpr, arkMethod: ArkMethod): void {
         const scene = arkMethod.getDeclaringArkFile().getScene();
         const parameters = expr.getMethodSignature().getMethodSubSignature().getParameters();
@@ -278,7 +316,6 @@ export class IRInference {
         const len = expr.getArgs().length;
         for (let index = 0; index < len; index++) {
             const arg = expr.getArg(index);
-            TypeInference.inferValueType(arg, arkMethod);
             if (index >= parameters.length) {
                 break;
             }
@@ -524,17 +561,6 @@ export class IRInference {
 
     public static inferLocal(base: Local, arkMethod: ArkMethod): void {
         const arkClass = arkMethod.getDeclaringArkClass();
-        if (base.getName() === THIS_NAME) {
-            if (arkClass.isAnonymousClass()) {
-                const thisType = TypeInference.inferBaseType(arkClass.getSignature().getDeclaringClassName(), arkClass);
-                if (thisType instanceof ClassType) {
-                    base.setType(thisType);
-                }
-            } else {
-                base.setType(new ClassType(arkClass.getSignature(), arkClass.getGenericsTypes()));
-            }
-            return;
-        }
         let baseType: Type | null | undefined = base.getType();
         if (baseType instanceof UnclearReferenceType) {
             baseType = TypeInference.inferUnclearRefName(baseType.getName(), arkClass);
@@ -567,7 +593,12 @@ export class IRInference {
         const fieldName = ref.getFieldName().replace(/[\"|\']/g, '');
         const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
         let propertyType = propertyAndType?.[1];
-        if (propertyType && TypeInference.isUnclearType(propertyType)) {
+        if (!propertyType) {
+            const newType = TypeInference.inferUnclearRefName(fieldName, arkClass);
+            if (newType) {
+                propertyType = newType;
+            }
+        } else if (TypeInference.isUnclearType(propertyType)) {
             const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
             if (newType) {
                 propertyType = newType;
@@ -612,17 +643,26 @@ export class IRInference {
             const property = ModelUtils.findPropertyInClass(anonField.getName(), declaredClass);
             if (property instanceof ArkField) {
                 this.assignAnonField(property, anonField, scene, set);
+            } else if (property instanceof ArkMethod) {
+                const type = anonField.getType();
+                if (type instanceof FunctionType) {
+                    this.assignAnonMethod(scene.getMethod(type.getMethodSignature()), property);
+                }
+                anonField.setSignature(new FieldSignature(anonField.getName(),
+                    property.getDeclaringArkClass().getSignature(), new FunctionType(property.getSignature())));
             }
         }
         for (const anonMethod of anon.getMethods()) {
-            const methodSignature = declaredClass.getMethodWithName(anonMethod.getName())
-                ?.matchMethodSignature(anonMethod.getSubSignature().getParameters());
-            if (methodSignature) {
-                anonMethod.setImplementationSignature(methodSignature);
-            }
+            this.assignAnonMethod(anonMethod, declaredClass.getMethodWithName(anonMethod.getName()));
         }
     }
 
+
+    private static assignAnonMethod(anonMethod: ArkMethod | null, declaredMethod: ArkMethod | null): void {
+        if (declaredMethod && anonMethod) {
+            anonMethod.setImplementationSignature(declaredMethod.matchMethodSignature(anonMethod.getSubSignature().getParameters()));
+        }
+    }
 
     private static assignAnonField(property: ArkField, anonField: ArkField, scene: Scene, set: Set<string>): void {
         function deepInfer(anonType: Type, declaredSignature: ClassSignature): void {

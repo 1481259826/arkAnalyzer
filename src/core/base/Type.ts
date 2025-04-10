@@ -17,7 +17,8 @@ import { AliasTypeSignature, ClassSignature, MethodSignature, NamespaceSignature
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
-    ANY_KEYWORD, BIGINT_KEYWORD,
+    ANY_KEYWORD,
+    BIGINT_KEYWORD,
     BOOLEAN_KEYWORD,
     NEVER_KEYWORD,
     NULL_KEYWORD,

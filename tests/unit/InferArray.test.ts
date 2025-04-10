@@ -275,4 +275,5 @@ describe("function Test", () => {
             ?.getCfg()?.getStmts().find(s => s instanceof ArkInvokeStmt)?.toString();
         assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(mode, %AM4$%AM3$demoCallBack)');
     })
+
 })

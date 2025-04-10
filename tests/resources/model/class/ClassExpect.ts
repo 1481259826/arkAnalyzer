@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -326,10 +326,10 @@ export const ObjClass = `object %AC2$%dflt.%dflt {
   %instInit(): void {
     label0:
       this = this: @class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt
-      @class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt.a = a
+      this.<@class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt.a> = a
       %0 = new @class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit
       instanceinvoke %0.<@class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit.constructor()>()
-      @class/ClassWithOtherCategory.ts: %dflt.[static]b = %0
+      this.<@class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt.b> = %0
       return
   }
 }
@@ -348,7 +348,7 @@ export const SubObjClass = `object %AC3$%AC2$%dflt.%dflt.%instInit {
   %instInit(): void {
     label0:
       this = this: @class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit
-      @class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit.value = b
+      this.<@class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit.value> = b
       return
   }
 }

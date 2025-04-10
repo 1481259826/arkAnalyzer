@@ -26,7 +26,8 @@ import {
     ClassWithSuperConstructor,
     EnumClass,
     InterfaceClass,
-    ObjClass, SubObjClass,
+    ObjClass,
+    SubObjClass,
     SubTypeLiteralClass,
     TypeLiteralClass,
 } from '../../../resources/model/class/ClassExpect';
@@ -202,7 +203,7 @@ describe('ArkClass with Other Category Test', () => {
         assert.equal(subIr, SubTypeLiteralClass);
     });
 
-    // TODO: Local this in object class is transferred to be default class incorrectly here, correct this UT after that bug fixed
+
     it('object class', async () => {
         const objectClassLocal = arkFile?.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get('testObj');
         assert.isDefined(objectClassLocal);
