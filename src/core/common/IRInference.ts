@@ -43,7 +43,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Scene } from '../../Scene';
 import { ArkClass } from '../model/ArkClass';
 import { findArkExport, ModelUtils } from './ModelUtils';
-import { ArkField } from '../model/ArkField';
+import { ArkField, FieldCategory } from '../model/ArkField';
 import { CALL_BACK } from './EtsConst';
 import {
     AliasClassSignature,
@@ -129,6 +129,7 @@ export class IRInference {
     public static inferStaticInvokeExpr(expr: ArkStaticInvokeExpr, arkMethod: ArkMethod): AbstractInvokeExpr {
         const arkClass = arkMethod.getDeclaringArkClass();
         const methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
+        expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
         if (methodName === IMPORT) {
             const arg = expr.getArg(0);
             let type;
@@ -139,9 +140,7 @@ export class IRInference {
                 expr.getMethodSignature().getMethodSubSignature().setReturnType(type);
             }
             return expr;
-        }
-        expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
-        if (methodName === SUPER_NAME) {
+        } else if (methodName === SUPER_NAME) {
             const superClass = arkClass.getSuperClass();
             if (superClass !== null) {
                 const newMethodSignature = new MethodSignature(superClass.getSignature(), expr.getMethodSignature().getMethodSubSignature());
@@ -608,11 +607,11 @@ export class IRInference {
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
             const property = propertyAndType?.[0];
-            if (property instanceof ArkField) {
+            if (property instanceof ArkField && property.getCategory() !== FieldCategory.ENUM_MEMBER) {
                 return property.getSignature();
             }
             staticFlag = baseType.getClassSignature().getClassName() === DEFAULT_ARK_CLASS_NAME ||
-                (property instanceof ArkMethod && property.isStatic());
+                ((property instanceof ArkMethod || property instanceof ArkMethod) && property.isStatic());
             signature = property instanceof ArkMethod ? property.getSignature().getDeclaringClassSignature() : baseType.getClassSignature();
         } else if (baseType instanceof AnnotationNamespaceType) {
             staticFlag = true;

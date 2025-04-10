@@ -15,7 +15,7 @@
 
 import { ArkParameterRef, ArkThisRef } from '../base/Ref';
 import { ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
-import { ClassType, FunctionType, GenericType, LiteralType, NumberType, Type, UnionType } from '../base/Type';
+import { ClassType, EnumValueType, FunctionType, GenericType, LiteralType, Type, UnionType } from '../base/Type';
 import { Value } from '../base/Value';
 import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
@@ -649,9 +649,14 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         } else if (paramType instanceof LiteralType && arg instanceof Constant) {
             return arg.getValue().replace(/[\"|\']/g, '') === paramType.getLiteralName()
                 .toString().replace(/[\"|\']/g, '');
-        } else if (paramType instanceof NumberType && argType instanceof ClassType && ClassCategory.ENUM ===
-            scene.getClass(argType.getClassSignature())?.getCategory()) {
-            return true;
+        } else if (paramType instanceof ClassType && argType instanceof EnumValueType) {
+            return paramType.getClassSignature() === argType.getFieldSignature().getDeclaringSignature();
+        } else if (paramType instanceof EnumValueType) {
+            if (argType instanceof EnumValueType) {
+                return paramType.getFieldSignature() === argType.getFieldSignature();
+            } else if (argType.constructor === paramType.getConstant()?.getType().constructor && arg instanceof Constant) {
+                return paramType.getConstant()?.getValue() === arg.getValue();
+            }
         }
         return argType.constructor === paramType.constructor;
     }
