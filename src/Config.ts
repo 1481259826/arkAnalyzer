@@ -18,6 +18,7 @@ import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { getAllFiles } from './utils/getAllFiles';
 import { Language } from './core/model/ArkFile';
+import { getArkAnalyzerModulePath } from './utils/pathTransfer';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Config');
 
@@ -242,12 +243,19 @@ export class SceneConfig {
 
     private loadDefaultConfig(options?: SceneOptions): void {
         let configFile = DEFAULT_CONFIG_FILE;
+        const modulePath = getArkAnalyzerModulePath('arkanalyzer');
+        if (modulePath !== null) {
+            configFile = path.join(modulePath, 'config', CONFIG_FILENAME);
+        }
         if (!fs.existsSync(configFile)) {
             configFile = path.join(__dirname, 'config', CONFIG_FILENAME);
         }
+        logger.info(`try to parse config file ${configFile}`);
         try {
             this.options = { ...this.options, ...JSON.parse(fs.readFileSync(configFile, 'utf-8')) };
-        } catch (error) { }
+        } catch (error) {
+            logger.error(`Failed to parse config file with error: ${error}`);
+        }
         if (options) {
             this.options = { ...this.options, ...options };
         }
