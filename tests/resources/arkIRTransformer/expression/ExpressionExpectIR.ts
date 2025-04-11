@@ -577,8 +577,12 @@ export const Operator_Expect_IR = {
             operandOriginalPositions: [[31, 1, 31, 9], [31, 1, 31, 9], [31, 7, 31, 9]],
         },
         {
-            text: 'isCat = cat instanceof Cat',
-            operandOriginalPositions: [[34, 5, 34, 10], [34, 13, 34, 31], [34, 13, 34, 16]],
+            text: '%6 = cat instanceof Cat',
+            operandOriginalPositions: [[34, 13, 34, 31], [34, 13, 34, 31], [34, 13, 34, 16]],
+        },
+        {
+            text: 'isCat = %6',
+            operandOriginalPositions: [[34, 5, 34, 10], [34, 13, 34, 31]],
         },
         {
             text: 'foo1 = <Foo>bar',

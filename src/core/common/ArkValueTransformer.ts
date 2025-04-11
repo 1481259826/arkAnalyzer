@@ -1299,7 +1299,13 @@ export class ArkValueTransformer {
             const instanceOfExpr = new ArkInstanceOfExpr(opValue1,
                 new UnclearReferenceType(binaryExpression.right.getText(this.sourceFile)));
             const instanceOfExprPositions = [binaryExpressionPosition, ...opPositions1];
-            return { value: instanceOfExpr, valueOriginalPositions: instanceOfExprPositions, stmts: stmts };
+            const {
+                value: instanceofRes,
+                valueOriginalPositions: instanceofPos,
+                stmts: instanceofStmt,
+            } = this.arkIRTransformer.generateAssignStmtForValue(instanceOfExpr, instanceOfExprPositions);
+            instanceofStmt.forEach(stmt => stmts.push(stmt));
+            return { value: instanceofRes, valueOriginalPositions: instanceofPos, stmts: stmts };
         }
 
         const {

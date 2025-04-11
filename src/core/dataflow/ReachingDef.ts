@@ -116,6 +116,9 @@ class ReachingDefFlowGraph extends BaseImplicitGraph<RDNode> implements FlowGrap
             for (let i = 0; i < stmts.length - 1; i++) {
                 let c = this.nodeToIdMap!.get(stmts[i])!;
                 let n = this.nodeToIdMap!.get(stmts[i + 1])!;
+                if (c === undefined || n === undefined) {
+                    continue;
+                }
                 this.succMap.set(c, [n]);
                 this.predMap.set(n, [c]);
             }
@@ -132,6 +135,9 @@ class ReachingDefFlowGraph extends BaseImplicitGraph<RDNode> implements FlowGrap
                 }
                 let t = this.nodeToIdMap?.get(terminate!)!;
                 let h = this.nodeToIdMap?.get(head)!;
+                if (t === undefined || h === undefined) {
+                    return;
+                }
                 // Terminate's succ
                 let succ = this.succMap.get(t) ?? [];
                 succ.push(h);
