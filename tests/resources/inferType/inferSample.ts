@@ -65,3 +65,7 @@ function testEnumValue(): void {
     sensor.off(sensor.SensorId.GRAVITY);
     sensor.off(5);
 }
+
+function returnWithAny(): any[] {
+    return ['greet'];
+}

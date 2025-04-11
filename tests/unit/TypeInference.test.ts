@@ -98,6 +98,17 @@ describe('Infer Method Return Type', () => {
         assert.isTrue(signature?.getType() instanceof ClassType);
         expect(signature?.getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
     });
+
+    it('method return with any type infer case', () => {
+        const method = scene.getFiles().find(file => file.getName() === 'inferSample.ts')?.getDefaultClass().getMethodWithName('returnWithAny');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+
+        TypeInference.inferTypeInMethod(method!);
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), 'any[]');
+    });
 });
 
 describe('IR Changes with Type Inference Test', () => {

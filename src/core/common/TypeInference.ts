@@ -399,7 +399,7 @@ export class TypeInference {
             return !!type.getTypes().find(t => this.hasUnclearReferenceType(t));
         } else if (type instanceof ArrayType) {
             const baseType = type.getBaseType();
-            return this.hasUnclearReferenceType(baseType) || baseType instanceof AnyType || baseType instanceof GenericType;
+            return this.hasUnclearReferenceType(baseType) || baseType instanceof GenericType;
         } else if (type instanceof AliasType) {
             return this.isUnclearType(type.getOriginalType());
         } else if (type instanceof KeyofTypeExpr) {
