@@ -224,18 +224,15 @@ export class PagBuilder {
     }
 
     private buildInvokeExprInAssignStmt(stmt: ArkAssignStmt, fpag: FuncPag): void {
-        let ivkExpr = stmt.getInvokeExpr();
+        let ivkExpr = stmt.getInvokeExpr()!;
         if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            let cs = this.cg.getCallSiteByStmt(stmt);
-            if (cs) {
+            let callSites = this.cg.getCallSiteByStmt(stmt);
+            if (callSites.length !== 0) {
                 // direct call is already existing in CG
                 // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
-                fpag.addNormalCallSite(cs);
-                if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
-                    .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-                    fpag.addUnknownCallSite(cs);
-                    return;
-                }
+                callSites.forEach((cs) => {
+                    this.addFuncPagCallSite(fpag, cs, ivkExpr);
+                });
             } else {
                 throw new Error('Can not find static callsite');
             }
@@ -247,19 +244,32 @@ export class PagBuilder {
         }
     }
 
-    private buildInvokeExprInInvokeStmt(stmt: ArkInvokeStmt, fpag: FuncPag): void {
-        // TODO: discuss if we need a invokeStmt
-
-        let cs = this.cg.getCallSiteByStmt(stmt);
-        if (cs) {
-            // direct call or constructor call is already existing in CG
-            // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
-            // TODO: instance invoke(ptr invoke)
-            if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
+    private addFuncPagCallSite(fpag: FuncPag, cs: CallSite, ivkExpr: AbstractInvokeExpr): void {
+        if (ivkExpr instanceof ArkStaticInvokeExpr) {
+            if (ivkExpr.getMethodSignature().getDeclaringClassSignature()
+                .getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
                 fpag.addUnknownCallSite(cs);
             } else {
                 fpag.addNormalCallSite(cs);
             }
+        }
+    }
+
+    private buildInvokeExprInInvokeStmt(stmt: ArkInvokeStmt, fpag: FuncPag): void {
+        // TODO: discuss if we need a invokeStmt
+
+        let callSites = this.cg.getCallSiteByStmt(stmt);
+        if (callSites.length !== 0) {
+            // direct call or constructor call is already existing in CG
+            // TODO: some ptr invoke stmt is recognized as Static invoke in tests/resources/callgraph/funPtrTest1/fnPtrTest4.ts
+            // TODO: instance invoke(ptr invoke)
+            callSites.forEach((cs) => {
+                if (this.cg.isUnknownMethod(cs.calleeFuncID)) {
+                    fpag.addUnknownCallSite(cs);
+                } else {
+                    fpag.addNormalCallSite(cs);
+                }
+            });
 
             return;
         }
