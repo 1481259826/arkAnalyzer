@@ -167,8 +167,6 @@ export class CallGraph extends BaseExplicitGraph {
     private callPairToEdgeMap: Map<string, CallGraphEdge> = new Map();
     private methodToCallSiteMap: Map<FuncID, Set<CallSite>> = new Map();
     private callSiteNum: number = 0;
-    // private directCallEdgeNum: number;
-    // private inDirectCallEdgeNum: number;
     private entries!: NodeID[];
     private cgStat: CGStat;
     private dummyMainMethodID: FuncID | undefined;
@@ -374,7 +372,6 @@ export class CallGraph extends BaseExplicitGraph {
         if (node !== undefined) {
             return (node as CallGraphNode).getMethod();
         }
-        //return undefined;
         return null;
     }
 

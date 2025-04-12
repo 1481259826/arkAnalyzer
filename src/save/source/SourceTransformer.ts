@@ -130,6 +130,46 @@ export class SourceTransformer {
         return `${this.valueToString(invokeExpr.getBase())}.${methodName}${genericCode}(${args.join(', ')})`;
     }
 
+    private transBuilderMethod(className: string, methodName: string, args: string[],
+                               invokeExpr: ArkStaticInvokeExpr, genericCode: string): string | null {
+        if (className === COMPONENT_CUSTOMVIEW) {
+            if (methodName === COMPONENT_CREATE_FUNCTION) {
+                // Anonymous @Builder method
+                if (args.length > 1) {
+                    // remove the substring '() =>' or '(x, y): type =>' at the beginning of args[1]
+                    const pattern = /^\([^)]*\)\s*:\s*\w*\s*=>\s*/;
+                    args[1] = args[1].replace(pattern, '');
+                }
+                return `${args.join(' ')}`;
+            }
+            if (methodName === COMPONENT_POP_FUNCTION) {
+                return '';
+            }
+        }
+
+        if (PrinterUtils.isComponentCreate(invokeExpr)) {
+            if (className === COMPONENT_IF) {
+                return `if (${args.join(', ')})`;
+            }
+            return `${className}${genericCode}(${args.join(', ')})`;
+        }
+
+        if (PrinterUtils.isComponentIfBranchInvoke(invokeExpr)) {
+            let arg0 = invokeExpr.getArg(0) as Constant;
+            if (arg0.getValue() === '0') {
+                return ``;
+            } else {
+                return '} else {';
+            }
+        }
+
+        if (PrinterUtils.isComponentPop(invokeExpr)) {
+            return '}';
+        }
+
+        return null;
+    }
+
     public staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr): string {
         let methodSignature = invokeExpr.getMethodSignature();
         let method = this.context.getMethod(methodSignature);
@@ -148,39 +188,9 @@ export class SourceTransformer {
         let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
 
         if (this.context.isInBuilderMethod()) {
-            if (className === COMPONENT_CUSTOMVIEW) {
-                if (methodName === COMPONENT_CREATE_FUNCTION) {
-                    // Anonymous @Builder method
-                    if (args.length > 1) {
-                        // remove the substring '() =>' or '(x, y): type =>' at the beginning of args[1]
-                        const pattern = /^\([^)]*\)\s*:\s*\w*\s*=>\s*/;
-                        args[1] = args[1].replace(pattern, '');
-                    }
-                    return `${args.join(' ')}`;
-                }
-                if (methodName === COMPONENT_POP_FUNCTION) {
-                    return '';
-                }
-            }
-
-            if (PrinterUtils.isComponentCreate(invokeExpr)) {
-                if (className === COMPONENT_IF) {
-                    return `if (${args.join(', ')})`;
-                }
-                return `${className}${genericCode}(${args.join(', ')})`;
-            }
-
-            if (PrinterUtils.isComponentIfBranchInvoke(invokeExpr)) {
-                let arg0 = invokeExpr.getArg(0) as Constant;
-                if (arg0.getValue() === '0') {
-                    return ``;
-                } else {
-                    return '} else {';
-                }
-            }
-
-            if (PrinterUtils.isComponentPop(invokeExpr)) {
-                return '}';
+            const res = this.transBuilderMethod(className, methodName, args, invokeExpr, genericCode);
+            if (res !== null) {
+                return res;
             }
         }
 
@@ -324,39 +334,43 @@ export class SourceTransformer {
         }
 
         if (value instanceof Local) {
-            if (PrinterUtils.isAnonymousMethod(value.getName())) {
-                let methodSignature = (value.getType() as FunctionType).getMethodSignature();
-                let anonymousMethod = this.context.getMethod(methodSignature);
-                if (anonymousMethod) {
-                    return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
-                }
-            }
-            if (PrinterUtils.isAnonymousClass(value.getName())) {
-                let clsSignature = (value.getType() as ClassType).getClassSignature();
-                let cls = this.context.getClass(clsSignature);
-                if (cls) {
-                    return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
-                }
-            }
-
-            if (
-                operator === NormalBinaryOperator.Division ||
-                operator === NormalBinaryOperator.Multiplication ||
-                operator === NormalBinaryOperator.Remainder
-            ) {
-                if (PrinterUtils.isTemp(value.getName())) {
-                    let stmt = value.getDeclaringStmt();
-                    if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
-                        return `(${this.context.transTemp2Code(value)})`;
-                    }
-                }
-            }
-
-            return this.context.transTemp2Code(value);
+            return this.localToString(value, operator);
         }
 
         logger.info(`valueToString ${value.constructor} not support.`);
         return `${value}`;
+    }
+
+    private localToString(value: Local, operator?: string): string {
+        if (PrinterUtils.isAnonymousMethod(value.getName())) {
+            let methodSignature = (value.getType() as FunctionType).getMethodSignature();
+            let anonymousMethod = this.context.getMethod(methodSignature);
+            if (anonymousMethod) {
+                return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
+            }
+        }
+        if (PrinterUtils.isAnonymousClass(value.getName())) {
+            let clsSignature = (value.getType() as ClassType).getClassSignature();
+            let cls = this.context.getClass(clsSignature);
+            if (cls) {
+                return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
+            }
+        }
+
+        if (
+            operator === NormalBinaryOperator.Division ||
+            operator === NormalBinaryOperator.Multiplication ||
+            operator === NormalBinaryOperator.Remainder
+        ) {
+            if (PrinterUtils.isTemp(value.getName())) {
+                let stmt = value.getDeclaringStmt();
+                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
+                    return `(${this.context.transTemp2Code(value)})`;
+                }
+            }
+        }
+
+        return this.context.transTemp2Code(value);
     }
 
     public literalObjectToString(type: ClassType): string {

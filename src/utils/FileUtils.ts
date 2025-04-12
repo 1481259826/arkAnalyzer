@@ -50,7 +50,7 @@ export class FileUtils {
         return /^(\/|\\|[A-Z]:\\)/.test(path);
     }
 
-    public static generateModuleMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>) {
+    public static generateModuleMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>): Map<string, ModulePath> {
         const moduleMap: Map<string, ModulePath> = new Map();
         ohPkgContentMap.forEach((content, filePath) => {
             const moduleName = content.name as string;
@@ -61,19 +61,21 @@ export class FileUtils {
             }
         })
         ohPkgContentMap.forEach((content, filePath) => {
-            if (content.dependencies) {
-                Object.entries(content.dependencies).forEach(([name, value]) => {
-                    if (!moduleMap.get(name)) {
-                        const modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
-                        const key = path.resolve(modulePath, OH_PACKAGE_JSON5);
-                        const target = ohPkgContentMap.get(key);
-                        if (target) {
-                            moduleMap.set(name, new ModulePath(modulePath, target.main ?
-                                path.resolve(modulePath, target.main as string) : ''));
-                        }
-                    }
-                })
+            if (!content.dependencies) {
+                return;
             }
+            Object.entries(content.dependencies).forEach(([name, value]) => {
+                if (moduleMap.get(name)) {
+                    return;
+                }
+                const modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
+                const key = path.resolve(modulePath, OH_PACKAGE_JSON5);
+                const target = ohPkgContentMap.get(key);
+                if (target) {
+                    moduleMap.set(name, new ModulePath(modulePath, target.main ?
+                        path.resolve(modulePath, target.main as string) : ''));
+                }
+            });
         })
         return moduleMap;
     }

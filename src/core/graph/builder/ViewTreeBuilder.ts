@@ -863,6 +863,42 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
     }
 
+    private parseFieldInObjectLiteral(field: ArkField, cls: ArkClass, transferMap: Map<ArkField, ArkField | ArkMethod>): void {
+        let dstField = cls.getFieldWithName(field.getName());
+        if (dstField?.getStateDecorators().length === 0 && !dstField?.hasBuilderParamDecorator()) {
+            return;
+        }
+
+        let stmts = field.getInitializer();
+        if (stmts.length === 0) {
+            return;
+        }
+
+        let assignStmt = stmts[stmts.length - 1];
+        if (!(assignStmt instanceof ArkAssignStmt)) {
+            return;
+        }
+
+        let value = assignStmt.getRightOp();
+        if (value instanceof Local) {
+            value = backtraceLocalInitValue(value);
+        }
+        if (dstField?.hasBuilderParamDecorator()) {
+            let method = this.findBuilderMethod(value);
+            if (method) {
+                transferMap.set(dstField, method);
+            }
+        } else {
+            let srcField: ArkField | undefined | null;
+            if (value instanceof ArkInstanceFieldRef) {
+                srcField = this.getDeclaringArkClass().getFieldWithName(value.getFieldName());
+            }
+            if (srcField && dstField) {
+                transferMap.set(dstField, srcField);
+            }
+        }
+    }
+
     private parseObjectLiteralExpr(
         cls: ArkClass,
         object: Value | undefined,
@@ -873,39 +909,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             let anonymousSig = (object.getType() as ClassType).getClassSignature();
             let anonymous = this.findClass(anonymousSig);
             anonymous?.getFields().forEach((field) => {
-                let dstField = cls.getFieldWithName(field.getName());
-                if (dstField?.getStateDecorators().length === 0 && !dstField?.hasBuilderParamDecorator()) {
-                    return;
-                }
-
-                let stmts = field.getInitializer();
-                if (stmts.length === 0) {
-                    return;
-                }
-
-                let assignStmt = stmts[stmts.length - 1];
-                if (!(assignStmt instanceof ArkAssignStmt)) {
-                    return;
-                }
-
-                let value = assignStmt.getRightOp();
-                if (value instanceof Local) {
-                    value = backtraceLocalInitValue(value);
-                }
-                if (dstField?.hasBuilderParamDecorator()) {
-                    let method = this.findBuilderMethod(value);
-                    if (method) {
-                        transferMap.set(dstField, method);
-                    }
-                } else {
-                    let srcField: ArkField | undefined | null;
-                    if (value instanceof ArkInstanceFieldRef) {
-                        srcField = this.getDeclaringArkClass().getFieldWithName(value.getFieldName());
-                    }
-                    if (srcField && dstField) {
-                        transferMap.set(dstField, srcField);
-                    }
-                }
+                this.parseFieldInObjectLiteral(field, cls, transferMap);
             });
         }
         // If the builder exists, there will be a unique BuilderParam

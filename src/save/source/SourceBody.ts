@@ -259,12 +259,13 @@ export class SourceBody implements StmtPrinterContext {
         for (let i = stmts.length - 1; i > 0; i--) {
             if (stmts[i] instanceof ArkInvokeStmt && (stmts[i].getInvokeExpr() as ArkInstanceInvokeExpr)) {
                 let instanceInvokeExpr = stmts[i].getInvokeExpr() as ArkInstanceInvokeExpr;
-                if ('constructor' === instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName()) {
-                    let localName = instanceInvokeExpr.getBase().getName();
-                    let newExprIdx = findNewExpr(i, localName);
-                    if (newExprIdx >= 0 && newExprIdx < i - 1) {
-                        moveStmt(i, newExprIdx);
-                    }
+                if ('constructor' !== instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName()) {
+                    continue;
+                }
+                let localName = instanceInvokeExpr.getBase().getName();
+                let newExprIdx = findNewExpr(i, localName);
+                if (newExprIdx >= 0 && newExprIdx < i - 1) {
+                    moveStmt(i, newExprIdx);
                 }
             }
         }
@@ -275,10 +276,9 @@ export class SourceBody implements StmtPrinterContext {
                 if (!(stmts[j] instanceof ArkAssignStmt)) {
                     continue;
                 }
-                if ((stmts[j] as ArkAssignStmt).getLeftOp() instanceof Local) {
-                    if (((stmts[j] as ArkAssignStmt).getLeftOp() as Local).getName() === name) {
-                        return j;
-                    }
+                const leftOp = (stmts[j] as ArkAssignStmt).getLeftOp();
+                if (leftOp instanceof Local && leftOp.getName() === name) {
+                    return j;
                 }
             }
             return -1;

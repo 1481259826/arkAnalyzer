@@ -236,33 +236,33 @@ export class SourceAssignStmt extends SourceStmt {
 
         if (this.context.hasTempVisit(this.leftCode)) {
             this.setText('');
+            return;
         } else if (PrinterUtils.isTemp(this.leftCode)) {
             this.setText(`${this.rightCode};`);
-        } else {
-            if (
-                this.leftOp instanceof Local &&
-                this.context.getLocals().has(this.leftOp.getName()) &&
-                !this.isLocalTempValue(this.leftOp)
-            ) {
-                if (this.context.isLocalDefined(this.leftOp)) {
-                    this.setText(`${this.leftCode} = ${this.rightCode};`);
-                } else {
-                    let flag = this.leftOp.getConstFlag() ? 'const' : 'let';
-                    if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
-                        this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
-                    } else {
-                        if (this.leftTypeCode.length > 0) {
-                            this.setText(`${flag} ${this.leftCode}: ${this.leftTypeCode} = ${this.rightCode};`);
-                        } else {
-                            this.setText(`${flag} ${this.leftCode} = ${this.rightCode};`);
-                        }
-                    }
-
-                    this.context.defineLocal(this.leftOp);
-                }
-            } else {
+            return;
+        }
+        if (
+            this.leftOp instanceof Local &&
+            this.context.getLocals().has(this.leftOp.getName()) &&
+            !this.isLocalTempValue(this.leftOp)
+        ) {
+            if (this.context.isLocalDefined(this.leftOp)) {
                 this.setText(`${this.leftCode} = ${this.rightCode};`);
+                return;
             }
+            let flag = this.leftOp.getConstFlag() ? 'const' : 'let';
+            if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
+                this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
+            } else {
+                if (this.leftTypeCode.length > 0) {
+                    this.setText(`${flag} ${this.leftCode}: ${this.leftTypeCode} = ${this.rightCode};`);
+                } else {
+                    this.setText(`${flag} ${this.leftCode} = ${this.rightCode};`);
+                }
+            }
+            this.context.defineLocal(this.leftOp);
+        } else {
+            this.setText(`${this.leftCode} = ${this.rightCode};`);
         }
     }
 
@@ -300,22 +300,7 @@ export class SourceAssignStmt extends SourceStmt {
                     'constructor' === instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() &&
                     instanceInvokeExpr.getBase().getName() === (this.leftOp as Local).getName()
                 ) {
-                    let args: string[] = [];
-                    instanceInvokeExpr.getArgs().forEach((v) => {
-                        args.push(this.transformer.valueToString(v));
-                    });
-
-                    if (originType === CLASS_CATEGORY_COMPONENT) {
-                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
-                    } else if (originType === ClassCategory.TYPE_LITERAL || originType === ClassCategory.OBJECT) {
-                        this.rightCode = `${this.transformer.literalObjectToString(
-                            this.rightOp.getType() as ClassType
-                        )}`;
-                    } else {
-                        this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
-                            ', '
-                        )})`;
-                    }
+                    this.handleConstructorInvoke(instanceInvokeExpr, originType);
                     return;
                 }
             }
@@ -330,6 +315,25 @@ export class SourceAssignStmt extends SourceStmt {
             this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}`;
         } else {
             this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}()`;
+        }
+    }
+
+    private handleConstructorInvoke(instanceInvokeExpr: ArkInstanceInvokeExpr, originType?: number): void {
+        let args: string[] = [];
+        instanceInvokeExpr.getArgs().forEach((v) => {
+            args.push(this.transformer.valueToString(v));
+        });
+
+        if (originType === CLASS_CATEGORY_COMPONENT) {
+            this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
+        } else if (originType === ClassCategory.TYPE_LITERAL || originType === ClassCategory.OBJECT) {
+            this.rightCode = `${this.transformer.literalObjectToString(
+                this.rightOp.getType() as ClassType
+            )}`;
+        } else {
+            this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
+                ', '
+            )})`;
         }
     }
 

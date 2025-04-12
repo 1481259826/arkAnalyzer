@@ -172,19 +172,23 @@ export class AbstractFlowGraph {
             this.structTypes.set(region, rtype);
             let blocks = new Set<AbstractNode>();
             for (const s of nset) {
-                if (!this.structOf.has(s)) {
-                    this.structOf.set(s, region);
-                }
-                if (this.structBlocks.has(s as Region)) {
-                    for (const b of this.structBlocks.get(s as Region)!) {
-                        blocks.add(b);
-                    }
-                } else {
-                    blocks.add(s);
-                }
+                this.handleRegion(s, region, blocks);
             }
             this.structBlocks.set(region, blocks);
             this.loopMap.set(region.header, region);
+        }
+    }
+
+    private handleRegion(s: AbstractNode | Region, region: NaturalLoopRegion, blocks: Set<AbstractNode>): void {
+        if (!this.structOf.has(s)) {
+            this.structOf.set(s, region);
+        }
+        if (this.structBlocks.has(s as Region)) {
+            for (const b of this.structBlocks.get(s as Region)!) {
+                blocks.add(b);
+            }
+        } else {
+            blocks.add(s);
         }
     }
 
@@ -678,21 +682,22 @@ export class AbstractFlowGraph {
     private reduce(rtype: RegionType, nodeSet: Set<AbstractNode>): Region | undefined {
         let region = this.createRegion(rtype, nodeSet);
         region?.replace();
-        if (region) {
-            this.structTypes.set(region, rtype);
-            let blocks = new Set<AbstractNode>();
-            for (const s of nodeSet) {
-                this.structOf.set(s, region);
-                if (this.structBlocks.has(s as Region)) {
-                    for (const b of this.structBlocks.get(s as Region)!) {
-                        blocks.add(b);
-                    }
-                } else {
-                    blocks.add(s);
-                }
-            }
-            this.structBlocks.set(region, blocks);
+        if (region === undefined) {
+            return undefined;
         }
+        this.structTypes.set(region, rtype);
+        let blocks = new Set<AbstractNode>();
+        for (const s of nodeSet) {
+            this.structOf.set(s, region);
+            if (this.structBlocks.has(s as Region)) {
+                for (const b of this.structBlocks.get(s as Region)!) {
+                    blocks.add(b);
+                }
+            } else {
+                blocks.add(s);
+            }
+        }
+        this.structBlocks.set(region, blocks);
         return region;
     }
 

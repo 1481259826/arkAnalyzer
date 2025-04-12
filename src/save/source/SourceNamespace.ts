@@ -21,6 +21,7 @@ import { SourceMethod } from './SourceMethod';
 import { PrinterUtils } from '../base/PrinterUtils';
 import { Dump } from '../base/BasePrinter';
 import { ExportPrinter } from '../base/ExportPrinter';
+import { ArkClass } from '../../core/model/ArkClass';
 
 /**
  * @category save
@@ -35,6 +36,16 @@ export class SourceNamespace extends SourceBase {
 
     public getLine(): number {
         return this.ns.getLine();
+    }
+
+    private printDefaultClassInNamespace(items: Dump[], cls: ArkClass): void {
+        for (let method of cls.getMethods()) {
+            if (method.isDefaultArkMethod()) {
+                items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod());
+            } else if (!PrinterUtils.isAnonymousMethod(method.getName())) {
+                items.push(new SourceMethod(method, this.printer.getIndent()));
+            }
+        }
     }
 
     public dump(): string {
@@ -56,18 +67,7 @@ export class SourceNamespace extends SourceBase {
                 continue;
             }
             if (cls.isDefaultArkClass()) {
-                for (let method of cls.getMethods()) {
-                    if (method.isDefaultArkMethod()) {
-                        items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod(),
-                        );
-                    } else if (
-                        !PrinterUtils.isAnonymousMethod(method.getName())
-                    ) {
-                        items.push(
-                            new SourceMethod(method, this.printer.getIndent())
-                        );
-                    }
-                }
+                this.printDefaultClassInNamespace(items, cls);
             } else {
                 items.push(new SourceClass(cls, this.printer.getIndent()));
             }

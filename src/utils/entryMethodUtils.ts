@@ -93,14 +93,18 @@ export interface AbilityMessage {
 
 export function getCallbackMethodFromStmt(stmt: Stmt, scene: Scene): ArkMethod | null {
     const invokeExpr = stmt.getInvokeExpr();
-    if (invokeExpr && invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName() === '' && CALLBACK_METHOD_NAME.includes(invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName())) {
-        for (const arg of invokeExpr.getArgs()) {
-            const argType = arg.getType();
-            if (argType instanceof FunctionType) {
-                const cbMethod = scene.getMethod(argType.getMethodSignature());
-                if (cbMethod) {
-                    return cbMethod;
-                }
+    if (invokeExpr === undefined ||
+        invokeExpr.getMethodSignature().getDeclaringClassSignature().getClassName() !== '' ||
+        !CALLBACK_METHOD_NAME.includes(invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName())) {
+        return null;
+    }
+
+    for (const arg of invokeExpr.getArgs()) {
+        const argType = arg.getType();
+        if (argType instanceof FunctionType) {
+            const cbMethod = scene.getMethod(argType.getMethodSignature());
+            if (cbMethod) {
+                return cbMethod;
             }
         }
     }

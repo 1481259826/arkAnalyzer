@@ -113,21 +113,21 @@ export class DummyMainCreater {
         for (const method of this.entryMethods) {
             if (method.getDeclaringArkClass().isDefaultArkClass() || method.isStatic()) {
                 defaultMethods.push(method);
-            } else {
-                const declaringArkClass = method.getDeclaringArkClass();
-                let newLocal: Local | null = null;
-                for (const local of this.classLocalMap.values()) {
-                    if ((local?.getType() as ClassType).getClassSignature() === declaringArkClass.getSignature()) {
-                        newLocal = local;
-                        break;
-                    }
-                }
-                if (!newLocal) {
-                    newLocal = new Local('%' + this.tempLocalIndex, new ClassType(declaringArkClass.getSignature()));
-                    this.tempLocalIndex++;
-                }
-                this.classLocalMap.set(method, newLocal);
+                continue;
             }
+            const declaringArkClass = method.getDeclaringArkClass();
+            let newLocal: Local | null = null;
+            for (const local of this.classLocalMap.values()) {
+                if ((local?.getType() as ClassType).getClassSignature() === declaringArkClass.getSignature()) {
+                    newLocal = local;
+                    break;
+                }
+            }
+            if (!newLocal) {
+                newLocal = new Local('%' + this.tempLocalIndex, new ClassType(declaringArkClass.getSignature()));
+                this.tempLocalIndex++;
+            }
+            this.classLocalMap.set(method, newLocal);
         }
         for (const defaultMethod of defaultMethods) {
             this.classLocalMap.set(defaultMethod, null);
@@ -330,13 +330,11 @@ export class DummyMainCreater {
             if (!method.getCfg()) {
                 return;
             }
-            method.getCfg()!.getBlocks().forEach(block => {
-                block.getStmts().forEach(stmt => {
-                    const cbMethod = getCallbackMethodFromStmt(stmt, this.scene);
-                    if (cbMethod && !callbackMethods.includes(cbMethod)) {
-                        callbackMethods.push(cbMethod);
-                    }
-                });
+            method.getCfg()!.getStmts().forEach(stmt => {
+                const cbMethod = getCallbackMethodFromStmt(stmt, this.scene);
+                if (cbMethod && !callbackMethods.includes(cbMethod)) {
+                    callbackMethods.push(cbMethod);
+                }
             });
         });
         return callbackMethods;
