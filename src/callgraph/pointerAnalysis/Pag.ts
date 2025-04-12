@@ -767,34 +767,35 @@ export class Pag extends BaseExplicitGraph {
         }
         ctx2NdMap.set(cid, id);
 
-        if (value instanceof ArkInstanceFieldRef || value instanceof ArkArrayRef) {
-            let base = value.getBase();
-            //TODO: remove below once this Local is not uniq in %instInit is fix
-            if (base instanceof Local && base.getName() === 'this') {
-                stmt?.getCfg()?.getStmts().forEach(s => {
-                    if (s instanceof ArkAssignStmt &&
-                        (s.getLeftOp()) instanceof Local &&
-                        (s.getLeftOp() as Local).getName() === 'this') {
+        if (!(value instanceof ArkInstanceFieldRef || value instanceof ArkArrayRef)) {
+            return;
+        }
+
+        let base = value.getBase();
+        //TODO: remove below once this Local is not uniq in %instInit is fix
+        if (base instanceof Local && base.getName() === 'this') {
+            stmt?.getCfg() ?.getStmts() .forEach((s) => {
+                if (s instanceof ArkAssignStmt && s.getLeftOp() instanceof Local &&
+                    (s.getLeftOp() as Local).getName() === 'this') {
                         base = s.getLeftOp() as Local;
                         return;
                     }
                 });
-            }
-            let ctxMap = this.contextBaseToIdMap.get(base);
-            if (ctxMap === undefined) {
-                ctxMap = new Map();
-                ctxMap.set(cid, [pagNode.getID()]);
-            } else {
-                let nodes = ctxMap.get(cid);
-                if (nodes === undefined) {
-                    nodes = [pagNode.getID()];
-                } else {
-                    nodes.push(pagNode.getID());
-                }
-                ctxMap.set(cid, nodes);
-            }
-            this.contextBaseToIdMap.set(base, ctxMap);
         }
+        let ctxMap = this.contextBaseToIdMap.get(base);
+        if (ctxMap === undefined) {
+            ctxMap = new Map();
+            ctxMap.set(cid, [pagNode.getID()]);
+        } else {
+            let nodes = ctxMap.get(cid);
+            if (nodes === undefined) {
+                nodes = [pagNode.getID()];
+            } else {
+                nodes.push(pagNode.getID());
+            }
+            ctxMap.set(cid, nodes);
+        }
+        this.contextBaseToIdMap.set(base, ctxMap);
     }
 
     /*

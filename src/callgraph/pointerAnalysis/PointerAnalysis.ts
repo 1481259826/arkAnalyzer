@@ -293,12 +293,14 @@ export class PointerAnalysis extends AbstractAnalysis {
                 } else {
                     dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                 }
-                if (dstNode && this.pag.addPagEdge(srcNode, dstNode!, PagEdgeKind.Copy)) {
-                    this.ptaStat.numRealWrite++;
+                if (!(dstNode && this.pag.addPagEdge(srcNode, dstNode!, PagEdgeKind.Copy))) {
+                    continue;
+                }
 
-                    if (this.ptd.resetElem(srcNode.getID())) {
-                        this.worklist.push(srcNode.getID());
-                    }
+                this.ptaStat.numRealWrite++;
+
+                if (this.ptd.resetElem(srcNode.getID())) {
+                    this.worklist.push(srcNode.getID());
                 }
             }
         });
@@ -318,13 +320,15 @@ export class PointerAnalysis extends AbstractAnalysis {
                 } else {
                     srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                 }
-                if (srcNode && this.pag.addPagEdge(srcNode!, dstNode, PagEdgeKind.Copy)) {
-                    this.ptaStat.numRealLoad++;
+                if (!(srcNode && this.pag.addPagEdge(srcNode!, dstNode, PagEdgeKind.Copy))) {
+                    continue;
+                }
 
-                    // TODO: if field is used before initialzed, newSrc node has no diff pts
-                    if (this.ptd.resetElem(srcNode.getID())) {
-                        this.worklist.push(srcNode.getID());
-                    }
+                this.ptaStat.numRealLoad++;
+
+                // TODO: if field is used before initialzed, newSrc node has no diff pts
+                if (this.ptd.resetElem(srcNode.getID())) {
+                    this.worklist.push(srcNode.getID());
                 }
             }
         });
@@ -630,9 +634,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         fs.access(filePath, fs.constants.F_OK, (err) => {
             if (!err) {
                 fs.truncate(filePath, 0, (err) => {
-                    if (err) {
-                        logger.error('Error to truncate file ', err);
-                    }
+                    err && logger.error('Error to truncate file ', err);
                 });
             }
 

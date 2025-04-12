@@ -20,6 +20,7 @@ import { Value } from '../../core/base/Value';
 import { DummyStmt } from '../../core/common/ArkIRTransformer';
 import { MFPDataFlowSolver } from '../../core/dataflow/GenericDataFlow';
 import { ReachingDefProblem } from '../../core/dataflow/ReachingDef';
+import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { FieldSignature } from '../../core/model/ArkSignature';
 import { Scene } from '../../Scene';
@@ -57,6 +58,14 @@ export class DVFGBuilder {
         });
 
         solution.in.forEach((defs, reach) => {
+            let addNewNodes = (defId: NodeID, def: Stmt, reach: Stmt): void => {
+                if (defs.test(defId)) {
+                    let srcNode = this.dvfg.getOrNewDVFGNode(def);
+                    let dstNode = this.dvfg.getOrNewDVFGNode(reach);
+                    this.dvfg.addDVFGEdge(srcNode, dstNode);
+                }
+            };
+
             const reachStmt = problem.flowGraph.getNode(reach);
             this.getStmtUsedValues(reachStmt).forEach(use => {
                 let target: Value | FieldSignature = use;
@@ -65,12 +74,7 @@ export class DVFGBuilder {
                 }
                 defMap.get(target)?.forEach((defStmt) => {
                     let defId = problem.flowGraph.getNodeID(defStmt);
-                    if (defs.test(defId)) {
-                        let srcNode = this.dvfg.getOrNewDVFGNode(defStmt);
-                        let dstNode = this.dvfg.getOrNewDVFGNode(reachStmt);
-
-                        this.dvfg.addDVFGEdge(srcNode, dstNode);
-                    }
+                    addNewNodes(defId, defStmt, reachStmt);
                 });
             });
         });
