@@ -25,7 +25,7 @@ import { PtsCollectionType } from '../../../src/callgraph/pointerAnalysis/PtsDS'
 import { Local } from '../../../src/core/base/Local';
 import { Sdk } from '../../../src/Config';
 import { assert } from 'vitest';
-import { ArkAssignStmt } from '../../../src';
+import { ArkAssignStmt, ArkInstanceInvokeExpr } from '../../../src';
 
 let sdk: Sdk = {
     name: 'ohos',
@@ -145,5 +145,49 @@ describe('ExportNew2Test', () => {
         assert(incoming.getKind() === PagEdgeKind.InterProceduralCopy);
         let outgoing = outgoings[0] as PagEdge;
         assert(outgoing.getKind() === PagEdgeKind.This);
+    });
+});
+
+describe('ExportNew3Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.buildFromProjectDir('./tests/resources/pta/ExportNew3');
+    config.getSdksObj().push(sdk);
+
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
+    let cg = new CallGraph(scene);
+    let cgBuilder = new CallGraphBuilder(cg, scene);
+    cgBuilder.buildDirectCallGraphForScene();
+
+    let pag = new Pag();
+    let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
+
+    
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector);
+    let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
+    pta.setEntries(debugfunc);
+    pta.start();
+
+    it('case1', () => {
+        let srcMethod = scene.getClasses().filter(arkClass => arkClass.getName() === '%dflt')
+            .flatMap(arkClass => arkClass.getMethodWithName('%dflt'))
+            .filter(method => method !== null && method !== undefined);
+        let dstMethod_1 = scene.getClasses().filter(arkClass => arkClass.getName() === '%dflt')
+            .flatMap(arkClass => arkClass.getMethodWithName('main'))
+            .filter(method => method !== null && method !== undefined);
+        let dstMethod_2 = scene.getClasses().filter(arkClass => arkClass.getName() === 'Vector')
+            .flatMap(arkClass => arkClass.getMethodWithName('editConfig'))
+            .filter(method => method !== null && method !== undefined);
+
+        let exportValue = srcMethod[0]?.getBody()?.getLocals().get('config')!;
+        let importValue_1 = (dstMethod_1[0]?.getCfg()?.getStmts()[1].getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+        let importValue_2 = (dstMethod_2[0]?.getCfg()?.getStmts()[1].getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
+
+        let relatedNodes = pta.getRelatedNodes(exportValue);
+        assert(
+            relatedNodes.has(importValue_1) && relatedNodes.has(importValue_2)
+        );
     });
 });
