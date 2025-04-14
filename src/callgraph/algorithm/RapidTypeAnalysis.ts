@@ -78,18 +78,20 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                     return;
                 }
 
-                if (possibleCalleeMethod && !possibleCalleeMethod.isAbstract()) {
-                    if (!this.instancedClasses.has(arkClass.getSignature())) {
-                        this.addIgnoredCalls(arkClass.getSignature(), callerMethod,
-                            this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
-                            invokeStmt
-                        );
-                    } else {
-                        resolveResult.push(new CallSite(invokeStmt, undefined,
-                            this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
-                            callerMethod)
-                        );
-                    }
+                if (!(possibleCalleeMethod && !possibleCalleeMethod.isAbstract())) {
+                    return;
+                }
+
+                if (!this.instancedClasses.has(arkClass.getSignature())) {
+                    this.addIgnoredCalls(arkClass.getSignature(), callerMethod,
+                        this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
+                        invokeStmt
+                    );
+                } else {
+                    resolveResult.push(new CallSite(invokeStmt, undefined,
+                        this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
+                        callerMethod)
+                    );
                 }
             });
         }

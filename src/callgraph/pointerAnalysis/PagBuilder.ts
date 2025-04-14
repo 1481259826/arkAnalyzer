@@ -631,21 +631,21 @@ export class PagBuilder {
                 .getMethodSubSignature().getMethodName()!;
 
             let base = locals.get(calleeName);
-
-            if (base) {
-                let baseNodeIDs = this.pag.getNodesByValue(base);
-                if (!baseNodeIDs) {
-                    logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
-                    return;
+            if (!base) {
+                return;
+            }
+            let baseNodeIDs = this.pag.getNodesByValue(base);
+            if (!baseNodeIDs) {
+                logger.warn(`[build dynamic call site] can not handle call site with base ${base.toString()}`);
+                return;
+            }
+            for (let nodeID of baseNodeIDs!.values()) {
+                let node = this.pag.getNode(nodeID);
+                if (!(node instanceof PagLocalNode)) {
+                    continue;
                 }
-                for (let nodeID of baseNodeIDs!.values()) {
-                    let node = this.pag.getNode(nodeID);
-                    if (!(node instanceof PagLocalNode)) {
-                        continue;
-                    }
 
-                    node.addRelatedUnknownCallSite(unknownCallSite);
-                }
+                node.addRelatedUnknownCallSite(unknownCallSite);
             }
         })
     }
@@ -704,46 +704,47 @@ export class PagBuilder {
                 return callee;
             }
             callee.push(tempCallee!);
-        } else {
-            let calleeName = ivkExpr!.getMethodSignature().getMethodSubSignature().getMethodName();
-            // instance method invoke
-            if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
-                return callee;
-            }
-            let tempCallee;
+            return callee;
+        }
+        //else branch
+        let calleeName = ivkExpr!.getMethodSignature().getMethodSubSignature().getMethodName();
+        // instance method invoke
+        if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
+            return callee;
+        }
+        let tempCallee;
 
-            // try to get callee by MethodSignature
-            if (value instanceof ArkNewExpr) {
-                // get class signature
-                let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
-                let cls;
+        // try to get callee by MethodSignature
+        if (value instanceof ArkNewExpr) {
+            // get class signature
+            let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
+            let cls;
 
-                cls = this.scene.getClass(clsSig) as ArkClass;
+            cls = this.scene.getClass(clsSig) as ArkClass;
 
-                while (!tempCallee && cls) {
-                    tempCallee = cls.getMethodWithName(calleeName);
-                    cls = cls.getSuperClass();
-                }
-
-                if (!tempCallee) {
-                    tempCallee = this.scene.getMethod(ivkExpr!.getMethodSignature());
-                }
+            while (!tempCallee && cls) {
+                tempCallee = cls.getMethodWithName(calleeName);
+                cls = cls.getSuperClass();
             }
 
-            if (!tempCallee && cs.args) {
-                // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
-                // return empty node when {o_2} come in
-                // try to get callee by anonymous method in param
-                for (let arg of cs.args) {
-                    // TODO: anonymous method param and return value pointer pass
-                    let argType = arg.getType();
-                    if (argType instanceof FunctionType) {
-                        callee.push(this.scene.getMethod(argType.getMethodSignature())!);
-                    }
-                }
-            } else if (tempCallee) {
-                callee.push(tempCallee);
+            if (!tempCallee) {
+                tempCallee = this.scene.getMethod(ivkExpr!.getMethodSignature());
             }
+        }
+
+        if (!tempCallee && cs.args) {
+            // while pts has {o_1, o_2} and invoke expr represents a method that only {o_1} has
+            // return empty node when {o_2} come in
+            // try to get callee by anonymous method in param
+            for (let arg of cs.args) {
+                // TODO: anonymous method param and return value pointer pass
+                let argType = arg.getType();
+                if (argType instanceof FunctionType) {
+                    callee.push(this.scene.getMethod(argType.getMethodSignature())!);
+                }
+            }
+        } else if (tempCallee) {
+            callee.push(tempCallee);
         }
 
         return callee;
@@ -776,11 +777,13 @@ export class PagBuilder {
         callee = this.scene.getMethod(ivkExpr.getMethodSignature());
         if (!callee) {
             cs.args?.forEach(arg => {
-                if (arg.getType() instanceof FunctionType) {
-                    callee = this.scene.getMethod((arg.getType() as FunctionType).getMethodSignature())
-                    if (callee) {
-                        callees.push(callee);
-                    }
+                if (!(arg.getType() instanceof FunctionType)) {
+                    return;
+                }
+
+                callee = this.scene.getMethod((arg.getType() as FunctionType).getMethodSignature());
+                if (callee) {
+                    callees.push(callee);
                 }
             })
         } else {
@@ -1090,55 +1093,55 @@ export class PagBuilder {
 
     private addSDKMethodParamPagEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID, funcID: FuncID): NodeID[] {
         let argNum = cs.args?.length;
-        let srcNodes = [];
+        let srcNodes: NodeID[] = [];
 
-        if (argNum) {
-            // add args to parameters edges
-            for (let i = 0; i < argNum; i++) {
-                let arg = cs.args?.at(i);
-                let paramValue;
+        if (!argNum) {
+            return srcNodes;
+        }
 
-                if (arg instanceof Local && arg.getType() instanceof FunctionType) {
-                    // TODO: cannot find value
-                    paramValue = this.methodParamValueMap.get(funcID)!.get(i);
-                } else {
-                    continue;
-                }
+        // add args to parameters edges
+        for (let i = 0; i < argNum; i++) {
+            let arg = cs.args?.at(i);
+            let paramValue;
 
-                if (arg && paramValue) {
-                    // Get or create new PAG node for argument and parameter
-                    let srcPagNode = this.getOrNewPagNode(callerCid, arg, cs.callStmt);
-                    let dstPagNode = this.getOrNewPagNode(calleeCid, paramValue, cs.callStmt);
-
-                    if (dstPagNode instanceof PagLocalNode) {
-                        // set the fake param Value in PagLocalNode
-                        /**
-                         * TODO: !!!
-                         * some API param is in the form of anonymous method:
-                         *  component/common.d.ts
-                         *  declare function animateTo(value: AnimateParam, event: () => void): void;
-                         *
-                         * this param fake Value will create PagFuncNode rather than PagLocalNode
-                         * when this API is called, the anonymous method pointer will not be able to pass into the fake Value PagNode
-                         */
-                        dstPagNode.setSdkParam();
-                        let sdkParamInvokeStmt = new ArkInvokeStmt(
-                            new ArkPtrInvokeExpr(
-                                (arg.getType() as FunctionType).getMethodSignature(),
-                                paramValue as Local,
-                                []
-                            )
-                        );
-
-                        // create new DynCallSite
-                        let sdkParamCallSite = new DynCallSite(funcID, sdkParamInvokeStmt, undefined, undefined);
-                        dstPagNode.addRelatedDynCallSite(sdkParamCallSite);
-                    }
-
-                    this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
-                    srcNodes.push(srcPagNode.getID());
-                }
+            if (arg instanceof Local && arg.getType() instanceof FunctionType) {
+                // TODO: cannot find value
+                paramValue = this.methodParamValueMap.get(funcID)!.get(i);
+            } else {
+                continue;
             }
+
+            if (!(arg && paramValue)) {
+                continue;
+            }
+
+            // Get or create new PAG node for argument and parameter
+            let srcPagNode = this.getOrNewPagNode(callerCid, arg, cs.callStmt);
+            let dstPagNode = this.getOrNewPagNode(calleeCid, paramValue, cs.callStmt);
+
+            if (dstPagNode instanceof PagLocalNode) {
+                // set the fake param Value in PagLocalNode
+                /**
+                 * TODO: !!!
+                 * some API param is in the form of anonymous method:
+                 *  component/common.d.ts
+                 *  declare function animateTo(value: AnimateParam, event: () => void): void;
+                 *
+                 * this param fake Value will create PagFuncNode rather than PagLocalNode
+                 * when this API is called, the anonymous method pointer will not be able to pass into the fake Value PagNode
+                 */
+                dstPagNode.setSdkParam();
+                let sdkParamInvokeStmt = new ArkInvokeStmt(
+                    new ArkPtrInvokeExpr((arg.getType() as FunctionType).getMethodSignature(), paramValue as Local, [])
+                );
+
+                // create new DynCallSite
+                let sdkParamCallSite = new DynCallSite(funcID, sdkParamInvokeStmt, undefined, undefined);
+                dstPagNode.addRelatedDynCallSite(sdkParamCallSite);
+            }
+
+            this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Copy, cs.callStmt);
+            srcNodes.push(srcPagNode.getID());
         }
 
         return srcNodes;

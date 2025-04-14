@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArkAssignStmt } from "../../core/base/Stmt";
+import { ArkAssignStmt, Stmt } from "../../core/base/Stmt";
 import { UnknownType } from "../../core/base/Type";
 import { CallGraphNode, CallGraphNodeKind } from "../model/CallGraph";
 import { PointerAnalysis } from "../pointerAnalysis/PointerAnalysis";
@@ -90,36 +90,38 @@ export class PTAStat implements StatTraits {
     }
 
     private getInferedStat(): void {
+        let stmtStat = (s: Stmt): void => {
+            if (!(s instanceof ArkAssignStmt)) {
+                return;
+            }
+
+            let lop = s.getLeftOp();
+            if (visited.has(lop)) {
+                return;
+            }
+            visited.add(lop);
+
+            if (inferred.includes(lop)) {
+                if (lop.getType() instanceof UnknownType) {
+                    this.numInferedUnknownValue++;
+                } else {
+                    this.numInferedDiffTypeValue++;
+                }
+            } else {
+                if (lop.getType() instanceof UnknownType) {
+                    this.numNotInferedUnknownValue++;
+                }
+            }
+            this.totalValuesInVisitedFunc++;
+        };
+
         let inferred = Array.from(this.pta.getTypeDiffMap().keys());
         let visited = new Set();
 
         let cg = this.pta.getCallGraph();
         this.pta.getHandledFuncs().forEach(funcID => {
             let f = cg.getArkMethodByFuncID(funcID);
-            f?.getCfg()?.getStmts().forEach(s => {
-                if (!(s instanceof ArkAssignStmt)) {
-                    return;
-                }
-
-                let lop = s.getLeftOp();
-                if (visited.has(lop)) {
-                    return;
-                }
-                visited.add(lop);
-
-                if (inferred.includes(lop)) {
-                    if (lop.getType() instanceof UnknownType) {
-                        this.numInferedUnknownValue++;
-                    } else {
-                        this.numInferedDiffTypeValue++;
-                    }
-                } else {
-                    if (lop.getType() instanceof UnknownType) {
-                        this.numNotInferedUnknownValue++;
-                    }
-                }
-                this.totalValuesInVisitedFunc++;
-            });
+            f?.getCfg()?.getStmts().forEach(s => stmtStat(s));
         });
     }
 
