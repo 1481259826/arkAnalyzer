@@ -103,10 +103,8 @@ export abstract class AbstractAnalysis {
         if (this.processedMethod.contains(cs.calleeFuncID) || meNode.isSdkMethod()) {
             return;
         }
-        
-        let callee = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
 
-        if (displayGeneratedMethod || !(callee?.isGenerated())) {
+        if (displayGeneratedMethod || !(me?.isGenerated())) {
             this.workList.push(cs.calleeFuncID);
             logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
         }
