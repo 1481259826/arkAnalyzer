@@ -24,6 +24,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, FuncID, CallSite, CallGraphNode } from '../model/CallGraph';
 import { CallGraphBuilder } from '../model/builder/CallGraphBuilder';
+import { createPtsCollectionCtor, IPtsCollection, PtsCollectionType } from '../pointerAnalysis/PtsDS';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG');
 
@@ -32,7 +33,7 @@ export abstract class AbstractAnalysis {
     protected cg!: CallGraph;
     protected cgBuilder!: CallGraphBuilder;
     protected workList: FuncID[] = [];
-    protected processedMethod!: Set<FuncID>;
+    protected processedMethod!: IPtsCollection<FuncID>;
 
     constructor(s: Scene) {
         this.scene = s;
@@ -78,7 +79,7 @@ export abstract class AbstractAnalysis {
             const method = this.workList.shift() as FuncID;
             const cgNode = this.cg.getNode(method) as CallGraphNode;
 
-            if (this.processedMethod.has(method) || cgNode.isSdkMethod()) {
+            if (this.processedMethod.contains(method) || cgNode.isSdkMethod()) {
                 continue;
             }
 
@@ -92,18 +93,18 @@ export abstract class AbstractAnalysis {
 
                 this.addCallGraphEdge(method, me, cs, displayGeneratedMethod);
 
-                if (!this.processedMethod.has(cs.calleeFuncID)) {
+                if (!this.processedMethod.contains(cs.calleeFuncID)) {
                     this.workList.push(cs.calleeFuncID);
                     logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
 
-                    this.processedMethod.add(cs.callerFuncID);
+                    this.processedMethod.insert(cs.callerFuncID);
                 }
             })
         }
     }
 
     protected init(): void {
-        this.processedMethod = new Set();
+        this.processedMethod = new (createPtsCollectionCtor(PtsCollectionType.BitVector))();
         this.cg.getEntries().forEach((entryFunc) => {
             this.workList.push(entryFunc);
         })
