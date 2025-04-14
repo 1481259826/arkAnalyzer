@@ -393,6 +393,7 @@ export class TypeInference {
             || type instanceof NullType || type instanceof UndefinedType) {
             return true;
         } else if (type instanceof ClassType && (type.getClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME ||
+            (type.getClassSignature().getClassName() === PROMISE && !type.getRealGenericTypes()) ||
             (type.getClassSignature().getDeclaringFileSignature().getFileName() === Builtin.DUMMY_FILE_NAME &&
                 type.getRealGenericTypes()?.find(t => t instanceof GenericType)))) {
             return true;

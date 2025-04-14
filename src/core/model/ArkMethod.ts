@@ -643,9 +643,9 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             return matched;
         } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
             return argType.getMethodSignature().getParamLength() === paramType.getMethodSignature().getParamLength();
-        } else if (argType instanceof FunctionType && paramType instanceof ClassType &&
+        } else if (paramType instanceof ClassType &&
             paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
-            return true;
+            return argType instanceof FunctionType;
         } else if (paramType instanceof LiteralType && arg instanceof Constant) {
             return arg.getValue().replace(/[\"|\']/g, '') === paramType.getLiteralName()
                 .toString().replace(/[\"|\']/g, '');
