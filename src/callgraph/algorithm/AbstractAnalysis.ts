@@ -96,19 +96,20 @@ export abstract class AbstractAnalysis {
 
     private processCallSite(method: FuncID, cs: CallSite, displayGeneratedMethod: boolean): void {
         let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
-
+        let meNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+        this.processedMethod.insert(cs.callerFuncID);
         this.addCallGraphEdge(method, me, cs, displayGeneratedMethod);
 
-        if (!this.processedMethod.contains(cs.calleeFuncID)) {
-            let callee = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
-
-            if (displayGeneratedMethod || !(callee?.isGenerated())) {
-                this.workList.push(cs.calleeFuncID);
-                logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
-            }
+        if (this.processedMethod.contains(cs.calleeFuncID) || meNode.isSdkMethod()) {
+            return;
         }
+        
+        let callee = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
 
-        this.processedMethod.insert(cs.callerFuncID);
+        if (displayGeneratedMethod || !(callee?.isGenerated())) {
+            this.workList.push(cs.calleeFuncID);
+            logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
+        }
     }
 
     protected init(): void {
