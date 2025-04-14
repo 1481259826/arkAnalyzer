@@ -89,18 +89,26 @@ export abstract class AbstractAnalysis {
             })
 
             this.processMethod(method).forEach((cs: CallSite) => {
-                let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
-
-                this.addCallGraphEdge(method, me, cs, displayGeneratedMethod);
-
-                if (!this.processedMethod.contains(cs.calleeFuncID)) {
-                    this.workList.push(cs.calleeFuncID);
-                    logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
-
-                    this.processedMethod.insert(cs.callerFuncID);
-                }
+                this.processCallSite(method, cs, displayGeneratedMethod);
             })
         }
+    }
+
+    private processCallSite(method: FuncID, cs: CallSite, displayGeneratedMethod: boolean): void {
+        let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
+
+        this.addCallGraphEdge(method, me, cs, displayGeneratedMethod);
+
+        if (!this.processedMethod.contains(cs.calleeFuncID)) {
+            let callee = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
+
+            if (displayGeneratedMethod || !(callee?.isGenerated())) {
+                this.workList.push(cs.calleeFuncID);
+                logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
+            }
+        }
+
+        this.processedMethod.insert(cs.callerFuncID);
     }
 
     protected init(): void {
