@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { assert, describe, it } from "vitest";
-import { SceneConfig, Scene, CallGraph, CallGraphBuilder } from "../../../src";
-import { Sdk } from "../../../src/Config";
+import { assert, describe, it } from 'vitest';
+import { SceneConfig, Scene, CallGraph, CallGraphBuilder } from '../../../src';
+import { Sdk } from '../../../src/Config';
 
 let sdk: Sdk = {
     name: 'ohos',
