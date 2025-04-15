@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,35 +13,16 @@
  * limitations under the License.
  */
 
-import et from './exp'
-import et2 from './exp2'
-import { Du } from './exp'
+import { config } from './config';
 
-class ImportTest {
-    obj: Du = et.obj;
-    obj2: Du = et2.obj;
-}
-
-function main(): void {
-    test1();
-    test2();
-    test3();
-}
-
-function test1(): void {
-    let lo = et;
-    let lo2 = et2;
-    lo.foo();
-    lo2.foo();
-}
-
-function test2(): void {
-    let lo2 = new ImportTest()
-    let x = lo2.obj;
-    let y = lo2.obj2;
-}
-
-function test3(): void {
-    et.foo();
-    et2.foo();
+export class Vector {
+    public editConfig(): void {
+        /**
+         * will check `config`, and find it is imported from `config.ts`
+         * config.ts/%dflt has been added to funcPag build worklist, and will NOT rebuild the funcPag
+         * even though the external copy edge is added, but will not add the pts value into this node
+         * because the upstream node is stable, and will not be triggered.
+         */
+        config.edit();
+    }
 }
