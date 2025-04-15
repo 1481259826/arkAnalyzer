@@ -14,7 +14,7 @@
  */
 
 namespace functionType {
-    class param {
+    class Param {
         public name: string;
         public value: string;
 
@@ -25,137 +25,143 @@ namespace functionType {
     }
 
     class Test {
-        public test(arg1: param, arg2: param) {
+        public test(arg1: Param, arg2: Param): void {
             console.log('test', arg1, arg2);
         }
 
-        public static testStatic(arg1: param, arg2: param) {
+        public static testStatic(arg1: Param, arg2: Param): void {
             console.log('testStatic', arg1, arg2);
         }
     }
 
-    function test(arg1: param, arg2: param) {
+    function test(arg1: Param, arg2: Param): void {
         console.log('test', arg1, arg2);
     }
 
-    function anonFunc(this: { name: string }, arg1: param, arg2: param) {
+    function anonFunc(this: { name: string }, arg1: Param, arg2: Param): void {
         console.log(this.name, arg1, arg2);
     };
       
-    const obj = { name: "Alice" };
+    const obj = { name: 'Alice' };
 
-    function ptrInvoke1_call(heapObj1: param, heapObj2: param) {
-        let f1 = (arg1: param, arg2: param) => { console.log('f1', arg1, arg2); };
+    function ptrInvoke1Call(heapObj1: Param, heapObj2: Param): void {
+        let f1 = (arg1: Param, arg2: Param): void => {
+            console.log('f1', arg1, arg2);
+        };
         f1.call(null, heapObj1, heapObj2);
     }
 
-    function ptrInvoke1_apply(heapObj1: param, heapObj2: param) {
-        let f1 = (arg1: param, arg2: param) => { console.log('f1', arg1, arg2); };
+    function ptrInvoke1Apply(heapObj1: Param, heapObj2: Param): void {
+        let f1 = (arg1: Param, arg2: Param): void => {
+            console.log('f1', arg1, arg2);
+        };
         f1.apply(null, [heapObj1, heapObj2]);
     }
 
-    function ptrInvoke1_bind(heapObj1: param, heapObj2: param) {
-        let f1 = (arg1: param, arg2: param) => { console.log('f1', arg1, arg2); };
+    function ptrInvoke1Bind(heapObj1: Param, heapObj2: Param): void {
+        let f1 = (arg1: Param, arg2: Param): void => {
+            console.log('f1', arg1, arg2);
+        };
         const f1_new = f1.bind(null, heapObj1, heapObj2);
         f1_new();
     }
 
-    function ptrInvoke2_call(heapObj1: param, heapObj2: param) {
+    function ptrInvoke2Call(heapObj1: Param, heapObj2: Param): void {
         let test_instance_1 = new Test();
         let f2 = test_instance_1.test;
         f2.call(test_instance_1, heapObj1, heapObj2);
     }
 
-    function ptrInvoke2_apply(heapObj1: param, heapObj2: param) {
+    function ptrInvoke2Apply(heapObj1: Param, heapObj2: Param): void {
         let test_instance_2 = new Test();
         let f2 = test_instance_2.test;
         f2.apply(test_instance_2, [heapObj1, heapObj2]);
     }
 
-    function ptrInvoke2_bind(heapObj1: param, heapObj2: param) {
+    function ptrInvoke2Bind(heapObj1: Param, heapObj2: Param): void {
         let test_instance = new Test();
         let f2 = test_instance.test;
         const f2_new = f2.bind(test_instance, heapObj1, heapObj2);
         f2_new();
     }
 
-    function ptrInvoke2_bind_return(heapObj1: param, heapObj2: param) {
+    function ptrInvoke2BindReturn(heapObj1: Param, heapObj2: Param): () => void {
         let test_instance = new Test();
         let f2 = test_instance.test;
         const f2_new = f2.bind(test_instance, heapObj1, heapObj2);
         return f2_new;
     }
 
-    function ptrInvoke3_call(heapObj1: param, heapObj2: param) {
+    function ptrInvoke3Call(heapObj1: Param, heapObj2: Param): void {
         let f2 = Test.testStatic;
         f2.call(Test, heapObj1, heapObj2);
     }
 
-    function ptrInvoke3_apply(heapObj1: param, heapObj2: param) {
+    function ptrInvoke3Apply(heapObj1: Param, heapObj2: Param): void {
         let f2 = Test.testStatic;
         f2.apply(null, [heapObj1, heapObj2]);
     }
 
-    function ptrInvoke3_bind(heapObj1: param, heapObj2: param) {
+    function ptrInvoke3Bind(heapObj1: Param, heapObj2: Param): void {
         let test_instance = new Test();
         let f2 = Test.testStatic;
         const f2_new = f2.bind(test_instance, heapObj1, heapObj2);
         f2_new();
     }
 
-    function ptrInvoke4_call(heapObj1: param, heapObj2: param) {
+    function ptrInvoke4Call(heapObj1: Param, heapObj2: Param): void {
         let f3 = test;
         f3.call(null, heapObj1, heapObj2);
     }
 
-    function ptrInvoke4_apply(heapObj1: param, heapObj2: param) {
+    function ptrInvoke4Apply(heapObj1: Param, heapObj2: Param): void {
         let f3 = test;
         f3.apply(null, [heapObj1, heapObj2]);
     }
 
-    function ptrInvoke4_bind(heapObj1: param, heapObj2: param) {
+    function ptrInvoke4Bind(heapObj1: Param, heapObj2: Param): void {
         let f3 = test;
         const f3_new = f3.bind(null, heapObj1, heapObj2);
         f3_new();
     }
 
-    function ptrInvoke5_call(heapObj1: param, heapObj2: param) {
+    function ptrInvoke5Call(heapObj1: Param, heapObj2: Param): void {
         anonFunc.call(obj, heapObj1, heapObj2); // Alice
     }
 
-    function ptrInvoke5_apply(heapObj1: param, heapObj2: param) {
+    function ptrInvoke5Apply(heapObj1: Param, heapObj2: Param): void {
         anonFunc.apply(obj, [heapObj1, heapObj2]); // Alice
     }
 
-    function ptrInvoke5_bind(heapObj1: param, heapObj2: param) {
+    function ptrInvoke5Bind(heapObj1: Param, heapObj2: Param): void {
         const boundFunc = anonFunc.bind(obj, heapObj1, heapObj2);
         boundFunc(); // Alice
     }
 
     export function main(): void {
-        let heapObj1 = new param('name1', 'value1');
-        let heapObj2 = new param('name2', 'value2');
+        let heapObj1 = new Param('name1', 'value1');
+        let heapObj2 = new Param('name2', 'value2');
 
-        ptrInvoke1_call(heapObj1, heapObj2);
-        ptrInvoke1_apply(heapObj1, heapObj2);
-        ptrInvoke1_bind(heapObj1, heapObj2);
+        ptrInvoke1Call(heapObj1, heapObj2);
+        ptrInvoke1Apply(heapObj1, heapObj2);
+        ptrInvoke1Bind(heapObj1, heapObj2);
 
-        ptrInvoke2_call(heapObj1, heapObj2);
-        ptrInvoke2_apply(heapObj1, heapObj2);
-        ptrInvoke2_bind(heapObj1, heapObj2);
-        let b = ptrInvoke2_bind_return(heapObj1, heapObj2);
+        ptrInvoke2Call(heapObj1, heapObj2);
+        ptrInvoke2Apply(heapObj1, heapObj2);
+        ptrInvoke2Bind(heapObj1, heapObj2);
+        let b = ptrInvoke2BindReturn(heapObj1, heapObj2);
         b();
 
-        ptrInvoke3_call(heapObj1, heapObj2);
-        ptrInvoke3_apply(heapObj1, heapObj2);
-        ptrInvoke3_bind(heapObj1, heapObj2);
+        ptrInvoke3Call(heapObj1, heapObj2);
+        ptrInvoke3Apply(heapObj1, heapObj2);
+        ptrInvoke3Bind(heapObj1, heapObj2);
 
-        ptrInvoke4_call(heapObj1, heapObj2);
-        ptrInvoke4_apply(heapObj1, heapObj2);
-        ptrInvoke4_bind(heapObj1, heapObj2);
+        ptrInvoke4Call(heapObj1, heapObj2);
+        ptrInvoke4Apply(heapObj1, heapObj2);
+        ptrInvoke4Bind(heapObj1, heapObj2);
 
-        ptrInvoke5_call(heapObj1, heapObj2);
-        ptrInvoke5_apply(heapObj1, heapObj2);
-        ptrInvoke5_bind(heapObj1, heapObj2);
+        ptrInvoke5Call(heapObj1, heapObj2);
+        ptrInvoke5Apply(heapObj1, heapObj2);
+        ptrInvoke5Bind(heapObj1, heapObj2);
     }
 }

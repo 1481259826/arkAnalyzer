@@ -50,10 +50,10 @@ function test(): PointerAnalysis {
 describe('Function.call Test', () => {
     let pta = test();
     it('case1: anonymousMethod', () => {
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke1_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.%dflt.%AM0$ptrInvoke1_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke1Call');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            '%AM1$ptrInvoke1Call');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -62,51 +62,53 @@ describe('Function.call Test', () => {
         let argDstValue_2 = calleeMethod[0]?.getBody()?.getLocals().get('arg2')!;
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
+        // console.log(argDstValue_1)
+        // console.log(Array.from(relatedNodes).includes(argDstValue_1))
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case2: class instance method', () => {
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke2_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.Test.test(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+        'ptrInvoke2Call');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+        'test');
 
         let thisSrcValue = callerMethod[0]?.getBody()?.getLocals().get('test_instance_1')!;
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
 
-        let thisDstValue = calleeMethod[0]?.getBody()?.getLocals().get('this')!;
-        let argDstValue_1 = calleeMethod[0]?.getBody()?.getLocals().get('arg1')!;
-        let argDstValue_2 = calleeMethod[0]?.getBody()?.getLocals().get('arg2')!;
+        let thisDstValue = calleeMethod[1]?.getBody()?.getLocals().get('this')!;
+        let argDstValue_1 = calleeMethod[1]?.getBody()?.getLocals().get('arg1')!;
+        let argDstValue_2 = calleeMethod[1]?.getBody()?.getLocals().get('arg2')!;
 
         let relatedNodes = pta.getRelatedNodes(thisSrcValue);
         assert(
-            Array.from(relatedNodes).find(node => node === thisDstValue)
+            Array.from(relatedNodes).includes(thisDstValue)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case3: class static method', () => {
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke3_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.Test.[static]testStatic(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke3Call');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'testStatic');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -116,20 +118,20 @@ describe('Function.call Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case4: function', () => {
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke4_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.%dflt.test(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke4Call');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'test');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -139,12 +141,12 @@ describe('Function.call Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
@@ -157,10 +159,10 @@ describe('Function.apply Test', () => {
     it('case1: anonymousMethod', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke1_apply(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.%dflt.%AM0$ptrInvoke1_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke1Apply');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            '%AM2$ptrInvoke1Apply');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -170,54 +172,54 @@ describe('Function.apply Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case2: class instance method', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke2_apply(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.Test.test(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke2Apply');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'test');
 
         let thisSrcValue = callerMethod[0]?.getBody()?.getLocals().get('test_instance_2')!;
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
 
-        let thisDstValue = calleeMethod[0]?.getBody()?.getLocals().get('this')!;
-        let argDstValue_1 = calleeMethod[0]?.getBody()?.getLocals().get('arg1')!;
-        let argDstValue_2 = calleeMethod[0]?.getBody()?.getLocals().get('arg2')!;
+        let thisDstValue = calleeMethod[1]?.getBody()?.getLocals().get('this')!;
+        let argDstValue_1 = calleeMethod[1]?.getBody()?.getLocals().get('arg1')!;
+        let argDstValue_2 = calleeMethod[1]?.getBody()?.getLocals().get('arg2')!;
 
         let relatedNodes = pta.getRelatedNodes(thisSrcValue);
         assert(
-            Array.from(relatedNodes).find(node => node === thisDstValue)
+            Array.from(relatedNodes).includes(thisDstValue)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case3: class static method', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke3_apply(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.Test.[static]testStatic(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke3Apply');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'testStatic');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -227,22 +229,22 @@ describe('Function.apply Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case4: function', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke4_apply(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.%dflt.test(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke4Apply');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'test');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -252,12 +254,12 @@ describe('Function.apply Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
@@ -271,10 +273,10 @@ describe('Function.bind Test', () => {
     it('case1: anonymousMethod', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke1_bind(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.%dflt.%AM0$ptrInvoke1_call(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke1Bind');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            '%AM3$ptrInvoke1Bind');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -282,56 +284,90 @@ describe('Function.bind Test', () => {
         let argDstValue_1 = calleeMethod[0]?.getBody()?.getLocals().get('arg1')!;
         let argDstValue_2 = calleeMethod[0]?.getBody()?.getLocals().get('arg2')!;
 
+        // console.log(pta.getRelatedNodes(argDstValue_1))
+
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
     it('case2: class instance method', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke2_bind(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.Test.test(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke2Bind');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'test');
 
         let thisSrcValue = callerMethod[0]?.getBody()?.getLocals().get('test_instance')!;
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
 
-        let thisDstValue = calleeMethod[0]?.getBody()?.getLocals().get('this')!;
-        let argDstValue_1 = calleeMethod[0]?.getBody()?.getLocals().get('arg1')!;
-        let argDstValue_2 = calleeMethod[0]?.getBody()?.getLocals().get('arg2')!;
+        let thisDstValue = calleeMethod[1]?.getBody()?.getLocals().get('this')!;
+        let argDstValue_1 = calleeMethod[1]?.getBody()?.getLocals().get('arg1')!;
+        let argDstValue_2 = calleeMethod[1]?.getBody()?.getLocals().get('arg2')!;
 
         let relatedNodes = pta.getRelatedNodes(thisSrcValue);
         assert(
-            Array.from(relatedNodes).find(node => node === thisDstValue)
+            Array.from(relatedNodes).includes(thisDstValue)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
-    it('case3: class static method', () => {
+    it('case3: class instance method called in external method', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke3_bind(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.Test.[static]testStatic(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke2BindReturn');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'test');
+
+        let thisSrcValue = callerMethod[0]?.getBody()?.getLocals().get('test_instance')!;
+        let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
+        let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
+
+        let thisDstValue = calleeMethod[1]?.getBody()?.getLocals().get('this')!;
+        let argDstValue_1 = calleeMethod[1]?.getBody()?.getLocals().get('arg1')!;
+        let argDstValue_2 = calleeMethod[1]?.getBody()?.getLocals().get('arg2')!;
+
+        let relatedNodes = pta.getRelatedNodes(thisSrcValue);
+        assert(
+            Array.from(relatedNodes).includes(thisDstValue)
+        );
+
+        relatedNodes = pta.getRelatedNodes(argSrcValue_1);
+        assert(
+            Array.from(relatedNodes).includes(argDstValue_1)
+        );
+
+        relatedNodes = pta.getRelatedNodes(argSrcValue_2);
+        assert(
+            Array.from(relatedNodes).includes(argDstValue_2)
+        );
+    });
+
+    it('case4: class static method', () => {
+        let pta = test();
+
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke3Bind');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'testStatic');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -341,22 +377,22 @@ describe('Function.bind Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
-    it('case4: function', () => {
+    it('case5: function', () => {
         let pta = test();
 
-        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString()
-            === '@FunctionType/functionType.ts: functionType.%dflt.ptrInvoke4_bind(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
-        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getSignature().toString() 
-            === '@FunctionType/functionType.ts: functionType.%dflt.test(@FunctionType/functionType.ts: functionType.param, @FunctionType/functionType.ts: functionType.param)');
+        let callerMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'ptrInvoke4Bind');
+        let calleeMethod = pta.getScene().getMethods().filter(arkMethod => arkMethod.getName() ===
+            'test');
 
         let argSrcValue_1 = callerMethod[0]?.getBody()?.getLocals().get('heapObj1')!;
         let argSrcValue_2 = callerMethod[0]?.getBody()?.getLocals().get('heapObj2')!;
@@ -366,16 +402,16 @@ describe('Function.bind Test', () => {
 
         let relatedNodes = pta.getRelatedNodes(argSrcValue_1);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_1)
+            Array.from(relatedNodes).includes(argDstValue_1)
         );
 
         relatedNodes = pta.getRelatedNodes(argSrcValue_2);
         assert(
-            Array.from(relatedNodes).find(node => node === argDstValue_2)
+            Array.from(relatedNodes).includes(argDstValue_2)
         );
     });
 
-    it('case5: function with binding environment', () => {
+    it('case6: function with binding environment', () => {
         // 
     });
 });

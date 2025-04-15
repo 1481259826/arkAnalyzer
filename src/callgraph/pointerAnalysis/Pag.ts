@@ -561,7 +561,7 @@ export class PagFuncNode extends PagNode {
         return this.methodSignature;
     }
 
-    public setThisPt(thisPt: NodeID) {
+    public setThisPt(thisPt: NodeID): void {
         this.thisPt = thisPt;
     }
 
@@ -569,7 +569,7 @@ export class PagFuncNode extends PagNode {
         return this.thisPt;
     }
 
-    public setCS(callsite: CallSite) {
+    public setCS(callsite: CallSite): void {
         this.originCallSite = callsite;
     }
 
@@ -577,7 +577,7 @@ export class PagFuncNode extends PagNode {
         return this.originCallSite;
     }
 
-    public setArgsOffset(offset: number) {
+    public setArgsOffset(offset: number): void {
         this.argsOffset = offset;
     }
 
@@ -589,7 +589,7 @@ export class PagFuncNode extends PagNode {
         return this.methodType;
     }
 
-    public setOriginCid(cid: ContextID) {
+    public setOriginCid(cid: ContextID): void {
         this.originCid = cid;
     }
 
@@ -733,7 +733,7 @@ export class Pag extends BaseExplicitGraph {
             let clonedFuncNode = this.getOrClonePagNode(baseNode, basePt) as PagFuncNode;
             return clonedFuncNode;
         } else {
-            logger.error(`Error clone func node ${baseNode.getValue()}`)
+            logger.error(`Error clone func node ${baseNode.getValue()}`);
             return undefined;
         }
     }
