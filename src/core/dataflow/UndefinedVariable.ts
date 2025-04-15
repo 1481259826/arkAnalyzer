@@ -18,7 +18,7 @@ import { DataflowProblem, FlowFunction } from './DataflowProblem';
 import { Local } from '../base/Local';
 import { Value } from '../base/Value';
 import { ClassType, UndefinedType } from '../base/Type';
-import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
+import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../base/Stmt';
 import { ArkMethod } from '../model/ArkMethod';
 import { Constant } from '../base/Constant';
 import { AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from '../base/Ref';
@@ -197,31 +197,6 @@ export class UndefinedVariableChecker extends DataflowProblem<Value> {
                 let ret: Set<Value> = new Set<Value>();
                 if (dataFact === checkerInstance.getZeroValue()) {
                     ret.add(checkerInstance.getZeroValue());
-                }
-                if (dataFact instanceof ArkInstanceFieldRef && dataFact.getBase().getName() === "this") {
-                    // todo:this转base。
-                    const expr = callStmt.getExprs()[0];
-                    if (expr instanceof ArkInstanceInvokeExpr) {
-                        const fieldRef = new ArkInstanceFieldRef(expr.getBase(),dataFact.getFieldSignature());
-                        ret.add(fieldRef);
-                    }
-                }
-                if (!(callStmt instanceof ArkAssignStmt)) {
-                    return ret;
-                }
-                if (srcStmt instanceof ArkReturnStmt) {
-                    let ass: ArkAssignStmt = callStmt as ArkAssignStmt;
-                    let leftOp: Value = ass.getLeftOp();
-                    let retVal: Value = (srcStmt as ArkReturnStmt).getOp();
-                    if (dataFact === checkerInstance.getZeroValue()) {
-                        ret.add(checkerInstance.getZeroValue());
-                        if (checkerInstance.isUndefined(retVal)) {
-                            ret.add(leftOp);
-                        }
-
-                    } else if (retVal === dataFact) {
-                        ret.add(leftOp);
-                    }
                 }
                 return ret;
             }

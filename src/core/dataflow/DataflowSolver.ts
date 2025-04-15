@@ -201,24 +201,30 @@ export abstract class DataflowSolver<D> {
         for (let callEdgePoint of callEdgePoints) {
             let returnSite: Stmt = this.getReturnSiteOfCall(callEdgePoint.node);
             let returnFlowFunc: FlowFunction<D> = this.problem.getExitToReturnFlowFunction(exitEdgePoint.node, returnSite, callEdgePoint.node);
-            for (let fact of returnFlowFunc.getDataFacts(exitEdgePoint.fact)) {
-                let returnSitePoint: PathEdgePoint<D> = new PathEdgePoint<D>(returnSite, fact);
-                let cacheEdge: CallToReturnCacheEdge<D> = new PathEdge<D>(callEdgePoint, returnSitePoint);
-                let summaryEdgeHasCacheEdge = false;
-                for (const sEdge of this.summaryEdge) {
-                    if (sEdge.edgeStart === callEdgePoint && sEdge.edgeEnd.node === returnSite && sEdge.edgeEnd.fact === fact) {
-                        summaryEdgeHasCacheEdge = true;
-                        break;
-                    }
+            this.handleFacts(returnFlowFunc, returnSite, exitEdgePoint, callEdgePoint);
+        }
+    }
+
+    private handleFacts(returnFlowFunc: FlowFunction<D>, returnSite: Stmt,
+                        exitEdgePoint: PathEdgePoint<D>, callEdgePoint: PathEdgePoint<D>): void {
+        for (let fact of returnFlowFunc.getDataFacts(exitEdgePoint.fact)) {
+            let returnSitePoint: PathEdgePoint<D> = new PathEdgePoint<D>(returnSite, fact);
+            let cacheEdge: CallToReturnCacheEdge<D> = new PathEdge<D>(callEdgePoint, returnSitePoint);
+            let summaryEdgeHasCacheEdge = false;
+            for (const sEdge of this.summaryEdge) {
+                if (sEdge.edgeStart === callEdgePoint && sEdge.edgeEnd.node === returnSite && sEdge.edgeEnd.fact === fact) {
+                    summaryEdgeHasCacheEdge = true;
+                    break;
                 }
-                if (!summaryEdgeHasCacheEdge) {
-                    this.summaryEdge.add(cacheEdge);
-                    let startOfCaller: Stmt = this.getStartOfCallerMethod(callEdgePoint.node);
-                    for (let pathEdge of this.pathEdgeSet) {
-                        if (pathEdge.edgeStart.node === startOfCaller && pathEdge.edgeEnd === callEdgePoint) {
-                            this.propagate(new PathEdge<D>(pathEdge.edgeStart, returnSitePoint));
-                        }
-                    }
+            }
+            if (summaryEdgeHasCacheEdge) {
+                continue;
+            }
+            this.summaryEdge.add(cacheEdge);
+            let startOfCaller: Stmt = this.getStartOfCallerMethod(callEdgePoint.node);
+            for (let pathEdge of this.pathEdgeSet) {
+                if (pathEdge.edgeStart.node === startOfCaller && pathEdge.edgeEnd === callEdgePoint) {
+                    this.propagate(new PathEdge<D>(pathEdge.edgeStart, returnSitePoint));
                 }
             }
         }

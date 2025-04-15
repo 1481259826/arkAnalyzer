@@ -179,55 +179,60 @@ export class Cfg {
         }
     }
 
-    public buildDefUseChain() {
+    private handleDefUseForValue(value: Value, block: BasicBlock, stmt: Stmt, stmtIndex: number): void {
+        const name = value.toString();
+        const defStmts: Stmt[] = [];
+        // 判断本block之前有无对应def
+        for (let i = stmtIndex - 1; i >= 0; i--) {
+            const beforeStmt = block.getStmts()[i];
+            if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() === name) {
+                defStmts.push(beforeStmt);
+                break;
+            }
+        }
+        // 本block有对应def直接结束,否则找所有的前序block
+        if (defStmts.length !== 0) {
+            this.defUseChains.push(new DefUseChain(value, defStmts[0], stmt));
+            return;
+        }
+        const needWalkBlocks: BasicBlock[] = [...block.getPredecessors()];
+        const walkedBlocks = new Set();
+        while (needWalkBlocks.length > 0) {
+            const predecessor = needWalkBlocks.pop();
+            if (!predecessor) {
+                return;
+            }
+            const predecessorStmts = predecessor.getStmts();
+            let predecessorHasDef = false;
+            for (let i = predecessorStmts.length - 1; i >= 0; i--) {
+                const beforeStmt = predecessorStmts[i];
+                if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() === name) {
+                    defStmts.push(beforeStmt);
+                    predecessorHasDef = true;
+                    break;
+                }
+            }
+            walkedBlocks.add(predecessor);
+            if (predecessorHasDef) {
+                continue;
+            }
+            for (const morePredecessor of predecessor.getPredecessors()) {
+                if (!walkedBlocks.has(morePredecessor) && !needWalkBlocks.includes(morePredecessor)) {
+                    needWalkBlocks.unshift(morePredecessor);
+                }
+            }
+        }
+        for (const def of defStmts) {
+            this.defUseChains.push(new DefUseChain(value, def, stmt));
+        }
+    }
+
+    public buildDefUseChain(): void {
         for (const block of this.blocks) {
             for (let stmtIndex = 0; stmtIndex < block.getStmts().length; stmtIndex++) {
                 const stmt = block.getStmts()[stmtIndex];
-
                 for (const value of stmt.getUses()) {
-                    const name = value.toString();
-                    const defStmts: Stmt[] = [];
-                    // 判断本block之前有无对应def
-                    for (let i = stmtIndex - 1; i >= 0; i--) {
-                        const beforeStmt = block.getStmts()[i];
-                        if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() === name) {
-                            defStmts.push(beforeStmt);
-                            break;
-                        }
-                    }
-                    // 本block有对应def直接结束,否则找所有的前序block
-                    if (defStmts.length !== 0) {
-                        this.defUseChains.push(new DefUseChain(value, defStmts[0], stmt));
-                    } else {
-                        const needWalkBlocks: BasicBlock[] = [...block.getPredecessors()];
-                        const walkedBlocks = new Set();
-                        while (needWalkBlocks.length > 0) {
-                            const predecessor = needWalkBlocks.pop();
-                            if (!predecessor) {
-                                return;
-                            }
-                            const predecessorStmts = predecessor.getStmts();
-                            let predecessorHasDef = false;
-                            for (let i = predecessorStmts.length - 1; i >= 0; i--) {
-                                const beforeStmt = predecessorStmts[i];
-                                if (beforeStmt.getDef() && beforeStmt.getDef()?.toString() === name) {
-                                    defStmts.push(beforeStmt);
-                                    predecessorHasDef = true;
-                                    break;
-                                }
-                            }
-                            if (!predecessorHasDef) {
-                                for (const morePredecessor of predecessor.getPredecessors()) {
-                                    if (!walkedBlocks.has(morePredecessor) && !needWalkBlocks.includes(morePredecessor))
-                                        needWalkBlocks.unshift(morePredecessor);
-                                }
-                            }
-                            walkedBlocks.add(predecessor);
-                        }
-                        for (const def of defStmts) {
-                            this.defUseChains.push(new DefUseChain(value, def, stmt));
-                        }
-                    }
+                    this.handleDefUseForValue(value, block, stmt, stmtIndex);
                 }
             }
         }

@@ -82,14 +82,8 @@ export function serializeScene(
     }
 }
 
-function serializeSingleTsFile(
-    input: string,
-    output: string,
-    options: any,
-): void {
-    if (options.verbose) {
-        console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
-    }
+function serializeSingleTsFile(input: string, output: string, options: any): void {
+    options.verbose && console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
 
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
@@ -105,30 +99,23 @@ function serializeSingleTsFile(
     }
 
     if (options.inferTypes) {
-        if (options.verbose) {
-            console.log('Inferring types...');
-        }
+        options.verbose && console.log('Inferring types...');
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) {
-                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
-                }
+                options.verbose && console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
                 scene.inferTypes();
             }
         }
     }
 
     if (options.entrypoint) {
-        if (options.verbose) {
-            console.log('Generating entrypoint...');
-        }
+        options.verbose && console.log('Generating entrypoint...');
         PointerAnalysis.pointerAnalysisForWholeProject(scene);
     }
 
-    if (options.verbose) {
-        console.log('Extracting single ArkFile...');
-    }
+    options.verbose && console.log('Extracting single ArkFile...');
+
     if (files.length === 0) {
         console.error(`ERROR: No files found in the project directory '${projectDir}'.`);
         process.exit(1);
@@ -140,7 +127,12 @@ function serializeSingleTsFile(
     // Note: we explicitly push a single path to the project files (in config),
     //       so we expect there is only *one* ArkFile in the scene.
     let arkFile = scene.getFiles()[0];
+    serializeFile(arkFile, output, options, scene);
 
+    options.verbose && console.log('All done!');
+}
+
+function serializeFile(arkFile: ArkFile, output: string, options: any, scene: Scene): void {
     let outPath: string;
     if (fs.existsSync(output) && fs.statSync(output).isDirectory()) {
         outPath = path.join(output, arkFile.getName() + '.json');
@@ -166,10 +158,6 @@ function serializeSingleTsFile(
         }
         console.log(`Serializing entrypoint to '${outPath}'...`);
         printer.dumpToJson(arkFile, outPath);
-    }
-
-    if (options.verbose) {
-        console.log('All done!');
     }
 }
 
@@ -205,9 +193,7 @@ function serializeMultipleTsFiles(
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) {
-                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
-                }
+                options.verbose && console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
                 scene.inferTypes();
             }
         }
@@ -255,9 +241,7 @@ function serializeTsProject(
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) {
-                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
-                }
+                options.verbose && console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
                 scene.inferTypes();
             }
         }

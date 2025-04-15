@@ -184,7 +184,81 @@ export function buildTypeParameters(typeParameters: ts.NodeArray<TypeParameterDe
     return genericTypes;
 }
 
-export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkInstance: ArkMethod | ArkField, sourceFile: ts.SourceFile) {
+function buildObjectBindingPatternParam(methodParameter: MethodParameter, paramNameNode: ts.ObjectBindingPattern): void {
+    methodParameter.setName('ObjectBindingPattern');
+    let elements: ObjectBindingPatternParameter[] = [];
+    paramNameNode.elements.forEach((element) => {
+        let paraElement = new ObjectBindingPatternParameter();
+        if (element.propertyName) {
+            if (ts.isIdentifier(element.propertyName)) {
+                paraElement.setPropertyName(element.propertyName.text);
+            } else {
+                logger.warn('New propertyName of ObjectBindingPattern found, please contact developers to support this!');
+            }
+        }
+
+        if (element.name) {
+            if (ts.isIdentifier(element.name)) {
+                paraElement.setName(element.name.text);
+            } else {
+                logger.warn('New name of ObjectBindingPattern found, please contact developers to support this!');
+            }
+        }
+
+        if (element.initializer) {
+            logger.warn('TODO: support ObjectBindingPattern initializer.');
+        }
+
+        if (element.dotDotDotToken) {
+            paraElement.setOptional(true);
+        }
+        elements.push(paraElement);
+    });
+    methodParameter.setObjElements(elements);
+}
+
+function buildBindingElementOfBindingPatternParam(element: ts.BindingElement, paraElement: ArrayBindingPatternParameter): void {
+    if (element.propertyName) {
+        if (ts.isIdentifier(element.propertyName)) {
+            paraElement.setPropertyName(element.propertyName.text);
+        } else {
+            logger.warn('New propertyName of ArrayBindingPattern found, please contact developers to support this!');
+        }
+    }
+
+    if (element.name) {
+        if (ts.isIdentifier(element.name)) {
+            paraElement.setName(element.name.text);
+        } else {
+            logger.warn('New name of ArrayBindingPattern found, please contact developers to support this!');
+        }
+    }
+
+    if (element.initializer) {
+        logger.warn('TODO: support ArrayBindingPattern initializer.');
+    }
+
+    if (element.dotDotDotToken) {
+        paraElement.setOptional(true);
+    }
+}
+
+function buildArrayBindingPatternParam(methodParameter: MethodParameter, paramNameNode: ts.ArrayBindingPattern): void {
+    methodParameter.setName('ArrayBindingPattern');
+    let elements: ArrayBindingPatternParameter[] = [];
+    paramNameNode.elements.forEach((element) => {
+        let paraElement = new ArrayBindingPatternParameter();
+        if (ts.isBindingElement(element)) {
+            buildBindingElementOfBindingPatternParam(element, paraElement);
+        } else if (ts.isOmittedExpression(element)) {
+            logger.warn('TODO: support OmittedExpression for ArrayBindingPattern parameter name.');
+        }
+        elements.push(paraElement);
+    });
+    methodParameter.setArrayElements(elements);
+}
+
+export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkInstance: ArkMethod | ArkField, sourceFile: ts.SourceFile): MethodParameter[] {
     let parameters: MethodParameter[] = [];
     params.forEach((parameter) => {
         let methodParameter = new MethodParameter();
@@ -193,71 +267,9 @@ export function buildParameters(params: ts.NodeArray<ParameterDeclaration>, arkI
         if (ts.isIdentifier(parameter.name)) {
             methodParameter.setName(parameter.name.text);
         } else if (ts.isObjectBindingPattern(parameter.name)) {
-            methodParameter.setName('ObjectBindingPattern');
-            let elements: ObjectBindingPatternParameter[] = [];
-            parameter.name.elements.forEach((element) => {
-                let paraElement = new ObjectBindingPatternParameter();
-                if (element.propertyName) {
-                    if (ts.isIdentifier(element.propertyName)) {
-                        paraElement.setPropertyName(element.propertyName.text);
-                    } else {
-                        logger.warn('New propertyName of ObjectBindingPattern found, please contact developers to support this!');
-                    }
-                }
-
-                if (element.name) {
-                    if (ts.isIdentifier(element.name)) {
-                        paraElement.setName(element.name.text);
-                    } else {
-                        logger.warn('New name of ObjectBindingPattern found, please contact developers to support this!');
-                    }
-                }
-
-                if (element.initializer) {
-                    logger.warn('TODO: support ObjectBindingPattern initializer.');
-                }
-
-                if (element.dotDotDotToken) {
-                    paraElement.setOptional(true);
-                }
-                elements.push(paraElement);
-            });
-            methodParameter.setObjElements(elements);
+            buildObjectBindingPatternParam(methodParameter, parameter.name);
         } else if (ts.isArrayBindingPattern(parameter.name)) {
-            methodParameter.setName('ArrayBindingPattern');
-            let elements: ArrayBindingPatternParameter[] = [];
-            parameter.name.elements.forEach((element) => {
-                let paraElement = new ArrayBindingPatternParameter();
-                if (ts.isBindingElement(element)) {
-                    if (element.propertyName) {
-                        if (ts.isIdentifier(element.propertyName)) {
-                            paraElement.setPropertyName(element.propertyName.text);
-                        } else {
-                            logger.warn('New propertyName of ArrayBindingPattern found, please contact developers to support this!');
-                        }
-                    }
-
-                    if (element.name) {
-                        if (ts.isIdentifier(element.name)) {
-                            paraElement.setName(element.name.text);
-                        } else {
-                            logger.warn('New name of ArrayBindingPattern found, please contact developers to support this!');
-                        }
-                    }
-
-                    if (element.initializer) {
-                        logger.warn('TODO: support ArrayBindingPattern initializer.');
-                    }
-
-                    if (element.dotDotDotToken) {
-                        paraElement.setOptional(true);
-                    }
-                } else if (ts.isOmittedExpression(element)) {
-                    logger.warn('TODO: support OmittedExpression for ArrayBindingPattern parameter name.');
-                }
-                elements.push(paraElement);
-            });
-            methodParameter.setArrayElements(elements);
+            buildArrayBindingPatternParam(methodParameter, parameter.name);
         } else {
             logger.warn('Parameter name is not identifier, ObjectBindingPattern nor ArrayBindingPattern, please contact developers to support this!');
         }

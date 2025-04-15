@@ -46,17 +46,16 @@ export class DominanceFinder {
                 let blockIdx = this.blockToIdx.get(block) as number;
                 let preds = Array.from(block.getPredecessors());
                 let newIdom = this.getFirstDefinedBlockPredIdx(preds);
-                if (preds.length > 0 && newIdom !== -1) {
-                    for (const pred of preds) {
-                        let predIdx = this.blockToIdx.get(pred) as number;
-                        if (this.idoms[predIdx] !== -1) {
-                            newIdom = this.intersect(newIdom, predIdx);
-                        }
-                    }
-                    if (this.idoms[blockIdx] !== newIdom) {
-                        this.idoms[blockIdx] = newIdom;
-                        isChanged = true;
-                    }
+                if (preds.length <= 0 || newIdom === -1) {
+                    continue;
+                }
+                for (const pred of preds) {
+                    let predIdx = this.blockToIdx.get(pred) as number;
+                    this.idoms[predIdx] !== -1 ? newIdom = this.intersect(newIdom, predIdx) : null;
+                }
+                if (this.idoms[blockIdx] !== newIdom) {
+                    this.idoms[blockIdx] = newIdom;
+                    isChanged = true;
                 }
             }
         }
@@ -68,14 +67,15 @@ export class DominanceFinder {
         }
         for (const block of this.blocks) {
             let preds = Array.from(block.getPredecessors());
-            if (preds.length > 1) {
-                let blockIdx = this.blockToIdx.get(block) as number;
-                for (const pred of preds) {
-                    let predIdx = this.blockToIdx.get(pred) as number;
-                    while (predIdx !== this.idoms[blockIdx]) {
-                        this.domFrontiers[predIdx].push(blockIdx);
-                        predIdx = this.idoms[predIdx];
-                    }
+            if (preds.length <= 1) {
+                continue;
+            }
+            let blockIdx = this.blockToIdx.get(block) as number;
+            for (const pred of preds) {
+                let predIdx = this.blockToIdx.get(pred) as number;
+                while (predIdx !== this.idoms[blockIdx]) {
+                    this.domFrontiers[predIdx].push(blockIdx);
+                    predIdx = this.idoms[predIdx];
                 }
             }
         }
