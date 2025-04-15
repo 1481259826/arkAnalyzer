@@ -404,7 +404,7 @@ export class PagBuilder {
 
             // for demand-driven analysis, add fake parameter heapObj nodes
             if (e.src instanceof ArkParameterRef && this.scale === PtaAnalysisScale.MethodLevel) {
-                let paramObjNodeID = paramNodes?.get(paramRefIndex ++);
+                let paramObjNodeID = paramNodes?.get(paramRefIndex++);
                 if (!paramObjNodeID) {
                     continue;
                 }
@@ -541,7 +541,7 @@ export class PagBuilder {
             }
             // update call graph
             // TODO: movo to cgbuilder
-            
+
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
@@ -551,8 +551,6 @@ export class PagBuilder {
                     srcNodes.push(...this.addStaticPagCallReturnEdge(staticCS, baseClassPTNode, calleeCid));
                     continue;
                 }
-                srcNodes.push(...this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode));
-                srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid));
 
                 if (getBuiltInApiType(ivkExpr?.getMethodSignature()!) === BuiltApiType.NotBuiltIn) {
                     // Dynamic call, Ptr call, normal SDK call
@@ -563,7 +561,7 @@ export class PagBuilder {
                         let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr.getBase(), callee!, calleeCid, cs.callerFuncID);
                         srcNodes.push(srcBaseNode);
                     } else if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkPtrInvokeExpr) {
-                        this.addThisRefCallEdge(baseClassPTNode, (ptNode as PagFuncNode).getOriginCid(), 
+                        this.addThisRefCallEdge(baseClassPTNode, (ptNode as PagFuncNode).getOriginCid(),
                             (ptNode as PagFuncNode).getCS().args![0] as Local, callee!, calleeCid, cs.callerFuncID
                         );
                     }
@@ -654,13 +652,13 @@ export class PagBuilder {
         }
 
         let addThisEdge = () => {
-            if (!(staticCS.args![0] instanceof NullConstant) && !(realCallee.isStatic())) { // !!! TODO: seperate the function, method, anonymous method
+            if (!(staticCS.args![0] instanceof NullConstant) && !(realCallee!.isStatic())) { // !!! TODO: seperate the function, method, anonymous method
                 // instance method need to pass this param
-                srcNodes.push(this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID));
+                srcNodes.push(this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee!, calleeCid, staticCS.callerFuncID));
             }
         }
 
-        let  setFunctionThisPt = (srcNode: PagFuncNode) => {
+        let setFunctionThisPt = (srcNode: PagFuncNode) => {
             let thisLocal = staticCS.args![0]
             if (!(thisLocal instanceof Local)) {
                 return;
@@ -686,7 +684,7 @@ export class PagBuilder {
                 srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
                 addThisEdge();
                 break;
-            
+
             case BuiltApiType.FunctionApply:
                 // function.apply(thisArg, [argsArray])
                 this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
@@ -712,8 +710,6 @@ export class PagBuilder {
                 let dstNode = this.getOrNewPagNode(cid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
                 this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy, staticCS.callStmt);
                 srcNodes.push(srcNode.getID());
-                // srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
-                // addThisEdge();
 
                 // store the args and offset in Function node
                 srcNode.setCS(staticCS);
@@ -1000,7 +996,7 @@ export class PagBuilder {
         if (!containerValue || !param) {
             return srcNodes;
         }
-        
+
         let basePagNode = this.getOrNewPagNode(callerCid, containerValue, callStmt);
         let dstPagNode = this.getOrNewPagNode(calleeCid, param, callStmt);
 
@@ -1428,7 +1424,7 @@ export class PagBuilder {
     }
 
     private funcPagDfs(graph: Map<Value, Value[]>, visited: Set<Value>, currentNode: Value, targetNode: Value,
-                       staticFieldFound: boolean): boolean {
+        staticFieldFound: boolean): boolean {
         if (currentNode === targetNode) {
             return staticFieldFound;
         }
