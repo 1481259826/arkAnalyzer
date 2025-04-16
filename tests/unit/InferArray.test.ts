@@ -277,4 +277,14 @@ describe("function Test", () => {
         assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(mode, %AM4$%AM3$demoCallBack)');
     })
 
+
+    it('enum value type case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'inferSample.ts');
+        const file = scene.getFile(fileId);
+        const stmts = file?.getDefaultClass()?.getMethodWithName('testEnumValue')?.getCfg()?.getStmts();
+        if (stmts) {
+            assert.equal(stmts[3].toString(), 'staticinvoke <@etsSdk/api/@ohos.sensor.d.ts: sensor.%dflt.off(@etsSdk/api/@ohos.sensor.d.ts: sensor.SensorId.[static]GRAVITY, @etsSdk/api/@ohos.base.d.ts: Callback<@etsSdk/api/@ohos.sensor.d.ts: sensor.GravityResponse>)>(%1)');
+            assert.equal(stmts[4].toString(), 'staticinvoke <@etsSdk/api/@ohos.sensor.d.ts: sensor.%dflt.off(@etsSdk/api/@ohos.sensor.d.ts: sensor.SensorId.[static]AMBIENT_LIGHT, @etsSdk/api/@ohos.base.d.ts: Callback<@etsSdk/api/@ohos.sensor.d.ts: sensor.LightResponse>)>(5)');
+        }
+    })
 })
