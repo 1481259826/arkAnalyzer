@@ -287,4 +287,13 @@ describe("function Test", () => {
             assert.equal(stmts[4].toString(), 'staticinvoke <@etsSdk/api/@ohos.sensor.d.ts: sensor.%dflt.off(@etsSdk/api/@ohos.sensor.d.ts: sensor.SensorId.[static]AMBIENT_LIGHT, @etsSdk/api/@ohos.base.d.ts: Callback<@etsSdk/api/@ohos.sensor.d.ts: sensor.LightResponse>)>(5)');
         }
     })
+
+    it('function name same with param type', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'inferSample.ts');
+        const file = scene.getFile(fileId);
+        const parameter = file?.getDefaultClass()?.getMethodWithName('ResponseType')?.getParameters()[0];
+        if (parameter) {
+            assert.equal(parameter.getType().toString(), '@etsSdk/api/@internal/component/ets/enums.d.ts: ResponseType');
+        }
+    })
 })
