@@ -620,7 +620,7 @@ export class TypeInference {
                 return EMPTY_STRING;
             });
             if (i === 0) {
-                type = singleNames.length > 1 ? this.inferBaseType(name, arkClass) : this.inferTypeName(name, arkClass);
+                type = singleNames.length > 1 ? this.inferBaseType(name, arkClass) : this.inferTypeByName(name, arkClass);
             } else if (type) {
                 type = this.inferFieldType(type, name, arkClass)?.[1];
             }
@@ -742,10 +742,10 @@ export class TypeInference {
         return this.parseArkExport2Type(arkExport);
     }
 
-    public static inferTypeName(typeName: string, arkClass: ArkClass): Type | null {
-        let arkExport: ArkExport | null = ModelUtils.getClassWithName(typeName, arkClass)
-            ?? ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(typeName)
-            ?? ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
+    public static inferTypeByName(typeName: string, arkClass: ArkClass): Type | null {
+        let arkExport: ArkExport | null = ModelUtils.getClassWithName(typeName, arkClass) ??
+            ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(typeName) ??
+            ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
         if (arkExport instanceof ArkClass || arkExport instanceof AliasType) {
             return this.parseArkExport2Type(arkExport);
         }
