@@ -2,6 +2,7 @@
   "supportFileExts": [
     ".ets",
     ".ts",
+    ".js",
     ".d.ets",
     ".d.ts"
   ],
