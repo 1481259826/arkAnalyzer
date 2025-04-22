@@ -54,7 +54,7 @@ export class AstTreeUtils {
         return sourceFile;
     }
 
-    private static createSourceFile(fileName: string, code: string):  ts.SourceFile{
+    private  static  createSourceFile(fileName:  string,  code:  string):  ts.SourceFile{
         return ts.createSourceFile(
             fileName,
             code,
