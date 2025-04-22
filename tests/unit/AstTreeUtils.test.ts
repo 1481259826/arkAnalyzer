@@ -24,4 +24,11 @@ describe('AstTreeUtils Test', () => {
         expect(sourceFile.kind).eq(ts.SyntaxKind.SourceFile);
         expect(sourceFile.statements.length).eq(1);
     });
+
+    it('test createSourceFile', async () => {
+        let code = 'async function AwaitThenable() { await \'value\'; let creataValue = ()=> \'value1\'; await creataValue;}';
+        let sourceFile = AstTreeUtils.createSourceFile('testFileName', code);
+        expect(sourceFile.kind).eq(ts.SyntaxKind.SourceFile);
+        expect(sourceFile.statements.length).eq(1);
+    });
 });
