@@ -22,6 +22,10 @@ import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
 abstract class StatTraits {
+    TotalTime: number = 0;
+    startTime: number = 0;
+    endTime: number = 0;
+
     public getStat(): string {
         return '';
     }
@@ -31,7 +35,7 @@ abstract class StatTraits {
     }
 }
 
-export class PTAStat implements StatTraits {
+export class PTAStat extends StatTraits {
     pta: PointerAnalysis;
     numProcessedAddr: number = 0;
     numProcessedCopy: number = 0;
@@ -56,10 +60,6 @@ export class PTAStat implements StatTraits {
     numUnhandledFunc: number = 0;
 
     iterTimes: number = 0;
-    TotalTime: number = 0;
-
-    startTime: number = 0;
-    endTime: number = 0;
 
     startMemUsage: any;
     endMemUsage: any;
@@ -67,6 +67,7 @@ export class PTAStat implements StatTraits {
     heapUsed: number = 0;
 
     constructor(pta: PointerAnalysis) {
+        super();
         this.pta = pta;
     }
 
@@ -169,7 +170,7 @@ export class PTAStat implements StatTraits {
     }
 }
 
-export class PAGStat implements StatTraits {
+export class PAGStat extends StatTraits {
     numDynamicCall: number = 0;
     numTotalFunction: number = 0;
     numTotalNode: number = 0;
@@ -196,6 +197,15 @@ export class CGStat extends StatTraits {
     numIntrinsic: number = 0;
     numConstructor: number = 0;
 
+    public startStat(): void {
+        this.startTime = new Date().getTime();
+    }
+
+    public endStat(): void {
+        this.endTime = new Date().getTime();
+        this.TotalTime = (this.endTime - this.startTime) / 1000;
+    }
+
     public addNodeStat(kind: CallGraphNodeKind): void {
         switch (kind) {
             case CallGraphNodeKind.real:
@@ -218,6 +228,7 @@ export class CGStat extends StatTraits {
     public getStat(): string {
         let output: string;
         output = '==== CG Statictics: ====\n';
+        output = output + `CG construction Total Time\t\t${this.TotalTime} S\n`;
         output = output + `Real function\t\t${this.numReal}\n`;
         output = output + `Intrinsic function\t${this.numIntrinsic}\n`;
         output = output + `Constructor function\t${this.numConstructor}\n`;

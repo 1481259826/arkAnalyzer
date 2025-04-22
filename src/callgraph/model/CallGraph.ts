@@ -428,6 +428,14 @@ export class CallGraph extends BaseExplicitGraph {
         return false;
     }
 
+    public startStat(): void {
+        this.cgStat.startStat();
+    }
+
+    public endStat(): void {
+        this.cgStat.endStat();
+    }
+
     public printStat(): void {
         this.cgStat.printStat();
     }
