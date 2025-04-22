@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Constants } from './constants';
+import { Constants, myNamespaceA } from './constants';
 import sensor from '@ohos.sensor';
 
 class Sample {
@@ -72,5 +72,21 @@ function returnWithAny(): any[] {
 
 
 function ResponseType(type: ResponseType): void {
-    console.log('yes');
+    console.log('yes' + myNamespaceA.a);
 }
+
+
+class classA {
+    private a = 'c';
+}
+
+function testFieldType(): void {
+    declare const anyVarTest: any;
+    declare const nestedAnyTest: { prop: any };
+    let testPoint = nestedAnyTest[anyVarTest];
+    let key = 'a';
+    let ain = new classA();
+    let str = ain[key];
+    let anyType = ain['key'];
+}
+
