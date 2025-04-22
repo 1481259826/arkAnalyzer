@@ -69,3 +69,8 @@ function testEnumValue(): void {
 function returnWithAny(): any[] {
     return ['greet'];
 }
+
+
+function ResponseType(type: ResponseType): void {
+    console.log('yes');
+}
