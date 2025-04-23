@@ -19,7 +19,6 @@ import {
     AnyType,
     ArrayType,
     ClassType,
-    EnumValueType,
     FunctionType,
     GenericType,
     LexicalEnvType,
@@ -262,7 +261,7 @@ export class IRInference {
             return new ArkArrayRef(ref.getBase(), ValueUtil.createConst(ref.getFieldName()));
         }
 
-        let newFieldSignature = this.generateNewFieldSignature(ref, arkMethod, baseType);
+        let newFieldSignature = this.generateNewFieldSignature(ref, arkMethod.getDeclaringArkClass(), baseType);
         if (newFieldSignature) {
             if (newFieldSignature.isStatic()) {
                 return new ArkStaticFieldRef(newFieldSignature);
@@ -583,27 +582,26 @@ export class IRInference {
         }
     }
 
-    private static generateNewFieldSignature(ref: AbstractFieldRef, arkMethod: ArkMethod, baseType: Type): FieldSignature | null {
-        const arkClass = arkMethod.getDeclaringArkClass();
+    private static generateNewFieldSignature(ref: AbstractFieldRef, arkClass: ArkClass, baseType: Type): FieldSignature | null {
         if (baseType instanceof UnionType) {
             for (let type of baseType.flatType()) {
                 if (type instanceof UndefinedType || type instanceof NullType) {
                     continue;
                 }
-                let newFieldSignature = this.generateNewFieldSignature(ref, arkMethod, type);
+                let newFieldSignature = this.generateNewFieldSignature(ref, arkClass, type);
                 if (!TypeInference.isUnclearType(newFieldSignature?.getType())) {
                     return newFieldSignature;
                 }
             }
             return null;
         } else if (baseType instanceof AliasType) {
-            return this.generateNewFieldSignature(ref, arkMethod, baseType.getOriginalType());
+            return this.generateNewFieldSignature(ref, arkClass, baseType.getOriginalType());
         }
-        const fieldName = IRInference.getFieldName(ref, arkMethod);
+        const fieldName = ref.getFieldName().replace(/[\"|\']/g, '');
         const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
         let propertyType = propertyAndType?.[1];
-        if (!propertyType) {
-            const newType = TypeInference.inferUnclearRefName(fieldName, arkClass);
+        if (!propertyType || propertyType instanceof UnknownType) {
+            const newType = TypeInference.inferBaseType(fieldName, arkClass);
             if (newType) {
                 propertyType = newType;
             }
@@ -632,23 +630,6 @@ export class IRInference {
         return new FieldSignature(fieldName, signature, propertyType ?? ref.getType(), staticFlag);
     }
 
-
-    private static getFieldName(ref: AbstractFieldRef, arkMethod: ArkMethod) {
-        let fieldName = ref.getFieldName().replace(/[\"|\']/g, '');
-        if (!ref.getFieldName().match(/[\"|\']/)) {
-            const arkExport = arkMethod.getBody()?.getLocals().get(fieldName) ??
-                ModelUtils.findDeclaredLocal(new Local(fieldName), arkMethod);
-            const declaringStmt = arkExport?.getDeclaringStmt();
-            if (declaringStmt instanceof ArkAssignStmt) {
-                if (declaringStmt.getRightOp() instanceof Constant) {
-                    fieldName = (declaringStmt.getRightOp() as Constant).getValue();
-                } else if (arkExport?.getType() instanceof EnumValueType) {
-                    fieldName = (arkExport.getType() as EnumValueType).getConstant()?.getValue() ?? '';
-                }
-            }
-        }
-        return fieldName;
-    }
 
     public static inferAnonymousClass(anon: ArkClass | null, declaredSignature: ClassSignature, set: Set<string> = new Set()): void {
         if (!anon) {

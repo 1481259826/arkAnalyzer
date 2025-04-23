@@ -705,7 +705,13 @@ export class TypeInference {
         } else if (property) {
             propertyType = this.parseArkExport2Type(property);
         }
-        return [property, propertyType ?? AnyType.getInstance()];
+        if (propertyType) {
+            return [property, propertyType];
+        } else if (arkClass.isAnonymousClass()) {
+            const fieldType = this.inferUnclearRefName(fieldName, arkClass);
+            return fieldType ? [null, fieldType] : null;
+        }
+        return null;
     }
 
     /**

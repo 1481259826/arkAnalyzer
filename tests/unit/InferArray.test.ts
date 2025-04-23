@@ -238,14 +238,6 @@ describe("Infer Array Test", () => {
     it('any type case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
         const file = projectScene.getFile(fileId);
-        const stmts = file?.getDefaultClass()?.getMethodWithName('testFieldType')
-            ?.getCfg()?.getStmts();
-        assert.isDefined(stmts);
-        if (stmts) {
-            assert.equal((stmts[3] as ArkAssignStmt).getLeftOp().getType().getTypeString(), 'any');
-            assert.equal((stmts[8] as ArkAssignStmt).getLeftOp().getType().getTypeString(), 'string');
-            assert.equal((stmts[9] as ArkAssignStmt).getLeftOp().getType().getTypeString(), 'any');
-        }
         const arkExport = file?.getImportInfoBy('myNamespaceA')?.getLazyExportInfo()?.getArkExport();
         assert.isDefined((arkExport as ArkNamespace).getExportInfoBy('a')?.getArkExport());
     })

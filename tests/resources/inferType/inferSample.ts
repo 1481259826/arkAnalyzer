@@ -76,7 +76,7 @@ function ResponseType(type: ResponseType): void {
 }
 
 
-class classA {
+class ClassA {
     private a = 'c';
 }
 
@@ -85,7 +85,7 @@ function testFieldType(): void {
     declare const nestedAnyTest: { prop: any };
     let testPoint = nestedAnyTest[anyVarTest];
     let key = 'a';
-    let ain = new classA();
+    let ain = new ClassA();
     let str = ain[key];
     let anyType = ain['key'];
 }
