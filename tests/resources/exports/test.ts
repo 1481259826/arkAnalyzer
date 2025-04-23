@@ -16,6 +16,7 @@
 import * as t from './exportSample';
 import hilog from '@ohos.hilog';
 import file from '@ohos.base';
+import path from 'path';
 
 export function cc() {
     t.testing();
