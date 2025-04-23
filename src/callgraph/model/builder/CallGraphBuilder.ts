@@ -93,7 +93,7 @@ export class CallGraphBuilder {
         classHierarchyAnalysis.start(displayGeneratedMethod);
     }
 
-    public buildCHA4HarmonyProjects(displayGeneratedMethod: boolean = false): void {
+    public buildCHA4WholeProject(displayGeneratedMethod: boolean = false): void {
         let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg);
         classHierarchyAnalysis.projectStart(displayGeneratedMethod);
     }
