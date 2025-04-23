@@ -20,6 +20,7 @@ import {
     ArkAssignStmt,
     ArkInstanceFieldRef,
     ArkInvokeStmt,
+    ArkNamespace,
     ArkNewArrayExpr,
     ArkStaticFieldRef,
     ArrayType,
@@ -232,6 +233,13 @@ describe("Infer Array Test", () => {
             assert.equal(stmts[2].toString(), '%0 = d instanceof @inferType/demo.ts: Test');
             assert.equal(stmts[3].toString(), 'if %0 != false');
         }
+    })
+
+    it('any type case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
+        const file = projectScene.getFile(fileId);
+        const arkExport = file?.getImportInfoBy('myNamespaceA')?.getLazyExportInfo()?.getArkExport();
+        assert.isDefined((arkExport as ArkNamespace).getExportInfoBy('a')?.getArkExport());
     })
 })
 

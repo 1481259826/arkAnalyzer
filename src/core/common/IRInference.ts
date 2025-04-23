@@ -600,8 +600,8 @@ export class IRInference {
         const fieldName = ref.getFieldName().replace(/[\"|\']/g, '');
         const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
         let propertyType = propertyAndType?.[1];
-        if (!propertyType) {
-            const newType = TypeInference.inferUnclearRefName(fieldName, arkClass);
+        if (!propertyType || propertyType instanceof UnknownType) {
+            const newType = TypeInference.inferBaseType(fieldName, arkClass);
             if (newType) {
                 propertyType = newType;
             }
