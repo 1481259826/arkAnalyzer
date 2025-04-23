@@ -29,6 +29,7 @@ export enum Language {
     TYPESCRIPT = 0,
     ARKTS1_1 = 1,
     ARKTS1_2 = 2,
+    JAVASCRIPT = 3,
     UNKNOWN = -1,
 }
 
