@@ -94,11 +94,32 @@ export abstract class AbstractAnalysis {
         }
     }
 
-    private processCallSite(method: FuncID, cs: CallSite, displayGeneratedMethod: boolean): void {
+    public projectStart(displayGeneratedMethod: boolean): void {
+        this.scene.getMethods().forEach((method) => {
+            let cgNode = this.cg.getCallGraphNodeByMethod(method.getSignature()) as CallGraphNode;
+
+            if (cgNode.isSdkMethod()) {
+                return;
+            }
+
+            this.preProcessMethod(cgNode.getID());
+
+            this.processMethod(cgNode.getID()).forEach((cs: CallSite) => {
+                this.processCallSite(cgNode.getID(), cs, displayGeneratedMethod, true);
+            });
+        });
+    }
+
+    private processCallSite(method: FuncID, cs: CallSite, displayGeneratedMethod: boolean, isProject: boolean = false): void {
         let me = this.cg.getArkMethodByFuncID(cs.calleeFuncID);
         let meNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-        this.processedMethod.insert(cs.callerFuncID);
         this.addCallGraphEdge(method, me, cs, displayGeneratedMethod);
+
+        if (isProject) {
+            return;
+        }
+
+        this.processedMethod.insert(cs.callerFuncID);
 
         if (this.processedMethod.contains(cs.calleeFuncID) || meNode.isSdkMethod()) {
             return;
