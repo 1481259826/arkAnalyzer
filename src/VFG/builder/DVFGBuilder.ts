@@ -24,7 +24,7 @@ import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { FieldSignature } from '../../core/model/ArkSignature';
 import { Scene } from '../../Scene';
-import { DVFG, DVFGNode } from "../DVFG";
+import { DVFG, DVFGNode } from '../DVFG';
 
 export class DVFGBuilder {
     private dvfg: DVFG;

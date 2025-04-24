@@ -21,7 +21,7 @@ import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkBody } from './ArkBody';
 import { ArkClass, ClassCategory } from './ArkClass';
-import { MethodSignature, MethodSubSignature } from "./ArkSignature";
+import { MethodSignature, MethodSubSignature } from './ArkSignature';
 import { BodyBuilder } from './builder/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
@@ -32,9 +32,9 @@ import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
 import { Constant } from '../base/Constant';
 import { Local } from '../base/Local';
-import { ArkFile, Language } from "./ArkFile";
+import { ArkFile, Language } from './ArkFile';
 import { CONSTRUCTOR_NAME } from '../common/TSConst';
-import { MethodParameter } from "./builder/ArkMethodBuilder";
+import { MethodParameter } from './builder/ArkMethodBuilder';
 
 export const arkMethodNodeKind = [
     'MethodDeclaration',

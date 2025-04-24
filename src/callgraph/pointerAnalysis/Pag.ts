@@ -306,7 +306,12 @@ export class PagNode extends BaseNode {
         this.pointTo = pts;
     }
 
-    public getOutEdges() {
+    public getOutEdges(): {
+        AddressEdge: PagEdgeSet;
+        CopyEdge: PagEdgeSet;
+        LoadEdge: PagEdgeSet;
+        WriteEdge: PagEdgeSet;
+    } {
         return {
             AddressEdge: this.addressOutEdges,
             CopyEdge: this.copyOutEdges,

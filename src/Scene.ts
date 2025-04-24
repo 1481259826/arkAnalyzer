@@ -965,7 +965,7 @@ export class Scene {
     }
 
     //Get the set of entry points that are used to build the call graph.
-    public getEntryPoints() {
+    public getEntryPoints(): MethodSignature[] {
         return [];
     }
 
@@ -974,15 +974,15 @@ export class Scene {
         return this.visibleValue;
     }
 
-    public getOhPkgContent() {
+    public getOhPkgContent(): { [p: string]: unknown } {
         return this.ohPkgContent;
     }
 
-    public getOhPkgContentMap() {
+    public getOhPkgContentMap(): Map<string, { [p: string]: unknown }> {
         return this.ohPkgContentMap;
     }
 
-    public getOhPkgFilePath() {
+    public getOhPkgFilePath(): string {
         return this.ohPkgFilePath;
     }
 
@@ -1422,7 +1422,7 @@ export class ModuleScene {
         return this.moduleOhPkgFilePath;
     }
 
-    public getOhPkgContent() {
+    public getOhPkgContent(): { [p: string]: unknown } {
         return this.ohPkgContent;
     }
 

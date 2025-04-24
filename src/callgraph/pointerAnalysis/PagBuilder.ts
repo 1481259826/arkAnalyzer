@@ -1973,7 +1973,7 @@ export class PagBuilder {
         this.updatedNodesThisRound.set(nodeID, updatedNode);
     }
 
-    public getUpdatedNodes() {
+    public getUpdatedNodes(): Map<number, IPtsCollection<number>> {
         return this.updatedNodesThisRound;
     }
 
