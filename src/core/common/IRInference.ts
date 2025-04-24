@@ -94,6 +94,15 @@ export class IRInference {
                 }
             }
         });
+        file.getNamespaces().forEach(namespace => {
+            namespace.getExportInfos().forEach(exportInfo => {
+                if (exportInfo.getArkExport() === undefined) {
+                    let arkExport = findArkExport(exportInfo);
+                    exportInfo.setArkExport(arkExport);
+                    arkExport !== null ? exportInfo.setExportClauseType(arkExport.getExportType()) : true;
+                }
+            });
+        });
     }
 
     private static inferImportInfos(file: ArkFile): void {
