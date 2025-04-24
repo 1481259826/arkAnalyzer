@@ -78,7 +78,7 @@ export function buildDefaultArkClassFromArkNamespace(
     buildDefaultArkClass(defaultClass, sourceFile, nsNode);
 }
 
-export function buildNormalArkClassFromArkMethod(clsNode: ClassLikeNode, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+export function buildNormalArkClassFromArkMethod(clsNode: ClassLikeNode, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod): void {
     const namespace = cls.getDeclaringArkNamespace();
     if (namespace) {
         buildNormalArkClassFromArkNamespace(clsNode, namespace, cls, sourceFile, declaringMethod);
@@ -290,7 +290,7 @@ function buildEnum2ArkClass(clsNode: ts.EnumDeclaration, cls: ArkClass, sourceFi
     buildArkClassMembers(clsNode, cls, sourceFile);
 }
 
-function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod): void {
     const className = genClassName('', cls, declaringMethod);
     const classSignature = new ClassSignature(className, cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
     cls.setSignature(classSignature);
@@ -304,7 +304,12 @@ function buildTypeLiteralNode2ArkClass(clsNode: ts.TypeLiteralNode, cls: ArkClas
     buildArkClassMembers(clsNode, cls, sourceFile);
 }
 
-function buildObjectLiteralExpression2ArkClass(clsNode: ts.ObjectLiteralExpression, cls: ArkClass, sourceFile: ts.SourceFile, declaringMethod?: ArkMethod) {
+function buildObjectLiteralExpression2ArkClass(
+    clsNode: ts.ObjectLiteralExpression,
+    cls: ArkClass,
+    sourceFile: ts.SourceFile,
+    declaringMethod?: ArkMethod
+): void {
     const className = genClassName('', cls, declaringMethod);
     const classSignature = new ClassSignature(className, cls.getDeclaringArkFile().getFileSignature(), cls.getDeclaringArkNamespace()?.getSignature() || null);
     cls.setSignature(classSignature);

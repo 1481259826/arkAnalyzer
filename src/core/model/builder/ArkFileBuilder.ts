@@ -65,7 +65,7 @@ export const notStmtOrExprKind = [
  * @param arkFile
  * @returns
  */
-export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile, projectName: string) {
+export function buildArkFileFromFile(absoluteFilePath: string, projectDir: string, arkFile: ArkFile, projectName: string): void {
     arkFile.setFilePath(absoluteFilePath);
     arkFile.setProjectDir(projectDir);
 
@@ -85,7 +85,7 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
  * @param astRoot
  * @returns
  */
-function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
+function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile): void {
     const statements = astRoot.statements;
     const namespaces: ArkNamespace[] = [];
     statements.forEach(child => {
@@ -157,7 +157,7 @@ function buildArkFile(arkFile: ArkFile, astRoot: ts.SourceFile) {
     });
 }
 
-function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile) {
+function genDefaultArkClass(arkFile: ArkFile, astRoot: ts.SourceFile): void {
     let defaultClass = new ArkClass();
 
     buildDefaultArkClassFromArkFile(arkFile, defaultClass, astRoot);

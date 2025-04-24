@@ -70,8 +70,9 @@ export class IRUtils {
             return new CommentsMetadata(comments);
         }
 
+        // node.pos is the start position of
         const commentRanges =
-            (isLeading ? ts.getLeadingCommentRanges(sourceFile.text, node.pos) : ts.getTrailingCommentRanges(sourceFile.text, node.end)) || []; // node.pos is the start position of
+            (isLeading ? ts.getLeadingCommentRanges(sourceFile.text, node.pos) : ts.getTrailingCommentRanges(sourceFile.text, node.end)) || [];
         // leading comment, while node.end is the
         // end position of the statement
         const getPosition = (pos: number, end: number): FullPosition => {

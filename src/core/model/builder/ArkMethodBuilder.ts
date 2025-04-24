@@ -58,7 +58,7 @@ export type MethodLikeNode =
     | ts.CallSignatureDeclaration
     | ts.FunctionTypeNode;
 
-export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration) {
+export function buildDefaultArkMethodFromArkClass(declaringClass: ArkClass, mtd: ArkMethod, sourceFile: ts.SourceFile, node?: ts.ModuleDeclaration): void {
     mtd.setDeclaringArkClass(declaringClass);
 
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(DEFAULT_ARK_METHOD_NAME, true);
@@ -78,7 +78,7 @@ export function buildArkMethodFromArkClass(
     mtd: ArkMethod,
     sourceFile: ts.SourceFile,
     declaringMethod?: ArkMethod
-) {
+): void {
     mtd.setDeclaringArkClass(declaringClass);
     declaringMethod !== undefined && mtd.setOuterMethod(declaringMethod);
 
@@ -174,7 +174,7 @@ function buildMethodName(node: MethodLikeNode, declaringClass: ArkClass, sourceF
     return name;
 }
 
-function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass) {
+function buildAnonymousMethodName(node: MethodLikeNode, declaringClass: ArkClass): string {
     return `${ANONYMOUS_METHOD_PREFIX}${declaringClass.getAnonymousMethodNumber()}`;
 }
 

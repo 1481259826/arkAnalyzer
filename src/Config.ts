@@ -84,7 +84,7 @@ export class SceneConfig {
      * @param sdks - sdks used in this scene.
      * @param fullFilePath - the full file path.
      */
-    public buildConfig(targetProjectName: string, targetProjectDirectory: string, sdks: Sdk[], fullFilePath?: string[]) {
+    public buildConfig(targetProjectName: string, targetProjectDirectory: string, sdks: Sdk[], fullFilePath?: string[]): void {
         this.targetProjectName = targetProjectName;
         this.targetProjectDirectory = targetProjectDirectory;
         this.sdksObj = sdks;
