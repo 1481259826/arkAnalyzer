@@ -55,6 +55,7 @@ export abstract class AbstractAnalysis {
         if (method != null) {
             return method;
         }
+        return undefined;
     }
 
     public getClassHierarchy(arkClass: ArkClass): ArkClass[] {

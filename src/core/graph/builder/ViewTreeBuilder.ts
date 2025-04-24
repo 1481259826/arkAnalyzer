@@ -900,7 +900,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
 
         if (transferMap.size === 0) {
-            return;
+            return undefined;
         }
         return transferMap;
     }

@@ -1879,7 +1879,7 @@ export class PagBuilder {
         // namespace check
         let arkMethod = this.cg.getArkMethodByFuncID(funcID);
         if (!arkMethod) {
-            return;
+            return undefined;
         }
 
         let declaringNameSpace = arkMethod.getDeclaringArkClass().getDeclaringArkNamespace();
@@ -1896,7 +1896,7 @@ export class PagBuilder {
         let declaringFile = arkMethod.getDeclaringArkFile();
         let fileLocals = declaringFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals() ?? new Map();
         if (!fileLocals.has(value.getName())) {
-            return;
+            return undefined;
         }
 
         return fileLocals.get(value.getName());
@@ -1905,18 +1905,18 @@ export class PagBuilder {
     private getExportSourceValue(value: Local, funcID: FuncID): Local | undefined {
         let curMethod = this.cg.getArkMethodByFuncID(funcID);
         if (!curMethod) {
-            return;
+            return undefined;
         }
 
         let curFile = curMethod.getDeclaringArkFile();
         let impInfo = curFile.getImportInfoBy(value.getName());
         if (!impInfo) {
-            return;
+            return undefined;
         }
 
         let exportSource = impInfo.getLazyExportInfo();
         if (!exportSource) {
-            return;
+            return undefined;
         }
 
         let exportSouceValue = exportSource.getArkExport();

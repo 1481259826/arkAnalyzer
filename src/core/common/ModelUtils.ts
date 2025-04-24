@@ -543,6 +543,7 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
             return arkFile;
         }
     }
+    return null;
 }
 
 /**
