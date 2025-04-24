@@ -13,15 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    BigIntConstant,
-    BooleanConstant,
-    Constant,
-    NullConstant,
-    NumberConstant,
-    StringConstant,
-    UndefinedConstant,
-} from '../base/Constant';
+import { BigIntConstant, BooleanConstant, Constant, NullConstant, NumberConstant, StringConstant, UndefinedConstant } from '../base/Constant';
 
 export const EMPTY_STRING = '';
 

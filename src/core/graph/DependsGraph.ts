@@ -97,11 +97,7 @@ export class DependsGraph<NodeAttr extends NodeAttributes, EdgeAttr extends Edge
         return node;
     }
 
-    public addEdge(
-        src: DependsNode<NodeAttr>,
-        dst: DependsNode<NodeAttr>,
-        attr: EdgeAttr
-    ): DependsEdge<NodeAttr, EdgeAttr> {
+    public addEdge(src: DependsNode<NodeAttr>, dst: DependsNode<NodeAttr>, attr: EdgeAttr): DependsEdge<NodeAttr, EdgeAttr> {
         let edge = new DependsEdge(src, dst, attr);
         let key = edge.getKey();
         if (this.edgesMap.has(key)) {

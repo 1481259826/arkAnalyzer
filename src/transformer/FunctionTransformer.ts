@@ -13,7 +13,4 @@
  * limitations under the License.
  */
 
-
-class FunctionTransformer extends Transformer{
-    
-}
+class FunctionTransformer extends Transformer {}

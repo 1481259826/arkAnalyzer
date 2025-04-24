@@ -13,13 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    AliasTypeSignature,
-    ClassSignature,
-    FieldSignature,
-    MethodSignature,
-    NamespaceSignature,
-} from '../model/ArkSignature';
+import { AliasTypeSignature, ClassSignature, FieldSignature, MethodSignature, NamespaceSignature } from '../model/ArkSignature';
 import { ArkExport, ExportType } from '../model/ArkExport';
 import { MODIFIER_TYPE_MASK, ModifierType } from '../model/ArkBaseModel';
 import {
@@ -254,7 +248,7 @@ export class LiteralType extends PrimitiveType {
  */
 export class UnionType extends Type {
     private types: Type[];
-    private currType: Type;  // The true type of the value at this time  
+    private currType: Type; // The true type of the value at this time
     constructor(types: Type[], currType: Type = UnknownType.getInstance()) {
         super();
         this.types = [...types];
@@ -275,7 +269,7 @@ export class UnionType extends Type {
 
     public getTypeString(): string {
         let typesString: string[] = [];
-        this.getTypes().forEach((t) => {
+        this.getTypes().forEach(t => {
             if (t instanceof UnionType || t instanceof IntersectionType) {
                 typesString.push(`(${t.toString()})`);
             } else {
@@ -317,7 +311,7 @@ export class IntersectionType extends Type {
 
     public getTypeString(): string {
         let typesString: string[] = [];
-        this.getTypes().forEach((t) => {
+        this.getTypes().forEach(t => {
             if (t instanceof UnionType || t instanceof IntersectionType) {
                 typesString.push(`(${t.toString()})`);
             } else {
@@ -803,7 +797,6 @@ export class LexicalEnvType extends Type {
 export class EnumValueType extends Type {
     private signature: FieldSignature;
     private constant?: Constant;
-
 
     constructor(signature: FieldSignature, constant?: Constant) {
         super();

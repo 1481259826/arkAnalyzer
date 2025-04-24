@@ -55,14 +55,7 @@ export class AstTreeUtils {
     }
 
     public static createSourceFile(fileName: string, code: string): ts.SourceFile {
-        return ts.createSourceFile(
-            fileName,
-            code,
-            ts.ScriptTarget.Latest,
-            true,
-            undefined,
-            ETS_COMPILER_OPTIONS
-        );
+        return ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, undefined, ETS_COMPILER_OPTIONS);
     }
 
     /**

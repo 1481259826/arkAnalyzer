@@ -62,10 +62,7 @@ export class PrinterBuilder {
         }
     }
 
-    public dumpToDot(
-        arkFile: ArkFile,
-        output: string | undefined = undefined
-    ): void {
+    public dumpToDot(arkFile: ArkFile, output: string | undefined = undefined): void {
         let filename = output;
         if (filename === undefined) {
             filename = path.join(this.getOutputDir(arkFile), arkFile.getName() + '.dot');
@@ -76,10 +73,7 @@ export class PrinterBuilder {
         PrinterBuilder.dump(printer, filename as string);
     }
 
-    public dumpToTs(
-        arkFile: ArkFile,
-        output: string | undefined = undefined
-    ): void {
+    public dumpToTs(arkFile: ArkFile, output: string | undefined = undefined): void {
         let filename = output;
         if (filename === undefined) {
             filename = path.join(this.getOutputDir(arkFile), arkFile.getName());
@@ -104,17 +98,14 @@ export class PrinterBuilder {
         PrinterBuilder.dump(printer, filename);
     }
 
-    public dumpToIR(
-        arkFile: ArkFile,
-        output: string | undefined = undefined
-    ): void {
+    public dumpToIR(arkFile: ArkFile, output: string | undefined = undefined): void {
         let filename = output;
         if (filename === undefined) {
             filename = path.join(this.getOutputDir(arkFile), arkFile.getName());
         }
-        
+
         filename += '.ir';
-        
+
         fs.mkdirSync(path.dirname(filename), { recursive: true });
 
         let printer: Printer = new ArkIRFilePrinter(arkFile);

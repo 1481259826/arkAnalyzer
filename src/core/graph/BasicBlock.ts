@@ -240,28 +240,30 @@ export class BasicBlock {
     public validate(): ArkError {
         let branchStmts: Stmt[] = [];
         for (const stmt of this.stmts) {
-            if (
-                stmt instanceof ArkIfStmt ||
-                stmt instanceof ArkReturnStmt ||
-                stmt instanceof ArkReturnVoidStmt
-            ) {
+            if (stmt instanceof ArkIfStmt || stmt instanceof ArkReturnStmt || stmt instanceof ArkReturnVoidStmt) {
                 branchStmts.push(stmt);
             }
         }
 
         if (branchStmts.length > 1) {
-            let errMsg = `More than one branch or return stmts in the block: ${branchStmts.map((value) => value.toString()).join('\n')}`;
+            let errMsg = `More than one branch or return stmts in the block: ${branchStmts.map(value => value.toString()).join('\n')}`;
             logger.error(errMsg);
-            return {errCode: ArkErrorCode.BB_MORE_THAN_ONE_BRANCH_RET_STMT, errMsg: errMsg };
+            return {
+                errCode: ArkErrorCode.BB_MORE_THAN_ONE_BRANCH_RET_STMT,
+                errMsg: errMsg,
+            };
         }
 
         if (branchStmts.length === 1 && branchStmts[0] !== this.stmts[this.stmts.length - 1]) {
             let errMsg = `${branchStmts[0].toString()} not at the end of block.`;
             logger.error(errMsg);
-            return {errCode: ArkErrorCode.BB_BRANCH_RET_STMT_NOT_AT_END, errMsg: errMsg};
+            return {
+                errCode: ArkErrorCode.BB_BRANCH_RET_STMT_NOT_AT_END,
+                errMsg: errMsg,
+            };
         }
 
-        return {errCode: ArkErrorCode.OK};
+        return { errCode: ArkErrorCode.OK };
     }
 
     private insertPos(index: number, toInsert: Stmt | Stmt[]): number {

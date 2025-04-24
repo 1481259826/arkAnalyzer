@@ -13,7 +13,4 @@
  * limitations under the License.
  */
 
-
-class SceneTransformer extends Transformer{
-    
-}
+class SceneTransformer extends Transformer {}

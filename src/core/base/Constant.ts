@@ -56,7 +56,7 @@ export class Constant implements Value {
     public toString(): string {
         let str = '';
         if (this.type instanceof StringType) {
-            str = '\'' + this.value + '\'';
+            str = "'" + this.value + "'";
         } else {
             str = this.value;
         }

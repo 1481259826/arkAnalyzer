@@ -25,7 +25,7 @@ export class RefUseReplacer {
     private newUse: Value;
 
     constructor(oldUse: Value, newUse: Value) {
-        this.oldUse = oldUse
+        this.oldUse = oldUse;
         this.newUse = newUse;
     }
 

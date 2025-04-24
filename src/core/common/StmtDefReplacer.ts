@@ -42,5 +42,4 @@ export class StmtDefReplacer {
             stmt.setLeftOp(this.newDef);
         }
     }
-
 }

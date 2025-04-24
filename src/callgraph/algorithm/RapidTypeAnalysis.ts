@@ -30,7 +30,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
     // TODO: signature duplicated check
     private instancedClasses: Set<ClassSignature> = new Set();
     // TODO: Set duplicated check
-    private ignoredCalls: Map<ClassSignature, Set<{ caller: NodeID, callee: NodeID, callStmt: Stmt }>> = new Map();
+    private ignoredCalls: Map<ClassSignature, Set<{ caller: NodeID; callee: NodeID; callStmt: Stmt }>> = new Map();
 
     constructor(scene: Scene, cg: CallGraph) {
         super(scene);
@@ -47,9 +47,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
 
         // process anonymous method call
         this.getParamAnonymousMethod(invokeExpr).forEach(method => {
-            resolveResult.push(new CallSite(invokeStmt, undefined,
-                this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
-            );
+            resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod));
         });
 
         let calleeMethod = this.resolveInvokeExpr(invokeExpr);
@@ -59,9 +57,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
 
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
-            resolveResult.push(new CallSite(invokeStmt, undefined,
-                this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod)
-            );
+            resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod));
         } else {
             let declareClass = calleeMethod!.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
@@ -72,8 +68,11 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
 
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
 
-                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && 
-                    arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
+                if (
+                    possibleCalleeMethod &&
+                    possibleCalleeMethod.isGenerated() &&
+                    arkClass.getSignature().toString() !== declareClass.getSignature().toString()
+                ) {
                     // remove the generated method in extended classes
                     return;
                 }
@@ -83,14 +82,15 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                 }
 
                 if (!this.instancedClasses.has(arkClass.getSignature())) {
-                    this.addIgnoredCalls(arkClass.getSignature(), callerMethod,
+                    this.addIgnoredCalls(
+                        arkClass.getSignature(),
+                        callerMethod,
                         this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
                         invokeStmt
                     );
                 } else {
-                    resolveResult.push(new CallSite(invokeStmt, undefined,
-                        this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
-                        callerMethod)
+                    resolveResult.push(
+                        new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
                     );
                 }
             });
@@ -102,14 +102,12 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
     protected preProcessMethod(funcID: FuncID): CallSite[] {
         let newCallSites: CallSite[] = [];
         let instancedClasses: Set<ClassSignature> = this.collectInstancedClassesInMethod(funcID);
-        let newlyInstancedClasses = new Set(
-            Array.from(instancedClasses).filter(item => !this.instancedClasses.has(item))
-        );
+        let newlyInstancedClasses = new Set(Array.from(instancedClasses).filter(item => !this.instancedClasses.has(item)));
 
         newlyInstancedClasses.forEach(sig => {
-            let ignoredCalls = this.ignoredCalls.get(sig)
+            let ignoredCalls = this.ignoredCalls.get(sig);
             if (ignoredCalls) {
-                ignoredCalls.forEach((call) => {
+                ignoredCalls.forEach(call => {
                     this.cg.addDynamicCallEdge(call.caller, call.callee, call.callStmt);
                     newCallSites.push(new CallSite(call.callStmt, undefined, call.callee, call.caller));
                 });

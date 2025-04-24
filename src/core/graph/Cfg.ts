@@ -258,26 +258,28 @@ export class Cfg {
         if (!startBB) {
             let errMsg = `Not found starting block}`;
             logger.error(errMsg);
-            return { errCode: ArkErrorCode.CFG_NOT_FOUND_START_BLOCK, errMsg: errMsg };
+            return {
+                errCode: ArkErrorCode.CFG_NOT_FOUND_START_BLOCK,
+                errMsg: errMsg,
+            };
         }
 
         let unreachable = this.getUnreachableBlocks();
         if (unreachable.size !== 0) {
             let errMsg = `Unreachable blocks: ${Array.from(unreachable)
-                .map((value) => value.toString())
+                .map(value => value.toString())
                 .join('\n')}`;
             logger.error(errMsg);
-            return { errCode: ArkErrorCode.CFG_HAS_UNREACHABLE_BLOCK, errMsg: errMsg };
+            return {
+                errCode: ArkErrorCode.CFG_HAS_UNREACHABLE_BLOCK,
+                errMsg: errMsg,
+            };
         }
 
         return { errCode: ArkErrorCode.OK };
     }
 
-    private dfsPostOrder(
-        node: BasicBlock,
-        visitor: Set<BasicBlock> = new Set(),
-        postOrder: Set<BasicBlock> = new Set()
-    ): Set<BasicBlock> {
+    private dfsPostOrder(node: BasicBlock, visitor: Set<BasicBlock> = new Set(), postOrder: Set<BasicBlock> = new Set()): Set<BasicBlock> {
         visitor.add(node);
         for (const succ of node.getSuccessors()) {
             if (visitor.has(succ)) {

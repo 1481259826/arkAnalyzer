@@ -18,7 +18,7 @@ import { Cfg } from './Cfg';
 
 export class DominanceFinder {
     private blocks: BasicBlock[] = [];
-    private blockToIdx = new Map<BasicBlock, number>;
+    private blockToIdx = new Map<BasicBlock, number>();
     private idoms: number[] = [];
     private domFrontiers: number[][] = [];
 
@@ -51,7 +51,7 @@ export class DominanceFinder {
                 }
                 for (const pred of preds) {
                     let predIdx = this.blockToIdx.get(pred) as number;
-                    this.idoms[predIdx] !== -1 ? newIdom = this.intersect(newIdom, predIdx) : null;
+                    this.idoms[predIdx] !== -1 ? (newIdom = this.intersect(newIdom, predIdx)) : null;
                 }
                 if (this.idoms[blockIdx] !== newIdom) {
                     this.idoms[blockIdx] = newIdom;
@@ -83,7 +83,7 @@ export class DominanceFinder {
 
     public getDominanceFrontiers(block: BasicBlock): Set<BasicBlock> {
         if (!this.blockToIdx.has(block)) {
-            throw new Error("The given block: " + block + " is not in Cfg!")
+            throw new Error('The given block: ' + block + ' is not in Cfg!');
         }
         let idx = this.blockToIdx.get(block) as number;
         let dfs = new Set<BasicBlock>();
@@ -105,7 +105,6 @@ export class DominanceFinder {
     public getImmediateDominators(): number[] {
         return this.idoms;
     }
-
 
     private getFirstDefinedBlockPredIdx(preds: BasicBlock[]): number {
         for (const block of preds) {

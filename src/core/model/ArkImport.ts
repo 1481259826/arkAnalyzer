@@ -16,7 +16,7 @@
 import { ArkFile, Language } from './ArkFile';
 import { LineColPosition } from '../base/Position';
 import { ExportInfo, FromInfo } from './ArkExport';
-import { findExportInfo } from "../common/ModelUtils";
+import { findExportInfo } from '../common/ModelUtils';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
 
@@ -45,8 +45,14 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
         return this.getDeclaringArkFile().getLanguage();
     }
 
-    public build(importClauseName: string, importType: string, importFrom: string, originTsPosition: LineColPosition,
-                 modifiers: number, nameBeforeAs?: string) {
+    public build(
+        importClauseName: string,
+        importType: string,
+        importFrom: string,
+        originTsPosition: LineColPosition,
+        modifiers: number,
+        nameBeforeAs?: string
+    ) {
         this.setImportClauseName(importClauseName);
         this.setImportType(importType);
         this.setImportFrom(importFrom);
@@ -60,8 +66,8 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
     }
 
     /**
-     * Returns the export information, i.e., the actual reference generated at the time of call. 
-     * The export information includes: clause's name, clause's type, modifiers, location 
+     * Returns the export information, i.e., the actual reference generated at the time of call.
+     * The export information includes: clause's name, clause's type, modifiers, location
      * where it is exported from, etc. If the export information could not be found, **null** will be returned.
      * @returns The export information. If there is no export information, the return will be a **null**.
      */

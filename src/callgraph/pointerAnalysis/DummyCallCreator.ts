@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 import { ArkInstanceInvokeExpr } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
 import { Stmt, ArkInvokeStmt } from '../../core/base/Stmt';
@@ -31,7 +30,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Dummy Call');
 export class DummyCallCreator {
     private scene: Scene;
     private pageMap;
-    // TODO: classSig -> str ? 
+    // TODO: classSig -> str ?
     private componentMap: Map<ClassSignature, Set<Stmt>>;
 
     constructor(scene: Scene) {
@@ -86,7 +85,9 @@ export class DummyCallCreator {
 
         let callStmts: Stmt[] = [];
         // filter callback method
-        componentClass.getMethods().filter(method => COMPONENT_LIFECYCLE_METHOD_NAME.includes(method.getName()))
+        componentClass
+            .getMethods()
+            .filter(method => COMPONENT_LIFECYCLE_METHOD_NAME.includes(method.getName()))
             .forEach((method: ArkMethod) => {
                 // TODO: args pointer ?
                 if (method.getParameters().length === 0) {

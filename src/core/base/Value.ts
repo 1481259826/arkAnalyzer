@@ -19,11 +19,11 @@ import { Type } from './Type';
  * @category core/base
  */
 export interface Value {
-    /** 
+    /**
      * Return a list of values which are contained in this {@link Value}.
-     * Value is a core interface in ArkAnalyzer, which may represent any value or expression. 
+     * Value is a core interface in ArkAnalyzer, which may represent any value or expression.
      * @returns An **array** of values used by this value.
-    */
+     */
     getUses(): Value[];
 
     /**
@@ -45,5 +45,5 @@ export interface Value {
     }
     ```
      */
-    getType():Type;
+    getType(): Type;
 }

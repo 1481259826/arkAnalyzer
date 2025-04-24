@@ -72,9 +72,7 @@ export class DotMethodPrinter extends Printer {
             let name = prefix + index++;
             blockToNode.set(block, name);
             /** Node0 [label="entry"]; */
-            this.printer
-                .writeIndent()
-                .writeLine(`${name} [label="${this.getBlockContent(block, this.printer.getIndent())}"];`);
+            this.printer.writeIndent().writeLine(`${name} [label="${this.getBlockContent(block, this.printer.getIndent())}"];`);
         }
 
         for (let block of blocks) {

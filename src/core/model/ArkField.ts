@@ -22,7 +22,6 @@ import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
 import { Language } from './ArkFile';
 
-
 export enum FieldCategory {
     PROPERTY_DECLARATION = 0,
     PROPERTY_ASSIGNMENT = 1,
@@ -39,7 +38,7 @@ export enum FieldCategory {
  * @category core/model
  */
 export class ArkField extends ArkBaseModel {
-    private code: string = "";
+    private code: string = '';
     private category!: FieldCategory;
 
     private declaringClass!: ArkClass;
@@ -94,7 +93,7 @@ export class ArkField extends ArkBaseModel {
         return this.fieldSignature.getFieldName();
     }
 
-    public getType():Type {
+    public getType(): Type {
         return this.fieldSignature.getType();
     }
 
@@ -152,10 +151,12 @@ export class ArkField extends ArkBaseModel {
 
     // For class field, it is default public if there is not any access modify
     public isPublic(): boolean {
-        if (!this.containsModifier(ModifierType.PUBLIC) &&
+        if (
+            !this.containsModifier(ModifierType.PUBLIC) &&
             !this.containsModifier(ModifierType.PRIVATE) &&
             !this.containsModifier(ModifierType.PROTECTED) &&
-            this.getDeclaringArkClass().getCategory() === ClassCategory.CLASS) {
+            this.getDeclaringArkClass().getCategory() === ClassCategory.CLASS
+        ) {
             return true;
         }
         return this.containsModifier(ModifierType.PUBLIC);

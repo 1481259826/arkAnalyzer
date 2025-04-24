@@ -30,7 +30,7 @@ export enum ExportType {
     METHOD = 2,
     LOCAL = 3,
     TYPE = 4,
-    UNKNOWN = 9
+    UNKNOWN = 9,
 }
 
 export interface ArkExport extends ArkSignature {
@@ -40,7 +40,6 @@ export interface ArkExport extends ArkSignature {
     getName(): string;
 
     getExportType(): ExportType;
-
 }
 
 export interface FromInfo {

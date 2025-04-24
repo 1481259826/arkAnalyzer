@@ -13,12 +13,9 @@
  * limitations under the License.
  */
 
-
 /**
- * 
+ *
  */
 class Transformer {
-    internalTransform() {
-
-    }
+    internalTransform() {}
 }
