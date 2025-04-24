@@ -24,7 +24,7 @@ import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { FieldSignature } from '../../core/model/ArkSignature';
 import { Scene } from '../../Scene';
-import { DVFG } from '../DVFG';
+import { DVFG, DVFGNode } from "../DVFG";
 
 export class DVFGBuilder {
     private dvfg: DVFG;
@@ -35,7 +35,7 @@ export class DVFGBuilder {
         this.scene = s;
     }
 
-    public build() {
+    public build(): void {
         this.scene.getMethods().forEach(m => {
             if (m.getCfg()) {
                 this.buildForSingleMethod(m);
@@ -43,7 +43,7 @@ export class DVFGBuilder {
         });
     }
 
-    public buildForSingleMethod(m: ArkMethod) {
+    public buildForSingleMethod(m: ArkMethod): void {
         let problem = new ReachingDefProblem(m);
         let solver = new MFPDataFlowSolver();
         let solution = solver.calculateMopSolutionForwards(problem);
@@ -122,7 +122,7 @@ export class DVFGBuilder {
         return [val];
     }
 
-    public getOrNewDVFGNode(stmt: Stmt) {
+    public getOrNewDVFGNode(stmt: Stmt): DVFGNode {
         return this.dvfg.getOrNewDVFGNode(stmt);
     }
 

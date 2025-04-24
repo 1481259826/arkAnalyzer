@@ -154,7 +154,7 @@ export class Scene {
      scene.buildSceneFromProjectDir(sceneConfig);
      ```
      */
-    public buildSceneFromProjectDir(sceneConfig: SceneConfig) {
+    public buildSceneFromProjectDir(sceneConfig: SceneConfig): void {
         this.buildBasicInfo(sceneConfig);
         this.genArkFiles();
     }
@@ -316,7 +316,7 @@ export class Scene {
         this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
-    private genArkFiles() {
+    private genArkFiles(): void {
         this.projectFiles.forEach(file => {
             logger.info('=== parse file:', file);
             try {
@@ -562,7 +562,7 @@ export class Scene {
         this.filesMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
     }
 
-    private buildSdk(sdkName: string, sdkPath: string) {
+    private buildSdk(sdkName: string, sdkPath: string): void {
         const allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         allFiles.forEach(file => {
             logger.info('=== parse sdk file:', file);
@@ -590,7 +590,7 @@ export class Scene {
      * dependencies from this file. Next, build a `ModuleScene` for this project to generate {@link ArkFile}. Finally,
      * it build bodies of all methods, generate extended classes, and add DefaultConstructors.
      */
-    public buildScene4HarmonyProject() {
+    public buildScene4HarmonyProject(): void {
         this.buildOhPkgContentMap();
         this.modulePath2NameMap.forEach((value, key) => {
             let moduleScene = new ModuleScene(this);
@@ -612,7 +612,7 @@ export class Scene {
         });
     }
 
-    public buildModuleScene(moduleName: string, modulePath: string, supportFileExts: string[]) {
+    public buildModuleScene(moduleName: string, modulePath: string, supportFileExts: string[]): void {
         if (this.moduleScenesMap.get(moduleName)) {
             return;
         }
@@ -682,7 +682,7 @@ export class Scene {
         return this.projectName;
     }
 
-    public getProjectFiles() {
+    public getProjectFiles(): string[] {
         return this.projectFiles;
     }
 
@@ -746,7 +746,7 @@ export class Scene {
      * @example
      * 1. In inferSimpleTypes() to check arkClass and arkMethod.
      * ```typescript
-     * public inferSimpleTypes() {
+     * public inferSimpleTypes(): void {
      *   for (let arkFile of this.getFiles()) {
      *       for (let arkClass of arkFile.getClasses()) {
      *           for (let arkMethod of arkClass.getMethods()) {
@@ -779,11 +779,11 @@ export class Scene {
         return Array.from(this.sdkArkFilesMap.values());
     }
 
-    public getModuleSdkMap() {
+    public getModuleSdkMap(): Map<string, Sdk[]> {
         return this.moduleSdkMap;
     }
 
-    public getProjectSdkMap() {
+    public getProjectSdkMap(): Map<string, Sdk> {
         return this.projectSdkMap;
     }
 
@@ -1012,7 +1012,7 @@ export class Scene {
      scene.inferTypes();
      ```
      */
-    public inferTypes() {
+    public inferTypes(): void {
         if (this.buildStage < SceneBuildStage.SDK_INFERRED) {
             this.sdkArkFilesMap.forEach(file => IRInference.inferFile(file));
             this.buildStage = SceneBuildStage.SDK_INFERRED;
@@ -1038,7 +1038,7 @@ export class Scene {
      scene.inferSimpleTypes();
      ```
      */
-    public inferSimpleTypes() {
+    public inferSimpleTypes(): void {
         for (let arkFile of this.getFiles()) {
             for (let arkClass of arkFile.getClasses()) {
                 for (let arkMethod of arkClass.getMethods()) {
@@ -1342,7 +1342,7 @@ export class Scene {
         return this.buildStage >= SceneBuildStage.CLASS_DONE;
     }
 
-    public getModuleScene(moduleName: string) {
+    public getModuleScene(moduleName: string): ModuleScene | undefined {
         return this.moduleScenesMap.get(moduleName);
     }
 
@@ -1399,7 +1399,7 @@ export class ModuleScene {
     /**
      * get oh-package.json5
      */
-    private getModuleOhPkgFilePath() {
+    private getModuleOhPkgFilePath(): void {
         const moduleOhPkgFilePath = path.resolve(this.projectScene.getRealProjectDir(), path.join(this.modulePath, OH_PACKAGE_JSON5));
         if (fs.existsSync(moduleOhPkgFilePath)) {
             this.moduleOhPkgFilePath = moduleOhPkgFilePath;
@@ -1418,7 +1418,7 @@ export class ModuleScene {
         return this.modulePath;
     }
 
-    public getOhPkgFilePath() {
+    public getOhPkgFilePath(): string {
         return this.moduleOhPkgFilePath;
     }
 
@@ -1434,7 +1434,7 @@ export class ModuleScene {
         this.moduleFileMap.set(arkFile.getFileSignature().toMapKey(), arkFile);
     }
 
-    private genArkFiles(supportFileExts: string[]) {
+    private genArkFiles(supportFileExts: string[]): void {
         getAllFiles(this.modulePath, supportFileExts, this.projectScene.getOptions().ignoreFileNames).forEach(file => {
             logger.info('=== parse file:', file);
             try {

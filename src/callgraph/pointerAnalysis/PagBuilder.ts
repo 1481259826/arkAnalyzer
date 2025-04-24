@@ -126,7 +126,7 @@ export class PagBuilder {
         return cs;
     }
 
-    private addToFuncHandledListThisRound(id: FuncID) {
+    private addToFuncHandledListThisRound(id: FuncID): void {
         if (this.funcHandledThisRound.has(id)) {
             return;
         }
@@ -350,7 +350,7 @@ export class PagBuilder {
         return paramPagNodes;
     }
 
-    public buildPagFromFuncPag(funcID: FuncID, cid: ContextID) {
+    public buildPagFromFuncPag(funcID: FuncID, cid: ContextID): void {
         let funcPag = this.funcPags.get(funcID);
         if (funcPag === undefined) {
             return;
@@ -443,7 +443,7 @@ export class PagBuilder {
         return true;
     }
 
-    public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID, cid: ContextID) {
+    public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID, cid: ContextID): void {
         // add dyn callsite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
             let invokeExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
@@ -1977,7 +1977,7 @@ export class PagBuilder {
         return this.updatedNodesThisRound;
     }
 
-    public resetUpdatedNodes() {
+    public resetUpdatedNodes(): void {
         this.updatedNodesThisRound.clear();
     }
 

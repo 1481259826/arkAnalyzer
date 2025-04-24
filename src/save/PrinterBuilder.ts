@@ -50,7 +50,7 @@ export class PrinterBuilder {
         this.outputDir = outputDir;
     }
 
-    public static dump(source: Printer, output: string) {
+    public static dump(source: Printer, output: string): void {
         fs.writeFileSync(output, source.dump());
     }
 
@@ -136,26 +136,26 @@ export class ScenePrinter {
         }
     }
 
-    public dumpToDot() {
+    public dumpToDot(): void {
         for (let f of this.scene.getFiles()) {
             this.printer.dumpToDot(f);
         }
     }
 
-    public dumpToTs() {
+    public dumpToTs(): void {
         for (let f of this.scene.getFiles()) {
             let relativePath = path.relative(f.getProjectDir(), f.getFilePath());
             this.printer.dumpToTs(f, path.join(this.outputDir, relativePath));
         }
     }
 
-    public dumpToJson() {
+    public dumpToJson(): void {
         for (let f of this.scene.getFiles()) {
             this.printer.dumpToJson(f);
         }
     }
 
-    public dumpToIR() {
+    public dumpToIR(): void {
         for (let f of this.scene.getFiles()) {
             this.printer.dumpToIR(f);
         }

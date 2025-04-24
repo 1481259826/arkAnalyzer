@@ -638,13 +638,13 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
         return this.op1 + ' ' + this.operator + ' ' + this.op2;
     }
 
-    protected inferOpType(op: Value, arkMethod: ArkMethod) {
+    protected inferOpType(op: Value, arkMethod: ArkMethod): void {
         if (op instanceof AbstractExpr || op instanceof AbstractRef) {
             TypeInference.inferValueType(op, arkMethod);
         }
     }
 
-    protected setType() {
+    protected setType(): void {
         let op1Type = this.op1.getType();
         let op2Type = this.op2.getType();
         if (op1Type instanceof UnionType) {

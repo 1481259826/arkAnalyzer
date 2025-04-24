@@ -73,7 +73,7 @@ export class ArkCodeBuffer {
         return this.output.join('');
     }
 
-    public clear() {
+    public clear(): void {
         this.output = [];
     }
 }

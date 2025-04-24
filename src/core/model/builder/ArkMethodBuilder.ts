@@ -192,27 +192,27 @@ export class ObjectBindingPatternParameter {
 
     constructor() {}
 
-    public getName() {
+    public getName(): string {
         return this.name;
     }
 
-    public setName(name: string) {
+    public setName(name: string): void {
         this.name = name;
     }
 
-    public getPropertyName() {
+    public getPropertyName(): string {
         return this.propertyName;
     }
 
-    public setPropertyName(propertyName: string) {
+    public setPropertyName(propertyName: string): void {
         this.propertyName = propertyName;
     }
 
-    public isOptional() {
+    public isOptional(): boolean {
         return this.optional;
     }
 
-    public setOptional(optional: boolean) {
+    public setOptional(optional: boolean): void {
         this.optional = optional;
     }
 }
@@ -224,27 +224,27 @@ export class ArrayBindingPatternParameter {
 
     constructor() {}
 
-    public getName() {
+    public getName(): string {
         return this.name;
     }
 
-    public setName(name: string) {
+    public setName(name: string): void {
         this.name = name;
     }
 
-    public getPropertyName() {
+    public getPropertyName(): string {
         return this.propertyName;
     }
 
-    public setPropertyName(propertyName: string) {
+    public setPropertyName(propertyName: string): void {
         this.propertyName = propertyName;
     }
 
-    public isOptional() {
+    public isOptional(): boolean {
         return this.optional;
     }
 
-    public setOptional(optional: boolean) {
+    public setOptional(optional: boolean): void {
         this.optional = optional;
     }
 }
@@ -259,59 +259,59 @@ export class MethodParameter implements Value {
 
     constructor() {}
 
-    public getName() {
+    public getName(): string {
         return this.name;
     }
 
-    public setName(name: string) {
+    public setName(name: string): void {
         this.name = name;
     }
 
-    public getType() {
+    public getType(): Type {
         return this.type;
     }
 
-    public setType(type: Type) {
+    public setType(type: Type): void {
         this.type = type;
     }
 
-    public isOptional() {
+    public isOptional(): boolean {
         return this.optional;
     }
 
-    public setOptional(optional: boolean) {
+    public setOptional(optional: boolean): void {
         this.optional = optional;
     }
 
-    public hasDotDotDotToken() {
+    public hasDotDotDotToken(): boolean {
         return this.dotDotDotToken;
     }
 
-    public setDotDotDotToken(dotDotDotToken: boolean) {
+    public setDotDotDotToken(dotDotDotToken: boolean): void {
         this.dotDotDotToken = dotDotDotToken;
     }
 
-    public addObjElement(element: ObjectBindingPatternParameter) {
+    public addObjElement(element: ObjectBindingPatternParameter): void {
         this.objElements.push(element);
     }
 
-    public getObjElements() {
+    public getObjElements(): ObjectBindingPatternParameter[] {
         return this.objElements;
     }
 
-    public setObjElements(objElements: ObjectBindingPatternParameter[]) {
+    public setObjElements(objElements: ObjectBindingPatternParameter[]): void {
         this.objElements = objElements;
     }
 
-    public addArrayElement(element: ArrayBindingPatternParameter) {
+    public addArrayElement(element: ArrayBindingPatternParameter): void {
         this.arrayElements.push(element);
     }
 
-    public getArrayElements() {
+    public getArrayElements(): ArrayBindingPatternParameter[] {
         return this.arrayElements;
     }
 
-    public setArrayElements(arrayElements: ArrayBindingPatternParameter[]) {
+    public setArrayElements(arrayElements: ArrayBindingPatternParameter[]): void {
         this.arrayElements = arrayElements;
     }
 

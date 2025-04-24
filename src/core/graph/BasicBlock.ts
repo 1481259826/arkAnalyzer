@@ -202,7 +202,7 @@ export class BasicBlock {
     }
 
     // Temp just for SSA
-    public addStmtToFirst(stmt: Stmt) {
+    public addStmtToFirst(stmt: Stmt): void {
         this.addHead(stmt);
     }
 

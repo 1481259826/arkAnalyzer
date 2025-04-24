@@ -96,7 +96,7 @@ export class UnclearReferenceType extends Type {
         this.genericTypes = genericTypes;
     }
 
-    public getName() {
+    public getName(): string {
         return this.name;
     }
 
@@ -125,7 +125,7 @@ export abstract class PrimitiveType extends Type {
         this.name = name;
     }
 
-    public getName() {
+    public getName(): string {
         return this.name;
     }
 
@@ -141,7 +141,7 @@ export class BooleanType extends PrimitiveType {
         super(BOOLEAN_KEYWORD);
     }
 
-    public static getInstance() {
+    public static getInstance(): BooleanType {
         return this.INSTANCE;
     }
 }
@@ -153,7 +153,7 @@ export class NumberType extends PrimitiveType {
         super(NUMBER_KEYWORD);
     }
 
-    public static getInstance() {
+    public static getInstance(): NumberType {
         return this.INSTANCE;
     }
 }
@@ -169,7 +169,7 @@ export class BigIntType extends PrimitiveType {
         super(BIGINT_KEYWORD);
     }
 
-    public static getInstance() {
+    public static getInstance(): BigIntType {
         return this.INSTANCE;
     }
 }
@@ -181,7 +181,7 @@ export class StringType extends PrimitiveType {
         super(STRING_KEYWORD);
     }
 
-    public static getInstance() {
+    public static getInstance(): StringType {
         return this.INSTANCE;
     }
 }
@@ -698,7 +698,7 @@ export class GenericType extends Type {
         this.constraint = type;
     }
 
-    public setIndex(index: number) {
+    public setIndex(index: number): void {
         this.index = index;
     }
 

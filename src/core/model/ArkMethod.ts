@@ -21,7 +21,7 @@ import { Cfg } from '../graph/Cfg';
 import { ViewTree } from '../graph/ViewTree';
 import { ArkBody } from './ArkBody';
 import { ArkClass, ClassCategory } from './ArkClass';
-import { MethodSignature } from './ArkSignature';
+import { MethodSignature, MethodSubSignature } from "./ArkSignature";
 import { BodyBuilder } from './builder/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
 import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
@@ -32,8 +32,9 @@ import { CALL_BACK } from '../common/EtsConst';
 import { Scene } from '../../Scene';
 import { Constant } from '../base/Constant';
 import { Local } from '../base/Local';
-import { Language } from './ArkFile';
+import { ArkFile, Language } from "./ArkFile";
 import { CONSTRUCTOR_NAME } from '../common/TSConst';
+import { MethodParameter } from "./builder/ArkMethodBuilder";
 
 export const arkMethodNodeKind = [
     'MethodDeclaration',
@@ -89,7 +90,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return ExportType.METHOD;
     }
 
-    public getName() {
+    public getName(): string {
         return this.getSignature().getMethodSubSignature().getMethodName();
     }
 
@@ -97,11 +98,11 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
      * Returns the codes of method as a **string.**
      * @returns the codes of method.
      */
-    public getCode() {
+    public getCode(): string | undefined {
         return this.code;
     }
 
-    public setCode(code: string) {
+    public setCode(code: string): void {
         this.code = code;
     }
 
@@ -241,15 +242,15 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
      * Returns the declaring class of the method.
      * @returns The declaring class of the method.
      */
-    public getDeclaringArkClass() {
+    public getDeclaringArkClass(): ArkClass {
         return this.declaringArkClass;
     }
 
-    public setDeclaringArkClass(declaringArkClass: ArkClass) {
+    public setDeclaringArkClass(declaringArkClass: ArkClass): void {
         this.declaringArkClass = declaringArkClass;
     }
 
-    public getDeclaringArkFile() {
+    public getDeclaringArkFile(): ArkFile {
         return this.declaringArkClass.getDeclaringArkFile();
     }
 
@@ -261,11 +262,11 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.getName().startsWith(ANONYMOUS_METHOD_PREFIX);
     }
 
-    public getParameters() {
+    public getParameters(): MethodParameter[] {
         return this.getSignature().getMethodSubSignature().getParameters();
     }
 
-    public getReturnType() {
+    public getReturnType(): Type {
         return this.getSignature().getType();
     }
 
@@ -363,7 +364,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.methodSignature = signature;
     }
 
-    public getSubSignature() {
+    public getSubSignature(): MethodSubSignature {
         return this.getSignature().getMethodSubSignature();
     }
 
@@ -408,7 +409,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.body;
     }
 
-    public setBody(body: ArkBody) {
+    public setBody(body: ArkBody): void {
         this.body = body;
     }
 
@@ -527,7 +528,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             .filter(stmt => stmt instanceof ArkReturnStmt);
     }
 
-    public setViewTree(viewTree: ViewTree) {
+    public setViewTree(viewTree: ViewTree): void {
         this.viewTree = viewTree;
     }
 
@@ -539,7 +540,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.viewTree !== undefined;
     }
 
-    public setBodyBuilder(bodyBuilder: BodyBuilder) {
+    public setBodyBuilder(bodyBuilder: BodyBuilder): void {
         this.bodyBuilder = bodyBuilder;
         if (this.getDeclaringArkFile().getScene().buildClassDone()) {
             this.buildBody();
@@ -550,7 +551,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         this.bodyBuilder = undefined;
     }
 
-    public buildBody() {
+    public buildBody(): void {
         if (this.bodyBuilder) {
             const arkBody: ArkBody | null = this.bodyBuilder.build();
             if (arkBody) {
@@ -567,7 +568,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.isGeneratedFlag;
     }
 
-    public setIsGeneratedFlag(isGeneratedFlag: boolean) {
+    public setIsGeneratedFlag(isGeneratedFlag: boolean): void {
         this.isGeneratedFlag = isGeneratedFlag;
     }
 
@@ -575,7 +576,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         return this.asteriskToken;
     }
 
-    public setAsteriskToken(asteriskToken: boolean) {
+    public setAsteriskToken(asteriskToken: boolean): void {
         this.asteriskToken = asteriskToken;
     }
 
