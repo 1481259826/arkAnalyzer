@@ -120,7 +120,7 @@ class SparseBitVectorElement {
     // Count the number of set bits in this element
     count(): number {
         let numBits = 0;
-        this.bits.forEach((word) => {
+        this.bits.forEach(word => {
             numBits += this.countBits(word);
         });
         return numBits;
@@ -498,7 +498,7 @@ export class SparseBitVector {
         }
 
         if (needDeleteIdx.size > 0) {
-            needDeleteIdx.forEach((idx) => this.elements.delete(idx));
+            needDeleteIdx.forEach(idx => this.elements.delete(idx));
             changed = true;
         }
 
@@ -529,7 +529,7 @@ export class SparseBitVector {
         }
 
         if (needDeleteIdx.size > 0) {
-            needDeleteIdx.forEach((idx) => this.elements.delete(idx));
+            needDeleteIdx.forEach(idx => this.elements.delete(idx));
             changed = true;
         }
 

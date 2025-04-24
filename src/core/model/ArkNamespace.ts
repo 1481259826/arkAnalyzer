@@ -174,8 +174,7 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
     }
 
     public getClass(classSignature: ClassSignature): ArkClass | null {
-        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName()
-            : classSignature.getClassName();
+        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName() : classSignature.getClassName();
         return this.getClassWithName(className);
     }
 
@@ -219,10 +218,10 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
 
     public getAllMethodsUnderThisNamespace(): ArkMethod[] {
         let methods: ArkMethod[] = [];
-        this.classes.forEach((cls) => {
+        this.classes.forEach(cls => {
             methods.push(...cls.getMethods());
         });
-        this.namespaces.forEach((ns) => {
+        this.namespaces.forEach(ns => {
             methods.push(...ns.getAllMethodsUnderThisNamespace());
         });
         return methods;
@@ -231,7 +230,7 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
     public getAllClassesUnderThisNamespace(): ArkClass[] {
         let classes: ArkClass[] = [];
         classes.push(...this.classes.values());
-        this.namespaces.forEach((ns) => {
+        this.namespaces.forEach(ns => {
             classes.push(...ns.getAllClassesUnderThisNamespace());
         });
         return classes;
@@ -240,7 +239,7 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
     public getAllNamespacesUnderThisNamespace(): ArkNamespace[] {
         let namespaces: ArkNamespace[] = [];
         namespaces.push(...this.namespaces.values());
-        this.namespaces.forEach((ns) => {
+        this.namespaces.forEach(ns => {
             namespaces.push(...ns.getAllNamespacesUnderThisNamespace());
         });
         return namespaces;
@@ -270,4 +269,3 @@ export class ArkNamespace extends ArkBaseModel implements ArkExport {
         return this.validateFields(['declaringArkFile', 'declaringInstance', 'namespaceSignature', 'defaultClass']);
     }
 }
-

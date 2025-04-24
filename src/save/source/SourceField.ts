@@ -42,7 +42,7 @@ export class SourceField extends SourceBase {
         const commentsMetadata = this.field.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
         if (commentsMetadata instanceof CommentsMetadata) {
             const comments = commentsMetadata.getComments();
-            comments.forEach((comment) => {
+            comments.forEach(comment => {
                 this.printer.writeIndent().writeLine(comment.content);
             });
         }

@@ -456,12 +456,7 @@ export class AbstractFlowGraph {
             return true;
         }
 
-        if (
-            m.getSucc().length === 1 &&
-            loop.control.has(m.getSucc()[0]) &&
-            !loop.control.has(n) &&
-            !this.isIfElseRegion(node, nodeSet)
-        ) {
+        if (m.getSucc().length === 1 && loop.control.has(m.getSucc()[0]) && !loop.control.has(n) && !this.isIfElseRegion(node, nodeSet)) {
             nodeSet.add(node).add(m);
             return true;
         }
@@ -483,11 +478,7 @@ export class AbstractFlowGraph {
         if (loop.header === node && loop.getType() === RegionType.FOR_LOOP_REGION) {
             let forLoop = loop as ForLoopRegion;
             let blocks = node.getSucc()[0];
-            if (
-                forLoop.inc.getPred().length === 1 &&
-                forLoop.inc.getPred()[0] === blocks &&
-                blocks.getSucc().length === 1
-            ) {
+            if (forLoop.inc.getPred().length === 1 && forLoop.inc.getPred()[0] === blocks && blocks.getSucc().length === 1) {
                 nodeSet.add(node).add(forLoop.inc).add(blocks);
                 return true;
             }
@@ -507,11 +498,7 @@ export class AbstractFlowGraph {
         return false;
     }
 
-    private identifyRegionType(
-        node: AbstractNode,
-        nodeSet: Set<AbstractNode>,
-        scope?: Set<AbstractNode>
-    ): RegionType | undefined {
+    private identifyRegionType(node: AbstractNode, nodeSet: Set<AbstractNode>, scope?: Set<AbstractNode>): RegionType | undefined {
         if (this.isBlockRegion(node, nodeSet, scope)) {
             return RegionType.BLOCK_REGION;
         }
@@ -668,11 +655,7 @@ export class AbstractFlowGraph {
             let doWhileLoop = new DoWhileLoopRegion(nodeSet);
             this.loopMap.set(doWhileLoop.header, doWhileLoop);
             node = doWhileLoop;
-        } else if (
-            rtype === RegionType.TRY_CATCH_REGION ||
-            rtype === RegionType.TRY_FINALLY_REGION ||
-            rtype === RegionType.TRY_CATCH_FINALLY_REGION
-        ) {
+        } else if (rtype === RegionType.TRY_CATCH_REGION || rtype === RegionType.TRY_FINALLY_REGION || rtype === RegionType.TRY_CATCH_FINALLY_REGION) {
             node = new TrapRegion(nodeSet, rtype);
         }
 
@@ -727,12 +710,7 @@ export class AbstractFlowGraph {
         if (!traps) {
             return [];
         }
-        traps.sort(
-            (a, b) =>
-                a.getTryBlocks().length +
-                a.getCatchBlocks().length -
-                (b.getTryBlocks().length + b.getCatchBlocks().length)
-        );
+        traps.sort((a, b) => a.getTryBlocks().length + a.getCatchBlocks().length - (b.getTryBlocks().length + b.getCatchBlocks().length));
 
         let trapRegions: NaturalTrapRegion[] = [];
 
@@ -1111,12 +1089,7 @@ abstract class NaturalLoopRegion extends Region {
         // add node to loop sets
         for (const node of this.nset) {
             for (const succ of node.getSucc()) {
-                if (
-                    !this.nset.has(succ) &&
-                    succ !== this.getExitNode() &&
-                    succ.getSucc().length === 1 &&
-                    succ.getSucc()[0] === this.getExitNode()
-                ) {
+                if (!this.nset.has(succ) && succ !== this.getExitNode() && succ.getSucc().length === 1 && succ.getSucc()[0] === this.getExitNode()) {
                     this.nset.add(succ);
                 }
             }

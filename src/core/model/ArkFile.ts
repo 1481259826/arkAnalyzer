@@ -19,11 +19,26 @@ import { ImportInfo } from './ArkImport';
 import { ArkClass } from './ArkClass';
 import { ArkNamespace } from './ArkNamespace';
 import { AliasClassSignature, ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
-import { ALL } from "../common/TSConst";
+import { ALL } from '../common/TSConst';
 
-export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
-    'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
-    'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
+export const notStmtOrExprKind = [
+    'ModuleDeclaration',
+    'ClassDeclaration',
+    'InterfaceDeclaration',
+    'EnumDeclaration',
+    'ExportDeclaration',
+    'ExportAssignment',
+    'MethodDeclaration',
+    'Constructor',
+    'FunctionDeclaration',
+    'GetAccessor',
+    'SetAccessor',
+    'ArrowFunction',
+    'FunctionExpression',
+    'MethodSignature',
+    'ConstructSignature',
+    'CallSignature',
+];
 
 export enum Language {
     TYPESCRIPT = 0,
@@ -88,8 +103,8 @@ export class ArkFile {
     }
 
     /**
-     * Returns the scene (i.e., {@link Scene}) built for the project. The {@link Scene} is the core class of ArkAnalyzer, 
-     * through which users can access all the information of the analyzed code (project), 
+     * Returns the scene (i.e., {@link Scene}) built for the project. The {@link Scene} is the core class of ArkAnalyzer,
+     * through which users can access all the information of the analyzed code (project),
      * including file list, class list, method list, property list, etc.
      * @returns The scene of the file.
      */
@@ -174,8 +189,7 @@ export class ArkFile {
      * @returns A class. If there is no class, the return will be a **null**.
      */
     public getClass(classSignature: ClassSignature): ArkClass | null {
-        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName()
-            : classSignature.getClassName();
+        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName() : classSignature.getClassName();
         return this.getClassWithName(className);
     }
 
@@ -190,9 +204,9 @@ export class ArkFile {
     public addNamespace(namespace: ArkNamespace) {
         this.namespaces.set(namespace.getName(), namespace);
     }
-    
+
     /**
-     * Returns an **array** of import information. 
+     * Returns an **array** of import information.
      * The import information includes: clause's name, type, modifiers, location where it is imported from, etc.
      * @returns An **array** of import information.
      */
@@ -230,7 +244,7 @@ export class ArkFile {
             if (key !== ALL || value.getFrom()) {
                 exportInfos.push(value);
             }
-        })
+        });
         return exportInfos;
     }
 
@@ -330,7 +344,7 @@ export class ArkFile {
     public getAllNamespacesUnderThisFile(): ArkNamespace[] {
         let namespaces: ArkNamespace[] = [];
         namespaces.push(...this.namespaces.values());
-        this.namespaces.forEach((ns) => {
+        this.namespaces.forEach(ns => {
             namespaces.push(...ns.getAllNamespacesUnderThisNamespace());
         });
         return namespaces;

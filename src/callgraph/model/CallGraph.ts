@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { MethodSignature } from '../../core/model/ArkSignature'
-import { Stmt } from '../../core/base/Stmt'
-import { Value } from '../../core/base/Value'
+import { MethodSignature } from '../../core/model/ArkSignature';
+import { Stmt } from '../../core/base/Stmt';
+import { Value } from '../../core/base/Value';
 import { Scene } from '../../Scene';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { GraphPrinter } from '../../save/GraphPrinter';
@@ -31,7 +31,10 @@ export type FuncID = number;
 type StmtSet = Set<Stmt>;
 
 export enum CallGraphNodeKind {
-    real, vitual, intrinsic, constructor
+    real,
+    vitual,
+    intrinsic,
+    constructor,
 }
 
 export class CallSite {
@@ -98,17 +101,17 @@ export class CallGraphEdge extends BaseEdge {
         const directCallNums: number = this.directCalls.size;
         const specialCallNums: number = this.specialCalls.size;
         if ([CallGraphNodeKind.intrinsic, CallGraphNodeKind.constructor].includes(this.getDstNode().getKind())) {
-            return ''
+            return '';
         }
 
         if (indirectCallNums !== 0 && directCallNums === 0) {
-            return "color=red";
+            return 'color=red';
         } else if (specialCallNums !== 0) {
-            return "color=yellow";
+            return 'color=yellow';
         } else if (indirectCallNums === 0 && directCallNums !== 0) {
-            return "color=black";
+            return 'color=black';
         } else {
-            return "color=black";
+            return 'color=black';
         }
     }
 }
@@ -132,7 +135,7 @@ export class CallGraphNode extends BaseNode {
     }
 
     public isSdkMethod(): boolean {
-        return this.ifSdkMethod
+        return this.ifSdkMethod;
     }
 
     public get isBlankMethod(): boolean {
@@ -190,9 +193,7 @@ export class CallGraph extends BaseExplicitGraph {
         let id: NodeID = this.nodeNum;
         let cgNode = new CallGraphNode(id, method, kind);
         // check if sdk method
-        cgNode.setSdkMethod(this.scene.hasSdkFile(
-            method.getDeclaringClassSignature().getDeclaringFileSignature()
-        ));
+        cgNode.setSdkMethod(this.scene.hasSdkFile(method.getDeclaringClassSignature().getDeclaringFileSignature()));
 
         let arkMethod = this.scene.getMethod(method);
         if (!arkMethod || !arkMethod.getCfg()) {
@@ -223,7 +224,7 @@ export class CallGraph extends BaseExplicitGraph {
             // The method can't be found
             // means the method has no implementation, or base type is unclear to find it
             // Create a virtual CG Node
-            // TODO: this virtual CG Node need be remove once the base type is clear 
+            // TODO: this virtual CG Node need be remove once the base type is clear
             return this.addCallGraphNode(method, CallGraphNodeKind.vitual);
         }
 
@@ -249,7 +250,7 @@ export class CallGraph extends BaseExplicitGraph {
             // TODO: check stmt exists
         }
 
-        // TODO: check if edge exists 
+        // TODO: check if edge exists
         let callEdge = this.getCallEdgeByPair(callerNode.getID(), calleeNode.getID());
         if (callEdge === undefined) {
             callEdge = new CallGraphEdge(callerNode, calleeNode);
@@ -284,7 +285,7 @@ export class CallGraph extends BaseExplicitGraph {
         }
         let args = callStmt.getInvokeExpr()?.getArgs();
 
-        let cs = new DynCallSite(callerNode.getID(), callStmt, args, calleeNode?.getID())
+        let cs = new DynCallSite(callerNode.getID(), callStmt, args, calleeNode?.getID());
         this.stmtToDynCallSitemap.set(callStmt, cs);
     }
 
@@ -342,7 +343,7 @@ export class CallGraph extends BaseExplicitGraph {
     public getInvokeStmtByMethod(func: FuncID | MethodSignature): Stmt[] {
         let callSites = this.getCallSitesByMethod(func);
         let invokeStmts: Stmt[] = [];
-        callSites.forEach((cs) => {
+        callSites.forEach(cs => {
             invokeStmts.push(cs.callStmt);
         });
 

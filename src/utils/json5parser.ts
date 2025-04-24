@@ -19,7 +19,9 @@ import Logger, { LOG_MODULE_TYPE } from './logger';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'json5parser');
 
-export function fetchDependenciesFromFile(filePath: string): { [k: string]: unknown } {
+export function fetchDependenciesFromFile(filePath: string): {
+    [k: string]: unknown;
+} {
     if (!fs.existsSync(filePath)) {
         return {};
     }
@@ -62,7 +64,7 @@ function getRootObjectLiteral(file: ts.JsonSourceFile): ts.ObjectLiteralExpressi
     }
     const rootObjectLiteralExpression = (expressionStatement as ts.ExpressionStatement).expression;
     if (!rootObjectLiteralExpression) {
-        logger.error('The JSON5 file format is incorrect, the first child node is empty.')
+        logger.error('The JSON5 file format is incorrect, the first child node is empty.');
         return undefined;
     }
 
@@ -104,7 +106,7 @@ function parseArrayLiteral(node: ts.Expression, file: ts.JsonSourceFile) {
     const res: unknown[] = [];
     (node as ts.ArrayLiteralExpression).elements.forEach(n => {
         res.push(parsePropertyInitializer(n, file));
-    })
+    });
     return res;
 }
 
@@ -115,7 +117,6 @@ function parseObjectLiteralExpression(ObjectLiteralExpression: ts.ObjectLiteralE
         const key = (propNode.name as ts.Identifier).text;
         const value = parsePropertyInitializer(propNode.initializer, file);
         res[key] = value;
-    })
+    });
     return res;
 }
-

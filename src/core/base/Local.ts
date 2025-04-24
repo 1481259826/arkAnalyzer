@@ -50,8 +50,7 @@ export class Local implements Value, ArkExport {
 
     public inferType(arkMethod: ArkMethod): Local {
         if (TypeInference.isUnclearType(this.type)) {
-            const type = TypeInference.inferBaseType(this.name, arkMethod.getDeclaringArkClass()) ??
-                ModelUtils.findDeclaredLocal(this, arkMethod)?.getType();
+            const type = TypeInference.inferBaseType(this.name, arkMethod.getDeclaringArkClass()) ?? ModelUtils.findDeclaredLocal(this, arkMethod)?.getType();
             if (type) {
                 this.type = type;
             }
@@ -187,8 +186,13 @@ export class Local implements Value, ArkExport {
     }
 
     public getSignature(): LocalSignature {
-        return this.signature ?? new LocalSignature(this.name, new MethodSignature(ClassSignature.DEFAULT,
-            ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(UNKNOWN_METHOD_NAME)));
+        return (
+            this.signature ??
+            new LocalSignature(
+                this.name,
+                new MethodSignature(ClassSignature.DEFAULT, ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(UNKNOWN_METHOD_NAME))
+            )
+        );
     }
 
     public setSignature(signature: LocalSignature): void {

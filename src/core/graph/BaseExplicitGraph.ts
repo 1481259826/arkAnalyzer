@@ -15,7 +15,7 @@
 
 import { Kind, NodeID, GraphTraits } from './GraphTraits';
 
-export {Kind, NodeID};
+export { Kind, NodeID };
 export abstract class BaseEdge {
     private src: BaseNode;
     private dst: BaseNode;

@@ -20,8 +20,7 @@ export enum ArkMetadataKind {
     TRAILING_COMMENTS,
 }
 
-export interface ArkMetadataType {
-}
+export interface ArkMetadataType {}
 
 /**
  * ArkMetadata
@@ -30,7 +29,7 @@ export interface ArkMetadataType {
  * let stmt: Stmt = xxx;
  * let comments = stmt.getMetadata(ArkMetadataKind.LEADING_COMMENTS) || [];
  * comments.forEach((comment) => {
- *   logger.info(comment);          
+ *   logger.info(comment);
  * });
  */
 export class ArkMetadata {
@@ -49,8 +48,8 @@ export class ArkMetadata {
 }
 
 export type CommentItem = {
-    content: string,
-    position: FullPosition
+    content: string;
+    position: FullPosition;
 };
 
 export class CommentsMetadata implements ArkMetadataType {

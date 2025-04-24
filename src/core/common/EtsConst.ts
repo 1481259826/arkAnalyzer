@@ -923,11 +923,7 @@ export const ETS_COMPILER_OPTIONS = {
 export const COMPONENT_FOR_EACH: string = 'ForEach';
 export const COMPONENT_LAZY_FOR_EACH: string = 'LazyForEach';
 
-export const BUILDIN_SYSTEM_COMPONENT: Set<string> = new Set([
-    ...ETS_COMPILER_OPTIONS.ets.components,
-    COMPONENT_FOR_EACH,
-    COMPONENT_LAZY_FOR_EACH,
-]);
+export const BUILDIN_SYSTEM_COMPONENT: Set<string> = new Set([...ETS_COMPILER_OPTIONS.ets.components, COMPONENT_FOR_EACH, COMPONENT_LAZY_FOR_EACH]);
 
 export const BUILDIN_ATOMIC_COMPONENT: Set<string> = new Set([
     'AbilityComponent',
@@ -1011,13 +1007,7 @@ export const COMPONENT_IF_BRANCH: string = 'IfBranch';
 export const COMPONENT_BRANCH_FUNCTION: string = 'branch';
 export const COMPONENT_BUILD_FUNCTION: string = 'build';
 
-export const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([
-    COMPONENT_IF,
-    COMPONENT_IF_BRANCH,
-    COMPONENT_CUSTOMVIEW,
-    COMPONENT_REPEAT,
-]);
-
+export const SPECIAL_CONTAINER_COMPONENT: Set<string> = new Set([COMPONENT_IF, COMPONENT_IF_BRANCH, COMPONENT_CUSTOMVIEW, COMPONENT_REPEAT]);
 
 export const COMPONENT_COMMON: string = 'Common';
 export const COMPONENT_INSTANCE: string = 'Instance';

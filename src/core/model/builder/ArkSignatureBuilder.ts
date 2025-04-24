@@ -17,8 +17,7 @@ import { ClassSignature, FieldSignature, FileSignature, MethodSignature, MethodS
 import { UnknownType } from '../../base/Type';
 
 export class ArkSignatureBuilder {
-    public static buildMethodSignatureFromClassNameAndMethodName(className: string, methodName: string,
-                                                                 staticFlag: boolean = false): MethodSignature {
+    public static buildMethodSignatureFromClassNameAndMethodName(className: string, methodName: string, staticFlag: boolean = false): MethodSignature {
         const classSignature = this.buildClassSignatureFromClassName(className);
         const methodSubSignature = this.buildMethodSubSignatureFromMethodName(methodName, staticFlag);
         return new MethodSignature(classSignature, methodSubSignature);
@@ -29,8 +28,7 @@ export class ArkSignatureBuilder {
         return new MethodSignature(ClassSignature.DEFAULT, methodSubSignature);
     }
 
-    public static buildMethodSubSignatureFromMethodName(methodName: string,
-                                                        staticFlag: boolean = false): MethodSubSignature {
+    public static buildMethodSubSignatureFromMethodName(methodName: string, staticFlag: boolean = false): MethodSubSignature {
         return new MethodSubSignature(methodName, [], UnknownType.getInstance(), staticFlag);
     }
 

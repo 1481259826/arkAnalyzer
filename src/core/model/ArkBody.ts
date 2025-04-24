@@ -27,8 +27,7 @@ export class ArkBody {
     private aliasTypeMap?: Map<string, [AliasType, ArkAliasTypeDefineStmt]>;
     private traps?: Trap[];
 
-    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
-                traps?: Trap[]) {
+    constructor(locals: Set<Local>, cfg: Cfg, aliasTypeMap?: Map<string, [AliasType, ArkAliasTypeDefineStmt]>, traps?: Trap[]) {
         this.cfg = cfg;
         this.aliasTypeMap = aliasTypeMap;
         this.locals = new Map<string, Local>();

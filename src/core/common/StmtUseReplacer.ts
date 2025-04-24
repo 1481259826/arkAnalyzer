@@ -29,7 +29,7 @@ export class StmtUseReplacer {
     private newUse: Value;
 
     constructor(oldUse: Value, newUse: Value) {
-        this.oldUse = oldUse
+        this.oldUse = oldUse;
         this.newUse = newUse;
     }
 
@@ -106,6 +106,4 @@ export class StmtUseReplacer {
             stmt.setOp(this.newUse);
         }
     }
-
-
 }

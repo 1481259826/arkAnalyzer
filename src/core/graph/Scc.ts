@@ -153,7 +153,7 @@ export class SCCDetection<Graph extends GraphTraits<BaseNode>> {
         this.setVisited(v);
 
         let node = this.getNode(v);
-        node.getOutgoingEdges().forEach((e) => {
+        node.getOutgoingEdges().forEach(e => {
             let w: NodeID = e.getDstID();
             if (!this.isVisited(w)) {
                 this.visit(w);

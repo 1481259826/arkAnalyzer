@@ -218,8 +218,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
             if (type) {
                 type = TypeInference.replaceAliasType(type);
             }
-            if (type instanceof ClassType &&
-                (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
+            if (type instanceof ClassType && (superClass = this.declaringArkFile.getScene().getClass(type.getClassSignature()))) {
                 superClass.addExtendedClass(this);
                 const realGenericTypes = type.getRealGenericTypes();
                 if (realGenericTypes) {
@@ -311,7 +310,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public addFields(fields: ArkField[]) {
-        fields.forEach((field) => {
+        fields.forEach(field => {
             this.addField(field);
         });
     }
@@ -348,8 +347,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      ```
      */
     public getMethods(generated?: boolean): ArkMethod[] {
-        const allMethods = Array.from(this.methods.values())
-            .filter(f => !generated && !f.isGenerated() || generated);
+        const allMethods = Array.from(this.methods.values()).filter(f => (!generated && !f.isGenerated()) || generated);
         allMethods.push(...this.staticMethods.values());
         return [...new Set(allMethods)];
     }

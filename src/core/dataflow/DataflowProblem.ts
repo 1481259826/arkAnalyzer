@@ -17,10 +17,9 @@ import { Stmt } from '../base/Stmt';
 import { ArkMethod } from '../model/ArkMethod';
 
 export abstract class DataflowProblem<D> {
-
     /**
      * Transfer the outFact of srcStmt to the inFact of tgtStmt
-     * 
+     *
      * Return true if keeping progagation (i.e., tgtStmt will be added to the WorkList for further analysis)
      */
     /*
@@ -33,23 +32,23 @@ export abstract class DataflowProblem<D> {
     abstract transferReturnEdge(srcStmt: Stmt, tgtStmt: Stmt, result: DataflowResult): boolean;
     */
 
-    abstract getNormalFlowFunction(srcStmt:Stmt, tgtStmt:Stmt) : FlowFunction<D>;
+    abstract getNormalFlowFunction(srcStmt: Stmt, tgtStmt: Stmt): FlowFunction<D>;
 
-    abstract getCallFlowFunction(srcStmt:Stmt, method:ArkMethod) : FlowFunction<D>;
+    abstract getCallFlowFunction(srcStmt: Stmt, method: ArkMethod): FlowFunction<D>;
 
-    abstract getExitToReturnFlowFunction(srcStmt:Stmt, tgtStmt:Stmt, callStmt:Stmt) : FlowFunction<D>;
+    abstract getExitToReturnFlowFunction(srcStmt: Stmt, tgtStmt: Stmt, callStmt: Stmt): FlowFunction<D>;
 
-    abstract getCallToReturnFlowFunction(srcStmt:Stmt, tgtStmt:Stmt) : FlowFunction<D>;
+    abstract getCallToReturnFlowFunction(srcStmt: Stmt, tgtStmt: Stmt): FlowFunction<D>;
 
-    abstract createZeroValue() : D;
+    abstract createZeroValue(): D;
 
-    abstract getEntryPoint() : Stmt;
+    abstract getEntryPoint(): Stmt;
 
-    abstract getEntryMethod() : ArkMethod;
+    abstract getEntryMethod(): ArkMethod;
 
     abstract factEqual(d1: D, d2: D): boolean;
 }
 
-export interface FlowFunction<D>  {
-    getDataFacts(d:D) : Set<D>;
+export interface FlowFunction<D> {
+    getDataFacts(d: D): Set<D>;
 }

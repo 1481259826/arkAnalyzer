@@ -16,21 +16,21 @@
 import { Stmt } from '../base/Stmt';
 
 export class PathEdgePoint<D> {
-    public node:Stmt;
-    public fact:D;
+    public node: Stmt;
+    public fact: D;
 
-    constructor(node:Stmt, fact:D){
+    constructor(node: Stmt, fact: D) {
         this.node = node;
         this.fact = fact;
     }
 }
 
 export class PathEdge<D> {
-    public edgeStart:PathEdgePoint<D>;
-    public edgeEnd:PathEdgePoint<D>;
+    public edgeStart: PathEdgePoint<D>;
+    public edgeEnd: PathEdgePoint<D>;
 
-    constructor(start:PathEdgePoint<D>, end:PathEdgePoint<D>) {
-        this.edgeStart=start;
-        this.edgeEnd=end;
+    constructor(start: PathEdgePoint<D>, end: PathEdgePoint<D>) {
+        this.edgeStart = start;
+        this.edgeEnd = end;
     }
 }

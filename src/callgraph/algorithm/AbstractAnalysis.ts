@@ -86,11 +86,11 @@ export abstract class AbstractAnalysis {
             // pre process for RTA only
             this.preProcessMethod(method).forEach((cs: CallSite) => {
                 this.workList.push(cs.calleeFuncID);
-            })
+            });
 
             this.processMethod(method).forEach((cs: CallSite) => {
                 this.processCallSite(method, cs, displayGeneratedMethod);
-            })
+            });
         }
     }
 
@@ -104,7 +104,7 @@ export abstract class AbstractAnalysis {
             return;
         }
 
-        if (displayGeneratedMethod || !(me?.isGenerated())) {
+        if (displayGeneratedMethod || !me?.isGenerated()) {
             this.workList.push(cs.calleeFuncID);
             logger.info(`New workList item ${cs.calleeFuncID}: ${this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature().toString()}`);
         }
@@ -112,9 +112,9 @@ export abstract class AbstractAnalysis {
 
     protected init(): void {
         this.processedMethod = new (createPtsCollectionCtor(PtsCollectionType.BitVector))();
-        this.cg.getEntries().forEach((entryFunc) => {
+        this.cg.getEntries().forEach(entryFunc => {
             this.workList.push(entryFunc);
-        })
+        });
     }
 
     protected processMethod(methodID: FuncID): CallSite[] {
@@ -123,22 +123,22 @@ export abstract class AbstractAnalysis {
         let calleeMethods: CallSite[] = [];
 
         if (!arkMethod) {
-            throw new Error("can not find method");
+            throw new Error('can not find method');
         }
 
         const cfg = arkMethod.getCfg();
         if (!cfg) {
             return [];
         }
-        cfg.getStmts().forEach((stmt) => {
+        cfg.getStmts().forEach(stmt => {
             if (stmt.containsInvokeExpr()) {
-                this.resolveCall(cgNode.getID(), stmt).forEach((callSite) => {
+                this.resolveCall(cgNode.getID(), stmt).forEach(callSite => {
                     calleeMethods.push(callSite);
                     this.cg.addStmtToCallSiteMap(stmt, callSite);
                     this.cg.addMethodToCallSiteMap(callSite.calleeFuncID, callSite);
                 });
             }
-        })
+        });
 
         return calleeMethods;
     }
@@ -146,7 +146,7 @@ export abstract class AbstractAnalysis {
     protected getParamAnonymousMethod(invokeExpr: AbstractInvokeExpr): MethodSignature[] {
         let paramMethod: MethodSignature[] = [];
 
-        invokeExpr.getArgs().forEach((args) => {
+        invokeExpr.getArgs().forEach(args => {
             let argsType = args.getType();
             if (argsType instanceof FunctionType) {
                 paramMethod.push(argsType.getMethodSignature());
@@ -161,7 +161,7 @@ export abstract class AbstractAnalysis {
         if (!callee) {
             logger.error(`FuncID has no method ${cs.calleeFuncID}`);
         } else {
-            if (displayGeneratedMethod || !(callee?.isGenerated())) {
+            if (displayGeneratedMethod || !callee?.isGenerated()) {
                 this.cg.addDynamicCallEdge(caller, cs.calleeFuncID, cs.callStmt);
             }
         }

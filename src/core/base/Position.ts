@@ -129,10 +129,7 @@ export class FullPosition {
     }
 
     public static buildFromNode(node: ts.Node, sourceFile: ts.SourceFile): FullPosition {
-        const { line: startLine, character: startCharacter } = ts.getLineAndCharacterOfPosition(
-            sourceFile,
-            node.getStart(sourceFile)
-        );
+        const { line: startLine, character: startCharacter } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart(sourceFile));
         const { line: endLine, character: endCharacter } = ts.getLineAndCharacterOfPosition(sourceFile, node.getEnd());
 
         // line start from 1
