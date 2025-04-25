@@ -94,11 +94,11 @@ export class ArkFile {
      * Returns the **string** name of the file, which also acts as the file's relative path.
      * @returns The file's name (also means its relative path).
      */
-    public getName() {
+    public getName(): string {
         return this.fileSignature.getFileName();
     }
 
-    public setScene(scene: Scene) {
+    public setScene(scene: Scene): void {
         this.scene = scene;
     }
 
@@ -108,19 +108,19 @@ export class ArkFile {
      * including file list, class list, method list, property list, etc.
      * @returns The scene of the file.
      */
-    public getScene() {
+    public getScene(): Scene {
         return this.scene;
     }
 
-    public getModuleScene() {
+    public getModuleScene(): ModuleScene | undefined {
         return this.moduleScene;
     }
 
-    public setModuleScene(moduleScene: ModuleScene) {
+    public setModuleScene(moduleScene: ModuleScene): void {
         this.moduleScene = moduleScene;
     }
 
-    public setProjectDir(projectDir: string) {
+    public setProjectDir(projectDir: string): void {
         this.projectDir = projectDir;
     }
 
@@ -142,11 +142,11 @@ export class ArkFile {
         return this.absoluteFilePath;
     }
 
-    public setFilePath(absoluteFilePath: string) {
+    public setFilePath(absoluteFilePath: string): void {
         this.absoluteFilePath = absoluteFilePath;
     }
 
-    public setCode(code: string) {
+    public setCode(code: string): void {
         this.code = code;
     }
 
@@ -154,19 +154,19 @@ export class ArkFile {
      * Returns the codes of file as a **string.**
      * @returns the codes of file.
      */
-    public getCode() {
+    public getCode(): string {
         return this.code;
     }
 
-    public addArkClass(arkClass: ArkClass) {
+    public addArkClass(arkClass: ArkClass): void {
         this.classes.set(arkClass.getName(), arkClass);
     }
 
-    public getDefaultClass() {
+    public getDefaultClass(): ArkClass {
         return this.defaultClass;
     }
 
-    public setDefaultClass(defaultClass: ArkClass) {
+    public setDefaultClass(defaultClass: ArkClass): void {
         this.defaultClass = defaultClass;
     }
 
@@ -201,7 +201,7 @@ export class ArkFile {
         return Array.from(this.classes.values());
     }
 
-    public addNamespace(namespace: ArkNamespace) {
+    public addNamespace(namespace: ArkNamespace): void {
         this.namespaces.set(namespace.getName(), namespace);
     }
 
@@ -218,7 +218,7 @@ export class ArkFile {
         return this.importInfoMap.get(name);
     }
 
-    public addImportInfo(importInfo: ImportInfo) {
+    public addImportInfo(importInfo: ImportInfo): void {
         this.importInfoMap.set(importInfo.getImportClauseName(), importInfo);
     }
 
@@ -301,7 +301,7 @@ export class ArkFile {
         return currExportInfo;
     }
 
-    public addExportInfo(exportInfo: ExportInfo, key?: string) {
+    public addExportInfo(exportInfo: ExportInfo, key?: string): void {
         this.exportInfoMap.set(key ?? exportInfo.getExportClauseName(), exportInfo);
     }
 
@@ -313,19 +313,19 @@ export class ArkFile {
         this.exportInfoMap.delete(exportInfo.getExportClauseName());
     }
 
-    public getProjectName() {
+    public getProjectName(): string {
         return this.fileSignature.getProjectName();
     }
 
-    public getModuleName() {
+    public getModuleName(): string | undefined {
         return this.moduleScene?.getModuleName();
     }
 
-    public setOhPackageJson5Path(ohPackageJson5Path: string[]) {
+    public setOhPackageJson5Path(ohPackageJson5Path: string[]): void {
         this.ohPackageJson5Path = ohPackageJson5Path;
     }
 
-    public getOhPackageJson5Path() {
+    public getOhPackageJson5Path(): string[] {
         return this.ohPackageJson5Path;
     }
 
@@ -333,7 +333,7 @@ export class ArkFile {
      * Returns the file signature of this file. A file signature consists of project's name and file's name.
      * @returns The file signature of this file.
      */
-    public getFileSignature() {
+    public getFileSignature(): FileSignature {
         return this.fileSignature;
     }
 
@@ -350,7 +350,7 @@ export class ArkFile {
         return namespaces;
     }
 
-    public getAnonymousClassNumber() {
+    public getAnonymousClassNumber(): number {
         return this.anonymousClassNumber++;
     }
 }

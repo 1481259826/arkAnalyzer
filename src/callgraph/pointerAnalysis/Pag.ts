@@ -137,6 +137,7 @@ export enum PagNodeKind {
     GlobalThis,
     ExportInfo,
 }
+
 export class PagNode extends BaseNode {
     private cid: ContextID | undefined;
     private value: Value;
@@ -173,7 +174,7 @@ export class PagNode extends BaseNode {
         return this.basePt;
     }
 
-    public setBasePt(pt: NodeID) {
+    public setBasePt(pt: NodeID): void {
         this.basePt = pt;
     }
 
@@ -184,11 +185,11 @@ export class PagNode extends BaseNode {
         return this.cid;
     }
 
-    public setCid(cid: ContextID) {
+    public setCid(cid: ContextID): void {
         this.cid = cid;
     }
 
-    public setStmt(s: Stmt) {
+    public setStmt(s: Stmt): void {
         this.stmt = s;
     }
 
@@ -297,7 +298,7 @@ export class PagNode extends BaseNode {
         return this.pointTo;
     }
 
-    public addPointToElement(node: NodeID) {
+    public addPointToElement(node: NodeID): void {
         this.pointTo.insert(node);
     }
 
@@ -305,7 +306,12 @@ export class PagNode extends BaseNode {
         this.pointTo = pts;
     }
 
-    public getOutEdges() {
+    public getOutEdges(): {
+        AddressEdge: PagEdgeSet;
+        CopyEdge: PagEdgeSet;
+        LoadEdge: PagEdgeSet;
+        WriteEdge: PagEdgeSet;
+    } {
         return {
             AddressEdge: this.addressOutEdges,
             CopyEdge: this.copyOutEdges,
@@ -1017,7 +1023,7 @@ export class Pag extends BaseExplicitGraph {
         return this.stashAddrEdge;
     }
 
-    public resetAddrEdges() {
+    public resetAddrEdges(): void {
         this.stashAddrEdge.clear();
     }
 

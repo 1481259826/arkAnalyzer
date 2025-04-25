@@ -17,5 +17,5 @@
  *
  */
 class Transformer {
-    internalTransform() {}
+    internalTransform(): void {}
 }

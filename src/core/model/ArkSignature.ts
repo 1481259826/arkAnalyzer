@@ -50,11 +50,11 @@ export class FileSignature {
         this.hashcode = CryptoUtils.hashcode(this.toString());
     }
 
-    public getProjectName() {
+    public getProjectName(): string {
         return this.projectName;
     }
 
-    public getFileName() {
+    public getFileName(): string {
         return this.fileName;
     }
 
@@ -80,15 +80,15 @@ export class NamespaceSignature {
         this.declaringNamespaceSignature = declaringNamespaceSignature;
     }
 
-    public getNamespaceName() {
+    public getNamespaceName(): string {
         return this.namespaceName;
     }
 
-    public getDeclaringFileSignature() {
+    public getDeclaringFileSignature(): FileSignature {
         return this.declaringFileSignature;
     }
 
-    public getDeclaringNamespaceSignature() {
+    public getDeclaringNamespaceSignature(): NamespaceSignature | null {
         return this.declaringNamespaceSignature;
     }
 
@@ -126,7 +126,7 @@ export class ClassSignature {
      * Returns the declaring file signature.
      * @returns The declaring file signature.
      */
-    public getDeclaringFileSignature() {
+    public getDeclaringFileSignature(): FileSignature {
         return this.declaringFileSignature;
     }
 
@@ -134,7 +134,7 @@ export class ClassSignature {
      * Get the declaring namespace's signature.
      * @returns the declaring namespace's signature.
      */
-    public getDeclaringNamespaceSignature() {
+    public getDeclaringNamespaceSignature(): NamespaceSignature | null {
         return this.declaringNamespaceSignature;
     }
 
@@ -142,7 +142,7 @@ export class ClassSignature {
      * Get the **string** name of class from the the class signature. The default value is `""`.
      * @returns The name of this class.
      */
-    public getClassName() {
+    public getClassName(): string {
         return this.className;
     }
 
@@ -161,7 +161,7 @@ export class ClassSignature {
         return this.className;
     }
 
-    public setClassName(className: string) {
+    public setClassName(className: string): void {
         this.className = className;
     }
 
@@ -227,15 +227,15 @@ export class FieldSignature {
         this.staticFlag = staticFlag;
     }
 
-    public getDeclaringSignature() {
+    public getDeclaringSignature(): BaseSignature {
         return this.declaringSignature;
     }
 
-    public getBaseName() {
+    public getBaseName(): string {
         return this.declaringSignature instanceof ClassSignature ? this.declaringSignature.getClassName() : this.declaringSignature.getNamespaceName();
     }
 
-    public getFieldName() {
+    public getFieldName(): string {
         return this.fieldName;
     }
 
@@ -279,11 +279,11 @@ export class MethodSubSignature {
         this.staticFlag = staticFlag;
     }
 
-    public getMethodName() {
+    public getMethodName(): string {
         return this.methodName;
     }
 
-    public getParameters() {
+    public getParameters(): MethodParameter[] {
         return this.parameters;
     }
 
@@ -336,8 +336,10 @@ export class MethodSignature {
     /**
      * Return the declaring class signature.
      * A {@link ClassSignature} includes:
-     * - File Signature: including the **string** names of the project and file, respectively. The default value of project's name is "%unk" and the default value of file's name is "%unk".
-     * - Namespace Signature | **null**:  it may be a namespace signature or **null**. A namespace signature can indicate its **string** name of namespace and its file signature.
+     * - File Signature: including the **string** names of the project and file, respectively.
+     * The default value of project's name is "%unk" and the default value of file's name is "%unk".
+     * - Namespace Signature | **null**:  it may be a namespace signature or **null**.
+     * A namespace signature can indicate its **string** name of namespace and its file signature.
      * - Class Name: the **string** name of this class.
      * @returns The declaring class signature.
      * @example
@@ -349,7 +351,7 @@ export class MethodSignature {
      ```
      *
      */
-    public getDeclaringClassSignature() {
+    public getDeclaringClassSignature(): ClassSignature {
         return this.declaringClassSignature;
     }
 
@@ -359,7 +361,7 @@ export class MethodSignature {
      * identify the name of the method, its parameters and the return value type.
      * @returns The sub-signature of this method signature.
      */
-    public getMethodSubSignature() {
+    public getMethodSubSignature(): MethodSubSignature {
         return this.methodSubSignature;
     }
 

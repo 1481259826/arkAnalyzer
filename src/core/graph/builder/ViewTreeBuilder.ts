@@ -444,7 +444,7 @@ class TreeNodeStack {
     /**
      * @internal
      */
-    public push(node: ViewTreeNodeImpl) {
+    public push(node: ViewTreeNodeImpl): void {
         let parent = this.getParent();
         node.parent = parent;
         this.stack.push(node);
@@ -458,7 +458,7 @@ class TreeNodeStack {
     /**
      * @internal
      */
-    public pop() {
+    public pop(): void {
         this.stack.pop();
     }
 
@@ -602,7 +602,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     /**
      * @internal
      */
-    public addStateValue(field: ArkField, node: ViewTreeNode) {
+    public addStateValue(field: ArkField, node: ViewTreeNode): void {
         if (!this.stateValues.has(field)) {
             this.stateValues.set(field, new Set());
         }
@@ -900,7 +900,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
 
         if (transferMap.size === 0) {
-            return;
+            return undefined;
         }
         return transferMap;
     }

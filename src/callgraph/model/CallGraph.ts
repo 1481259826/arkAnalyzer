@@ -84,15 +84,15 @@ export class CallGraphEdge extends BaseEdge {
         super(src, dst, 0);
     }
 
-    public addDirectCallSite(stmt: Stmt) {
+    public addDirectCallSite(stmt: Stmt): void {
         this.directCalls.add(stmt);
     }
 
-    public addSpecialCallSite(stmt: Stmt) {
+    public addSpecialCallSite(stmt: Stmt): void {
         this.specialCalls.add(stmt);
     }
 
-    public addInDirectCallSite(stmt: Stmt) {
+    public addInDirectCallSite(stmt: Stmt): void {
         this.indirectCalls.add(stmt);
     }
 
@@ -206,7 +206,7 @@ export class CallGraph extends BaseExplicitGraph {
         return cgNode;
     }
 
-    public removeCallGraphNode(nodeID: NodeID) {
+    public removeCallGraphNode(nodeID: NodeID): void {
         // remove edge relate to node first
         this.removeCallGraphEdge(nodeID);
         let node = this.getNode(nodeID) as CallGraphNode;
@@ -265,7 +265,7 @@ export class CallGraph extends BaseExplicitGraph {
         }
     }
 
-    public removeCallGraphEdge(nodeID: NodeID) {
+    public removeCallGraphEdge(nodeID: NodeID): void {
         let node = this.getNode(nodeID) as CallGraphNode;
 
         for (const inEdge of node.getIncomingEdge()) {
@@ -289,7 +289,7 @@ export class CallGraph extends BaseExplicitGraph {
         this.stmtToDynCallSitemap.set(callStmt, cs);
     }
 
-    public addDynamicCallEdge(callerID: NodeID, calleeID: NodeID, callStmt: Stmt) {
+    public addDynamicCallEdge(callerID: NodeID, calleeID: NodeID, callStmt: Stmt): void {
         let callerNode = this.getNode(callerID) as CallGraphNode;
         let calleeNode = this.getNode(calleeID) as CallGraphNode;
 

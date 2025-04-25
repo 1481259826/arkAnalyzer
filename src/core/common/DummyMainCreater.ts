@@ -256,7 +256,7 @@ export class DummyMainCreater {
         return dummyCfg;
     }
 
-    private addCfg2Stmt() {
+    private addCfg2Stmt(): void {
         const cfg = this.dummyMain.getCfg();
         if (!cfg) {
             return;

@@ -385,7 +385,7 @@ export class SparseBitVector {
         let element = next.value;
         if (!element) {
             return {
-                next() {
+                next(): { value: undefined; done: true } {
                     return { value: undefined, done: true };
                 },
                 [Symbol.iterator]() {

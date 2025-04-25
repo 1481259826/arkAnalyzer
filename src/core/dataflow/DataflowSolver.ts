@@ -62,7 +62,7 @@ export abstract class DataflowSolver<D> {
         this.stmtNexts = new Map();
     }
 
-    public solve() {
+    public solve(): void {
         this.init();
         this.doSolve();
     }
@@ -80,7 +80,7 @@ export abstract class DataflowSolver<D> {
         return Array.from(this.stmtNexts.get(stmt) || []);
     }
 
-    protected init() {
+    protected init(): void {
         let edgePoint: PathEdgePoint<D> = new PathEdgePoint<D>(this.problem.getEntryPoint(), this.zeroFact);
         let edge: PathEdge<D> = new PathEdge<D>(edgePoint, edgePoint);
         this.workList.push(edge);
@@ -94,7 +94,7 @@ export abstract class DataflowSolver<D> {
         return;
     }
 
-    protected buildStmtMapInClass() {
+    protected buildStmtMapInClass(): void {
         const methods = this.scene.getMethods();
         methods.push(this.problem.getEntryMethod());
         for (const method of methods) {
@@ -125,7 +125,7 @@ export abstract class DataflowSolver<D> {
         }
     }
 
-    protected setCfg4AllStmt() {
+    protected setCfg4AllStmt(): void {
         for (const cls of this.scene.getClasses()) {
             for (const mtd of cls.getMethods(true)) {
                 addCfg2Stmt(mtd);
@@ -158,7 +158,7 @@ export abstract class DataflowSolver<D> {
         return [...cfg.getBlocks()][0].getStmts()[paraNum];
     }
 
-    protected pathEdgeSetHasEdge(edge: PathEdge<D>) {
+    protected pathEdgeSetHasEdge(edge: PathEdge<D>): boolean {
         for (const path of this.pathEdgeSet) {
             this.problem.factEqual(path.edgeEnd.fact, edge.edgeEnd.fact);
             if (
@@ -173,7 +173,7 @@ export abstract class DataflowSolver<D> {
         return false;
     }
 
-    protected propagate(edge: PathEdge<D>) {
+    protected propagate(edge: PathEdge<D>): void {
         if (!this.pathEdgeSetHasEdge(edge)) {
             let index = this.workList.length;
             for (let i = 0; i < this.workList.length; i++) {
@@ -187,7 +187,7 @@ export abstract class DataflowSolver<D> {
         }
     }
 
-    protected processExitNode(edge: PathEdge<D>) {
+    protected processExitNode(edge: PathEdge<D>): void {
         let startEdgePoint: PathEdgePoint<D> = edge.edgeStart;
         let exitEdgePoint: PathEdgePoint<D> = edge.edgeEnd;
         const summary = this.endSummary.get(startEdgePoint);
@@ -234,7 +234,7 @@ export abstract class DataflowSolver<D> {
         }
     }
 
-    protected processNormalNode(edge: PathEdge<D>) {
+    protected processNormalNode(edge: PathEdge<D>): void {
         let start: PathEdgePoint<D> = edge.edgeStart;
         let end: PathEdgePoint<D> = edge.edgeEnd;
         let stmts: Stmt[] = [...this.getChildren(end.node)].reverse();
@@ -250,7 +250,7 @@ export abstract class DataflowSolver<D> {
         }
     }
 
-    protected processCallNode(edge: PathEdge<D>) {
+    protected processCallNode(edge: PathEdge<D>): void {
         let start: PathEdgePoint<D> = edge.edgeStart;
         let callEdgePoint: PathEdgePoint<D> = edge.edgeEnd;
         const invokeStmt = callEdgePoint.node as ArkInvokeStmt;
@@ -316,7 +316,7 @@ export abstract class DataflowSolver<D> {
         }
     }
 
-    protected doSolve() {
+    protected doSolve(): void {
         while (this.workList.length !== 0) {
             let pathEdge: PathEdge<D> = this.workList.shift()!;
             if (this.laterEdges.has(pathEdge)) {

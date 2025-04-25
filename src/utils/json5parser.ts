@@ -102,7 +102,7 @@ function parsePropertyInitializer(node: ts.Expression, file: ts.JsonSourceFile):
     return undefined;
 }
 
-function parseArrayLiteral(node: ts.Expression, file: ts.JsonSourceFile) {
+function parseArrayLiteral(node: ts.Expression, file: ts.JsonSourceFile): unknown[] {
     const res: unknown[] = [];
     (node as ts.ArrayLiteralExpression).elements.forEach(n => {
         res.push(parsePropertyInitializer(n, file));

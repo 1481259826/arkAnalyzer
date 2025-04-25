@@ -106,7 +106,7 @@ export class SceneConfig {
     sceneConfig.buildFromProjectDir(projectDir);
     ```
      */
-    public buildFromProjectDir(targetProjectDirectory: string) {
+    public buildFromProjectDir(targetProjectDirectory: string): void {
         this.targetProjectDirectory = targetProjectDirectory;
         this.targetProjectName = path.basename(targetProjectDirectory);
         this.projectFiles = getAllFiles(targetProjectDirectory, this.options.supportFileExts!, this.options.ignoreFileNames);
@@ -168,7 +168,7 @@ export class SceneConfig {
         }
     }
 
-    public buildFromJson(configJsonPath: string) {
+    public buildFromJson(configJsonPath: string): void {
         if (fs.existsSync(configJsonPath)) {
             let configurationsText: string;
             try {
@@ -201,15 +201,15 @@ export class SceneConfig {
         }
     }
 
-    public getTargetProjectName() {
+    public getTargetProjectName(): string {
         return this.targetProjectName;
     }
 
-    public getTargetProjectDirectory() {
+    public getTargetProjectDirectory(): string {
         return this.targetProjectDirectory;
     }
 
-    public getProjectFiles() {
+    public getProjectFiles(): string[] {
         return this.projectFiles;
     }
 
@@ -217,19 +217,19 @@ export class SceneConfig {
         return this.fileLanguages;
     }
 
-    public getSdkFiles() {
+    public getSdkFiles(): string[] {
         return this.sdkFiles;
     }
 
-    public getSdkFilesMap() {
+    public getSdkFilesMap(): Map<string[], string> {
         return this.sdkFilesMap;
     }
 
-    public getEtsSdkPath() {
+    public getEtsSdkPath(): string {
         return this.etsSdkPath;
     }
 
-    public getSdksObj() {
+    public getSdksObj(): Sdk[] {
         return this.sdksObj;
     }
 

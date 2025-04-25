@@ -94,7 +94,7 @@ export class LineColPosition {
         return getColNo(this.lineCol);
     }
 
-    public static buildFromNode(node: ts.Node, sourceFile: ts.SourceFile) {
+    public static buildFromNode(node: ts.Node, sourceFile: ts.SourceFile): LineColPosition {
         let { line, character } = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart(sourceFile));
         // line start from 1.
         return new LineColPosition(line + 1, character + 1);

@@ -126,7 +126,7 @@ export class PagBuilder {
         return cs;
     }
 
-    private addToFuncHandledListThisRound(id: FuncID) {
+    private addToFuncHandledListThisRound(id: FuncID): void {
         if (this.funcHandledThisRound.has(id)) {
             return;
         }
@@ -350,7 +350,7 @@ export class PagBuilder {
         return paramPagNodes;
     }
 
-    public buildPagFromFuncPag(funcID: FuncID, cid: ContextID) {
+    public buildPagFromFuncPag(funcID: FuncID, cid: ContextID): void {
         let funcPag = this.funcPags.get(funcID);
         if (funcPag === undefined) {
             return;
@@ -443,7 +443,7 @@ export class PagBuilder {
         return true;
     }
 
-    public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID, cid: ContextID) {
+    public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID, cid: ContextID): void {
         // add dyn callsite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
             let invokeExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
@@ -1879,7 +1879,7 @@ export class PagBuilder {
         // namespace check
         let arkMethod = this.cg.getArkMethodByFuncID(funcID);
         if (!arkMethod) {
-            return;
+            return undefined;
         }
 
         let declaringNameSpace = arkMethod.getDeclaringArkClass().getDeclaringArkNamespace();
@@ -1896,7 +1896,7 @@ export class PagBuilder {
         let declaringFile = arkMethod.getDeclaringArkFile();
         let fileLocals = declaringFile.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals() ?? new Map();
         if (!fileLocals.has(value.getName())) {
-            return;
+            return undefined;
         }
 
         return fileLocals.get(value.getName());
@@ -1905,18 +1905,18 @@ export class PagBuilder {
     private getExportSourceValue(value: Local, funcID: FuncID): Local | undefined {
         let curMethod = this.cg.getArkMethodByFuncID(funcID);
         if (!curMethod) {
-            return;
+            return undefined;
         }
 
         let curFile = curMethod.getDeclaringArkFile();
         let impInfo = curFile.getImportInfoBy(value.getName());
         if (!impInfo) {
-            return;
+            return undefined;
         }
 
         let exportSource = impInfo.getLazyExportInfo();
         if (!exportSource) {
-            return;
+            return undefined;
         }
 
         let exportSouceValue = exportSource.getArkExport();
@@ -1973,11 +1973,11 @@ export class PagBuilder {
         this.updatedNodesThisRound.set(nodeID, updatedNode);
     }
 
-    public getUpdatedNodes() {
+    public getUpdatedNodes(): Map<number, IPtsCollection<number>> {
         return this.updatedNodesThisRound;
     }
 
-    public resetUpdatedNodes() {
+    public resetUpdatedNodes(): void {
         this.updatedNodesThisRound.clear();
     }
 

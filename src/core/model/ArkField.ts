@@ -61,11 +61,11 @@ export class ArkField extends ArkBaseModel {
         return this.getDeclaringArkClass().getLanguage();
     }
 
-    public getDeclaringArkClass() {
+    public getDeclaringArkClass(): ArkClass {
         return this.declaringClass;
     }
 
-    public setDeclaringArkClass(declaringClass: ArkClass) {
+    public setDeclaringArkClass(declaringClass: ArkClass): void {
         this.declaringClass = declaringClass;
     }
 
@@ -73,11 +73,11 @@ export class ArkField extends ArkBaseModel {
      * Returns the codes of field as a **string.**
      * @returns the codes of field.
      */
-    public getCode() {
+    public getCode(): string {
         return this.code;
     }
 
-    public setCode(code: string) {
+    public setCode(code: string): void {
         this.code = code;
     }
 
@@ -89,7 +89,7 @@ export class ArkField extends ArkBaseModel {
         this.category = category;
     }
 
-    public getName() {
+    public getName(): string {
         return this.fieldSignature.getFieldName();
     }
 
@@ -101,7 +101,7 @@ export class ArkField extends ArkBaseModel {
         return this.fieldSignature;
     }
 
-    public setSignature(fieldSig: FieldSignature) {
+    public setSignature(fieldSig: FieldSignature): void {
         this.fieldSignature = fieldSig;
     }
 
@@ -113,27 +113,27 @@ export class ArkField extends ArkBaseModel {
         return this.initializer;
     }
 
-    public setInitializer(initializer: Stmt[]) {
+    public setInitializer(initializer: Stmt[]): void {
         this.initializer = initializer;
     }
 
-    public setQuestionToken(questionToken: boolean) {
+    public setQuestionToken(questionToken: boolean): void {
         this.questionToken = questionToken;
     }
 
-    public setExclamationToken(exclamationToken: boolean) {
+    public setExclamationToken(exclamationToken: boolean): void {
         this.exclamationToken = exclamationToken;
     }
 
-    public getQuestionToken() {
+    public getQuestionToken(): boolean {
         return this.questionToken;
     }
 
-    public getExclamationToken() {
+    public getExclamationToken(): boolean {
         return this.exclamationToken;
     }
 
-    public setOriginPosition(position: LineColPosition) {
+    public setOriginPosition(position: LineColPosition): void {
         this.originPosition = position;
     }
 

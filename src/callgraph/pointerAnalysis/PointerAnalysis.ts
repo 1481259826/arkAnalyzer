@@ -96,7 +96,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         return pta;
     }
 
-    protected init() {
+    protected init(): void {
         logger.warn(`========== Init Pointer Analysis ==========`);
         // start statistics
         this.ptaStat.startStat();
@@ -108,13 +108,13 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
     }
 
-    public start() {
+    public start(): void {
         this.init();
         this.solveConstraint();
         this.postProcess();
     }
 
-    private postProcess() {
+    private postProcess(): void {
         this.ptaStat.endStat();
         this.pagBuilder.doStat();
         this.cg.printStat();
@@ -147,11 +147,11 @@ export class PointerAnalysis extends AbstractAnalysis {
         return [];
     }
 
-    public setEntries(fIds: FuncID[]) {
+    public setEntries(fIds: FuncID[]): void {
         this.entries = fIds;
     }
 
-    private solveConstraint() {
+    private solveConstraint(): void {
         this.worklist = [];
         logger.warn(`========== Pointer Analysis Start ==========`);
         this.initWorklist();
@@ -348,7 +348,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         return true;
     }
 
-    private handlePt(nodeID: NodeID) {
+    private handlePt(nodeID: NodeID): void {
         let realDiff = this.ptd.calculateDiff(nodeID, nodeID);
 
         if (realDiff.count() !== 0) {

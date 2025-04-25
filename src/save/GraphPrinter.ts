@@ -74,7 +74,7 @@ export class GraphPrinter<GraphType extends GraphTraits<BaseNode>> extends Print
         }
     }
 
-    public setStartID(n: NodeID) {
+    public setStartID(n: NodeID): void {
         this.startID = n;
     }
 

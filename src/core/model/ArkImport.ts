@@ -52,7 +52,7 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
         originTsPosition: LineColPosition,
         modifiers: number,
         nameBeforeAs?: string
-    ) {
+    ): void {
         this.setImportClauseName(importClauseName);
         this.setImportType(importType);
         this.setImportFrom(importFrom);
@@ -110,7 +110,7 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
         return this.nameBeforeAs;
     }
 
-    public setNameBeforeAs(nameBeforeAs: string | undefined) {
+    public setNameBeforeAs(nameBeforeAs: string | undefined): void {
         this.nameBeforeAs = nameBeforeAs;
     }
 

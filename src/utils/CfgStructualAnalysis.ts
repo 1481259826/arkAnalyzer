@@ -81,7 +81,7 @@ export class AbstractFlowGraph {
         return loop.inc.getBlock()!;
     }
 
-    public preOrder(node: AbstractNode, callback: TraversalCallback, visitor: Set<AbstractNode> = new Set()) {
+    public preOrder(node: AbstractNode, callback: TraversalCallback, visitor: Set<AbstractNode> = new Set()): void {
         visitor.add(node);
         node.traversal(callback, CodeBlockType.NORMAL);
         for (const succ of node.getSucc()) {
@@ -889,7 +889,7 @@ class AbstractNode {
         this.type = RegionType.ABSTRACT_NODE;
     }
 
-    public traversal(callback: TraversalCallback, type: CodeBlockType) {
+    public traversal(callback: TraversalCallback, type: CodeBlockType): void {
         callback(this.bb, type);
     }
 
@@ -901,11 +901,11 @@ class AbstractNode {
         return this.succNodes;
     }
 
-    public addSucc(node: AbstractNode) {
+    public addSucc(node: AbstractNode): void {
         this.succNodes.push(node);
     }
 
-    public replaceSucc(src: AbstractNode, dst: AbstractNode) {
+    public replaceSucc(src: AbstractNode, dst: AbstractNode): void {
         for (let i = 0; i < this.succNodes.length; i++) {
             if (this.succNodes[i] === src) {
                 this.succNodes[i] = dst;
@@ -914,7 +914,7 @@ class AbstractNode {
         }
     }
 
-    public removeSucc(src: AbstractNode) {
+    public removeSucc(src: AbstractNode): void {
         for (let i = 0; i < this.predNodes.length; i++) {
             if (this.succNodes[i] === src) {
                 this.succNodes.splice(i, 1);
@@ -935,7 +935,7 @@ class AbstractNode {
         this.predNodes.push(block);
     }
 
-    public replacePred(src: AbstractNode, dst: AbstractNode) {
+    public replacePred(src: AbstractNode, dst: AbstractNode): void {
         for (let i = 0; i < this.predNodes.length; i++) {
             if (this.predNodes[i] === src) {
                 this.predNodes[i] = dst;
@@ -944,7 +944,7 @@ class AbstractNode {
         }
     }
 
-    public removePred(src: AbstractNode) {
+    public removePred(src: AbstractNode): void {
         for (let i = 0; i < this.predNodes.length; i++) {
             if (this.predNodes[i] === src) {
                 this.predNodes.splice(i, 1);
@@ -953,7 +953,7 @@ class AbstractNode {
         }
     }
 
-    public setBlock(bb: BasicBlock) {
+    public setBlock(bb: BasicBlock): void {
         this.bb = bb;
     }
 
@@ -1013,7 +1013,7 @@ class BlockRegion extends Region {
         this.blocks = Array.from(nset);
     }
 
-    public replace() {
+    public replace(): void {
         for (let pred of this.blocks[0].getPred()) {
             pred.replaceSucc(this.blocks[0], this);
             this.addPred(pred);
@@ -1025,7 +1025,7 @@ class BlockRegion extends Region {
         }
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         for (const node of this.blocks) {
             node.traversal(callback, CodeBlockType.NORMAL);
         }
@@ -1105,7 +1105,7 @@ class SelfLoopRegion extends NaturalLoopRegion {
         this.back = this.header;
     }
 
-    public replace() {
+    public replace(): void {
         for (let pred of this.header.getPred()) {
             if (pred !== this.header) {
                 pred.replaceSucc(this.header, this);
@@ -1131,7 +1131,7 @@ class WhileLoopRegion extends NaturalLoopRegion {
         super(nset, RegionType.WHILE_LOOP_REGION);
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         this.header.traversal(callback, CodeBlockType.WHILE);
         if (this.header !== this.back) {
             this.back.traversal(callback, CodeBlockType.NORMAL);
@@ -1151,7 +1151,7 @@ class DoWhileLoopRegion extends NaturalLoopRegion {
         this.control.add(this.back);
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         callback(undefined, CodeBlockType.DO);
         if (this.header !== this.back) {
             this.header.traversal(callback, CodeBlockType.NORMAL);
@@ -1173,7 +1173,7 @@ class ForLoopRegion extends NaturalLoopRegion {
         this.control.add(this.inc);
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         this.header.traversal(callback, CodeBlockType.FOR);
         for (const node of this.nset) {
             if (node !== this.header && node !== this.inc) {
@@ -1211,7 +1211,7 @@ class IfRegion extends Region {
         }
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         this.contition.traversal(callback, CodeBlockType.IF);
         this.then.traversal(callback, CodeBlockType.NORMAL);
         callback(undefined, CodeBlockType.COMPOUND_END);
@@ -1233,7 +1233,7 @@ class IfExitRegion extends IfRegion {
         this.type = RegionType.IF_THEN_EXIT_REGION;
     }
 
-    public replace() {
+    public replace(): void {
         this.replaceContitionPred();
 
         let succ = this.contition.getSucc()[1];
@@ -1248,7 +1248,7 @@ class IfBreakRegion extends IfRegion {
         this.type = RegionType.IF_THEN_BREAK_REGION;
     }
 
-    public replace() {
+    public replace(): void {
         this.replaceContitionPred();
 
         let succ = this.contition.getSucc()[1];
@@ -1264,7 +1264,7 @@ class IfBreakRegion extends IfRegion {
         }
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         this.contition.traversal(callback, CodeBlockType.IF);
         this.then?.traversal(callback, CodeBlockType.NORMAL);
         callback(undefined, CodeBlockType.BREAK);
@@ -1278,7 +1278,7 @@ class IfContinueRegion extends IfBreakRegion {
         this.type = RegionType.IF_THEN_CONTINUE_REGION;
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         this.contition.traversal(callback, CodeBlockType.IF);
         this.then?.traversal(callback, CodeBlockType.NORMAL);
         callback(undefined, CodeBlockType.CONTINUE);
@@ -1299,7 +1299,7 @@ class IfElseRegion extends Region {
         this.else = nodes[2];
     }
 
-    public replace() {
+    public replace(): void {
         for (let pred of this.contition.getPred()) {
             if (pred !== this.contition) {
                 pred.replaceSucc(this.contition, this);
@@ -1316,7 +1316,7 @@ class IfElseRegion extends Region {
         }
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         this.contition.traversal(callback, CodeBlockType.IF);
         this.then.traversal(callback, CodeBlockType.NORMAL);
         callback(undefined, CodeBlockType.ELSE);
@@ -1370,7 +1370,7 @@ class TrapRegion extends Region {
         }
     }
 
-    public traversal(callback: TraversalCallback) {
+    public traversal(callback: TraversalCallback): void {
         callback(undefined, CodeBlockType.TRY);
         this.tryNode.traversal(callback, CodeBlockType.NORMAL);
         if (this.catchNode) {
