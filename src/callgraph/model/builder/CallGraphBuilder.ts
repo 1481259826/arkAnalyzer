@@ -93,6 +93,11 @@ export class CallGraphBuilder {
         classHierarchyAnalysis.start(displayGeneratedMethod);
     }
 
+    public buildCHA4WholeProject(displayGeneratedMethod: boolean = false): void {
+        let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg);
+        classHierarchyAnalysis.projectStart(displayGeneratedMethod);
+    }
+
     public buildRapidTypeCallGraph(entries: Method[], displayGeneratedMethod: boolean = false): void {
         let cgEntries: NodeID[] = [];
         entries.forEach((entry: Method) => {
