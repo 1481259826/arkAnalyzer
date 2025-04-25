@@ -640,7 +640,7 @@ function processSdkPath(sdk: Sdk, formPath: string): string {
     return `${formPath}`;
 }
 
-function getArkFileFromScene(im: FromInfo, originPath: string) {
+function getArkFileFromScene(im: FromInfo, originPath: string): ArkFile | null {
     if (FileUtils.isDirectory(originPath)) {
         originPath = path.join(originPath, FileUtils.getIndexFileName(originPath));
     }
@@ -671,7 +671,7 @@ function getArkFileFormMap(projectName: string, filePath: string, scene: Scene):
     return null;
 }
 
-function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile) {
+function findExportInfoInfile(fromInfo: FromInfo, file: ArkFile): ExportInfo | undefined {
     const exportName = fromInfo.isDefault() ? DEFAULT : fromInfo.getOriginName();
     let exportInfo = file.getExportInfoBy(exportName);
     if (exportInfo) {
@@ -704,9 +704,9 @@ export function initModulePathMap(ohPkgContentMap: Map<string, { [k: string]: un
     moduleMap = FileUtils.generateModuleMap(ohPkgContentMap);
 }
 
-function getArkFileFromOtherModule(fromInfo: FromInfo) {
+function getArkFileFromOtherModule(fromInfo: FromInfo): ArkFile | undefined {
     if (!moduleMap || moduleMap.size === 0) {
-        return;
+        return undefined;
     }
     const from = fromInfo.getFrom()!;
     let index: number;
@@ -739,9 +739,9 @@ function getArkFileFromOtherModule(fromInfo: FromInfo) {
     return file;
 }
 
-function findFileInModule(fromInfo: FromInfo, modulePath: ModulePath | undefined, contentPath: string) {
+function findFileInModule(fromInfo: FromInfo, modulePath: ModulePath | undefined, contentPath: string): ArkFile | undefined {
     if (!modulePath) {
-        return;
+        return undefined;
     }
     const originPath = path.join(modulePath.path, contentPath);
     let file;

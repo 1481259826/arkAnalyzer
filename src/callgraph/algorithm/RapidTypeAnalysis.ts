@@ -118,7 +118,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
         return newCallSites;
     }
 
-    private collectInstancedClassesInMethod(funcID: FuncID) {
+    private collectInstancedClassesInMethod(funcID: FuncID): Set<ClassSignature> {
         let instancedClasses: Set<ClassSignature> = new Set();
         let arkMethod = this.cg.getArkMethodByFuncID(funcID);
 
@@ -146,7 +146,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
         return instancedClasses;
     }
 
-    public addIgnoredCalls(arkClass: ClassSignature, callerID: FuncID, calleeID: FuncID, invokeStmt: Stmt) {
+    public addIgnoredCalls(arkClass: ClassSignature, callerID: FuncID, calleeID: FuncID, invokeStmt: Stmt): void {
         let classMap = this.ignoredCalls.get(arkClass) ?? new Set();
         classMap.add({ caller: callerID, callee: calleeID, callStmt: invokeStmt });
         this.ignoredCalls.set(arkClass, classMap);

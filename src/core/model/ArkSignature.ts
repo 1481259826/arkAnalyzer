@@ -336,8 +336,10 @@ export class MethodSignature {
     /**
      * Return the declaring class signature.
      * A {@link ClassSignature} includes:
-     * - File Signature: including the **string** names of the project and file, respectively. The default value of project's name is "%unk" and the default value of file's name is "%unk".
-     * - Namespace Signature | **null**:  it may be a namespace signature or **null**. A namespace signature can indicate its **string** name of namespace and its file signature.
+     * - File Signature: including the **string** names of the project and file, respectively.
+     * The default value of project's name is "%unk" and the default value of file's name is "%unk".
+     * - Namespace Signature | **null**:  it may be a namespace signature or **null**.
+     * A namespace signature can indicate its **string** name of namespace and its file signature.
      * - Class Name: the **string** name of this class.
      * @returns The declaring class signature.
      * @example

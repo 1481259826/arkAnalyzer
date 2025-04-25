@@ -562,7 +562,7 @@ export class TypeInference {
         return null;
     }
 
-    public static inferGenericType(types: GenericType[] | undefined, arkClass: ArkClass) {
+    public static inferGenericType(types: GenericType[] | undefined, arkClass: ArkClass): void {
         types?.forEach(type => {
             const defaultType = type.getDefaultType();
             if (defaultType instanceof UnclearReferenceType) {

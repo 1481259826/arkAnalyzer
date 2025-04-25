@@ -15,7 +15,7 @@
 
 import path from 'path';
 
-export function transfer2UnixPath(path2Do: string) {
+export function transfer2UnixPath(path2Do: string): string {
     return path.posix.join(...path2Do.split(/\\/));
 }
 

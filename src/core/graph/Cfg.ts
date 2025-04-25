@@ -139,7 +139,7 @@ export class Cfg {
         return this.declaringMethod;
     }
 
-    public setDeclaringMethod(method: ArkMethod) {
+    public setDeclaringMethod(method: ArkMethod): void {
         this.declaringMethod = method;
     }
 

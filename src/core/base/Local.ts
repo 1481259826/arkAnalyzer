@@ -126,7 +126,7 @@ export class Local implements Value, ArkExport {
         return this.declaringStmt;
     }
 
-    public setDeclaringStmt(declaringStmt: Stmt) {
+    public setDeclaringStmt(declaringStmt: Stmt): void {
         this.declaringStmt = declaringStmt;
     }
 
@@ -138,7 +138,7 @@ export class Local implements Value, ArkExport {
         return [];
     }
 
-    public addUsedStmt(usedStmt: Stmt) {
+    public addUsedStmt(usedStmt: Stmt): void {
         this.usedStmts.push(usedStmt);
     }
 

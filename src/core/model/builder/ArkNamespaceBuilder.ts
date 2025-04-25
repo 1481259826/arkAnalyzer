@@ -29,7 +29,7 @@ import { IRUtils } from '../../common/IRUtils';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkNamespaceBuilder');
 
-export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance: ArkFile | ArkNamespace, ns: ArkNamespace, sourceFile: ts.SourceFile) {
+export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance: ArkFile | ArkNamespace, ns: ArkNamespace, sourceFile: ts.SourceFile): void {
     // modifiers
     if (node.modifiers) {
         ns.setModifiers(buildModifiers(node));
@@ -85,7 +85,7 @@ export function buildArkNamespace(node: ts.ModuleDeclaration, declaringInstance:
 }
 
 // TODO: check and update
-function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, sourceFile: ts.SourceFile) {
+function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, sourceFile: ts.SourceFile): void {
     const statements = node.statements;
     const nestedNamespaces: ArkNamespace[] = [];
     statements.forEach(child => {
@@ -146,7 +146,7 @@ function buildNamespaceMembers(node: ts.ModuleBlock, namespace: ArkNamespace, so
     });
 }
 
-function genDefaultArkClass(ns: ArkNamespace, node: ts.ModuleDeclaration, sourceFile: ts.SourceFile) {
+function genDefaultArkClass(ns: ArkNamespace, node: ts.ModuleDeclaration, sourceFile: ts.SourceFile): void {
     let defaultClass = new ArkClass();
 
     buildDefaultArkClassFromArkNamespace(ns, defaultClass, node, sourceFile);

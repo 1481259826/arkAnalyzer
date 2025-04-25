@@ -86,7 +86,7 @@ export class ExprUseReplacer {
         }
 
         if (expr instanceof ArkInstanceInvokeExpr && expr.getBase() === this.oldUse) {
-            expr.setBase(<Local>this.newUse);
+            expr.setBase(<Local> this.newUse);
         } else if (expr instanceof ArkPtrInvokeExpr && expr.getFuncPtrLocal() === this.oldUse && this.newUse instanceof Local) {
             expr.setFunPtrLocal(this.newUse);
         }

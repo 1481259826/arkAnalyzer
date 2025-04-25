@@ -362,7 +362,7 @@ export function buildGenericType(type: Type, arkInstance: ArkMethod | ArkField |
     return type;
 }
 
-export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, method: ArkMethod) {
+export function buildReturnType(node: TypeNode, sourceFile: ts.SourceFile, method: ArkMethod): Type {
     if (node) {
         return tsNode2Type(node, sourceFile, method);
     } else {
@@ -470,7 +470,7 @@ export function tsNode2Type(
     }
 }
 
-export function buildTypeFromPreStr(preStr: string) {
+export function buildTypeFromPreStr(preStr: string): Type {
     let postStr = '';
     switch (preStr) {
         case 'BooleanKeyword':

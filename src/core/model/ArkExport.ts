@@ -103,7 +103,7 @@ export class ExportInfo extends ArkBaseModel implements FromInfo {
         return this.nameBeforeAs;
     }
 
-    public setArkExport(value: ArkExport | null) {
+    public setArkExport(value: ArkExport | null): void {
         this.arkExport = value;
     }
 

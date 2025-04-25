@@ -113,7 +113,7 @@ export function getCallbackMethodFromStmt(stmt: Stmt, scene: Scene): ArkMethod |
     return null;
 }
 
-export function addCfg2Stmt(method: ArkMethod) {
+export function addCfg2Stmt(method: ArkMethod): void {
     const cfg = method.getCfg();
     if (cfg) {
         for (const block of cfg.getBlocks()) {

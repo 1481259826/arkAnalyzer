@@ -87,7 +87,7 @@ export function buildProperty2ArkField(
     return field;
 }
 
-export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass) {
+export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass): void {
     const field = new ArkField();
     field.setCode(member.getText(sourceFile));
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
@@ -108,7 +108,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     cls.addField(field);
 }
 
-export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile) {
+export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile): void {
     let cls = mthd.getDeclaringArkClass();
     let field = new ArkField();
     field.setDeclaringArkClass(cls);
