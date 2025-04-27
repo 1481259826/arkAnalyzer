@@ -15,18 +15,18 @@
 
 import { SceneConfig, Scene, DEFAULT_ARK_CLASS_NAME, CallGraph, CallGraphBuilder, MethodSignature } from '../../src';
 
-let config: SceneConfig = new SceneConfig()
-config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test')
-// config.buildFromJson('./tests/resources/callgraph/callGraphConfigUnix.json');
-function runScene(config: SceneConfig) {
+let config: SceneConfig = new SceneConfig();
+function runDir() {
+    config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test');
     let projectScene: Scene = new Scene();
-    projectScene.buildSceneFromProjectDir(config)
-    projectScene.inferTypes()
+    projectScene.buildSceneFromProjectDir(config);
+    projectScene.inferTypes();
 
-    let entryPoints: MethodSignature[] = []
+    let entryPoints: MethodSignature[] = [];
 
-    entryPoints.push(...
-        projectScene.getFiles()
+    entryPoints.push(
+        ...projectScene
+            .getFiles()
             .filter(arkFile => arkFile.getName() === 'main.ts')
             .flatMap(arkFile => arkFile.getClasses())
             .filter(arkClass => arkClass.getName() === DEFAULT_ARK_CLASS_NAME)
@@ -35,13 +35,34 @@ function runScene(config: SceneConfig) {
             .map(arkMethod => arkMethod.getSignature())
     );
 
-    let callGraph = new CallGraph(projectScene)
-    let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene)
+    let callGraph = new CallGraph(projectScene);
+    let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene);
     if (true) {
-        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints, false)
+        callGraphBuilder.buildClassHierarchyCallGraph(entryPoints, false);
     } else {
-        callGraphBuilder.buildRapidTypeCallGraph(entryPoints, false)
+        callGraphBuilder.buildRapidTypeCallGraph(entryPoints, false);
     }
     callGraph.dump('out/cg.dot');
 }
-runScene(config);
+
+function run4Project() {
+    config.buildFromJson('./tests/resources/callgraph/callGraphConfigUnix.json');
+    let projectScene: Scene = new Scene();
+    projectScene.buildBasicInfo(config);
+    projectScene.buildScene4HarmonyProject();
+    projectScene.inferTypes();
+
+    let callGraph = new CallGraph(projectScene);
+    let callGraphBuilder = new CallGraphBuilder(callGraph, projectScene);
+
+    callGraphBuilder.buildCHA4WholeProject(true);
+
+    console.log(callGraph.getStat());
+    console.log('entry count: ', callGraph.getEntries().length);
+}
+
+if (true) {
+    run4Project();
+} else {
+    runDir();
+}

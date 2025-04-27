@@ -38,19 +38,27 @@ export class CallGraphBuilder {
         this.setEntries();
     }
 
-    public buildDirectCallGraph(methods: ArkMethod[]): void {
+    /*
+     * Create CG Node for ArkMethods
+     */
+    public buildCGNodes(methods: ArkMethod[]): void {
         for (const method of methods) {
             let m = method.getSignature();
             let kind = CallGraphNodeKind.real;
             if (method.isGenerated()) {
                 kind = CallGraphNodeKind.intrinsic;
-            }
-            if (method.getName() === 'constructor') {
+            } else if (method.getBody() === undefined || method.getCfg() === undefined){
+                kind = CallGraphNodeKind.blank;
+            } else if (method.getName() === 'constructor') {
                 kind = CallGraphNodeKind.constructor;
             }
 
             this.cg.addCallGraphNode(m, kind);
         }
+    }
+
+    public buildDirectCallGraph(methods: ArkMethod[]): void {
+        this.buildCGNodes(methods);
 
         for (const method of methods) {
             let cfg = method.getCfg();
@@ -89,12 +97,12 @@ export class CallGraphBuilder {
         });
         this.cg.setEntries(cgEntries);
 
-        let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg);
+        let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg, this);
         classHierarchyAnalysis.start(displayGeneratedMethod);
     }
 
     public buildCHA4WholeProject(displayGeneratedMethod: boolean = false): void {
-        let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg);
+        let classHierarchyAnalysis: ClassHierarchyAnalysis = new ClassHierarchyAnalysis(this.scene, this.cg, this);
         classHierarchyAnalysis.projectStart(displayGeneratedMethod);
     }
 

@@ -31,10 +31,11 @@ export type FuncID = number;
 type StmtSet = Set<Stmt>;
 
 export enum CallGraphNodeKind {
-    real,
+    real, // method from project and has body
     vitual,
-    intrinsic,
-    constructor,
+    intrinsic, // method created by AA, which arkMethod.isGenrated is true
+    constructor, // constructor
+    blank, // method without body
 }
 
 export class CallSite {
@@ -119,7 +120,6 @@ export class CallGraphEdge extends BaseEdge {
 export class CallGraphNode extends BaseNode {
     private method: Method;
     private ifSdkMethod: boolean = false;
-    private isBlank: boolean = false;
 
     constructor(id: number, m: Method, k: CallGraphNodeKind = CallGraphNodeKind.real) {
         super(id, k);
@@ -139,11 +139,7 @@ export class CallGraphNode extends BaseNode {
     }
 
     public get isBlankMethod(): boolean {
-        return this.isBlank;
-    }
-
-    public set isBlankMethod(is: boolean) {
-        this.isBlank = is;
+        return this.kind === CallGraphNodeKind.blank;
     }
 
     public getDotAttr(): string {
@@ -194,11 +190,6 @@ export class CallGraph extends BaseExplicitGraph {
         let cgNode = new CallGraphNode(id, method, kind);
         // check if sdk method
         cgNode.setSdkMethod(this.scene.hasSdkFile(method.getDeclaringClassSignature().getDeclaringFileSignature()));
-
-        let arkMethod = this.scene.getMethod(method);
-        if (!arkMethod || !arkMethod.getCfg()) {
-            cgNode.isBlankMethod = true;
-        }
 
         this.addNode(cgNode);
         this.methodToCGNodeMap.set(method.toString(), cgNode.getID());
