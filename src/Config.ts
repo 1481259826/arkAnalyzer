@@ -18,7 +18,6 @@ import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './utils/logger';
 import { getAllFiles } from './utils/getAllFiles';
 import { Language } from './core/model/ArkFile';
-import { getArkAnalyzerModulePath } from './utils/pathTransfer';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Config');
 
@@ -233,21 +232,29 @@ export class SceneConfig {
         return this.sdksObj;
     }
 
-    private loadDefaultConfig(options?: SceneOptions): void {
-        let configFile = DEFAULT_CONFIG_FILE;
-        const modulePath = getArkAnalyzerModulePath('arkanalyzer');
-        if (modulePath !== null) {
-            configFile = path.join(modulePath, 'config', CONFIG_FILENAME);
-        }
-        if (!fs.existsSync(configFile)) {
-            configFile = path.join(__dirname, 'config', CONFIG_FILENAME);
-        }
-        logger.info(`try to parse config file ${configFile}`);
+    private getDefaultConfigPath(): string {
         try {
-            this.options = {
-                ...this.options,
-                ...JSON.parse(fs.readFileSync(configFile, 'utf-8')),
-            };
+            const moduleRoot = path.dirname(path.dirname(require.resolve('arkanalyzer')));
+            return path.join(moduleRoot, 'config', CONFIG_FILENAME);
+        } catch (e) {
+            logger.info(`Failed to resolve default config file from dependency path with error: ${e}`);
+            let configFile = DEFAULT_CONFIG_FILE;
+            if (!fs.existsSync(configFile)) {
+                logger.debug(`default config file '${DEFAULT_CONFIG_FILE}' not found.`);
+                configFile = path.join(__dirname, 'config', CONFIG_FILENAME);
+                logger.debug(`use new config file '${configFile}'.`);
+            } else {
+                logger.debug(`default config file '${DEFAULT_CONFIG_FILE}' found, use it.`);
+            }
+            return configFile;
+        }
+    }
+
+    private loadDefaultConfig(options?: SceneOptions): void {
+        const configFile = this.getDefaultConfigPath();
+        logger.debug(`try to parse config file ${configFile}`);
+        try {
+            this.options = { ...this.options, ...JSON.parse(fs.readFileSync(configFile, 'utf-8')) };
         } catch (error) {
             logger.error(`Failed to parse config file with error: ${error}`);
         }
