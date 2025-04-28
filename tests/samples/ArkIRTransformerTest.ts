@@ -161,7 +161,7 @@ class ArkIRTransformerTest {
             const stmts = cfg.getStmts();
             logger.info(`${stmts}`);
         } else {
-            logger.error(`cfg is undefined`);
+            logger.info(`cfg is undefined`);
         }
 
         logger.info('simpleTest end');
