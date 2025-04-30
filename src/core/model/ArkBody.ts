@@ -86,7 +86,7 @@ export class ArkBody {
     public getExportLocalByName(name: string): Local | null {
         const local = this.locals?.get(name);
         if (local) {
-            local.setSignature(new LocalSignature(name, this.cfg.getDeclaringMethod().getSignature()))
+            local.setSignature(new LocalSignature(name, this.cfg.getDeclaringMethod().getSignature()));
             return local;
         }
         return null;
