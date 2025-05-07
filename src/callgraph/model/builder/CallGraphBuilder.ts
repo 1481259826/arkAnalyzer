@@ -78,8 +78,7 @@ export class CallGraphBuilder {
                 if (callee && invokeExpr instanceof ArkStaticInvokeExpr) {
                     this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt);
                 } else if (
-                    callee &&
-                    invokeExpr instanceof ArkInstanceInvokeExpr &&
+                    callee && invokeExpr instanceof ArkInstanceInvokeExpr &&
                     (this.isConstructor(callee) || this.scene.getMethod(callee)?.isGenerated())
                 ) {
                     this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt, false);

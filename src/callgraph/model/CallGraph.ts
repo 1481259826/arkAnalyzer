@@ -15,20 +15,20 @@
 
 import { MethodSignature } from '../../core/model/ArkSignature';
 import { Stmt } from '../../core/base/Stmt';
-import { Value } from '../../core/base/Value';
 import { Scene } from '../../Scene';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { BaseEdge, BaseNode, BaseExplicitGraph, NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CGStat } from '../common/Statistics';
-import { ContextID } from '../pointerAnalysis/Context';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
+import { CallSite, CallSiteID, DynCallSite, ICallSite } from './CallSite';
 
 export type Method = MethodSignature;
-export type CallSiteID = number;
 export type FuncID = number;
 type StmtSet = Set<Stmt>;
+
+export { CallSite, DynCallSite, ICallSite };
 
 export enum CallGraphNodeKind {
     real, // method from project and has body
@@ -36,43 +36,6 @@ export enum CallGraphNodeKind {
     intrinsic, // method created by AA, which arkMethod.isGenrated is true
     constructor, // constructor
     blank, // method without body
-}
-
-export class CallSite {
-    public callStmt: Stmt;
-    public args: Value[] | undefined;
-    public calleeFuncID: FuncID;
-    public callerFuncID: FuncID;
-
-    constructor(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
-        this.callStmt = s;
-        this.args = a;
-        this.calleeFuncID = ce;
-        this.callerFuncID = cr;
-    }
-}
-
-export class DynCallSite {
-    public callerFuncID: FuncID;
-    public callStmt: Stmt;
-    public args: Value[] | undefined;
-    public protentialCalleeFuncID: FuncID | undefined;
-
-    constructor(caller: FuncID, s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined) {
-        this.callerFuncID = caller;
-        this.callStmt = s;
-        this.args = a;
-        this.protentialCalleeFuncID = ptcCallee;
-    }
-}
-
-export class CSCallSite extends CallSite {
-    public cid: ContextID;
-
-    constructor(id: ContextID, cs: CallSite) {
-        super(cs.callStmt, cs.args, cs.calleeFuncID, cs.callerFuncID);
-        this.cid = id;
-    }
 }
 
 export class CallGraphEdge extends BaseEdge {
@@ -276,7 +239,7 @@ export class CallGraph extends BaseExplicitGraph {
         }
         let args = callStmt.getInvokeExpr()?.getArgs();
 
-        let cs = new DynCallSite(callerNode.getID(), callStmt, args, calleeNode?.getID());
+        let cs = new DynCallSite(callStmt, args, calleeNode?.getID(), callerNode.getID());
         this.stmtToDynCallSitemap.set(callStmt, cs);
     }
 
