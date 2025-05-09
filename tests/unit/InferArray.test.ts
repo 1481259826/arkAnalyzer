@@ -304,4 +304,10 @@ describe("function Test", () => {
             assert.equal(parameter.getType().toString(), '@etsSdk/api/@internal/component/ets/enums.d.ts: ResponseType');
         }
     })
+
+    it('sdk import', () => {
+        const fileId = new FileSignature('etsSdk', 'api/@internal/ets/lifecycle.d.ts');
+        const file = scene.getFile(fileId);
+        assert.isNotNull(file?.getImportInfoBy('AsyncCallback')?.getLazyExportInfo());
+    })
 })

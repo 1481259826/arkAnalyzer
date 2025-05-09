@@ -24,7 +24,7 @@ const performance = perf_hooks.performance;
 class DependencyTest {
     public testBuildSceneByFiles(): void {
 
-        const filesPath: string[] = ['/'];
+        const filesPath: string[] = ['./'];
         const projectDir = './tests/resources/dependency/exampleProject/MyApplication4Files';
         const projectName = 'MyApplication4Files';
         const sceneConfig: SceneConfig = new SceneConfig();

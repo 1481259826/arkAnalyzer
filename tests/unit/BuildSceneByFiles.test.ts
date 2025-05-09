@@ -19,7 +19,7 @@ import { Scene } from '../../src/Scene';
 
 describe('build scene by files Test', () => {
 
-    const filesPath: string[] = ['/'];
+    const filesPath: string[] = ['./'];
     const projectDir = './tests/resources/dependency/exampleProject/MyApplication4Files';
     const projectName = 'MyApplication4Files';
     const sceneConfig: SceneConfig = new SceneConfig();

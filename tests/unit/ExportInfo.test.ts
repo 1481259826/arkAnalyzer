@@ -268,6 +268,13 @@ describe("export Test", () => {
         assert.isDefined(stmt);
         assert.equal(stmt?.getInvokeExpr()?.getArgs()[0].getType().getTypeString(), '@exports/Lottie_Report.ets: %AC2$%AC1$Foo.%instInit.%instInit.%AM0$%instInit()');
     });
+
+    it('export local case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'exportSample.ts');
+        const file = projectScene.getFile(fileId);
+        assert.equal((file?.getExportInfoBy('a')?.getArkExport() as Local).getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#a');
+        assert.equal((file?.getExportInfoBy('c')?.getArkExport() as Local).getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#c');
+    })
 })
 
 describe("function Test", () => {
