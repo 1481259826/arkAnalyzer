@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 import { SceneConfig, Scene, DEFAULT_ARK_CLASS_NAME, CallGraph, CallGraphBuilder, MethodSignature } from '../../src';
 
 let config: SceneConfig = new SceneConfig();
-function runDir() {
+function runDir(): void {
     config.buildFromProjectDir('tests/resources/callgraph/cha_rta_test');
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
@@ -45,7 +45,7 @@ function runDir() {
     callGraph.dump('out/cg.dot');
 }
 
-function run4Project() {
+function run4Project(): void {
     config.buildFromJson('./tests/resources/callgraph/callGraphConfigUnix.json');
     let projectScene: Scene = new Scene();
     projectScene.buildBasicInfo(config);

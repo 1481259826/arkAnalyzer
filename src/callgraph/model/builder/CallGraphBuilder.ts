@@ -47,7 +47,7 @@ export class CallGraphBuilder {
             let kind = CallGraphNodeKind.real;
             if (method.isGenerated()) {
                 kind = CallGraphNodeKind.intrinsic;
-            } else if (method.getBody() === undefined || method.getCfg() === undefined){
+            } else if (method.getBody() === undefined || method.getCfg() === undefined) {
                 kind = CallGraphNodeKind.blank;
             } else if (method.getName() === 'constructor') {
                 kind = CallGraphNodeKind.constructor;
