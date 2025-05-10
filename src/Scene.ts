@@ -318,7 +318,7 @@ export class Scene {
 
     private genArkFiles(): void {
         this.projectFiles.forEach(file => {
-            logger.info('=== parse file:', file);
+            logger.trace('=== parse file:', file);
             try {
                 const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file, this.fileLanguages));
                 arkFile.setScene(this);
@@ -462,7 +462,7 @@ export class Scene {
     private findDependenciesByRule(originPath: string, arkFile: ArkFile): void {
         const extNameArray = ['.ets', '.ts', '.d.ets', '.d.ts'];
         if (!this.findFilesByPathArray(originPath, this.indexPathArray, arkFile) && !this.findFilesByExtNameArray(originPath, extNameArray, arkFile)) {
-            logger.info(originPath + 'module mapperInfo is not found!');
+            logger.trace(originPath + 'module mapperInfo is not found!');
         }
     }
 
@@ -533,7 +533,7 @@ export class Scene {
                 this.addFileNode2DependencyGrap(originPath, arkFile);
             }
             if (!this.findFilesByPathArray(originPath, this.indexPathArray, arkFile)) {
-                logger.info(originPath + 'module mapperInfo is not found!');
+                logger.trace(originPath + 'module mapperInfo is not found!');
             }
         }
     }
@@ -565,7 +565,7 @@ export class Scene {
     private buildSdk(sdkName: string, sdkPath: string): void {
         const allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         allFiles.forEach(file => {
-            logger.info('=== parse sdk file:', file);
+            logger.trace('=== parse sdk file:', file);
             try {
                 const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file, this.fileLanguages));
                 arkFile.setScene(this);
@@ -1437,7 +1437,7 @@ export class ModuleScene {
 
     private genArkFiles(supportFileExts: string[]): void {
         getAllFiles(this.modulePath, supportFileExts, this.projectScene.getOptions().ignoreFileNames).forEach(file => {
-            logger.info('=== parse file:', file);
+            logger.trace('=== parse file:', file);
             try {
                 const arkFile: ArkFile = new ArkFile(FileUtils.getFileLanguage(file, this.projectScene.getFileLanguages()));
                 arkFile.setScene(this.projectScene);

@@ -562,8 +562,7 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
 export function findExportInfo(fromInfo: FromInfo): ExportInfo | null {
     let file = getArkFile(fromInfo);
     if (!file) {
-        logger.warn(`${fromInfo.getOriginName()} ${fromInfo.getFrom()} file not found: 
-        ${fromInfo.getDeclaringArkFile()?.getFileSignature()?.toString()}`);
+        logger.warn(`${fromInfo.getOriginName()} ${fromInfo.getFrom()} file not found: ${fromInfo.getDeclaringArkFile()?.getFileSignature()?.toString()}`);
         return null;
     }
     if (fileSignatureCompare(file.getFileSignature(), fromInfo.getDeclaringArkFile().getFileSignature())) {
@@ -615,8 +614,8 @@ export function findArkExport(exportInfo: ExportInfo | undefined): ArkExport | n
     if (arkExport) {
         exportInfo.setArkExport(arkExport);
     } else {
-        logger.warn(`${exportInfo.getExportClauseName()} get arkExport fail from ${exportInfo.getFrom()} at
-                ${exportInfo.getDeclaringArkFile().getFileSignature().toString()}`);
+        const file = exportInfo.getDeclaringArkFile().getFileSignature().toString();
+        logger.warn(`${exportInfo.getExportClauseName()} get arkExport fail from ${exportInfo.getFrom()} at ${file}`);
     }
     return arkExport || null;
 }
