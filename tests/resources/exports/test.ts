@@ -14,9 +14,10 @@
  */
 
 import * as t from './exportSample';
-import { arr } from './exportSample';
 import hilog from '@ohos.hilog';
 import file from '@ohos.base';
+import path from 'path';
+import { arr } from './exportSample';
 
 export function cc() {
     t.testing();
