@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import * as t from './exportSample';
 import hilog from '@ohos.hilog';
 import file from '@ohos.base';
 import path from 'path';
+import { arr } from './exportSample';
 
 export function cc() {
     t.testing();
@@ -40,3 +41,4 @@ class test {
 let sTest = new test();
 export default sTest as test;
 
+arr[3] = 2;

@@ -20,6 +20,7 @@ import {
     ArkClass,
     ClassType,
     FileSignature,
+    GlobalRef,
     Local,
     Scene,
     SceneConfig,
@@ -114,7 +115,7 @@ describe("export Test", () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
-        assert.equal(file?.getImportInfos().length, 4);
+        assert.equal(file?.getImportInfos().length, 5);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
     })
@@ -156,7 +157,7 @@ describe("export Test", () => {
         const testFileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const testImportInfos = projectScene.getFile(testFileId)?.getImportInfos();
         assert.isDefined(testImportInfos);
-        assert.equal(testImportInfos!.length, 4);
+        assert.equal(testImportInfos!.length, 5);
         expect([testImportInfos![0].getOriginTsPosition().getLineNo(), testImportInfos![0].getOriginTsPosition().getColNo()]).toEqual([16, 13]);
         expect([testImportInfos![1].getOriginTsPosition().getLineNo(), testImportInfos![1].getOriginTsPosition().getColNo()]).toEqual([17, 8]);
         expect([testImportInfos![2].getOriginTsPosition().getLineNo(), testImportInfos![2].getOriginTsPosition().getColNo()]).toEqual([18, 8]);
@@ -166,6 +167,17 @@ describe("export Test", () => {
         assert.equal(testImportInfos![1].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@etsSdk/api/@ohos.hilog.d.ts: hilog');
         assert.equal(testImportInfos![2].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@etsSdk/api/@ohos.base.d.ts: %dflt');
         assert.equal(testImportInfos![3].getLazyExportInfo(), null);
+    })
+
+    it('export local case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+        const file = projectScene.getFile(fileId);
+        const ref = file?.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getUsedGlobals()?.get('arr');
+        assert.isTrue(ref instanceof GlobalRef);
+        const exportLocal = (ref as GlobalRef).getRef();
+        if (exportLocal instanceof Local) {
+            assert.equal(exportLocal.getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#arr');
+        }
     })
 
     it('sdk case', () => {
