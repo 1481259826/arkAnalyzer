@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -95,6 +95,38 @@ function case6(): void {
         console.log('catch');
     } finally {
         console.log('finally');
+    }
+    console.log(i);
+}
+
+function case7(): void {
+    let i = -1;
+    try {
+        i = 0;
+    } catch (e) {
+        i = 1;
+    } finally {
+        if (i) {
+            i = 3;
+        }
+    }
+    let j = i ? 3 : 4;
+    console.log(j);
+}
+
+function case8(): void {
+    let i = -1;
+    try {
+        i = 0;
+    } catch (e) {
+        i = 1;
+    } finally {
+        if (i) {
+            i = 3;
+        }
+    }
+    if (i > 1) {
+        i--;
     }
     console.log(i);
 }

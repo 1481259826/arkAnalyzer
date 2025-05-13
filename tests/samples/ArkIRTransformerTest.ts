@@ -13,16 +13,21 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../../src';
-import { Scene } from '../../src';
-import { ArkBody } from '../../src';
-import { PrinterBuilder, Stmt } from '../../src';
-import { ModelUtils } from '../../src';
+import {
+    ArkBody,
+    LOG_LEVEL,
+    LOG_MODULE_TYPE,
+    Logger,
+    ModelUtils,
+    PrinterBuilder,
+    Scene,
+    SceneConfig,
+    Stmt,
+} from '../../src';
 import { ArkMetadataKind, CommentsMetadata } from '../../src/core/model/ArkMetadata';
-import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
-Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
+Logger.configure('out/ArkIRTransformerTest.log', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
@@ -68,7 +73,6 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddressStmt of cfg.getStmts()) {
             logger.info(`text: '${threeAddressStmt.toString()}'`);
-            this.printMetadata(threeAddressStmt);
         }
     }
 
@@ -108,9 +112,6 @@ class ArkIRTransformerTest {
 
     private printScene(scene: Scene): void {
         for (const arkFile of scene.getFiles()) {
-            if (!arkFile.getFilePath().includes('City.ets')) {
-                continue;
-            }
             logger.info('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
             for (const arkClass of ModelUtils.getAllClassesInFile(arkFile)) {
                 logger.info('========= arkClass:', arkClass.getSignature().toString(), ' =======');
@@ -170,7 +171,4 @@ class ArkIRTransformerTest {
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
 arkIRTransformerTest.testStmtsOfSimpleProject();
-arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.printCfg();
-arkIRTransformerTest.simpleTest();
 
