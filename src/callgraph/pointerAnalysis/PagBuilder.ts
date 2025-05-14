@@ -646,7 +646,10 @@ export class PagBuilder {
         // Pass base's pts to callee's this pointer
         if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkInstanceInvokeExpr) {
             let srcBaseNode = this.addThisRefCallEdge(baseClassPTNode, cid, ivkExpr.getBase(), callee!, calleeCid, staticCS.callerFuncID);
-            srcNodes.push(srcBaseNode);
+
+            if (srcBaseNode !== -1) {
+                srcNodes.push(srcBaseNode);
+            }
         } else if (!dstCGNode.isSdkMethod() && ivkExpr instanceof ArkPtrInvokeExpr) {
             let originCS = (ptNode as PagFuncNode).getCS();
             if (!originCS) {
@@ -799,7 +802,11 @@ export class PagBuilder {
 
     private addThisEdge(staticCS: CallSite, cid: ContextID, realCallee: ArkMethod, srcNodes: NodeID[], baseClassPTNode: NodeID, calleeCid: ContextID): void {
         if (!(staticCS.args![0] instanceof NullConstant) && !realCallee.isStatic()) {
-            srcNodes.push(this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID));
+            let srcNodeID = this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID);
+
+            if (srcNodeID !== -1) {
+                srcNodes.push(srcNodeID);
+            }
         }
     }
 
@@ -915,6 +922,10 @@ export class PagBuilder {
         callerFunID: FuncID
     ): NodeID {
         let thisRefNodeID = this.recordThisRefNode(baseClassPTNode, callee, calleeCid);
+        if (thisRefNodeID === -1) {
+            return -1;
+        }
+
         let thisRefNode = this.pag.getNode(thisRefNodeID) as PagThisRefNode;
         let srcBaseLocal = baseLocal;
         srcBaseLocal = this.getRealThisLocal(srcBaseLocal, callerFunID);
