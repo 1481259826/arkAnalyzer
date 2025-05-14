@@ -28,6 +28,9 @@ import { ClassType } from '../base/Type';
 import { AbstractFieldRef } from '../base/Ref';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { TypeInference } from './TypeInference';
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SdkUtils');
 
 export class SdkUtils {
 
@@ -92,7 +95,10 @@ export class SdkUtils {
                 globalMap.delete(cls.getName());
                 globalMap.set(cls.getName(), cls);
             }
-        } else if (!old) {
+        } else {
+            if (old) {
+                logger.error(`${old.getSignature()} is override`);
+            }
             globalMap.set(cls.getName(), cls);
         }
     }
