@@ -365,6 +365,7 @@ export class ArkNewExpr extends AbstractExpr {
                 return returnType instanceof ClassType ? returnType : undefined;
             }
         }
+        return undefined;
     }
 }
 
