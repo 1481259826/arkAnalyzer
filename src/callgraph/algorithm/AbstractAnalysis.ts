@@ -30,13 +30,14 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'CG');
 
 export abstract class AbstractAnalysis {
     protected scene: Scene;
-    protected cg!: CallGraph;
+    protected cg: CallGraph;
     protected cgBuilder!: CallGraphBuilder;
     protected workList: FuncID[] = [];
     protected processedMethod!: IPtsCollection<FuncID>;
 
-    constructor(s: Scene) {
+    constructor(s: Scene, cg: CallGraph) {
         this.scene = s;
+        this.cg = cg;
     }
 
     public getScene(): Scene {
@@ -96,11 +97,13 @@ export abstract class AbstractAnalysis {
     }
 
     public projectStart(displayGeneratedMethod: boolean): void {
-        this.scene.getMethods().forEach((method) => {
-            let cgNode = this.cg.getCallGraphNodeByMethod(method.getSignature()) as CallGraphNode;
+        this.cgBuilder.buildCGNodes(this.scene.getMethods());
+
+        for (let n of this.cg.getNodesIter()) {
+            let cgNode = n as CallGraphNode;
 
             if (cgNode.isSdkMethod()) {
-                return;
+                continue;
             }
 
             this.preProcessMethod(cgNode.getID());
@@ -108,7 +111,9 @@ export abstract class AbstractAnalysis {
             this.processMethod(cgNode.getID()).forEach((cs: CallSite) => {
                 this.processCallSite(cgNode.getID(), cs, displayGeneratedMethod, true);
             });
-        });
+        }
+
+        this.cgBuilder.setEntries();
     }
 
     private processCallSite(method: FuncID, cs: CallSite, displayGeneratedMethod: boolean, isProject: boolean = false): void {
