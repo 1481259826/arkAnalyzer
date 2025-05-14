@@ -287,6 +287,24 @@ describe("export Test", () => {
         assert.equal((file?.getExportInfoBy('a')?.getArkExport() as Local).getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#a');
         assert.equal((file?.getExportInfoBy('c')?.getArkExport() as Local).getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#c');
     })
+
+    it('local Type case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'else.ts');
+        const locals = projectScene.getFile(fileId)?.getDefaultClass()
+            .getDefaultArkMethod()?.getBody()?.getLocals();
+        assert.isNotEmpty(locals);
+        if (locals) {
+            assert.equal(locals.get('a1')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string>');
+            assert.equal(locals.get('a2')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Map<string,string>')
+            assert.equal(locals.get('a3')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string[]>')
+            assert.equal(locals.get('a4')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string>>>')
+            assert.equal(locals.get('%1')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any>');
+            assert.equal(locals.get('%2')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Map<any,string>')
+            assert.equal(locals.get('%3')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any[]>')
+            assert.equal(locals.get('%4')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any>>>')
+
+        }
+    })
 })
 
 describe("function Test", () => {

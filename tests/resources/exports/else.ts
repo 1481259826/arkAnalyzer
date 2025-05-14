@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,3 +43,8 @@ export default class dfs {
     }
 
 }
+
+const a1: Set<string> = new Set<any>();
+const a2: Map<string, string> = new Map<any, string>();
+const a3: Set<string[]> = new Set<any[]>();
+const a4: Set<Set<Set<string>>> = new Set<Set<Set<any>>>();
