@@ -15,6 +15,7 @@
 
 import { Constants, myNamespaceA } from './constants';
 import sensor from '@ohos.sensor';
+import media from '@'
 
 class Sample {
     public sampleMethod(): Sample;

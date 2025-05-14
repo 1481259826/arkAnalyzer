@@ -35,6 +35,7 @@ import { Local } from '../base/Local';
 import { ArkFile, Language } from './ArkFile';
 import { CONSTRUCTOR_NAME } from '../common/TSConst';
 import { MethodParameter } from './builder/ArkMethodBuilder';
+import { TypeInference } from '../common/TypeInference';
 
 export const arkMethodNodeKind = [
     'MethodDeclaration',
@@ -631,7 +632,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                     if (!args[i]) {
                         return parameters[i].isOptional();
                     }
-                    const isMatched = this.matchParam(parameters[i].getType(), args[i], scene);
+                    const isMatched = this.matchParam(TypeInference.replaceAliasType(parameters[i].getType()), args[i], scene);
                     if (!isMatched) {
                         return false;
                     }
@@ -647,7 +648,9 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         const argType = arg.getType();
         if (arg instanceof Local) {
             const stmt = arg.getDeclaringStmt();
-            if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof Constant) {
+            if (argType instanceof EnumValueType && argType.getConstant()) {
+                arg = argType.getConstant()!;
+            } else if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof Constant) {
                 arg = stmt.getRightOp();
             }
         }
@@ -661,7 +664,18 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             }
             return matched;
         } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
-            return argType.getMethodSignature().getParamLength() === paramType.getMethodSignature().getParamLength();
+            if (argType.getMethodSignature().getParamLength() < paramType.getMethodSignature().getParamLength()) {
+                return false;
+            }
+            const parameters = paramType.getMethodSignature().getMethodSubSignature().getParameters();
+            const args = argType.getMethodSignature().getMethodSubSignature().getParameters();
+            for (let i = 0; i < args.length; i++) {
+                const isMatched = this.matchParam(parameters[i].getType(), args[i], scene);
+                if (!isMatched) {
+                    return false;
+                }
+            }
+            return true;
         } else if (paramType instanceof ClassType && paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
             return argType instanceof FunctionType;
         } else if (paramType instanceof LiteralType && arg instanceof Constant) {

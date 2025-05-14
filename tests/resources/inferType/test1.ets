@@ -33,3 +33,7 @@ export class SCBTransitionManager {
     return isHomeState;
   }
 }
+
+export enum Events {
+    STATE_CHANGE = 'stateChange'
+}
