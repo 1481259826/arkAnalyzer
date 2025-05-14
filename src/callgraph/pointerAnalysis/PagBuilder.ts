@@ -802,7 +802,7 @@ export class PagBuilder {
 
     private addThisEdge(staticCS: CallSite, cid: ContextID, realCallee: ArkMethod, srcNodes: NodeID[], baseClassPTNode: NodeID, calleeCid: ContextID): void {
         if (!(staticCS.args![0] instanceof NullConstant) && !realCallee.isStatic()) {
-            let srcNodeID = this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID)
+            let srcNodeID = this.addThisRefCallEdge(baseClassPTNode, cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID);
 
             if (srcNodeID !== -1) {
                 srcNodes.push(srcNodeID);
