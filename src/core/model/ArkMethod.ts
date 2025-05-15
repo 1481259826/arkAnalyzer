@@ -664,7 +664,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             }
             return matched;
         } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
-            if (argType.getMethodSignature().getParamLength() < paramType.getMethodSignature().getParamLength()) {
+            if (argType.getMethodSignature().getParamLength() > paramType.getMethodSignature().getParamLength()) {
                 return false;
             }
             const parameters = paramType.getMethodSignature().getMethodSubSignature().getParameters();
