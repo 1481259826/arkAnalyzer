@@ -31,5 +31,5 @@ let printer = new PrinterBuilder();
 for (let f of scene.getFiles()) {
     logger.info("Processing: " + f.getFilePath());
     printer.dumpToTs(f);
-    // printer.dumpToJson(f); // TODO: ArkAliasTypeDefineStmt adapt
+    printer.dumpToJson(f);
 }
