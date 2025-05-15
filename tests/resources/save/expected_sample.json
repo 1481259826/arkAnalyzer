@@ -16,6 +16,7 @@
       },
       "modifiers": 0,
       "decorators": [],
+      "category": 0,
       "superClassName": "",
       "implementedInterfaceNames": [],
       "fields": [],
@@ -331,14 +332,16 @@
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               },
               {
                 "name": "y",
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               }
             ],
             "returnType": {
@@ -850,21 +853,24 @@
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               },
               {
                 "name": "b",
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               },
               {
                 "name": "flag",
                 "type": {
                   "_": "BooleanType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               }
             ],
             "returnType": {
@@ -1443,7 +1449,8 @@
                     }
                   ]
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               }
             ],
             "returnType": {
@@ -1884,6 +1891,7 @@
       },
       "modifiers": 0,
       "decorators": [],
+      "category": 2,
       "superClassName": "",
       "implementedInterfaceNames": [],
       "fields": [
@@ -1961,6 +1969,7 @@
       },
       "modifiers": 0,
       "decorators": [],
+      "category": 0,
       "superClassName": "",
       "implementedInterfaceNames": [
         "Person"
@@ -2211,21 +2220,24 @@
                 "type": {
                   "_": "StringType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               },
               {
                 "name": "age",
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               },
               {
                 "name": "grade",
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               }
             ],
             "returnType": {
@@ -2977,7 +2989,8 @@
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               }
             ],
             "returnType": {
@@ -3210,6 +3223,7 @@
       },
       "modifiers": 32,
       "decorators": [],
+      "category": 0,
       "superClassName": "",
       "implementedInterfaceNames": [],
       "fields": [],
@@ -3950,6 +3964,7 @@
       },
       "modifiers": 0,
       "decorators": [],
+      "category": 0,
       "superClassName": "Shape",
       "implementedInterfaceNames": [],
       "fields": [
@@ -4158,7 +4173,8 @@
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false
+                "isOptional": false,
+                "isRest": false
               }
             ],
             "returnType": {
