@@ -316,7 +316,7 @@ describe("function Test", () => {
         const stmts = file?.getDefaultClass()?.getMethodWithName('%AM5$matchOverride')
             ?.getCfg()?.getStmts();
         assert.isDefined(stmts);
-        if(stmts){
+        if (stmts) {
             assert.equal(stmts[4].toString(), 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'stateChange\', @etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.[static]%dflt()#OnAVPlayerStateChangeHandle)>(%0, %AM6$%AM5$matchOverride)');
         }
     })
