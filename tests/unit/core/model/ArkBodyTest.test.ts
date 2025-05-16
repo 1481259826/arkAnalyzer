@@ -24,6 +24,8 @@ import {
     TRAP_EXPECT_CASE4,
     TRAP_EXPECT_CASE5,
     TRAP_EXPECT_CASE6,
+    TRAP_EXPECT_CASE7,
+    TRAP_EXPECT_CASE8,
 } from '../../../resources/model/body/trap/TrapExpect';
 import { assertBlocksEqual } from '../../common';
 import { Local_Expect_In_Generated_Method } from '../../../resources/model/body/local/LocalExpect';
@@ -55,6 +57,14 @@ describe('trap Test', () => {
 
     it('trap case6', async () => {
         testTraps(scene, 'TrapTest.ts', 'case6', TRAP_EXPECT_CASE6.traps);
+    });
+
+    it('trap case7', async () => {
+        testTraps(scene, 'TrapTest.ts', 'case7', TRAP_EXPECT_CASE7.traps);
+    });
+
+    it('trap case8', async () => {
+        testTraps(scene, 'TrapTest.ts', 'case8', TRAP_EXPECT_CASE8.traps);
     });
 });
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -440,6 +440,142 @@ export const TRAP_EXPECT_CASE6 = {
                         'throw %1',
                     ],
                     preds: [],
+                    succes: [],
+                },
+            ],
+        },
+    ],
+};
+
+export const TRAP_EXPECT_CASE7 = {
+    traps: [
+        {
+            tryBlocks: [
+                {
+                    id: 1,
+                    stmts: [
+                        'i = 0',
+                    ],
+                    preds: [0],
+                    succes: [3],
+                },
+            ],
+            catchBlocks: [
+                {
+                    id: 2,
+                    stmts: [
+                        'e = caughtexception: unknown',
+                        'i = 1',
+                    ],
+                    preds: [],
+                    succes: [3],
+                },
+            ],
+        },
+        {
+            tryBlocks: [
+                {
+                    id: 2,
+                    stmts: [
+                        'e = caughtexception: unknown',
+                        'i = 1',
+                    ],
+                    preds: [],
+                    succes: [3],
+                },
+            ],
+            catchBlocks: [
+                {
+                    id: 9,
+                    stmts: [
+                        '%1 = caughtexception: unknown',
+                        'if i != 0',
+                    ],
+                    preds: [],
+                    succes: [10, 11],
+                },
+                {
+                    id: 10,
+                    stmts: [
+                        'i = 3',
+                    ],
+                    preds: [9],
+                    succes: [11],
+                },
+                {
+                    id: 11,
+                    stmts: [
+                        'throw %1',
+                    ],
+                    preds: [9, 10],
+                    succes: [],
+                },
+            ],
+        },
+    ],
+};
+
+export const TRAP_EXPECT_CASE8 = {
+    traps: [
+        {
+            tryBlocks: [
+                {
+                    id: 1,
+                    stmts: [
+                        'i = 0',
+                    ],
+                    preds: [0],
+                    succes: [3],
+                },
+            ],
+            catchBlocks: [
+                {
+                    id: 2,
+                    stmts: [
+                        'e = caughtexception: unknown',
+                        'i = 1',
+                    ],
+                    preds: [],
+                    succes: [3],
+                },
+            ],
+        },
+        {
+            tryBlocks: [
+                {
+                    id: 2,
+                    stmts: [
+                        'e = caughtexception: unknown',
+                        'i = 1',
+                    ],
+                    preds: [],
+                    succes: [3],
+                },
+            ],
+            catchBlocks: [
+                {
+                    id: 8,
+                    stmts: [
+                        '%0 = caughtexception: unknown',
+                        'if i != 0',
+                    ],
+                    preds: [],
+                    succes: [9, 10],
+                },
+                {
+                    id: 9,
+                    stmts: [
+                        'i = 3',
+                    ],
+                    preds: [8],
+                    succes: [10],
+                },
+                {
+                    id: 10,
+                    stmts: [
+                        'throw %0',
+                    ],
+                    preds: [8, 9],
                     succes: [],
                 },
             ],
