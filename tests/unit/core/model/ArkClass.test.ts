@@ -229,3 +229,26 @@ describe('ArkClass with Other Category Test', () => {
         assert.equal(subIr, SubObjClass);
     });
 });
+
+describe('ArkClass with Heritage Class Test', () => {
+    const scene = buildScene(path.join(__dirname, '../../../resources/model/class'));
+    const arkFile = scene.getFiles().find((file) => file.getName() === 'ClassWithHeritage.ts');
+
+    it('extended class without constructor', async () => {
+        const arkClass = arkFile?.getClassWithName('A');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        const extendedClass = arkClass!.getExtendedClasses().get('B');
+        assert.isDefined(extendedClass);
+        assert.equal(extendedClass!.getSignature().toString(), '@class/ClassWithHeritage.ts: B');
+    });
+
+    it('extended class with constructor', async () => {
+        const arkClass = arkFile?.getClassWithName('B');
+        assert.isDefined(arkClass);
+        assert.isNotNull(arkClass);
+        const extendedClass = arkClass!.getExtendedClasses().get('Q');
+        assert.isDefined(extendedClass);
+        assert.equal(extendedClass!.getSignature().toString(), '@class/ClassWithHeritage.ts: Q');
+    });
+});

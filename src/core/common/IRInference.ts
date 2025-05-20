@@ -130,6 +130,7 @@ export class IRInference {
                 }
                 return 0;
             });
+            arkClass.getAllHeritageClasses();
             methods.forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
         });
         this.inferExportInfos(file);
