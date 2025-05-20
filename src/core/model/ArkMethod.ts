@@ -33,7 +33,7 @@ import { ArkClass, ClassCategory } from './ArkClass';
 import { MethodSignature, MethodSubSignature } from './ArkSignature';
 import { BodyBuilder } from './builder/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
-import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME } from '../common/Const';
+import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX } from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
@@ -665,7 +665,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
                 return false;
             }
             const parameters = paramType.getMethodSignature().getMethodSubSignature().getParameters();
-            const args = argType.getMethodSignature().getMethodSubSignature().getParameters();
+            const args = argType.getMethodSignature().getMethodSubSignature().getParameters().filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX));
             return this.isMatched(parameters, args, true);
         } else if (paramType instanceof ClassType && paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
             return argType instanceof FunctionType;
