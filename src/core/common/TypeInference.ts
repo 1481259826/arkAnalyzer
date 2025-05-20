@@ -387,7 +387,8 @@ export class TypeInference {
 
     public static isUnclearType(type: Type | null | undefined): boolean {
         // TODO: For UnionType, IntersectionType and TupleType, it should recurse check every item of them.
-        if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType || type instanceof NullType || type instanceof UndefinedType) {
+        if (!type || type instanceof UnknownType || type instanceof UnclearReferenceType || type instanceof NullType ||
+            type instanceof UndefinedType || type instanceof GenericType) {
             return true;
         } else if (
             type instanceof ClassType &&
