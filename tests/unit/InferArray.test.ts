@@ -285,7 +285,6 @@ describe("function Test", () => {
         assert.equal(actual2, 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'audioInterrupt\', @etsSdk/api/@ohos.base.d.ts: Callback<audio.InterruptEvent>)>(mode, %AM4$%AM3$demoCallBack)');
     })
 
-
     it('enum value type case', () => {
         const fileId = new FileSignature(scene.getProjectName(), 'inferSample.ts');
         const file = scene.getFile(fileId);
@@ -309,5 +308,16 @@ describe("function Test", () => {
         const fileId = new FileSignature('etsSdk', 'api/@internal/ets/lifecycle.d.ts');
         const file = scene.getFile(fileId);
         assert.isNotNull(file?.getImportInfoBy('AsyncCallback')?.getLazyExportInfo());
+    })
+
+    it('match override case', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'test2.ets');
+        const file = scene.getFile(fileId);
+        const stmts = file?.getDefaultClass()?.getMethodWithName('%AM5$matchOverride')
+            ?.getCfg()?.getStmts();
+        assert.isDefined(stmts);
+        if (stmts) {
+            assert.equal(stmts[4].toString(), 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'stateChange\', @etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.[static]%dflt()#OnAVPlayerStateChangeHandle)>(%0, %AM6$%AM5$matchOverride)');
+        }
     })
 })

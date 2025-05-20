@@ -489,7 +489,7 @@ export class TypeInference {
         return value.getType();
     }
 
-    private static inferParameterType(param: MethodParameter, arkMethod: ArkMethod): void {
+    public static inferParameterType(param: MethodParameter, arkMethod: ArkMethod): void {
         let pType = param.getType();
         const arkClass = arkMethod.getDeclaringArkClass();
         let type;
