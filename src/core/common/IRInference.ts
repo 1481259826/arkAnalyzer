@@ -63,7 +63,7 @@ import {
     ArkArrayRef,
     ArkInstanceFieldRef,
     ArkParameterRef,
-    ArkStaticFieldRef, GlobalRef
+    ArkStaticFieldRef
 } from '../base/Ref';
 import { Value } from '../base/Value';
 import { Constant } from '../base/Constant';
@@ -588,15 +588,7 @@ export class IRInference {
         } else if (TypeInference.isUnclearType(baseType)) {
             const declaringStmt = base.getDeclaringStmt();
             if (!declaringStmt || !declaringStmt.getOriginalText() || declaringStmt.getOriginalText()?.startsWith(base.getName())) {
-                const type = TypeInference.inferBaseType(base.getName(), arkClass);
-                if (type) {
-                    baseType = type;
-                } else {
-                    const value = arkMethod.getBody()?.getUsedGlobals()?.get(base.getName());
-                    if(value instanceof GlobalRef){
-                        baseType = value.getRef()?.getType();
-                    }
-                }
+                baseType = ModelUtils.findDeclaredLocal(base, arkMethod)?.getType() ?? TypeInference.inferBaseType(base.getName(), arkClass);
             }
         }
         if (baseType instanceof UnionType || (baseType && !TypeInference.isUnclearType(baseType))) {

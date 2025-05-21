@@ -114,6 +114,15 @@ describe("Infer Array Test", () => {
         }
     })
 
+    it('global ref case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'inferSample.ts');
+        const file = projectScene.getFile(fileId);
+        const method = file?.getDefaultClass().getMethodWithName('test1');
+        const type = method?.getBody()?.getUsedGlobals()?.get('out')?.getType();
+        assert.isTrue(type instanceof NumberType);
+
+    })
+
     it('demo case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);

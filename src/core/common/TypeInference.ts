@@ -767,14 +767,12 @@ export class TypeInference {
             ModelUtils.getClassWithName(typeName, arkClass) ??
             ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(typeName) ??
             ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
-        if (arkExport instanceof ArkClass || arkExport instanceof AliasType) {
-            return this.parseArkExport2Type(arkExport);
-        }
-        if (!arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
+        if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(typeName);
         }
-        if (arkExport instanceof ArkClass || arkExport instanceof AliasType) {
-            return this.parseArkExport2Type(arkExport);
+        const type = this.parseArkExport2Type(arkExport);
+        if (type instanceof ClassType || type instanceof AliasType) {
+            return type;
         }
         return null;
     }
