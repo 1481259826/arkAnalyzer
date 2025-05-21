@@ -87,11 +87,11 @@ export class SdkUtils {
 
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
         const old = globalMap.get(cls.getName());
-        if (old instanceof ArkClass) {
+        if (old instanceof ArkClass && old.getDeclaringArkFile().getProjectName() === cls.getDeclaringArkFile().getProjectName()) {
             if (old.getCategory() === ClassCategory.CLASS) {
-                this.copyMethod(cls, old);
+                this.copyMembers(cls, old);
             } else {
-                this.copyMethod(old, cls);
+                this.copyMembers(old, cls);
                 globalMap.delete(cls.getName());
                 globalMap.set(cls.getName(), cls);
             }
@@ -111,10 +111,7 @@ export class SdkUtils {
             const instance = globalMap.get(name + 'Interface');
             const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
             if (attr instanceof ArkClass && instance instanceof ArkClass) {
-                instance
-                    .getMethods()
-                    .filter(m => !attr.getMethodWithName(m.getName()))
-                    .forEach(m => attr.addMethod(m));
+                this.copyMembers(instance, attr);
                 globalMap.set(name, attr);
                 return;
             }
@@ -125,15 +122,12 @@ export class SdkUtils {
         } else if (old instanceof ArkClass && local.getType() instanceof ClassType) {
             const localConstructor = scene.getClass((local.getType() as ClassType).getClassSignature());
             if (localConstructor) {
-                localConstructor
-                    .getMethods()
-                    .filter(m => !old.getMethodWithName(m.getName()))
-                    .forEach(m => old.addMethod(m));
+                this.copyMembers(localConstructor, old);
             }
         }
     }
 
-    private static copyMethod(from: ArkClass, to: ArkClass): void {
+    private static copyMembers(from: ArkClass, to: ArkClass): void {
         from.getMethods().forEach(method => {
             const dist = method.isStatic() ? to.getStaticMethodWithName(method.getName()) : to.getMethodWithName(method.getName());
             const distSignatures = dist?.getDeclareSignatures();
@@ -143,6 +137,12 @@ export class SdkUtils {
                 to.addMethod(method);
             }
         });
+        from.getFields().forEach(field => {
+            const dist = field.isStatic() ? to.getStaticFieldWithName(field.getName()) : to.getFieldWithName(field.getName());
+            if (!dist) {
+                to.addField(field);
+            }
+        })
     }
 
     public static computeGlobalThis(leftOp: AbstractFieldRef, arkMethod: ArkMethod): void {
