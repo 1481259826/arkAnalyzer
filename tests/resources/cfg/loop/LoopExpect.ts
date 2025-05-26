@@ -74,9 +74,9 @@ export const LOOP_EXPECT_CASE2 = {
             stmts: [
                 'this = this: @loop/LoopSample.ts: %dflt',
                 '%0 = new @loop/LoopSample.ts: %AC0$%dflt.case2',
-                'instanceinvoke %0.<@loop/LoopSample.ts: %AC0$%dflt.case2.constructor()>()',
+                '%0 = instanceinvoke %0.<@loop/LoopSample.ts: %AC0$%dflt.case2.constructor()>()',
                 '%1 = new @loop/LoopSample.ts: %AC1$%dflt.case2',
-                'instanceinvoke %1.<@loop/LoopSample.ts: %AC1$%dflt.case2.constructor()>()',
+                '%1 = instanceinvoke %1.<@loop/LoopSample.ts: %AC1$%dflt.case2.constructor()>()',
                 '%2 = newarray (@loop/LoopSample.ts: %AC0$%dflt.case2|@loop/LoopSample.ts: %AC1$%dflt.case2)[2]',
                 '%2[0] = %0',
                 '%2[1] = %1',

@@ -118,6 +118,11 @@ export class PrinterUtils {
         return false;
     }
 
+    public static isConstructorInvoke(invokeExpr: ArkInstanceInvokeExpr): boolean {
+        let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+        return this.isConstructorMethod(methodName);
+    }
+
     public static isComponentAttributeInvoke(invokeExpr: ArkInstanceInvokeExpr, visitor: Set<ArkInstanceInvokeExpr> = new Set()): boolean {
         if (visitor.has(invokeExpr)) {
             return false;

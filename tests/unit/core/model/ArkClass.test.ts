@@ -16,7 +16,7 @@
 import { assert, describe, expect, it } from 'vitest';
 import { ArkClass, ArkMethod, ClassSignature, ClassType, MethodSignature, Stmt } from '../../../../src';
 import path from 'path';
-import { assertStmtsEqual, buildScene } from '../../common';
+import { assertStmtsEqual, buildScene, fullPositionArray2String } from '../../common';
 import {
     Class_With_Static_Init_Block_Expect,
     ClassWithFieldAndConstructor,
@@ -30,8 +30,11 @@ import {
     SubObjClass,
     SubTypeLiteralClass,
     TypeLiteralClass,
+    New_Class_In_Default_Method,
+    New_Class_In_Function
 } from '../../../resources/model/class/ClassExpect';
 import { ArkIRClassPrinter } from '../../../../src/save/arkir/ArkIRClassPrinter';
+import { ArkIRMethodPrinter } from '../../../../src/save/arkir/ArkIRMethodPrinter';
 
 describe('ArkClass Test', () => {
     const scene = buildScene(path.join(__dirname, '../../../resources/model/class'));
@@ -203,7 +206,6 @@ describe('ArkClass with Other Category Test', () => {
         assert.equal(subIr, SubTypeLiteralClass);
     });
 
-
     it('object class', async () => {
         const objectClassLocal = arkFile?.getDefaultClass().getDefaultArkMethod()?.getBody()?.getLocals().get('testObj');
         assert.isDefined(objectClassLocal);
@@ -250,5 +252,45 @@ describe('ArkClass with Heritage Class Test', () => {
         const extendedClass = arkClass!.getExtendedClasses().get('Q');
         assert.isDefined(extendedClass);
         assert.equal(extendedClass!.getSignature().toString(), '@class/ClassWithHeritage.ts: Q');
+    });
+});
+
+describe('New Class Test', () => {
+    const scene = buildScene(path.join(__dirname, '../../../resources/model/class'));
+
+    it('new class ir', async () => {
+        const arkFile = scene.getFiles().find((file) => file.getName() === 'class.ts');
+
+        const defaultMethod = arkFile?.getDefaultClass().getDefaultArkMethod();
+        assert.isDefined(defaultMethod);
+        assert.isNotNull(defaultMethod);
+        let defaultPrinter = new ArkIRMethodPrinter(defaultMethod!);
+        let defaultIr = defaultPrinter.dump();
+        assert.equal(defaultIr, New_Class_In_Default_Method);
+
+        const assignLocal1 = defaultMethod?.getBody()?.getLocals().get('%0');
+        assert.isDefined(assignLocal1);
+        assert.equal(assignLocal1?.getType().toString(), '@class/class.ts: TestClass');
+        const defaultStmts = defaultMethod!.getBody()?.getCfg().getStmts();
+        assert.isDefined(defaultStmts);
+        assert.isAtLeast(defaultStmts!.length, 3);
+        assert.equal(fullPositionArray2String(defaultStmts![3].getOperandOriginalPositions()!),
+            '[[[28, 5], [28, 17]], [[28, 20], [28, 35]], [[28, 20], [28, 35]], [[28, 20], [28, 35]]]');
+
+        const testMethod = arkFile?.getDefaultClass().getMethodWithName('test');
+        assert.isDefined(testMethod);
+        assert.isNotNull(testMethod);
+        let testPrinter = new ArkIRMethodPrinter(testMethod!);
+        let testIr = testPrinter.dump();
+        assert.equal(testIr, New_Class_In_Function);
+
+        const assignLocal2 = testMethod?.getBody()?.getLocals().get('%0');
+        assert.isDefined(assignLocal2);
+        assert.equal(assignLocal2?.getType().toString(), '@class/class.ts: TestClass');
+        const testStmts = testMethod!.getBody()?.getCfg().getStmts();
+        assert.isDefined(testStmts);
+        assert.isAtLeast(testStmts!.length, 3);
+        assert.equal(fullPositionArray2String(testStmts![3].getOperandOriginalPositions()!),
+            '[[[32, 9], [32, 21]], [[32, 24], [32, 39]], [[32, 24], [32, 39]], [[32, 24], [32, 39]]]');
     });
 });

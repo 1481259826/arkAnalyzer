@@ -328,7 +328,7 @@ export const ObjClass = `object %AC2$%dflt.%dflt {
       this = this: @class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt
       this.<@class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt.a> = a
       %0 = new @class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit
-      instanceinvoke %0.<@class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit.constructor()>()
+      %0 = instanceinvoke %0.<@class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit.constructor()>()
       this.<@class/ClassWithOtherCategory.ts: %AC2$%dflt.%dflt.b> = %0
       return
   }
@@ -351,5 +351,29 @@ export const SubObjClass = `object %AC3$%AC2$%dflt.%dflt.%instInit {
       this.<@class/ClassWithOtherCategory.ts: %AC3$%AC2$%dflt.%dflt.%instInit.value> = b
       return
   }
+}
+`;
+
+export const New_Class_In_Default_Method = `%dflt(): void {
+  label0:
+    this = this: @class/class.ts: %dflt
+    %0 = new @class/class.ts: TestClass
+    %0 = instanceinvoke %0.<@class/class.ts: TestClass.constructor()>()
+    testInstance = %0
+    %1 = instanceinvoke testInstance.<@class/class.ts: TestClass.testMethod(number)>(123)
+    instanceinvoke console.<@%unk/%unk: .log()>(%1)
+    return
+}
+`;
+
+export const New_Class_In_Function = `test(): void {
+  label0:
+    this = this: @class/class.ts: %dflt
+    %0 = new @class/class.ts: TestClass
+    %0 = instanceinvoke %0.<@class/class.ts: TestClass.constructor()>()
+    testInstance = %0
+    %1 = instanceinvoke testInstance.<@class/class.ts: TestClass.testMethod(string)>('abc')
+    instanceinvoke console.<@%unk/%unk: .log()>(%1)
+    return
 }
 `;
