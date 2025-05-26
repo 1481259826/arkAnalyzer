@@ -1059,10 +1059,14 @@ export class AliasTypeExpr extends AbstractExpr {
     public getType(): Type {
         function getTypeOfImportInfo(importInfo: ImportInfo): Type {
             const arkExport = importInfo.getLazyExportInfo()?.getArkExport();
-            if (arkExport) {
-                return TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
+            const importClauseName = importInfo.getImportClauseName();
+            let type;
+            if (importClauseName.includes('.') && arkExport instanceof ArkClass) {
+                type = TypeInference.inferUnclearRefName(importClauseName, arkExport);
+            } else if (arkExport) {
+                type = TypeInference.parseArkExport2Type(arkExport);
             }
-            return UnknownType.getInstance();
+            return type ?? UnknownType.getInstance();
         }
 
         const operator = this.getOriginalObject();

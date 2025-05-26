@@ -16,7 +16,14 @@
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { AbstractExpr, ArkInstanceInvokeExpr, ArkPtrInvokeExpr, ArkStaticInvokeExpr } from '../base/Expr';
 import { Local } from '../base/Local';
-import { AbstractFieldRef, AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef } from '../base/Ref';
+import {
+    AbstractFieldRef,
+    AbstractRef,
+    ArkArrayRef,
+    ArkInstanceFieldRef,
+    ArkParameterRef,
+    ArkStaticFieldRef
+} from '../base/Ref';
 import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import {
     AliasType,
@@ -54,7 +61,7 @@ import {
     ANY_KEYWORD,
     BIGINT_KEYWORD,
     BOOLEAN_KEYWORD,
-    CONSTRUCTOR_NAME,
+    CONSTRUCTOR_NAME, DEFAULT,
     GLOBAL_THIS_NAME,
     NEVER_KEYWORD,
     NULL_KEYWORD,
@@ -729,6 +736,8 @@ export class TypeInference {
     public static inferBaseType(baseName: string, arkClass: ArkClass): Type | null {
         if (SUPER_NAME === baseName) {
             return this.parseArkExport2Type(arkClass.getSuperClass());
+        } else if (DEFAULT === baseName) {
+            return this.parseArkExport2Type(arkClass.getDeclaringArkFile().getExportInfoBy(DEFAULT)?.getArkExport());
         }
         const field = ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName);
         if (field && !this.isUnclearType(field.getType())) {
