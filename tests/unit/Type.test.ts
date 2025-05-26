@@ -183,6 +183,7 @@ function checkLocalInitWithBigIntConstant(stmt: Stmt, expectValue: string): void
     assert.isTrue(value.getType() instanceof BigIntType);
     assert.equal((value as BigIntConstant).getValue(), expectValue);
 }
+
 let projectScene = buildScene();
 const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
 const defaultClass = projectScene.getFile(fileId)?.getDefaultClass();
@@ -288,8 +289,8 @@ describe('Alias Type With Import Test', () => {
     it('alias type of exported default namespace', () => {
         const locals = defaultClass?.getMethodWithName('aliasTypeWithImportDefault')?.getBody()?.getLocals();
         assert.isTrue(locals?.get('pix')?.getType() instanceof AliasType);
-        assert.equal((locals?.get('pix')?.getType() as AliasType).getOriginalType().toString(),'@es2015/api/@internal/component/ets/@ohos.multimedia.image.d.ts: image.PixelMap');
-        assert.equal(locals?.get('b')?.getType().toString(),'@es2015/api/@internal/component/ets/@ohos.multimedia.image.d.ts: image.ImageInfo');
+        assert.equal((locals?.get('pix')?.getType() as AliasType).getOriginalType().toString(), '@es2015/api/@internal/component/ets/@ohos.multimedia.image.d.ts: image.PixelMap');
+        assert.equal(locals?.get('b')?.getType().toString(), '@es2015/api/@internal/component/ets/@ohos.multimedia.image.d.ts: image.ImageInfo');
     });
 
     it('alias type of default exported class', () => {

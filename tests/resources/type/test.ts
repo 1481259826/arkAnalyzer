@@ -126,7 +126,7 @@ class SpecialForIsUnclearCheck {
     }
 }
 
-async function aliasTypeWithImportDefault() {
+async function aliasTypeWithImportDefault(): void {
     let pix: PixelMap = {};
     let b = await pix.getImportInfo();
 }
