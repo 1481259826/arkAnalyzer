@@ -90,3 +90,11 @@ function testFieldType(): void {
     let anyType = ain['key'];
 }
 
+function foo() {
+    class Test {
+        name: string = "test"
+    }
+
+    let t = new Test();
+    console.info(t.name);
+}
