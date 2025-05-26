@@ -200,7 +200,7 @@ export class TypeInference {
                     value.setRef(arkExport);
                 }
             }
-        })
+        });
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
@@ -708,9 +708,6 @@ export class TypeInference {
         const arkClass = declareClass.getDeclaringArkFile().getScene().getClass(baseType.getClassSignature());
         if (!arkClass) {
             return null;
-        } else if (fieldName.includes('.') && declareClass.isAnonymousClass()) {
-            const fieldType = this.inferUnclearRefName(fieldName, arkClass);
-            return fieldType ? [null, fieldType] : null;
         }
         const property = ModelUtils.findPropertyInClass(fieldName, arkClass);
         let propertyType: Type | null = null;
@@ -730,6 +727,9 @@ export class TypeInference {
         }
         if (propertyType) {
             return [property, propertyType];
+        } else if (arkClass.isAnonymousClass()) {
+            const fieldType = this.inferUnclearRefName(fieldName, arkClass);
+            return fieldType ? [null, fieldType] : null;
         }
         return null;
     }

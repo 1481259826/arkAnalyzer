@@ -282,7 +282,8 @@ export class IRInference {
     private static inferBase(instance: ArkInstanceFieldRef | ArkInstanceInvokeExpr, arkMethod: ArkMethod): void {
         const base = instance.getBase();
         if (base.getName() === THIS_NAME) {
-            const name = instance instanceof ArkInstanceFieldRef ? instance.getFieldName() : instance.getMethodSignature().getMethodSubSignature().getMethodName();
+            const name = instance instanceof ArkInstanceFieldRef ? instance.getFieldName() :
+                instance.getMethodSignature().getMethodSubSignature().getMethodName();
             if (name.includes('.')) {
                 return;
             }
@@ -629,8 +630,7 @@ export class IRInference {
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
             const property = propertyAndType?.[0];
-            if (property instanceof ArkField && property.getCategory() !== FieldCategory.ENUM_MEMBER &&
-                !TypeInference.isUnclearType(property.getType())) {
+            if (property instanceof ArkField && property.getCategory() !== FieldCategory.ENUM_MEMBER) {
                 return property.getSignature();
             }
             staticFlag =

@@ -142,7 +142,7 @@ export class SdkUtils {
             if (!dist) {
                 to.addField(field);
             }
-        })
+        });
     }
 
     public static computeGlobalThis(leftOp: AbstractFieldRef, arkMethod: ArkMethod): void {
