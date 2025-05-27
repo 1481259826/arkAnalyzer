@@ -22,6 +22,7 @@ import { BasicBlock } from './BasicBlock';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { ArkStaticInvokeExpr } from '../base/Expr';
 import { Value } from '../base/Value';
+import { ValueAsserts } from '../../utils/ValueAsserts';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'BasicBlock');
 
 /**
@@ -124,7 +125,9 @@ export class Cfg {
     }
 
     public getStartingBlock(): BasicBlock | undefined {
-        return this.stmtToBlock.get(this.startingStmt);
+        const startingBlock = this.stmtToBlock.get(this.startingStmt);
+        ValueAsserts.assertDefined(startingBlock, 'starting block getting with starting stmt is undefined');
+        return startingBlock;
     }
 
     public getStartingStmt(): Stmt {
