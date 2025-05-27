@@ -875,14 +875,16 @@ export class TypeInference {
             .getMethodSignature()
             .getMethodSubSignature()
             .getParameters()
-            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX) && this.isUnclearType(p.getType()))
+            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX))
             .forEach((p, i) => {
-                let type = params?.[i]?.getType();
-                if (type instanceof GenericType && realTypes) {
-                    type = realTypes?.[type.getIndex()];
-                }
-                if (type) {
-                    p.setType(type);
+                if (this.isUnclearType(p.getType())) {
+                    let type = params?.[i]?.getType();
+                    if (type instanceof GenericType && realTypes) {
+                        type = realTypes?.[type.getIndex()];
+                    }
+                    if (type) {
+                        p.setType(type);
+                    }
                 }
             });
     }
