@@ -910,11 +910,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let temp = expr.getArg(0) as Local;
         let arg: Value | undefined;
         temp.getUsedStmts().forEach(value => {
-            if (value instanceof ArkInvokeStmt) {
-                let invokerExpr = value.getInvokeExpr();
-                let methodName = invokerExpr.getMethodSignature().getMethodSubSignature().getMethodName();
+            if (value instanceof ArkAssignStmt && value.getRightOp() instanceof ArkInstanceInvokeExpr) {
+                const rightOp: ArkInstanceInvokeExpr = value.getRightOp() as ArkInstanceInvokeExpr;
+                const methodName = rightOp.getMethodSignature().getMethodSubSignature().getMethodName();
                 if (methodName === 'constructor') {
-                    arg = invokerExpr.getArg(0);
+                    arg = rightOp.getArg(0);
                 }
             }
         });
@@ -938,8 +938,12 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (!(initValue instanceof ArkNewExpr)) {
             return undefined;
         }
+        const initValueType = initValue.getType();
+        if (!(initValueType instanceof ClassType)) {
+            return undefined;
+        }
 
-        let clsSignature = (initValue.getType() as ClassType).getClassSignature();
+        let clsSignature = initValueType.getClassSignature();
         if (clsSignature) {
             let cls = this.findClass(clsSignature);
             if (cls && cls.hasComponentDecorator()) {

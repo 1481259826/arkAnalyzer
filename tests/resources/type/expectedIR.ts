@@ -1035,7 +1035,7 @@ export const SourceIROfObjectType = `class %dflt {
     label0:
       this = this: @type/objectType.ts: %dflt
       %0 = new @ES2015/BuiltinClass: Object
-      instanceinvoke %0.<@ES2015/BuiltinClass: Object.constructor()>()
+      %0 = instanceinvoke %0.<@ES2015/BuiltinClass: Object.constructor()>()
       emptyObj = %0
       a = staticinvoke <@type/objectType.ts: %dflt.foo(@ES2015/BuiltinClass: Object)>(emptyObj)
       type @type/objectType.ts: %dflt.[static]%dflt()#newObject = @ES2015/BuiltinClass: Object
@@ -1065,7 +1065,7 @@ class ClassA {
     label0:
       this = this: @type/objectType.ts: ClassA
       %0 = new @type/objectType.ts: %AC0$ClassA.%instInit
-      instanceinvoke %0.<@type/objectType.ts: %AC0$ClassA.%instInit.constructor()>()
+      %0 = instanceinvoke %0.<@type/objectType.ts: %AC0$ClassA.%instInit.constructor()>()
       this.<@type/objectType.ts: ClassA.fieldA> = %0
       return
   }

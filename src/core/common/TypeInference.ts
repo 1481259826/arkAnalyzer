@@ -22,7 +22,7 @@ import {
     ArkArrayRef,
     ArkInstanceFieldRef,
     ArkParameterRef,
-    ArkStaticFieldRef
+    ArkStaticFieldRef, GlobalRef
 } from '../base/Ref';
 import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import {
@@ -164,7 +164,7 @@ export class TypeInference {
                 type = leftOpType;
             }
         } else if (leftOpType instanceof AnnotationNamespaceType) {
-            type = this.inferUnclearRefName(leftOpType.getOriginType(), declaringArkClass);
+            type = this.inferBaseType(leftOpType.getOriginType(), declaringArkClass);
         } else if (leftOpType instanceof UnclearReferenceType) {
             type = this.inferUnclearRefType(leftOpType, declaringArkClass);
         }
@@ -192,6 +192,15 @@ export class TypeInference {
             signatures.forEach(s => this.inferSignatureReturnType(s, arkMethod));
             return;
         }
+        body.getUsedGlobals()?.forEach((value, key) => {
+            if (value instanceof GlobalRef && !value.getRef()) {
+                const arkExport = ModelUtils.findGlobalRef(key, arkMethod);
+                if (arkExport instanceof Local) {
+                    arkExport.getUsedStmts().push(...value.getUsedStmts());
+                    value.setRef(arkExport);
+                }
+            }
+        });
         const cfg = body.getCfg();
         for (const block of cfg.getBlocks()) {
             for (const stmt of block.getStmts()) {
@@ -711,7 +720,7 @@ export class TypeInference {
                 }
                 propertyType = new EnumValueType(property.getSignature(), constant);
             } else {
-                propertyType = property.getType();
+                propertyType = this.replaceTypeWithReal(property.getType(), baseType.getRealGenericTypes());
             }
         } else if (property) {
             propertyType = this.parseArkExport2Type(property);
@@ -760,14 +769,12 @@ export class TypeInference {
             ModelUtils.getClassWithName(typeName, arkClass) ??
             ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(typeName) ??
             ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
-        if (arkExport instanceof ArkClass || arkExport instanceof AliasType) {
-            return this.parseArkExport2Type(arkExport);
-        }
-        if (!arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
+        if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(typeName);
         }
-        if (arkExport instanceof ArkClass || arkExport instanceof AliasType) {
-            return this.parseArkExport2Type(arkExport);
+        const type = this.parseArkExport2Type(arkExport);
+        if (type instanceof ClassType || type instanceof AliasType) {
+            return type;
         }
         return null;
     }
@@ -868,7 +875,7 @@ export class TypeInference {
             .getMethodSignature()
             .getMethodSubSignature()
             .getParameters()
-            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX))
+            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX) && this.isUnclearType(p.getType()))
             .forEach((p, i) => {
                 let type = params?.[i]?.getType();
                 if (type instanceof GenericType && realTypes) {

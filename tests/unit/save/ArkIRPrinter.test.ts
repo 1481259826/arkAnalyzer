@@ -22,8 +22,8 @@ const CASE1_EXPECT = `class %dflt {
   forLoopTest(): void {
     label0:
       this = this: @save/basic.ts: %dflt
-      %0 = new @%unk/%unk: Person
-      instanceinvoke %0.<@%unk/%unk: Person.constructor()>(10)
+      %0 = new @save/basic.ts: Person
+      %0 = instanceinvoke %0.<@save/basic.ts: Person.constructor(number)>(10)
       myPerson = %0
       i = 0
       goto label1
@@ -32,7 +32,7 @@ const CASE1_EXPECT = `class %dflt {
       if i < 10 goto label2 label3
 
     label2:
-      %1 = myPerson.<@%unk/%unk: Person.age>
+      %1 = myPerson.<@save/basic.ts: Person.age>
       newAge = %1 + i
       instanceinvoke logger.<@%unk/%unk: .info()>(newAge)
       i = i + 1
@@ -140,19 +140,19 @@ const CASE1_EXPECT = `class %dflt {
   export classMethodTest(): void {
     label0:
       this = this: @save/basic.ts: %dflt
-      %0 = new @%unk/%unk: Person
-      instanceinvoke %0.<@%unk/%unk: Person.constructor()>(10)
+      %0 = new @save/basic.ts: Person
+      %0 = instanceinvoke %0.<@save/basic.ts: Person.constructor(number)>(10)
       notPerson = %0
       %1 = new @%unk/%unk: Map
-      instanceinvoke %1.<@%unk/%unk: Map.constructor()>()
+      %1 = instanceinvoke %1.<@%unk/%unk: Map.constructor()>()
       x = %1
       %2 = new @%unk/%unk: Error
-      instanceinvoke %2.<@%unk/%unk: Error.constructor()>()
+      %2 = instanceinvoke %2.<@%unk/%unk: Error.constructor()>()
       z = %2
-      y = staticinvoke <@%unk/%unk: .controlTest()>()
-      a = notPerson.<@%unk/%unk: Person.age>
-      instanceinvoke notPerson.<@%unk/%unk: Person.growOld()>()
-      instanceinvoke Person.<@%unk/%unk: .wooooof()>()
+      y = staticinvoke <@save/basic.ts: %dflt.controlTest()>()
+      a = notPerson.<@save/basic.ts: Person.age>
+      ptrinvoke <@save/basic.ts: Person.notPerson.growOld()>()
+      staticinvoke <@save/basic.ts: Person.[static]wooooof()>()
       return
   }
 
@@ -183,7 +183,7 @@ const CASE1_EXPECT = `class %dflt {
       w = parameter2: string
       this = this: @save/basic.ts: %dflt
       %0 = new @save/basic.ts: %AC9$%dflt.listParameters
-      instanceinvoke %0.<@save/basic.ts: %AC9$%dflt.listParameters.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC9$%dflt.listParameters.constructor()>()
       return %0
   }
 
@@ -191,7 +191,7 @@ const CASE1_EXPECT = `class %dflt {
     label0:
       this = this: @save/basic.ts: %dflt
       %0 = new @save/basic.ts: %AC11$%dflt.deleteTest
-      instanceinvoke %0.<@save/basic.ts: %AC11$%dflt.deleteTest.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC11$%dflt.deleteTest.constructor()>()
       x = %0
       bbb = x.<@save/basic.ts: %AC10.b>
       %1 = delete x.<@save/basic.ts: %AC10.a>
@@ -214,20 +214,20 @@ const CASE1_EXPECT = `class %dflt {
     label0:
       this = this: @save/basic.ts: %dflt
       %0 = new @save/basic.ts: %AC2$%dflt.%dflt
-      instanceinvoke %0.<@save/basic.ts: %AC2$%dflt.%dflt.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC2$%dflt.%dflt.constructor()>()
       staticinvoke <@%unk/%unk: .configure()>(%0)
       logger = staticinvoke <@%unk/%unk: .getLogger()>()
       someClass = %AC8$%dflt.%dflt
-      %1 = new @%unk/%unk: someClass
-      instanceinvoke %1.<@%unk/%unk: someClass.constructor()>('Hello, world')
+      %1 = new @save/basic.ts: %AC8$%dflt.%dflt
+      %1 = instanceinvoke %1.<@save/basic.ts: %AC8$%dflt.%dflt.constructor(Type)>('Hello, world')
       m = %1
-      %2 = staticinvoke <@%unk/%unk: .yieldTest()>()
+      %2 = staticinvoke <@save/basic.ts: %dflt.yieldTest()>()
       iterator = await %2
       x = 1
       soo = 123
-      staticinvoke <@%unk/%unk: .forLoopTest()>()
-      staticinvoke <@%unk/%unk: .controlTest()>()
-      staticinvoke <@%unk/%unk: .deleteTest()>()
+      staticinvoke <@save/basic.ts: %dflt.forLoopTest()>()
+      staticinvoke <@save/basic.ts: %dflt.controlTest()>()
+      staticinvoke <@save/basic.ts: %dflt.deleteTest()>()
       return
   }
 
@@ -246,7 +246,7 @@ const CASE1_EXPECT = `class %dflt {
       %2 = max === rRGB
       %3 = gRGB >= bRGB
       %4 = %2 && %3
-      if %4 != 0 goto label1 label2
+      if %4 != false goto label1 label2
 
     label1:
       %5 = gRGB - bRGB
@@ -260,7 +260,7 @@ const CASE1_EXPECT = `class %dflt {
       %9 = max === rRGB
       %10 = gRGB < bRGB
       %11 = %9 && %10
-      if %11 != 0 goto label3 label4
+      if %11 != false goto label3 label4
 
     label3:
       %12 = gRGB - bRGB
@@ -319,13 +319,13 @@ const CASE1_EXPECT = `class %dflt {
       text = parameter0: string
       this = this: @save/basic.ts: %dflt
       %0 = new @%unk/%unk: RegExp
-      instanceinvoke %0.<@%unk/%unk: RegExp.constructor()>('\\[\\d{2,}:\\d{2}((\\.|:)\\d{2,})\\]', 'g')
+      %0 = instanceinvoke %0.<@%unk/%unk: RegExp.constructor()>('\\[\\d{2,}:\\d{2}((\\.|:)\\d{2,})\\]', 'g')
       lrcLineRegex = %0
       %1 = new @%unk/%unk: RegExp
-      instanceinvoke %1.<@%unk/%unk: RegExp.constructor()>('\\[\\d{2,}', 'i')
+      %1 = instanceinvoke %1.<@%unk/%unk: RegExp.constructor()>('\\[\\d{2,}', 'i')
       lrcTimeRegex1 = %1
       %2 = new @%unk/%unk: RegExp
-      instanceinvoke %2.<@%unk/%unk: RegExp.constructor()>('\\d{2}\\.\\d{2,}', 'i')
+      %2 = instanceinvoke %2.<@%unk/%unk: RegExp.constructor()>('\\d{2}\\.\\d{2,}', 'i')
       lrcTimeRegex2 = %2
       lyric = instanceinvoke text.<@%unk/%unk: .split()>('\n')
       return
@@ -368,10 +368,10 @@ object %AC2$%dflt.%dflt {
     label0:
       this = this: @save/basic.ts: %AC2$%dflt.%dflt
       %0 = new @save/basic.ts: %AC3$%AC2$%dflt.%dflt.%instInit
-      instanceinvoke %0.<@save/basic.ts: %AC3$%AC2$%dflt.%dflt.%instInit.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC3$%AC2$%dflt.%dflt.%instInit.constructor()>()
       this.<@save/basic.ts: %AC2$%dflt.%dflt.appenders> = %0
       %1 = new @save/basic.ts: %AC6$%AC2$%dflt.%dflt.%instInit
-      instanceinvoke %1.<@save/basic.ts: %AC6$%AC2$%dflt.%dflt.%instInit.constructor()>()
+      %1 = instanceinvoke %1.<@save/basic.ts: %AC6$%AC2$%dflt.%dflt.%instInit.constructor()>()
       this.<@save/basic.ts: %AC2$%dflt.%dflt.categories> = %1
       return
   }
@@ -390,7 +390,7 @@ object %AC3$%AC2$%dflt.%dflt.%instInit {
     label0:
       this = this: @save/basic.ts: %AC3$%AC2$%dflt.%dflt.%instInit
       %0 = new @save/basic.ts: %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit
-      instanceinvoke %0.<@save/basic.ts: %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.constructor()>()
       this.<@save/basic.ts: %AC3$%AC2$%dflt.%dflt.%instInit.console> = %0
       return
   }
@@ -411,7 +411,7 @@ object %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit {
       this = this: @save/basic.ts: %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit
       this.<@save/basic.ts: %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.type> = 'console'
       %0 = new @save/basic.ts: %AC5$%AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.%instInit
-      instanceinvoke %0.<@save/basic.ts: %AC5$%AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.%instInit.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC5$%AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.%instInit.constructor()>()
       this.<@save/basic.ts: %AC4$%AC3$%AC2$%dflt.%dflt.%instInit.%instInit.layout> = %0
       return
   }
@@ -449,7 +449,7 @@ object %AC6$%AC2$%dflt.%dflt.%instInit {
     label0:
       this = this: @save/basic.ts: %AC6$%AC2$%dflt.%dflt.%instInit
       %0 = new @save/basic.ts: %AC7$%AC6$%AC2$%dflt.%dflt.%instInit.%instInit
-      instanceinvoke %0.<@save/basic.ts: %AC7$%AC6$%AC2$%dflt.%dflt.%instInit.%instInit.constructor()>()
+      %0 = instanceinvoke %0.<@save/basic.ts: %AC7$%AC6$%AC2$%dflt.%dflt.%instInit.%instInit.constructor()>()
       this.<@save/basic.ts: %AC6$%AC2$%dflt.%dflt.%instInit.default> = %0
       return
   }
@@ -512,7 +512,7 @@ class Person {
       return
   }
 
-  public getAge(): unknown {
+  public getAge(): number {
     label0:
       this = this: @save/basic.ts: Person
       %0 = this.<@save/basic.ts: Person.age>
@@ -589,7 +589,7 @@ class Adder {
 }
 class ExtendedAdder extends Adder {
   // Create a copy of parent before creating our own
-  private superAdd
+  private superAdd: @save/basic.ts: ExtendedAdder.%AM0$%instInit(string)
   // Now create our override
   add: @save/basic.ts: ExtendedAdder.%AM0$%instInit(string)
 
@@ -621,7 +621,7 @@ class ExtendedAdder extends Adder {
     label0:
       b = parameter0: string
       this = this: @save/basic.ts: ExtendedAdder
-      %0 = instanceinvoke this.<@save/basic.ts: ExtendedAdder.superAdd()>(b)
+      %0 = ptrinvoke <@save/basic.ts: ExtendedAdder.this.superAdd(string)>(b)
       return %0
   }
 }
@@ -631,9 +631,9 @@ typeliteral %AC0 {
   z: string
 }
 object %AC9$%dflt.listParameters {
-  x
-  y
-  z
+  x: number
+  y: number
+  z: string
 
   constructor(): @save/basic.ts: %AC9$%dflt.listParameters {
     label0:
@@ -654,7 +654,7 @@ object %AC9$%dflt.listParameters {
 export class SecurityDoor extends Door implements Alarm, Alarm2 {
   x: number
   y: string
-  z: Person
+  z: @save/basic.ts: Person
   public Members: @save/basic.ts: %AC1$SecurityDoor.%instInit
 
   %statInit(): void {
@@ -682,8 +682,8 @@ export class SecurityDoor extends Door implements Alarm, Alarm2 {
       this = this: @save/basic.ts: SecurityDoor
       this.<@save/basic.ts: SecurityDoor.x> = 0
       this.<@save/basic.ts: SecurityDoor.y> = ''
-      %0 = new @%unk/%unk: Person
-      instanceinvoke %0.<@%unk/%unk: Person.constructor()>(10)
+      %0 = new @save/basic.ts: Person
+      %0 = instanceinvoke %0.<@save/basic.ts: Person.constructor(number)>(10)
       this.<@save/basic.ts: SecurityDoor.z> = %0
       this.<@save/basic.ts: SecurityDoor.Members> = %AC1$SecurityDoor.%instInit
       return
@@ -701,7 +701,7 @@ export class SecurityDoor extends Door implements Alarm, Alarm2 {
       x = parameter0: number
       y = parameter1: string
       this = this: @save/basic.ts: SecurityDoor
-      staticinvoke <@%unk/%unk: .super()>()
+      staticinvoke <@save/basic.ts: Door.super()>()
       instanceinvoke this.<@save/basic.ts: SecurityDoor.%instInit()>()
       this.<@save/basic.ts: SecurityDoor.x> = x
       this.<@save/basic.ts: SecurityDoor.y> = y
@@ -749,12 +749,12 @@ class %AC8$%dflt.%dflt<Type> {
       value = parameter0: Type
       this = this: @save/basic.ts: %AC8$%dflt.%dflt
       instanceinvoke this.<@save/basic.ts: %AC8$%dflt.%dflt.%instInit()>()
-      this.<@save/basic.ts: %AC8$%dflt.%dflt.content> = value
+      @save/basic.ts: %dflt.[static]content = value
       return this
   }
 }
 abstract class Animal {
-  public name
+  public name: string
 
   %instInit(): void {
     label0:
@@ -822,6 +822,7 @@ describe('ArkIRPrinterTest', () => {
     config.buildFromProjectDir(path.join(__dirname, '../../resources/save'));
     let scene = new Scene();
     scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
 
     let arkfile = scene.getFiles().find((value) => {
         return value.getName().endsWith('basic.ts');

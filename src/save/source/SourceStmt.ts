@@ -174,7 +174,10 @@ export class SourceAssignStmt extends SourceStmt {
             this.transferRightNewArrayExpr();
         } else if (this.rightOp instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentCreate(this.rightOp)) {
             this.transferRightComponentCreate();
-        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isComponentAttributeInvoke(this.rightOp)) {
+        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isConstructorInvoke(this.rightOp)) {
+            this.transferConstructorInvokeExpr(this.rightOp);
+        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isComponentAttributeInvoke(this.rightOp)
+        ) {
             this.transferRightComponentAttribute();
         } else {
             this.rightCode = this.transformer.valueToString(this.rightOp);
@@ -270,8 +273,8 @@ export class SourceAssignStmt extends SourceStmt {
         if (this.context.getStmtReader().hasNext()) {
             let stmt = this.context.getStmtReader().next();
             let rollback = true;
-            if (stmt instanceof ArkInvokeStmt && (stmt.getInvokeExpr() as ArkInstanceInvokeExpr)) {
-                let instanceInvokeExpr = stmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+            if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
+                let instanceInvokeExpr = stmt.getRightOp() as ArkInstanceInvokeExpr;
                 if (
                     'constructor' === instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() &&
                     instanceInvokeExpr.getBase().getName() === (this.leftOp as Local).getName()
@@ -307,6 +310,13 @@ export class SourceAssignStmt extends SourceStmt {
         } else {
             this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
         }
+    }
+
+    private transferConstructorInvokeExpr(expr: ArkInstanceInvokeExpr): void {
+        let rightCode = this.transformer.valueToString(this.rightOp);
+        const pattern = /\([^)]*\)\.constructor/;
+        this.rightCode = rightCode.replace(pattern, '');
+        this.dumpType = AssignStmtDumpType.NORMAL;
     }
 
     /**

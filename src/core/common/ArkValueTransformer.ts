@@ -295,13 +295,14 @@ export class ArkValueTransformer {
         const constructorMethodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(CONSTRUCTOR_NAME);
         const constructorMethodSignature = new MethodSignature(anonymousClassSignature, constructorMethodSubSignature);
         const constructorInvokeExpr = new ArkInstanceInvokeExpr(newExprLocal as Local, constructorMethodSignature, []);
-        const constructorInvokeExprPositions = [objectLiteralExpressionPosition, ...newExprLocalPositions];
-        const constructorInvokeStmt = new ArkInvokeStmt(constructorInvokeExpr);
-        constructorInvokeStmt.setOperandOriginalPositions(constructorInvokeExprPositions);
-        stmts.push(constructorInvokeStmt);
+
+        const assignStmt = new ArkAssignStmt(newExprLocal, constructorInvokeExpr);
+        const assignStmtPositions = [newExprLocalPositions[0], newExprLocalPositions[0], ...newExprLocalPositions];
+        assignStmt.setOperandOriginalPositions(assignStmtPositions);
+        stmts.push(assignStmt);
         return {
             value: newExprLocal,
-            valueOriginalPositions: newExprLocalPositions,
+            valueOriginalPositions: assignStmtPositions,
             stmts: stmts,
         };
     }
@@ -356,11 +357,11 @@ export class ArkValueTransformer {
         const constructorMethodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(CONSTRUCTOR_NAME);
         const constructorMethodSignature = new MethodSignature(classSignature, constructorMethodSubSignature);
         const instanceInvokeExpr = new ArkInstanceInvokeExpr(newExprLocal as Local, constructorMethodSignature, args);
-        const instanceInvokeExprPositions = [componentExpressionPosition, ...newExprPositions, ...argPositionsAllFlat];
-        const instanceInvokeStmt = new ArkInvokeStmt(instanceInvokeExpr);
-        instanceInvokeStmt.setOperandOriginalPositions(instanceInvokeExprPositions);
-        stmts.push(instanceInvokeStmt);
-        const createViewArgs = [newExprLocal];
+        const assignStmt = new ArkAssignStmt(newExprLocal, instanceInvokeExpr);
+        const assignStmtPositions = [componentExpressionPosition, componentExpressionPosition, ...newExprPositions, ...argPositionsAllFlat];
+        assignStmt.setOperandOriginalPositions(assignStmtPositions);
+        stmts.push(assignStmt);
+        const createViewArgs: Value[] = [newExprLocal];
         const createViewArgPositionsAll = [newExprPositions];
         if (ts.isEtsComponentExpression(componentExpression) && componentExpression.body) {
             const anonymous = ts.factory.createArrowFunction([], [], [], undefined, undefined, componentExpression.body);
@@ -975,15 +976,12 @@ export class ArkValueTransformer {
 
         const { args: argValues, argPositions: argPositions } = this.parseArguments(stmts, newExpression.arguments);
         const instanceInvokeExpr = new ArkInstanceInvokeExpr(newLocal as Local, constructorMethodSignature, argValues);
-        const instanceInvokeExprPositions = [newLocalPositions[0], ...newLocalPositions, ...argPositions];
-        const invokeStmt = new ArkInvokeStmt(instanceInvokeExpr);
-        invokeStmt.setOperandOriginalPositions(instanceInvokeExprPositions);
-        stmts.push(invokeStmt);
-        return {
-            value: newLocal,
-            valueOriginalPositions: newLocalPositions,
-            stmts: stmts,
-        };
+
+        const assignStmt = new ArkAssignStmt(newLocal, instanceInvokeExpr);
+        const assignStmtPositions = [newLocalPositions[0], newLocalPositions[0], ...newLocalPositions, ...argPositions];
+        assignStmt.setOperandOriginalPositions(assignStmtPositions);
+        stmts.push(assignStmt);
+        return { value: newLocal, valueOriginalPositions: assignStmtPositions, stmts: stmts };
     }
 
     private newArrayExpressionToValueAndStmts(newArrayExpression: ts.NewExpression): ValueAndStmts {

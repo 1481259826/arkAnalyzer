@@ -77,7 +77,7 @@ function ResponseType(type: ResponseType): void {
 
 
 class ClassA {
-    private a = 'c';
+    private y = 1;
 }
 
 function testFieldType(): void {
@@ -88,6 +88,13 @@ function testFieldType(): void {
     let ain = new ClassA();
     let str = ain[key];
     let anyType = ain['key'];
+}
+
+let out = 10;
+
+function test1(): number {
+    let a = new ClassA();
+    let x = a.y + out;
 }
 
 function foo() {

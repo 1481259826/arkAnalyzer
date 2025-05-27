@@ -24,3 +24,11 @@ class TestClass {
         }
     }
 }
+
+let testInstance = new TestClass();
+console.log(testInstance.testMethod(123));
+
+function test(): void {
+    let testInstance = new TestClass();
+    console.log(testInstance.testMethod('abc'));
+}

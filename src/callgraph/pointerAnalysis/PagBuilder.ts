@@ -56,7 +56,6 @@ import {
 } from './Pag';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
-import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
 import { BuiltApiType, getBuiltInApiType } from './PTAUtils';
 import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 
@@ -202,10 +201,10 @@ export class PagBuilder {
                 }
 
                 // handle call
-                this.buildInvokeExprInAssignStmt(stmt, fpag);
+                this.buildInvokeExprInStmt(stmt, fpag);
             } else if (stmt instanceof ArkInvokeStmt && this.scale === PtaAnalysisScale.WholeProgram) {
                 this.processExternalScopeValue(stmt.getInvokeExpr(), funcID);
-                this.buildInvokeExprInInvokeStmt(stmt, fpag);
+                this.buildInvokeExprInStmt(stmt, fpag);
             } else {
                 // TODO: need handle other type of stmt?
             }
@@ -216,38 +215,7 @@ export class PagBuilder {
         return true;
     }
 
-    private buildInvokeExprInAssignStmt(stmt: ArkAssignStmt, fpag: FuncPag): void {
-        let ivkExpr = stmt.getInvokeExpr()!;
-        if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            let callSites = this.cg.getCallSiteByStmt(stmt);
-            if (callSites.length !== 0) {
-                // direct call is already existing in CG
-                // TODO: API Invoke stmt has anonymous method param, how to add these param into callee
-                callSites.forEach(cs => {
-                    this.addFuncPagCallSite(fpag, cs, ivkExpr);
-                });
-            } else {
-                throw new Error('Can not find static callsite');
-            }
-        } else if (ivkExpr instanceof ArkInstanceInvokeExpr || ivkExpr instanceof ArkPtrInvokeExpr) {
-            let ptcs = this.cg.getDynCallsiteByStmt(stmt);
-            if (ptcs) {
-                this.addToDynamicCallSite(fpag, ptcs);
-            }
-        }
-    }
-
-    private addFuncPagCallSite(fpag: FuncPag, cs: CallSite, ivkExpr: AbstractInvokeExpr): void {
-        if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            if (ivkExpr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
-                fpag.addUnknownCallSite(cs);
-            } else {
-                fpag.addNormalCallSite(cs);
-            }
-        }
-    }
-
-    private buildInvokeExprInInvokeStmt(stmt: ArkInvokeStmt, fpag: FuncPag): void {
+    private buildInvokeExprInStmt(stmt: Stmt, fpag: FuncPag): void {
         // TODO: discuss if we need a invokeStmt
 
         let callSites = this.cg.getCallSiteByStmt(stmt);
@@ -270,7 +238,7 @@ export class PagBuilder {
         if (dycs) {
             this.addToDynamicCallSite(fpag, dycs);
         } else {
-            throw new Error('Can not find callsite by stmt');
+            logger.error(`can not find callsite by stmt: ${stmt.toString()}`);
         }
     }
 
