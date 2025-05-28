@@ -49,11 +49,11 @@ export class SCBSceneSessionManager {
 }
 
 function demoCallBack(){
-    media.createAVPlayer((error:BusinessError, player: media.AVPlayer) =>{
+    media.createAVPlayer((error:BusinessError, player) =>{
         player.on('audioInterrupt',() => console.error('createAVPlayer audioInterrupt'));
     })
 
-    media.createAVPlayer().then((player: media.AVPlayer) =>{
+    media.createAVPlayer().then((player) =>{
         let mode = 'audioInterrupt';
         player.on(mode,() => console.error('createAVPlayer audioInterrupt2'));
     }).catch((error:BusinessError)=>{console.error('createAVPlayer error')})
@@ -61,7 +61,7 @@ function demoCallBack(){
 
 
 function matchOverride(){
-    media.createAVPlayer((error:BusinessError, player: media.AVPlayer) =>{
+    media.createAVPlayer((error:BusinessError, player) =>{
         player.on(Events.STATE_CHANGE,(state: media.AVPlayerState) => console.error('AVPlayer STATE_CHANGE' + state));
     })
 }
