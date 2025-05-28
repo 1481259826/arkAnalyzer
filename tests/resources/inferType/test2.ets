@@ -14,6 +14,7 @@
  */
 import type { SCBUnlockTransitionController } from './test1';
 import { SCBTransitionManager } from './test1';
+import { Events } from './test1';
 import { media } from '@kit.MediaKit';
 import { collections } from '@kit.ArkTS';
 
@@ -48,12 +49,19 @@ export class SCBSceneSessionManager {
 }
 
 function demoCallBack(){
-    media.createAVPlayer((error:BusinessError, player: media.AVPlayer) =>{
+    media.createAVPlayer((error:BusinessError, player) =>{
         player.on('audioInterrupt',() => console.error('createAVPlayer audioInterrupt'));
     })
 
-    media.createAVPlayer().then((player: media.AVPlayer) =>{
+    media.createAVPlayer().then((player) =>{
         let mode = 'audioInterrupt';
         player.on(mode,() => console.error('createAVPlayer audioInterrupt2'));
     }).catch((error:BusinessError)=>{console.error('createAVPlayer error')})
+}
+
+
+function matchOverride(){
+    media.createAVPlayer((error:BusinessError, player) =>{
+        player.on(Events.STATE_CHANGE,(state: media.AVPlayerState) => console.error('AVPlayer STATE_CHANGE' + state));
+    })
 }

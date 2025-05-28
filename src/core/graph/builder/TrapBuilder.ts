@@ -37,8 +37,12 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'TrapBuilder');
  * Builder for traps from try...catch
  */
 export class TrapBuilder {
-    public buildTraps(blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>, blockBuildersBeforeTry: Set<BlockBuilder>,
-                      arkIRTransformer: ArkIRTransformer, basicBlockSet: Set<BasicBlock>): Trap[] {
+    public buildTraps(
+        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>,
+        blockBuildersBeforeTry: Set<BlockBuilder>,
+        arkIRTransformer: ArkIRTransformer,
+        basicBlockSet: Set<BasicBlock>
+    ): Trap[] {
         const traps: Trap[] = [];
         for (const blockBuilderBeforeTry of blockBuildersBeforeTry) {
             if (blockBuilderBeforeTry.nexts.length === 0) {
@@ -53,14 +57,16 @@ export class TrapBuilder {
                 logger.error(`can't find finally block or dummy finally block.`);
                 continue;
             }
-            const { bfsBlocks: tryBfsBlocks, tailBlocks: tryTailBlocks } = this.getAllBlocksBFS(blockBuilderToCfgBlock,
-                blockBuilderContainTry, finallyBlockBuilder);
+            const { bfsBlocks: tryBfsBlocks, tailBlocks: tryTailBlocks } = this.getAllBlocksBFS(
+                blockBuilderToCfgBlock,
+                blockBuilderContainTry,
+                finallyBlockBuilder
+            );
             let catchBfsBlocks: BasicBlock[] = [];
             let catchTailBlocks: BasicBlock[] = [];
             const catchBlockBuilder = tryStmtBuilder.catchStatement?.block;
             if (catchBlockBuilder) {
-                ({ bfsBlocks: catchBfsBlocks, tailBlocks: catchTailBlocks } = this.getAllBlocksBFS(
-                    blockBuilderToCfgBlock, catchBlockBuilder));
+                ({ bfsBlocks: catchBfsBlocks, tailBlocks: catchTailBlocks } = this.getAllBlocksBFS(blockBuilderToCfgBlock, catchBlockBuilder));
             }
             const finallyStmts = finallyBlockBuilder.stmts;
             const blockBuilderAfterFinally = tryStmtBuilder.afterFinal?.block;
@@ -68,27 +74,49 @@ export class TrapBuilder {
                 logger.error(`can't find block after try...catch.`);
                 continue;
             }
-            if (finallyStmts.length === 1 && finallyStmts[0].code === 'dummyFinally') { // no finally block
-                const trapsIfNoFinally = this.buildTrapsIfNoFinally(tryBfsBlocks, tryTailBlocks, catchBfsBlocks,
+            if (finallyStmts.length === 1 && finallyStmts[0].code === 'dummyFinally') {
+                // no finally block
+                const trapsIfNoFinally = this.buildTrapsIfNoFinally(
+                    tryBfsBlocks,
+                    tryTailBlocks,
+                    catchBfsBlocks,
                     catchTailBlocks,
-                    finallyBlockBuilder, blockBuilderAfterFinally, basicBlockSet, blockBuilderToCfgBlock);
+                    finallyBlockBuilder,
+                    blockBuilderAfterFinally,
+                    basicBlockSet,
+                    blockBuilderToCfgBlock
+                );
                 if (trapsIfNoFinally) {
                     traps.push(...trapsIfNoFinally);
                 }
             } else {
-                const trapsIfFinallyExist = this.buildTrapsIfFinallyExist(tryBfsBlocks, tryTailBlocks, catchBfsBlocks,
-                    catchTailBlocks, finallyBlockBuilder, blockBuilderAfterFinally, basicBlockSet, arkIRTransformer,
-                    blockBuilderToCfgBlock);
+                const trapsIfFinallyExist = this.buildTrapsIfFinallyExist(
+                    tryBfsBlocks,
+                    tryTailBlocks,
+                    catchBfsBlocks,
+                    catchTailBlocks,
+                    finallyBlockBuilder,
+                    blockBuilderAfterFinally,
+                    basicBlockSet,
+                    arkIRTransformer,
+                    blockBuilderToCfgBlock
+                );
                 traps.push(...trapsIfFinallyExist);
             }
         }
         return traps;
     }
 
-    private buildTrapsIfNoFinally(tryBfsBlocks: BasicBlock[], tryTailBlocks: BasicBlock[], catchBfsBlocks: BasicBlock[],
-                                  catchTailBlocks: BasicBlock[], finallyBlockBuilder: BlockBuilder,
-                                  blockBuilderAfterFinally: BlockBuilder, basicBlockSet: Set<BasicBlock>,
-                                  blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>): Trap[] | null {
+    private buildTrapsIfNoFinally(
+        tryBfsBlocks: BasicBlock[],
+        tryTailBlocks: BasicBlock[],
+        catchBfsBlocks: BasicBlock[],
+        catchTailBlocks: BasicBlock[],
+        finallyBlockBuilder: BlockBuilder,
+        blockBuilderAfterFinally: BlockBuilder,
+        basicBlockSet: Set<BasicBlock>,
+        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>
+    ): Trap[] | null {
         if (catchBfsBlocks.length === 0) {
             logger.error(`catch block expected.`);
             return null;
@@ -130,16 +158,23 @@ export class TrapBuilder {
         return [new Trap(tryBfsBlocks, catchBfsBlocks)];
     }
 
-    private buildTrapsIfFinallyExist(tryBfsBlocks: BasicBlock[], tryTailBlocks: BasicBlock[],
-                                     catchBfsBlocks: BasicBlock[], catchTailBlocks: BasicBlock[],
-                                     finallyBlockBuilder: BlockBuilder, blockBuilderAfterFinally: BlockBuilder,
-                                     basicBlockSet: Set<BasicBlock>, arkIRTransformer: ArkIRTransformer,
-                                     blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>): Trap[] {
+    private buildTrapsIfFinallyExist(
+        tryBfsBlocks: BasicBlock[],
+        tryTailBlocks: BasicBlock[],
+        catchBfsBlocks: BasicBlock[],
+        catchTailBlocks: BasicBlock[],
+        finallyBlockBuilder: BlockBuilder,
+        blockBuilderAfterFinally: BlockBuilder,
+        basicBlockSet: Set<BasicBlock>,
+        arkIRTransformer: ArkIRTransformer,
+        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>
+    ): Trap[] {
         const { bfsBlocks: finallyBfsBlocks, tailBlocks: finallyTailBlocks } = this.getAllBlocksBFS(
             blockBuilderToCfgBlock,
-            finallyBlockBuilder, blockBuilderAfterFinally);
-        const copyFinallyBfsBlocks = this.copyFinallyBlocks(finallyBfsBlocks, finallyTailBlocks, basicBlockSet,
-            arkIRTransformer, blockBuilderToCfgBlock);
+            finallyBlockBuilder,
+            blockBuilderAfterFinally
+        );
+        const copyFinallyBfsBlocks = this.copyFinallyBlocks(finallyBfsBlocks, finallyTailBlocks, basicBlockSet, arkIRTransformer, blockBuilderToCfgBlock);
         const traps: Trap[] = [];
         if (catchBfsBlocks.length !== 0) {
             for (const catchTailBlock of catchTailBlocks) {
@@ -166,8 +201,11 @@ export class TrapBuilder {
         return traps;
     }
 
-    private getAllBlocksBFS(blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>, startBlockBuilder: BlockBuilder,
-                            endBlockBuilder?: BlockBuilder): { bfsBlocks: BasicBlock[], tailBlocks: BasicBlock[] } {
+    private getAllBlocksBFS(
+        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>,
+        startBlockBuilder: BlockBuilder,
+        endBlockBuilder?: BlockBuilder
+    ): { bfsBlocks: BasicBlock[]; tailBlocks: BasicBlock[] } {
         const bfsBlocks: BasicBlock[] = [];
         const tailBlocks: BasicBlock[] = [];
         const queue: BlockBuilder[] = [];
@@ -187,49 +225,47 @@ export class TrapBuilder {
             bfsBlocks.push(currBlock);
 
             const childList = currBlockBuilder.nexts;
-            if (childList.length === 0 || (childList.length !== 0 && (childList[0] === endBlockBuilder))) {
-                if (childList[0] === endBlockBuilder) {
-                    tailBlocks.push(currBlock);
-                    continue;
-                }
-            }
             if (childList.length !== 0) {
                 for (const child of childList) {
-                    queue.push(child);
+                    // A tail block's successor may be within the traversal range
+                    if (child === endBlockBuilder) {
+                        tailBlocks.push(currBlock);
+                    } else {
+                        queue.push(child);
+                    }
                 }
+            } else {
+                tailBlocks.push(currBlock);
             }
         }
         return { bfsBlocks, tailBlocks };
     }
 
-    private copyFinallyBlocks(finallyBfsBlocks: BasicBlock[], finallyTailBlocks: BasicBlock[],
-                              basicBlockSet: Set<BasicBlock>, arkIRTransformer: ArkIRTransformer,
-                              blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>): BasicBlock[] {
+    private copyFinallyBlocks(
+        finallyBfsBlocks: BasicBlock[],
+        finallyTailBlocks: BasicBlock[],
+        basicBlockSet: Set<BasicBlock>,
+        arkIRTransformer: ArkIRTransformer,
+        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>
+    ): BasicBlock[] {
         const copyFinallyBfsBlocks = this.copyBlocks(finallyBfsBlocks);
         const caughtExceptionRef = new ArkCaughtExceptionRef(UnknownType.getInstance());
-        const {
-            value: exceptionValue,
-            stmts: exceptionAssignStmts,
-        } = arkIRTransformer.generateAssignStmtForValue(caughtExceptionRef, [FullPosition.DEFAULT]);
+        const { value: exceptionValue, stmts: exceptionAssignStmts } = arkIRTransformer.generateAssignStmtForValue(caughtExceptionRef, [FullPosition.DEFAULT]);
         copyFinallyBfsBlocks[0].addHead(exceptionAssignStmts);
         const finallyPredecessorsCnt = copyFinallyBfsBlocks[0].getPredecessors().length;
         copyFinallyBfsBlocks[0].getPredecessors().splice(0, finallyPredecessorsCnt);
         const throwStmt = new ArkThrowStmt(exceptionValue);
-        let copyFinallyTailBlocks = copyFinallyBfsBlocks.splice(
-            copyFinallyBfsBlocks.length - finallyTailBlocks.length, finallyTailBlocks.length);
-        copyFinallyTailBlocks.forEach((copyFinallyTailBlock: BasicBlock) => {
-            const successorsCnt = copyFinallyTailBlock.getSuccessors().length;
-            copyFinallyTailBlock.getSuccessors().splice(0, successorsCnt);
-        });
+        let copyFinallyTailBlocks = copyFinallyBfsBlocks.splice(copyFinallyBfsBlocks.length - finallyTailBlocks.length, finallyTailBlocks.length);
         if (copyFinallyTailBlocks.length > 1) {
             const newCopyFinallyTailBlock = new BasicBlock();
             copyFinallyTailBlocks.forEach((copyFinallyTailBlock: BasicBlock) => {
                 copyFinallyTailBlock.addSuccessorBlock(newCopyFinallyTailBlock);
                 newCopyFinallyTailBlock.addPredecessorBlock(copyFinallyTailBlock);
             });
+            copyFinallyBfsBlocks.push(...copyFinallyTailBlocks);
             copyFinallyTailBlocks = [newCopyFinallyTailBlock];
         }
-        copyFinallyTailBlocks[0]?.addStmt(throwStmt);
+        copyFinallyTailBlocks[0].addStmt(throwStmt);
         copyFinallyBfsBlocks.push(...copyFinallyTailBlocks);
         copyFinallyBfsBlocks.forEach((copyFinallyBfsBlock: BasicBlock) => {
             basicBlockSet.add(copyFinallyBfsBlock);
@@ -251,12 +287,19 @@ export class TrapBuilder {
         for (const sourceBlock of sourceBlocks) {
             const targetBlock = sourceToTarget.get(sourceBlock)!;
             for (const predecessor of sourceBlock.getPredecessors()) {
-                const targetPredecessor = sourceToTarget.get(predecessor)!;
-                targetBlock.addPredecessorBlock(targetPredecessor);
+                const targetPredecessor = sourceToTarget.get(predecessor);
+                // Only include blocks within the copy range, so that predecessor and successor relationships to
+                // external blocks can be trimmed
+                if (targetPredecessor) {
+                    targetBlock.addPredecessorBlock(targetPredecessor);
+                }
+
             }
             for (const successor of sourceBlock.getSuccessors()) {
-                const targetSuccessor = sourceToTarget.get(successor)!;
-                targetBlock.addSuccessorBlock(targetSuccessor);
+                const targetSuccessor = sourceToTarget.get(successor);
+                if (targetSuccessor) {
+                    targetBlock.addSuccessorBlock(targetSuccessor);
+                }
             }
         }
         return targetBlocks;

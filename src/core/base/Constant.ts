@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { BooleanType, NullType, NumberType, StringType, Type, UndefinedType } from './Type';
+import { BigIntType, BooleanType, NullType, NumberType, StringType, Type, UndefinedType } from './Type';
 import { Value } from './Value';
 import { NULL_KEYWORD, UNDEFINED_KEYWORD } from '../common/TSConst';
 
@@ -56,7 +56,7 @@ export class Constant implements Value {
     public toString(): string {
         let str = '';
         if (this.type instanceof StringType) {
-            str = '\'' + this.value + '\'';
+            str = "'" + this.value + "'";
         } else {
             str = this.value;
         }
@@ -80,6 +80,12 @@ export class BooleanConstant extends Constant {
 export class NumberConstant extends Constant {
     constructor(value: number) {
         super(value.toString(), NumberType.getInstance());
+    }
+}
+
+export class BigIntConstant extends Constant {
+    constructor(value: bigint) {
+        super(value.toString(), BigIntType.getInstance());
     }
 }
 

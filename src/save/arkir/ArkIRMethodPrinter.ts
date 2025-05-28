@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { UnknownType } from '../../core/base/Type';
 import { ArkMethod } from '../../core/model/ArkMethod';
 import { ArkCodeBuffer } from '../ArkStream';
 
@@ -60,7 +59,7 @@ export class ArkIRMethodPrinter extends BasePrinter {
         if (cfg) {
             cfg.getStmts()
                 .reverse()
-                .forEach((stmt) => stmts.push(stmt));
+                .forEach(stmt => stmts.push(stmt));
         }
         for (const stmt of stmts) {
             if (stmt.getOriginPositionInfo().getLineNo() > 0) {
@@ -76,7 +75,7 @@ export class ArkIRMethodPrinter extends BasePrinter {
         this.printer.writeIndent().write(this.methodProtoToString(method));
         // abstract function no body
         if (!method.getBody()) {
-            this.printer.writeLine(';');
+            this.printer.writeLine('');
             return;
         }
 
@@ -85,7 +84,6 @@ export class ArkIRMethodPrinter extends BasePrinter {
         this.printBody(method);
         this.printer.decIndent();
         this.printer.writeIndent().writeLine('}');
-        this.printer.writeLine('');
     }
 
     private printBody(method: ArkMethod): void {
@@ -106,14 +104,14 @@ export class ArkIRMethodPrinter extends BasePrinter {
         const genericTypes = method.getGenericTypes();
         if (genericTypes && genericTypes.length > 0) {
             let typeParameters: string[] = [];
-            genericTypes.forEach((genericType) => {
+            genericTypes.forEach(genericType => {
                 typeParameters.push(genericType.toString());
             });
             code.write(`<${genericTypes.join(', ')}>`);
         }
 
         let parameters: string[] = [];
-        method.getParameters().forEach((parameter) => {
+        method.getParameters().forEach(parameter => {
             let str: string = parameter.getName();
             if (parameter.hasDotDotDotToken()) {
                 str = `...${parameter.getName()}`;
@@ -128,22 +126,21 @@ export class ArkIRMethodPrinter extends BasePrinter {
         });
         code.write(`(${parameters.join(', ')})`);
         const returnType = method.getReturnType();
-        if (method.getName() !== 'constructor' && !(returnType instanceof UnknownType)) {
-            code.write(`: ${returnType.toString()}`);
-        }
+        code.write(`: ${returnType.toString()}`);
         return code.toString();
     }
 
     private printCfg(cfg: Cfg): void {
         let blocks = cfg.getBlocks();
 
-        if (blocks.size === 1) {
-            cfg.getStmts().map((stmt) => {
-                this.printer.writeIndent().writeLine(stmt.toString());
-            });
-        } else {
-            for (const block of blocks) {
-                this.printBasicBlock(block);
+        let firstBB = true;
+        for (const block of blocks) {
+            if (!firstBB) {
+                this.printer.writeLine('');
+            }
+            this.printBasicBlock(block);
+            if (firstBB) {
+                firstBB = false;
             }
         }
     }
@@ -155,7 +152,7 @@ export class ArkIRMethodPrinter extends BasePrinter {
         this.printer.incIndent();
 
         if (successors.length === 1) {
-            block.getStmts().map((stmt) => {
+            block.getStmts().map(stmt => {
                 this.printer.writeIndent().writeLine(stmt.toString());
             });
             this.printer.writeIndent().writeLine(`goto label${successors[0].getId()}`);
@@ -168,11 +165,11 @@ export class ArkIRMethodPrinter extends BasePrinter {
                 }
             }
         } else {
-            block.getStmts().map((stmt) => {
+            block.getStmts().map(stmt => {
                 this.printer.writeIndent().writeLine(stmt.toString());
             });
         }
 
-        this.printer.decIndent().writeLine('');
+        this.printer.decIndent();
     }
 }

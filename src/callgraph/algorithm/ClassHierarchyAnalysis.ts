@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,12 +20,12 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, CallSite } from '../model/CallGraph';
 import { AbstractAnalysis } from './AbstractAnalysis';
+import { CallGraphBuilder } from '../model/builder/CallGraphBuilder';
 
 export class ClassHierarchyAnalysis extends AbstractAnalysis {
-
-    constructor(scene: Scene, cg: CallGraph) {
-        super(scene);
-        this.cg = cg;
+    constructor(scene: Scene, cg: CallGraph, cb: CallGraphBuilder) {
+        super(scene, cg);
+        this.cgBuilder = cb;
     }
 
     public resolveCall(callerMethod: NodeID, invokeStmt: Stmt): CallSite[] {
@@ -38,11 +38,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
         // process anonymous method call
         this.getParamAnonymousMethod(invokeExpr).forEach(method => {
-            resolveResult.push(
-                new CallSite(invokeStmt, undefined,
-                    this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod
-                )
-            );
+            resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod));
         });
 
         let calleeMethod = this.resolveInvokeExpr(invokeExpr);
@@ -51,9 +47,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         }
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
-            resolveResult.push(new CallSite(invokeStmt, undefined,
-                this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(),
-                callerMethod!));
+            resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!));
         } else {
             let declareClass = calleeMethod.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
@@ -64,18 +58,18 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
 
-                if (possibleCalleeMethod && possibleCalleeMethod.isGenerated() && 
-                    arkClass.getSignature().toString() !== declareClass.getSignature().toString()) {
+                if (
+                    possibleCalleeMethod &&
+                    possibleCalleeMethod.isGenerated() &&
+                    arkClass.getSignature().toString() !== declareClass.getSignature().toString()
+                ) {
                     // remove the generated method in extended classes
                     return;
                 }
 
                 if (possibleCalleeMethod && !possibleCalleeMethod.isAbstract()) {
                     resolveResult.push(
-                        new CallSite(invokeStmt, undefined,
-                            this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
-                            callerMethod
-                        )
+                        new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
                     );
                 }
             });

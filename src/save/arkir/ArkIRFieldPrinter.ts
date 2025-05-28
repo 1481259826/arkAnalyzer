@@ -61,7 +61,7 @@ export class ArkIRFieldPrinter extends BasePrinter {
         if (this.field.getCategory() === FieldCategory.ENUM_MEMBER) {
             this.printer.writeLine(',');
         } else {
-            this.printer.writeLine(';');
+            this.printer.writeLine('');
         }
         return this.printer.toString();
     }

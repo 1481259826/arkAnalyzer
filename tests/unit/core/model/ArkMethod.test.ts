@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,6 @@ import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../../../src/Scene';
 import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
-import { Builtin } from '../../../../src/core/common/Builtin';
 import { Local, Stmt, Value } from '../../../../src';
 
 let config: SceneConfig = new SceneConfig();
@@ -38,16 +37,16 @@ describe("ArkMethod Test", () => {
             const hasDotDotDotToken = parameter.hasDotDotDotToken();
             expect(hasDotDotDotToken).eq(true);
         }
-    })
+    });
 
     it('test object parameter', async () => {
         let method = arkDefaultClass?.getMethodWithName('testObjectTypeParam');
         let parameter = method?.getParameters().find((param) => param.getName() == 'obj');
         if (parameter) {
             const paramTypeName = parameter.getType().toString();
-            expect(paramTypeName).eq(Builtin.OBJECT_CLASS_SIGNATURE.toString());
+            expect(paramTypeName).eq('object');
         }
-    })
+    });
 });
 
 describe('Nested Method with Function Declaration Statement', () => {
@@ -59,7 +58,7 @@ describe('Nested Method with Function Declaration Statement', () => {
        const stmts = method?.getBody()?.getCfg().getStmts();
        assert.isDefined(stmts);
        expect((stmts as Stmt[])[1].toString()).toEqual('instanceinvoke console.<@%unk/%unk: .log()>(\'This is nested function with function declaration.\')');
-       expect((stmts as Stmt[])[2].toString()).toEqual('staticinvoke <@%unk/%unk: .innerInnerFunction1()>()');
+       expect((stmts as Stmt[])[2].toString()).toEqual('staticinvoke <@method/method.ts: %dflt.%innerInnerFunction1$%innerFunction1$outerFunction1()>()');
 
        const global = method!.getBody()?.getUsedGlobals()?.get('innerInnerFunction1');
        assert.isDefined(global);
@@ -90,7 +89,7 @@ describe('Nested Method with Function Declaration Statement', () => {
 
         const stmts = method?.getBody()?.getCfg().getStmts();
         assert.isDefined(stmts);
-        expect((stmts as Stmt[])[1].toString()).toEqual('staticinvoke <@%unk/%unk: .innerFunction1()>()');
+        expect((stmts as Stmt[])[1].toString()).toEqual('staticinvoke <@method/method.ts: %dflt.%innerFunction1$outerFunction1()>()');
 
         const global = method!.getBody()?.getUsedGlobals()?.get('innerFunction1');
         assert.isDefined(global);
@@ -257,7 +256,7 @@ describe('Nested Method in Class', () => {
 
         const stmts = outerMethod?.getBody()?.getCfg().getStmts();
         assert.isDefined(stmts);
-        expect((stmts as Stmt[])[1].toString()).toEqual('staticinvoke <@%unk/%unk: .innerFunction1()>()');
+        expect((stmts as Stmt[])[1].toString()).toEqual('staticinvoke <@method/method.ts: %dflt.%innerFunction1$outerFunction1()>()');
         expect((stmts as Stmt[])[4].toString()).toEqual('ptrinvoke <@%unk/%unk: .innerFunction2()>()');
         expect((stmts as Stmt[])[5].toString()).toEqual('ptrinvoke <@%unk/%unk: .innerFunction3()>()');
 
@@ -280,3 +279,59 @@ describe('Nested Method in Class', () => {
         expect(innerFunction3Local!.getType().toString()).toEqual('@method/method.ts: NestedTestClass.%AM2$outerMethod()');
     });
 })
+
+describe('Optional Method', () => {
+    it('optional methods', async () => {
+        const method1 = arkFile?.getClassWithName('InterfaceA')?.getMethodWithName('optionalMethod');
+        assert.isDefined(method1);
+        assert.isNotNull(method1);
+        assert.isTrue(method1!.getQuestionToken());
+
+        const method2 = arkFile?.getClassWithName('ClassA')?.getMethodWithName('optionalMethod');
+        assert.isDefined(method2);
+        assert.isNotNull(method2);
+        assert.isTrue(method2!.getQuestionToken());
+
+        const method3 = arkFile?.getClassWithName('%AC0')?.getMethodWithName('optionalMethod');
+        assert.isDefined(method3);
+        assert.isNotNull(method3);
+        assert.isTrue(method3!.getQuestionToken());
+
+        const method4 = arkFile?.getClassWithName('%AC1')?.getMethodWithName('optionalMethod');
+        assert.isDefined(method4);
+        assert.isNotNull(method4);
+        assert.isTrue(method4!.getQuestionToken());
+    });
+
+    it('nonOptional methods', async () => {
+        const method1 = arkFile?.getDefaultClass().getMethodWithName('testDotDotDotToken');
+        assert.isDefined(method1);
+        assert.isNotNull(method1);
+        assert.isFalse(method1!.getQuestionToken());
+
+        const method2 = arkFile?.getDefaultClass().getMethodWithName('%innerFunction1$outerFunction1');
+        assert.isDefined(method2);
+        assert.isNotNull(method2);
+        assert.isFalse(method2!.getQuestionToken());
+
+        const method3 = arkFile?.getDefaultClass().getMethodWithName('%AM1$outerFunction3');
+        assert.isDefined(method3);
+        assert.isNotNull(method3);
+        assert.isFalse(method3!.getQuestionToken());
+
+        const method4 = arkFile?.getDefaultClass().getDefaultArkMethod();
+        assert.isDefined(method4);
+        assert.isNotNull(method4);
+        assert.isFalse(method4!.getQuestionToken());
+
+        const method5 = arkFile?.getClassWithName('%AC0')?.getMethodWithName('requiredMethod');
+        assert.isDefined(method5);
+        assert.isNotNull(method5);
+        assert.isFalse(method5!.getQuestionToken());
+
+        const method6 = arkFile?.getClassWithName('%AC1')?.getMethodWithName('requiredMethod');
+        assert.isDefined(method6);
+        assert.isNotNull(method6);
+        assert.isFalse(method6!.getQuestionToken());
+    });
+});

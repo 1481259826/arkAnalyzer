@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  */
 
 import { ClassSignature, FileSignature, MethodSignature, MethodSubSignature } from '../model/ArkSignature';
-import { ClassType, StringType } from '../base/Type';
+import { ClassType, GenericType, StringType } from '../base/Type';
 
 export class Builtin {
     // built-in classes
@@ -33,6 +33,7 @@ export class Builtin {
 
     public static BUILT_IN_CLASSES_FILE_SIGNATURE = Builtin.buildBuiltInClassesFileSignature();
     public static OBJECT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.OBJECT);
+    public static OBJECT_CLASS_TYPE = new ClassType(this.OBJECT_CLASS_SIGNATURE);
     public static ARRAY_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ARRAY);
     public static SET_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.SET);
     public static MAP_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.MAP);
@@ -50,13 +51,15 @@ export class Builtin {
 
     public static ITERATOR_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ITERATOR);
     public static ITERATOR_RESULT_CLASS_SIGNATURE = this.buildBuiltInClassSignature(this.ITERATOR_RESULT);
-    public static ITERATOR_CLASS_TYPE = new ClassType(this.ITERATOR_CLASS_SIGNATURE);
-    public static ITERATOR_RESULT_CLASS_TYPE = new ClassType(this.ITERATOR_RESULT_CLASS_SIGNATURE);
+    public static ITERATOR_CLASS_TYPE = new ClassType(this.ITERATOR_CLASS_SIGNATURE, [new GenericType('T')]);
+    public static ITERATOR_RESULT_CLASS_TYPE = new ClassType(this.ITERATOR_RESULT_CLASS_SIGNATURE, [new GenericType('T')]);
 
     // constants for string
     public static TO_STRING = 'toString';
-    public static TO_STRING_METHOD_SIGNATURE = new MethodSignature(ClassSignature.DEFAULT,
-        new MethodSubSignature(this.TO_STRING, [], StringType.getInstance(), false));
+    public static TO_STRING_METHOD_SIGNATURE = new MethodSignature(
+        ClassSignature.DEFAULT,
+        new MethodSubSignature(this.TO_STRING, [], StringType.getInstance(), false)
+    );
 
     private static buildBuiltInClasses(): Set<string> {
         const builtInClasses = new Set<string>();
@@ -84,5 +87,9 @@ export class Builtin {
         builtInClassSignatureMap.set(this.MAP, this.MAP_CLASS_SIGNATURE);
         builtInClassSignatureMap.set(this.REGEXP, this.REGEXP_CLASS_SIGNATURE);
         return builtInClassSignatureMap;
+    }
+
+    public static isBuiltinClass(className: string): boolean {
+        return this.BUILT_IN_CLASSES.has(className);
     }
 }

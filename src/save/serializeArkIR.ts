@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,11 +62,7 @@ export function serializeArkFile(arkFile: ArkFile, output?: string): void {
     fs.closeSync(fd);
 }
 
-export function serializeScene(
-    scene: Scene,
-    outDir: string,
-    verbose: boolean = false,
-): void {
+export function serializeScene(scene: Scene, outDir: string, verbose: boolean = false): void {
     let files = scene.getFiles();
     console.log(`Serializing Scene with ${files.length} files to '${outDir}'...`);
     for (let f of files) {
@@ -82,14 +78,8 @@ export function serializeScene(
     }
 }
 
-function serializeSingleTsFile(
-    input: string,
-    output: string,
-    options: any,
-): void {
-    if (options.verbose) {
-        console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
-    }
+function serializeSingleTsFile(input: string, output: string, options: any): void {
+    options.verbose && console.log(`Serializing TS file to JSON: '${input}' -> '${output}'`);
 
     let filepath = path.resolve(input);
     let projectDir = path.dirname(filepath);
@@ -105,30 +95,23 @@ function serializeSingleTsFile(
     }
 
     if (options.inferTypes) {
-        if (options.verbose) {
-            console.log('Inferring types...');
-        }
+        options.verbose && console.log('Inferring types...');
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) {
-                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
-                }
+                options.verbose && console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
                 scene.inferTypes();
             }
         }
     }
 
     if (options.entrypoint) {
-        if (options.verbose) {
-            console.log('Generating entrypoint...');
-        }
+        options.verbose && console.log('Generating entrypoint...');
         PointerAnalysis.pointerAnalysisForWholeProject(scene);
     }
 
-    if (options.verbose) {
-        console.log('Extracting single ArkFile...');
-    }
+    options.verbose && console.log('Extracting single ArkFile...');
+
     if (files.length === 0) {
         console.error(`ERROR: No files found in the project directory '${projectDir}'.`);
         process.exit(1);
@@ -140,7 +123,12 @@ function serializeSingleTsFile(
     // Note: we explicitly push a single path to the project files (in config),
     //       so we expect there is only *one* ArkFile in the scene.
     let arkFile = scene.getFiles()[0];
+    serializeFile(arkFile, output, options, scene);
 
+    options.verbose && console.log('All done!');
+}
+
+function serializeFile(arkFile: ArkFile, output: string, options: any, scene: Scene): void {
     let outPath: string;
     if (fs.existsSync(output) && fs.statSync(output).isDirectory()) {
         outPath = path.join(output, arkFile.getName() + '.json');
@@ -167,17 +155,9 @@ function serializeSingleTsFile(
         console.log(`Serializing entrypoint to '${outPath}'...`);
         printer.dumpToJson(arkFile, outPath);
     }
-
-    if (options.verbose) {
-        console.log('All done!');
-    }
 }
 
-function serializeMultipleTsFiles(
-    inputDir: string,
-    outDir: string,
-    options: any,
-): void {
+function serializeMultipleTsFiles(inputDir: string, outDir: string, options: any): void {
     console.log(`Serializing multiple TS files to JSON: '${inputDir}' -> '${outDir}'`);
     if (fs.existsSync(outDir) && !fs.statSync(outDir).isDirectory()) {
         console.error(`ERROR: Output path must be a directory.`);
@@ -195,7 +175,7 @@ function serializeMultipleTsFiles(
     let files = scene.getFiles();
     if (options.verbose) {
         console.log(`Scene contains ${files.length} files`);
-        files.forEach((f) => console.log(`- '${f.getName()}'`));
+        files.forEach(f => console.log(`- '${f.getName()}'`));
     }
 
     if (options.inferTypes) {
@@ -205,9 +185,7 @@ function serializeMultipleTsFiles(
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) {
-                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
-                }
+                options.verbose && console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
                 scene.inferTypes();
             }
         }
@@ -234,11 +212,7 @@ function serializeMultipleTsFiles(
     console.log('All done!');
 }
 
-function serializeTsProject(
-    inputDir: string,
-    outDir: string,
-    options: any,
-): void {
+function serializeTsProject(inputDir: string, outDir: string, options: any): void {
     console.log(`Serializing TS project to JSON: '${inputDir}' -> '${outDir}'`);
 
     if (fs.existsSync(outDir) && !fs.statSync(outDir).isDirectory()) {
@@ -255,9 +229,7 @@ function serializeTsProject(
         scene.inferTypes();
         if (options.inferTypes > 1) {
             for (let i = 1; i < options.inferTypes; i++) {
-                if (options.verbose) {
-                    console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
-                }
+                options.verbose && console.log(`Inferring types one more time (${i + 1} / ${options.inferTypes})...`);
                 scene.inferTypes();
             }
         }
@@ -299,7 +271,6 @@ export const program = new Command()
     .option('-e, --entrypoint', 'Generate entrypoint for the files', false)
     .option('-v, --verbose', 'Verbose output', false)
     .action((input: any, output: any, options: any) => {
-
         // Check for invalid combinations of flags
         if (options.multi && options.project) {
             console.error(`ERROR: You cannot provide both the '-m' and '-p' flags.`);

@@ -28,9 +28,10 @@ import { DummyMainCreater } from '../../core/common/DummyMainCreater';
 import { PTAStat } from '../common/Statistics';
 import { Pag, PagNode, PagEdgeKind, PagEdge, PagLocalNode, PagGlobalThisNode, PagArrayNode } from './Pag';
 import { PagBuilder } from './PagBuilder';
-import { PointerAnalysisConfig } from './PointerAnalysisConfig';
+import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 import { DiffPTData, IPtsCollection } from './PtsDS';
 import { Local } from '../../core/base/Local';
+import { ArkMethod } from '../../core/model/ArkMethod';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -46,11 +47,10 @@ export class PointerAnalysis extends AbstractAnalysis {
     private config: PointerAnalysisConfig;
 
     constructor(p: Pag, cg: CallGraph, s: Scene, config: PointerAnalysisConfig) {
-        super(s)
+        super(s, cg);
         this.pag = p;
-        this.cg = cg;
         this.ptd = new DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>(config.ptsCollectionCtor);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit, config.analysisScale);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat(this);
         this.config = config;
@@ -79,7 +79,23 @@ export class PointerAnalysis extends AbstractAnalysis {
         return pta;
     }
 
-    protected init() {
+    static pointerAnalysisForMethod(s: Scene, method: ArkMethod, config?: PointerAnalysisConfig): PointerAnalysis {
+        let cg = new CallGraph(s);
+        let cgBuilder = new CallGraphBuilder(cg, s);
+        cgBuilder.buildDirectCallGraphForScene();
+        let pag = new Pag();
+        if (!config) {
+            config = PointerAnalysisConfig.create(1, 'out/', false, false);
+        }
+
+        let entryMethodID = cg.getCallGraphNodeByMethod(method.getSignature()).getID();
+        let pta = new PointerAnalysis(pag, cg, s, config);
+        pta.setEntries([entryMethodID]);
+        pta.start();
+        return pta;
+    }
+
+    protected init(): void {
         logger.warn(`========== Init Pointer Analysis ==========`);
         // start statistics
         this.ptaStat.startStat();
@@ -91,13 +107,13 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
     }
 
-    public start() {
+    public start(): void {
         this.init();
         this.solveConstraint();
         this.postProcess();
     }
 
-    private postProcess() {
+    private postProcess(): void {
         this.ptaStat.endStat();
         this.pagBuilder.doStat();
         this.cg.printStat();
@@ -130,11 +146,11 @@ export class PointerAnalysis extends AbstractAnalysis {
         return [];
     }
 
-    public setEntries(fIds: FuncID[]) {
+    public setEntries(fIds: FuncID[]): void {
         this.entries = fIds;
     }
 
-    private solveConstraint() {
+    private solveConstraint(): void {
         this.worklist = [];
         logger.warn(`========== Pointer Analysis Start ==========`);
         this.initWorklist();
@@ -147,7 +163,11 @@ export class PointerAnalysis extends AbstractAnalysis {
             // do pointer transfer
             this.solveWorklist();
             // process dynamic call
-            reanalyzer = this.onTheFlyDynamicCallSolve();
+            if (this.config.analysisScale === PtaAnalysisScale.WholeProgram || this.ptaStat.iterTimes === 1) {
+                reanalyzer = this.onTheFlyDynamicCallSolve();
+            } else {
+                reanalyzer = false;
+            }
             if (this.config.dotDump) {
                 this.pag.dump(path.join(this.config.outputDirectory, `pta_pag_itor#${this.ptaStat.iterTimes}.dot`));
             }
@@ -157,7 +177,9 @@ export class PointerAnalysis extends AbstractAnalysis {
     /**
      * get newly added Address Edge, and add them to initial WorkList
      */
-    private initWorklist() {
+    private initWorklist(): boolean {
+        let changed: boolean = false;
+        this.addToReanalyze(this.pagBuilder.getRetriggerNodes());
         for (let e of this.pag.getAddrEdges()) {
             this.ptaStat.numProcessedAddr++;
 
@@ -170,8 +192,10 @@ export class PointerAnalysis extends AbstractAnalysis {
             }
 
             this.worklist.push(dst);
+            changed = true;
         }
         this.pag.resetAddrEdges();
+        return changed;
     }
 
     private solveWorklist(): boolean {
@@ -217,10 +241,10 @@ export class PointerAnalysis extends AbstractAnalysis {
         let intraProceduralFieldNodeMap = new Map();
 
         if (nodeValue instanceof Local) {
-            this.pagBuilder.getExportVariableMap(nodeValue).forEach((dst) => {
+            this.pagBuilder.getExportVariableMap(nodeValue).forEach(dst => {
                 let temp = this.pag.getNodesByBaseValue(dst) ?? new Map();
                 intraProceduralFieldNodeMap = this.mergeInstanceFieldMap(instanceFieldNodeMap, temp);
-            })
+            });
         }
 
         instanceFieldNodeMap!.forEach((nodeIDs, cid) => {
@@ -236,25 +260,25 @@ export class PointerAnalysis extends AbstractAnalysis {
 
                 this.handleFieldInEdges(fieldNode, diffPts!);
                 this.handleFieldOutEdges(fieldNode, diffPts!);
-            })
-        })
+            });
+        });
 
         // without cid check, because closure and export is under different cid
-        intraProceduralFieldNodeMap!.forEach((nodeIDs) => {
+        intraProceduralFieldNodeMap!.forEach(nodeIDs => {
             nodeIDs.forEach((nodeID: number) => {
                 // get abstract field node
                 let fieldNode = this.pag.getNode(nodeID) as PagNode;
 
                 this.handleFieldInEdges(fieldNode, diffPts!);
                 this.handleFieldOutEdges(fieldNode, diffPts!);
-            })
-        })
+            });
+        });
 
         return true;
     }
 
     private handleFieldInEdges(fieldNode: PagNode, diffPts: IPtsCollection<number>): void {
-        fieldNode.getIncomingEdge().forEach((edge) => {
+        fieldNode.getIncomingEdge().forEach(edge => {
             if (edge.getKind() !== PagEdgeKind.Write) {
                 return;
             }
@@ -269,19 +293,21 @@ export class PointerAnalysis extends AbstractAnalysis {
                 } else {
                     dstNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                 }
-                if (dstNode && this.pag.addPagEdge(srcNode, dstNode!, PagEdgeKind.Copy)) {
-                    this.ptaStat.numRealWrite++;
+                if (!(dstNode && this.pag.addPagEdge(srcNode, dstNode!, PagEdgeKind.Copy))) {
+                    continue;
+                }
 
-                    if (this.ptd.resetElem(srcNode.getID())) {
-                        this.worklist.push(srcNode.getID());
-                    }
+                this.ptaStat.numRealWrite++;
+
+                if (this.ptd.resetElem(srcNode.getID())) {
+                    this.worklist.push(srcNode.getID());
                 }
             }
         });
     }
 
     private handleFieldOutEdges(fieldNode: PagNode, diffPts: IPtsCollection<number>): void {
-        fieldNode.getOutgoingEdges().forEach((edge) => {
+        fieldNode.getOutgoingEdges().forEach(edge => {
             if (edge.getKind() !== PagEdgeKind.Load) {
                 return;
             }
@@ -294,13 +320,15 @@ export class PointerAnalysis extends AbstractAnalysis {
                 } else {
                     srcNode = this.pag.getOrClonePagFieldNode(fieldNode, pt);
                 }
-                if (srcNode && this.pag.addPagEdge(srcNode!, dstNode, PagEdgeKind.Copy)) {
-                    this.ptaStat.numRealLoad++;
+                if (!(srcNode && this.pag.addPagEdge(srcNode!, dstNode, PagEdgeKind.Copy))) {
+                    continue;
+                }
 
-                    // TODO: if field is used before initialzed, newSrc node has no diff pts
-                    if (this.ptd.resetElem(srcNode.getID())) {
-                        this.worklist.push(srcNode.getID());
-                    }
+                this.ptaStat.numRealLoad++;
+
+                // TODO: if field is used before initialzed, newSrc node has no diff pts
+                if (this.ptd.resetElem(srcNode.getID())) {
+                    this.worklist.push(srcNode.getID());
                 }
             }
         });
@@ -319,7 +347,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         return true;
     }
 
-    private handlePt(nodeID: NodeID) {
+    private handlePt(nodeID: NodeID): void {
         let realDiff = this.ptd.calculateDiff(nodeID, nodeID);
 
         if (realDiff.count() !== 0) {
@@ -368,13 +396,13 @@ export class PointerAnalysis extends AbstractAnalysis {
 
             changed = this.processDynCallSite(node, pts, processedCallSites) || changed;
             changed = this.processUnknownCallSite(node, pts) || changed;
-        })
+        });
         this.pagBuilder.resetUpdatedNodes();
         let srcNodes = this.pagBuilder.handleUnprocessedCallSites(processedCallSites);
         changed = this.addToReanalyze(srcNodes) || changed;
 
         changed = this.pagBuilder.handleReachable() || changed;
-        this.initWorklist();
+        changed = this.initWorklist() || changed;
         return changed;
     }
 
@@ -388,13 +416,13 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
 
         logger.info(`[process dynamic callsite] node ${node.getID()}`);
-        dynCallSites.forEach((dynCallsite) => {
+        dynCallSites.forEach(dynCallsite => {
             for (let pt of pts) {
                 let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
                 changed = this.addToReanalyze(srcNodes) || changed;
             }
             processedCallSites.add(dynCallsite);
-        })
+        });
 
         return changed;
     }
@@ -409,12 +437,12 @@ export class PointerAnalysis extends AbstractAnalysis {
         }
 
         logger.info(`[process unknown callsite] node ${node.getID()}`);
-        unknownCallSites.forEach((unknownCallSite) => {
+        unknownCallSites.forEach(unknownCallSite => {
             for (let pt of pts) {
                 let srcNodes = this.pagBuilder.addDynamicCallEdge(unknownCallSite, pt, node.getCid());
                 changed = this.addToReanalyze(srcNodes) || changed;
             }
-        })
+        });
 
         return changed;
     }
@@ -496,7 +524,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         processedNodes.forEach(nodeID => {
             let valueNode = this.pag.getNode(nodeID) as PagNode;
             relatedAllNodes.add(valueNode.getValue());
-        })
+        });
 
         return relatedAllNodes;
     }
@@ -512,8 +540,10 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private addIncomingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
         let inCopyEdges = valueNode.getIncomingCopyEdges();
-        if (inCopyEdges) {
-            inCopyEdges.forEach(edge => {
+        let inThisEdges = valueNode.getIncomingThisEdges();
+        let combinedEdges = new Set([...(inCopyEdges ?? []), ...(inThisEdges ?? [])]);
+        if (combinedEdges) {
+            combinedEdges.forEach(edge => {
                 let srcID = edge.getSrcID();
                 if (!processedNodes.has(srcID)) {
                     workListNodes.push(srcID);
@@ -524,8 +554,10 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private addOutgoingEdgesToWorkList(valueNode: PagNode, workListNodes: NodeID[], processedNodes: Set<NodeID>): void {
         let outCopyEdges = valueNode.getOutgoingCopyEdges();
-        if (outCopyEdges) {
-            outCopyEdges.forEach(edge => {
+        let outThisEdges = valueNode.getOutgoingThisEdges();
+        let combinedEdges = new Set([...(outCopyEdges ?? []), ...(outThisEdges ?? [])]);
+        if (combinedEdges) {
+            combinedEdges.forEach(edge => {
                 let dstID = edge.getDstID();
                 if (!processedNodes.has(dstID)) {
                     workListNodes.push(dstID);
@@ -569,7 +601,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             }
         }
 
-        // If find pts to original type, 
+        // If find pts to original type,
         // need add original type back since it is a correct type
         let diffSet = this.typeDiffMap.get(value);
         if (diffSet && findSameType) {
@@ -599,12 +631,10 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     private dumpUnhandledFunctions(): void {
         const filePath = path.join(this.config.outputDirectory, 'PtaUnhandledFunctionList.txt');
-        fs.access(filePath, fs.constants.F_OK, (err) => {
+        fs.access(filePath, fs.constants.F_OK, err => {
             if (!err) {
-                fs.truncate(filePath, 0, (err) => {
-                    if (err) {
-                        logger.error('Error to truncate file ', err);
-                    }
+                fs.truncate(filePath, 0, err => {
+                    err && logger.error('Error to truncate file ', err);
                 });
             }
 
@@ -621,7 +651,7 @@ export class PointerAnalysis extends AbstractAnalysis {
                 }
             });
 
-            fs.writeFile(filePath, updatedContent, 'utf8', (err) => {
+            fs.writeFile(filePath, updatedContent, 'utf8', err => {
                 if (err) {
                     logger.error('Error to write file', err);
                 }

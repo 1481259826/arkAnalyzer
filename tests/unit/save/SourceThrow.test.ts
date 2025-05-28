@@ -32,8 +32,8 @@ const CASE1_EXPECT = `/*
  * limitations under the License.
  */
 class ThrowTest {
-  static readonly ERR = 'throw err';
-  test() {
+  static readonly ERR: string = 'throw err';
+  test(): void {
     throw new Error(ThrowTest.ERR);
   }
 }

@@ -16,7 +16,7 @@
 import {
     BasicBlock,
     DEFAULT_ARK_CLASS_NAME,
-    DEFAULT_ARK_METHOD_NAME,
+    DEFAULT_ARK_METHOD_NAME, FullPosition,
     ModelUtils,
     Scene,
     SceneConfig,
@@ -123,6 +123,7 @@ export function assertStmtsEqual(stmts: Stmt[], expectStmts: any[], assertPos: b
     expect(stmts.length).toEqual(expectStmts.length);
     for (let i = 0; i < stmts.length; i++) {
         expect(stmts[i].toString()).toEqual(expectStmts[i].text);
+        assert.isDefined(stmts[i].getCfg());
 
         if (expectStmts[i].operandOriginalPositions === undefined) {
             continue;
@@ -143,4 +144,14 @@ export function assertStmtsEqual(stmts: Stmt[], expectStmts: any[], assertPos: b
         }
         expect(operandOriginalPositions).toEqual(expectStmts[i].operandOriginalPositions);
     }
+}
+
+export function fullPosition2String(fullPosition: FullPosition): string {
+    return `[[${fullPosition.getFirstLine()}, ${fullPosition.getFirstCol()}], [${fullPosition.getLastLine()}, ${fullPosition.getLastCol()}]]`;
+}
+
+export function fullPositionArray2String(fullPositions: FullPosition[]): string {
+    let positions: string[] = [];
+    fullPositions.forEach(position => positions.push(fullPosition2String(position)));
+    return `[${positions.join(', ')}]`;
 }

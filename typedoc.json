@@ -16,6 +16,6 @@
     ],
     "excludeInternal": true,
     "useTsLinkResolution": true,
-    "out": "doc",
+    "out": "docs/api_docs",
     "readme": "./README.en.md"
 }

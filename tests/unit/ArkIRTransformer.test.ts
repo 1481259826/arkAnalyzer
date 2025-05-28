@@ -59,7 +59,10 @@ import {
     ClosureNamespaceClassMethod_Expect_IR,
     ClosureNamespaceFunction_Expect_IR,
     MultipleAnonymousMethod1_Expect_IR,
-    MultipleAnonymousMethod2_Expect_IR, MultipleAnonymousMethod3_Expect_IR, MultipleAnonymousMethod4_Expect_IR, MultipleCallMethod4_Expect_IR,
+    MultipleAnonymousMethod2_Expect_IR,
+    MultipleAnonymousMethod3_Expect_IR,
+    MultipleAnonymousMethod4_Expect_IR,
+    MultipleCallMethod4_Expect_IR,
     MultipleNested111Method1_Expect_IR,
     MultipleNested11Method1_Expect_IR,
     MultipleNested1Method1_Expect_IR,
@@ -67,9 +70,13 @@ import {
     MultipleNested22Method1_Expect_IR,
     MultipleNested2Method1_Expect_IR,
     MultipleNested33Method1_Expect_IR,
-    MultipleNested3Method1_Expect_IR, MultipleNestedInNestedMethod4_Expect_IR, MultipleNestedMethod4_Expect_IR,
+    MultipleNested3Method1_Expect_IR,
+    MultipleNestedInNestedMethod4_Expect_IR,
+    MultipleNestedMethod4_Expect_IR,
     MultipleOuterMethod1_Expect_IR,
-    MultipleOuterMethod2_Expect_IR, MultipleOuterMethod3_Expect_IR, MultipleOuterMethod4_Expect_IR,
+    MultipleOuterMethod2_Expect_IR,
+    MultipleOuterMethod3_Expect_IR,
+    MultipleOuterMethod4_Expect_IR,
     NoOverloadMethod_Expect_IR,
     NoOverloadMethodWithBody2_Expect_IR,
     NoOverloadMethodWithBody_Expect_IR,
@@ -85,7 +92,9 @@ import {
     FOR_STATEMENT_EXPECT_CASE1,
     FOR_STATEMENT_EXPECT_CASE2,
     FOR_STATEMENT_EXPECT_CASE3,
-    FOR_STATEMENT_EXPECT_CASE4, FOR_STATEMENT_EXPECT_CASE5, FOR_STATEMENT_EXPECT_CASE6,
+    FOR_STATEMENT_EXPECT_CASE4,
+    FOR_STATEMENT_EXPECT_CASE5,
+    FOR_STATEMENT_EXPECT_CASE6,
 } from '../resources/arkIRTransformer/loopStatement/LoopExpect';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
@@ -640,7 +649,6 @@ describe('multiple closure Test', () => {
         assert.isDefined(nestedInNestedMethod4);
         testMethodClosure(nestedInNestedMethod4!, MultipleNestedInNestedMethod4_Expect_IR);
 
-        // TODO: 此处的callMethod(3)应该是ptrInvoke，args需要加入闭包变量，当前错误识别成statcInvoke，args中缺失闭包变量。需类型推导时处理
         const callMethod = multipleTestClass?.getMethods().find((method) => (method.getName() === 'callMethod4'));
         assert.isDefined(callMethod);
         testMethodClosure(callMethod!, MultipleCallMethod4_Expect_IR);

@@ -17,6 +17,11 @@ import * as fs from 'fs';
 import { createPtsCollectionCtor, IPtsCollection, PtsCollectionType } from './PtsDS';
 import { NodeID } from '../../core/graph/BaseExplicitGraph';
 
+export enum PtaAnalysisScale {
+    WholeProgram = 0,
+    MethodLevel = 1,
+}
+
 export class PointerAnalysisConfig {
     private static instance: PointerAnalysisConfig;
 
@@ -25,15 +30,23 @@ export class PointerAnalysisConfig {
     public detectTypeDiff: boolean;
     public dotDump: boolean;
     public unhandledFuncDump: boolean;
+    public analysisScale: PtaAnalysisScale;
     public ptsCollectionType: PtsCollectionType;
     public ptsCollectionCtor: new () => IPtsCollection<NodeID>;
 
     /*
      * Note: DO NOT use `new PointerAnalysisConfig` to initialize ptaconfig
-     *       Use PointerAnalysisConfig.create() for singleton pattern 
+     *       Use PointerAnalysisConfig.create() for singleton pattern
      */
-    constructor(kLimit: number, outputDirectory: string, detectTypeDiff: boolean = false,
-        dotDump: boolean = false, unhandledFuncDump: boolean = false, ptsCoType = PtsCollectionType.Set) {
+    constructor(
+        kLimit: number,
+        outputDirectory: string,
+        detectTypeDiff: boolean = false,
+        dotDump: boolean = false,
+        unhandledFuncDump: boolean = false,
+        analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram,
+        ptsCoType = PtsCollectionType.Set
+    ) {
         if (kLimit > 5) {
             throw new Error('K Limit too large');
         }
@@ -42,6 +55,7 @@ export class PointerAnalysisConfig {
         this.detectTypeDiff = detectTypeDiff;
         this.dotDump = dotDump;
         this.unhandledFuncDump = unhandledFuncDump;
+        this.analysisScale = analysisScale;
         this.ptsCollectionType = ptsCoType;
         this.ptsCollectionCtor = createPtsCollectionCtor<NodeID>(ptsCoType);
 
@@ -50,14 +64,28 @@ export class PointerAnalysisConfig {
         }
     }
 
-
     /*
      * Create Singleton instance
      * The instance can be created multi-times and be overwrited
      */
-    public static create(kLimit: number, outputDirectory: string, detectTypeDiff: boolean = false,
-        dotDump: boolean = false, unhandledFuncDump: boolean = false, ptsCoType = PtsCollectionType.Set): PointerAnalysisConfig {
-        PointerAnalysisConfig.instance = new PointerAnalysisConfig(kLimit, outputDirectory, detectTypeDiff, dotDump, unhandledFuncDump, ptsCoType);
+    public static create(
+        kLimit: number,
+        outputDirectory: string,
+        detectTypeDiff: boolean = false,
+        dotDump: boolean = false,
+        unhandledFuncDump: boolean = false,
+        analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram,
+        ptsCoType = PtsCollectionType.Set
+    ): PointerAnalysisConfig {
+        PointerAnalysisConfig.instance = new PointerAnalysisConfig(
+            kLimit,
+            outputDirectory,
+            detectTypeDiff,
+            dotDump,
+            unhandledFuncDump,
+            analysisScale,
+            ptsCoType
+        );
         return PointerAnalysisConfig.instance;
     }
 

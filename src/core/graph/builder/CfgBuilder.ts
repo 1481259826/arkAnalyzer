@@ -23,26 +23,28 @@ import { ArkMethod } from '../../model/ArkMethod';
 import { ArkIRTransformer, ValueAndStmts } from '../../common/ArkIRTransformer';
 import { ModelUtils } from '../../common/ModelUtils';
 import { IRUtils } from '../../common/IRUtils';
-import { AliasType } from '../../base/Type';
+import { AliasType, ClassType, UnclearReferenceType, UnknownType, VoidType } from '../../base/Type';
 import { Trap } from '../../base/Trap';
 import { GlobalRef } from '../../base/Ref';
 import { LoopBuilder } from './LoopBuilder';
 import { SwitchBuilder } from './SwitchBuilder';
 import { ConditionBuilder } from './ConditionBuilder';
 import { TrapBuilder } from './TrapBuilder';
+import { CONSTRUCTOR_NAME, PROMISE } from '../../common/TSConst';
+import { ModifierType } from '../../model/ArkBaseModel';
 
 class StatementBuilder {
     type: string;
-    //节点对应源代码    
+    //节点对应源代码
     code: string;
     next: StatementBuilder | null;
     lasts: Set<StatementBuilder>;
     walked: boolean;
     index: number;
-    // TODO:以下两个属性需要获取    
-    line: number;//行号//ast节点存了一个start值为这段代码的起始地址，可以从start开始往回查原文有几个换行符确定行号    
-    column: number; // 列  
-    astNode: ts.Node | null;//ast节点对象
+    // TODO:以下两个属性需要获取
+    line: number; //行号//ast节点存了一个start值为这段代码的起始地址，可以从start开始往回查原文有几个换行符确定行号
+    column: number; // 列
+    astNode: ts.Node | null; //ast节点对象
     scopeID: number;
     addressCode3: string[] = [];
     block: BlockBuilder | null;
@@ -266,7 +268,6 @@ export class CfgBuilder {
             lastStatement.next = s;
             s.lasts.add(lastStatement);
         }
-
     }
 
     ASTNodeBreakStatement(c: ts.Node, lastStatement: StatementBuilder): void {
@@ -357,7 +358,8 @@ export class CfgBuilder {
         loopExit.lasts.add(loopstm);
         loopstm.code = 'for (';
         if (ts.isForStatement(c)) {
-            loopstm.code += c.initializer?.getText(this.sourceFile) + '; ' + c.condition?.getText(this.sourceFile) + '; ' + c.incrementor?.getText(this.sourceFile);
+            loopstm.code +=
+                c.initializer?.getText(this.sourceFile) + '; ' + c.condition?.getText(this.sourceFile) + '; ' + c.incrementor?.getText(this.sourceFile);
         } else if (ts.isForOfStatement(c)) {
             loopstm.code += c.initializer?.getText(this.sourceFile) + ' of ' + c.expression.getText(this.sourceFile);
         } else {
@@ -495,7 +497,6 @@ export class CfgBuilder {
             } else {
                 trystm.catchError = 'Error';
             }
-
         }
         let final = new StatementBuilder('statement', 'finally', c, scopeID);
         let finalExit = new StatementBuilder('finallyExit', '', c, scopeID);
@@ -503,7 +504,7 @@ export class CfgBuilder {
         if (c.finallyBlock && c.finallyBlock.statements.length > 0) {
             this.walkAST(final, finalExit, [...c.finallyBlock.statements]);
         } else {
-            let dummyFinally = new StatementBuilder('statement', 'dummyFinally', c, (new Scope(this.scopes.length)).id);
+            let dummyFinally = new StatementBuilder('statement', 'dummyFinally', c, new Scope(this.scopes.length).id);
             final.next = dummyFinally;
             dummyFinally.lasts.add(final);
             dummyFinally.next = finalExit;
@@ -646,13 +647,16 @@ export class CfgBuilder {
 
     addStmt2BlockStmtQueueInSpecialCase(stmt: StatementBuilder, stmtQueue: StatementBuilder[]): StatementBuilder | null {
         if (stmt.next) {
-            if ((stmt.type === 'continueStatement' || stmt.next.type === 'loopStatement') && stmt.next.block || stmt.next.type.includes('exit')) {
+            if (((stmt.type === 'continueStatement' || stmt.next.type === 'loopStatement') && stmt.next.block) || stmt.next.type.includes('exit')) {
                 return null;
             }
             stmt.next.passTmies++;
             if (stmt.next.passTmies === stmt.next.lasts.size || stmt.next.type === 'loopStatement' || stmt.next.isDoWhile) {
-                if (stmt.next.scopeID !== stmt.scopeID && !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement) &&
-                    !(ts.isCaseClause(stmt.astNode!) || ts.isDefaultClause(stmt.astNode!))) {
+                if (
+                    stmt.next.scopeID !== stmt.scopeID &&
+                    !(stmt.next instanceof ConditionStatementBuilder && stmt.next.doStatement) &&
+                    !(ts.isCaseClause(stmt.astNode!) || ts.isDefaultClause(stmt.astNode!))
+                ) {
                     stmtQueue.push(stmt.next);
                     return null;
                 }
@@ -723,8 +727,7 @@ export class CfgBuilder {
         }
     }
 
-    buildConditionNextBlocks(originStatement: ConditionStatementBuilder, block: BlockBuilder,
-                             isLastStatement: boolean): void {
+    buildConditionNextBlocks(originStatement: ConditionStatementBuilder, block: BlockBuilder, isLastStatement: boolean): void {
         let nextT = originStatement.nextT?.block;
         if (nextT && (isLastStatement || nextT !== block) && !originStatement.nextT?.type.includes(' exit')) {
             block.nexts.push(nextT);
@@ -737,8 +740,7 @@ export class CfgBuilder {
         }
     }
 
-    buildSwitchNextBlocks(originStatement: SwitchStatementBuilder, block: BlockBuilder,
-                          isLastStatement: boolean): void {
+    buildSwitchNextBlocks(originStatement: SwitchStatementBuilder, block: BlockBuilder, isLastStatement: boolean): void {
         if (originStatement.nexts.length === 0) {
             const nextBlock = originStatement.afterSwitch!.block;
             if (nextBlock && (isLastStatement || nextBlock !== block)) {
@@ -766,7 +768,7 @@ export class CfgBuilder {
     buildBlocksNextLast(): void {
         for (let block of this.blocks) {
             for (let originStatement of block.stmts) {
-                let isLastStatement = (block.stmts.indexOf(originStatement) === block.stmts.length - 1);
+                let isLastStatement = block.stmts.indexOf(originStatement) === block.stmts.length - 1;
                 if (originStatement instanceof ConditionStatementBuilder) {
                     this.buildConditionNextBlocks(originStatement, block, isLastStatement);
                 } else if (originStatement instanceof SwitchStatementBuilder) {
@@ -851,10 +853,7 @@ export class CfgBuilder {
     addStmtBuilderPosition(): void {
         for (const stmt of this.statementArray) {
             if (stmt.astNode) {
-                const { line, character } = ts.getLineAndCharacterOfPosition(
-                    this.sourceFile,
-                    stmt.astNode.getStart(this.sourceFile),
-                );
+                const { line, character } = ts.getLineAndCharacterOfPosition(this.sourceFile, stmt.astNode.getStart(this.sourceFile));
                 stmt.line = line + 1;
                 stmt.column = character + 1;
             }
@@ -862,7 +861,6 @@ export class CfgBuilder {
     }
 
     CfgBuilder2Array(stmt: StatementBuilder): void {
-
         if (stmt.walked) {
             return;
         }
@@ -962,10 +960,15 @@ export class CfgBuilder {
         let stmts: ts.Node[] = [];
         if (ts.isSourceFile(this.astRoot)) {
             stmts = [...this.astRoot.statements];
-        } else if (ts.isFunctionDeclaration(this.astRoot) || ts.isMethodDeclaration(this.astRoot) ||
-            ts.isConstructorDeclaration(this.astRoot) || ts.isGetAccessorDeclaration(this.astRoot) ||
-            ts.isSetAccessorDeclaration(this.astRoot) || ts.isFunctionExpression(this.astRoot) ||
-            ts.isClassStaticBlockDeclaration(this.astRoot)) {
+        } else if (
+            ts.isFunctionDeclaration(this.astRoot) ||
+            ts.isMethodDeclaration(this.astRoot) ||
+            ts.isConstructorDeclaration(this.astRoot) ||
+            ts.isGetAccessorDeclaration(this.astRoot) ||
+            ts.isSetAccessorDeclaration(this.astRoot) ||
+            ts.isFunctionExpression(this.astRoot) ||
+            ts.isClassStaticBlockDeclaration(this.astRoot)
+        ) {
             if (this.astRoot.body) {
                 stmts = [...this.astRoot.body.statements];
             } else {
@@ -975,8 +978,12 @@ export class CfgBuilder {
             if (ts.isBlock(this.astRoot.body)) {
                 stmts = [...this.astRoot.body.statements];
             }
-        } else if (ts.isMethodSignature(this.astRoot) || ts.isConstructSignatureDeclaration(this.astRoot) ||
-            ts.isCallSignatureDeclaration(this.astRoot) || ts.isFunctionTypeNode(this.astRoot)) {
+        } else if (
+            ts.isMethodSignature(this.astRoot) ||
+            ts.isConstructSignatureDeclaration(this.astRoot) ||
+            ts.isCallSignatureDeclaration(this.astRoot) ||
+            ts.isFunctionTypeNode(this.astRoot)
+        ) {
             this.emptyBody = true;
         } else if (ts.isModuleDeclaration(this.astRoot) && ts.isModuleBlock(this.astRoot.body!)) {
             stmts = [...this.astRoot.body.statements];
@@ -994,7 +1001,7 @@ export class CfgBuilder {
         this.CfgBuilder2Array(this.entry);
         this.addStmtBuilderPosition();
         this.buildBlocks();
-        this.blocks = this.blocks.filter((b) => b.stmts.length !== 0);
+        this.blocks = this.blocks.filter(b => b.stmts.length !== 0);
         this.buildBlocksNextLast();
         this.addReturnStmt();
     }
@@ -1016,11 +1023,11 @@ export class CfgBuilder {
     }
 
     public buildCfg(): {
-        cfg: Cfg,
-        locals: Set<Local>,
-        globals: Map<string, GlobalRef> | null,
-        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
-        traps: Trap[],
+        cfg: Cfg;
+        locals: Set<Local>;
+        globals: Map<string, GlobalRef> | null;
+        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>;
+        traps: Trap[];
     } {
         if (ts.isArrowFunction(this.astRoot) && !ts.isBlock(this.astRoot.body)) {
             return this.buildCfgForSimpleArrowFunction();
@@ -1030,11 +1037,11 @@ export class CfgBuilder {
     }
 
     public buildCfgForSimpleArrowFunction(): {
-        cfg: Cfg,
-        locals: Set<Local>,
-        globals: Map<string, GlobalRef> | null,
-        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
-        traps: Trap[],
+        cfg: Cfg;
+        locals: Set<Local>;
+        globals: Map<string, GlobalRef> | null;
+        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>;
+        traps: Trap[];
     } {
         const stmts: Stmt[] = [];
         const arkIRTransformer = new ArkIRTransformer(this.sourceFile, this.declaringMethod);
@@ -1079,22 +1086,29 @@ export class CfgBuilder {
     }
 
     public buildNormalCfg(): {
-        cfg: Cfg,
-        locals: Set<Local>,
-        globals: Map<string, GlobalRef> | null,
-        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>,
-        traps: Trap[],
+        cfg: Cfg;
+        locals: Set<Local>;
+        globals: Map<string, GlobalRef> | null;
+        aliasTypeMap: Map<string, [AliasType, ArkAliasTypeDefineStmt]>;
+        traps: Trap[];
     } {
         const { blockBuilderToCfgBlock, basicBlockSet, arkIRTransformer } = this.initializeBuild();
-        const {
-            blocksContainLoopCondition, blockBuildersBeforeTry, blockBuildersContainSwitch,
-            valueAndStmtsOfSwitchAndCasesAll,
-        } = this.processBlocks(blockBuilderToCfgBlock, basicBlockSet, arkIRTransformer);
+        const { blocksContainLoopCondition, blockBuildersBeforeTry, blockBuildersContainSwitch, valueAndStmtsOfSwitchAndCasesAll } = this.processBlocks(
+            blockBuilderToCfgBlock,
+            basicBlockSet,
+            arkIRTransformer
+        );
 
         const currBlockId = this.blocks.length;
         this.linkBasicBlocks(blockBuilderToCfgBlock);
-        this.adjustBlocks(blockBuilderToCfgBlock, blocksContainLoopCondition, basicBlockSet, blockBuildersContainSwitch,
-            valueAndStmtsOfSwitchAndCasesAll, arkIRTransformer);
+        this.adjustBlocks(
+            blockBuilderToCfgBlock,
+            blocksContainLoopCondition,
+            basicBlockSet,
+            blockBuildersContainSwitch,
+            valueAndStmtsOfSwitchAndCasesAll,
+            arkIRTransformer
+        );
 
         const trapBuilder = new TrapBuilder();
         const traps = trapBuilder.buildTraps(blockBuilderToCfgBlock, blockBuildersBeforeTry, arkIRTransformer, basicBlockSet);
@@ -1110,9 +1124,9 @@ export class CfgBuilder {
     }
 
     private initializeBuild(): {
-        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>,
-        basicBlockSet: Set<BasicBlock>,
-        arkIRTransformer: ArkIRTransformer,
+        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>;
+        basicBlockSet: Set<BasicBlock>;
+        arkIRTransformer: ArkIRTransformer;
     } {
         const blockBuilderToCfgBlock = new Map<BlockBuilder, BasicBlock>();
         const basicBlockSet = new Set<BasicBlock>();
@@ -1123,12 +1137,12 @@ export class CfgBuilder {
     private processBlocks(
         blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>,
         basicBlockSet: Set<BasicBlock>,
-        arkIRTransformer: ArkIRTransformer,
+        arkIRTransformer: ArkIRTransformer
     ): {
-        blocksContainLoopCondition: Set<BlockBuilder>,
-        blockBuildersBeforeTry: Set<BlockBuilder>,
-        blockBuildersContainSwitch: BlockBuilder[],
-        valueAndStmtsOfSwitchAndCasesAll: ValueAndStmts[][],
+        blocksContainLoopCondition: Set<BlockBuilder>;
+        blockBuildersBeforeTry: Set<BlockBuilder>;
+        blockBuildersContainSwitch: BlockBuilder[];
+        valueAndStmtsOfSwitchAndCasesAll: ValueAndStmts[][];
     } {
         const blocksContainLoopCondition = new Set<BlockBuilder>();
         const blockBuildersBeforeTry = new Set<BlockBuilder>();
@@ -1148,15 +1162,14 @@ export class CfgBuilder {
                     blocksContainLoopCondition.add(this.blocks[i]);
                 } else if (statementBuilder instanceof SwitchStatementBuilder) {
                     blockBuildersContainSwitch.push(this.blocks[i]);
-                    const valueAndStmtsOfSwitchAndCases = arkIRTransformer.switchStatementToValueAndStmts(
-                        statementBuilder.astNode as ts.SwitchStatement);
+                    const valueAndStmtsOfSwitchAndCases = arkIRTransformer.switchStatementToValueAndStmts(statementBuilder.astNode as ts.SwitchStatement);
                     valueAndStmtsOfSwitchAndCasesAll.push(valueAndStmtsOfSwitchAndCases);
                     continue;
                 }
                 if (statementBuilder.astNode && statementBuilder.code !== '') {
                     arkIRTransformer.tsNodeToStmts(statementBuilder.astNode).forEach(s => stmtsInBlock.push(s));
                 } else if (statementBuilder.code.startsWith('return')) {
-                    stmtsInBlock.push(new ArkReturnVoidStmt());
+                    stmtsInBlock.push(this.generateReturnStmt(arkIRTransformer));
                 }
             }
             const blockInCfg = new BasicBlock();
@@ -1168,9 +1181,31 @@ export class CfgBuilder {
             blockBuilderToCfgBlock.set(this.blocks[i], blockInCfg);
         }
         return {
-            blocksContainLoopCondition, blockBuildersBeforeTry, blockBuildersContainSwitch,
+            blocksContainLoopCondition,
+            blockBuildersBeforeTry,
+            blockBuildersContainSwitch,
             valueAndStmtsOfSwitchAndCasesAll,
         };
+    }
+
+    private generateReturnStmt(arkIRTransformer: ArkIRTransformer): Stmt {
+        if (this.name === CONSTRUCTOR_NAME) {
+            this.declaringMethod.getSubSignature().setReturnType(arkIRTransformer.getThisLocal().getType());
+            return new ArkReturnStmt(arkIRTransformer.getThisLocal());
+        }
+        if (this.declaringMethod.getSubSignature().getReturnType() instanceof UnknownType && !this.declaringMethod.getAsteriskToken()) {
+            if (this.declaringMethod.containsModifier(ModifierType.ASYNC)) {
+                const promise = this.declaringMethod.getDeclaringArkFile().getScene().getSdkGlobal(PROMISE);
+                if (promise instanceof ArkClass) {
+                    this.declaringMethod.getSubSignature().setReturnType(new ClassType(promise.getSignature()));
+                } else {
+                    this.declaringMethod.getSubSignature().setReturnType(new UnclearReferenceType(PROMISE, [VoidType.getInstance()]));
+                }
+            } else {
+                this.declaringMethod.getSubSignature().setReturnType(VoidType.getInstance());
+            }
+        }
+        return new ArkReturnVoidStmt();
     }
 
     private adjustBlocks(
@@ -1179,21 +1214,17 @@ export class CfgBuilder {
         basicBlockSet: Set<BasicBlock>,
         blockBuildersContainSwitch: BlockBuilder[],
         valueAndStmtsOfSwitchAndCasesAll: ValueAndStmts[][],
-        arkIRTransformer: ArkIRTransformer,
+        arkIRTransformer: ArkIRTransformer
     ): void {
         const loopBuilder = new LoopBuilder();
         loopBuilder.rebuildBlocksInLoop(blockBuilderToCfgBlock, blocksContainLoopCondition, basicBlockSet, this.blocks);
         const switchBuilder = new SwitchBuilder();
-        switchBuilder.buildSwitch(blockBuilderToCfgBlock, blockBuildersContainSwitch,
-            valueAndStmtsOfSwitchAndCasesAll, arkIRTransformer, basicBlockSet);
+        switchBuilder.buildSwitch(blockBuilderToCfgBlock, blockBuildersContainSwitch, valueAndStmtsOfSwitchAndCasesAll, arkIRTransformer, basicBlockSet);
         const conditionalBuilder = new ConditionBuilder();
         conditionalBuilder.rebuildBlocksContainConditionalOperator(basicBlockSet, ModelUtils.isArkUIBuilderMethod(this.declaringMethod));
     }
 
-    private createCfg(
-        blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>,
-        basicBlockSet: Set<BasicBlock>, prevBlockId: number,
-    ): Cfg {
+    private createCfg(blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>, basicBlockSet: Set<BasicBlock>, prevBlockId: number): Cfg {
         let currBlockId = prevBlockId;
         for (const blockBuilder of this.blocks) {
             if (blockBuilder.id === -1) {

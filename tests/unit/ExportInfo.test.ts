@@ -20,6 +20,7 @@ import {
     ArkClass,
     ClassType,
     FileSignature,
+    GlobalRef,
     Local,
     Scene,
     SceneConfig,
@@ -114,7 +115,7 @@ describe("export Test", () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
         const file = projectScene.getFile(fileId);
         assert.equal(file?.getExportInfos().length, 2);
-        assert.equal(file?.getImportInfos().length, 3);
+        assert.equal(file?.getImportInfos().length, 5);
         const stmts = file?.getDefaultClass().getMethodWithName('cc')?.getCfg()?.getStmts();
         assert.isNotEmpty(stmts);
     })
@@ -139,6 +140,44 @@ describe("export Test", () => {
     it('import index case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'exportSample.ts');
         assert.isNotNull(projectScene.getFile(fileId)?.getImportInfoBy('Constants')?.getLazyExportInfo());
+
+        const importInfos = projectScene.getFile(fileId)?.getImportInfos();
+        assert.isDefined(importInfos);
+        assert.equal(importInfos!.length, 4);
+        expect([importInfos![0].getOriginTsPosition().getLineNo(), importInfos![0].getOriginTsPosition().getColNo()]).toEqual([16, 10]);
+        expect([importInfos![1].getOriginTsPosition().getLineNo(), importInfos![1].getOriginTsPosition().getColNo()]).toEqual([17, 8]);
+        expect([importInfos![2].getOriginTsPosition().getLineNo(), importInfos![2].getOriginTsPosition().getColNo()]).toEqual([17, 15]);
+        expect([importInfos![3].getOriginTsPosition().getLineNo(), importInfos![3].getOriginTsPosition().getColNo()]).toEqual([18, 10]);
+
+        assert.equal(importInfos![0].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@exports/test.ts: %dflt.cc()');
+        assert.equal(importInfos![1].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@exports/else.ts: dfs');
+        assert.equal(importInfos![2].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@exports/else.ts: %dflt.something()');
+        assert.equal(importInfos![3].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@exports/else.ts: dfs');
+
+        const testFileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+        const testImportInfos = projectScene.getFile(testFileId)?.getImportInfos();
+        assert.isDefined(testImportInfos);
+        assert.equal(testImportInfos!.length, 5);
+        expect([testImportInfos![0].getOriginTsPosition().getLineNo(), testImportInfos![0].getOriginTsPosition().getColNo()]).toEqual([16, 13]);
+        expect([testImportInfos![1].getOriginTsPosition().getLineNo(), testImportInfos![1].getOriginTsPosition().getColNo()]).toEqual([17, 8]);
+        expect([testImportInfos![2].getOriginTsPosition().getLineNo(), testImportInfos![2].getOriginTsPosition().getColNo()]).toEqual([18, 8]);
+        expect([testImportInfos![3].getOriginTsPosition().getLineNo(), testImportInfos![3].getOriginTsPosition().getColNo()]).toEqual([19, 8]);
+
+        assert.equal(testImportInfos![0].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@exports/exportSample.ts: %dflt');
+        assert.equal(testImportInfos![1].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@etsSdk/api/@ohos.hilog.d.ts: hilog');
+        assert.equal(testImportInfos![2].getLazyExportInfo()?.getArkExport()?.getSignature().toString(), '@etsSdk/api/@ohos.base.d.ts: %dflt');
+        assert.equal(testImportInfos![3].getLazyExportInfo(), null);
+    })
+
+    it('export local case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'test.ts');
+        const file = projectScene.getFile(fileId);
+        const ref = file?.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getUsedGlobals()?.get('arr');
+        assert.isTrue(ref instanceof GlobalRef);
+        const exportLocal = (ref as GlobalRef).getRef();
+        if (exportLocal instanceof Local) {
+            assert.equal(exportLocal.getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#arr');
+        }
     })
 
     it('sdk case', () => {
@@ -226,7 +265,7 @@ describe("export Test", () => {
     it('this case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
         const type = projectScene.getFile(fileId)?.getClassWithName('%AC4$MyComponent.build')
-            ?.getMethodWithName('%instInit')?.getBody()?.getLocals().get(THIS_NAME)?.getType();
+            ?.getMethodWithName('%instInit')?.getBody()?.getUsedGlobals()?.get(THIS_NAME)?.getType();
         assert.equal(type?.getTypeString(), '@exports/Lottie_Report.ets: MyComponent');
 
         const type2 = projectScene.getFile(fileId)?.getClassWithName('MyComponent')
@@ -241,6 +280,31 @@ describe("export Test", () => {
         assert.isDefined(stmt);
         assert.equal(stmt?.getInvokeExpr()?.getArgs()[0].getType().getTypeString(), '@exports/Lottie_Report.ets: %AC2$%AC1$Foo.%instInit.%instInit.%AM0$%instInit()');
     });
+
+    it('export local case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'exportSample.ts');
+        const file = projectScene.getFile(fileId);
+        assert.equal((file?.getExportInfoBy('a')?.getArkExport() as Local).getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#a');
+        assert.equal((file?.getExportInfoBy('c')?.getArkExport() as Local).getSignature().toString(), '@exports/exportSample.ts: %dflt.[static]%dflt()#c');
+    })
+
+    it('local Type case', () => {
+        const fileId = new FileSignature(projectScene.getProjectName(), 'else.ts');
+        const locals = projectScene.getFile(fileId)?.getDefaultClass()
+            .getDefaultArkMethod()?.getBody()?.getLocals();
+        assert.isNotEmpty(locals);
+        if (locals) {
+            assert.equal(locals.get('a1')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string>');
+            assert.equal(locals.get('a2')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Map<string,string>')
+            assert.equal(locals.get('a3')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string[]>')
+            assert.equal(locals.get('a4')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string>>>')
+            assert.equal(locals.get('%1')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any>');
+            assert.equal(locals.get('%2')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Map<any,string>')
+            assert.equal(locals.get('%3')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any[]>')
+            assert.equal(locals.get('%4')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any>>>')
+
+        }
+    })
 })
 
 describe("function Test", () => {

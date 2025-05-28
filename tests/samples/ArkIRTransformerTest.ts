@@ -13,16 +13,21 @@
  * limitations under the License.
  */
 
-import { SceneConfig } from '../../src';
-import { Scene } from '../../src';
-import { ArkBody } from '../../src';
-import { PrinterBuilder, Stmt } from '../../src';
-import { ModelUtils } from '../../src';
+import {
+    ArkBody,
+    LOG_LEVEL,
+    LOG_MODULE_TYPE,
+    Logger,
+    ModelUtils,
+    PrinterBuilder,
+    Scene,
+    SceneConfig,
+    Stmt,
+} from '../../src';
 import { ArkMetadataKind, CommentsMetadata } from '../../src/core/model/ArkMetadata';
-import { Logger, LOG_LEVEL, LOG_MODULE_TYPE } from '../../src';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
-Logger.configure('', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
+Logger.configure('out/ArkIRTransformerTest.log', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
 
 class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
@@ -41,6 +46,24 @@ class ArkIRTransformerTest {
         this.printScene(scene);
 
         logger.info('testStmtsOfSimpleProject end\n');
+    }
+
+    public testBuildSceneWithJsonFile(): void {
+        logger.info('testBuildSceneWithJsonFile start');
+
+        const configPath = 'tests/resources/arkIRTransformer/ArkIRTransformerTestConfig.json';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromJson(configPath);
+
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
+        logger.info('before inferTypes');
+        this.printScene(scene);
+        scene.inferTypes();
+        logger.info('after inferTypes');
+        this.printScene(scene);
+
+        logger.info('testBuildSceneWithJsonFile end\n');
     }
 
     public testStmtsOfEtsProject() {
@@ -68,7 +91,6 @@ class ArkIRTransformerTest {
         const cfg = body.getCfg();
         for (const threeAddressStmt of cfg.getStmts()) {
             logger.info(`text: '${threeAddressStmt.toString()}'`);
-            this.printMetadata(threeAddressStmt);
         }
     }
 
@@ -108,9 +130,6 @@ class ArkIRTransformerTest {
 
     private printScene(scene: Scene): void {
         for (const arkFile of scene.getFiles()) {
-            if (!arkFile.getFilePath().includes('City.ets')) {
-                continue;
-            }
             logger.info('+++++++++++++ arkFile:', arkFile.getFilePath(), ' +++++++++++++');
             for (const arkClass of ModelUtils.getAllClassesInFile(arkFile)) {
                 logger.info('========= arkClass:', arkClass.getSignature().toString(), ' =======');
@@ -161,7 +180,7 @@ class ArkIRTransformerTest {
             const stmts = cfg.getStmts();
             logger.info(`${stmts}`);
         } else {
-            logger.error(`cfg is undefined`);
+            logger.info(`cfg is undefined`);
         }
 
         logger.info('simpleTest end');
@@ -171,6 +190,5 @@ class ArkIRTransformerTest {
 const arkIRTransformerTest = new ArkIRTransformerTest();
 arkIRTransformerTest.testStmtsOfSimpleProject();
 arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.printCfg();
-arkIRTransformerTest.simpleTest();
+arkIRTransformerTest.testBuildSceneWithJsonFile();
 

@@ -60,12 +60,7 @@ import { SourceClass } from './SourceClass';
 import { Value } from '../../core/base/Value';
 import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { ArkFile } from '../../core/model/ArkFile';
-import {
-    COMPONENT_CREATE_FUNCTION,
-    COMPONENT_CUSTOMVIEW,
-    COMPONENT_IF,
-    COMPONENT_POP_FUNCTION,
-} from '../../core/common/EtsConst';
+import { COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW, COMPONENT_IF, COMPONENT_POP_FUNCTION } from '../../core/common/EtsConst';
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
@@ -74,6 +69,7 @@ import { ArkBaseModel } from '../../core/model/ArkBaseModel';
 import { ArkField } from '../../core/model/ArkField';
 import { ExportInfo } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
+import { BIGINT_KEYWORD, SUPER_NAME } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
@@ -117,7 +113,7 @@ export class SourceTransformer {
             return '';
         }
         let args: string[] = [];
-        invokeExpr.getArgs().forEach((v) => {
+        invokeExpr.getArgs().forEach(v => {
             args.push(this.valueToString(v));
         });
         let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
@@ -127,6 +123,45 @@ export class SourceTransformer {
         }
 
         return `${this.valueToString(invokeExpr.getBase())}.${methodName}${genericCode}(${args.join(', ')})`;
+    }
+
+    private transBuilderMethod(className: string, methodName: string, args: string[], invokeExpr: ArkStaticInvokeExpr, genericCode: string): string | null {
+        if (className === COMPONENT_CUSTOMVIEW) {
+            if (methodName === COMPONENT_CREATE_FUNCTION) {
+                // Anonymous @Builder method
+                if (args.length > 1) {
+                    // remove the substring '() =>' or '(x, y): type =>' at the beginning of args[1]
+                    const pattern = /^\([^)]*\)\s*:\s*\w*\s*=>\s*/;
+                    args[1] = args[1].replace(pattern, '');
+                }
+                return `${args.join(' ')}`;
+            }
+            if (methodName === COMPONENT_POP_FUNCTION) {
+                return '';
+            }
+        }
+
+        if (PrinterUtils.isComponentCreate(invokeExpr)) {
+            if (className === COMPONENT_IF) {
+                return `if (${args.join(', ')})`;
+            }
+            return `${className}${genericCode}(${args.join(', ')})`;
+        }
+
+        if (PrinterUtils.isComponentIfBranchInvoke(invokeExpr)) {
+            let arg0 = invokeExpr.getArg(0) as Constant;
+            if (arg0.getValue() === '0') {
+                return ``;
+            } else {
+                return '} else {';
+            }
+        }
+
+        if (PrinterUtils.isComponentPop(invokeExpr)) {
+            return '}';
+        }
+
+        return null;
     }
 
     public staticInvokeExprToString(invokeExpr: ArkStaticInvokeExpr): string {
@@ -140,53 +175,25 @@ export class SourceTransformer {
         let className = PrinterUtils.getStaticInvokeClassFullName(classSignature, this.context.getDeclaringArkNamespace());
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
         let args: string[] = [];
-        invokeExpr.getArgs().forEach((v) => {
+        invokeExpr.getArgs().forEach(v => {
             args.push(this.valueToString(v));
         });
 
         let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
 
         if (this.context.isInBuilderMethod()) {
-            if (className === COMPONENT_CUSTOMVIEW) {
-                if (methodName === COMPONENT_CREATE_FUNCTION) {
-                    // Anonymous @Builder method
-                    if (args.length > 1) {
-                        args[1] = args[1].substring('() => '.length);
-                    }
-                    return `${args.join(' ')}`;
-                }
-                if (methodName === COMPONENT_POP_FUNCTION) {
-                    return '';
-                }
-            }
-
-            if (PrinterUtils.isComponentCreate(invokeExpr)) {
-                if (className === COMPONENT_IF) {
-                    return `if (${args.join(', ')})`;
-                }
-                return `${className}${genericCode}(${args.join(', ')})`;
-            }
-
-            if (PrinterUtils.isComponentIfBranchInvoke(invokeExpr)) {
-                let arg0 = invokeExpr.getArg(0) as Constant;
-                if (arg0.getValue() === '0') {
-                    return ``;
-                } else {
-                    return '} else {';
-                }
-            }
-
-            if (PrinterUtils.isComponentPop(invokeExpr)) {
-                return '}';
+            const res = this.transBuilderMethod(className, methodName, args, invokeExpr, genericCode);
+            if (res !== null) {
+                return res;
             }
         }
 
-        if (className && className.length > 0) {
+        if (className && className.length > 0 && methodName !== SUPER_NAME) {
             return `${className}.${methodName}${genericCode}(${args.join(', ')})`;
         }
         return `${methodName}${genericCode}(${args.join(', ')})`;
     }
-    
+
     private genericTypesToString(types: Type[] | undefined): string {
         if (!types) {
             return '';
@@ -201,7 +208,7 @@ export class SourceTransformer {
 
     public typeArrayToString(types: Type[], split: string = ', '): string {
         let typesStr: string[] = [];
-        types.forEach((t) => {
+        types.forEach(t => {
             typesStr.push(this.typeToString(t));
         });
 
@@ -211,6 +218,8 @@ export class SourceTransformer {
     public static constToString(value: Constant): string {
         if (value.getType().toString() === 'string') {
             return `'${PrinterUtils.escape(value.getValue())}'`;
+        } else if (value.getType().toString() === BIGINT_KEYWORD) {
+            return `${value.getValue()}n`;
         } else {
             return value.getValue();
         }
@@ -286,11 +295,7 @@ export class SourceTransformer {
 
         if (value instanceof ArkArrayRef) {
             let index = value.getIndex();
-            if (
-                index instanceof Constant &&
-                index.getType() instanceof StringType &&
-                PrinterUtils.isTemp(index.getValue())
-            ) {
+            if (index instanceof Constant && index.getType() instanceof StringType && PrinterUtils.isTemp(index.getValue())) {
                 return `${this.valueToString(value.getBase())}[${this.valueToString(new Local(index.getValue()))}]`;
             }
             return `${this.valueToString(value.getBase())}[${this.valueToString(value.getIndex())}]`;
@@ -319,39 +324,39 @@ export class SourceTransformer {
         }
 
         if (value instanceof Local) {
-            if (PrinterUtils.isAnonymousMethod(value.getName())) {
-                let methodSignature = (value.getType() as FunctionType).getMethodSignature();
-                let anonymousMethod = this.context.getMethod(methodSignature);
-                if (anonymousMethod) {
-                    return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
-                }
-            }
-            if (PrinterUtils.isAnonymousClass(value.getName())) {
-                let clsSignature = (value.getType() as ClassType).getClassSignature();
-                let cls = this.context.getClass(clsSignature);
-                if (cls) {
-                    return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
-                }
-            }
-
-            if (
-                operator === NormalBinaryOperator.Division ||
-                operator === NormalBinaryOperator.Multiplication ||
-                operator === NormalBinaryOperator.Remainder
-            ) {
-                if (PrinterUtils.isTemp(value.getName())) {
-                    let stmt = value.getDeclaringStmt();
-                    if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
-                        return `(${this.context.transTemp2Code(value)})`;
-                    }
-                }
-            }
-
-            return this.context.transTemp2Code(value);
+            return this.localToString(value, operator);
         }
 
         logger.info(`valueToString ${value.constructor} not support.`);
         return `${value}`;
+    }
+
+    private localToString(value: Local, operator?: string): string {
+        if (PrinterUtils.isAnonymousMethod(value.getName())) {
+            let methodSignature = (value.getType() as FunctionType).getMethodSignature();
+            let anonymousMethod = this.context.getMethod(methodSignature);
+            if (anonymousMethod) {
+                return this.anonymousMethodToString(anonymousMethod, this.context.getPrinter().getIndent());
+            }
+        }
+        if (PrinterUtils.isAnonymousClass(value.getName())) {
+            let clsSignature = (value.getType() as ClassType).getClassSignature();
+            let cls = this.context.getClass(clsSignature);
+            if (cls) {
+                return this.anonymousClassToString(cls, this.context.getPrinter().getIndent());
+            }
+        }
+
+        if (operator === NormalBinaryOperator.Division || operator === NormalBinaryOperator.Multiplication || operator === NormalBinaryOperator.Remainder) {
+            if (PrinterUtils.isTemp(value.getName())) {
+                let stmt = value.getDeclaringStmt();
+                if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
+                    return `(${this.context.transTemp2Code(value)})`;
+                }
+            }
+        }
+
+        return this.context.transTemp2Code(value);
     }
 
     public literalObjectToString(type: ClassType): string {
@@ -518,7 +523,7 @@ export class SourceTransformer {
     private unclearReferenceType2string(type: UnclearReferenceType): string {
         let genericTypes = type.getGenericTypes();
         if (genericTypes.length > 0) {
-            return `${type.getName()}<${genericTypes.map((value)=>this.typeToString(value)).join(', ')}>`;
+            return `${type.getName()}<${genericTypes.map(value => this.typeToString(value)).join(', ')}>`;
         }
         return type.getName();
     }

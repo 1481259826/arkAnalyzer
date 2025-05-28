@@ -82,3 +82,21 @@ class NestedTestClass {
         };
     }
 }
+
+interface InterfaceA {
+    optionalMethod?(): void
+}
+
+class ClassA {
+    optionalMethod?(): void {}
+}
+
+type MyType = {
+    requiredMethod(): string;
+    optionalMethod?(): string;
+};
+
+const myObject: {
+    requiredMethod(): void;
+    optionalMethod?(): void;
+};

@@ -537,8 +537,8 @@ export const Operator_Expect_IR = {
             operandOriginalPositions: [[17, 9, 17, 20], [17, 9, 17, 20]],
         },
         {
-            text: 'instanceinvoke %0.<@%unk/%unk: Point.constructor()>()',
-            operandOriginalPositions: [[17, 9, 17, 20], [17, 9, 17, 20]],
+            text: '%0 = instanceinvoke %0.<@%unk/%unk: Point.constructor()>()',
+            operandOriginalPositions: [[17, 9, 17, 20], [17, 9, 17, 20], [17, 9, 17, 20]],
         },
         {
             text: 'p = %0',
@@ -577,8 +577,12 @@ export const Operator_Expect_IR = {
             operandOriginalPositions: [[31, 1, 31, 9], [31, 1, 31, 9], [31, 7, 31, 9]],
         },
         {
-            text: 'isCat = cat instanceof Cat',
-            operandOriginalPositions: [[34, 5, 34, 10], [34, 13, 34, 31], [34, 13, 34, 16]],
+            text: '%6 = cat instanceof Cat',
+            operandOriginalPositions: [[34, 13, 34, 31], [34, 13, 34, 31], [34, 13, 34, 16]],
+        },
+        {
+            text: 'isCat = %6',
+            operandOriginalPositions: [[34, 5, 34, 10], [34, 13, 34, 31]],
         },
         {
             text: 'foo1 = <Foo>bar',
@@ -668,8 +672,8 @@ export const ExpressionStatements_Expect_IR = {
             operandOriginalPositions: [[32, 11, 32, 20], [32, 11, 32, 20]],
         },
         {
-            text: 'instanceinvoke %1.<@expression/ExpressionStatementsTest.ts: Foo.constructor()>()',
-            operandOriginalPositions: [[32, 11, 32, 20], [32, 11, 32, 20]],
+            text: '%1 = instanceinvoke %1.<@expression/ExpressionStatementsTest.ts: Foo.constructor()>()',
+            operandOriginalPositions: [[32, 11, 32, 20], [32, 11, 32, 20], [32, 11, 32, 20]],
         },
         {
             text: 'foo = %1',
@@ -728,8 +732,8 @@ export const ExpressionStatements_Expect_IR = {
             operandOriginalPositions: [[48, 1, 48, 10], [48, 1, 48, 10]],
         },
         {
-            text: 'instanceinvoke %12.<@expression/ExpressionStatementsTest.ts: Foo.constructor()>()',
-            operandOriginalPositions: [[48, 1, 48, 10], [48, 1, 48, 10]],
+            text: '%12 = instanceinvoke %12.<@expression/ExpressionStatementsTest.ts: Foo.constructor()>()',
+            operandOriginalPositions: [[48, 1, 48, 10], [48, 1, 48, 10], [48, 1, 48, 10]],
         },
         {
             text: 'return',

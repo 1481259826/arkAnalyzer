@@ -14,25 +14,10 @@
  */
 
 import { Constant } from '../../core/base/Constant';
-import {
-    ArkInstanceInvokeExpr,
-    ArkNewArrayExpr,
-    ArkNewExpr,
-    ArkStaticInvokeExpr,
-    NormalBinaryOperator,
-} from '../../core/base/Expr';
+import { ArkInstanceInvokeExpr, ArkNewArrayExpr, ArkNewExpr, ArkStaticInvokeExpr, NormalBinaryOperator } from '../../core/base/Expr';
 import { Local } from '../../core/base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ClosureFieldRef } from '../../core/base/Ref';
-import {
-    ArkAliasTypeDefineStmt,
-    ArkAssignStmt,
-    ArkIfStmt,
-    ArkInvokeStmt,
-    ArkReturnStmt,
-    ArkReturnVoidStmt,
-    ArkThrowStmt,
-    Stmt,
-} from '../../core/base/Stmt';
+import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkIfStmt, ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, ArkThrowStmt, Stmt } from '../../core/base/Stmt';
 import { AliasType, ClassType, Type } from '../../core/base/Type';
 import { Value } from '../../core/base/Value';
 import { BasicBlock } from '../../core/graph/BasicBlock';
@@ -90,7 +75,7 @@ export abstract class SourceStmt implements Dump {
         return this.line;
     }
 
-    public setLine(line: number) {
+    public setLine(line: number): void {
         this.line = line;
     }
 
@@ -110,7 +95,7 @@ export abstract class SourceStmt implements Dump {
         const commentsMetadata = this.original.getMetadata(ArkMetadataKind.LEADING_COMMENTS);
         if (commentsMetadata instanceof CommentsMetadata) {
             const comments = commentsMetadata.getComments();
-            comments.forEach((comment) => {
+            comments.forEach(comment => {
                 content.push(`${this.printer.getIndent()}${comment.content}\n`);
             });
         }
@@ -173,7 +158,8 @@ export class SourceAssignStmt extends SourceStmt {
         if (
             (this.leftOp instanceof Local && this.leftOp.getName() === 'this') ||
             (this.rightOp instanceof Constant && this.rightOp.getValue() === 'undefined') ||
-            this.rightOp instanceof ArkParameterRef || this.rightOp instanceof ClosureFieldRef
+            this.rightOp instanceof ArkParameterRef ||
+            this.rightOp instanceof ClosureFieldRef
         ) {
             this.setText('');
             this.dumpType = AssignStmtDumpType.NORMAL;
@@ -188,9 +174,9 @@ export class SourceAssignStmt extends SourceStmt {
             this.transferRightNewArrayExpr();
         } else if (this.rightOp instanceof ArkStaticInvokeExpr && PrinterUtils.isComponentCreate(this.rightOp)) {
             this.transferRightComponentCreate();
-        } else if (
-            this.rightOp instanceof ArkInstanceInvokeExpr &&
-            PrinterUtils.isComponentAttributeInvoke(this.rightOp)
+        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isConstructorInvoke(this.rightOp)) {
+            this.transferConstructorInvokeExpr(this.rightOp);
+        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isComponentAttributeInvoke(this.rightOp)
         ) {
             this.transferRightComponentAttribute();
         } else {
@@ -201,10 +187,7 @@ export class SourceAssignStmt extends SourceStmt {
             this.context.setTempCode((this.leftOp as Local).getName(), this.rightCode);
         }
 
-        if (
-            (this.leftOp instanceof ArkInstanceFieldRef && this.leftOp.getBase().getName() === 'this') ||
-            this.leftOp instanceof ArkStaticFieldRef
-        ) {
+        if ((this.leftOp instanceof ArkInstanceFieldRef && this.leftOp.getBase().getName() === 'this') || this.leftOp instanceof ArkStaticFieldRef) {
             this.context.setTempCode(this.leftOp.getFieldName(), this.rightCode);
         }
 
@@ -236,33 +219,29 @@ export class SourceAssignStmt extends SourceStmt {
 
         if (this.context.hasTempVisit(this.leftCode)) {
             this.setText('');
+            return;
         } else if (PrinterUtils.isTemp(this.leftCode)) {
             this.setText(`${this.rightCode};`);
-        } else {
-            if (
-                this.leftOp instanceof Local &&
-                this.context.getLocals().has(this.leftOp.getName()) &&
-                !this.isLocalTempValue(this.leftOp)
-            ) {
-                if (this.context.isLocalDefined(this.leftOp)) {
-                    this.setText(`${this.leftCode} = ${this.rightCode};`);
-                } else {
-                    let flag = this.leftOp.getConstFlag() ? 'const' : 'let';
-                    if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
-                        this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
-                    } else {
-                        if (this.leftTypeCode.length > 0) {
-                            this.setText(`${flag} ${this.leftCode}: ${this.leftTypeCode} = ${this.rightCode};`);
-                        } else {
-                            this.setText(`${flag} ${this.leftCode} = ${this.rightCode};`);
-                        }
-                    }
-
-                    this.context.defineLocal(this.leftOp);
-                }
-            } else {
+            return;
+        }
+        if (this.leftOp instanceof Local && this.context.getLocals().has(this.leftOp.getName()) && !this.isLocalTempValue(this.leftOp)) {
+            if (this.context.isLocalDefined(this.leftOp)) {
                 this.setText(`${this.leftCode} = ${this.rightCode};`);
+                return;
             }
+            let flag = this.leftOp.getConstFlag() ? 'const' : 'let';
+            if (this.context.getArkFile().getExportInfoBy(this.leftCode) && this.context.isInDefaultMethod()) {
+                this.setText(`export ${flag} ${this.leftCode} = ${this.rightCode};`);
+            } else {
+                if (this.leftTypeCode.length > 0) {
+                    this.setText(`${flag} ${this.leftCode}: ${this.leftTypeCode} = ${this.rightCode};`);
+                } else {
+                    this.setText(`${flag} ${this.leftCode} = ${this.rightCode};`);
+                }
+            }
+            this.context.defineLocal(this.leftOp);
+        } else {
+            this.setText(`${this.leftCode} = ${this.rightCode};`);
         }
     }
 
@@ -294,28 +273,13 @@ export class SourceAssignStmt extends SourceStmt {
         if (this.context.getStmtReader().hasNext()) {
             let stmt = this.context.getStmtReader().next();
             let rollback = true;
-            if (stmt instanceof ArkInvokeStmt && (stmt.getInvokeExpr() as ArkInstanceInvokeExpr)) {
-                let instanceInvokeExpr = stmt.getInvokeExpr() as ArkInstanceInvokeExpr;
+            if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkInstanceInvokeExpr) {
+                let instanceInvokeExpr = stmt.getRightOp() as ArkInstanceInvokeExpr;
                 if (
                     'constructor' === instanceInvokeExpr.getMethodSignature().getMethodSubSignature().getMethodName() &&
                     instanceInvokeExpr.getBase().getName() === (this.leftOp as Local).getName()
                 ) {
-                    let args: string[] = [];
-                    instanceInvokeExpr.getArgs().forEach((v) => {
-                        args.push(this.transformer.valueToString(v));
-                    });
-
-                    if (originType === CLASS_CATEGORY_COMPONENT) {
-                        this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
-                    } else if (originType === ClassCategory.TYPE_LITERAL || originType === ClassCategory.OBJECT) {
-                        this.rightCode = `${this.transformer.literalObjectToString(
-                            this.rightOp.getType() as ClassType
-                        )}`;
-                    } else {
-                        this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(
-                            ', '
-                        )})`;
-                    }
+                    this.handleConstructorInvoke(instanceInvokeExpr, originType);
                     return;
                 }
             }
@@ -331,6 +295,28 @@ export class SourceAssignStmt extends SourceStmt {
         } else {
             this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}()`;
         }
+    }
+
+    private handleConstructorInvoke(instanceInvokeExpr: ArkInstanceInvokeExpr, originType?: number): void {
+        let args: string[] = [];
+        instanceInvokeExpr.getArgs().forEach(v => {
+            args.push(this.transformer.valueToString(v));
+        });
+
+        if (originType === CLASS_CATEGORY_COMPONENT) {
+            this.rightCode = `${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
+        } else if (originType === ClassCategory.TYPE_LITERAL || originType === ClassCategory.OBJECT) {
+            this.rightCode = `${this.transformer.literalObjectToString(this.rightOp.getType() as ClassType)}`;
+        } else {
+            this.rightCode = `new ${this.transformer.typeToString(this.rightOp.getType())}(${args.join(', ')})`;
+        }
+    }
+
+    private transferConstructorInvokeExpr(expr: ArkInstanceInvokeExpr): void {
+        let rightCode = this.transformer.valueToString(this.rightOp);
+        const pattern = /\([^)]*\)\.constructor/;
+        this.rightCode = rightCode.replace(pattern, '');
+        this.dumpType = AssignStmtDumpType.NORMAL;
     }
 
     /**
@@ -593,9 +579,7 @@ export class SourceWhileStmt extends SourceStmt {
             this.context.setTempVisit(name);
         }
 
-        this.setText(
-            `for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`
-        );
+        this.setText(`for (let [${arrayValueNames.join(', ')}] of ${this.transformer.valueToString(iterator.getBase())}) {`);
         this.context.setTempVisit((temp3 as Local).getName());
 
         return true;
@@ -622,18 +606,12 @@ export class SourceWhileStmt extends SourceStmt {
             if (!(stmt instanceof ArkAssignStmt)) {
                 continue;
             }
-            if (
-                PrinterUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Addition) &&
-                (stmt.getLeftOp() as Local).getName() === value.getName()
-            ) {
+            if (PrinterUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Addition) && (stmt.getLeftOp() as Local).getName() === value.getName()) {
                 this.context.setSkipStmt(stmt);
                 return `${value.getName()}++`;
             }
 
-            if (
-                PrinterUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Subtraction) &&
-                (stmt.getLeftOp() as Local).getName() === value.getName()
-            ) {
+            if (PrinterUtils.isDeIncrementStmt(stmt, NormalBinaryOperator.Subtraction) && (stmt.getLeftOp() as Local).getName() === value.getName()) {
                 this.context.setSkipStmt(stmt);
                 return `${value.getName()}--`;
             }
@@ -825,7 +803,9 @@ export class SourceTypeAliasStmt extends SourceStmt {
             if (typeObject instanceof AliasType) {
                 this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${typeObject.getName()}${realGenericTypes};`);
             } else {
-                this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`);
+                this.setText(
+                    `${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.typeToString(typeObject)}${realGenericTypes};`
+                );
             }
             return;
         }
@@ -838,7 +818,9 @@ export class SourceTypeAliasStmt extends SourceStmt {
             return;
         }
         if (typeObject instanceof Local) {
-            this.setText(`${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.valueToString(typeObject)}${realGenericTypes};`);
+            this.setText(
+                `${modifier}type ${this.aliasType.getName()}${genericTypes} = ${typeOf}${this.transformer.valueToString(typeObject)}${realGenericTypes};`
+            );
             return;
         }
         if (typeObject instanceof ArkClass) {
@@ -937,7 +919,7 @@ export class SourceNewArrayExpr {
         this.values = [];
     }
 
-    public addInitValue(value: string) {
+    public addInitValue(value: string): void {
         this.values.push(value);
     }
 

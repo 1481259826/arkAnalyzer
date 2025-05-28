@@ -16,11 +16,10 @@
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { FieldSignature } from '../model/ArkSignature';
 import { Local } from './Local';
-import { ArrayType, ClassType, Type, UnclearReferenceType, UnknownType } from './Type';
+import { ArrayType, ClassType, LexicalEnvType, Type, UnknownType } from './Type';
 import { Value } from './Value';
 import { TypeInference } from '../common/TypeInference';
 import { ArkMethod } from '../model/ArkMethod';
-import { ANONYMOUS_CLASS_PREFIX } from '../common/Const';
 import { Stmt } from './Stmt';
 import { IRInference } from '../common/IRInference';
 
@@ -40,7 +39,7 @@ export abstract class AbstractRef implements Value {
 }
 
 export class ArkArrayRef extends AbstractRef {
-    private base: Local;  // 数组变量
+    private base: Local; // 数组变量
     private index: Value; // 索引
 
     constructor(base: Local, index: Value) {
@@ -168,7 +167,7 @@ export abstract class AbstractFieldRef extends AbstractRef {
 }
 
 export class ArkInstanceFieldRef extends AbstractFieldRef {
-    private base: Local;       // which obj this field belong to
+    private base: Local; // which obj this field belong to
 
     constructor(base: Local, fieldSignature: FieldSignature) {
         super(fieldSignature);
@@ -217,7 +216,6 @@ export class ArkInstanceFieldRef extends AbstractFieldRef {
     public inferType(arkMethod: ArkMethod): AbstractRef {
         return IRInference.inferFieldRef(this, arkMethod);
     }
-
 }
 
 export class ArkStaticFieldRef extends AbstractFieldRef {
@@ -261,18 +259,7 @@ export class ArkParameterRef extends AbstractRef {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractRef {
-        if (this.paramType instanceof UnknownType || this.paramType instanceof UnclearReferenceType) {
-            const type1 = arkMethod.getSignature().getMethodSubSignature().getParameters()[this.index]?.getType();
-            if (!TypeInference.isUnclearType(type1)) {
-                this.paramType = type1;
-                return this;
-            }
-        }
-        let type = TypeInference.inferUnclearedType(this.paramType, arkMethod.getDeclaringArkClass());
-        if (type) {
-            this.paramType = type;
-        }
-        return this;
+        return IRInference.inferParameterRef(this, arkMethod);
     }
 
     public getUses(): Value[] {
@@ -284,24 +271,12 @@ export class ArkParameterRef extends AbstractRef {
     }
 }
 
-
 export class ArkThisRef extends AbstractRef {
     private type: ClassType;
 
     constructor(type: ClassType) {
         super();
         this.type = type;
-    }
-
-    public inferType(arkMethod: ArkMethod): AbstractRef {
-        const classSignature = this.type.getClassSignature();
-        if (classSignature.getClassName().startsWith(ANONYMOUS_CLASS_PREFIX)) {
-            let type = TypeInference.inferBaseType(classSignature.getDeclaringClassName(), arkMethod.getDeclaringArkClass());
-            if (type instanceof ClassType) {
-                this.type = type;
-            }
-        }
-        return this;
     }
 
     public getType(): ClassType {
@@ -417,5 +392,21 @@ export class ClosureFieldRef extends AbstractRef {
 
     public toString(): string {
         return this.base.toString() + '.' + this.getFieldName();
+    }
+
+    public inferType(arkMethod: ArkMethod): AbstractRef {
+        if (TypeInference.isUnclearType(this.type)) {
+            let type: Type | undefined = this.base.getType();
+            if (type instanceof LexicalEnvType) {
+                type = type
+                    .getClosures()
+                    .find(c => c.getName() === this.fieldName)
+                    ?.getType();
+            }
+            if (type && !TypeInference.isUnclearType(type)) {
+                this.type = type;
+            }
+        }
+        return this;
     }
 }

@@ -41,6 +41,7 @@ import { PrinterUtils } from '../base/PrinterUtils';
 import { printImports } from '../base/ImportPrinter';
 import { ExportPrinter } from '../base/ExportPrinter';
 import { Printer } from '../Printer';
+import { ArkClass } from '../../core/model/ArkClass';
 
 /**
  * @category save
@@ -52,6 +53,16 @@ export class SourceFilePrinter extends Printer {
     constructor(arkFile: ArkFile) {
         super();
         this.arkFile = arkFile;
+    }
+
+    private printDefaultClassInFile(cls: ArkClass): void {
+        for (let method of cls.getMethods()) {
+            if (method.isDefaultArkMethod()) {
+                this.items.push(...new SourceMethod(method, this.printer.getIndent()).dumpDefaultMethod());
+            } else if (!PrinterUtils.isAnonymousMethod(method.getName())) {
+                this.items.push(new SourceMethod(method));
+            }
+        }
     }
 
     public dump(): string {
@@ -67,20 +78,7 @@ export class SourceFilePrinter extends Printer {
         // print class
         for (let cls of this.arkFile.getClasses()) {
             if (cls.isDefaultArkClass()) {
-                for (let method of cls.getMethods()) {
-                    if (method.isDefaultArkMethod()) {
-                        this.items.push(
-                            ...new SourceMethod(
-                                method,
-                                this.printer.getIndent()
-                            ).dumpDefaultMethod()
-                        );
-                    } else if (
-                        !PrinterUtils.isAnonymousMethod(method.getName())
-                    ) {
-                        this.items.push(new SourceMethod(method));
-                    }
-                }
+                this.printDefaultClassInFile(cls);
             } else if (!PrinterUtils.isAnonymousClass(cls.getName())) {
                 this.items.push(new SourceClass(cls));
             }

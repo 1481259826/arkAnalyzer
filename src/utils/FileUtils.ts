@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,14 +18,15 @@ import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './logger';
 import { transfer2UnixPath } from './pathTransfer';
 import { OH_PACKAGE_JSON5 } from '../core/common/EtsConst';
+import { Language } from '../core/model/ArkFile';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'FileUtils');
 
 export class FileUtils {
     public static readonly FILE_FILTER = {
         ignores: ['.git', '.preview', '.hvigor', '.idea', 'test', 'ohosTest'],
-        include: /(?<!\.d)\.(ets|ts|json5)$/
-    }
+        include: /(?<!\.d)\.(ets|ts|json5)$/,
+    };
 
     public static getIndexFileName(srcPath: string): string {
         for (const fileInDir of fs.readdirSync(srcPath, { withFileTypes: true })) {
@@ -39,9 +40,7 @@ export class FileUtils {
     public static isDirectory(srcPath: string): boolean {
         try {
             return fs.statSync(srcPath).isDirectory();
-        } catch (e) {
-
-        }
+        } catch (e) {}
         return false;
     }
 
@@ -49,34 +48,50 @@ export class FileUtils {
         return /^(\/|\\|[A-Z]:\\)/.test(path);
     }
 
-    public static generateModuleMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>) {
+    public static generateModuleMap(ohPkgContentMap: Map<string, { [k: string]: unknown }>): Map<string, ModulePath> {
         const moduleMap: Map<string, ModulePath> = new Map();
         ohPkgContentMap.forEach((content, filePath) => {
             const moduleName = content.name as string;
             if (moduleName && moduleName.startsWith('@')) {
                 const modulePath = path.dirname(filePath);
-                moduleMap.set(moduleName, new ModulePath(modulePath, content.main ?
-                    path.resolve(modulePath, content.main as string) : ''));
+                moduleMap.set(moduleName, new ModulePath(modulePath, content.main ? path.resolve(modulePath, content.main as string) : ''));
             }
-        })
+        });
         ohPkgContentMap.forEach((content, filePath) => {
-            if (content.dependencies) {
-                Object.entries(content.dependencies).forEach(([name, value]) => {
-                    if (!moduleMap.get(name)) {
-                        const modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
-                        const key = path.resolve(modulePath, OH_PACKAGE_JSON5);
-                        const target = ohPkgContentMap.get(key);
-                        if (target) {
-                            moduleMap.set(name, new ModulePath(modulePath, target.main ?
-                                path.resolve(modulePath, target.main as string) : ''));
-                        }
-                    }
-                })
+            if (!content.dependencies) {
+                return;
             }
-        })
+            Object.entries(content.dependencies).forEach(([name, value]) => {
+                if (moduleMap.get(name)) {
+                    return;
+                }
+                const modulePath = path.resolve(path.dirname(filePath), value.replace('file:', ''));
+                const key = path.resolve(modulePath, OH_PACKAGE_JSON5);
+                const target = ohPkgContentMap.get(key);
+                if (target) {
+                    moduleMap.set(name, new ModulePath(modulePath, target.main ? path.resolve(modulePath, target.main as string) : ''));
+                }
+            });
+        });
         return moduleMap;
     }
 
+    public static getFileLanguage(file: string, fileTags?: Map<string, Language>): Language {
+        if (fileTags && fileTags.has(file)) {
+            return fileTags.get(file) as Language;
+        }
+        const extension = path.extname(file).toLowerCase();
+        switch (extension) {
+            case '.ts':
+                return Language.TYPESCRIPT;
+            case '.ets':
+                return Language.ARKTS1_1;
+            case '.js':
+                return Language.JAVASCRIPT;
+            default:
+                return Language.UNKNOWN;
+        }
+    }
 }
 
 export class ModulePath {
@@ -97,7 +112,7 @@ export function getFileRecursively(srcDir: string, fileName: string, visited: Se
     }
 
     const filesUnderThisDir = fs.readdirSync(srcDir, { withFileTypes: true });
-    const realSrc = fs.realpathSync(srcDir)
+    const realSrc = fs.realpathSync(srcDir);
     if (visited.has(realSrc)) {
         return res;
     }
@@ -113,6 +128,7 @@ export function getFileRecursively(srcDir: string, fileName: string, visited: Se
         }
         const tmpDir = path.resolve(srcDir, '../');
         res = getFileRecursively(tmpDir, fileName, visited);
+        return res;
     });
     return res;
 }

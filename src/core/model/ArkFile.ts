@@ -19,16 +19,40 @@ import { ImportInfo } from './ArkImport';
 import { ArkClass } from './ArkClass';
 import { ArkNamespace } from './ArkNamespace';
 import { AliasClassSignature, ClassSignature, FileSignature, NamespaceSignature } from './ArkSignature';
-import { ALL } from "../common/TSConst";
+import { ALL } from '../common/TSConst';
 
-export const notStmtOrExprKind = ['ModuleDeclaration', 'ClassDeclaration', 'InterfaceDeclaration', 'EnumDeclaration', 'ExportDeclaration',
-    'ExportAssignment', 'MethodDeclaration', 'Constructor', 'FunctionDeclaration', 'GetAccessor', 'SetAccessor', 'ArrowFunction',
-    'FunctionExpression', 'MethodSignature', 'ConstructSignature', 'CallSignature'];
+export const notStmtOrExprKind = [
+    'ModuleDeclaration',
+    'ClassDeclaration',
+    'InterfaceDeclaration',
+    'EnumDeclaration',
+    'ExportDeclaration',
+    'ExportAssignment',
+    'MethodDeclaration',
+    'Constructor',
+    'FunctionDeclaration',
+    'GetAccessor',
+    'SetAccessor',
+    'ArrowFunction',
+    'FunctionExpression',
+    'MethodSignature',
+    'ConstructSignature',
+    'CallSignature',
+];
+
+export enum Language {
+    TYPESCRIPT = 0,
+    ARKTS1_1 = 1,
+    ARKTS1_2 = 2,
+    JAVASCRIPT = 3,
+    UNKNOWN = -1,
+}
 
 /**
  * @category core/model
  */
 export class ArkFile {
+    private language: Language;
     private absoluteFilePath: string = '';
     private projectDir: string = '';
     private code: string = '';
@@ -51,40 +75,52 @@ export class ArkFile {
 
     private anonymousClassNumber: number = 0;
 
-    constructor() {
+    constructor(language: Language) {
+        this.language = language;
+    }
+
+    /**
+     * Returns the program language of the file.
+     */
+    public getLanguage(): Language {
+        return this.language;
+    }
+
+    public setLanguage(language: Language): void {
+        this.language = language;
     }
 
     /**
      * Returns the **string** name of the file, which also acts as the file's relative path.
      * @returns The file's name (also means its relative path).
      */
-    public getName() {
+    public getName(): string {
         return this.fileSignature.getFileName();
     }
 
-    public setScene(scene: Scene) {
+    public setScene(scene: Scene): void {
         this.scene = scene;
     }
 
     /**
-     * Returns the scene (i.e., {@link Scene}) built for the project. The {@link Scene} is the core class of ArkAnalyzer, 
-     * through which users can access all the information of the analyzed code (project), 
+     * Returns the scene (i.e., {@link Scene}) built for the project. The {@link Scene} is the core class of ArkAnalyzer,
+     * through which users can access all the information of the analyzed code (project),
      * including file list, class list, method list, property list, etc.
      * @returns The scene of the file.
      */
-    public getScene() {
+    public getScene(): Scene {
         return this.scene;
     }
 
-    public getModuleScene() {
+    public getModuleScene(): ModuleScene | undefined {
         return this.moduleScene;
     }
 
-    public setModuleScene(moduleScene: ModuleScene) {
+    public setModuleScene(moduleScene: ModuleScene): void {
         this.moduleScene = moduleScene;
     }
 
-    public setProjectDir(projectDir: string) {
+    public setProjectDir(projectDir: string): void {
         this.projectDir = projectDir;
     }
 
@@ -106,11 +142,11 @@ export class ArkFile {
         return this.absoluteFilePath;
     }
 
-    public setFilePath(absoluteFilePath: string) {
+    public setFilePath(absoluteFilePath: string): void {
         this.absoluteFilePath = absoluteFilePath;
     }
 
-    public setCode(code: string) {
+    public setCode(code: string): void {
         this.code = code;
     }
 
@@ -118,19 +154,19 @@ export class ArkFile {
      * Returns the codes of file as a **string.**
      * @returns the codes of file.
      */
-    public getCode() {
+    public getCode(): string {
         return this.code;
     }
 
-    public addArkClass(arkClass: ArkClass) {
+    public addArkClass(arkClass: ArkClass): void {
         this.classes.set(arkClass.getName(), arkClass);
     }
 
-    public getDefaultClass() {
+    public getDefaultClass(): ArkClass {
         return this.defaultClass;
     }
 
-    public setDefaultClass(defaultClass: ArkClass) {
+    public setDefaultClass(defaultClass: ArkClass): void {
         this.defaultClass = defaultClass;
     }
 
@@ -153,8 +189,7 @@ export class ArkFile {
      * @returns A class. If there is no class, the return will be a **null**.
      */
     public getClass(classSignature: ClassSignature): ArkClass | null {
-        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName()
-            : classSignature.getClassName();
+        const className = classSignature instanceof AliasClassSignature ? classSignature.getOriginName() : classSignature.getClassName();
         return this.getClassWithName(className);
     }
 
@@ -166,12 +201,12 @@ export class ArkFile {
         return Array.from(this.classes.values());
     }
 
-    public addNamespace(namespace: ArkNamespace) {
+    public addNamespace(namespace: ArkNamespace): void {
         this.namespaces.set(namespace.getName(), namespace);
     }
-    
+
     /**
-     * Returns an **array** of import information. 
+     * Returns an **array** of import information.
      * The import information includes: clause's name, type, modifiers, location where it is imported from, etc.
      * @returns An **array** of import information.
      */
@@ -183,7 +218,7 @@ export class ArkFile {
         return this.importInfoMap.get(name);
     }
 
-    public addImportInfo(importInfo: ImportInfo) {
+    public addImportInfo(importInfo: ImportInfo): void {
         this.importInfoMap.set(importInfo.getImportClauseName(), importInfo);
     }
 
@@ -209,7 +244,7 @@ export class ArkFile {
             if (key !== ALL || value.getFrom()) {
                 exportInfos.push(value);
             }
-        })
+        });
         return exportInfos;
     }
 
@@ -266,7 +301,7 @@ export class ArkFile {
         return currExportInfo;
     }
 
-    public addExportInfo(exportInfo: ExportInfo, key?: string) {
+    public addExportInfo(exportInfo: ExportInfo, key?: string): void {
         this.exportInfoMap.set(key ?? exportInfo.getExportClauseName(), exportInfo);
     }
 
@@ -278,19 +313,19 @@ export class ArkFile {
         this.exportInfoMap.delete(exportInfo.getExportClauseName());
     }
 
-    public getProjectName() {
+    public getProjectName(): string {
         return this.fileSignature.getProjectName();
     }
 
-    public getModuleName() {
+    public getModuleName(): string | undefined {
         return this.moduleScene?.getModuleName();
     }
 
-    public setOhPackageJson5Path(ohPackageJson5Path: string[]) {
+    public setOhPackageJson5Path(ohPackageJson5Path: string[]): void {
         this.ohPackageJson5Path = ohPackageJson5Path;
     }
 
-    public getOhPackageJson5Path() {
+    public getOhPackageJson5Path(): string[] {
         return this.ohPackageJson5Path;
     }
 
@@ -298,7 +333,7 @@ export class ArkFile {
      * Returns the file signature of this file. A file signature consists of project's name and file's name.
      * @returns The file signature of this file.
      */
-    public getFileSignature() {
+    public getFileSignature(): FileSignature {
         return this.fileSignature;
     }
 
@@ -309,13 +344,13 @@ export class ArkFile {
     public getAllNamespacesUnderThisFile(): ArkNamespace[] {
         let namespaces: ArkNamespace[] = [];
         namespaces.push(...this.namespaces.values());
-        this.namespaces.forEach((ns) => {
+        this.namespaces.forEach(ns => {
             namespaces.push(...ns.getAllNamespacesUnderThisNamespace());
         });
         return namespaces;
     }
 
-    public getAnonymousClassNumber() {
+    public getAnonymousClassNumber(): number {
         return this.anonymousClassNumber++;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,7 @@
  * limitations under the License.
  */
 
-import {
-    BooleanConstant,
-    Constant,
-    NullConstant,
-    NumberConstant,
-    StringConstant,
-    UndefinedConstant,
-} from '../base/Constant';
+import { BigIntConstant, BooleanConstant, Constant, NullConstant, NumberConstant, StringConstant, UndefinedConstant } from '../base/Constant';
 
 export const EMPTY_STRING = '';
 
@@ -35,6 +28,10 @@ export class ValueUtil {
             this.NumberConstantCache.set(n, constant);
         }
         return constant;
+    }
+
+    public static createBigIntConst(bigInt: bigint): BigIntConstant {
+        return new BigIntConstant(bigInt);
     }
 
     public static createStringConst(str: string): Constant {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,14 +29,15 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkFieldBuilder');
 
 export type PropertyLike = ts.PropertyDeclaration | ts.PropertyAssignment;
 
-export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment
-    | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember, sourceFile: ts.SourceFile, cls: ArkClass): ArkField {
+export function buildProperty2ArkField(
+    member: ts.PropertyDeclaration | ts.PropertyAssignment | ts.ShorthandPropertyAssignment | ts.SpreadAssignment | ts.PropertySignature | ts.EnumMember,
+    sourceFile: ts.SourceFile,
+    cls: ArkClass
+): ArkField {
     let field = new ArkField();
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
     field.setCode(member.getText(sourceFile));
-
     field.setDeclaringArkClass(cls);
-
     field.setOriginPosition(LineColPosition.buildFromNode(member, sourceFile));
 
     let fieldName = member.getText(sourceFile);
@@ -46,7 +47,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         } else if (ts.isPropertyAccessExpression(member.name.expression)) {
             fieldName = handlePropertyAccessExpression(member.name.expression);
         } else {
-            logger.warn("Other property expression type found!");
+            logger.warn(`Other property expression type found: ${member.name.expression.getText()}!`);
         }
     } else if (member.name && (ts.isIdentifier(member.name) || ts.isLiteralExpression(member.name))) {
         fieldName = member.name.text;
@@ -55,29 +56,28 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
         fieldName = propertyName.substring(1);
         field.addModifier(ModifierType.PRIVATE);
     } else {
-        logger.warn("Other type of property name found!");
-    }
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.modifiers) {
-        let modifiers = buildModifiers(member);
-        field.addModifier(modifiers);
-        field.setDecorators(buildDecorators(member, sourceFile));
+        logger.warn(`Other type of property name found: ${member.getText()}!`);
     }
 
     let fieldType: Type = UnknownType.getInstance();
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.type) {
-        fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
+    if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
+        if (member.modifiers) {
+            field.addModifier(buildModifiers(member));
+        }
+        field.addModifier(0);
+        field.setDecorators(buildDecorators(member, sourceFile));
+        field.setQuestionToken(member.questionToken !== undefined);
+
+        if (member.type) {
+            fieldType = buildGenericType(tsNode2Type(member.type, sourceFile, cls), field);
+        }
     }
+
     if (ts.isEnumMember(member)) {
         field.addModifier(ModifierType.STATIC);
         fieldType = new ClassType(cls.getSignature());
     }
-    const fieldSignature = new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic());
-    field.setSignature(fieldSignature);
-
-
-    if ((ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) && member.questionToken) {
-        field.setQuestionToken(true);
-    }
+    field.setSignature(new FieldSignature(fieldName, cls.getSignature(), fieldType, field.isStatic()));
 
     if (ts.isPropertyDeclaration(member) && member.exclamationToken) {
         field.setExclamationToken(true);
@@ -87,7 +87,7 @@ export function buildProperty2ArkField(member: ts.PropertyDeclaration | ts.Prope
     return field;
 }
 
-export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass) {
+export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaration, sourceFile: ts.SourceFile, cls: ArkClass): void {
     const field = new ArkField();
     field.setCode(member.getText(sourceFile));
     field.setCategory(mapSyntaxKindToFieldOriginType(member.kind) as FieldCategory);
@@ -108,7 +108,7 @@ export function buildIndexSignature2ArkField(member: ts.IndexSignatureDeclaratio
     cls.addField(field);
 }
 
-export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile) {
+export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mthd: ArkMethod, sourceFile: ts.SourceFile): void {
     let cls = mthd.getDeclaringArkClass();
     let field = new ArkField();
     field.setDeclaringArkClass(cls);
@@ -120,8 +120,7 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
     let fieldName = member.getText(sourceFile);
     if (ts.isIdentifier(member.name) || ts.isLiteralExpression(member.name)) {
         fieldName = member.name.text;
-    }
-    else if (ts.isComputedPropertyName(member.name)) {
+    } else if (ts.isComputedPropertyName(member.name)) {
         if (ts.isIdentifier(member.name.expression)) {
             let propertyName = member.name.expression.text;
             fieldName = propertyName;
@@ -130,11 +129,10 @@ export function buildGetAccessor2ArkField(member: ts.GetAccessorDeclaration, mth
         } else if (ts.isLiteralExpression(member.name.expression)) {
             fieldName = member.name.expression.text;
         } else {
-            logger.warn("Other type of computed property name found!");
+            logger.warn('Other type of computed property name found!');
         }
-    }
-    else {
-        logger.warn("Please contact developers to support new type of GetAccessor name!");
+    } else {
+        logger.warn('Please contact developers to support new type of GetAccessor name!');
     }
 
     const fieldType = mthd.getReturnType();
@@ -171,7 +169,6 @@ function mapSyntaxKindToFieldOriginType(syntaxKind: ts.SyntaxKind): FieldCategor
             fieldOriginType = FieldCategory.GET_ACCESSOR;
             break;
         default:
-            ;
     }
     return fieldOriginType;
 }

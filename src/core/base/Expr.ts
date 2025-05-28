@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import { Local } from './Local';
 import {
     AliasType,
     ArrayType,
+    BigIntType,
     BooleanType,
     ClassType,
     FunctionType,
@@ -33,14 +34,15 @@ import {
     UnknownType,
 } from './Type';
 import { Value } from './Value';
-import { AbstractFieldRef, AbstractRef } from './Ref';
+import { AbstractFieldRef, AbstractRef, ArkInstanceFieldRef, ArkStaticFieldRef } from './Ref';
 import { EMPTY_STRING, ValueUtil } from '../common/ValueUtil';
 import { ArkMethod } from '../model/ArkMethod';
 import { UNKNOWN_FILE_NAME } from '../common/Const';
 import { IRInference } from '../common/IRInference';
 import { ImportInfo } from '../model/ArkImport';
-import { ArkClass } from '../model/ArkClass';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { ArkField } from '../model/ArkField';
+import { ModelUtils } from '../common/ModelUtils';
 
 /**
  * @category core/base/expr
@@ -60,7 +62,7 @@ export abstract class AbstractExpr implements Value {
 export abstract class AbstractInvokeExpr extends AbstractExpr {
     private methodSignature: MethodSignature;
     private args: Value[];
-    private realGenericTypes?: Type[];//新增
+    private realGenericTypes?: Type[]; //新增
 
     constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
         super();
@@ -216,7 +218,6 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     public inferType(arkMethod: ArkMethod): AbstractInvokeExpr {
         return IRInference.inferInstanceInvokeExpr(this, arkMethod);
     }
-
 }
 
 export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
@@ -243,29 +244,54 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
     public inferType(arkMethod: ArkMethod): AbstractInvokeExpr {
         return IRInference.inferStaticInvokeExpr(this, arkMethod);
     }
-
 }
 
+/**
+ *     1. Local PtrInvokeExpr
+ *
+ *      ```typescript
+ *      func foo():void {
+ *      }
+ *      let ptr = foo;
+ *      ptr();
+ *      ```
+ *     2. FieldRef PtrInvokeExpr
+ *
+ *      ```typescript
+ *      class A {
+ *          b:()=> void()
+ *      }
+ *      new A().b()
+ *      ```
+ */
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
-    private funPtrLocal: Local;
+    private funPtr: Local | AbstractFieldRef;
 
-    constructor(methodSignature: MethodSignature, ptr: Local, args: Value[], realGenericTypes?: Type[]) {
+    constructor(methodSignature: MethodSignature, ptr: Local | AbstractFieldRef, args: Value[], realGenericTypes?: Type[]) {
         super(methodSignature, args, realGenericTypes);
-        this.funPtrLocal = ptr;
+        this.funPtr = ptr;
     }
 
-    public setFunPtrLocal(ptr: Local): void {
-        this.funPtrLocal = ptr;
+    public setFunPtrLocal(ptr: Local | AbstractFieldRef): void {
+        this.funPtr = ptr;
     }
 
-    public getFuncPtrLocal(): Local {
-        return this.funPtrLocal;
+    public getFuncPtrLocal(): Local | AbstractFieldRef {
+        return this.funPtr;
     }
 
     public toString(): string {
         let strs: string[] = [];
         strs.push('ptrinvoke <');
-        strs.push(this.getMethodSignature().toString());
+        let ptrName: string = '';
+        if (this.funPtr instanceof Local) {
+            ptrName = this.funPtr.getName();
+        } else if (this.funPtr instanceof ArkInstanceFieldRef) {
+            ptrName = this.funPtr.getBase().getName() + '.' + this.funPtr.getFieldName();
+        } else if (this.funPtr instanceof ArkStaticFieldRef) {
+            ptrName = this.funPtr.getFieldName();
+        }
+        strs.push(this.getMethodSignature().toString(ptrName));
         strs.push('>(');
         if (this.getArgs().length > 0) {
             for (const arg of this.getArgs()) {
@@ -276,11 +302,6 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
         }
         strs.push(')');
         return strs.join('');
-    }
-
-    public inferType(arkMethod: ArkMethod): ArkPtrInvokeExpr {
-        // TODO: handle type inference
-        return this;
     }
 
     public getUses(): Value[] {
@@ -322,13 +343,29 @@ export class ArkNewExpr extends AbstractExpr {
         const classSignature = this.classType.getClassSignature();
         if (classSignature.getDeclaringFileSignature().getFileName() === UNKNOWN_FILE_NAME) {
             const className = classSignature.getClassName();
-            let type = TypeInference.inferUnclearRefName(className, arkMethod.getDeclaringArkClass());
+            let type: Type | null | undefined = ModelUtils.findDeclaredLocal(new Local(className), arkMethod, 1)?.getType();
+            if (TypeInference.isUnclearType(type)) {
+                type = TypeInference.inferUnclearRefName(className, arkMethod.getDeclaringArkClass());
+            }
             if (type && type instanceof ClassType) {
-                let realGenericTypes = this.classType.getRealGenericTypes();
-                this.classType = realGenericTypes ? new ClassType(type.getClassSignature(), realGenericTypes) : type;
+                const instanceType = this.constructorSignature(type, arkMethod) ?? type;
+                this.classType.setClassSignature(instanceType.getClassSignature());
+                TypeInference.inferRealGenericTypes(this.classType.getRealGenericTypes(), arkMethod.getDeclaringArkClass());
             }
         }
         return this;
+    }
+
+    private constructorSignature(type: ClassType, arkMethod: ArkMethod): ClassType | undefined {
+        const classConstructor = arkMethod.getDeclaringArkFile().getScene().getClass(type.getClassSignature());
+        if (classConstructor?.getCategory() === ClassCategory.INTERFACE) {
+            const type = classConstructor.getMethodWithName('construct-signature')?.getReturnType();
+            if (type) {
+                const returnType = TypeInference.replaceAliasType(type);
+                return returnType instanceof ClassType ? returnType : undefined;
+            }
+        }
+        return undefined;
     }
 }
 
@@ -418,7 +455,6 @@ export class ArkDeleteExpr extends AbstractExpr {
     public toString(): string {
         return 'delete ' + this.field;
     }
-
 }
 
 export class ArkAwaitExpr extends AbstractExpr {
@@ -619,13 +655,13 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
         return this.op1 + ' ' + this.operator + ' ' + this.op2;
     }
 
-    protected inferOpType(op: Value, arkMethod: ArkMethod) {
+    protected inferOpType(op: Value, arkMethod: ArkMethod): void {
         if (op instanceof AbstractExpr || op instanceof AbstractRef) {
             TypeInference.inferValueType(op, arkMethod);
         }
     }
 
-    protected setType() {
+    protected setType(): void {
         let op1Type = this.op1.getType();
         let op2Type = this.op2.getType();
         if (op1Type instanceof UnionType) {
@@ -643,6 +679,9 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
                 }
+                if (op1Type === BigIntType.getInstance() && op2Type === BigIntType.getInstance()) {
+                    type = BigIntType.getInstance();
+                }
                 break;
             case '-':
             case '*':
@@ -650,6 +689,9 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
             case '%':
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
+                }
+                if (op1Type === BigIntType.getInstance() && op2Type === BigIntType.getInstance()) {
+                    type = BigIntType.getInstance();
                 }
                 break;
             case '!=':
@@ -670,21 +712,22 @@ export abstract class AbstractBinopExpr extends AbstractExpr {
             case '^':
             case '<<':
             case '>>':
+                if (op1Type === BigIntType.getInstance() && op2Type === BigIntType.getInstance()) {
+                    type = BigIntType.getInstance();
+                }
             case '>>>':
                 if (op1Type === NumberType.getInstance() && op2Type === NumberType.getInstance()) {
                     type = NumberType.getInstance();
                 }
                 break;
             case '??':
-                if (op1Type === UnknownType.getInstance() || op1Type === UndefinedType.getInstance()
-                    || op1Type === NullType.getInstance()) {
+                if (op1Type === UnknownType.getInstance() || op1Type === UndefinedType.getInstance() || op1Type === NullType.getInstance()) {
                     type = op2Type;
                 } else {
                     type = op1Type;
                 }
                 break;
             default:
-                ;
         }
         this.type = type;
     }
@@ -757,6 +800,13 @@ export class ArkTypeOfExpr extends AbstractExpr {
     public toString(): string {
         return 'typeof ' + this.op;
     }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        if (this.op instanceof AbstractRef || this.op instanceof AbstractExpr) {
+            this.op.inferType(arkMethod);
+        }
+        return this;
+    }
 }
 
 export class ArkInstanceOfExpr extends AbstractExpr {
@@ -795,6 +845,17 @@ export class ArkInstanceOfExpr extends AbstractExpr {
     public toString(): string {
         return this.op + ' instanceof ' + this.checkType;
     }
+
+    public inferType(arkMethod: ArkMethod): AbstractExpr {
+        TypeInference.inferValueType(this.op, arkMethod);
+        if (TypeInference.isUnclearType(this.checkType)) {
+            const newType = TypeInference.inferUnclearedType(this.checkType, arkMethod.getDeclaringArkClass());
+            if (newType) {
+                this.checkType = newType;
+            }
+        }
+        return this;
+    }
 }
 
 // 类型转换
@@ -828,11 +889,12 @@ export class ArkCastExpr extends AbstractExpr {
     }
 
     public inferType(arkMethod: ArkMethod): AbstractExpr {
-        const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass())
-            ?? this.op.getType();
-        if (!TypeInference.isUnclearType(type)) {
-            this.type = type;
-            IRInference.inferRightWithSdkType(type, this.op.getType(), arkMethod.getDeclaringArkClass());
+        if (TypeInference.isUnclearType(this.getType())) {
+            const type = TypeInference.inferUnclearedType(this.type, arkMethod.getDeclaringArkClass()) ?? this.op.getType();
+            if (type !== undefined && !TypeInference.isUnclearType(type)) {
+                this.type = type;
+                IRInference.inferRightWithSdkType(type, this.op.getType(), arkMethod.getDeclaringArkClass());
+            }
         }
         return this;
     }
@@ -896,7 +958,7 @@ export class ArkPhiExpr extends AbstractExpr {
 export enum UnaryOperator {
     Neg = '-',
     BitwiseNot = '~',
-    LogicalNot = '!'
+    LogicalNot = '!',
 }
 
 // unary operation expression
@@ -997,10 +1059,14 @@ export class AliasTypeExpr extends AbstractExpr {
     public getType(): Type {
         function getTypeOfImportInfo(importInfo: ImportInfo): Type {
             const arkExport = importInfo.getLazyExportInfo()?.getArkExport();
-            if (arkExport) {
-                return TypeInference.parseArkExport2Type(arkExport) ?? UnknownType.getInstance();
+            const importClauseName = importInfo.getImportClauseName();
+            let type;
+            if (importClauseName.includes('.') && arkExport instanceof ArkClass) {
+                type = TypeInference.inferUnclearRefName(importClauseName, arkExport);
+            } else if (arkExport) {
+                type = TypeInference.parseArkExport2Type(arkExport);
             }
-            return UnknownType.getInstance();
+            return type ?? UnknownType.getInstance();
         }
 
         const operator = this.getOriginalObject();
@@ -1075,17 +1141,19 @@ export class AliasTypeExpr extends AbstractExpr {
                 const genericTypes = this.getRealGenericTypes()!.join(',');
                 res = res.replace('(', `<${genericTypes}>(`).replace(/\([^)]*\)/g, `(${genericTypes})`);
             }
-            return res
+            return res;
         }
         return `${typeOf}${typeObject.getName()}`;
     }
 
     public static isAliasTypeOriginalModel(object: any): object is AliasTypeOriginalModel {
-        return object instanceof Type ||
+        return (
+            object instanceof Type ||
             object instanceof ImportInfo ||
             object instanceof Local ||
             object instanceof ArkClass ||
             object instanceof ArkMethod ||
-            object instanceof ArkField;
+            object instanceof ArkField
+        );
     }
 }

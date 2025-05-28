@@ -82,6 +82,14 @@ export abstract class BaseImplicitGraph<Node> implements GraphTraits<Node> {
         return this.idToNodeMap.get(id)!;
     }
 
+    public getNodeID(s: Node): NodeID {
+        if (!this.nodeToIdMap.has(s)) {
+            throw new Error(`Can find Node # ${s}`);
+        }
+
+        return this.nodeToIdMap.get(s)!;
+    }
+
     /**
      * Checks whether the graph contains a specific node ID.
      * @param id The node ID.

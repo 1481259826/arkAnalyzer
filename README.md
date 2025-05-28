@@ -84,6 +84,15 @@ npm install -g typescript
 ```shell
 npm install
 ```
+5. 【可选】生成最新API文档，文档生成在 docs/api_docs。
+```shell
+npm run gendoc
+```
+
+## ArkAnalyzer 文档
+
+1. ArkAnalyzer 快速入门文档，请参考：[链接](https://gitcode.com/openharmony-sig/arkanalyzer/wiki/ArkAnalyzer%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8%E6%8C%87%E5%8D%97.md)。
+2. ArkAnalyzer API文档，请参考：[链接](https://gitcode.com/openharmony-sig/arkanalyzer/wiki/globals.md)。
 
 ## ArkAnalyzer 代码上库
 遵守openharmony-sig代码上库规范, 操作方法请参考：[链接](docs/HowToCreatePR.md#中文)

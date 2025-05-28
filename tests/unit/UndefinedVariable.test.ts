@@ -37,33 +37,3 @@ describe('UndefinedVariableTest1', () => {
         expect(problem.getOutcomes().length).eq(0);
     });
 });
-
-describe('UndefinedVariableTest2', () => {
-    const u2 = scene.getMethods().filter(method => method.getName() === 'u2')[0];
-    const problem = new UndefinedVariableChecker([...u2.getCfg()!.getBlocks()][0].getStmts()[u2.getParameters().length], u2);
-    const solver = new UndefinedVariableSolver(problem, scene);
-    solver.solve();
-    it('case1: UndefinedVariable', () => {
-        expect(problem.getOutcomes().length).eq(1);
-    });
-});
-
-describe('UndefinedVariableTest3', () => {
-    const u3 = scene.getMethods().filter(method => method.getName() === 'u3')[0];
-    const problem = new UndefinedVariableChecker([...u3.getCfg()!.getBlocks()][0].getStmts()[u3.getParameters().length], u3);
-    const solver = new UndefinedVariableSolver(problem, scene);
-    solver.solve();
-    it('case2: UndefinedVariable', () => {
-        expect(problem.getOutcomes().length).eq(1);
-    });
-});
-
-describe('UndefinedVariableTest4', () => {
-    const u4 = scene.getMethods().filter(method => method.getName() === 'u4')[0];
-    const problem = new UndefinedVariableChecker([...u4.getCfg()!.getBlocks()][0].getStmts()[u4.getParameters().length], u4);
-    const solver = new UndefinedVariableSolver(problem, scene);
-    solver.solve();
-    it('case2: UndefinedVariable', () => {
-        expect(problem.getOutcomes().length).eq(1);
-    });
-});

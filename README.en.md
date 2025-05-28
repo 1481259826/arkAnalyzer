@@ -77,6 +77,14 @@ npm install -g typescript
 cd arkanalyzer
 npm install
 ```
+5. [Optional] Generate the latest API documentation, which will be created at docs/api_docs.
+```shell
+npm run gendoc
+```
+
+## Docmentations
+
+1. ArkAnalyzer API docmentations，refer to the [link](https://gitcode.com/openharmony-sig/arkanalyzer/wiki/globals.md).
 
 ## Commit codes
 Follow the code repository standards of Openharmony-Sig, refer to the [link](docs/HowToCreatePR.md#english)

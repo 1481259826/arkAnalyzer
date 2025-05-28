@@ -21,23 +21,25 @@ import {
     ArkAliasTypeDefineStmt,
     ArkAssignStmt,
     ArkClass,
-    ArkField,
-    ArkMethod,
-    ArrayType,
+    ArkField, ArkInstanceFieldRef, ArkInstanceInvokeExpr, ArkInvokeStmt,
+    ArkMethod, ArkStaticFieldRef, ArkStaticInvokeExpr,
+    ArrayType, BigIntType,
     ClassType,
     FileSignature,
     FunctionType,
     ImportInfo,
     IntersectionType,
     Local,
+    NumberType,
     Scene,
     SceneConfig,
-    SourceClassPrinter,
+    SourceClassPrinter, SourceFilePrinter,
     SourceMethodPrinter,
     Stmt,
     TupleType,
     Type,
     UnionType,
+    UnknownType,
 } from '../../src';
 import {
     AliasTypeMultiRef,
@@ -65,7 +67,7 @@ import {
     AliasTypeOfString,
     AliasTypeOfUnionType,
     AliasTypeOfWholeExports,
-    AliasTypeRef,
+    AliasTypeRef, IRBigIntType,
     SourceAliasTypeWithClassType,
     SourceAliasTypeWithFunctionType,
     SourceAliasTypeWithGenericType,
@@ -77,19 +79,23 @@ import {
     SourceAllKeyofObjectClassWithTypeOperator,
     SourceBasicKeyofClassWithTypeOperator,
     SourceBasicReadonlyClassWithTypeOperator,
+    SourceBigIntType,
     SourceIntersectionTypeForClass,
     SourceIntersectionTypeForDefaultMethod,
-    SourceIntersectionTypeForFunction,
+    SourceIntersectionTypeForFunction, SourceIROfObjectType,
     SourceKeyofWithGenericClassWithTypeOperator,
     SourceReadonlyOfGenericTypeClassWithTypeOperator,
     SourceReadonlyOfReferenceTypeClassWithTypeOperator,
     SourceSimpleAliasType,
 } from '../resources/type/expectedIR';
 import { KeyofTypeExpr, TypeQueryExpr } from '../../src/core/base/TypeExpr';
+import { BigIntConstant } from '../../src/core/base/Constant';
+import { ArkIRFilePrinter } from '../../src/save/arkir/ArkIRFilePrinter';
 
 function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
     config.buildFromProjectDir(path.join(__dirname, '../resources/type'));
+    config.getSdksObj().push({ moduleName: '', name: 'es2015', path: path.join(__dirname, '../resources/Sdk') });
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     projectScene.inferTypes();
@@ -156,6 +162,26 @@ function compareTypeAliasExpr(expr: AliasTypeExpr, expectedExpr: any): void {
     assert.equal(expr.getTransferWithTypeOf(), expectedExpr.transferWithTypeOf);
     assert.equal(expr.getRealGenericTypes()?.toString(), expectedExpr.realGenericTypes);
     assert.equal(expr.toString(), expectedExpr.toString);
+}
+
+function checkLocalWithBigIntType(name: string, method?: ArkMethod | null): void {
+    const local = method?.getBody()?.getLocals().get(name);
+    assert.isDefined(local);
+    assert.isTrue(local!.getType() instanceof BigIntType);
+}
+
+function checkLocalWithNumberType(name: string, method?: ArkMethod | null): void {
+    const local = method?.getBody()?.getLocals().get(name);
+    assert.isDefined(local);
+    assert.isTrue(local!.getType() instanceof NumberType);
+}
+
+function checkLocalInitWithBigIntConstant(stmt: Stmt, expectValue: string): void {
+    assert.isTrue(stmt instanceof ArkAssignStmt);
+    const value = (stmt as ArkAssignStmt).getRightOp();
+    assert.isTrue(value instanceof BigIntConstant);
+    assert.isTrue(value.getType() instanceof BigIntType);
+    assert.equal((value as BigIntConstant).getValue(), expectValue);
 }
 
 let projectScene = buildScene();
@@ -258,6 +284,13 @@ describe('Alias Type With Import Test', () => {
 
         const importInfo = projectScene.getFile(fileId)?.getImportInfoBy('ClassA');
         assert.isUndefined(importInfo);
+    });
+
+    it('alias type of exported default namespace', () => {
+        const locals = defaultClass?.getMethodWithName('aliasTypeWithImportDefault')?.getBody()?.getLocals();
+        assert.isTrue(locals?.get('pix')?.getType() instanceof AliasType);
+        assert.equal((locals?.get('pix')?.getType() as AliasType).getOriginalType().toString(), '@es2015/api/@internal/component/ets/@ohos.multimedia.image.d.ts: image.PixelMap');
+        assert.equal(locals?.get('b')?.getType().toString(), '@es2015/api/@internal/component/ets/@ohos.multimedia.image.d.ts: image.ImageInfo');
     });
 
     it('alias type of default exported class', () => {
@@ -1405,14 +1438,96 @@ describe('Keyof Type With Generic Type Test', () => {
     });
 });
 
-describe('Save to TS Test', () => {
-    let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, '../resources/type'));
-    let scene = new Scene();
-    scene.buildSceneFromProjectDir(config);
-    scene.inferTypes();
+describe('BigInt Type Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'bigIntType.ts');
+    const targetClass = projectScene.getFile(fileId)?.getClassWithName('BigIntClass');
+    const method = targetClass?.getMethodWithName('transfer2String');
 
-    let arkFile = scene.getFiles().find((value) => {
+    it('bigint class field', () => {
+        const fieldA = targetClass?.getFieldWithName('fieldA');
+        assert.isDefined(fieldA);
+        assert.isNotNull(fieldA);
+        assert.isTrue(fieldA!.getType() instanceof BigIntType);
+        assert.equal(fieldA!.getType().toString(), `bigint`);
+        assert.isAtLeast(fieldA!.getInitializer().length, 1);
+        checkLocalInitWithBigIntConstant(fieldA!.getInitializer()[0], '1');
+
+        const fieldB = targetClass?.getFieldWithName('fieldB');
+        assert.isDefined(fieldB);
+        assert.isNotNull(fieldB);
+        assert.isTrue(fieldB!.getType() instanceof IntersectionType);
+        assert.isTrue((fieldB!.getType() as IntersectionType).getTypes()[1] instanceof BigIntType);
+        assert.equal(fieldB!.getType().toString(), `number&bigint`);
+
+        const fieldC = targetClass?.getStaticFieldWithName('fieldC');
+        assert.isDefined(fieldC);
+        assert.isNotNull(fieldC);
+        assert.isTrue(fieldC!.getType() instanceof UnionType);
+        assert.isTrue((fieldC!.getType() as UnionType).getTypes()[0] instanceof BigIntType);
+        assert.equal(fieldC!.getType().toString(), `bigint|number`);
+    });
+
+    it('bigint method param', () => {
+        const params = method?.getSubSignature().getParameters();
+        assert.isDefined(params);
+        assert.isAtLeast(params!.length, 1);
+        assert.isTrue(params![0].getType() instanceof UnionType);
+        assert.isTrue((params![0].getType() as UnionType).getTypes()[1] instanceof BigIntType);
+        assert.equal(params![0].getType().toString(), `number|bigint`);
+    });
+
+    it('bigint method return type', () => {
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.isTrue(returnType instanceof UnionType);
+        assert.isTrue((returnType as UnionType).getTypes()[1] instanceof BigIntType);
+        assert.equal(returnType!.toString(), `string|bigint`);
+    });
+
+    it('bigint method local', () => {
+        checkLocalWithBigIntType('a', method);
+        checkLocalWithBigIntType('b', method);
+        checkLocalWithBigIntType('c', method);
+        checkLocalWithBigIntType('%0', method);
+        checkLocalWithBigIntType('%1', method);
+        checkLocalWithBigIntType('%2', method);
+        checkLocalWithBigIntType('%3', method);
+        checkLocalWithBigIntType('%4', method);
+
+        const resLocal = method?.getBody()?.getLocals().get('%5');
+        assert.isDefined(resLocal);
+        assert.isTrue(resLocal!.getType() instanceof UnknownType);
+
+        const stmts = method?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmts);
+        assert.isAtLeast(stmts!.length, 4);
+        checkLocalInitWithBigIntConstant(stmts![3], '10');
+        checkLocalInitWithBigIntConstant(stmts![4], '100');
+    });
+
+    it('bigint bit operator stmt', () => {
+        const bitOperator = targetClass?.getMethodWithName('testBitOperator');
+        checkLocalWithBigIntType('a', bitOperator);
+        checkLocalWithBigIntType('b', bitOperator);
+        checkLocalWithBigIntType('c', bitOperator);
+
+        checkLocalWithNumberType('aa', bitOperator);
+        checkLocalWithNumberType('bb', bitOperator);
+        checkLocalWithNumberType('cc', bitOperator);
+    });
+
+    it('bigint alias type', () => {
+        const method = projectScene.getFile(fileId)?.getDefaultClass()?.getDefaultArkMethod();
+        const aliasType = method?.getBody()?.getAliasTypeByName('IntersectionType');
+        assert.isDefined(aliasType);
+        assert.isNotNull(aliasType);
+        assert.isTrue(aliasType!.getOriginalType() instanceof IntersectionType);
+        assert.isTrue((aliasType!.getOriginalType() as IntersectionType).getTypes()[1] instanceof BigIntType);
+    });
+});
+
+describe('Save to TS Test', () => {
+    let arkFile = projectScene.getFiles().find((value) => {
         return value.getName() === 'test.ts';
     });
 
@@ -1507,7 +1622,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case10: intersection type', () => {
-        let arkFile = scene.getFiles().find((value) => {
+        let arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'intersectionType.ts';
         });
         let defaultMethod = arkFile?.getDefaultClass().getDefaultArkMethod();
@@ -1536,7 +1651,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case11: class BasicReadonly of typeOperator', () => {
-        const arkFile = scene.getFiles().find((value) => {
+        const arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
         const arkClass = arkFile?.getClassWithName('BasicReadonly');
@@ -1547,7 +1662,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case12: class ReadonlyOfReferenceType of typeOperator', () => {
-        const arkFile = scene.getFiles().find((value) => {
+        const arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
         const arkClass = arkFile?.getClassWithName('ReadonlyOfReferenceType');
@@ -1558,7 +1673,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case13: class ReadonlyOfGenericType of typeOperator', () => {
-        const arkFile = scene.getFiles().find((value) => {
+        const arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
         const arkClass = arkFile?.getClassWithName('ReadonlyOfGenericType');
@@ -1569,7 +1684,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case14: class BasicKeyof of typeOperator', () => {
-        const arkFile = scene.getFiles().find((value) => {
+        const arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
         const arkClass = arkFile?.getClassWithName('BasicKeyof');
@@ -1580,7 +1695,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case15: class AllKeyofObject of typeOperator', () => {
-        const arkFile = scene.getFiles().find((value) => {
+        const arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
         const arkClass = arkFile?.getClassWithName('AllKeyofObject');
@@ -1591,7 +1706,7 @@ describe('Save to TS Test', () => {
     });
 
     it('case16: class KeyofWithGeneric of typeOperator', () => {
-        const arkFile = scene.getFiles().find((value) => {
+        const arkFile = projectScene.getFiles().find((value) => {
             return value.getName() === 'typeOperator.ts';
         });
         const arkClass = arkFile?.getClassWithName('KeyofWithGeneric');
@@ -1599,5 +1714,138 @@ describe('Save to TS Test', () => {
         const printer = new SourceClassPrinter(arkClass!);
         let source = printer.dump();
         assert.equal(source, SourceKeyofWithGenericClassWithTypeOperator);
+    });
+
+    it('case17: bigint type', () => {
+        const arkFile = projectScene.getFiles().find((value) => {
+            return value.getName() === 'bigIntType.ts';
+        });
+        assert.isDefined(arkFile);
+        const printer = new SourceFilePrinter(arkFile!);
+        let source = printer.dump();
+        assert.equal(source, SourceBigIntType);
+    });
+});
+
+describe('Save to IR Test', () => {
+    it('case1: bigint type', () => {
+        const arkFile = projectScene.getFiles().find((value) => {
+            return value.getName() === 'bigIntType.ts';
+        });
+        assert.isDefined(arkFile);
+        let printer = new ArkIRFilePrinter(arkFile!);
+        let source = printer.dump();
+        assert.equal(source, IRBigIntType);
+    });
+});
+
+describe('Object Type Test', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'objectType.ts');
+    const arkFile = projectScene.getFile(fileId);
+    const classA = arkFile?.getClassWithName('ClassA');
+    const defaultClass = arkFile?.getDefaultClass();
+    const objectTypeStr = '@ES2015/BuiltinClass: Object';
+
+    it('case1: whole ir', () => {
+        assert.isNotNull(arkFile);
+        const printer = new ArkIRFilePrinter(arkFile!);
+        const ir = printer.dump();
+        assert.equal(ir, SourceIROfObjectType);
+    });
+
+    it('case2: class field Type', () => {
+        const fieldA = classA?.getFieldWithName('fieldA');
+        assert.isDefined(fieldA);
+        assert.isNotNull(fieldA);
+        assert.equal(fieldA!.getType().toString(), objectTypeStr);
+    });
+
+    it('case3: method param Type', () => {
+        const params = defaultClass?.getMethodWithName('foo')?.getParameters();
+        assert.isDefined(params);
+        assert.isAtLeast(params!.length, 1);
+        assert.equal(params![0].getType().toString(), objectTypeStr);
+    });
+
+    it('case4: method return Type', () => {
+        const returnType = defaultClass?.getMethodWithName('foo')?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), objectTypeStr);
+    });
+
+    it('case5: method local Type', () => {
+        const localsFoo = defaultClass?.getMethodWithName('foo')?.getBody()?.getLocals();
+        const localObj = localsFoo?.get('obj');
+        assert.isDefined(localObj);
+        assert.equal(localObj!.getType().toString(), objectTypeStr);
+
+        const localsDefault = defaultClass?.getDefaultArkMethod()?.getBody()?.getLocals();
+        const localEmptyObj = localsDefault?.get('emptyObj');
+        assert.isDefined(localEmptyObj);
+        assert.equal(localEmptyObj!.getType().toString(), objectTypeStr);
+        const localA = localsDefault?.get('a');
+        assert.isDefined(localA);
+        assert.equal(localA!.getType().toString(), objectTypeStr);
+        const localB = localsDefault?.get('b');
+        assert.isDefined(localB);
+        assert.equal(localB!.getType().toString(), objectTypeStr);
+        const localNewEmptyObj = localsDefault?.get('newEmptyObj');
+        assert.isDefined(localNewEmptyObj);
+        assert.equal(localNewEmptyObj!.getType().toString(), '@type/objectType.ts: %dflt.[static]%dflt()#newObject');
+        assert.isTrue(localNewEmptyObj!.getType() instanceof AliasType);
+        assert.equal((localNewEmptyObj!.getType() as AliasType).getOriginalType().getTypeString(), objectTypeStr);
+    });
+
+    it('case6: alias Type', () => {
+        const aliasNewObject = defaultClass?.getDefaultArkMethod()?.getBody()?.getAliasTypeMap()?.get('newObject');
+        assert.isDefined(aliasNewObject);
+        assert.equal(aliasNewObject![0].getOriginalType().toString(), objectTypeStr);
+        assert.equal(aliasNewObject![1].getExprs()[0].getOriginalObject().toString(), objectTypeStr);
+    });
+
+    it('case7: method invoke expr', () => {
+        const stmtsDefault = defaultClass?.getDefaultArkMethod()?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtsDefault);
+        assert.isAtLeast(stmtsDefault!.length, 7);
+        assert.isTrue(stmtsDefault![6] instanceof ArkAssignStmt);
+        assert.isTrue((stmtsDefault![6] as ArkAssignStmt).getRightOp() instanceof ArkStaticFieldRef);
+        assert.equal(((stmtsDefault![6] as ArkAssignStmt).getRightOp() as ArkStaticFieldRef).getFieldSignature().toString(), `${objectTypeStr}.[static]prototype`);
+        assert.isTrue(stmtsDefault![7] instanceof ArkAssignStmt);
+        assert.isTrue((stmtsDefault![7] as ArkAssignStmt).getRightOp() instanceof ArkStaticInvokeExpr);
+        assert.equal(((stmtsDefault![7] as ArkAssignStmt).getRightOp() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.create()`);
+
+        const stmtsFoo = defaultClass?.getMethodWithName('foo')?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtsFoo);
+        assert.isAtLeast(stmtsFoo!.length, 3);
+        assert.isTrue(stmtsFoo![2] instanceof ArkInvokeStmt);
+        assert.isTrue((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() instanceof ArkStaticInvokeExpr);
+        assert.equal(((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.keys()`);
+
+        assert.isTrue(stmtsFoo![3] instanceof ArkInvokeStmt);
+        assert.isTrue((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() instanceof ArkInstanceInvokeExpr);
+        assert.equal(((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() as ArkInstanceInvokeExpr).getBase().toString(), 'obj');
+        assert.equal(((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() as ArkInstanceInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.toLocaleString()`);
+    });
+
+    it('case8: class field invoke expr', () => {
+        const stmtsKeys = classA?.getMethodWithName('keys')?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtsKeys);
+        assert.isAtLeast(stmtsKeys!.length, 2);
+        assert.isTrue(stmtsKeys![1] instanceof ArkAssignStmt);
+        assert.isTrue((stmtsKeys![1] as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+        assert.equal(((stmtsKeys![1] as ArkAssignStmt).getRightOp() as ArkInstanceFieldRef).getFieldSignature().getType().toString(), objectTypeStr);
+        assert.isTrue(stmtsKeys![2] instanceof ArkInvokeStmt);
+        assert.isTrue((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() instanceof ArkStaticInvokeExpr);
+        assert.equal(((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.keys()`);
+
+        const stmtshasA = classA?.getMethodWithName('hasA')?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmtshasA);
+        assert.isAtLeast(stmtshasA!.length, 2);
+        assert.isTrue(stmtshasA![1] instanceof ArkAssignStmt);
+        assert.isTrue((stmtshasA![1] as ArkAssignStmt).getRightOp() instanceof ArkInstanceFieldRef);
+        assert.equal(((stmtshasA![1] as ArkAssignStmt).getRightOp() as ArkInstanceFieldRef).getFieldSignature().getType().toString(), objectTypeStr);
+        assert.isTrue(stmtshasA![2] instanceof ArkAssignStmt);
+        assert.isTrue((stmtshasA![2] as ArkAssignStmt).getRightOp() instanceof ArkInstanceInvokeExpr);
+        assert.equal(((stmtshasA![2] as ArkAssignStmt).getRightOp() as ArkInstanceInvokeExpr).getMethodSignature().toString(), `${objectTypeStr}.toLocaleString()`);
     });
 });

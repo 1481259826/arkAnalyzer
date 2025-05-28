@@ -34,6 +34,9 @@ export { PointerAnalysis } from './callgraph/pointerAnalysis/PointerAnalysis';
 export { PointerAnalysisConfig } from './callgraph/pointerAnalysis/PointerAnalysisConfig';
 export { PtsSet, DiffPTData } from './callgraph/pointerAnalysis/PtsDS';
 
+export { DVFG } from './VFG/DVFG';
+export { DVFGBuilder } from './VFG/builder/DVFGBuilder';
+
 // core/base
 export { Constant } from './core/base/Constant';
 export { Decorator } from './core/base/Decorator';
@@ -117,7 +120,6 @@ export * from './utils/pathTransfer';
 export * from './utils/AstTreeUtils';
 export { LOG_LEVEL, LOG_MODULE_TYPE } from './utils/logger';
 export { default as Logger } from './utils/logger';
-
 
 //ohos-typescript
 import ts from 'ohos-typescript';

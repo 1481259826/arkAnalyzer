@@ -48,7 +48,7 @@ namespace Validation {
     }
   }
   export class ZipcodeValidator implements StringValidator {
-    isAcceptable(s: string) {
+    isAcceptable(s: string): boolean {
       return s.length === 5 && numberRegexp.test(s);
     }
   }

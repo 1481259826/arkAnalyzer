@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+import { A2 } from './ArkTS1_2File';
+import { C1 } from './ArkTS1_1File';
+
 interface Main {
     i: number;
 }

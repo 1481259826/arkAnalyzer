@@ -2,6 +2,7 @@
   "supportFileExts": [
     ".ets",
     ".ts",
+    ".js",
     ".d.ets",
     ".d.ts"
   ],
@@ -9,6 +10,7 @@
   "ignoreFileNames": [
     "oh_modules",
     "node_modules",
+    "build-tools",
     "hvigorfile.ts"
   ],
   "sdkGlobalFolders": [

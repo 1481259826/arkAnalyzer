@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-import { ArkFile } from './ArkFile';
+import { ArkFile, Language } from './ArkFile';
 import { LineColPosition } from '../base/Position';
 import { ExportInfo, FromInfo } from './ArkExport';
-import { findExportInfo } from "../common/ModelUtils";
+import { findExportInfo } from '../common/ModelUtils';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
 
@@ -38,8 +38,21 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
         super();
     }
 
-    public build(importClauseName: string, importType: string, importFrom: string, originTsPosition: LineColPosition,
-                 modifiers: number, nameBeforeAs?: string) {
+    /**
+     * Returns the program language of the file where this import info defined.
+     */
+    public getLanguage(): Language {
+        return this.getDeclaringArkFile().getLanguage();
+    }
+
+    public build(
+        importClauseName: string,
+        importType: string,
+        importFrom: string,
+        originTsPosition: LineColPosition,
+        modifiers: number,
+        nameBeforeAs?: string
+    ): void {
         this.setImportClauseName(importClauseName);
         this.setImportType(importType);
         this.setImportFrom(importFrom);
@@ -53,13 +66,13 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
     }
 
     /**
-     * Returns the export information, i.e., the actual reference generated at the time of call. 
-     * The export information includes: clause's name, clause's type, modifiers, location 
+     * Returns the export information, i.e., the actual reference generated at the time of call.
+     * The export information includes: clause's name, clause's type, modifiers, location
      * where it is exported from, etc. If the export information could not be found, **null** will be returned.
      * @returns The export information. If there is no export information, the return will be a **null**.
      */
     public getLazyExportInfo(): ExportInfo | null {
-        if (this.lazyExportInfo === undefined) {
+        if (this.lazyExportInfo === undefined && this.declaringArkFile.getScene().getStage() >= 2) {
             this.lazyExportInfo = findExportInfo(this);
         }
         return this.lazyExportInfo || null;
@@ -97,7 +110,7 @@ export class ImportInfo extends ArkBaseModel implements FromInfo {
         return this.nameBeforeAs;
     }
 
-    public setNameBeforeAs(nameBeforeAs: string | undefined) {
+    public setNameBeforeAs(nameBeforeAs: string | undefined): void {
         this.nameBeforeAs = nameBeforeAs;
     }
 

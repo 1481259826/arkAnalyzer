@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,7 +35,7 @@ describe('StaticSingleAssignmentFormer Test', () => {
 
         const spy = vi.spyOn(method, 'getBody');
         TypeInference.inferTypeInMethod(method);
-        expect(spy).toHaveBeenCalledTimes(9);
+        expect(spy).toHaveBeenCalledTimes(12);
     });
 
     it('inferSimpleTypeInMethod case', () => {
@@ -97,6 +97,17 @@ describe('Infer Method Return Type', () => {
         expect(signature?.toString()).toEqual('@inferType/inferSample.ts: Sample.sampleMethod(number)');
         assert.isTrue(signature?.getType() instanceof ClassType);
         expect(signature?.getType().toString()).toEqual('@inferType/inferSample.ts: Sample');
+    });
+
+    it('method return with any type infer case', () => {
+        const method = scene.getFiles().find(file => file.getName() === 'inferSample.ts')?.getDefaultClass().getMethodWithName('returnWithAny');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+
+        TypeInference.inferTypeInMethod(method!);
+        const returnType = method?.getReturnType();
+        assert.isDefined(returnType);
+        assert.equal(returnType!.toString(), 'any[]');
     });
 });
 
