@@ -14,6 +14,7 @@
  */
 
 import * as ts from 'ohos-typescript';
+import { ParameterDeclaration } from 'ohos-typescript';
 import { Local } from '../../base/Local';
 import { ArkAliasTypeDefineStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
 import { BasicBlock } from '../BasicBlock';
@@ -32,7 +33,6 @@ import { ConditionBuilder } from './ConditionBuilder';
 import { TrapBuilder } from './TrapBuilder';
 import { CONSTRUCTOR_NAME, PROMISE } from '../../common/TSConst';
 import { ModifierType } from '../../model/ArkBaseModel';
-import { ParameterDeclaration } from 'ohos-typescript';
 
 class StatementBuilder {
     type: string;
@@ -1125,8 +1125,8 @@ export class CfgBuilder {
             arkIRTransformer
         );
 
-        const trapBuilder = new TrapBuilder();
-        const traps = trapBuilder.buildTraps(blockBuilderToCfgBlock, blockBuildersBeforeTry, arkIRTransformer, basicBlockSet);
+        const trapBuilder = new TrapBuilder(blockBuildersBeforeTry, blockBuilderToCfgBlock, arkIRTransformer, basicBlockSet);
+        const traps = trapBuilder.buildTraps();
 
         this.removeEmptyBlocks(basicBlockSet);
 
@@ -1283,7 +1283,8 @@ export class CfgBuilder {
         const switchBuilder = new SwitchBuilder();
         switchBuilder.buildSwitch(blockBuilderToCfgBlock, blockBuildersContainSwitch, valueAndStmtsOfSwitchAndCasesAll, arkIRTransformer, basicBlockSet);
         const conditionalBuilder = new ConditionBuilder();
-        conditionalBuilder.rebuildBlocksContainConditionalOperator(basicBlockSet, ModelUtils.isArkUIBuilderMethod(this.declaringMethod));
+        conditionalBuilder.rebuildBlocksContainConditionalOperator(blockBuilderToCfgBlock, basicBlockSet,
+            ModelUtils.isArkUIBuilderMethod(this.declaringMethod));
     }
 
     private createCfg(blockBuilderToCfgBlock: Map<BlockBuilder, BasicBlock>, basicBlockSet: Set<BasicBlock>, prevBlockId: number): Cfg {

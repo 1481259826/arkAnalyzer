@@ -56,6 +56,12 @@ import {
 } from '../../../resources/cfg/switch/SwitchExpect';
 import { LOOP_EXPECT_CASE1, LOOP_EXPECT_CASE2 } from '../../../resources/cfg/loop/LoopExpect';
 import { testBlocks } from '../../common';
+import {
+    MIX_OF_STATEMENTS_EXPECT_CASE1,
+    MIX_OF_STATEMENTS_EXPECT_CASE2,
+    MIX_OF_STATEMENTS_EXPECT_CASE3,
+    MIX_OF_STATEMENTS_EXPECT_CASE4,
+} from '../../../resources/cfg/mixOfStatements/MixOfStatementsExpect';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
@@ -162,6 +168,14 @@ describe('CfgTest', () => {
             testBlocks(scene, 'LoopSample.ts', 'case2', LOOP_EXPECT_CASE2.blocks);
         },
     );
+
+    it('case5: mix of statements', () => {
+        const scene = buildScene('mixOfStatements');
+        testBlocks(scene, 'MixOfStatementsSample.ts', 'case1', MIX_OF_STATEMENTS_EXPECT_CASE1.blocks);
+        testBlocks(scene, 'MixOfStatementsSample.ts', 'case2', MIX_OF_STATEMENTS_EXPECT_CASE2.blocks);
+        testBlocks(scene, 'MixOfStatementsSample.ts', 'case3', MIX_OF_STATEMENTS_EXPECT_CASE3.blocks);
+        testBlocks(scene, 'MixOfStatementsSample.ts', 'case4', MIX_OF_STATEMENTS_EXPECT_CASE4.blocks);
+    });
 });
 
 const BASE_DIR = 'tests/resources/cfg';
