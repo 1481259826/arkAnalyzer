@@ -194,6 +194,9 @@ export class Scene {
         }
 
         // handle sdks
+        if (this.options.enableBuiltIn) {
+            sceneConfig.getSdksObj().unshift(SdkUtils.BUILT_IN_SDK);
+        }
         sceneConfig.getSdksObj()?.forEach(sdk => {
             if (!sdk.moduleName) {
                 this.buildSdk(sdk.name, sdk.path);
@@ -222,6 +225,7 @@ export class Scene {
                 return;
             }
             const buildProfileJson = parseJsonText(configurationsText);
+            SdkUtils.setEsVersion(buildProfileJson);
             const modules = buildProfileJson.modules;
             if (modules instanceof Array) {
                 modules.forEach(module => {
@@ -572,7 +576,8 @@ export class Scene {
     }
 
     private buildSdk(sdkName: string, sdkPath: string): void {
-        const allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
+        const allFiles = sdkName === SdkUtils.BUILT_IN_NAME ? SdkUtils.fetchBuiltInFiles() :
+            getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         allFiles.forEach(file => {
             logger.trace('=== parse sdk file:', file);
             try {
@@ -1027,6 +1032,9 @@ export class Scene {
             this.sdkArkFilesMap.forEach(file => {
                 try {
                     IRInference.inferFile(file);
+                    if (file.getProjectName() === SdkUtils.BUILT_IN_NAME) {
+                        SdkUtils.postBuiltIn(file, this.sdkGlobalMap);
+                    }
                 } catch (error) {
                     logger.error('Error inferring types of sdk file:', file.getFileSignature(), error);
                 }

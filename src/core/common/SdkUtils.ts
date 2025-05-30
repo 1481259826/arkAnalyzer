@@ -29,12 +29,56 @@ import { AbstractFieldRef } from '../base/Ref';
 import { ArkNamespace } from '../model/ArkNamespace';
 import { TypeInference } from './TypeInference';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { Sdk } from '../../Config';
+import ts from 'ohos-typescript';
+import fs from 'fs';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SdkUtils');
 
 export class SdkUtils {
+    private static esVersion: string = 'ES2017';
+    private static esVersionMap: Map<string, string> = new Map<string, string>([
+        ["ES2017", 'lib.es2020.d.ts'],
+        ["ES2021", 'lib.es2021.d.ts']
+    ]);
 
     private static sdkImportMap: Map<string, ArkFile> = new Map<string, ArkFile>();
+    public static BUILT_IN_NAME = 'built-in';
+    private static BUILT_IN_PATH = 'node_modules/ohos-typescript/lib';
+    public static BUILT_IN_SDK: Sdk = {
+        moduleName: '',
+        name: `${SdkUtils.BUILT_IN_NAME}`,
+        path: ''
+    }
+
+    public static setEsVersion(buildProfile: any) {
+        const accessChain = 'buildOption.arkOptions.tscConfig.targetESVersion';
+        const version = accessChain.split('.').reduce((acc, key) => acc?.[key], buildProfile);
+        if (version && this.esVersionMap.has(version)) {
+            this.esVersion = version;
+        }
+    }
+
+    public static fetchBuiltInFiles(): string[] {
+        const filePath = path.resolve(this.BUILT_IN_PATH, this.esVersionMap.get(this.esVersion) ?? '');
+        this.BUILT_IN_SDK.path = path.resolve(this.BUILT_IN_PATH);
+        if (!fs.existsSync(filePath)) {
+            logger.error(`built in directory ${filePath} is not exist, please check!`);
+            return [];
+        }
+        const result = new Set<string>();
+        this.dfsFiles(filePath, result);
+        return Array.from(result);
+    }
+
+    private static dfsFiles(filePath: string, files: Set<string>) {
+        const sourceFile = ts.createSourceFile(filePath, fs.readFileSync(filePath, 'utf8'), ts.ScriptTarget.Latest);
+        const references = sourceFile.libReferenceDirectives;
+        references.forEach(ref => {
+            this.dfsFiles(path.join(path.dirname(filePath), `lib.${ref.fileName}.d.ts`), files);
+        })
+        files.add(filePath);
+    }
 
     public static buildSdkImportMap(file: ArkFile): void {
         const fileName = path.basename(file.getName());
@@ -82,7 +126,25 @@ export class SdkUtils {
             ?.getBody()
             ?.getAliasTypeMap()
             ?.forEach(a => globalMap.set(a[0].getName(), a[0]));
-        ModelUtils.getAllNamespacesInFile(file).forEach(ns => globalMap.set(ns.getName(), ns));
+    }
+
+    public static postBuiltIn(file: ArkFile, globalMap: Map<string, ArkExport>): void {
+        const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();
+        defaultArkMethod
+            ?.getBody()
+            ?.getLocals()
+            .forEach(local => {
+                const name = local.getName();
+                if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX)) {
+                    const old = globalMap.get(name);
+                    if (old instanceof ArkClass && local.getType() instanceof ClassType) {
+                        const localConstructor = globalMap.get((local.getType() as ClassType).getClassSignature().getClassName());
+                        if (localConstructor instanceof ArkClass) {
+                            this.copyMembers(localConstructor, old);
+                        }
+                    }
+                }
+            });
     }
 
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
@@ -119,11 +181,6 @@ export class SdkUtils {
         const old = globalMap.get(name);
         if (!old) {
             globalMap.set(name, local);
-        } else if (old instanceof ArkClass && local.getType() instanceof ClassType) {
-            const localConstructor = scene.getClass((local.getType() as ClassType).getClassSignature());
-            if (localConstructor) {
-                this.copyMembers(localConstructor, old);
-            }
         }
     }
 

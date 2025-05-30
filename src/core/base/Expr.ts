@@ -347,6 +347,14 @@ export class ArkNewExpr extends AbstractExpr {
             if (TypeInference.isUnclearType(type)) {
                 type = TypeInference.inferUnclearRefName(className, arkMethod.getDeclaringArkClass());
             }
+            if (type instanceof AliasType) {
+                const originalType = TypeInference.replaceAliasType(type);
+                if (originalType instanceof FunctionType) {
+                    type = originalType.getMethodSignature().getMethodSubSignature().getReturnType();
+                } else {
+                    type = originalType;
+                }
+            }
             if (type && type instanceof ClassType) {
                 const instanceType = this.constructorSignature(type, arkMethod) ?? type;
                 this.classType.setClassSignature(instanceType.getClassSignature());

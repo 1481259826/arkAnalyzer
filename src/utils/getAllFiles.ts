@@ -18,6 +18,7 @@ import path from 'path';
 import Logger, { LOG_MODULE_TYPE } from './logger';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'getAllFiles');
+
 /**
  * 从指定目录中提取指定后缀名的所有文件
  * @param srcPath string 要提取文件的项目入口，相对或绝对路径都可
@@ -48,24 +49,26 @@ export function getAllFiles(
     visited.add(realSrc);
 
     // 遍历src，判断文件类型
-    fs.readdirSync(realSrc).forEach(filename => {
-        if (ignoreFiles.has(filename)) {
-            return;
-        }
-        // 拼接文件的绝对路径
-        const realFile = path.resolve(realSrc, filename);
-
-        //TODO: 增加排除文件后缀和目录
-
-        // 如果是目录，递归提取
-        if (fs.statSync(realFile).isDirectory()) {
-            getAllFiles(realFile, exts, ignore, filenameArr, visited);
-        } else {
-            // 如果是文件，则判断其扩展名是否在给定的扩展名数组中
-            if (exts.includes(path.extname(filename))) {
-                filenameArr.push(realFile);
+    fs.readdirSync(realSrc)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .forEach(filename => {
+            if (ignoreFiles.has(filename)) {
+                return;
             }
-        }
-    });
+            // 拼接文件的绝对路径
+            const realFile = path.resolve(realSrc, filename);
+
+            //TODO: 增加排除文件后缀和目录
+
+            // 如果是目录，递归提取
+            if (fs.statSync(realFile).isDirectory()) {
+                getAllFiles(realFile, exts, ignore, filenameArr, visited);
+            } else {
+                // 如果是文件，则判断其扩展名是否在给定的扩展名数组中
+                if (exts.includes(path.extname(filename))) {
+                    filenameArr.push(realFile);
+                }
+            }
+        });
     return filenameArr;
 }

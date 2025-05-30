@@ -1235,7 +1235,7 @@ export const ClosureClassMethod_Expect_IR = {
                 },
                 usedStmts: [
                     {
-                        text: '%0 = instanceinvoke nums.<@%unk/%unk: .iterator()>()'
+                        text: '%0 = instanceinvoke nums.<@%unk/%unk: .Symbol.iterator()>()'
                     }
                 ]
             },
