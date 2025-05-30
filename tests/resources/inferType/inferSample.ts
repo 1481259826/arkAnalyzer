@@ -97,9 +97,9 @@ function test1(): number {
     let x = a.y + out;
 }
 
-function foo() {
+function foo(): void {
     class Test {
-        name: string = "test"
+        name: string = 'test';
     }
 
     let t = new Test();
