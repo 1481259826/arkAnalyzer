@@ -4519,7 +4519,7 @@
                               "name": "Math",
                               "declaringFile": {
                                 "projectName": "built-in",
-                                "fileName": "node_modules/ohos-typescript/lib/lib.es2015.symbol.wellknown.d.ts"
+                                "fileName": "node_modules/ohos-typescript/lib/lib.es5.d.ts"
                               },
                               "declaringNamespace": null
                             }
@@ -4815,7 +4815,7 @@
                               "name": "Math",
                               "declaringFile": {
                                 "projectName": "built-in",
-                                "fileName": "node_modules/ohos-typescript/lib/lib.es2015.symbol.wellknown.d.ts"
+                                "fileName": "node_modules/ohos-typescript/lib/lib.es5.d.ts"
                               },
                               "declaringNamespace": null
                             }

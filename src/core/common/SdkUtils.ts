@@ -150,7 +150,7 @@ export class SdkUtils {
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
         const old = globalMap.get(cls.getName());
         if (old instanceof ArkClass && old.getDeclaringArkFile().getProjectName() === cls.getDeclaringArkFile().getProjectName()) {
-            if (old.getCategory() === ClassCategory.CLASS) {
+            if (old.getCategory() === ClassCategory.CLASS || old.getCategory() === ClassCategory.INTERFACE) {
                 this.copyMembers(cls, old);
             } else {
                 this.copyMembers(old, cls);
