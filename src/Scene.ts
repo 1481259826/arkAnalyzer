@@ -46,11 +46,11 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
 enum SceneBuildStage {
     BUILD_INIT,
+    SDK_INFERRED,
     CLASS_DONE,
     METHOD_DONE,
     CLASS_COLLECTED,
     METHOD_COLLECTED,
-    SDK_INFERRED,
     TYPE_INFERRED,
 }
 
@@ -210,7 +210,16 @@ export class Scene {
                 }
             }
         });
-
+        if (this.buildStage < SceneBuildStage.SDK_INFERRED) {
+            this.sdkArkFilesMap.forEach(file => {
+                IRInference.inferFile(file);
+                SdkUtils.buildGlobalMap(file, this.sdkGlobalMap);
+            });
+            this.sdkArkFilesMap.forEach(file => {
+                SdkUtils.postInferredSdk(file, this.sdkGlobalMap);
+            });
+            this.buildStage = SceneBuildStage.SDK_INFERRED;
+        }
         this.fileLanguages = sceneConfig.getFileLanguages();
     }
 
@@ -591,7 +600,6 @@ export class Scene {
                 const fileSig = arkFile.getFileSignature().toMapKey();
                 this.sdkArkFilesMap.set(fileSig, arkFile);
                 SdkUtils.buildSdkImportMap(arkFile);
-                SdkUtils.buildGlobalMap(arkFile, this.sdkGlobalMap);
             } catch (error) {
                 logger.error('Error parsing file:', file, error);
                 this.unhandledSdkFilePaths.push(file);
@@ -1028,19 +1036,7 @@ export class Scene {
      ```
      */
     public inferTypes(): void {
-        if (this.buildStage < SceneBuildStage.SDK_INFERRED) {
-            this.sdkArkFilesMap.forEach(file => {
-                try {
-                    IRInference.inferFile(file);
-                    if (file.getProjectName() === SdkUtils.BUILT_IN_NAME) {
-                        SdkUtils.postBuiltIn(file, this.sdkGlobalMap);
-                    }
-                } catch (error) {
-                    logger.error('Error inferring types of sdk file:', file.getFileSignature(), error);
-                }
-            });
-            this.buildStage = SceneBuildStage.SDK_INFERRED;
-        }
+
         this.filesMap.forEach(file => {
             try {
                 IRInference.inferFile(file);

@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "prepack": "tsc -p ./tsconfig.prod.json",
-    "test": "npm run copyCollectionDefintion && vitest",
+    "test": "vitest",
     "testonce": "npm run copyCollectionDefintion && vitest --no-color run",
     "coverage": "npm run copyCollectionDefintion && vitest run --coverage",
     "heapdump": "npm run build && node --expose-gc out/tests/HeapDumpTest.js",

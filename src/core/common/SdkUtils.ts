@@ -27,7 +27,6 @@ import path from 'path';
 import { ClassType } from '../base/Type';
 import { AbstractFieldRef } from '../base/Ref';
 import { ArkNamespace } from '../model/ArkNamespace';
-import { TypeInference } from './TypeInference';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { Sdk } from '../../Config';
 import ts from 'ohos-typescript';
@@ -38,8 +37,8 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SdkUtils');
 export class SdkUtils {
     private static esVersion: string = 'ES2017';
     private static esVersionMap: Map<string, string> = new Map<string, string>([
-        ["ES2017", 'lib.es2020.d.ts'],
-        ["ES2021", 'lib.es2021.d.ts']
+        ['ES2017', 'lib.es2020.d.ts'],
+        ['ES2021', 'lib.es2021.d.ts']
     ]);
 
     private static sdkImportMap: Map<string, ArkFile> = new Map<string, ArkFile>();
@@ -49,9 +48,9 @@ export class SdkUtils {
         moduleName: '',
         name: `${SdkUtils.BUILT_IN_NAME}`,
         path: ''
-    }
+    };
 
-    public static setEsVersion(buildProfile: any) {
+    public static setEsVersion(buildProfile: any): void {
         const accessChain = 'buildOption.arkOptions.tscConfig.targetESVersion';
         const version = accessChain.split('.').reduce((acc, key) => acc?.[key], buildProfile);
         if (version && this.esVersionMap.has(version)) {
@@ -71,12 +70,12 @@ export class SdkUtils {
         return Array.from(result);
     }
 
-    private static dfsFiles(filePath: string, files: Set<string>) {
+    private static dfsFiles(filePath: string, files: Set<string>): void {
         const sourceFile = ts.createSourceFile(filePath, fs.readFileSync(filePath, 'utf8'), ts.ScriptTarget.Latest);
         const references = sourceFile.libReferenceDirectives;
         references.forEach(ref => {
             this.dfsFiles(path.join(path.dirname(filePath), `lib.${ref.fileName}.d.ts`), files);
-        })
+        });
         files.add(filePath);
     }
 
@@ -109,10 +108,18 @@ export class SdkUtils {
                     .forEach(mtd => globalMap.set(mtd.getName(), mtd));
             }
         });
-        const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();
-        if (defaultArkMethod) {
-            TypeInference.inferTypeInMethod(defaultArkMethod);
+
+    }
+
+    public static postInferredSdk(file: ArkFile, globalMap: Map<string, ArkExport>): void {
+        const isGlobalPath = file
+            .getScene()
+            .getOptions()
+            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
+        if (!isGlobalPath) {
+            return;
         }
+        const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();
         defaultArkMethod
             ?.getBody()
             ?.getLocals()
@@ -126,25 +133,6 @@ export class SdkUtils {
             ?.getBody()
             ?.getAliasTypeMap()
             ?.forEach(a => globalMap.set(a[0].getName(), a[0]));
-    }
-
-    public static postBuiltIn(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();
-        defaultArkMethod
-            ?.getBody()
-            ?.getLocals()
-            .forEach(local => {
-                const name = local.getName();
-                if (name !== THIS_NAME && !name.startsWith(TEMP_LOCAL_PREFIX)) {
-                    const old = globalMap.get(name);
-                    if (old instanceof ArkClass && local.getType() instanceof ClassType) {
-                        const localConstructor = globalMap.get((local.getType() as ClassType).getClassSignature().getClassName());
-                        if (localConstructor instanceof ArkClass) {
-                            this.copyMembers(localConstructor, old);
-                        }
-                    }
-                }
-            });
     }
 
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
@@ -181,6 +169,11 @@ export class SdkUtils {
         const old = globalMap.get(name);
         if (!old) {
             globalMap.set(name, local);
+        } else if (old instanceof ArkClass && local.getType() instanceof ClassType) {
+            const localConstructor = globalMap.get((local.getType() as ClassType).getClassSignature().getClassName());
+            if (localConstructor instanceof ArkClass) {
+                this.copyMembers(localConstructor, old);
+            }
         }
     }
 

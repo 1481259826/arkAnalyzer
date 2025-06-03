@@ -607,18 +607,7 @@ export class IRInference {
         }
         const fieldName = ref.getFieldName().replace(/[\"|\']/g, '');
         const propertyAndType = TypeInference.inferFieldType(baseType, fieldName, arkClass);
-        let propertyType = propertyAndType?.[1];
-        if (!propertyType || propertyType instanceof UnknownType) {
-            const newType = TypeInference.inferBaseType(fieldName, arkClass);
-            if (newType) {
-                propertyType = newType;
-            }
-        } else if (TypeInference.isUnclearType(propertyType)) {
-            const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
-            if (newType) {
-                propertyType = newType;
-            }
-        }
+        let propertyType = IRInference.repairType(propertyAndType?.[1], fieldName, arkClass);
         let staticFlag: boolean;
         let signature: BaseSignature;
         if (baseType instanceof ClassType) {
@@ -638,6 +627,21 @@ export class IRInference {
             return null;
         }
         return new FieldSignature(fieldName, signature, propertyType ?? ref.getType(), staticFlag);
+    }
+
+    private static repairType(propertyType: Type | undefined, fieldName: string, arkClass: ArkClass): Type | undefined {
+        if (!propertyType || propertyType instanceof UnknownType) {
+            const newType = TypeInference.inferBaseType(fieldName, arkClass);
+            if (newType) {
+                propertyType = newType;
+            }
+        } else if (TypeInference.isUnclearType(propertyType)) {
+            const newType = TypeInference.inferUnclearedType(propertyType, arkClass);
+            if (newType) {
+                propertyType = newType;
+            }
+        }
+        return propertyType;
     }
 
     public static inferAnonymousClass(anon: ArkClass | null, declaredSignature: ClassSignature, set: Set<string> = new Set()): void {
