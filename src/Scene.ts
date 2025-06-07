@@ -194,7 +194,7 @@ export class Scene {
         }
 
         // handle sdks
-        if (this.options.enableBuiltIn) {
+        if (this.options.enableBuiltIn && !sceneConfig.getSdksObj().find(sdk => sdk.name === SdkUtils.BUILT_IN_NAME)) {
             sceneConfig.getSdksObj().unshift(SdkUtils.BUILT_IN_SDK);
         }
         sceneConfig.getSdksObj()?.forEach(sdk => {
@@ -213,7 +213,7 @@ export class Scene {
         if (this.buildStage < SceneBuildStage.SDK_INFERRED) {
             this.sdkArkFilesMap.forEach(file => {
                 IRInference.inferFile(file);
-                SdkUtils.buildGlobalMap(file, this.sdkGlobalMap);
+                SdkUtils.mergeGlobalAPI(file, this.sdkGlobalMap);
             });
             this.sdkArkFilesMap.forEach(file => {
                 SdkUtils.postInferredSdk(file, this.sdkGlobalMap);
@@ -600,6 +600,7 @@ export class Scene {
                 const fileSig = arkFile.getFileSignature().toMapKey();
                 this.sdkArkFilesMap.set(fileSig, arkFile);
                 SdkUtils.buildSdkImportMap(arkFile);
+                SdkUtils.loadGlobalAPI(arkFile, this.sdkGlobalMap);
             } catch (error) {
                 logger.error('Error parsing file:', file, error);
                 this.unhandledSdkFilePaths.push(file);

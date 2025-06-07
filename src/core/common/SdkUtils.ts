@@ -20,7 +20,6 @@ import { GLOBAL_THIS_NAME, THIS_NAME } from './TSConst';
 import { TEMP_LOCAL_PREFIX } from './Const';
 import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { LocalSignature } from '../model/ArkSignature';
-import { ModelUtils } from './ModelUtils';
 import { Local } from '../base/Local';
 import { ArkMethod } from '../model/ArkMethod';
 import path from 'path';
@@ -90,7 +89,7 @@ export class SdkUtils {
         return this.sdkImportMap.get(from);
     }
 
-    public static buildGlobalMap(file: ArkFile, globalMap: Map<string, ArkExport>): void {
+    public static loadGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
         const isGlobalPath = file
             .getScene()
             .getOptions()
@@ -98,17 +97,43 @@ export class SdkUtils {
         if (!isGlobalPath) {
             return;
         }
-        ModelUtils.getAllClassesInFile(file).forEach(cls => {
+        file.getClasses().forEach(cls => {
             if (!cls.isAnonymousClass() && !cls.isDefaultArkClass()) {
-                SdkUtils.loadClass(globalMap, cls);
+                this.loadAPI(cls, globalMap);
             }
             if (cls.isDefaultArkClass()) {
                 cls.getMethods()
                     .filter(mtd => !mtd.isDefaultArkMethod() && !mtd.isAnonymousMethod())
-                    .forEach(mtd => globalMap.set(mtd.getName(), mtd));
+                    .forEach(mtd => this.loadAPI(mtd, globalMap));
             }
         });
+    }
 
+    public static mergeGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
+        const isGlobalPath = file
+            .getScene()
+            .getOptions()
+            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
+        if (!isGlobalPath) {
+            return;
+        }
+        file.getClasses().forEach(cls => {
+            if (!cls.isAnonymousClass() && !cls.isDefaultArkClass()) {
+                this.loadClass(globalMap, cls);
+            }
+        });
+    }
+
+    public static loadAPI(api: ArkExport, globalMap: Map<string, ArkExport>, override: boolean = false): void {
+        const old = globalMap.get(api.getName());
+        if (!old) {
+            globalMap.set(api.getName(), api);
+        } else if (override) {
+            logger.trace(`${old.getSignature()} is override`);
+            globalMap.set(api.getName(), api);
+        } else {
+            logger.trace(`duplicated api: ${api.getSignature()}`);
+        }
     }
 
     public static postInferredSdk(file: ArkFile, globalMap: Map<string, ArkExport>): void {
@@ -132,24 +157,23 @@ export class SdkUtils {
         defaultArkMethod
             ?.getBody()
             ?.getAliasTypeMap()
-            ?.forEach(a => globalMap.set(a[0].getName(), a[0]));
+            ?.forEach(a => this.loadAPI(a[0], globalMap, true));
     }
 
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
         const old = globalMap.get(cls.getName());
-        if (old instanceof ArkClass && old.getDeclaringArkFile().getProjectName() === cls.getDeclaringArkFile().getProjectName()) {
+        if (cls === old) {
+            return;
+        } else if (old instanceof ArkClass && old.getDeclaringArkFile().getProjectName() === cls.getDeclaringArkFile().getProjectName()) {
             if (old.getCategory() === ClassCategory.CLASS || old.getCategory() === ClassCategory.INTERFACE) {
                 this.copyMembers(cls, old);
             } else {
                 this.copyMembers(old, cls);
                 globalMap.delete(cls.getName());
-                globalMap.set(cls.getName(), cls);
+                this.loadAPI(cls, globalMap, true);
             }
         } else {
-            if (old) {
-                logger.error(`${old.getSignature()} is override`);
-            }
-            globalMap.set(cls.getName(), cls);
+            this.loadAPI(cls, globalMap, true);
         }
     }
 
@@ -162,18 +186,20 @@ export class SdkUtils {
             const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
             if (attr instanceof ArkClass && instance instanceof ArkClass) {
                 this.copyMembers(instance, attr);
-                globalMap.set(name, attr);
+                this.loadAPI(attr, globalMap, true);
                 return;
             }
         }
         const old = globalMap.get(name);
-        if (!old) {
-            globalMap.set(name, local);
-        } else if (old instanceof ArkClass && local.getType() instanceof ClassType) {
+        if (old instanceof ArkClass && local.getType() instanceof ClassType) {
             const localConstructor = globalMap.get((local.getType() as ClassType).getClassSignature().getClassName());
             if (localConstructor instanceof ArkClass) {
                 this.copyMembers(localConstructor, old);
+            } else {
+                this.loadAPI(local, globalMap, true);
             }
+        } else {
+            this.loadAPI(local, globalMap, true);
         }
     }
 
