@@ -113,13 +113,12 @@ export function buildArkMethodFromArkClass(
         mtd.setImplementationSignature(methodSignature);
         mtd.setLine(line + 1);
         mtd.setColumn(character + 1);
+        let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd, sourceFile);
+        mtd.setBodyBuilder(bodyBuilder);
     } else {
         mtd.setDeclareSignatures(methodSignature);
         mtd.setDeclareLinesAndCols([line + 1], [character + 1]);
     }
-
-    let bodyBuilder = new BodyBuilder(mtd.getSignature(), methodNode, mtd, sourceFile);
-    mtd.setBodyBuilder(bodyBuilder);
 
     if (mtd.hasBuilderDecorator()) {
         mtd.setViewTree(buildViewTree(mtd));
