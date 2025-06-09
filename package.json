@@ -19,8 +19,8 @@
     "copyCollectionDefintion": "ts-node script/typescriptCollectionDefinitionCopy.ts"
   },
   "dependencies": {
-    "commander": "11.0.0",
-    "log4js": "6.7.1",
+    "commander": "13.1.0",
+    "log4js": "6.9.1",
     "ohos-typescript": "^4.9.5-r4"
   },
   "bundledDependencies": [
@@ -29,7 +29,8 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^1.5.0",
     "ts-node": "^10.9.1",
-    "typedoc": "^0.25.13",
+    "typedoc": "^0.28.0",
+    "typedoc-plugin-markdown": "^4.6.3",
     "vitest": "^1.5.0"
   }
 }

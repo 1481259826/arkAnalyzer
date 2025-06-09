@@ -28,6 +28,7 @@ import {
     BigIntType,
     BooleanType,
     ClassType,
+    EnumValueType,
     FunctionType,
     GenericType,
     IntersectionType,
@@ -315,6 +316,13 @@ export class JsonPrinter extends Printer {
                 _: 'AnnotationTypeQueryType',
                 originType: type.getOriginType(),
             };
+        } else if (type instanceof EnumValueType) {
+            const c = type.getConstant();
+            return {
+                _: 'EnumValueType',
+                signature: this.serializeFieldSignature(type.getFieldSignature()),
+                constant: c && this.serializeValue(c),
+            };
         } else {
             console.warn(`Unhandled Type: ${type.constructor.name} (${type.toString()})`);
             return {
@@ -425,6 +433,13 @@ export class JsonPrinter extends Printer {
         };
     }
 
+    private serializeConstant(constant: Constant): object {
+        return {
+            value: constant.getValue(),
+            type: this.serializeType(constant.getType()),
+        };
+    }
+
     private serializeValue(value: Value): object {
         if (value === undefined) {
             throw new Error('Value is undefined');
@@ -438,8 +453,7 @@ export class JsonPrinter extends Printer {
         } else if (value instanceof Constant) {
             return {
                 _: 'Constant',
-                value: value.getValue(),
-                type: this.serializeType(value.getType()),
+                ...this.serializeConstant(value),
             };
         } else if (value instanceof ArkNewExpr) {
             return {

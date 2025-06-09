@@ -78,6 +78,14 @@ export class SdkUtils {
         files.add(filePath);
     }
 
+    /*
+     * Set static field to be null, then all related objects could be freed by GC.
+     * Class SdkUtils is only internally used by ArkAnalyzer type inference, the dispose method should be called at the end of type inference.
+     */
+    public static dispose(): void {
+        this.sdkImportMap.clear();
+    }
+
     public static buildSdkImportMap(file: ArkFile): void {
         const fileName = path.basename(file.getName());
         if (fileName.startsWith('@')) {
