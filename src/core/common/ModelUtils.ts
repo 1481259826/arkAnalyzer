@@ -37,14 +37,7 @@ import path from 'path';
 import { Sdk } from '../../Config';
 import { ALL, DEFAULT, THIS_NAME } from './TSConst';
 import { buildDefaultExportInfo } from '../model/builder/ArkExportBuilder';
-import {
-    AnnotationNamespaceType,
-    ClassType,
-    FunctionType,
-    Type,
-    UnclearReferenceType,
-    UnknownType
-} from '../base/Type';
+import { AnnotationNamespaceType, ClassType, FunctionType, Type, UnclearReferenceType, UnknownType } from '../base/Type';
 import { Scene } from '../../Scene';
 import { DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, TEMP_LOCAL_PREFIX } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
@@ -55,6 +48,14 @@ import { SdkUtils } from './SdkUtils';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
+
+    /*
+     * Set static field to be null, then all related objects could be freed by GC.
+     * Static field implicitArkUIBuilderMethods is only used during method body building, the dispose method should be called after build all body.
+     */
+    public static dispose(): void {
+        this.implicitArkUIBuilderMethods.clear();
+    }
 
     public static getMethodSignatureFromArkClass(arkClass: ArkClass, methodName: string): MethodSignature | null {
         for (const arkMethod of arkClass.getMethods()) {

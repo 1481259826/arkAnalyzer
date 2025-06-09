@@ -41,6 +41,8 @@ import { ImportInfo } from './core/model/ArkImport';
 import { ALL, CONSTRUCTOR_NAME, TSCONFIG_JSON } from './core/common/TSConst';
 import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
 import { SdkUtils } from './core/common/SdkUtils';
+import { PointerAnalysisConfig } from './callgraph/pointerAnalysis/PointerAnalysisConfig';
+import { ValueUtil } from './core/common/ValueUtil';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -98,6 +100,17 @@ export class Scene {
     private unhandledSdkFilePaths: string[] = [];
 
     constructor() {}
+
+    /*
+     * Set all static field to be null, then all related objects could be freed by GC.
+     * This method could be called before drop Scene.
+     */
+    public dispose(): void {
+        PointerAnalysisConfig.dispose();
+        SdkUtils.dispose();
+        ValueUtil.dispose();
+        ModelUtils.dispose();
+    }
 
     public getOptions(): SceneOptions {
         return this.options;
@@ -322,6 +335,7 @@ export class Scene {
             }
         }
 
+        ModelUtils.dispose();
         this.buildStage = SceneBuildStage.METHOD_DONE;
     }
 
@@ -1046,6 +1060,7 @@ export class Scene {
             this.getMethodsMap(true);
             this.buildStage = SceneBuildStage.TYPE_INFERRED;
         }
+        SdkUtils.dispose();
     }
 
     /**
