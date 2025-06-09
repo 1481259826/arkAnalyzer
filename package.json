@@ -19,8 +19,8 @@
     "copyCollectionDefintion": "ts-node script/typescriptCollectionDefinitionCopy.ts"
   },
   "dependencies": {
-    "commander": "11.0.0",
-    "log4js": "6.7.1",
+    "commander": "13.1.0",
+    "log4js": "6.9.1",
     "ohos-typescript": "^4.9.5-r4"
   },
   "bundledDependencies": [
