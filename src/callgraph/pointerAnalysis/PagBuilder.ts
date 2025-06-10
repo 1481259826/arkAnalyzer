@@ -36,7 +36,6 @@ import { ArkClass } from '../../core/model/ArkClass';
 import { ArrayType, ClassType, FunctionType, StringType } from '../../core/base/Type';
 import { Constant, NullConstant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
-import { ContextID, DUMMY_CID, KLimitedContextSensitive } from './Context';
 import {
     FuncPag,
     InterFuncPag,
@@ -58,6 +57,8 @@ import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
 import { BuiltApiType, getBuiltInApiType } from './PTAUtils';
 import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
+import { ContextID, DUMMY_CID } from './context/Context';
+import { ContextSelector, KCallsiteContextSelector } from './context/ContextSelector';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -78,7 +79,7 @@ export class PagBuilder {
     private funcPags: Map<FuncID, FuncPag>;
     private interFuncPags?: Map<FuncID, InterFuncPag>;
     private handledFunc: Set<string> = new Set();
-    private ctx: KLimitedContextSensitive;
+    private ctxSelector: ContextSelector;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
     private pagStat: PAGStat;
@@ -106,7 +107,7 @@ export class PagBuilder {
         this.cg = cg;
         this.scale = scale;
         this.funcPags = new Map<FuncID, FuncPag>();
-        this.ctx = new KLimitedContextSensitive(kLimit);
+        this.ctxSelector = new KCallsiteContextSelector(kLimit);
         this.scene = s;
         this.pagStat = new PAGStat();
     }
@@ -136,7 +137,7 @@ export class PagBuilder {
     public buildForEntries(funcIDs: FuncID[]): void {
         this.worklist = [];
         funcIDs.forEach(funcID => {
-            let cid = this.ctx.getNewContextID(funcID);
+            let cid = this.ctxSelector.getNewContext(funcID);
             let csFuncID = new CSFuncID(cid, funcID);
             this.buildFuncPagAndAddToWorklist(csFuncID);
         });
@@ -163,7 +164,7 @@ export class PagBuilder {
 
     public build(): void {
         for (let funcID of this.cg.getEntries()) {
-            let cid = this.ctx.getNewContextID(funcID);
+            let cid = this.ctxSelector.getNewContext(funcID);
             let csFuncID = new CSFuncID(cid, funcID);
             this.buildFuncPagAndAddToWorklist(csFuncID);
 
@@ -385,7 +386,7 @@ export class PagBuilder {
     public addCallsEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
         for (let cs of funcPag.getNormalCallSites()) {
             let ivkExpr = cs.callStmt.getInvokeExpr();
-            let calleeCid = this.ctx.getOrNewContext(cid, cs.calleeFuncID, true);
+            let calleeCid = this.ctxSelector.selectContext(cid, cs, cs.calleeFuncID);
 
             let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
 
@@ -522,8 +523,11 @@ export class PagBuilder {
                 return srcNodes;
             }
 
-            let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
-            let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
+            // let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
+            let staticCS = this.cg.getCallSiteManager().newCallsite(
+                cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID
+            );
+            let calleeCid = this.ctxSelector.selectContext(cid, staticCS, staticCS.calleeFuncID);
 
             if (this.scale === PtaAnalysisScale.MethodLevel) {
                 srcNodes.push(...this.addStaticPagCallReturnEdge(staticCS, baseClassPTNode, calleeCid));
@@ -838,8 +842,11 @@ export class PagBuilder {
             logger.warn(`\tAdd call edge of unknown call ${callee.getSignature().toString()}`);
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
-                let calleeCid = this.ctx.getOrNewContext(cid, dstCGNode.getID(), true);
-                let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
+                // let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
+                let staticCS = this.cg.getCallSiteManager().newCallsite(
+                    cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID
+                );
+                let calleeCid = this.ctxSelector.selectContext(cid, staticCS, staticCS.calleeFuncID);
                 let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
                 srcNodes.push(...staticSrcNodes);
             }
@@ -945,7 +952,7 @@ export class PagBuilder {
      */
     public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID, ptNode?: PagNode): NodeID[] {
         if (!calleeCid) {
-            calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID, true);
+            calleeCid = this.ctxSelector.selectContext(callerCid, cs, cs.calleeFuncID);
         }
 
         let srcNodes: NodeID[] = [];
@@ -1101,7 +1108,7 @@ export class PagBuilder {
 
     public addStaticPagCallReturnEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
         if (!calleeCid) {
-            calleeCid = this.ctx.getOrNewContext(callerCid, cs.calleeFuncID, true);
+            calleeCid = this.ctxSelector.selectContext(callerCid, cs, cs.calleeFuncID);
         }
 
         let srcNodes: NodeID[] = [];
@@ -1213,7 +1220,10 @@ export class PagBuilder {
                 let sdkParamInvokeStmt = new ArkInvokeStmt(new ArkPtrInvokeExpr((arg.getType() as FunctionType).getMethodSignature(), paramValue as Local, []));
 
                 // create new DynCallSite
-                let sdkParamCallSite = new DynCallSite(sdkParamInvokeStmt, undefined, undefined, funcID);
+                // let sdkParamCallSite = new DynCallSite(sdkParamInvokeStmt, undefined, undefined, funcID);
+                let sdkParamCallSite = this.cg.getCallSiteManager().newDynCallsite(
+                    sdkParamInvokeStmt, undefined, undefined, funcID
+                );
                 dstPagNode.addRelatedDynCallSite(sdkParamCallSite);
             }
 
@@ -1856,7 +1866,7 @@ export class PagBuilder {
         let srcFunc = src.getDeclaringStmt()?.getCfg().getDeclaringMethod();
         if (srcFunc) {
             let srcFuncID = this.cg.getCallGraphNodeByMethod(srcFunc.getSignature()).getID();
-            let cid = this.ctx.getNewContextID(srcFuncID);
+            let cid = this.ctxSelector.getNewContext(srcFuncID);
             let csFuncID = new CSFuncID(cid, srcFuncID);
             this.buildFuncPagAndAddToWorklist(csFuncID);
         }
