@@ -15,24 +15,26 @@
 
 import { Stmt } from '../../core/base/Stmt';
 import { Value } from '../../core/base/Value';
-import { ContextID } from '../pointerAnalysis/Context';
 import { FuncID } from './CallGraph';
 
 export type CallSiteID = number;
 
 export interface ICallSite {
+    id: CallSiteID;
     callStmt: Stmt;
     args: Value[] | undefined;
     callerFuncID: FuncID;
 }
 
 export class CallSite implements ICallSite {
+    public id: CallSiteID;
     public callStmt: Stmt;
     public args: Value[] | undefined;
     public calleeFuncID: FuncID;
     public callerFuncID: FuncID;
 
-    constructor(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
+    constructor(id: CallSiteID, s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
+        this.id = id;
         this.callStmt = s;
         this.args = a;
         this.calleeFuncID = ce;
@@ -41,12 +43,14 @@ export class CallSite implements ICallSite {
 }
 
 export class DynCallSite implements ICallSite {
+    public id: CallSiteID;
     public callStmt: Stmt;
     public args: Value[] | undefined;
     public protentialCalleeFuncID: FuncID | undefined;
     public callerFuncID: FuncID;
 
-    constructor(s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID) {
+    constructor(id: CallSiteID, s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID) {
+        this.id = id;
         this.callerFuncID = caller;
         this.callStmt = s;
         this.args = a;
@@ -54,11 +58,32 @@ export class DynCallSite implements ICallSite {
     }
 }
 
-export class CSCallSite extends CallSite {
-    public cid: ContextID;
+// export class CSCallSite extends CallSite {
+//     public cid: ContextID;
 
-    constructor(id: ContextID, cs: CallSite) {
-        super(cs.callStmt, cs.args, cs.calleeFuncID, cs.callerFuncID);
-        this.cid = id;
+//     constructor(id: ContextID, cs: CallSite) {
+//         super(cs.callStmt, cs.args, cs.calleeFuncID, cs.callerFuncID);
+//         this.cid = id;
+//     }
+// }
+
+export class CallSiteManager {
+    private idToCallSiteMap: Map<CallSiteID, ICallSite> = new Map();
+    private callSiteToIdMap: Map<ICallSite, CallSiteID> = new Map();
+
+    public newCallsite(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
+        let id = this.idToCallSiteMap.size;
+        let callSite = new CallSite(id, s, a, ce, cr);
+        this.idToCallSiteMap.set(id, callSite);
+        this.callSiteToIdMap.set(callSite, id);
+        return callSite;
+    }
+
+    public newDynCallsite(s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID) {
+        let id = this.idToCallSiteMap.size;
+        let callSite = new DynCallSite(id, s, a, ptcCallee, caller);
+        this.idToCallSiteMap.set(id, callSite);
+        this.callSiteToIdMap.set(callSite, id);
+        return callSite;
     }
 }
