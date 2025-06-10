@@ -137,8 +137,10 @@ describe("Infer Array Test", () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'demo.ts');
         const file = projectScene.getFile(fileId);
         const method = file?.getDefaultClass()?.getMethodWithName('testDoubleNamespace');
-        const stmt = method?.getCfg()?.getStmts().at(-2);
-        assert.equal(stmt?.toString(), 'staticinvoke <@inferType/demo.ts: outer.inner.TestClass.[static]request()>()');
+        const stmts = method?.getCfg()?.getStmts();
+        const stmt = stmts?.[stmts?.length - 2];
+        assert.isDefined(stmt);
+        assert.equal(stmt!.toString(), 'staticinvoke <@inferType/demo.ts: outer.inner.TestClass.[static]request()>()');
     })
 
     it('field case', () => {
