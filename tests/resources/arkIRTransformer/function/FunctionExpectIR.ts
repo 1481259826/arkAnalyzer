@@ -178,7 +178,7 @@ export const ArrowFunction_Expect_IR = {
             {
                 text: 'return i',
                 operandOriginalPositions: [
-                    [22, 28, 22, 31],
+                    [22, 28, 22, 29],
                 ],
             },
         ],

@@ -84,7 +84,7 @@ export interface TransformerContext {
 
     getPrinter(): ArkCodeBuffer;
 
-    transTemp2Code(temp: Local): string;
+    transTemp2Code(temp: Local, isLeftOp: boolean): string;
 
     isInBuilderMethod(): boolean;
 }
@@ -251,7 +251,7 @@ export class SourceTransformer {
             let op2: Value = expr.getOp2();
             let operator: string = expr.getOperator();
 
-            return `${this.valueToString(op1, operator)} ${operator} ${this.valueToString(op2, operator)}`;
+            return `${this.valueToString(op1, false, operator)} ${operator} ${this.valueToString(op2, false, operator)}`;
         }
 
         if (expr instanceof ArkTypeOfExpr) {
@@ -310,7 +310,7 @@ export class SourceTransformer {
         return `${value}`;
     }
 
-    public valueToString(value: Value, operator?: string): string {
+    public valueToString(value: Value, isLeftOp: boolean = false, operator?: string): string {
         if (value instanceof AbstractExpr) {
             return this.exprToString(value);
         }
@@ -324,14 +324,14 @@ export class SourceTransformer {
         }
 
         if (value instanceof Local) {
-            return this.localToString(value, operator);
+            return this.localToString(value, isLeftOp, operator);
         }
 
         logger.info(`valueToString ${value.constructor} not support.`);
         return `${value}`;
     }
 
-    private localToString(value: Local, operator?: string): string {
+    private localToString(value: Local, isLeftOp: boolean = false, operator?: string): string {
         if (PrinterUtils.isAnonymousMethod(value.getName())) {
             let methodSignature = (value.getType() as FunctionType).getMethodSignature();
             let anonymousMethod = this.context.getMethod(methodSignature);
@@ -351,12 +351,12 @@ export class SourceTransformer {
             if (PrinterUtils.isTemp(value.getName())) {
                 let stmt = value.getDeclaringStmt();
                 if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkNormalBinopExpr) {
-                    return `(${this.context.transTemp2Code(value)})`;
+                    return `(${this.context.transTemp2Code(value, isLeftOp)})`;
                 }
             }
         }
 
-        return this.context.transTemp2Code(value);
+        return this.context.transTemp2Code(value, isLeftOp);
     }
 
     public literalObjectToString(type: ClassType): string {

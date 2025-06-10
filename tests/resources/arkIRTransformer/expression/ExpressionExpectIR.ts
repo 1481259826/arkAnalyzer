@@ -741,3 +741,85 @@ export const ExpressionStatements_Expect_IR = {
         },
     ],
 };
+
+export const PostfixAndPrefixUnaryExpression_Expected_IR = `class %dflt {
+  %dflt(): void {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: %dflt
+      return
+  }
+}
+class FieldModification {
+  static count: number
+
+  %instInit(): void {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification
+      return
+  }
+
+  constructor(): @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification
+      instanceinvoke this.<@expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.%instInit()>()
+      return this
+  }
+
+  %statInit(): void {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification
+      @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count = 0
+      return
+  }
+
+  static changeField(): number {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification
+      %0 = @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count
+      %0 = %0 + 1
+      @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count = %0
+      %1 = @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count
+      %1 = %1 + 1
+      @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count = %1
+      %2 = @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count
+      %2 = %2 - 1
+      @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count = %2
+      %3 = @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count
+      %3 = %3 - 1
+      @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count = %3
+      %4 = @expression/PostfixAndPrefixUnaryExpression.ts: FieldModification.[static]count
+      return %4
+  }
+}
+class LocalModification {
+  %instInit(): void {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: LocalModification
+      return
+  }
+
+  %statInit(): void {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: LocalModification
+      return
+  }
+
+  constructor(): @expression/PostfixAndPrefixUnaryExpression.ts: LocalModification {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: LocalModification
+      instanceinvoke this.<@expression/PostfixAndPrefixUnaryExpression.ts: LocalModification.%instInit()>()
+      return this
+  }
+
+  changeLocal(): number {
+    label0:
+      this = this: @expression/PostfixAndPrefixUnaryExpression.ts: LocalModification
+      count = 0
+      count = count + 1
+      count = count + 1
+      count = count - 1
+      count = count - 1
+      return count
+  }
+}
+`;

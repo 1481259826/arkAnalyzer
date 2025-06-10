@@ -17,6 +17,7 @@ import { assert, describe, expect, it } from 'vitest';
 import path from 'path';
 import {
     ANONYMOUS_METHOD_PREFIX,
+    ArkFile,
     ArkMethod,
     ArkStaticFieldRef,
     GlobalRef,
@@ -32,8 +33,8 @@ import {
     ExpressionStatements_Expect_IR,
     LiteralExpression_Expect_IR,
     NewExpression_Expect_IR,
-    Operator_Expect_IR,
-    UnaryExpression_Expect_IR,
+    Operator_Expect_IR, PostfixAndPrefixUnaryExpression_Expected_IR,
+    UnaryExpression_Expect_IR
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
     CompoundAssignment_Expect_IR,
@@ -96,6 +97,7 @@ import {
     FOR_STATEMENT_EXPECT_CASE5,
     FOR_STATEMENT_EXPECT_CASE6,
 } from '../resources/arkIRTransformer/loopStatement/LoopExpect';
+import { ArkIRFilePrinter } from '../../src/save/arkir/ArkIRFilePrinter';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
 
@@ -363,6 +365,11 @@ function testMethodClosure(arkMethod: ArkMethod, expectMethod: any): void {
     assertMethodBodyBuilderEqual(arkMethod, expectMethod.bodyBuilder);
 }
 
+function printFileIR(arkFile: ArkFile): string {
+    const printer = new ArkIRFilePrinter(arkFile);
+    return printer.dump();
+}
+
 describe('expression Test', () => {
     const scene = buildScene(path.join(BASE_DIR, 'expression'));
 
@@ -392,6 +399,12 @@ describe('expression Test', () => {
 
     it('test expression statement', async () => {
         testMethodStmts(scene, 'ExpressionStatementsTest.ts', ExpressionStatements_Expect_IR.stmts);
+    });
+
+    it('test postfix and prefix unary expression', async () => {
+        const file = scene.getFiles().find((file) => file.getName().endsWith('PostfixAndPrefixUnaryExpression.ts'));
+        assert.isDefined(file);
+        assert.equal(printFileIR(file!), PostfixAndPrefixUnaryExpression_Expected_IR);
     });
 });
 
