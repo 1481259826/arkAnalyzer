@@ -1,8 +1,12 @@
-import { CallsiteContextItem, ObjectContextItem } from "./ContextItem";
+import { ContextItemManager } from "./ContextItem";
 
 export type ContextID = number;
 export const DUMMY_CID = 0;
 
+/**
+ * An abstract base class representing a context in pointer analysis.
+ * A context is an immutable sequence of context elements (represented by their IDs).
+ */
 export abstract class Context {
     protected contextElems: number[];
 
@@ -15,28 +19,30 @@ export abstract class Context {
     // -------------------------------------------------------------------
 
     /**
-     * 创建一个新的空上下文实例。
-     * 必须在子类上调用，例如: CallsiteContext.newEmpty()
+     * Creates a new empty context instance.
+     * This static method must be called on a concrete subclass.
+     * @example CallsiteContext.newEmpty()
      */
     static newEmpty<T extends Context>(this: new () => T): T {
         return new this();
     }
 
     /**
-     * 根据元素数组创建一个新的上下文实例。
-     * @param contextElems 元素数组
-     * 必须在子类上调用，例如: CallsiteContext.new([1, 2])
+     * Creates a new context instance from an array of element IDs.
+     * This static method must be called on a concrete subclass.
+     * @param contextElems An array of ContextItem IDs.
+     * @example CallsiteContext.new([1, 2])
      */
     static new<T extends Context>(this: new (elems: number[]) => T, contextElems: number[]): T {
         return new this(contextElems);
     }
     
     /**
-     * 基于旧上下文和新元素，创建一个新的 k-limited 上下文。
-     * 返回的实例类型与 oldCtx 的类型相同。
-     * @param oldCtx 旧的上下文实例
-     * @param elem 要添加的新元素
-     * @param k 上下文的最大长度限制
+     * Creates a new k-limited context by prepending a new element to an old context.
+     * The returned instance has the same type as the `oldCtx`.
+     * @param oldCtx The previous context instance.
+     * @param elem The ID of the new element to add.
+     * @param k The maximum length limit for the context.
      */
     static newKLimitedContext<T extends Context>(oldCtx: T, elem: number, k: number): T {
         let elems: number[] = [];
@@ -49,16 +55,16 @@ export abstract class Context {
                 elems = elems.concat(oldElems.slice(0, k - 1));
             }
         }
-        // 使用 oldCtx 的构造函数来创建新实例，保持类型一致
+        // Use the constructor of the old context to create a new instance, preserving type
         const constructor = oldCtx.constructor as new (elems: number[]) => T;
         return new constructor(elems);
     }
 
     /**
-     * 将一个现有上下文裁剪到 k-limited。
-     * 返回的实例类型与 ctx 的类型相同。
-     * @param ctx 要裁剪的上下文实例
-     * @param k 上下文的最大长度限制
+     * Truncates an existing context to a specified k-limit.
+     * The returned instance has the same type as `ctx`.
+     * @param ctx The context instance to truncate.
+     * @param k The maximum length limit for the context.
      */
     static kLimitedContext<T extends Context>(ctx: T, k: number): T {
         const constructor = ctx.constructor as new (elems: number[]) => T;
@@ -89,19 +95,19 @@ export abstract class Context {
         return this.contextElems.join('-');
     }
 
-    public abstract append(id: ContextID, callsiteID: number, calleeFunc: number, k: number): Context;
+    public abstract append(callsiteID: number, calleeFunc: number, k: number, m: ContextItemManager): Context;
 }
 
 export class CallsiteContext extends Context {
-    public append(id: ContextID, callsiteID: number, calleeFunc: number, k: number): CallsiteContext {
-        let contextItem = new CallsiteContextItem(id, callsiteID, calleeFunc);
+    public append(callsiteID: number, calleeFunc: number, k: number, m: ContextItemManager): CallsiteContext {
+        let contextItem = m.getOrCreateCallSiteItem(callsiteID, calleeFunc);
         return Context.newKLimitedContext(this, contextItem.id, k) as CallsiteContext;
     }
 }
 
 export class ObjContext extends Context {
-    public append(id: ContextID, callsiteID: number, objId: number, k: number): ObjContext {
-        let contextItem = new ObjectContextItem(id, objId);
+    public append(callsiteID: number, objId: number, k: number, m: ContextItemManager): ObjContext {
+        let contextItem = m.getOrCreateObjectItem(objId);
         return Context.newKLimitedContext(this, contextItem.id, k);
     }
 }

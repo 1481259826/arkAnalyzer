@@ -1,9 +1,14 @@
 import { NodeID } from "../../../core/graph/GraphTraits";
 import { FuncID, ICallSite } from "../../model/CallGraph";
 import { CallsiteContext, Context, ContextCache, ContextID, DUMMY_CID, ObjContext } from "./Context";
+import { ContextItemManager } from "./ContextItem";
 
+/**
+ * Top layer of context
+ */
 export interface ContextSelector {
     ctxCache: ContextCache;
+    ctxManager: ContextItemManager;
     selectContext(callerContextID: ContextID, callsite: ICallSite, calleeFunc: number): ContextID;
     emptyContext(): Context
     getNewContext(callerFuncId: FuncID): ContextID;
@@ -13,10 +18,12 @@ export interface ContextSelector {
 export class KCallsiteContextSelector implements ContextSelector {
     private k: number;
     ctxCache: ContextCache;
+    ctxManager: ContextItemManager;
 
     constructor(k: number) {
         this.k = k;
         this.ctxCache = new ContextCache();
+        this.ctxManager = new ContextItemManager();
     }
 
     public selectContext(callerContextID: ContextID, callsite: ICallSite, calleeFunc: number): ContextID {
@@ -25,7 +32,7 @@ export class KCallsiteContextSelector implements ContextSelector {
             return DUMMY_CID;
         }
 
-        let calleeContext = callerContext.append(this.ctxCache.getContextList().length, callsite.id, calleeFunc, this.k);
+        let calleeContext = callerContext.append(callsite.id, calleeFunc, this.k, this.ctxManager);
         return this.ctxCache.getOrNewContextID(calleeContext);
     }
 
@@ -46,10 +53,12 @@ export class KCallsiteContextSelector implements ContextSelector {
 export class KObjContextSelector implements ContextSelector {
     private k: number;
     ctxCache: ContextCache;
+    ctxManager: ContextItemManager;
 
     constructor(k: number) {
         this.k = k;
         this.ctxCache = new ContextCache();
+        this.ctxManager = new ContextItemManager();
     }
     public selectContext(callerContextID: ContextID, callsite: ICallSite, obj: number): ContextID {
         let callerContext = this.ctxCache.getContext(callerContextID);
@@ -57,7 +66,7 @@ export class KObjContextSelector implements ContextSelector {
             return DUMMY_CID;
         }
 
-        let calleeContext = callerContext.append(this.ctxCache.getContextList().length, 0, obj, this.k);
+        let calleeContext = callerContext.append(0, obj, this.k, this.ctxManager);
         return this.ctxCache.getOrNewContextID(calleeContext);
     }
 

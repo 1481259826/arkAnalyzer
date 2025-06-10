@@ -1,3 +1,6 @@
+/**
+ * A ContextItem represents a unique context in the program.
+ */
 export interface ContextItem {
     readonly id: number;
     getSignature(): string;
@@ -5,7 +8,7 @@ export interface ContextItem {
 
 export class CallsiteContextItem implements ContextItem {
     readonly id: number;
-    readonly callSiteId: number; // TODO: add id to callsite
+    readonly callSiteId: number;
     readonly calleeFuncId: number;
 
     constructor(id: number, callSiteId: number, calleeFuncId: number) {
