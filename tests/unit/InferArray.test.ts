@@ -360,7 +360,7 @@ describe("for Test without sdk", () => {
             assert.equal(item.getType().toString(), 'number');
         }
         assert.equal(file?.getDefaultClass()?.getMethodWithName('testFor')
-            ?.getCfg()?.getStmts().at(10)?.toString(), '%4 = %2.<@ES2015/BuiltinClass: IteratorResult.value>')
+            ?.getCfg()?.getStmts()?.[10].toString(), '%4 = %2.<@ES2015/BuiltinClass: IteratorResult.value>')
     })
 
     it('while case', () => {
@@ -373,7 +373,7 @@ describe("for Test without sdk", () => {
             assert.equal(item.getType().toString(), 'number');
         }
         assert.equal(file?.getDefaultClass()?.getMethodWithName('testFor')
-            ?.getCfg()?.getStmts().at(10)?.toString(), '%4 = %2.<@ES2015/BuiltinClass: IteratorResult.value>')
+            ?.getCfg()?.getStmts()?.[10].toString(), '%4 = %2.<@ES2015/BuiltinClass: IteratorResult.value>')
     })
 
 })
@@ -395,7 +395,7 @@ describe("for Test with sdk", () => {
             assert.equal(item.getType().toString(), 'number');
         }
         assert.equal(file?.getDefaultClass()?.getMethodWithName('testFor')
-            ?.getCfg()?.getStmts().at(10)?.toString(), '%4 = %2.<@built-in/lib.es2015.iterable.d.ts: IteratorYieldResult.value>')
+            ?.getCfg()?.getStmts()?.[10].toString(), '%4 = %2.<@built-in/lib.es2015.iterable.d.ts: IteratorYieldResult.value>')
     })
 
     it('while case', () => {
@@ -408,7 +408,7 @@ describe("for Test with sdk", () => {
             assert.equal(item.getType().toString(), 'number');
         }
         assert.equal(file?.getDefaultClass()?.getMethodWithName('testWhile')
-            ?.getCfg()?.getStmts().at(11)?.toString(), 'item = next.<@built-in/lib.es2015.iterable.d.ts: IteratorYieldResult.value>')
+            ?.getCfg()?.getStmts()?.[11].toString(), 'item = next.<@built-in/lib.es2015.iterable.d.ts: IteratorYieldResult.value>')
     })
 })
 
