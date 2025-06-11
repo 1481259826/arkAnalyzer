@@ -29,7 +29,7 @@ export class PointerAnalysisConfig {
     public outputDirectory: string;
     public detectTypeDiff: boolean;
     public dotDump: boolean;
-    public unhandledFuncDump: boolean;
+    public debug: boolean;
     public analysisScale: PtaAnalysisScale;
     public ptsCollectionType: PtsCollectionType;
     public ptsCollectionCtor: new () => IPtsCollection<NodeID>;
@@ -43,7 +43,7 @@ export class PointerAnalysisConfig {
         outputDirectory: string,
         detectTypeDiff: boolean = false,
         dotDump: boolean = false,
-        unhandledFuncDump: boolean = false,
+        debug: boolean = false,
         analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram,
         ptsCoType = PtsCollectionType.Set
     ) {
@@ -54,7 +54,7 @@ export class PointerAnalysisConfig {
         this.outputDirectory = outputDirectory;
         this.detectTypeDiff = detectTypeDiff;
         this.dotDump = dotDump;
-        this.unhandledFuncDump = unhandledFuncDump;
+        this.debug = debug;
         this.analysisScale = analysisScale;
         this.ptsCollectionType = ptsCoType;
         this.ptsCollectionCtor = createPtsCollectionCtor<NodeID>(ptsCoType);
