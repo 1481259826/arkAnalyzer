@@ -86,9 +86,6 @@ export class PagBuilder {
     // TODO: change string to hash value
     private staticField2UniqInstanceMap: Map<string, Value> = new Map();
     private instanceField2UniqInstanceMap: Map<string, Value> = new Map();
-    private cid2ThisRefPtMap: Map<ContextID, NodeID> = new Map();
-    private cid2ThisRefMap: Map<ContextID, NodeID> = new Map();
-    private cid2ThisLocalMap: Map<ContextID, NodeID> = new Map();
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>> = new Map();
     // record the SDK API param, and create fake Values
     private methodParamValueMap: Map<FuncID, Map<number, Value>> = new Map();
@@ -937,10 +934,7 @@ export class PagBuilder {
             throw new Error('Can not get this ptr');
         }
 
-        // IMPORTANT: set cid 2 base Pt info firstly
-        this.cid2ThisRefPtMap.set(calleeCid, baseClassPTNode);
-        let thisRefNode = this.getOrNewThisRefNode(calleeCid, thisPtr) as PagThisRefNode;
-        thisRefNode.addPTNode(baseClassPTNode);
+        let thisRefNode = this.getOrNewPagNode(calleeCid, thisPtr) as PagThisRefNode;
 
         return thisRefNode.getID();
     }
@@ -1235,21 +1229,10 @@ export class PagBuilder {
     }
 
     public getOrNewPagNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
-        if (v instanceof ArkThisRef) {
-            return this.getOrNewThisRefNode(cid, v as ArkThisRef);
-        }
-
-        // this local is also not uniq!!!
-        // remove below block once this issue fixed
-
         // globalThis process can not be removed while all `globalThis` ref is the same Value
-        if (v instanceof Local) {
-            if (v.getName() === 'this') {
-                return this.getOrNewThisLoalNode(cid, v as Local, s);
-            } else if (v.getName() === GLOBAL_THIS_NAME && v.getDeclaringStmt() == null) {
+        if (v instanceof Local && v.getName() === GLOBAL_THIS_NAME && v.getDeclaringStmt() == null) {
                 // globalThis node has no cid
                 return this.getOrNewGlobalThisNode(-1);
-            }
         }
 
         if (v instanceof ArkInstanceFieldRef || v instanceof ArkStaticFieldRef) {
@@ -1259,39 +1242,8 @@ export class PagBuilder {
         return this.pag.getOrNewNode(cid, v, s);
     }
 
-    /**
-     * return ThisRef PAG node according to cid, a cid has a unique ThisRef node
-     * @param cid: current contextID
-     */
-    public getOrNewThisRefNode(cid: ContextID, v: ArkThisRef): PagNode {
-        let thisRefNodeID = this.cid2ThisRefMap.get(cid);
-        if (!thisRefNodeID) {
-            thisRefNodeID = -1;
-        }
-
-        let thisRefNode = this.pag.getOrNewThisRefNode(thisRefNodeID, v);
-        this.cid2ThisRefMap.set(cid, thisRefNode.getID());
-        return thisRefNode;
-    }
-
-    // TODO: remove it once this local not uniq issue is fixed
-    public getOrNewThisLoalNode(cid: ContextID, v: Local, s?: Stmt): PagNode {
-        let thisLocalNodeID = this.cid2ThisLocalMap.get(cid);
-        if (thisLocalNodeID) {
-            return this.pag.getNode(thisLocalNodeID) as PagNode;
-        }
-
-        let thisNode = this.pag.getOrNewNode(cid, v, s);
-        this.cid2ThisLocalMap.set(cid, thisNode.getID());
-        return thisNode;
-    }
-
     public getOrNewGlobalThisNode(cid: ContextID): PagNode {
         return this.pag.getOrNewNode(cid, this.getGlobalThisValue());
-    }
-
-    public getUniqThisLocalNode(cid: ContextID): NodeID | undefined {
-        return this.cid2ThisLocalMap.get(cid);
     }
 
     /**
@@ -1866,7 +1818,7 @@ export class PagBuilder {
         let srcFunc = src.getDeclaringStmt()?.getCfg().getDeclaringMethod();
         if (srcFunc) {
             let srcFuncID = this.cg.getCallGraphNodeByMethod(srcFunc.getSignature()).getID();
-            let cid = this.ctxSelector.getNewContext(srcFuncID);
+            let cid = this.ctxSelector.emptyContext();
             let csFuncID = new CSFuncID(cid, srcFuncID);
             this.buildFuncPagAndAddToWorklist(csFuncID);
         }

@@ -1,5 +1,19 @@
-import { NodeID } from "../../../core/graph/GraphTraits";
-import { CallGraph, FuncID, ICallSite } from "../../model/CallGraph";
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { CallGraph, ICallSite } from "../../model/CallGraph";
 import { CallsiteContext, Context, ContextCache, ContextID, DUMMY_CID, ObjContext } from "./Context";
 import { ContextItemManager } from "./ContextItem";
 import path from 'path';
@@ -13,7 +27,6 @@ export interface ContextSelector {
     ctxManager: ContextItemManager;
     selectContext(callerContextID: ContextID, callsite: ICallSite, calleeFunc: number): ContextID;
     emptyContext(): ContextID
-    getNewContext(callerFuncId: FuncID): ContextID;
     getContextID(context: Context): ContextID;
     dump(path: string, cg: CallGraph): void;
 }
@@ -46,10 +59,6 @@ export class KCallsiteContextSelector implements ContextSelector {
 
     public getContextID(context: Context): ContextID {
         return this.ctxCache.getOrNewContextID(context);
-    }
-
-    public getNewContext(callerFuncId: FuncID): ContextID {
-        return this.ctxCache.getOrNewContextID(CallsiteContext.new([callerFuncId]));
     }
 
     public dump(dir: string,cg: CallGraph) {
@@ -88,10 +97,6 @@ export class KObjContextSelector implements ContextSelector {
 
     public getContextID(context: Context): ContextID {
         return this.ctxCache.getOrNewContextID(context);
-    }
-
-    public getNewContext(objID: NodeID): ContextID {
-        return this.ctxCache.getOrNewContextID(ObjContext.new([objID]));
     }
 
     public dump(dir: string, cg: CallGraph) {

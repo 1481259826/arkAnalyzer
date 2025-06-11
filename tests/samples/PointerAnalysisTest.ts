@@ -88,6 +88,7 @@ function printTypeDiff(pta: PointerAnalysis) {
 
     }
 }
+
 function runProject(output: string) {
     config.buildFromJson('./tests/resources/pta/PointerAnalysisTestConfig.json');
     let projectScene: Scene = new Scene();
@@ -102,7 +103,7 @@ function runProject(output: string) {
 
 
 function runDir(output: string) {
-    config.buildFromProjectDir('./tests/resources/pta/CallParam');
+    config.buildFromProjectDir('./tests/unit/save');
     config.getSdksObj().push(sdk);
 
     let projectScene: Scene = new Scene();
@@ -148,18 +149,18 @@ function runMethod(output: string): void {
     PointerAnalysis.pointerAnalysisForMethod(projectScene, cg.getArkMethodByFuncID(debugfunc[0]) as ArkMethod, ptaConfig);
 }
 
-let type = 2;
+let type = 1;
 
 switch (type) {
     case 1:
-        runDir('./out');
+        runDir('./out/dir');
         break;
 
     case 2:
-        runMethod('./out');
+        runMethod('./out/method');
         break;
 
     case 3:
-        runProject('./out');
+        runProject('./out/project');
         break;
 }

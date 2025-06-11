@@ -40,8 +40,6 @@ export type PagNodeType = Value;
  * Implementation of pointer-to assignment graph for pointer analysis
  */
 
-const DUMMY_PAG_NODE_ID = -1;
-
 export enum PagEdgeKind {
     Address,
     Copy,
@@ -461,8 +459,8 @@ export class PagStaticFieldNode extends PagNode {
 
 export class PagThisRefNode extends PagNode {
     pointToNode: NodeID[];
-    constructor(id: NodeID, thisRef: ArkThisRef) {
-        super(id, DUMMY_PAG_NODE_ID, thisRef, PagNodeKind.ThisRef);
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, thisRef: ArkThisRef) {
+        super(id, cid, thisRef, PagNodeKind.ThisRef);
         this.pointToNode = [];
     }
 
@@ -780,7 +778,7 @@ export class Pag extends BaseExplicitGraph {
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
-            throw new Error('This Node needs to use addThisNode method');
+            pagNode = new PagThisRefNode(id, cid, value);
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
@@ -883,35 +881,6 @@ export class Pag extends BaseExplicitGraph {
             ctxMap.set(cid, nodes);
         }
         this.contextBaseToIdMap.set(base, ctxMap);
-    }
-
-    /*
-     * This node has no context info
-     * but point to node info
-     */
-    public addPagThisRefNode(value: ArkThisRef): PagNode {
-        let id: NodeID = this.nodeNum + 1;
-        let pagNode = new PagThisRefNode(id, value);
-        this.addNode(pagNode);
-
-        return pagNode;
-    }
-
-    public addPagThisLocalNode(ptNode: NodeID, value: Local): PagNode {
-        let id: NodeID = this.nodeNum + 1;
-        let pagNode = new PagLocalNode(id, ptNode, value);
-        this.addNode(pagNode);
-
-        return pagNode;
-    }
-
-    public getOrNewThisRefNode(thisRefNodeID: NodeID, value: ArkThisRef): PagNode {
-        if (thisRefNodeID !== -1) {
-            return this.getNode(thisRefNodeID) as PagNode;
-        }
-
-        let thisRefNode = this.addPagThisRefNode(value);
-        return thisRefNode;
     }
 
     public getOrNewThisLocalNode(cid: ContextID, ptNode: NodeID, value: Local, s?: Stmt): PagNode {

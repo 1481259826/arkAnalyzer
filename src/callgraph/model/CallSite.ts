@@ -67,15 +67,6 @@ export class DynCallSite implements ICallSite {
     }
 }
 
-// export class CSCallSite extends CallSite {
-//     public cid: ContextID;
-
-//     constructor(id: ContextID, cs: CallSite) {
-//         super(cs.callStmt, cs.args, cs.calleeFuncID, cs.callerFuncID);
-//         this.cid = id;
-//     }
-// }
-
 export class CallSiteManager {
     private idToCallSiteMap: Map<CallSiteID, ICallSite> = new Map();
     private callSiteToIdMap: Map<ICallSite, CallSiteID> = new Map();
