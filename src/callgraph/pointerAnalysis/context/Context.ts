@@ -1,4 +1,5 @@
-import { ContextItemManager } from "./ContextItem";
+import { CallGraph } from "../../model/CallGraph";
+import { CallsiteContextItem, ContextItemManager } from "./ContextItem";
 
 export type ContextID = number;
 export const DUMMY_CID = 0;
@@ -96,12 +97,24 @@ export abstract class Context {
     }
 
     public abstract append(callsiteID: number, calleeFunc: number, k: number, m: ContextItemManager): Context;
+    public abstract dump(m: ContextItemManager, cg: CallGraph): string;
 }
 
 export class CallsiteContext extends Context {
     public append(callsiteID: number, calleeFunc: number, k: number, m: ContextItemManager): CallsiteContext {
         let contextItem = m.getOrCreateCallSiteItem(callsiteID, calleeFunc);
         return Context.newKLimitedContext(this, contextItem.id, k) as CallsiteContext;
+        // TODO: dumplicated check
+    }
+
+    public dump(m: ContextItemManager, cg: CallGraph): string {
+        let content: string = '';
+        for (let i = 0; i < this.length(); i++) {
+            const item = m.getItem(this.get(i)) as CallsiteContextItem;
+            const callSiteInfo = cg.getCallSiteInfo(item.callSiteId);
+            content += `\t[${callSiteInfo}]\n`;
+        }
+        return content;
     }
 }
 
@@ -109,6 +122,11 @@ export class ObjContext extends Context {
     public append(callsiteID: number, objId: number, k: number, m: ContextItemManager): ObjContext {
         let contextItem = m.getOrCreateObjectItem(objId);
         return Context.newKLimitedContext(this, contextItem.id, k);
+    }
+
+    public dump(m: ContextItemManager, cg: CallGraph): string {
+        let content: string = '';
+        return content;
     }
 }
 
@@ -164,5 +182,15 @@ export class ContextCache {
 
     public getContextList(): Context[] {
         return this.contextList;
+    }
+
+    public dump(m: ContextItemManager,cg: CallGraph) {
+        let content: string = '';
+        this.contextList.forEach((c, i) => {
+            content += `Context ${i}:\n`;
+            content += `${c.dump(m, cg)}\n`;
+        });
+
+        return content;
     }
 }

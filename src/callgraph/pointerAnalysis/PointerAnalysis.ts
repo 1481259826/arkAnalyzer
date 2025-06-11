@@ -122,6 +122,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         if (this.config.dotDump) {
             this.pag.dump(path.join(this.config.outputDirectory, 'ptaEnd_pag.dot'));
             this.cg.dump(path.join(this.config.outputDirectory, 'cgEnd.dot'));
+            this.pagBuilder.getContextSelector().dump(this.config.outputDirectory, this.cg);
         }
 
         if (this.config.unhandledFuncDump) {
