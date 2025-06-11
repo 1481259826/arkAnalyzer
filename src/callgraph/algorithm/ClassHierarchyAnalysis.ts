@@ -40,7 +40,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         this.getParamAnonymousMethod(invokeExpr).forEach(method => {
             // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod));
             resolveResult.push(
-                this.cg.getCallSiteManager().newCallsite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
+                this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
             );
         });
 
@@ -52,7 +52,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
             // get specific method
             // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!));
             resolveResult.push(
-                this.cg.getCallSiteManager().newCallsite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!
+                this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!
             ));
         } else {
             let declareClass = calleeMethod.getDeclaringArkClass();
@@ -78,7 +78,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
                     //     new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
                     // );
                     resolveResult.push(
-                        this.cg.getCallSiteManager().newCallsite(
+                        this.cg.getCallSiteManager().newCallSite(
                             invokeStmt, undefined,
                             this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod
                         ));

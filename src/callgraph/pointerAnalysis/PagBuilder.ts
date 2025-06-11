@@ -137,7 +137,7 @@ export class PagBuilder {
     public buildForEntries(funcIDs: FuncID[]): void {
         this.worklist = [];
         funcIDs.forEach(funcID => {
-            let cid = this.ctxSelector.getNewContext(funcID);
+            let cid = this.ctxSelector.emptyContext();
             let csFuncID = new CSFuncID(cid, funcID);
             this.buildFuncPagAndAddToWorklist(csFuncID);
         });
@@ -164,7 +164,7 @@ export class PagBuilder {
 
     public build(): void {
         for (let funcID of this.cg.getEntries()) {
-            let cid = this.ctxSelector.getNewContext(funcID);
+            let cid = this.ctxSelector.emptyContext();
             let csFuncID = new CSFuncID(cid, funcID);
             this.buildFuncPagAndAddToWorklist(csFuncID);
 
@@ -524,9 +524,11 @@ export class PagBuilder {
             }
 
             // let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
-            let staticCS = this.cg.getCallSiteManager().newCallsite(
-                cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID
-            );
+            // let staticCS = this.cg.getCallSiteManager().newCallSite(
+            //     cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID
+            // );
+
+            let staticCS = this.cg.getCallSiteManager().cloneCallSiteFromDyn((cs as DynCallSite), dstCGNode.getID());
             let calleeCid = this.ctxSelector.selectContext(cid, staticCS, staticCS.calleeFuncID);
 
             if (this.scale === PtaAnalysisScale.MethodLevel) {
@@ -843,9 +845,7 @@ export class PagBuilder {
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
             if (!this.cg.detectReachable(dstCGNode.getID(), callerNode.getID())) {
                 // let staticCS = new CallSite(cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID);
-                let staticCS = this.cg.getCallSiteManager().newCallsite(
-                    cs.callStmt, cs.args, dstCGNode.getID(), cs.callerFuncID
-                );
+                let staticCS = this.cg.getCallSiteManager().cloneCallSiteFromDyn(cs, dstCGNode.getID());
                 let calleeCid = this.ctxSelector.selectContext(cid, staticCS, staticCS.calleeFuncID);
                 let staticSrcNodes = this.addStaticPagCallEdge(staticCS, cid, calleeCid);
                 srcNodes.push(...staticSrcNodes);
@@ -1221,7 +1221,7 @@ export class PagBuilder {
 
                 // create new DynCallSite
                 // let sdkParamCallSite = new DynCallSite(sdkParamInvokeStmt, undefined, undefined, funcID);
-                let sdkParamCallSite = this.cg.getCallSiteManager().newDynCallsite(
+                let sdkParamCallSite = this.cg.getCallSiteManager().newDynCallSite(
                     sdkParamInvokeStmt, undefined, undefined, funcID
                 );
                 dstPagNode.addRelatedDynCallSite(sdkParamCallSite);
@@ -2011,5 +2011,9 @@ export class PagBuilder {
         });
 
         return usedValuesInArray;
+    }
+
+    public getContextSelector(): ContextSelector {
+        return this.ctxSelector;
     }
 }

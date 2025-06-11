@@ -48,7 +48,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
         this.getParamAnonymousMethod(invokeExpr).forEach(method => {
             // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod));
             resolveResult.push(
-                this.cg.getCallSiteManager().newCallsite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
+                this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
             );
         });
 
@@ -61,7 +61,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
             // get specific method
             // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod));
             resolveResult.push(
-                this.cg.getCallSiteManager().newCallsite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod)
+                this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod)
             );
         } else {
             let declareClass = calleeMethod!.getDeclaringArkClass();
@@ -99,7 +99,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                     // );
 
                     resolveResult.push(
-                        this.cg.getCallSiteManager().newCallsite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
+                        this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
                     );
                 }
             });
@@ -120,7 +120,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                     this.cg.addDynamicCallEdge(call.caller, call.callee, call.callStmt);
                     // newCallSites.push(new CallSite(call.callStmt, undefined, call.callee, call.caller));
                     newCallSites.push(
-                        this.cg.getCallSiteManager().newCallsite(call.callStmt, undefined, call.callee, call.caller)
+                        this.cg.getCallSiteManager().newCallSite(call.callStmt, undefined, call.callee, call.caller)
                     );
                 });
             }

@@ -22,7 +22,7 @@ import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { BaseEdge, BaseNode, BaseExplicitGraph, NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CGStat } from '../common/Statistics';
 import { UNKNOWN_FILE_NAME } from '../../core/common/Const';
-import { CallSite, CallSiteManager, DynCallSite, ICallSite } from './CallSite';
+import { CallSite, CallSiteID, CallSiteManager, DynCallSite, ICallSite } from './CallSite';
 
 export type Method = MethodSignature;
 export type FuncID = number;
@@ -188,7 +188,7 @@ export class CallGraph extends BaseExplicitGraph {
         let calleeNode = this.getCallGraphNodeByMethod(callee) as CallGraphNode;
         let args = callStmt.getInvokeExpr()?.getArgs();
 
-        let cs: CallSite = this.csManager.newCallsite(callStmt, args, calleeNode.getID(), callerNode.getID());
+        let cs: CallSite = this.csManager.newCallSite(callStmt, args, calleeNode.getID(), callerNode.getID());
 
         if (this.addStmtToCallSiteMap(callStmt, cs)) {
             // TODO: check stmt exists
@@ -229,7 +229,7 @@ export class CallGraph extends BaseExplicitGraph {
         }
         let args = callStmt.getInvokeExpr()?.getArgs();
 
-        let cs = this.csManager.newDynCallsite(callStmt, args, calleeNode?.getID(), callerNode.getID());
+        let cs = this.csManager.newDynCallSite(callStmt, args, calleeNode?.getID(), callerNode.getID());
         this.stmtToDynCallSitemap.set(callStmt, cs);
     }
 
@@ -414,5 +414,17 @@ export class CallGraph extends BaseExplicitGraph {
 
     public getCallSiteManager(): CallSiteManager {
         return this.csManager;
+    }
+
+    public getCallSiteInfo(csID: CallSiteID) {
+        const callSite = this.csManager.getCallSiteById(csID);
+        if (!callSite) {
+            return '';
+        }
+
+        const callerMethod = this.getMethodByFuncID(callSite.callerFuncID)!;
+        const calleeMethod = this.getMethodByFuncID(callSite.getCalleeFuncID()!)!;
+
+        return `CS[${csID}]: {${callerMethod.toString()} -> ${calleeMethod.toString()}}`
     }
 }

@@ -24,6 +24,7 @@ export interface ICallSite {
     callStmt: Stmt;
     args: Value[] | undefined;
     callerFuncID: FuncID;
+    getCalleeFuncID(): FuncID | undefined;
 }
 
 export class CallSite implements ICallSite {
@@ -39,6 +40,10 @@ export class CallSite implements ICallSite {
         this.args = a;
         this.calleeFuncID = ce;
         this.callerFuncID = cr;
+    }
+
+    public getCalleeFuncID(): FuncID | undefined {
+        return this.calleeFuncID;
     }
 }
 
@@ -56,6 +61,10 @@ export class DynCallSite implements ICallSite {
         this.args = a;
         this.protentialCalleeFuncID = ptcCallee;
     }
+
+    public getCalleeFuncID(): FuncID | undefined {
+        return this.protentialCalleeFuncID;
+    }
 }
 
 // export class CSCallSite extends CallSite {
@@ -70,8 +79,9 @@ export class DynCallSite implements ICallSite {
 export class CallSiteManager {
     private idToCallSiteMap: Map<CallSiteID, ICallSite> = new Map();
     private callSiteToIdMap: Map<ICallSite, CallSiteID> = new Map();
+    private dynToStaticMap: Map<CallSiteID, CallSiteID[]> = new Map();
 
-    public newCallsite(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
+    public newCallSite(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
         let id = this.idToCallSiteMap.size;
         let callSite = new CallSite(id, s, a, ce, cr);
         this.idToCallSiteMap.set(id, callSite);
@@ -79,11 +89,33 @@ export class CallSiteManager {
         return callSite;
     }
 
-    public newDynCallsite(s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID) {
+    public newDynCallSite(s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID) {
         let id = this.idToCallSiteMap.size;
         let callSite = new DynCallSite(id, s, a, ptcCallee, caller);
         this.idToCallSiteMap.set(id, callSite);
         this.callSiteToIdMap.set(callSite, id);
         return callSite;
+    }
+
+    public cloneCallSiteFromDyn(dynCallSite: DynCallSite, calleeFuncID: FuncID): CallSite {
+        let clonedCS = this.dynToStaticMap.get(dynCallSite.id) ?? [];
+
+        let foundCS = clonedCS
+            .map(id => this.idToCallSiteMap.get(id) as CallSite)
+            .find(cs => cs.calleeFuncID === calleeFuncID);
+    
+        if (foundCS) {
+            return foundCS;
+        }
+
+        let staticCS = this.newCallSite(dynCallSite.callStmt, dynCallSite.args, calleeFuncID, dynCallSite.callerFuncID);
+        clonedCS.push(staticCS.id);
+        this.dynToStaticMap.set(dynCallSite.id, clonedCS);
+
+        return staticCS;
+    }
+
+    public getCallSiteById(id: CallSiteID): ICallSite | undefined {
+        return this.idToCallSiteMap.get(id);
     }
 }
