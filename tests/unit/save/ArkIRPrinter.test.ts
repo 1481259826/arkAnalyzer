@@ -509,6 +509,7 @@ class Person {
       this = this: @save/basic.ts: Person
       %0 = this.<@save/basic.ts: Person.age>
       %0 = %0 + 1
+      this.<@save/basic.ts: Person.age> = %0
       return
   }
 

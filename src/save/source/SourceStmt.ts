@@ -166,7 +166,7 @@ export class SourceAssignStmt extends SourceStmt {
             return;
         }
 
-        this.leftCode = this.transformer.valueToString(this.leftOp);
+        this.leftCode = this.transformer.valueToString(this.leftOp, true);
 
         if (this.leftOp instanceof Local && this.rightOp instanceof ArkNewExpr) {
             this.transferRightNewExpr();
@@ -176,8 +176,7 @@ export class SourceAssignStmt extends SourceStmt {
             this.transferRightComponentCreate();
         } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isConstructorInvoke(this.rightOp)) {
             this.transferConstructorInvokeExpr(this.rightOp);
-        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isComponentAttributeInvoke(this.rightOp)
-        ) {
+        } else if (this.rightOp instanceof ArkInstanceInvokeExpr && PrinterUtils.isComponentAttributeInvoke(this.rightOp)) {
             this.transferRightComponentAttribute();
         } else {
             this.rightCode = this.transformer.valueToString(this.rightOp);
