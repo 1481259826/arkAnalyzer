@@ -12,7 +12,9 @@
     "oh_modules",
     "node_modules",
     "build-tools",
-    "hvigorfile.ts"
+    "hvigorfile.ts",
+    "hvigorfile.js",
+    "hvigor-wrapper.js"
   ],
   "sdkGlobalFolders": [
     "component",
