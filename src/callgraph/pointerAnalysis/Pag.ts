@@ -588,8 +588,8 @@ export class PagFuncNode extends PagNode {
         return this.thisPt;
     }
 
-    public setCS(callsite: CallSite): void {
-        this.originCallSite = callsite;
+    public setCS(callSite: CallSite): void {
+        this.originCallSite = callSite;
     }
 
     public getCS(): CallSite {

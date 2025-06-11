@@ -14,7 +14,7 @@
  */
 
 import { CallGraph } from "../../model/CallGraph";
-import { CallsiteContextItem, ContextItemManager } from "./ContextItem";
+import { CallSiteContextItem, ContextItemManager } from "./ContextItem";
 
 export type ContextID = number;
 export const DUMMY_CID = 0;
@@ -37,7 +37,7 @@ export abstract class Context {
     /**
      * Creates a new empty context instance.
      * This static method must be called on a concrete subclass.
-     * @example CallsiteContext.newEmpty()
+     * @example CallSiteContext.newEmpty()
      */
     static newEmpty<T extends Context>(this: new () => T): T {
         return new this();
@@ -47,12 +47,12 @@ export abstract class Context {
      * Creates a new context instance from an array of element IDs.
      * This static method must be called on a concrete subclass.
      * @param contextElems An array of ContextItem IDs.
-     * @example CallsiteContext.new([1, 2])
+     * @example CallSiteContext.new([1, 2])
      */
     static new<T extends Context>(this: new (elems: number[]) => T, contextElems: number[]): T {
         return new this(contextElems);
     }
-    
+
     /**
      * Creates a new k-limited context by prepending a new element to an old context.
      * The returned instance has the same type as the `oldCtx`.
@@ -111,21 +111,21 @@ export abstract class Context {
         return this.contextElems.join('-');
     }
 
-    public abstract append(callsiteID: number, calleeFunc: number, k: number, m: ContextItemManager): Context;
+    public abstract append(callSiteID: number, calleeFunc: number, k: number, m: ContextItemManager): Context;
     public abstract dump(m: ContextItemManager, cg: CallGraph): string;
 }
 
-export class CallsiteContext extends Context {
-    public append(callsiteID: number, calleeFunc: number, k: number, m: ContextItemManager): CallsiteContext {
-        let contextItem = m.getOrCreateCallSiteItem(callsiteID, calleeFunc);
-        return Context.newKLimitedContext(this, contextItem.id, k) as CallsiteContext;
+export class CallSiteContext extends Context {
+    public append(callSiteID: number, calleeFunc: number, k: number, m: ContextItemManager): CallSiteContext {
+        let contextItem = m.getOrCreateCallSiteItem(callSiteID, calleeFunc);
+        return Context.newKLimitedContext(this, contextItem.id, k) as CallSiteContext;
         // TODO: dumplicated check
     }
 
     public dump(m: ContextItemManager, cg: CallGraph): string {
         let content: string = '';
         for (let i = 0; i < this.length(); i++) {
-            const item = m.getItem(this.get(i)) as CallsiteContextItem;
+            const item = m.getItem(this.get(i)) as CallSiteContextItem;
             const callSiteInfo = cg.getCallSiteInfo(item.callSiteId);
             content += `\t[${callSiteInfo}]\n`;
         }
@@ -134,7 +134,7 @@ export class CallsiteContext extends Context {
 }
 
 export class ObjContext extends Context {
-    public append(callsiteID: number, objId: number, k: number, m: ContextItemManager): ObjContext {
+    public append(callSiteID: number, objId: number, k: number, m: ContextItemManager): ObjContext {
         let contextItem = m.getOrCreateObjectItem(objId);
         return Context.newKLimitedContext(this, contextItem.id, k);
     }
@@ -199,7 +199,7 @@ export class ContextCache {
         return this.contextList;
     }
 
-    public dump(m: ContextItemManager,cg: CallGraph) {
+    public dump(m: ContextItemManager, cg: CallGraph) {
         let content: string = '';
         this.contextList.forEach((c, i) => {
             content += `Context ${i}:\n`;

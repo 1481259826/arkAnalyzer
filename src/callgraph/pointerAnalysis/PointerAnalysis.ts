@@ -381,7 +381,7 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     /**
      * 1. 记录被更新的节点(记录cid, nodeid)
-     * 2. ( PAGLocalNode记录callsite(cid, value唯一))，通过1种的nodeID查询Node,拿到Callsite
+     * 2. ( PAGLocalNode记录callSite(cid, value唯一))，通过1种的nodeID查询Node,拿到CallSite
      * 3. 在addDynamicCall里对传入指针过滤（已处理指针和未处理指针）
      */
     private onTheFlyDynamicCallSolve(): boolean {
@@ -416,13 +416,13 @@ export class PointerAnalysis extends AbstractAnalysis {
             return changed;
         }
 
-        logger.info(`[process dynamic callsite] node ${node.getID()}`);
-        dynCallSites.forEach(dynCallsite => {
+        logger.info(`[process dynamic callSite] node ${node.getID()}`);
+        dynCallSites.forEach(dynCallSite => {
             for (let pt of pts) {
-                let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
+                let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallSite, pt, node.getCid());
                 changed = this.addToReanalyze(srcNodes) || changed;
             }
-            processedCallSites.add(dynCallsite);
+            processedCallSites.add(dynCallSite);
         });
 
         return changed;
@@ -437,7 +437,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             return changed;
         }
 
-        logger.info(`[process unknown callsite] node ${node.getID()}`);
+        logger.info(`[process unknown callSite] node ${node.getID()}`);
         unknownCallSites.forEach(unknownCallSite => {
             for (let pt of pts) {
                 let srcNodes = this.pagBuilder.addDynamicCallEdge(unknownCallSite, pt, node.getCid());

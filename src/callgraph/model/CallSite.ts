@@ -94,7 +94,7 @@ export class CallSiteManager {
         let foundCS = clonedCS
             .map(id => this.idToCallSiteMap.get(id) as CallSite)
             .find(cs => cs.calleeFuncID === calleeFuncID);
-    
+
         if (foundCS) {
             return foundCS;
         }

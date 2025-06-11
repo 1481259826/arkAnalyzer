@@ -247,7 +247,7 @@ export class CallGraph extends BaseExplicitGraph {
         callEdge.addInDirectCallSite(callStmt);
     }
 
-    public getDynCallsiteByStmt(stmt: Stmt): DynCallSite | undefined {
+    public getDynCallSiteByStmt(stmt: Stmt): DynCallSite | undefined {
         return this.stmtToDynCallSitemap.get(stmt);
     }
 
@@ -425,6 +425,6 @@ export class CallGraph extends BaseExplicitGraph {
         const callerMethod = this.getMethodByFuncID(callSite.callerFuncID)!;
         const calleeMethod = this.getMethodByFuncID(callSite.getCalleeFuncID()!)!;
 
-        return `CS[${csID}]: {${callerMethod.toString()} -> ${calleeMethod.toString()}}`
+        return `CS[${csID}]: {${callerMethod.toString()} -> ${calleeMethod.toString()}}`;
     }
 }

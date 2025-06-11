@@ -21,7 +21,7 @@ export interface ContextItem {
     getSignature(): string;
 }
 
-export class CallsiteContextItem implements ContextItem {
+export class CallSiteContextItem implements ContextItem {
     readonly id: number;
     readonly callSiteId: number;
     readonly calleeFuncId: number;
@@ -60,27 +60,27 @@ export class ContextItemManager {
     private idToItemMap: Map<number, ContextItem> = new Map();
     private nextItemId: number = 0;
 
-    public getOrCreateCallSiteItem(callSiteId: number, calleeFuncID: number): CallsiteContextItem {
+    public getOrCreateCallSiteItem(callSiteId: number, calleeFuncID: number): CallSiteContextItem {
         const signature = `CS:${callSiteId}-${calleeFuncID}`;
         if (this.itemToIdMap.has(signature)) {
             const id = this.itemToIdMap.get(signature)!;
-            return this.idToItemMap.get(id) as CallsiteContextItem;
+            return this.idToItemMap.get(id) as CallSiteContextItem;
         }
 
         const id = this.nextItemId++;
-        const item = new CallsiteContextItem(id, callSiteId, calleeFuncID);
+        const item = new CallSiteContextItem(id, callSiteId, calleeFuncID);
         this.itemToIdMap.set(signature, id);
         this.idToItemMap.set(id, item);
         return item;
     }
-    
+
     public getOrCreateObjectItem(allocationSiteId: number): ObjectContextItem {
         const signature = `OBJ:${allocationSiteId}`;
         if (this.itemToIdMap.has(signature)) {
             const id = this.itemToIdMap.get(signature)!;
             return this.idToItemMap.get(id) as ObjectContextItem;
         }
-        
+
         const id = this.nextItemId++;
         const item = new ObjectContextItem(id, allocationSiteId);
         this.itemToIdMap.set(signature, id);

@@ -58,7 +58,7 @@ import { IPtsCollection } from './PtsDS';
 import { BuiltApiType, getBuiltInApiType } from './PTAUtils';
 import { PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 import { ContextID, DUMMY_CID } from './context/Context';
-import { ContextSelector, KCallsiteContextSelector } from './context/ContextSelector';
+import { ContextSelector, KCallSiteContextSelector } from './context/ContextSelector';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -104,7 +104,7 @@ export class PagBuilder {
         this.cg = cg;
         this.scale = scale;
         this.funcPags = new Map<FuncID, FuncPag>();
-        this.ctxSelector = new KCallsiteContextSelector(kLimit);
+        this.ctxSelector = new KCallSiteContextSelector(kLimit);
         this.scene = s;
         this.pagStat = new PAGStat();
     }
@@ -232,11 +232,11 @@ export class PagBuilder {
             return;
         }
 
-        let dycs = this.cg.getDynCallsiteByStmt(stmt);
+        let dycs = this.cg.getDynCallSiteByStmt(stmt);
         if (dycs) {
             this.addToDynamicCallSite(fpag, dycs);
         } else {
-            logger.error(`can not find callsite by stmt: ${stmt.toString()}`);
+            logger.error(`can not find callSite by stmt: ${stmt.toString()}`);
         }
     }
 
@@ -415,7 +415,7 @@ export class PagBuilder {
     }
 
     public addDynamicCallSite(funcPag: FuncPag, funcID: FuncID, cid: ContextID): void {
-        // add dyn callsite in funcpag to base node
+        // add dyn callSite in funcpag to base node
         for (let cs of funcPag.getDynamicCallSites()) {
             let invokeExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
             let base!: Local;
@@ -680,7 +680,7 @@ export class PagBuilder {
 
             case BuiltApiType.FunctionBind:
                 /**
-                 * clone the function node and add the this pointer, origin callsite, args offset to it
+                 * clone the function node and add the this pointer, origin callSite, args offset to it
                  * let f = function.bind(thisArg, arg1, arg2, ...)
                  * f();
                  */
@@ -941,7 +941,7 @@ export class PagBuilder {
 
     /*
      * Add copy edges from arguments to parameters
-     *     ret edges from return values to callsite
+     *     ret edges from return values to callSite
      * Return src node
      */
     public addStaticPagCallEdge(cs: CallSite, callerCid: ContextID, calleeCid?: ContextID, ptNode?: PagNode): NodeID[] {
@@ -1231,8 +1231,8 @@ export class PagBuilder {
     public getOrNewPagNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
         // globalThis process can not be removed while all `globalThis` ref is the same Value
         if (v instanceof Local && v.getName() === GLOBAL_THIS_NAME && v.getDeclaringStmt() == null) {
-                // globalThis node has no cid
-                return this.getOrNewGlobalThisNode(-1);
+            // globalThis node has no cid
+            return this.getOrNewGlobalThisNode(-1);
         }
 
         if (v instanceof ArkInstanceFieldRef || v instanceof ArkStaticFieldRef) {
@@ -1708,7 +1708,7 @@ export class PagBuilder {
         funcPag.addDynamicCallSite(cs);
         this.pagStat.numDynamicCall++;
 
-        logger.trace('[add dynamic callsite] ' + cs.callStmt.toString() + ':  ' + cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString());
+        logger.trace('[add dynamic callSite] ' + cs.callStmt.toString() + ':  ' + cs.callStmt.getCfg()?.getDeclaringMethod().getSignature().toString());
     }
 
     public setPtForNode(node: NodeID, pts: IPtsCollection<NodeID> | undefined): void {
