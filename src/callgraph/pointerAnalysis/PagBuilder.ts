@@ -526,7 +526,7 @@ export class PagBuilder {
             // );
 
             let staticCS = this.cg.getCallSiteManager().cloneCallSiteFromDyn((cs as DynCallSite), dstCGNode.getID());
-            let calleeCid = this.ctxSelector.selectContext(cid, staticCS, staticCS.calleeFuncID);
+            let calleeCid = this.ctxSelector.selectContext(cid, staticCS, baseClassPTNode);
 
             if (this.scale === PtaAnalysisScale.MethodLevel) {
                 srcNodes.push(...this.addStaticPagCallReturnEdge(staticCS, baseClassPTNode, calleeCid));

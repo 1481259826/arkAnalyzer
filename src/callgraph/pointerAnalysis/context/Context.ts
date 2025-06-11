@@ -119,7 +119,6 @@ export class CallSiteContext extends Context {
     public append(callSiteID: number, calleeFunc: number, k: number, m: ContextItemManager): CallSiteContext {
         let contextItem = m.getOrCreateCallSiteItem(callSiteID, calleeFunc);
         return Context.newKLimitedContext(this, contextItem.id, k) as CallSiteContext;
-        // TODO: dumplicated check
     }
 
     public dump(m: ContextItemManager, cg: CallGraph): string {

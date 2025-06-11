@@ -42,13 +42,14 @@ export class KCallSiteContextSelector implements ContextSelector {
         this.ctxManager = new ContextItemManager();
     }
 
-    public selectContext(callerContextID: ContextID, callSite: ICallSite, calleeFunc: number): ContextID {
+    public selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number): ContextID {
         let callerContext = this.ctxCache.getContext(callerContextID);
-        if (!callerContext) {
+        let calleeFuncID = callSite.getCalleeFuncID();
+        if (!callerContext || !calleeFuncID) {
             return DUMMY_CID;
         }
 
-        let calleeContext = callerContext.append(callSite.id, calleeFunc, this.k, this.ctxManager);
+        let calleeContext = callerContext.append(callSite.id, calleeFuncID, this.k, this.ctxManager);
         return this.ctxCache.getOrNewContextID(calleeContext);
     }
 
