@@ -252,10 +252,12 @@ export class IRInference {
         if (type instanceof FunctionType) {
             const methodSignature = type.getMethodSignature();
             // because of last stmt is ArkReturnVoidStmt, the ArkInvokeStmt at -2 before ArkReturnVoidStmt.
-            const endIndex = -2;
-            const endStmt = arkMethod.getDeclaringArkFile().getScene().getMethod(methodSignature)?.getCfg()?.getStmts().at(endIndex);
-            if (endStmt instanceof ArkInvokeStmt) {
-                methodSignature.getMethodSubSignature().setReturnType(endStmt.getInvokeExpr().getType());
+            const stmts = arkMethod.getDeclaringArkFile().getScene().getMethod(methodSignature)?.getCfg()?.getStmts();
+            if (stmts) {
+                const endStmt = stmts[stmts.length - 2];
+                if (endStmt instanceof ArkInvokeStmt) {
+                    methodSignature.getMethodSubSignature().setReturnType(endStmt.getInvokeExpr().getType());
+                }
             }
             expr.setMethodSignature(methodSignature);
             return expr;
@@ -695,7 +697,8 @@ export class IRInference {
         }
 
         const type = property.getSignature().getType();
-        const lastStmt = anonField.getInitializer().at(-1);
+        const fieldInitializer = anonField.getInitializer();
+        const lastStmt = fieldInitializer[fieldInitializer.length - 1];
         if (lastStmt instanceof ArkAssignStmt) {
             const rightType = lastStmt.getRightOp().getType();
             if (type instanceof ClassType) {
@@ -812,7 +815,7 @@ export class IRInference {
     public static inferParameterRef(ref: ArkParameterRef, arkMethod: ArkMethod): AbstractRef {
         const paramType = ref.getType();
         if (paramType instanceof UnknownType || paramType instanceof UnclearReferenceType) {
-            const signature = arkMethod.getDeclareSignatures()?.at(0) ?? arkMethod.getSignature();
+            const signature = arkMethod.getDeclareSignatures()?.[0] ?? arkMethod.getSignature();
             const type1 = signature.getMethodSubSignature().getParameters()[ref.getIndex()]?.getType();
             if (!TypeInference.isUnclearType(type1)) {
                 ref.setType(type1);

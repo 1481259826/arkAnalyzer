@@ -714,7 +714,8 @@ export class TypeInference {
         if (property instanceof ArkField) {
             if (arkClass.getCategory() === ClassCategory.ENUM) {
                 let constant;
-                const lastStmt = property.getInitializer().at(-1);
+                const propertyInitializer = property.getInitializer();
+                const lastStmt = propertyInitializer[propertyInitializer.length - 1];
                 if (lastStmt instanceof ArkAssignStmt && lastStmt.getRightOp() instanceof Constant) {
                     constant = lastStmt.getRightOp() as Constant;
                 }
@@ -895,7 +896,7 @@ export class TypeInference {
         }
         let returnType: Type | undefined = arkMethod.getSignature().getType();
         if (returnType instanceof ClassType && returnType.getClassSignature().getClassName() === PROMISE) {
-            returnType = returnType.getRealGenericTypes()?.at(0);
+            returnType = returnType.getRealGenericTypes()?.[0];
         }
         if (returnType) {
             IRInference.inferRightWithSdkType(returnType, stmt.getOp().getType(), arkMethod.getDeclaringArkClass());

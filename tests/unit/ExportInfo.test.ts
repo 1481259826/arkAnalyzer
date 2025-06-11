@@ -275,8 +275,8 @@ describe("export Test", () => {
 
     it('setTimeout case', () => {
         const fileId = new FileSignature(projectScene.getProjectName(), 'Lottie_Report.ets');
-        const stmt = projectScene.getFile(fileId)?.getClassWithName('Foo')
-            ?.getMethodWithName('func')?.getCfg()?.getStmts().at(-2);
+        const stmts = projectScene.getFile(fileId)?.getClassWithName('Foo')?.getMethodWithName('func')?.getCfg()?.getStmts();
+        const stmt = stmts?.[stmts?.length - 2];
         assert.isDefined(stmt);
         assert.equal(stmt?.getInvokeExpr()?.getArgs()[0].getType().getTypeString(), '@exports/Lottie_Report.ets: %AC2$%AC1$Foo.%instInit.%instInit.%AM0$%instInit()');
     });
