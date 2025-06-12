@@ -277,17 +277,25 @@ export const ClassWithParamProperty = `class ClassWithParamProperty {
       return
   }
 
-  constructor(a: number, b: string, c: boolean, d?: string): @class/ClassWithConstructor.ts: ClassWithParamProperty {
+  constructor(a?: number, b: string, c: boolean, e?: string, d?: string): @class/ClassWithConstructor.ts: ClassWithParamProperty {
     label0:
       a = parameter0: number
       b = parameter1: string
       c = parameter2: boolean
-      d = parameter3: string
+      e = parameter3: string
+      d = parameter4: string
       this = this: @class/ClassWithConstructor.ts: ClassWithParamProperty
       instanceinvoke this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.%instInit()>()
       this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.a> = a
       this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.b> = b
       this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.c> = c
+      if e == undefined goto label1 label2
+
+    label1:
+      e = 'abc'
+      goto label2
+
+    label2:
       this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.d> = d
       instanceinvoke console.<@%unk/%unk: .log()>('this is constructor method')
       return this

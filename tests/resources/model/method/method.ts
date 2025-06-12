@@ -100,3 +100,58 @@ const myObject: {
     requiredMethod(): void;
     optionalMethod?(): void;
 };
+
+function paramWithInitializer(a: string, x: number = 5, y = 'abc', z: number = x + 1): number {
+    console.log(a + y);
+    return (x + z);
+}
+
+function getA(): number {
+    return 1;
+}
+
+const condition = true;
+
+function paramWithComplicatedInitializer(a = getA(), b = condition ? 'true' : 'false', c: string): void {
+    console.log(a + b);
+}
+
+function paramInitializerWithIfBranch(a = 3): number {
+    if (a > 0) {
+        return a;
+    } else {
+        return -a;
+    }
+}
+
+function paramInitializerWithTernary(a = 3): number {
+    let b: number;
+    a > 0 ? b = a : b = -a;
+    return b;
+}
+
+function paramInitializerWithTryCatch(a = 3): void {
+    try {
+        console.log(a);
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+function paramInitializerWithForLoop(a = 3): void {
+    for (let i = 0; i < a; i++) {
+        console.log(i);
+    }
+}
+
+function paramInitializerWithSwitch(a = 3): void {
+    switch (a) {
+        case 1:
+            console.log(a + 1);
+            break;
+        default:
+            console.log(a);
+    }
+
+}
+
