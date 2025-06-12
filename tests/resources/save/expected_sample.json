@@ -4432,7 +4432,7 @@
               {
                 "name": "%0",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "NumberType"
                 }
               },
               {
@@ -4444,7 +4444,7 @@
               {
                 "name": "%2",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "NumberType"
                 }
               },
               {
@@ -4456,7 +4456,7 @@
               {
                 "name": "%4",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "NumberType"
                 }
               }
             ],
@@ -4505,7 +4505,7 @@
                         "_": "Local",
                         "name": "%0",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       },
                       "right": {
@@ -4514,21 +4514,29 @@
                           "_": "Local",
                           "name": "Math",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "ClassType",
+                            "signature": {
+                              "name": "Math",
+                              "declaringFile": {
+                                "projectName": "built-in",
+                                "fileName": "node_modules/ohos-typescript/lib/lib.es5.d.ts"
+                              },
+                              "declaringNamespace": null
+                            }
                           }
                         },
                         "field": {
                           "declaringClass": {
-                            "name": "",
+                            "name": "Math",
                             "declaringFile": {
-                              "projectName": "%unk",
-                              "fileName": "%unk"
+                              "projectName": "built-in",
+                              "fileName": "node_modules/ohos-typescript/lib/lib.es5.d.ts"
                             },
                             "declaringNamespace": null
                           },
                           "name": "PI",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "NumberType"
                           }
                         }
                       }
@@ -4581,7 +4589,7 @@
                         "_": "Local",
                         "name": "%2",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       },
                       "right": {
@@ -4591,7 +4599,7 @@
                           "_": "Local",
                           "name": "%0",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "NumberType"
                           }
                         },
                         "right": {
@@ -4651,7 +4659,7 @@
                         "_": "Local",
                         "name": "%4",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       },
                       "right": {
@@ -4661,7 +4669,7 @@
                           "_": "Local",
                           "name": "%2",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "NumberType"
                           }
                         },
                         "right": {
@@ -4679,7 +4687,7 @@
                         "_": "Local",
                         "name": "%4",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       }
                     }
@@ -4726,13 +4734,13 @@
               {
                 "name": "%0",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "NumberType"
                 }
               },
               {
                 "name": "%1",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "NumberType"
                 }
               },
               {
@@ -4744,7 +4752,7 @@
               {
                 "name": "%3",
                 "type": {
-                  "_": "UnknownType"
+                  "_": "NumberType"
                 }
               }
             ],
@@ -4793,7 +4801,7 @@
                         "_": "Local",
                         "name": "%0",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       },
                       "right": {
@@ -4802,21 +4810,29 @@
                           "_": "Local",
                           "name": "Math",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "ClassType",
+                            "signature": {
+                              "name": "Math",
+                              "declaringFile": {
+                                "projectName": "built-in",
+                                "fileName": "node_modules/ohos-typescript/lib/lib.es5.d.ts"
+                              },
+                              "declaringNamespace": null
+                            }
                           }
                         },
                         "field": {
                           "declaringClass": {
-                            "name": "",
+                            "name": "Math",
                             "declaringFile": {
-                              "projectName": "%unk",
-                              "fileName": "%unk"
+                              "projectName": "built-in",
+                              "fileName": "node_modules/ohos-typescript/lib/lib.es5.d.ts"
                             },
                             "declaringNamespace": null
                           },
                           "name": "PI",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "NumberType"
                           }
                         }
                       }
@@ -4827,7 +4843,7 @@
                         "_": "Local",
                         "name": "%1",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       },
                       "right": {
@@ -4844,7 +4860,7 @@
                           "_": "Local",
                           "name": "%0",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "NumberType"
                           }
                         }
                       }
@@ -4897,7 +4913,7 @@
                         "_": "Local",
                         "name": "%3",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       },
                       "right": {
@@ -4907,7 +4923,7 @@
                           "_": "Local",
                           "name": "%1",
                           "type": {
-                            "_": "UnknownType"
+                            "_": "NumberType"
                           }
                         },
                         "right": {
@@ -4925,7 +4941,7 @@
                         "_": "Local",
                         "name": "%3",
                         "type": {
-                          "_": "UnknownType"
+                          "_": "NumberType"
                         }
                       }
                     }

@@ -833,6 +833,11 @@ export class ArkValueTransformer {
             } else {
                 invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
             }
+        } else if (callerValue instanceof ArkArrayRef && ts.isElementAccessExpression(functionNameNode)) {
+            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(functionNameNode.argumentExpression.getText());
+            invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args, realGenericTypes);
+            invokeValuePositions.push(...callerPositions.slice(1));
+            stmts.pop();
         } else {
             ({
                 value: callerValue,
@@ -1935,7 +1940,8 @@ export class ArkValueTransformer {
     }
 
     private resolveTypeReferenceNode(typeReferenceNode: ts.TypeReferenceNode): Type {
-        const typeReferenceFullName = typeReferenceNode.typeName.getText(this.sourceFile);
+        const typeReferenceFullName = ts.isIdentifier(typeReferenceNode.typeName) ? typeReferenceNode.typeName.text :
+            typeReferenceNode.typeName.getText(this.sourceFile);
         if (typeReferenceFullName === Builtin.OBJECT) {
             return Builtin.OBJECT_CLASS_TYPE;
         }
@@ -1949,12 +1955,11 @@ export class ArkValueTransformer {
         }
 
         if (!aliasTypeAndStmt) {
-            const typeName = typeReferenceNode.typeName.getText(this.sourceFile);
-            const local = this.locals.get(typeName);
+            const local = this.locals.get(typeReferenceFullName);
             if (local !== undefined) {
                 return local.getType();
             }
-            return new UnclearReferenceType(typeName, genericTypes);
+            return new UnclearReferenceType(typeReferenceFullName, genericTypes);
         } else {
             if (genericTypes.length > 0) {
                 const oldAlias = aliasTypeAndStmt[0];

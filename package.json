@@ -10,9 +10,9 @@
   "scripts": {
     "build": "tsc",
     "prepack": "tsc -p ./tsconfig.prod.json",
-    "test": "npm run copyCollectionDefintion && vitest",
-    "testonce": "npm run copyCollectionDefintion && vitest --no-color run",
-    "coverage": "npm run copyCollectionDefintion && vitest run --coverage",
+    "test": "vitest",
+    "testonce": "vitest --no-color run",
+    "coverage": "vitest run --coverage",
     "heapdump": "npm run build && node --expose-gc out/tests/HeapDumpTest.js",
     "gendoc": "npx typedoc",
     "postinstall": "node script/npmInstall.js",

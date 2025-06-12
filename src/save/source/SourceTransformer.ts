@@ -60,7 +60,12 @@ import { SourceClass } from './SourceClass';
 import { Value } from '../../core/base/Value';
 import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { ArkFile } from '../../core/model/ArkFile';
-import { COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW, COMPONENT_IF, COMPONENT_POP_FUNCTION } from '../../core/common/EtsConst';
+import {
+    COMPONENT_CREATE_FUNCTION,
+    COMPONENT_CUSTOMVIEW,
+    COMPONENT_IF,
+    COMPONENT_POP_FUNCTION
+} from '../../core/common/EtsConst';
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
@@ -107,7 +112,7 @@ export class SourceTransformer {
         return clsPrinter.dump().trimStart();
     }
 
-    public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr): string {
+    public instanceInvokeExprToString(invokeExpr: ArkInstanceInvokeExpr, isAttr: boolean): string {
         let methodName = invokeExpr.getMethodSignature().getMethodSubSignature().getMethodName();
         if (methodName === INSTANCE_INIT_METHOD_NAME) {
             return '';
@@ -116,9 +121,8 @@ export class SourceTransformer {
         invokeExpr.getArgs().forEach(v => {
             args.push(this.valueToString(v));
         });
-        let genericCode = this.genericTypesToString(invokeExpr.getRealGenericTypes());
-
-        if (PrinterUtils.isComponentAttributeInvoke(invokeExpr) && this.context.isInBuilderMethod()) {
+        let genericCode = isAttr ? '' : this.genericTypesToString(invokeExpr.getRealGenericTypes());
+        if (isAttr && this.context.isInBuilderMethod()) {
             return `.${methodName}${genericCode}(${args.join(', ')})`;
         }
 
@@ -227,7 +231,8 @@ export class SourceTransformer {
 
     private exprToString(expr: AbstractExpr): string {
         if (expr instanceof ArkInstanceInvokeExpr) {
-            return `${this.instanceInvokeExprToString(expr)}`;
+            const isAttr = PrinterUtils.isComponentAttributeInvoke(expr);
+            return `${this.instanceInvokeExprToString(expr, isAttr)}`;
         }
 
         if (expr instanceof ArkStaticInvokeExpr) {
