@@ -985,6 +985,7 @@ export class Pag extends BaseExplicitGraph {
                 break;
             default:
         }
+        this.edgeNum++;
         return true;
     }
 

@@ -134,6 +134,10 @@ export class PointerAnalysis extends AbstractAnalysis {
         return this.ptd;
     }
 
+    public getPag(): Pag {
+        return this.pag;
+    }
+
     public getStat(): string {
         let ret: string = this.cg.getStat();
         ret += '\n' + this.pagBuilder.getStat();

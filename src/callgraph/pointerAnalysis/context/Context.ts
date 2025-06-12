@@ -154,7 +154,7 @@ export class FuncContext extends Context {
         let content: string = '';
         for (let i = 0; i < this.length(); i++) {
             const item = m.getItem(this.get(i)) as FuncContextItem;
-            const methodSig = cg.getArkMethodByFuncID(item.funcID)!.getSignature().toString();
+            const methodSig = cg.getMethodByFuncID(item.funcID)!.toString();
             content += `\t[${methodSig}]\n`;
         }
         return content;

@@ -201,6 +201,7 @@ export class CallGraph extends BaseExplicitGraph {
             callEdge.getSrcNode().addOutgoingEdge(callEdge);
             callEdge.getDstNode().addIncomingEdge(callEdge);
             this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
+            this.edgeNum++;
         }
         if (isDirectCall) {
             callEdge.addDirectCallSite(callStmt);
@@ -243,6 +244,7 @@ export class CallGraph extends BaseExplicitGraph {
             callEdge.getSrcNode().addOutgoingEdge(callEdge);
             callEdge.getDstNode().addIncomingEdge(callEdge);
             this.callPairToEdgeMap.set(this.getCallPairString(callerNode.getID(), calleeNode.getID()), callEdge);
+            this.edgeNum++;
         }
         callEdge.addInDirectCallSite(callStmt);
     }
