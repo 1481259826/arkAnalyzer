@@ -493,6 +493,7 @@ class Person {
       age = parameter0: number
       this = this: @save/basic.ts: Person
       instanceinvoke this.<@save/basic.ts: Person.%instInit()>()
+      this.<@save/basic.ts: Person.age> = age
       return this
   }
 
@@ -568,6 +569,7 @@ class Adder {
       a = parameter0: number
       this = this: @save/basic.ts: Adder
       instanceinvoke this.<@save/basic.ts: Adder.%instInit()>()
+      this.<@save/basic.ts: Adder.a> = a
       return this
   }
 
