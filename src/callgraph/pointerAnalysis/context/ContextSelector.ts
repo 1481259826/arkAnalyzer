@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { CallGraph, ICallSite } from "../../model/CallGraph";
-import { CallSiteContext, Context, ContextCache, ContextID, DUMMY_CID, ObjContext } from "./Context";
+import { CallGraph, FuncID, ICallSite } from "../../model/CallGraph";
+import { CallSiteContext, Context, ContextCache, ContextID, DUMMY_CID, FuncContext, ObjContext } from "./Context";
 import { ContextItemManager } from "./ContextItem";
 import path from 'path';
 import * as fs from 'fs';
@@ -25,8 +25,8 @@ import * as fs from 'fs';
 export interface ContextSelector {
     ctxCache: ContextCache;
     ctxManager: ContextItemManager;
-    selectContext(callerContextID: ContextID, callSite: ICallSite, calleeFunc: number): ContextID;
-    emptyContext(): ContextID;
+    selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number, calleeFunc: number): ContextID;
+    emptyContext(id: number): ContextID;
     getContextID(context: Context): ContextID;
     dump(path: string, cg: CallGraph): void;
 }
@@ -42,7 +42,7 @@ export class KCallSiteContextSelector implements ContextSelector {
         this.ctxManager = new ContextItemManager();
     }
 
-    public selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number): ContextID {
+    public selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number, callee: number): ContextID {
         let callerContext = this.ctxCache.getContext(callerContextID);
         let calleeFuncID = callSite.getCalleeFuncID();
         if (!callerContext || !calleeFuncID) {
@@ -53,7 +53,7 @@ export class KCallSiteContextSelector implements ContextSelector {
         return this.ctxCache.getOrNewContextID(calleeContext);
     }
 
-    public emptyContext(): ContextID {
+    public emptyContext(id: number): ContextID {
         let emptyContext = CallSiteContext.newEmpty();
         return this.ctxCache.getOrNewContextID(emptyContext);
     }
@@ -81,17 +81,21 @@ export class KObjContextSelector implements ContextSelector {
         this.ctxManager = new ContextItemManager();
     }
 
-    public selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number): ContextID {
+    public selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number, callee: number): ContextID {
         let callerContext = this.ctxCache.getContext(callerContextID);
         if (!callerContext) {
             return DUMMY_CID;
+        }
+
+        if (obj === -1) {
+            return callerContextID;
         }
 
         let calleeContext = callerContext.append(0, obj, this.k, this.ctxManager);
         return this.ctxCache.getOrNewContextID(calleeContext);
     }
 
-    public emptyContext(): ContextID {
+    public emptyContext(id: number): ContextID {
         let emptyContext = ObjContext.newEmpty();
         return this.ctxCache.getOrNewContextID(emptyContext);
     }
@@ -102,5 +106,43 @@ export class KObjContextSelector implements ContextSelector {
 
     public dump(dir: string, cg: CallGraph) {
 
+    }
+}
+
+export class kFuncContextSelector implements ContextSelector {
+    private k: number;
+    ctxCache: ContextCache;
+    ctxManager: ContextItemManager;
+
+    constructor(k: number) {
+        this.k = k;
+        this.ctxCache = new ContextCache();
+        this.ctxManager = new ContextItemManager();
+    }
+
+    public selectContext(callerContextID: ContextID, callSite: ICallSite, obj: number, funcID: number): ContextID {
+        let callerContext = this.ctxCache.getContext(callerContextID);
+        if (!callerContext) {
+            return DUMMY_CID;
+        }
+
+        let calleeContext = callerContext.append(0, funcID, this.k, this.ctxManager);
+        return this.ctxCache.getOrNewContextID(calleeContext);
+    }
+
+    public emptyContext(funcID: FuncID): ContextID {
+        let emptyContext = FuncContext.newEmpty();
+        let calleeContext = emptyContext.append(0, funcID, this.k, this.ctxManager);
+        return this.ctxCache.getOrNewContextID(calleeContext);
+    }
+
+    public getContextID(context: Context): ContextID {
+        return this.ctxCache.getOrNewContextID(context);
+    }
+
+    public dump(dir: string, cg: CallGraph) {
+        const content = this.ctxCache.dump(this.ctxManager, cg);
+        const filePath = path.join(dir, 'context.txt');
+        fs.writeFileSync(filePath, content, 'utf8');
     }
 }

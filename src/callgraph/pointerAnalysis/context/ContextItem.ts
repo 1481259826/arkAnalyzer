@@ -51,6 +51,20 @@ export class ObjectContextItem implements ContextItem {
     }
 }
 
+export class FuncContextItem implements ContextItem {
+    readonly id: number;
+    readonly funcID: number;
+
+    constructor(id: number, funcID: number) {
+        this.id = id;
+        this.funcID = funcID;
+    }
+
+    getSignature(): string {
+        return `FUNC:${this.funcID}`;
+    }
+}
+
 /**
  * Manages the creation and unique identification of all ContextItems.
  * This ensures that each unique item (based on its signature) has one and only one ID.
@@ -83,6 +97,20 @@ export class ContextItemManager {
 
         const id = this.nextItemId++;
         const item = new ObjectContextItem(id, allocationSiteId);
+        this.itemToIdMap.set(signature, id);
+        this.idToItemMap.set(id, item);
+        return item;
+    }
+
+    public getOrCreateFuncItem(calleeFuncID: number): FuncContextItem {
+        const signature = `FUNC:${calleeFuncID}`;
+        if (this.itemToIdMap.has(signature)) {
+            const id = this.itemToIdMap.get(signature)!;
+            return this.idToItemMap.get(id) as FuncContextItem;
+        }
+
+        const id = this.nextItemId++;
+        const item = new FuncContextItem(id, calleeFuncID);
         this.itemToIdMap.set(signature, id);
         this.idToItemMap.set(id, item);
         return item;

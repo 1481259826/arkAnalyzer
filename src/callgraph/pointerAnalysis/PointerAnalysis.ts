@@ -50,7 +50,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         super(s, cg);
         this.pag = p;
         this.ptd = new DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>(config.ptsCollectionCtor);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit, config.analysisScale);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit, config.contextType, config.analysisScale);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat(this);
         this.config = config;
@@ -62,7 +62,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         cgBuilder.buildDirectCallGraphForScene();
         let pag = new Pag();
         if (!config) {
-            config = PointerAnalysisConfig.create(1, 'out/', false, false);
+            config = PointerAnalysisConfig.create(1, 'cs', 'out/', false, false);
         }
 
         const dummyMainCreator = new DummyMainCreater(projectScene);
@@ -85,7 +85,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         cgBuilder.buildDirectCallGraphForScene();
         let pag = new Pag();
         if (!config) {
-            config = PointerAnalysisConfig.create(1, 'out/', false, false);
+            config = PointerAnalysisConfig.create(1, 'cs', 'out/', false, false);
         }
 
         let entryMethodID = cg.getCallGraphNodeByMethod(method.getSignature()).getID();

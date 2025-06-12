@@ -22,10 +22,17 @@ export enum PtaAnalysisScale {
     MethodLevel = 1,
 }
 
+export enum ContextType {
+    CallSite = 0,
+    Obj = 1,
+    Func = 2,
+}
+
 export class PointerAnalysisConfig {
     private static instance: PointerAnalysisConfig;
 
     public kLimit: number;
+    public contextType: ContextType;
     public outputDirectory: string;
     public detectTypeDiff: boolean;
     public dotDump: boolean;
@@ -40,6 +47,7 @@ export class PointerAnalysisConfig {
      */
     constructor(
         kLimit: number,
+        contextType: string,
         outputDirectory: string,
         detectTypeDiff: boolean = false,
         dotDump: boolean = false,
@@ -51,6 +59,7 @@ export class PointerAnalysisConfig {
             throw new Error('K Limit too large');
         }
         this.kLimit = kLimit;
+
         this.outputDirectory = outputDirectory;
         this.detectTypeDiff = detectTypeDiff;
         this.dotDump = dotDump;
@@ -58,6 +67,20 @@ export class PointerAnalysisConfig {
         this.analysisScale = analysisScale;
         this.ptsCollectionType = ptsCoType;
         this.ptsCollectionCtor = createPtsCollectionCtor<NodeID>(ptsCoType);
+
+        switch (contextType) {
+            case 'cs':
+                this.contextType = ContextType.CallSite;
+                break;
+            case 'obj':
+                this.contextType = ContextType.Obj;
+                break;
+            case 'func':
+                this.contextType = ContextType.Func;
+                break;
+            default:
+                throw new Error(`Unsupported context type: ${contextType}`);
+        }
 
         if (!fs.existsSync(outputDirectory)) {
             fs.mkdirSync(outputDirectory, { recursive: true });
@@ -79,19 +102,21 @@ export class PointerAnalysisConfig {
      */
     public static create(
         kLimit: number,
+        contextType: string,
         outputDirectory: string,
         detectTypeDiff: boolean = false,
         dotDump: boolean = false,
-        unhandledFuncDump: boolean = false,
+        debug: boolean = false,
         analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram,
         ptsCoType = PtsCollectionType.Set
     ): PointerAnalysisConfig {
         PointerAnalysisConfig.instance = new PointerAnalysisConfig(
             kLimit,
+            contextType,
             outputDirectory,
             detectTypeDiff,
             dotDump,
-            unhandledFuncDump,
+            debug,
             analysisScale,
             ptsCoType
         );

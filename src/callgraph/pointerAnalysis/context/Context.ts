@@ -14,7 +14,7 @@
  */
 
 import { CallGraph } from "../../model/CallGraph";
-import { CallSiteContextItem, ContextItemManager } from "./ContextItem";
+import { CallSiteContextItem, ContextItemManager, FuncContextItem } from "./ContextItem";
 
 export type ContextID = number;
 export const DUMMY_CID = 0;
@@ -140,6 +140,23 @@ export class ObjContext extends Context {
 
     public dump(m: ContextItemManager, cg: CallGraph): string {
         let content: string = '';
+        return content;
+    }
+}
+
+export class FuncContext extends Context {
+    public append(callSiteID: number, funcId: number, k: number, m: ContextItemManager): FuncContext {
+        let contextItem = m.getOrCreateFuncItem(funcId);
+        return Context.newKLimitedContext(this, contextItem.id, k);
+    }
+
+    public dump(m: ContextItemManager, cg: CallGraph): string {
+        let content: string = '';
+        for (let i = 0; i < this.length(); i++) {
+            const item = m.getItem(this.get(i)) as FuncContextItem;
+            const methodSig = cg.getArkMethodByFuncID(item.funcID)!.getSignature().toString();
+            content += `\t[${methodSig}]\n`;
+        }
         return content;
     }
 }
