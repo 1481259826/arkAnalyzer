@@ -255,27 +255,41 @@ export const ClassWithSuperConstructor = `class ClassWithSuperConstructor extend
 `;
 
 export const ClassWithParamProperty = `class ClassWithParamProperty {
-  public x: number
-  private readonly y: number
-
-  %instInit(): void {
-    label0:
-      this = this: @class/ClassWithConstructor.ts: ClassWithParamProperty
-      return
-  }
+  static x: number
+  y: string
+  public a: number
+  private readonly b: string
+  protected c: boolean
+  public d?: string
 
   %statInit(): void {
     label0:
       this = this: @class/ClassWithConstructor.ts: ClassWithParamProperty
+      @class/ClassWithConstructor.ts: ClassWithParamProperty.[static]x = 456
       return
   }
 
-  constructor(x: number, y: number): @class/ClassWithConstructor.ts: ClassWithParamProperty {
+  %instInit(): void {
     label0:
-      x = parameter0: number
-      y = parameter1: number
+      this = this: @class/ClassWithConstructor.ts: ClassWithParamProperty
+      this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.y> = 'abc'
+      this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.a> = 123
+      return
+  }
+
+  constructor(a: number, b: string, c: boolean, d?: string): @class/ClassWithConstructor.ts: ClassWithParamProperty {
+    label0:
+      a = parameter0: number
+      b = parameter1: string
+      c = parameter2: boolean
+      d = parameter3: string
       this = this: @class/ClassWithConstructor.ts: ClassWithParamProperty
       instanceinvoke this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.%instInit()>()
+      this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.a> = a
+      this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.b> = b
+      this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.c> = c
+      this.<@class/ClassWithConstructor.ts: ClassWithParamProperty.d> = d
+      instanceinvoke console.<@%unk/%unk: .log()>('this is constructor method')
       return this
   }
 }
