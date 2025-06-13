@@ -64,9 +64,6 @@ export class CallGraphEdge extends BaseEdge {
         const indirectCallNums: number = this.indirectCalls.size;
         const directCallNums: number = this.directCalls.size;
         const specialCallNums: number = this.specialCalls.size;
-        if ([CallGraphNodeKind.intrinsic, CallGraphNodeKind.constructor].includes(this.getDstNode().getKind())) {
-            return '';
-        }
 
         if (indirectCallNums !== 0 && directCallNums === 0) {
             return 'color=red';
@@ -106,9 +103,6 @@ export class CallGraphNode extends BaseNode {
     }
 
     public getDotAttr(): string {
-        if ([CallGraphNodeKind.intrinsic, CallGraphNodeKind.constructor].includes(this.getKind())) {
-            return '';
-        }
         return 'shape=box';
     }
 

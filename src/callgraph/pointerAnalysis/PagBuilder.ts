@@ -424,6 +424,12 @@ export class PagBuilder {
                     logger.error(`constructor or intrinsic func is static ${ivkExpr!.toString()}`);
                 }
             }
+
+            this.cg.addDirectOrSpecialCallEdge(
+                this.cg.getArkMethodByFuncID(cs.callerFuncID)?.getSignature()!,
+                this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature()!,
+                cs.callStmt,
+            );
         }
 
         return true;
