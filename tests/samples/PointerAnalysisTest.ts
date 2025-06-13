@@ -96,7 +96,7 @@ function runProject(output: string) {
     projectScene.buildScene4HarmonyProject()
     projectScene.inferTypes();
 
-    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true)
+    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', output, true, true, true)
     let pta = PointerAnalysis.pointerAnalysisForWholeProject(projectScene, ptaConfig);
     printStat(pta);
 }
@@ -117,7 +117,7 @@ function runDir(output: string) {
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
-    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector)
+    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', output, true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector)
     let pta = new PointerAnalysis(pag, cg, projectScene, ptaConfig)
     pta.setEntries(debugfunc);
     pta.start();
@@ -145,7 +145,7 @@ function runMethod(output: string): void {
 
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'setget');
 
-    let ptaConfig = PointerAnalysisConfig.create(2, output, true, true, true, PtaAnalysisScale.MethodLevel, PtsCollectionType.BitVector);
+    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', output, true, true, true, PtaAnalysisScale.MethodLevel, PtsCollectionType.BitVector);
     PointerAnalysis.pointerAnalysisForMethod(projectScene, cg.getArkMethodByFuncID(debugfunc[0]) as ArkMethod, ptaConfig);
 }
 

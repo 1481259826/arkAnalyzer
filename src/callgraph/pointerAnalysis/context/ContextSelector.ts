@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { CallGraph, FuncID, ICallSite } from "../../model/CallGraph";
-import { CallSiteContext, Context, ContextCache, ContextID, DUMMY_CID, FuncContext, ObjContext } from "./Context";
-import { ContextItemManager } from "./ContextItem";
+import { CallGraph, FuncID, ICallSite } from '../../model/CallGraph';
+import { CallSiteContext, Context, ContextCache, ContextID, DUMMY_CID, FuncContext, ObjContext } from './Context';
+import { ContextItemManager } from './ContextItem';
 import path from 'path';
 import * as fs from 'fs';
 
@@ -62,7 +62,7 @@ export class KCallSiteContextSelector implements ContextSelector {
         return this.ctxCache.getOrNewContextID(context);
     }
 
-    public dump(dir: string, cg: CallGraph) {
+    public dump(dir: string, cg: CallGraph): void {
         const content = this.ctxCache.dump(this.ctxManager, cg);
         const filePath = path.join(dir, 'context.txt');
         fs.writeFileSync(filePath, content, 'utf8');
@@ -104,12 +104,11 @@ export class KObjContextSelector implements ContextSelector {
         return this.ctxCache.getOrNewContextID(context);
     }
 
-    public dump(dir: string, cg: CallGraph) {
-
+    public dump(dir: string, cg: CallGraph): void {
     }
 }
 
-export class kFuncContextSelector implements ContextSelector {
+export class KFuncContextSelector implements ContextSelector {
     private k: number;
     ctxCache: ContextCache;
     ctxManager: ContextItemManager;
@@ -140,7 +139,7 @@ export class kFuncContextSelector implements ContextSelector {
         return this.ctxCache.getOrNewContextID(context);
     }
 
-    public dump(dir: string, cg: CallGraph) {
+    public dump(dir: string, cg: CallGraph): void {
         const content = this.ctxCache.dump(this.ctxManager, cg);
         const filePath = path.join(dir, 'context.txt');
         fs.writeFileSync(filePath, content, 'utf8');

@@ -46,7 +46,6 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
 
         // process anonymous method call
         this.getParamAnonymousMethod(invokeExpr).forEach(method => {
-            // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod));
             resolveResult.push(
                 this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
             );
@@ -59,9 +58,10 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
 
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
-            // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod));
             resolveResult.push(
-                this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod)
+                this.cg.getCallSiteManager().newCallSite(
+                    invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod.getSignature()).getID(), callerMethod
+                )
             );
         } else {
             let declareClass = calleeMethod!.getDeclaringArkClass();
@@ -74,8 +74,7 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
 
                 if (
-                    possibleCalleeMethod &&
-                    possibleCalleeMethod.isGenerated() &&
+                    possibleCalleeMethod && possibleCalleeMethod.isGenerated() &&
                     arkClass.getSignature().toString() !== declareClass.getSignature().toString()
                 ) {
                     // remove the generated method in extended classes
@@ -86,20 +85,13 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
                     return;
                 }
 
-                if (!this.instancedClasses.has(arkClass.getSignature())) {
-                    this.addIgnoredCalls(
-                        arkClass.getSignature(),
-                        callerMethod,
-                        this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(),
-                        invokeStmt
-                    );
-                } else {
-                    // resolveResult.push(
-                    //     new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
-                    // );
+                let calleeNode = this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature());
 
+                if (!this.instancedClasses.has(arkClass.getSignature())) {
+                    this.addIgnoredCalls(arkClass.getSignature(), callerMethod, calleeNode.getID(), invokeStmt);
+                } else {
                     resolveResult.push(
-                        this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
+                        this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, calleeNode.getID(), callerMethod)
                     );
                 }
             });
@@ -118,7 +110,6 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
             if (ignoredCalls) {
                 ignoredCalls.forEach(call => {
                     this.cg.addDynamicCallEdge(call.caller, call.callee, call.callStmt);
-                    // newCallSites.push(new CallSite(call.callStmt, undefined, call.callee, call.caller));
                     newCallSites.push(
                         this.cg.getCallSiteManager().newCallSite(call.callStmt, undefined, call.callee, call.caller)
                     );

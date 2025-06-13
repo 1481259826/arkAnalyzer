@@ -72,7 +72,7 @@ export class CallSiteManager {
     private callSiteToIdMap: Map<ICallSite, CallSiteID> = new Map();
     private dynToStaticMap: Map<CallSiteID, CallSiteID[]> = new Map();
 
-    public newCallSite(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID) {
+    public newCallSite(s: Stmt, a: Value[] | undefined, ce: FuncID, cr: FuncID): CallSite {
         let id = this.idToCallSiteMap.size;
         let callSite = new CallSite(id, s, a, ce, cr);
         this.idToCallSiteMap.set(id, callSite);
@@ -80,7 +80,7 @@ export class CallSiteManager {
         return callSite;
     }
 
-    public newDynCallSite(s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID) {
+    public newDynCallSite(s: Stmt, a: Value[] | undefined, ptcCallee: FuncID | undefined, caller: FuncID): DynCallSite {
         let id = this.idToCallSiteMap.size;
         let callSite = new DynCallSite(id, s, a, ptcCallee, caller);
         this.idToCallSiteMap.set(id, callSite);

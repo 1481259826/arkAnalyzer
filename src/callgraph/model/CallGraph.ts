@@ -412,7 +412,7 @@ export class CallGraph extends BaseExplicitGraph {
         return this.csManager;
     }
 
-    public getCallSiteInfo(csID: CallSiteID) {
+    public getCallSiteInfo(csID: CallSiteID): string {
         const callSite = this.csManager.getCallSiteById(csID);
         if (!callSite) {
             return '';

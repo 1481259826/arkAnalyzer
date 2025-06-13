@@ -38,7 +38,6 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
         // process anonymous method call
         this.getParamAnonymousMethod(invokeExpr).forEach(method => {
-            // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod));
             resolveResult.push(
                 this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(method).getID(), callerMethod)
             );
@@ -50,10 +49,12 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
         }
         if (invokeExpr instanceof ArkStaticInvokeExpr) {
             // get specific method
-            // resolveResult.push(new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!));
             resolveResult.push(
-                this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!
-            ));
+                this.cg.getCallSiteManager().newCallSite(
+                    invokeStmt, undefined,
+                    this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!
+                )
+            );
         } else {
             let declareClass = calleeMethod.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
@@ -74,9 +75,6 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
                 }
 
                 if (possibleCalleeMethod && !possibleCalleeMethod.isAbstract()) {
-                    // resolveResult.push(
-                    //     new CallSite(invokeStmt, undefined, this.cg.getCallGraphNodeByMethod(possibleCalleeMethod.getSignature()).getID(), callerMethod)
-                    // );
                     resolveResult.push(
                         this.cg.getCallSiteManager().newCallSite(
                             invokeStmt, undefined,

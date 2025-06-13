@@ -77,14 +77,7 @@ export class CallGraphBuilder {
                 // abstract method will also be added into direct cg
                 if (callee && invokeExpr instanceof ArkStaticInvokeExpr) {
                     this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt);
-                } 
-                // else if (
-                //     callee && invokeExpr instanceof ArkInstanceInvokeExpr &&
-                //     (this.isConstructor(callee) || this.scene.getMethod(callee)?.isGenerated())
-                // ) {
-                //     this.cg.addDirectOrSpecialCallEdge(method.getSignature(), callee, stmt, false);
-                // } 
-                else {
+                } else {
                     this.cg.addDynamicCallInfo(stmt, method.getSignature(), callee);
                 }
             }
@@ -122,10 +115,6 @@ export class CallGraphBuilder {
     private getDCCallee(invokeExpr: AbstractInvokeExpr): Method | undefined {
         return invokeExpr.getMethodSignature();
     }
-
-    // private isConstructor(m: Method): boolean {
-    //     return m.getMethodSubSignature().getMethodName() === 'constructor';
-    // }
 
     public setEntries(): void {
         let nodesIter = this.cg.getNodesIter();

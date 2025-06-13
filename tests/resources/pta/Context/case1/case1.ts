@@ -28,7 +28,7 @@ namespace Context_Case_1 {
         }
     }
 
-    function buildChain(node: Node, depth: number) {
+    function buildChain(node: Node, depth: number): void {
         if (depth <= 0) {
             return;
         }
@@ -42,7 +42,7 @@ namespace Context_Case_1 {
         buildChain(newChild, depth - 1);
     }
 
-    function main() {
+    function main(): void {
         const root = new Node(0);
         buildChain(root, 2);
     }

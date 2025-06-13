@@ -19,7 +19,7 @@ namespace Context_Case_3 {
     class A {
         field: Base;
 
-        setField(value: Base) {
+        setField(value: Base): void {
             this.field = value;
         }
 
@@ -28,22 +28,22 @@ namespace Context_Case_3 {
         }
     }
 
-    function main() {
+    function main(): void {
         let base = new Base();
         main2(base);
     }
 
-    function main2(base: Base) {
+    function main2(base: Base): void {
         let a = new A();
         main3(base, a);
     }
 
-    function main3(base: Base, a: A) {
+    function main3(base: Base, a: A): void {
         a.setField(base);
         main4(a);
     }
 
-    function main4(a: A) {
+    function main4(a: A): void {
         let b = a.getField();
     }
 }

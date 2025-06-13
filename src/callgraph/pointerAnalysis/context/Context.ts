@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { CallGraph } from "../../model/CallGraph";
-import { CallSiteContextItem, ContextItemManager, FuncContextItem } from "./ContextItem";
+import { CallGraph } from '../../model/CallGraph';
+import { CallSiteContextItem, ContextItemManager, FuncContextItem } from './ContextItem';
 
 export type ContextID = number;
 export const DUMMY_CID = 0;
@@ -215,7 +215,7 @@ export class ContextCache {
         return this.contextList;
     }
 
-    public dump(m: ContextItemManager, cg: CallGraph) {
+    public dump(m: ContextItemManager, cg: CallGraph): string {
         let content: string = '';
         this.contextList.forEach((c, i) => {
             content += `Context ${i}:\n`;

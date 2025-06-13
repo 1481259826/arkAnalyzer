@@ -22,11 +22,11 @@ namespace Context_Case_2 {
         value: SimpleData | null = null;
     }
 
-    function assign(container: Box, content: SimpleData) {
+    function assign(container: Box, content: SimpleData): void {
         container.value = content;
     }
 
-    function main() {
+    function main(): void {
         // 调用点 1 (callsite 1)
         const boxA = new Box();
         const objA = new SimpleData('A'); // 使用 new 创建实例
