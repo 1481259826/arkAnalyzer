@@ -15,7 +15,7 @@
 
 namespace Context_Case_1 {
     class Payload {
-        constructor(public value: number) {}
+        constructor(public value: number) { }
     }
 
     class Node {

@@ -14,7 +14,7 @@
  */
 
 namespace Context_Case_3 {
-    class Base {}
+    class Base { }
 
     class A {
         field: Base;

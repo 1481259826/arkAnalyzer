@@ -15,26 +15,26 @@
 
 namespace Context_Case_2 {
     class SimpleData {
-    constructor(public name: string) {}
+        constructor(public name: string) { }
     }
 
     class Box {
-    value: SimpleData | null = null;
+        value: SimpleData | null = null;
     }
 
     function assign(container: Box, content: SimpleData) {
-    container.value = content;
+        container.value = content;
     }
 
     function main() {
-    // 调用点 1 (callsite 1)
-    const boxA = new Box();
-    const objA = new SimpleData('A'); // 使用 new 创建实例
-    assign(boxA, objA);
+        // 调用点 1 (callsite 1)
+        const boxA = new Box();
+        const objA = new SimpleData('A'); // 使用 new 创建实例
+        assign(boxA, objA);
 
-    // 调用点 2 (callsite 2)
-    const boxB = new Box();
-    const objB = new SimpleData('B'); // 使用 new 创建实例
-    assign(boxB, objB);
+        // 调用点 2 (callsite 2)
+        const boxB = new Box();
+        const objB = new SimpleData('B'); // 使用 new 创建实例
+        assign(boxB, objB);
     }
 }
