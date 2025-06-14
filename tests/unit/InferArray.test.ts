@@ -341,6 +341,15 @@ describe("function Test", () => {
             assert.equal(stmts[4].toString(), 'instanceinvoke player.<@etsSdk/api/@ohos.multimedia.media.d.ts: media.AVPlayer.on(\'stateChange\', @etsSdk/api/@ohos.multimedia.media.d.ts: media.%dflt.[static]%dflt()#OnAVPlayerStateChangeHandle)>(%0, %AM6$%AM5$matchOverride)');
         }
     })
+
+    it('testArrayFrom', () => {
+        const fileId = new FileSignature(scene.getProjectName(), 'inferSample.ts');
+        const file = scene.getFile(fileId);
+        const locals = file?.getDefaultClass()?.getMethodWithName('testArrayFrom')?.getBody()?.getLocals();
+        assert.isDefined(locals)
+        assert.isTrue(locals?.get('arr1')?.getType() instanceof ArrayType);
+        assert.equal(locals?.get('arr2')?.getType().toString(), 'string[]');
+    })
 })
 
 describe("for Test without sdk", () => {

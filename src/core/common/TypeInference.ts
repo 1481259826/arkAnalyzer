@@ -415,10 +415,10 @@ export class TypeInference {
         ) {
             return true;
         } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
-            return !!type.getTypes().find(t => this.hasUnclearReferenceType(t));
+            return !!type.getTypes().find(t => this.checkType(t, e => e instanceof UnclearReferenceType));
         } else if (type instanceof ArrayType) {
             const baseType = type.getBaseType();
-            return this.hasUnclearReferenceType(baseType) || baseType instanceof GenericType;
+            return this.checkType(baseType, t => t instanceof UnclearReferenceType) || baseType instanceof GenericType;
         } else if (type instanceof AliasType) {
             return this.isUnclearType(type.getOriginalType());
         } else if (type instanceof KeyofTypeExpr) {
@@ -429,25 +429,29 @@ export class TypeInference {
         return false;
     }
 
-    // This is the temporal function to check unclearReferenceType recursively and can be removed after typeInfer supports multiple candidate types.
-    private static hasUnclearReferenceType(type: Type, visited: Set<Type> = new Set()): boolean {
+    // This is the temporal function to check Type recursively and can be removed after typeInfer supports multiple candidate types.
+    public static checkType(type: Type,
+                            check: (t: Type) => boolean,
+                            visited: Set<Type> = new Set()): boolean {
         if (visited.has(type)) {
             return false;
         } else {
             visited.add(type);
         }
-        if (type instanceof UnclearReferenceType) {
+        if (check(type)) {
             return true;
+        } else if (type instanceof ClassType) {
+            return !!type.getRealGenericTypes()?.find(t => this.checkType(t, check, visited));
         } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
-            return !!type.getTypes().find(t => this.hasUnclearReferenceType(t, visited));
+            return !!type.getTypes().find(t => this.checkType(t, check, visited));
         } else if (type instanceof ArrayType) {
-            return this.hasUnclearReferenceType(type.getBaseType(), visited);
+            return this.checkType(type.getBaseType(), check, visited);
         } else if (type instanceof AliasType) {
-            return this.hasUnclearReferenceType(type.getOriginalType(), visited);
+            return this.checkType(type.getOriginalType(), check, visited);
         } else if (type instanceof KeyofTypeExpr) {
-            return this.hasUnclearReferenceType(type.getOpType(), visited);
+            return this.checkType(type.getOpType(), check, visited);
         } else if (type instanceof TypeQueryExpr) {
-            return this.hasUnclearReferenceType(type.getType(), visited);
+            return this.checkType(type.getType(), check, visited);
         }
         return false;
     }
@@ -778,6 +782,11 @@ export class TypeInference {
             return type;
         }
         return null;
+    }
+
+    public static getTypeByGlobalName(globalName: string, arkMethod: ArkMethod): Type | null {
+        const arkExport: ArkExport | null = arkMethod.getDeclaringArkFile().getScene().getSdkGlobal(globalName);
+        return this.parseArkExport2Type(arkExport);
     }
 
     public static inferRealGenericTypes(realTypes: Type[] | undefined, arkClass: ArkClass): void {

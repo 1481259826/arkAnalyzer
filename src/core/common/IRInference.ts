@@ -49,7 +49,7 @@ import {
     AliasClassSignature,
     BaseSignature,
     ClassSignature,
-    FieldSignature,
+    FieldSignature, FileSignature,
     MethodSignature,
     MethodSubSignature
 } from '../model/ArkSignature';
@@ -70,7 +70,7 @@ import { Constant } from '../base/Constant';
 import {
     ANONYMOUS_CLASS_PREFIX,
     CALL_SIGNATURE_NAME,
-    DEFAULT_ARK_CLASS_NAME,
+    DEFAULT_ARK_CLASS_NAME, LEXICAL_ENV_NAME_PREFIX,
     NAME_DELIMITER,
     NAME_PREFIX,
     UNKNOWN_CLASS_NAME
@@ -136,6 +136,10 @@ export class IRInference {
     }
 
     public static inferStaticInvokeExpr(expr: ArkStaticInvokeExpr, arkMethod: ArkMethod): AbstractInvokeExpr {
+        const fileSignature = expr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature();
+        if (fileSignature !== FileSignature.DEFAULT && fileSignature !== Builtin.BUILT_IN_CLASSES_FILE_SIGNATURE) {
+            return expr;
+        }
         const arkClass = arkMethod.getDeclaringArkClass();
         const methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
         expr.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
@@ -493,7 +497,7 @@ export class IRInference {
             const methodSignature = method.matchMethodSignature(expr.getArgs());
             TypeInference.inferSignatureReturnType(methodSignature, method);
             expr.setMethodSignature(this.replaceMethodSignature(expr.getMethodSignature(), methodSignature));
-            expr.setRealGenericTypes(IRInference.getRealTypes(method, declaredClass, baseType));
+            expr.setRealGenericTypes(IRInference.getRealTypes(expr, declaredClass, baseType));
             if (method.isStatic() && expr instanceof ArkInstanceInvokeExpr) {
                 return new ArkStaticInvokeExpr(methodSignature, expr.getArgs(), expr.getRealGenericTypes());
             }
@@ -531,9 +535,19 @@ export class IRInference {
         return null;
     }
 
-    private static getRealTypes(method: ArkMethod, declaredClass: ArkClass | null, baseType: ClassType): Type[] | undefined {
+    private static getRealTypes(expr: AbstractInvokeExpr, declaredClass: ArkClass | null, baseType: ClassType): Type[] | undefined {
         let realTypes;
-        if (declaredClass?.hasComponentDecorator()) {
+        const tmp: Type[] = [];
+        expr.getMethodSignature().getMethodSubSignature().getParameters()
+            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX))
+            .forEach((p, i) => {
+                if (TypeInference.checkType(p.getType(), t => t instanceof GenericType)) {
+                    tmp.push(expr.getArg(i).getType());
+                }
+            });
+        if (tmp.length > 0) {
+            realTypes = tmp;
+        } else if (declaredClass?.hasComponentDecorator()) {
             realTypes = [new ClassType(declaredClass?.getSignature())];
         } else {
             realTypes = baseType.getRealGenericTypes() ?? declaredClass?.getRealTypes();
