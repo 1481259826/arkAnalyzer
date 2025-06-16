@@ -22,6 +22,8 @@ import * as fs from 'fs';
 /**
  * Top layer of context
  */
+
+export let emptyID: number = -1;
 export interface ContextSelector {
     ctxCache: ContextCache;
     ctxManager: ContextItemManager;
@@ -87,7 +89,7 @@ export class KObjContextSelector implements ContextSelector {
             return DUMMY_CID;
         }
 
-        if (obj === -1) {
+        if (obj === emptyID) {
             return callerContextID;
         }
 

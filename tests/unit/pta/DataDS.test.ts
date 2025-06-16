@@ -42,7 +42,7 @@ function test(type: PtsCollectionType): PointerAnalysis {
     let pag = new Pag();
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
-    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', './out', true, true, false, PtaAnalysisScale.WholeProgram, type);
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true, false, PtaAnalysisScale.WholeProgram, type, 'cs');
     let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
     pta.setEntries(debugfunc);
     pta.start();

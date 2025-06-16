@@ -102,13 +102,13 @@ export class PointerAnalysisConfig {
      */
     public static create(
         kLimit: number,
-        contextType: string,
         outputDirectory: string,
         detectTypeDiff: boolean = false,
         dotDump: boolean = false,
         debug: boolean = false,
         analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram,
-        ptsCoType = PtsCollectionType.Set
+        ptsCoType = PtsCollectionType.Set,
+        contextType: string = 'func',
     ): PointerAnalysisConfig {
         PointerAnalysisConfig.instance = new PointerAnalysisConfig(
             kLimit,

@@ -50,7 +50,7 @@ describe('ExportNewTest', () => {
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
     
-    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector);
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector, 'cs');
     let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
     pta.setEntries(debugfunc);
     pta.start();
@@ -123,7 +123,7 @@ describe('ExportNew2Test', () => {
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
     
-    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector);
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector, 'cs');
     let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
     pta.setEntries(debugfunc);
     pta.start();
@@ -165,7 +165,7 @@ describe('ExportNew3Test', () => {
     let debugfunc = cg.getEntries().filter(funcID => cg.getArkMethodByFuncID(funcID)?.getName() === 'main');
 
     
-    let ptaConfig = PointerAnalysisConfig.create(2, 'cs', './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector);
+    let ptaConfig = PointerAnalysisConfig.create(2, './out', true, true, true, PtaAnalysisScale.WholeProgram, PtsCollectionType.BitVector, 'cs');
     let pta = new PointerAnalysis(pag, cg, scene, ptaConfig);
     pta.setEntries(debugfunc);
     pta.start();
