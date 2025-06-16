@@ -115,6 +115,11 @@ export class SdkUtils {
                     .forEach(mtd => this.loadAPI(mtd, globalMap));
             }
         });
+        file.getDefaultClass().getDefaultArkMethod()
+            ?.getBody()
+            ?.getAliasTypeMap()
+            ?.forEach(a => this.loadAPI(a[0], globalMap, true));
+        file.getNamespaces().forEach(ns => this.loadAPI(ns, globalMap));
     }
 
     public static mergeGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
@@ -162,10 +167,6 @@ export class SdkUtils {
                     this.loadGlobalLocal(local, defaultArkMethod, globalMap);
                 }
             });
-        defaultArkMethod
-            ?.getBody()
-            ?.getAliasTypeMap()
-            ?.forEach(a => this.loadAPI(a[0], globalMap, true));
     }
 
     private static loadClass(globalMap: Map<string, ArkExport>, cls: ArkClass): void {
@@ -194,7 +195,7 @@ export class SdkUtils {
             const attr = globalMap.get(name + COMPONENT_ATTRIBUTE);
             if (attr instanceof ArkClass && instance instanceof ArkClass) {
                 this.copyMembers(instance, attr);
-                this.loadAPI(attr, globalMap, true);
+                globalMap.set(name, attr);
                 return;
             }
         }
