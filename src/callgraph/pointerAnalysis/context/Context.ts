@@ -111,7 +111,8 @@ export abstract class Context {
         return this.contextElems.join('-');
     }
 
-    public abstract append(callSiteID: number, calleeFunc: number, k: number, m: ContextItemManager): Context;
+    // elementID represents the ID of Obj NodeID OR FuncID corresponding to the context type
+    public abstract append(callSiteID: number, elementID: number, k: number, m: ContextItemManager): Context;
     public abstract dump(m: ContextItemManager, cg: CallGraph): string;
 }
 

@@ -47,7 +47,7 @@ export class PointerAnalysisConfig {
      */
     constructor(
         kLimit: number,
-        contextType: string,
+        contextType: ContextType,
         outputDirectory: string,
         detectTypeDiff: boolean = false,
         dotDump: boolean = false,
@@ -67,20 +67,7 @@ export class PointerAnalysisConfig {
         this.analysisScale = analysisScale;
         this.ptsCollectionType = ptsCoType;
         this.ptsCollectionCtor = createPtsCollectionCtor<NodeID>(ptsCoType);
-
-        switch (contextType) {
-            case 'cs':
-                this.contextType = ContextType.CallSite;
-                break;
-            case 'obj':
-                this.contextType = ContextType.Obj;
-                break;
-            case 'func':
-                this.contextType = ContextType.Func;
-                break;
-            default:
-                throw new Error(`Unsupported context type: ${contextType}`);
-        }
+        this.contextType = contextType;
 
         if (!fs.existsSync(outputDirectory)) {
             fs.mkdirSync(outputDirectory, { recursive: true });
@@ -108,7 +95,7 @@ export class PointerAnalysisConfig {
         debug: boolean = false,
         analysisScale: PtaAnalysisScale = PtaAnalysisScale.WholeProgram,
         ptsCoType = PtsCollectionType.Set,
-        contextType: string = 'func',
+        contextType: ContextType = ContextType.Func,
     ): PointerAnalysisConfig {
         PointerAnalysisConfig.instance = new PointerAnalysisConfig(
             kLimit,
