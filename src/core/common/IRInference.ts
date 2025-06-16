@@ -497,7 +497,7 @@ export class IRInference {
             const methodSignature = method.matchMethodSignature(expr.getArgs());
             TypeInference.inferSignatureReturnType(methodSignature, method);
             expr.setMethodSignature(this.replaceMethodSignature(expr.getMethodSignature(), methodSignature));
-            expr.setRealGenericTypes(IRInference.getRealTypes(expr, declaredClass, baseType));
+            expr.setRealGenericTypes(IRInference.getRealTypes(expr, declaredClass, baseType, method));
             if (method.isStatic() && expr instanceof ArkInstanceInvokeExpr) {
                 return new ArkStaticInvokeExpr(methodSignature, expr.getArgs(), expr.getRealGenericTypes());
             }
@@ -535,16 +535,18 @@ export class IRInference {
         return null;
     }
 
-    private static getRealTypes(expr: AbstractInvokeExpr, declaredClass: ArkClass | null, baseType: ClassType): Type[] | undefined {
+    private static getRealTypes(expr: AbstractInvokeExpr, declaredClass: ArkClass | null, baseType: ClassType, method: ArkMethod): Type[] | undefined {
         let realTypes;
         const tmp: Type[] = [];
-        expr.getMethodSignature().getMethodSubSignature().getParameters()
-            .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX))
-            .forEach((p, i) => {
-                if (TypeInference.checkType(p.getType(), t => t instanceof GenericType)) {
-                    tmp.push(expr.getArg(i).getType());
-                }
-            });
+        if (method.getGenericTypes()) {
+            expr.getMethodSignature().getMethodSubSignature().getParameters()
+                .filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX))
+                .forEach((p, i) => {
+                    if (TypeInference.checkType(p.getType(), t => t instanceof GenericType)) {
+                        tmp.push(expr.getArg(i).getType());
+                    }
+                });
+        }
         if (tmp.length > 0) {
             realTypes = tmp;
         } else if (declaredClass?.hasComponentDecorator()) {
