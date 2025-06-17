@@ -23,7 +23,6 @@ import {
     ArkNewArrayExpr,
     ArkNewExpr,
     ArkPtrInvokeExpr,
-    ArkStaticInvokeExpr,
 } from '../../core/base/Expr';
 import { AbstractFieldRef, ArkArrayRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { Value } from '../../core/base/Value';
@@ -33,7 +32,7 @@ import { Local } from '../../core/base/Local';
 import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkClass } from '../../core/model/ArkClass';
-import { ArrayType, ClassType, FunctionType, StringType } from '../../core/base/Type';
+import { ArrayType, ClassType, FunctionType } from '../../core/base/Type';
 import { Constant, NullConstant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import {
@@ -50,8 +49,6 @@ import {
     PagNode,
     PagNodeType,
     PagThisRefNode,
-    StorageLinkEdgeType,
-    StorageType,
 } from './Pag';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
@@ -59,6 +56,7 @@ import { BuiltApiType, getBuiltInApiType } from './PTAUtils';
 import { ContextType, PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 import { ContextID, DUMMY_CID } from './context/Context';
 import { ContextSelector, emptyID, KCallSiteContextSelector, KFuncContextSelector, KObjContextSelector } from './context/ContextSelector';
+import { PluginManager } from './plugins/PluginManager';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 
@@ -80,6 +78,7 @@ export class PagBuilder {
     private interFuncPags?: Map<FuncID, InterFuncPag>;
     private handledFunc: Set<string> = new Set();
     private ctxSelector: ContextSelector;
+    private pluginManager: PluginManager;
     private scene: Scene;
     private worklist: CSFuncID[] = [];
     private pagStat: PAGStat;
@@ -95,7 +94,6 @@ export class PagBuilder {
     private singletonFuncMap: Map<FuncID, boolean> = new Map();
     private globalThisValue: Local = new Local(GLOBAL_THIS_NAME);
     private globalThisPagNode?: PagGlobalThisNode;
-    private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
     private externalScopeVariableMap: Map<Local, Local[]> = new Map();
     private retriggerNodesList: Set<NodeID> = new Set();
 
@@ -106,6 +104,8 @@ export class PagBuilder {
         this.funcPags = new Map<FuncID, FuncPag>();
         this.scene = s;
         this.pagStat = new PAGStat();
+        this.pluginManager = new PluginManager();
+        this.pluginManager.init(p, this);
         let kLimit = config.kLimit;
 
         switch (config.contextType) {
@@ -408,8 +408,14 @@ export class PagBuilder {
             }
 
             // process the Storage API(Static)
-            if (!this.processStorage(cs, calleeCGNode, cid)) {
-                // If not Storage API, process normal edge
+            // if (!this.processStorage(cs, calleeCGNode, cid)) {
+            //     // If not Storage API, process normal edge
+            // }
+
+            const pluginResult = this.pluginManager.processCallSite(cs, cid, this, this.cg);
+            if (pluginResult.handled) {
+                logger.debug(`[buildFuncPag] plugin handled call site ${cs.callStmt.toString()}`);
+            } else {
                 this.addStaticPagCallEdge(cs, cid, calleeCid);
             }
 
@@ -850,13 +856,14 @@ export class PagBuilder {
                 throw new Error('Can not get caller method node');
             }
 
-            if (this.processStorage(cs, dstCGNode, cid)) {
-                if (ivkExpr.getArgs().length !== 0) {
-                    // for AppStorage.set() instance invoke, add obj to reanalyze list
-                    let argsNode = this.pag.getOrNewNode(cid, cs.args![0]);
-                    srcNodes.push(argsNode.getID());
-                }
-            }
+            // TODO: check
+            // if (this.processStorage(cs, dstCGNode, cid)) {
+            //     if (ivkExpr.getArgs().length !== 0) {
+            //         // for AppStorage.set() instance invoke, add obj to reanalyze list
+            //         let argsNode = this.pag.getOrNewNode(cid, cs.args![0]);
+            //         srcNodes.push(argsNode.getID());
+            //     }
+            // }
 
             logger.warn(`\tAdd call edge of unknown call ${callee.getSignature().toString()}`);
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);
@@ -1263,71 +1270,6 @@ export class PagBuilder {
         return this.pag.getOrNewNode(cid, this.getGlobalThisValue());
     }
 
-    /**
-     * search the storage map to get propertyNode with given storage and propertyFieldName
-     * @param storage storage type: AppStorage, LocalStorage etc.
-     * @param propertyName string property key
-     * @returns propertyNode: PagLocalNode
-     */
-    public getOrNewPropertyNode(storage: StorageType, propertyName: string, stmt: Stmt): PagNode {
-        let propertyNode = this.getPropertyNode(storage, propertyName, stmt);
-
-        if (propertyNode) {
-            return propertyNode;
-        }
-
-        let storageMap = this.storagePropertyMap.get(storage)!;
-        let propertyLocal = new Local(propertyName);
-        storageMap.set(propertyName, propertyLocal);
-        this.storagePropertyMap.set(storage, storageMap);
-
-        return this.getOrNewPagNode(-1, propertyLocal, stmt);
-    }
-
-    public getPropertyNode(storage: StorageType, propertyName: string, stmt: Stmt): PagNode | undefined {
-        let storageMap = this.storagePropertyMap.get(storage);
-        let propertyLocal: Local | undefined;
-
-        if (!storageMap) {
-            storageMap = new Map();
-            this.storagePropertyMap.set(storage, storageMap);
-        }
-
-        if (storageMap.has(propertyName)) {
-            propertyLocal = storageMap.get(propertyName)!;
-        }
-
-        if (propertyLocal) {
-            return this.getOrNewPagNode(-1, propertyLocal, stmt);
-        }
-        return undefined;
-    }
-
-    /**
-     * add PagEdge
-     * @param edgeKind: edge kind differs from API
-     * @param propertyNode: PAG node created by protpertyName
-     * @param obj: heapObj stored with Storage API
-     */
-    public addPropertyLinkEdge(propertyNode: PagNode, storageObj: Value, cid: ContextID, stmt: Stmt, edgeKind: number): boolean {
-        if (!(storageObj.getType() instanceof ClassType)) {
-            return false;
-        }
-
-        if (edgeKind === StorageLinkEdgeType.Property2Local) {
-            // propertyNode --> objNode
-            this.pag.addPagEdge(propertyNode, this.pag.getOrNewNode(cid, storageObj), PagEdgeKind.Copy, stmt);
-        } else if (edgeKind === StorageLinkEdgeType.Local2Property) {
-            // propertyNode <-- objNode
-            this.pag.addPagEdge(this.pag.getOrNewNode(cid, storageObj), propertyNode, PagEdgeKind.Copy, stmt);
-        } else if (edgeKind === StorageLinkEdgeType.TwoWay) {
-            // propertyNode <-> objNode
-            this.pag.addPagEdge(propertyNode, this.pag.getOrNewNode(cid, storageObj), PagEdgeKind.Copy, stmt);
-            this.pag.addPagEdge(this.pag.getOrNewNode(cid, storageObj), propertyNode, PagEdgeKind.Copy, stmt);
-        }
-        return true;
-    }
-
     /*
      * In ArkIR, ArkField has multiple instances for each stmt which use it
      * But the unique one is needed for pointer analysis
@@ -1495,173 +1437,6 @@ export class PagBuilder {
         }
 
         return PagEdgeKind.Unknown;
-    }
-
-    /**
-     * process Storage API
-     * @returns boolean: check if the cs represent a Storage API, no matter the API will success or fail
-     */
-    private processStorage(cs: ICallSite, calleeCGNode: CallGraphNode, cid: ContextID): boolean {
-        let storageName = calleeCGNode.getMethod().getDeclaringClassSignature().getClassName();
-        let storageType: StorageType = this.getStorageType(storageName, cs, cid);
-
-        // TODO: add other storages
-        if (storageType === StorageType.APP_STORAGE) {
-            let calleeName = calleeCGNode.getMethod().getMethodSubSignature().getMethodName();
-
-            // TODO: complete AppStorage API
-            if (calleeName === 'setOrCreate') {
-                this.processStorageSetOrCreate(cs, cid);
-            } else if (calleeName === 'link') {
-                this.processStorageLink(cs, cid);
-            } else if (calleeName === 'prop') {
-                this.processStorageProp(cs, cid);
-            } else if (calleeName === 'set') {
-                this.processStorageSet(cs, cid);
-            } else if (calleeName === 'get') {
-                this.processStorageGet(cs, cid);
-            }
-            return true;
-        } else if (storageType === StorageType.LOCAL_STORAGE) {
-            // TODO: LocalStorage is not Static
-        }
-
-        return false;
-    }
-
-    private processStorageSetOrCreate(cs: ICallSite, cid: ContextID): void {
-        let propertyStr = this.getPropertyName(cs.args![0]);
-        if (!propertyStr) {
-            return;
-        }
-
-        let propertyName = propertyStr;
-        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        let storageObj = cs.args![1];
-
-        this.addPropertyLinkEdge(propertyNode, storageObj, cid, cs.callStmt, StorageLinkEdgeType.Local2Property);
-    }
-
-    private processStorageLink(cs: ICallSite, cid: ContextID): void {
-        let propertyStr = this.getPropertyName(cs.args![0]);
-        if (!propertyStr) {
-            return;
-        }
-
-        let propertyName = propertyStr;
-        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
-        if (linkedOpNode instanceof PagLocalNode) {
-            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
-        }
-
-        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
-        this.pag.addPagEdge(linkedOpNode, propertyNode, PagEdgeKind.Copy);
-    }
-
-    private processStorageProp(cs: ICallSite, cid: ContextID): void {
-        let propertyStr = this.getPropertyName(cs.args![0]);
-        if (!propertyStr) {
-            return;
-        }
-
-        let propertyName = propertyStr;
-        let propertyNode = this.getOrNewPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-        let linkedOpNode = this.pag.getOrNewNode(cid, leftOp) as PagNode;
-        if (linkedOpNode instanceof PagLocalNode) {
-            linkedOpNode.setStorageLink(StorageType.APP_STORAGE, propertyName);
-        }
-
-        this.pag.addPagEdge(propertyNode, linkedOpNode, PagEdgeKind.Copy);
-    }
-
-    private processStorageSet(cs: ICallSite, cid: ContextID): void {
-        let ivkExpr: AbstractInvokeExpr = cs.callStmt.getInvokeExpr()!;
-        if (ivkExpr instanceof ArkInstanceInvokeExpr) {
-            let base = ivkExpr.getBase();
-            let baseNode = this.pag.getOrNewNode(cid, base) as PagLocalNode;
-
-            if (baseNode.isStorageLinked()) {
-                let argsNode = this.pag.getOrNewNode(cid, cs.args![0]) as PagNode;
-
-                this.pag.addPagEdge(argsNode, baseNode, PagEdgeKind.Copy);
-            }
-        } else if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            // TODO: process AppStorage.set()
-        }
-    }
-
-    private processStorageGet(cs: ICallSite, cid: ContextID): void {
-        if (!(cs.callStmt instanceof ArkAssignStmt)) {
-            return;
-        }
-        let leftOp = (cs.callStmt as ArkAssignStmt).getLeftOp() as Local;
-        let ivkExpr = cs.callStmt.getInvokeExpr();
-        let propertyName!: string;
-        if (ivkExpr instanceof ArkStaticInvokeExpr) {
-            let propertyStr = this.getPropertyName(cs.args![0]);
-            if (propertyStr) {
-                propertyName = propertyStr;
-            }
-        } else if (ivkExpr instanceof ArkInstanceInvokeExpr) {
-            let baseNode = this.pag.getOrNewNode(cid, ivkExpr.getBase()) as PagLocalNode;
-            if (baseNode.isStorageLinked()) {
-                propertyName = baseNode.getStorage().PropertyName!;
-            }
-        }
-
-        let propertyNode = this.getPropertyNode(StorageType.APP_STORAGE, propertyName, cs.callStmt);
-        if (!propertyNode) {
-            return;
-        }
-
-        this.pag.addPagEdge(propertyNode, this.pag.getOrNewNode(cid, leftOp, cs.callStmt), PagEdgeKind.Copy, cs.callStmt);
-    }
-
-    private getPropertyName(value: Value): string | undefined {
-        if (value instanceof Local) {
-            let type = value.getType();
-            if (type instanceof StringType) {
-                return type.getName();
-            }
-        } else if (value instanceof Constant) {
-            return value.getValue();
-        }
-
-        return undefined;
-    }
-
-    /**
-     * get storageType enum with method's Declaring ClassName
-     *
-     * @param storageName ClassName that method belongs to, currently support AppStorage and SubscribedAbstractProperty
-     * SubscribedAbstractProperty: in following listing, `link1` is infered as ClassType `SubscribedAbstractProperty`,
-     * it needs to get PAG node to check the StorageType
-     * let link1: SubscribedAbstractProperty<A> = AppStorage.link('PropA');
-     * link1.set(a);
-     * @param cs: for search PAG node in SubscribedAbstractProperty
-     * @param cid: for search PAG node in SubscribedAbstractProperty
-     * @returns StorageType enum
-     */
-    private getStorageType(storageName: string, cs: ICallSite, cid: ContextID): StorageType {
-        switch (storageName) {
-            case 'AppStorage':
-                return StorageType.APP_STORAGE;
-            case 'SubscribedAbstractProperty': {
-                let calleeBaseLocal = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
-                let calleeBaseLocalNode = this.pag.getOrNewNode(cid, calleeBaseLocal) as PagLocalNode;
-                if (calleeBaseLocalNode.isStorageLinked()) {
-                    let storage = calleeBaseLocalNode.getStorage();
-
-                    return storage.StorageType!;
-                }
-                return StorageType.Undefined;
-            }
-            default:
-                return StorageType.Undefined;
-        }
     }
 
     /**\

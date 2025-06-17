@@ -32,6 +32,7 @@ import { BuiltApiType, getBuiltInApiType, IsCollectionClass } from './PTAUtils';
 import { IPtsCollection } from './PtsDS';
 import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 import { ContextID } from './context/Context';
+import { StorageType } from './plugins/StoragePlugin';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export type PagNodeType = Value;
@@ -48,18 +49,6 @@ export enum PagEdgeKind {
     This,
     Unknown,
     InterProceduralCopy,
-}
-
-export enum StorageType {
-    APP_STORAGE,
-    LOCAL_STORAGE,
-    Undefined,
-}
-
-export enum StorageLinkEdgeType {
-    Property2Local,
-    Local2Property,
-    TwoWay,
 }
 
 export class PagEdge extends BaseEdge {
