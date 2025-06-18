@@ -25,13 +25,13 @@ import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { Constant } from '../../core/base/Constant';
 import { FunctionType, UnclearReferenceType } from '../../core/base/Type';
 import { ClassSignature, FieldSignature, FileSignature, MethodSignature } from '../../core/model/ArkSignature';
-import { ContextID } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
 import { BuiltApiType, getBuiltInApiType, IsCollectionClass } from './PTAUtils';
 import { IPtsCollection } from './PtsDS';
 import { PointerAnalysisConfig } from './PointerAnalysisConfig';
+import { ContextID } from './context/Context';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 export type PagNodeType = Value;
@@ -39,8 +39,6 @@ export type PagNodeType = Value;
 /*
  * Implementation of pointer-to assignment graph for pointer analysis
  */
-
-const DUMMY_PAG_NODE_ID = -1;
 
 export enum PagEdgeKind {
     Address,
@@ -461,8 +459,8 @@ export class PagStaticFieldNode extends PagNode {
 
 export class PagThisRefNode extends PagNode {
     pointToNode: NodeID[];
-    constructor(id: NodeID, thisRef: ArkThisRef) {
-        super(id, DUMMY_PAG_NODE_ID, thisRef, PagNodeKind.ThisRef);
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, thisRef: ArkThisRef) {
+        super(id, cid, thisRef, PagNodeKind.ThisRef);
         this.pointToNode = [];
     }
 
@@ -590,8 +588,8 @@ export class PagFuncNode extends PagNode {
         return this.thisPt;
     }
 
-    public setCS(callsite: CallSite): void {
-        this.originCallSite = callsite;
+    public setCS(callSite: CallSite): void {
+        this.originCallSite = callSite;
     }
 
     public getCS(): CallSite {
@@ -780,7 +778,7 @@ export class Pag extends BaseExplicitGraph {
         } else if (value instanceof ArkParameterRef) {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
-            throw new Error('This Node needs to use addThisNode method');
+            pagNode = new PagThisRefNode(id, cid, value);
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
@@ -885,35 +883,6 @@ export class Pag extends BaseExplicitGraph {
         this.contextBaseToIdMap.set(base, ctxMap);
     }
 
-    /*
-     * This node has no context info
-     * but point to node info
-     */
-    public addPagThisRefNode(value: ArkThisRef): PagNode {
-        let id: NodeID = this.nodeNum + 1;
-        let pagNode = new PagThisRefNode(id, value);
-        this.addNode(pagNode);
-
-        return pagNode;
-    }
-
-    public addPagThisLocalNode(ptNode: NodeID, value: Local): PagNode {
-        let id: NodeID = this.nodeNum + 1;
-        let pagNode = new PagLocalNode(id, ptNode, value);
-        this.addNode(pagNode);
-
-        return pagNode;
-    }
-
-    public getOrNewThisRefNode(thisRefNodeID: NodeID, value: ArkThisRef): PagNode {
-        if (thisRefNodeID !== -1) {
-            return this.getNode(thisRefNodeID) as PagNode;
-        }
-
-        let thisRefNode = this.addPagThisRefNode(value);
-        return thisRefNode;
-    }
-
     public getOrNewThisLocalNode(cid: ContextID, ptNode: NodeID, value: Local, s?: Stmt): PagNode {
         if (ptNode !== -1) {
             return this.getNode(ptNode) as PagNode;
@@ -1016,6 +985,7 @@ export class Pag extends BaseExplicitGraph {
                 break;
             default:
         }
+        this.edgeNum++;
         return true;
     }
 

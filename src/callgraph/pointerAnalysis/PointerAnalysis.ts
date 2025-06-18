@@ -50,7 +50,7 @@ export class PointerAnalysis extends AbstractAnalysis {
         super(s, cg);
         this.pag = p;
         this.ptd = new DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>>(config.ptsCollectionCtor);
-        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config.kLimit, config.analysisScale);
+        this.pagBuilder = new PagBuilder(this.pag, this.cg, s, config);
         this.cgBuilder = new CallGraphBuilder(this.cg, s);
         this.ptaStat = new PTAStat(this);
         this.config = config;
@@ -124,13 +124,18 @@ export class PointerAnalysis extends AbstractAnalysis {
             this.cg.dump(path.join(this.config.outputDirectory, 'cgEnd.dot'));
         }
 
-        if (this.config.unhandledFuncDump) {
+        if (this.config.debug) {
             this.dumpUnhandledFunctions();
+            this.pagBuilder.getContextSelector().dump(this.config.outputDirectory, this.cg);
         }
     }
 
     public getPTD(): DiffPTData<NodeID, NodeID, IPtsCollection<NodeID>> {
         return this.ptd;
+    }
+
+    public getPag(): Pag {
+        return this.pag;
     }
 
     public getStat(): string {
@@ -380,7 +385,7 @@ export class PointerAnalysis extends AbstractAnalysis {
 
     /**
      * 1. 记录被更新的节点(记录cid, nodeid)
-     * 2. ( PAGLocalNode记录callsite(cid, value唯一))，通过1种的nodeID查询Node,拿到Callsite
+     * 2. ( PAGLocalNode记录callSite(cid, value唯一))，通过1种的nodeID查询Node,拿到CallSite
      * 3. 在addDynamicCall里对传入指针过滤（已处理指针和未处理指针）
      */
     private onTheFlyDynamicCallSolve(): boolean {
@@ -415,13 +420,13 @@ export class PointerAnalysis extends AbstractAnalysis {
             return changed;
         }
 
-        logger.info(`[process dynamic callsite] node ${node.getID()}`);
-        dynCallSites.forEach(dynCallsite => {
+        logger.info(`[process dynamic callSite] node ${node.getID()}`);
+        dynCallSites.forEach(dynCallSite => {
             for (let pt of pts) {
-                let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallsite, pt, node.getCid());
+                let srcNodes = this.pagBuilder.addDynamicCallEdge(dynCallSite, pt, node.getCid());
                 changed = this.addToReanalyze(srcNodes) || changed;
             }
-            processedCallSites.add(dynCallsite);
+            processedCallSites.add(dynCallSite);
         });
 
         return changed;
@@ -436,7 +441,7 @@ export class PointerAnalysis extends AbstractAnalysis {
             return changed;
         }
 
-        logger.info(`[process unknown callsite] node ${node.getID()}`);
+        logger.info(`[process unknown callSite] node ${node.getID()}`);
         unknownCallSites.forEach(unknownCallSite => {
             for (let pt of pts) {
                 let srcNodes = this.pagBuilder.addDynamicCallEdge(unknownCallSite, pt, node.getCid());
