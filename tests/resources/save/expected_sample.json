@@ -2236,7 +2236,7 @@
                 "type": {
                   "_": "NumberType"
                 },
-                "isOptional": false,
+                "isOptional": true,
                 "isRest": false
               }
             ],
@@ -2293,7 +2293,7 @@
               "blocks": [
                 {
                   "id": 0,
-                  "successors": [],
+                  "successors": [1, 2],
                   "predecessors": [],
                   "stmts": [
                     {
@@ -2416,6 +2416,37 @@
                         "args": []
                       }
                     },
+                    {
+                      "_": "IfStmt",
+                      "condition": {
+                        "_": "ConditionExpr",
+                        "left": {
+                          "_": "Local",
+                          "name": "grade",
+                          "type": {
+                            "_": "NumberType"
+                          }
+                        },
+                        "op": "==",
+                        "right": {
+                          "_": "Constant",
+                          "type": {
+                            "_": "UndefinedType"
+                          },
+                          "value": "undefined"
+                        },
+                        "type": {
+                          "_": "BooleanType"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": 1,
+                  "successors": [],
+                  "predecessors": [0, 2],
+                  "stmts": [
                     {
                       "_": "AssignStmt",
                       "left": {
@@ -2558,6 +2589,30 @@
                             "declaringNamespace": null
                           }
                         }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": 2,
+                  "successors": [1],
+                  "predecessors": [0],
+                  "stmts": [
+                    {
+                      "_": "AssignStmt",
+                      "left": {
+                        "_": "Local",
+                        "name": "grade",
+                        "type": {
+                          "_": "NumberType"
+                        }
+                      },
+                      "right": {
+                        "_": "Constant",
+                        "type": {
+                          "_": "NumberType"
+                        },
+                        "value": "1"
                       }
                     }
                   ]

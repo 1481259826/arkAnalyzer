@@ -18,6 +18,7 @@ import { Scene } from '../../../../src/Scene';
 import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
 import { Local, Stmt, Value } from '../../../../src';
+import { ArkIRMethodPrinter } from "../../../../src/save/arkir/ArkIRMethodPrinter";
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../../../resources/model/method"))
@@ -28,6 +29,207 @@ projectScene.inferTypes();
 let arkFile = projectScene.getFiles().find((file) => file.getName() == 'method.ts');
 let arkDefaultClass = arkFile?.getDefaultClass();
 let nestedTestClass = arkFile?.getClassWithName('NestedTestClass');
+
+const MethodParamWithDefaultValue = `paramWithInitializer(a: string, x?: number, y?: unknown, z?: number): number {
+  label0:
+    a = parameter0: string
+    x = parameter1: number
+    y = parameter2: unknown
+    z = parameter3: number
+    this = this: @method/method.ts: %dflt
+    if x == undefined goto label1 label2
+
+  label1:
+    x = 5
+    goto label2
+
+  label2:
+    if y == undefined goto label3 label4
+
+  label3:
+    y = 'abc'
+    goto label4
+
+  label4:
+    if z == undefined goto label5 label6
+
+  label5:
+    z = x + 1
+    goto label6
+
+  label6:
+    %0 = a + y
+    instanceinvoke console.<@%unk/%unk: .log()>(%0)
+    %1 = x + z
+    return %1
+}
+`;
+
+const paramWithComplicatedInitializer = `paramWithComplicatedInitializer(a?: unknown, b?: unknown, c: string): void {
+  label0:
+    a = parameter0: unknown
+    b = parameter1: unknown
+    c = parameter2: string
+    this = this: @method/method.ts: %dflt
+    if a == undefined goto label1 label2
+
+  label1:
+    a = staticinvoke <@method/method.ts: %dflt.getA()>()
+    goto label2
+
+  label2:
+    if condition != 0 goto label3 label4
+
+  label3:
+    %0 = 'true'
+    goto label5
+
+  label4:
+    %0 = 'false'
+    goto label5
+
+  label5:
+    if b == undefined goto label6 label7
+
+  label6:
+    b = %0
+    goto label7
+
+  label7:
+    %1 = a + b
+    instanceinvoke console.<@%unk/%unk: .log()>(%1)
+    return
+}
+`;
+
+const methodWithIfBranch = `paramInitializerWithIfBranch(a?: unknown): number {
+  label2:
+    a = parameter0: unknown
+    this = this: @method/method.ts: %dflt
+    if a == undefined goto label3 label4
+
+  label0:
+    return a
+
+  label1:
+    %0 = -a
+    return %0
+
+  label3:
+    a = 3
+    goto label4
+
+  label4:
+    if a > 0 goto label0 label1
+}
+`;
+
+const methodWithTernary = `paramInitializerWithTernary(a?: unknown): number {
+  label0:
+    a = parameter0: unknown
+    this = this: @method/method.ts: %dflt
+    if a == undefined goto label1 label2
+
+  label1:
+    a = 3
+    goto label2
+
+  label2:
+    b = undefined
+    if a > 0 goto label3 label4
+
+  label3:
+    b = a
+    %1 = b
+    goto label5
+
+  label4:
+    b = -a
+    %1 = b
+    goto label5
+
+  label5:
+    return b
+}
+`;
+
+const methodWithTryCatch = `paramInitializerWithTryCatch(a?: unknown): void {
+  label3:
+    a = parameter0: unknown
+    this = this: @method/method.ts: %dflt
+    if a == undefined goto label4 label0
+
+  label0:
+    instanceinvoke console.<@%unk/%unk: .log()>(a)
+    goto label2
+
+  label1:
+    e = caughtexception: unknown
+    instanceinvoke console.<@%unk/%unk: .log()>(e)
+    goto label2
+
+  label2:
+    return
+
+  label4:
+    a = 3
+    goto label0
+}
+`;
+
+const methodWithForLoop = `paramInitializerWithForLoop(a?: unknown): void {
+  label3:
+    a = parameter0: unknown
+    this = this: @method/method.ts: %dflt
+    if a == undefined goto label4 label5
+
+  label0:
+    if i < a goto label1 label2
+
+  label1:
+    instanceinvoke console.<@%unk/%unk: .log()>(i)
+    i = i + 1
+    goto label0
+
+  label2:
+    return
+
+  label4:
+    a = 3
+    goto label5
+
+  label5:
+    i = 0
+    goto label0
+}
+`;
+
+const methodWithSwitch = `paramInitializerWithSwitch(a?: unknown): void {
+  label3:
+    a = parameter0: unknown
+    this = this: @method/method.ts: %dflt
+    if a == undefined goto label4 label5
+
+  label0:
+    %0 = a + 1
+    instanceinvoke console.<@%unk/%unk: .log()>(%0)
+    goto label2
+
+  label1:
+    instanceinvoke console.<@%unk/%unk: .log()>(a)
+    goto label2
+
+  label2:
+    return
+
+  label4:
+    a = 3
+    goto label5
+
+  label5:
+    if a == 1 goto label0 label1
+}
+`;
 
 describe("ArkMethod Test", () => {
     it('test dotDotDot parameter', async () => {
@@ -333,5 +535,105 @@ describe('Optional Method', () => {
         assert.isDefined(method6);
         assert.isNotNull(method6);
         assert.isFalse(method6!.getQuestionToken());
+    });
+});
+
+describe('Method Param with Default Value', () => {
+    const method = arkFile?.getDefaultClass().getMethodWithName('paramWithInitializer');
+
+    it('case1: param without default value', async () => {
+        const param = method?.getSubSignature().getParameters()[0];
+        assert.isDefined(param);
+        assert.isFalse(param!.isOptional());
+        assert.equal(param!.getType().toString(), 'string');
+    });
+
+    it('case2: param with default value and type annotation', async () => {
+        const param = method?.getSubSignature().getParameters()[1];
+        assert.isDefined(param);
+        assert.isTrue(param!.isOptional());
+        assert.equal(param!.getType().toString(), 'number');
+    });
+
+    it('case3: param with default value and without type annotation', async () => {
+        const param = method?.getSubSignature().getParameters()[2];
+        assert.isDefined(param);
+        assert.isTrue(param!.isOptional());
+        // TODO: type inference should update the param type with initializer stmts.
+        assert.equal(param!.getType().toString(), 'unknown');
+    });
+
+    it('case4: param with default value according to another param', async () => {
+        const param = method?.getSubSignature().getParameters()[3];
+        assert.isDefined(param);
+        assert.isTrue(param!.isOptional());
+        assert.equal(param!.getType().toString(), 'number');
+    });
+
+    it('case5: method ir', async () => {
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), MethodParamWithDefaultValue);
+    });
+
+    it('case6: method with complicated initializer ir', async () => {
+        const method = arkFile?.getDefaultClass().getMethodWithName('paramWithComplicatedInitializer');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), paramWithComplicatedInitializer);
+    });
+
+    it('case7: method with if branch', async () => {
+        const method = arkFile?.getDefaultClass().getMethodWithName('paramInitializerWithIfBranch');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), methodWithIfBranch);
+        const startingBlockID = method!.getBody()?.getCfg().getStartingBlock()?.getId();
+        assert.isDefined(startingBlockID);
+        assert.equal(startingBlockID, 2);
+    });
+
+    it('case8: method with ternary expression', async () => {
+        const method = arkFile?.getDefaultClass().getMethodWithName('paramInitializerWithTernary');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), methodWithTernary);
+    });
+
+    it('case9: method with try catch', async () => {
+        const method = arkFile?.getDefaultClass().getMethodWithName('paramInitializerWithTryCatch');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), methodWithTryCatch);
+        const startingBlockID = method!.getBody()?.getCfg().getStartingBlock()?.getId();
+        assert.isDefined(startingBlockID);
+        assert.equal(startingBlockID, 3);
+    });
+
+    it('case10: method with for loop', async () => {
+        const method = arkFile?.getDefaultClass().getMethodWithName('paramInitializerWithForLoop');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), methodWithForLoop);
+        const startingBlockID = method!.getBody()?.getCfg().getStartingBlock()?.getId();
+        assert.isDefined(startingBlockID);
+        assert.equal(startingBlockID, 3);
+    });
+
+    it('case11: method with Switch', async () => {
+        const method = arkFile?.getDefaultClass().getMethodWithName('paramInitializerWithSwitch');
+        assert.isDefined(method);
+        assert.isNotNull(method);
+        const printer = new ArkIRMethodPrinter(method!);
+        assert.equal(printer.dump(), methodWithSwitch);
+        const startingBlockID = method!.getBody()?.getCfg().getStartingBlock()?.getId();
+        assert.isDefined(startingBlockID);
+        assert.equal(startingBlockID, 3);
     });
 });

@@ -53,7 +53,8 @@ class ClassWithParamProperty {
         public a: number = 123,
         private readonly b: string,
         protected c: boolean,
-        public d?: string
+        e: string = 'abc',
+        public d?: string,
     ) {
         console.log('this is constructor method');
     }

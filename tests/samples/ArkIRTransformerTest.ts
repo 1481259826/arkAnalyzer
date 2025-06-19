@@ -22,7 +22,7 @@ import {
     PrinterBuilder,
     Scene,
     SceneConfig,
-    Stmt,
+    Stmt
 } from '../../src';
 import { ArkMetadataKind, CommentsMetadata } from '../../src/core/model/ArkMetadata';
 
