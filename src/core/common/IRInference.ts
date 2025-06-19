@@ -333,7 +333,7 @@ export class IRInference {
         return null;
     }
 
-    private static inferArgs(expr: AbstractInvokeExpr, arkMethod: ArkMethod): void {
+    public static inferArgs(expr: AbstractInvokeExpr, arkMethod: ArkMethod): void {
         const scene = arkMethod.getDeclaringArkFile().getScene();
         const parameters = expr.getMethodSignature().getMethodSubSignature().getParameters();
         let realTypes: Type[] = [];
@@ -370,10 +370,11 @@ export class IRInference {
         } else if (paramType instanceof GenericType || paramType instanceof AnyType) {
             realTypes.push(argType);
         } else if (paramType instanceof FunctionType && argType instanceof FunctionType) {
-            if (paramType.getMethodSignature().getParamLength() > 0 && paramType.getMethodSignature().getType() instanceof GenericType) {
+            const returnType = paramType.getMethodSignature().getType();
+            if (paramType.getMethodSignature().getParamLength() > 0 && returnType instanceof GenericType) {
                 const paramMethod = scene.getMethod(expr.getMethodSignature());
                 const argMethod = scene.getMethod(argType.getMethodSignature());
-                if (paramMethod && paramMethod.getGenericTypes() && argMethod) {
+                if (argMethod && paramMethod?.getGenericTypes()?.find(t => t === returnType)) {
                     TypeInference.inferTypeInMethod(argMethod);
                 }
             }
@@ -686,9 +687,11 @@ export class IRInference {
                 if (type instanceof FunctionType) {
                     this.assignAnonMethod(scene.getMethod(type.getMethodSignature()), property);
                 }
-                anonField.setSignature(
-                    new FieldSignature(anonField.getName(), property.getDeclaringArkClass().getSignature(), new FunctionType(property.getSignature()))
-                );
+                if (type instanceof UnknownType) {
+                    anonField.setSignature(
+                        new FieldSignature(anonField.getName(), property.getDeclaringArkClass().getSignature(), new FunctionType(property.getSignature()))
+                    );
+                }
             }
         }
         for (const anonMethod of anon.getMethods()) {

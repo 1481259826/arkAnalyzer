@@ -46,16 +46,9 @@ import {
     ExportAllWithAsNameFromThisFile_Expect_IR,
 } from '../resources/exports/from/expectedIR';
 import { DefaultExportObjectLiteral_Expect_IR } from '../resources/exports/objectLiteral/expectedIR';
-import { Sdk } from '../../src/Config';
 
 function buildScene(): Scene {
     let config: SceneConfig = new SceneConfig();
-    let sdk: Sdk = {
-        name: 'ohos',
-        path: './builtIn/typescript',
-        moduleName: ''
-    };
-    config.getSdksObj().push(sdk);
     config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
     config.getSdksObj().push({
         moduleName: '',
@@ -294,14 +287,14 @@ describe("export Test", () => {
             .getDefaultArkMethod()?.getBody()?.getLocals();
         assert.isNotEmpty(locals);
         if (locals) {
-            assert.equal(locals.get('a1')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string>');
-            assert.equal(locals.get('a2')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Map<string,string>')
-            assert.equal(locals.get('a3')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string[]>')
-            assert.equal(locals.get('a4')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<string>>>')
-            assert.equal(locals.get('%1')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any>');
-            assert.equal(locals.get('%2')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Map<any,string>')
-            assert.equal(locals.get('%3')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any[]>')
-            assert.equal(locals.get('%4')?.getType().getTypeString(), '@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<@ohos/api/@internal/lib.es2015.collection.d.ts: Set<any>>>')
+            assert.equal(locals.get('a1')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<string>');
+            assert.equal(locals.get('a2')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Map<string,string>')
+            assert.equal(locals.get('a3')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<string[]>')
+            assert.equal(locals.get('a4')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<string>>>')
+            assert.equal(locals.get('%1')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<any>');
+            assert.equal(locals.get('%2')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Map<any,string>')
+            assert.equal(locals.get('%3')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<any[]>')
+            assert.equal(locals.get('%4')?.getType().getTypeString(), '@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<@built-in/node_modules/ohos-typescript/lib/lib.es2015.collection.d.ts: Set<any>>>')
 
         }
     })

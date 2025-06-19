@@ -22,7 +22,8 @@ import {
     ArkArrayRef,
     ArkInstanceFieldRef,
     ArkParameterRef,
-    ArkStaticFieldRef, GlobalRef
+    ArkStaticFieldRef,
+    GlobalRef
 } from '../base/Ref';
 import { ArkAliasTypeDefineStmt, ArkAssignStmt, ArkReturnStmt, Stmt } from '../base/Stmt';
 import {
@@ -61,7 +62,8 @@ import {
     ANY_KEYWORD,
     BIGINT_KEYWORD,
     BOOLEAN_KEYWORD,
-    CONSTRUCTOR_NAME, DEFAULT,
+    CONSTRUCTOR_NAME,
+    DEFAULT,
     GLOBAL_THIS_NAME,
     NEVER_KEYWORD,
     NULL_KEYWORD,
@@ -415,10 +417,10 @@ export class TypeInference {
         ) {
             return true;
         } else if (type instanceof UnionType || type instanceof IntersectionType || type instanceof TupleType) {
-            return !!type.getTypes().find(t => this.checkType(t, e => e instanceof UnclearReferenceType));
+            return !!type.getTypes().find(t => this.checkType(t, e => e instanceof UnclearReferenceType || e instanceof GenericType));
         } else if (type instanceof ArrayType) {
             const baseType = type.getBaseType();
-            return this.checkType(baseType, t => t instanceof UnclearReferenceType) || baseType instanceof GenericType;
+            return this.checkType(baseType, t => t instanceof UnclearReferenceType || baseType instanceof GenericType);
         } else if (type instanceof AliasType) {
             return this.isUnclearType(type.getOriginalType());
         } else if (type instanceof KeyofTypeExpr) {
@@ -874,7 +876,8 @@ export class TypeInference {
     public static inferFunctionType(argType: FunctionType, paramSubSignature: MethodSubSignature | undefined, realTypes: Type[] | undefined): void {
         const returnType = argType.getMethodSignature().getMethodSubSignature().getReturnType();
         const declareType = paramSubSignature?.getReturnType();
-        if (declareType instanceof GenericType && realTypes && !this.isUnclearType(returnType) && !(returnType instanceof VoidType)) {
+        if (declareType instanceof GenericType && realTypes && !realTypes[declareType.getIndex()] &&
+            !this.isUnclearType(returnType) && !(returnType instanceof VoidType)) {
             realTypes[declareType.getIndex()] = returnType;
         }
         const params = paramSubSignature?.getParameters();
@@ -903,6 +906,7 @@ export class TypeInference {
         if (!(stmt instanceof ArkReturnStmt)) {
             return;
         }
+        this.inferValueType(stmt.getOp(), arkMethod);
         let returnType: Type | undefined = arkMethod.getSignature().getType();
         if (returnType instanceof ClassType && returnType.getClassSignature().getClassName() === PROMISE) {
             returnType = returnType.getRealGenericTypes()?.[0];
