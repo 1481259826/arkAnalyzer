@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { CallGraph, CallGraphNode } from "../../model/CallGraph";
 import { ICallSite } from "../../model/CallSite";
 import { Pag } from "../Pag";
@@ -5,13 +20,15 @@ import { PagBuilder } from "../PagBuilder";
 import { IPagPlugin } from "./IPagPlugin";
 import { StoragePlugin } from "./StoragePlugin";
 import { NodeID } from '../../../core/graph/GraphTraits';
+import { FunctionPlugin } from "./FunctionPlugin";
 
 // plugins/PluginManager.ts
 export class PluginManager {
     private plugins: IPagPlugin[] = [];
 
-    public init(pag: Pag, pagBuilder: PagBuilder) {
-        this.registerPlugin(new StoragePlugin(pag, pagBuilder));
+    public init(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
+        // this.registerPlugin(new StoragePlugin(pag, pagBuilder, cg));
+        this.registerPlugin(new FunctionPlugin(pag, pagBuilder, cg));
     }
 
     public registerPlugin(plugin: IPagPlugin): void {
@@ -26,13 +43,13 @@ export class PluginManager {
         return this.plugins;
     }
 
-    public processCallSite(cs: ICallSite, cid: number, pagBuilder: PagBuilder, cg: CallGraph): { handled: boolean, srcNodes: NodeID[] } {
+    public processCallSite(cs: ICallSite, cid: number, basePTNode: NodeID, cg: CallGraph): { handled: boolean, srcNodes: NodeID[] } {
         const cgNode = cg.getNode(cs.getCalleeFuncID()!) as CallGraphNode;
         const plugin = this.findPlugin(cs, cgNode);
         let srcNodes: NodeID[] = [];
 
         if (plugin) {
-            srcNodes.push(...plugin.processCallSite(cs, cid, pagBuilder, cg));
+            srcNodes.push(...plugin.processCallSite(cs, cid, basePTNode));
             return { handled: true, srcNodes: srcNodes };
         }
 

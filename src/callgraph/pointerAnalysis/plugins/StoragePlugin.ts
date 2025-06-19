@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { Constant } from "../../../core/base/Constant";
 import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../../../core/base/Expr";
 import { Local } from "../../../core/base/Local";
@@ -5,8 +20,9 @@ import { Stmt, ArkAssignStmt } from "../../../core/base/Stmt";
 import { ClassType, StringType } from "../../../core/base/Type";
 import { Value } from "../../../core/base/Value";
 import { NodeID } from "../../../core/graph/GraphTraits";
-import { CallGraph, CallGraphNode } from "../../model/CallGraph";
-import { ICallSite } from "../../model/CallSite";
+import { ArkMethod } from "../../../core/model/ArkMethod";
+import { CallGraph, CallGraphNode, FuncID } from "../../model/CallGraph";
+import { CallSite, ICallSite } from "../../model/CallSite";
 import { ContextID } from "../context/Context";
 import { Pag, PagEdgeKind, PagLocalNode, PagNode } from "../Pag";
 import { PagBuilder } from "../PagBuilder";
@@ -27,13 +43,15 @@ export enum StorageLinkEdgeType {
 
 // plugins/StoragePlugin.ts
 export class StoragePlugin implements IPagPlugin {
-    private pag: Pag;
-    private pagBuider: PagBuilder;
+    pag: Pag;
+    pagBuilder: PagBuilder;
+    cg: CallGraph;
     private storagePropertyMap: Map<StorageType, Map<string, Local>> = new Map();
 
-    constructor(pag: Pag, pagBuilder: PagBuilder) {
+    constructor(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
         this.pag = pag;
-        this.pagBuider = pagBuilder;
+        this.pagBuilder = pagBuilder;
+        this.cg = cg;
 
         // Initialize storagePropertyMap for each StorageType
         this.storagePropertyMap.set(StorageType.APP_STORAGE, new Map());
@@ -49,18 +67,18 @@ export class StoragePlugin implements IPagPlugin {
         return this.getStorageType(storageName) !== StorageType.Undefined;
     }
 
-    processCallSite(cs: ICallSite, cid: ContextID, pagBuilder: PagBuilder, cg: CallGraph): NodeID[] {
+    processCallSite(cs: ICallSite, cid: ContextID, emptyNode: NodeID): NodeID[] {
         let calleeFuncID = cs.getCalleeFuncID();
         if (!calleeFuncID) {
             return [];
         }
 
-        const cgNode = cg.getNode(calleeFuncID) as CallGraphNode;
+        const cgNode = this.cg.getNode(calleeFuncID) as CallGraphNode;
         const storageName = cgNode.getMethod().getDeclaringClassSignature().getClassName();
         const storageType = this.getStorageType(storageName);
         const calleeName = cgNode.getMethod().getMethodSubSignature().getMethodName();
 
-        this.processStorageAPI(cs, cid, storageType, calleeName, pagBuilder);
+        this.processStorageAPI(cs, cid, storageType, calleeName, this.pagBuilder);
         return [];
     }
 

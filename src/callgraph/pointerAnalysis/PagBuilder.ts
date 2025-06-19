@@ -105,7 +105,7 @@ export class PagBuilder {
         this.scene = s;
         this.pagStat = new PAGStat();
         this.pluginManager = new PluginManager();
-        this.pluginManager.init(p, this);
+        this.pluginManager.init(p, this, cg);
         let kLimit = config.kLimit;
 
         switch (config.contextType) {
@@ -124,7 +124,7 @@ export class PagBuilder {
         }
     }
 
-    private buildFuncPagAndAddToWorklist(cs: CSFuncID): CSFuncID {
+    public buildFuncPagAndAddToWorklist(cs: CSFuncID): CSFuncID {
         if (this.worklist.includes(cs)) {
             return cs;
         }
@@ -412,7 +412,7 @@ export class PagBuilder {
             //     // If not Storage API, process normal edge
             // }
 
-            const pluginResult = this.pluginManager.processCallSite(cs, cid, this, this.cg);
+            const pluginResult = this.pluginManager.processCallSite(cs, cid, emptyID, this.cg);
             if (pluginResult.handled) {
                 logger.debug(`[buildFuncPag] plugin handled call site ${cs.callStmt.toString()}`);
             } else {
@@ -552,19 +552,27 @@ export class PagBuilder {
             }
 
             let staticCS = this.cg.getCallSiteManager().cloneCallSiteFromDyn((cs as DynCallSite), dstCGNode.getID());
-            let calleeCid = this.ctxSelector.selectContext(cid, staticCS, baseClassPTNode, dstCGNode.getID());
 
             if (this.scale === PtaAnalysisScale.MethodLevel) {
-                srcNodes.push(...this.addStaticPagCallReturnEdge(staticCS, baseClassPTNode, calleeCid));
+                srcNodes.push(...this.addStaticPagCallReturnEdge(staticCS, cid, baseClassPTNode));
                 continue;
             }
 
-            if (getBuiltInApiType(ivkExpr?.getMethodSignature()!) === BuiltApiType.NotBuiltIn) {
-                srcNodes.push(...this.processNormalMethodPagCallEdge(staticCS, cid, calleeCid, baseClassPTNode));
-            } else {
-                // special SDK call: Container API, Function API
-                srcNodes.push(...this.processBuiltInMethodPagCallEdge(staticCS, cid, calleeCid, baseClassPTNode));
+            const pluginResult = this.pluginManager.processCallSite(staticCS, cid, baseClassPTNode, this.cg);
+            if (pluginResult.handled) {
+                logger.debug(`[buildDynamicCallEdge] plugin handled call site ${cs.callStmt.toString()}`);
+                srcNodes.push(...pluginResult.srcNodes);
+                continue;
             }
+
+            srcNodes.push(...this.processNormalMethodPagCallEdge(staticCS, cid, baseClassPTNode));
+
+            // if (getBuiltInApiType(ivkExpr?.getMethodSignature()!) === BuiltApiType.NotBuiltIn) {
+            //     srcNodes.push(...this.processNormalMethodPagCallEdge(staticCS, cid, baseClassPTNode));
+            // } else {
+            //     // special SDK call: Container API, Function API
+            //     srcNodes.push(...this.processBuiltInMethodPagCallEdge(staticCS, cid, calleeCid, baseClassPTNode));
+            // }
         }
 
         return srcNodes;
@@ -631,11 +639,12 @@ export class PagBuilder {
         return callee;
     }
 
-    public processNormalMethodPagCallEdge(staticCS: CallSite, cid: ContextID, calleeCid: ContextID, baseClassPTNode: NodeID): NodeID[] {
+    public processNormalMethodPagCallEdge(staticCS: CallSite, cid: ContextID, baseClassPTNode: NodeID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let ivkExpr = staticCS.callStmt.getInvokeExpr()!;
         let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
         let dstCGNode = this.cg.getNode(staticCS.calleeFuncID) as CallGraphNode;
+        let calleeCid = this.ctxSelector.selectContext(cid, staticCS, baseClassPTNode, dstCGNode.getID());
         let callee = this.cg.getArkMethodByFuncID(staticCS.calleeFuncID);
         // Dynamic call, Ptr call, normal SDK call
         srcNodes.push(...this.addStaticPagCallEdge(staticCS, cid, calleeCid, ptNode));
@@ -687,31 +696,6 @@ export class PagBuilder {
             case BuiltApiType.MapSet:
                 this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode, builtInType);
                 break;
-
-            case BuiltApiType.FunctionCall:
-                /**
-                 * set this and param
-                 * function.call(thisArg, arg1, arg2, ...)
-                 */
-                this.handleFunctionCall(staticCS, cid, calleeCid, realCallee, srcNodes, baseClassPTNode);
-                break;
-
-            case BuiltApiType.FunctionApply:
-                /**
-                 * set this, resolve array param
-                 * function.apply(thisArg, [argsArray])
-                 */
-                this.handleFunctionApply(staticCS, cid, calleeCid, realCallee, srcNodes, baseClassPTNode);
-                break;
-
-            case BuiltApiType.FunctionBind:
-                /**
-                 * clone the function node and add the this pointer, origin callSite, args offset to it
-                 * let f = function.bind(thisArg, arg1, arg2, ...)
-                 * f();
-                 */
-                this.handleFunctionBind(staticCS, cid, baseClassPTNode, srcNodes);
-                break;
             default:
         }
 
@@ -749,77 +733,6 @@ export class PagBuilder {
         }
 
         return srcNodes;
-    }
-
-    private handleFunctionCall(
-        staticCS: CallSite,
-        cid: ContextID,
-        calleeCid: ContextID,
-        realCallee: ArkMethod,
-        srcNodes: NodeID[],
-        baseClassPTNode: NodeID
-    ): void {
-        this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
-        srcNodes.push(...this.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
-        this.addThisEdge(staticCS, cid, realCallee, srcNodes, calleeCid);
-    }
-
-    private handleFunctionApply(
-        staticCS: CallSite,
-        cid: ContextID,
-        calleeCid: ContextID,
-        realCallee: ArkMethod,
-        srcNodes: NodeID[],
-        baseClassPTNode: NodeID
-    ): void {
-        this.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
-        let callerMethod = this.cg.getArkMethodByFuncID(staticCS.callerFuncID);
-        if (!callerMethod) {
-            throw new Error('Cannot get caller method');
-        }
-        let argsRealValues = this.transferArrayValues(callerMethod, staticCS.args![1]);
-        srcNodes.push(...this.addCallParamPagEdge(realCallee, argsRealValues, staticCS.callStmt, cid, calleeCid, 0));
-        this.addThisEdge(staticCS, cid, realCallee, srcNodes, calleeCid);
-    }
-
-    private handleFunctionBind(staticCS: CallSite, cid: ContextID, baseClassPTNode: NodeID, srcNodes: NodeID[]): void {
-        let srcNode = this.pag.getOrClonePagFuncNode(baseClassPTNode);
-        if (!srcNode) {
-            return;
-        }
-        this.setFunctionThisPt(staticCS, srcNode, cid);
-
-        let dstNode = this.getOrNewPagNode(cid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
-        this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy, staticCS.callStmt);
-        srcNodes.push(srcNode.getID());
-
-        srcNode.setCS(staticCS);
-        srcNode.setArgsOffset(1);
-        srcNode.setOriginCid(cid);
-    }
-
-    private addThisEdge(staticCS: CallSite, cid: ContextID, realCallee: ArkMethod, srcNodes: NodeID[], calleeCid: ContextID): void {
-        if (!(staticCS.args![0] instanceof NullConstant) && !realCallee.isStatic()) {
-            let srcNodeID = this.addThisRefCallEdge(cid, staticCS.args![0] as Local, realCallee, calleeCid, staticCS.callerFuncID);
-
-            if (srcNodeID !== -1) {
-                srcNodes.push(srcNodeID);
-            }
-        }
-    }
-
-    private setFunctionThisPt(staticCS: CallSite, srcNode: PagFuncNode, cid: ContextID): void {
-        let thisLocal = staticCS.args![0];
-        if (!(thisLocal instanceof Local)) {
-            return;
-        }
-
-        let thisInstanceLocal = this.getRealThisLocal(thisLocal, staticCS.callerFuncID);
-        let baseThisNode = this.pag.getOrNewNode(cid, thisInstanceLocal);
-
-        for (let pt of baseThisNode.getPointTo()) {
-            srcNode.setThisPt(pt);
-        }
     }
 
     public handleUnkownDynamicCall(cs: DynCallSite, cid: ContextID): NodeID[] {
@@ -912,7 +825,7 @@ export class PagBuilder {
         return reAnalyzeNodes;
     }
 
-    private addThisRefCallEdge(
+    public addThisRefCallEdge(
         cid: ContextID,
         baseLocal: Local,
         callee: ArkMethod,
@@ -1015,7 +928,7 @@ export class PagBuilder {
     /**
      * only process the param PAG edge for invoke stmt
      */
-    private addCallParamPagEdge(calleeMethod: ArkMethod, args: Value[], callStmt: Stmt, callerCid: ContextID, calleeCid: ContextID, offset: number): NodeID[] {
+    public addCallParamPagEdge(calleeMethod: ArkMethod, args: Value[], callStmt: Stmt, callerCid: ContextID, calleeCid: ContextID, offset: number): NodeID[] {
         let params = calleeMethod
             .getCfg()!
             .getStmts()
@@ -1125,21 +1038,18 @@ export class PagBuilder {
         return srcNodes;
     }
 
-    public addStaticPagCallReturnEdge(cs: CallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
-        if (!calleeCid) {
-            calleeCid = this.ctxSelector.selectContext(callerCid, cs, emptyID, cs.calleeFuncID);
-        }
-
+    public addStaticPagCallReturnEdge(cs: CallSite, cid: ContextID, baseClassPTNode: NodeID): NodeID[] {
         let srcNodes: NodeID[] = [];
         // Add reachable
 
         let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
+        let calleeCid = this.ctxSelector.selectContext(cid, cs, baseClassPTNode, cs.calleeFuncID);
         if (!calleeMethod) {
             // TODO: check if nodes need to delete
             return srcNodes;
         }
-        srcNodes.push(...this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod));
+        srcNodes.push(...this.addSDKMethodReturnPagEdge(cs, cid, calleeCid, calleeMethod));
         return srcNodes;
     }
 
@@ -1733,28 +1643,6 @@ export class PagBuilder {
 
     public resetUpdatedNodes(): void {
         this.updatedNodesThisRound.clear();
-    }
-
-    private transferArrayValues(method: ArkMethod, arrayLocal: Value): Local[] {
-        if (!(arrayLocal instanceof Local) || !(arrayLocal.getType() instanceof ArrayType)) {
-            return [];
-        }
-
-        /**
-         * TODO: get array element values
-         * need to resolve multi dimension array
-         */
-        const usedValuesInArray = arrayLocal.getUsedStmts().flatMap(stmt => {
-            if (stmt instanceof ArkAssignStmt) {
-                const rightOp = stmt.getRightOp();
-                if (rightOp instanceof Local) {
-                    return rightOp;
-                }
-            }
-            return [];
-        });
-
-        return usedValuesInArray;
     }
 
     public getContextSelector(): ContextSelector {
