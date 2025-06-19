@@ -15,6 +15,4 @@ export interface IPagPlugin {
     getName(): string;
     canHandle(cs: ICallSite, cgNode: CallGraphNode): boolean;
     processCallSite(cs: ICallSite, cid: ContextID, basePTNode: NodeID): NodeID[];
-    processReturnValue?(cs: CallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod): NodeID[];
-    processParameters?(cs: CallSite, callerCid: ContextID, calleeCid: ContextID, funcID: FuncID): NodeID[];
 }

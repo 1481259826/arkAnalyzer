@@ -69,7 +69,7 @@ export class FunctionPlugin implements IPagPlugin {
         const methodType = getBuiltInApiType(ivkExpr.getMethodSignature());
         const calleeCid = this.pagBuilder.getContextSelector().selectContext(cid, cs, basePTNode, calleeFuncID);
 
-        // TODO: check if need to return the srcNodes
+        // TODO: call and apply can return.
         switch (methodType) {
             case BuiltApiType.FunctionCall:
                 /**

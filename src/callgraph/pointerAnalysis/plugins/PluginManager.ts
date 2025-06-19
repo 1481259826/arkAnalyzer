@@ -21,6 +21,7 @@ import { IPagPlugin } from "./IPagPlugin";
 import { StoragePlugin } from "./StoragePlugin";
 import { NodeID } from '../../../core/graph/GraphTraits';
 import { FunctionPlugin } from "./FunctionPlugin";
+import { SdkPlugin } from "./SdkPlugin";
 
 // plugins/PluginManager.ts
 export class PluginManager {
@@ -28,7 +29,8 @@ export class PluginManager {
 
     public init(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
         // this.registerPlugin(new StoragePlugin(pag, pagBuilder, cg));
-        this.registerPlugin(new FunctionPlugin(pag, pagBuilder, cg));
+        // this.registerPlugin(new FunctionPlugin(pag, pagBuilder, cg));
+        this.registerPlugin(new SdkPlugin(pag, pagBuilder, cg));
     }
 
     public registerPlugin(plugin: IPagPlugin): void {
