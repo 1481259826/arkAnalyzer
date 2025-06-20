@@ -115,11 +115,11 @@ export class ScenePassMgr {
         }
     }
 
-    sceneContext() {
+    sceneContext(): SceneCtx {
         return this.sctx;
     }
 
-    run(scene: Scene) {
+    run(scene: Scene): void {
         logger.info('run scene');
         let files;
         if (this.selectors?.file) {
@@ -132,7 +132,7 @@ export class ScenePassMgr {
         }
     }
 
-    private iterFile(file: ArkFile) {
+    private iterFile(file: ArkFile): void {
         let fctx: FileCtx = new FileCtx(this.sctx);
         for (let P of this.passes.file) {
             let p = new P();
@@ -151,11 +151,11 @@ export class ScenePassMgr {
         }
     }
 
-    private iterClass(cls: ArkClass, fctx: FileCtx) {
+    private iterClass(cls: ArkClass, fctx: FileCtx): void {
         let cctx: ClassCtx = new ClassCtx(fctx);
         for (let P of this.passes.klass) {
             let p = new P();
-            if(p.run(cls, cctx) === FallAction.Break) {
+            if (p.run(cls, cctx) === FallAction.Break) {
                 break;
             }
         }
@@ -170,11 +170,11 @@ export class ScenePassMgr {
         }
     }
 
-    private iterMethod(mtd: ArkMethod, cctx: ClassCtx) {
+    private iterMethod(mtd: ArkMethod, cctx: ClassCtx): void {
         let mctx: MethodCtx = new MethodCtx(cctx);
         for (let P of this.passes.method) {
             let p = new P();
-            if(p.run(mtd, mctx)===FallAction.Break) {
+            if (p.run(mtd, mctx) === FallAction.Break) {
                 break;
             }
         }

@@ -100,7 +100,7 @@ type StmtPass = {
     [K in IndexOf<typeof STMTS>]: InstPass<InstanceType<typeof STMTS[K]>>;
 }[IndexOf<typeof STMTS>];
 
-type StmtList<S extends StmtClass> = [S, InstPass<InstanceType<S>>[] | InstPass<InstanceType<S>>]
+type StmtList<S extends StmtClass> = [S, InstPass<InstanceType<S>>[] | InstPass<InstanceType<S>>];
 
 /**
  * Represents an initialization statement type derived from the `STMTS` constant.
@@ -177,7 +177,7 @@ type ValuePass = {
     [K in IndexOf<typeof VALUES>]: InstPass<InstanceType<typeof VALUES[K]>>;
 }[IndexOf<typeof VALUES>];
 
-type ValuePair<S extends ValueClass> = [S, InstPass<InstanceType<S>>[] | InstPass<InstanceType<S>>]
+type ValuePair<S extends ValueClass> = [S, InstPass<InstanceType<S>>[] | InstPass<InstanceType<S>>];
 
 /**
  * Represents an initialization value for a specific index in the VALUES array.
@@ -243,7 +243,7 @@ export class Dispatcher {
         this.dispatch = dispatch;
     }
 
-    dispatchStmt(mtd: ArkMethod, stmt: Stmt) {
+    dispatchStmt(mtd: ArkMethod, stmt: Stmt): void {
         logger.debug(`dispatch stmt ${stmt}`);
         const tys = this.dispatch.stmts;
         for (let ty of tys) {
@@ -264,10 +264,10 @@ export class Dispatcher {
         }
     }
 
-    dispatchValue(mtd: ArkMethod, value: Value) {
+    dispatchValue(mtd: ArkMethod, value: Value): void {
         logger.debug(`dispatch value ${value}`);
         // skip uses if there is no value pass
-        if (this.dispatch.values.length == 0) {
+        if (this.dispatch.values.length === 0) {
             return;
         }
         if (this.cache.has(value)) {

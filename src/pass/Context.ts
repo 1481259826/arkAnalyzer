@@ -69,8 +69,8 @@ export class Context<U extends Upper, T> implements Upper {
         return this.args.get(k) as K;
     }
 
-    set<K extends T>(k: AnyKey<K>, v: K) {
-        return this.args.set(k, v);
+    set<K extends T>(k: AnyKey<K>, v: K): void {
+        this.args.set(k, v);
     }
 
     remove<K extends T>(k: AnyKey<K>): K | undefined {

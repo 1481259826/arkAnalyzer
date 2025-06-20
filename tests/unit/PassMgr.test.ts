@@ -97,34 +97,34 @@ class Counter {
 class InstCounter extends Dispatcher {
     constructor(ctx: MethodCtx) {
         const stmts: StmtInit[] = [
-            [ArkAssignStmt, (v: ArkAssignStmt, ctx: MethodCtx) => {
+            [ArkAssignStmt, (v: ArkAssignStmt, ctx: MethodCtx): void => {
                 logger.info(`asign ${v}`);
                 let counter = ctx.root().get(Counter)!;
                 counter.stmt++;
             }],
-            [Stmt, [(v: Stmt, ctx: MethodCtx) => {
+            [Stmt, [(v: Stmt, ctx: MethodCtx): void => {
                 logger.info(`stmt ${v}`);
                 let counter = ctx.root().get(Counter)!;
                 counter.stmt++;
             }]],
         ];
         const values: ValueInit[] = [
-            [AbstractExpr, (v: AbstractExpr, ctx: MethodCtx) => {
+            [AbstractExpr, (v: AbstractExpr, ctx: MethodCtx): void => {
                 logger.info(`expr ${v}`);
                 let counter = ctx.root().get(Counter)!;
                 counter.expr++;
             }],
-            [AbstractRef, (v: AbstractRef, ctx: MethodCtx) => {
+            [AbstractRef, (v: AbstractRef, ctx: MethodCtx): void => {
                 logger.info(`ref ${v}`);
                 let counter = ctx.root().get(Counter)!;
                 counter.ref++;
             }],
-            [Constant, (v: Constant, ctx: MethodCtx) => {
+            [Constant, (v: Constant, ctx: MethodCtx): void => {
                 logger.info(`constant ${v}`);
                 let counter = ctx.root().get(Counter)!;
                 counter.constant++;
             }],
-            [Local, (v: Local, ctx: MethodCtx) => {
+            [Local, (v: Local, ctx: MethodCtx): void => {
                 logger.info(`local ${v}`);
                 let counter = ctx.root().get(Counter)!;
                 counter.local++;
@@ -145,7 +145,7 @@ describe('Anonymous Test', () => {
                 file: [FileCounter], klass: [ClassCounter], method: [MethodCounter],
             },
             selectors: {
-                file: (scene: Scene) => {
+                file: (scene: Scene): ArkFile[] => {
                     return scene.getFiles().filter(file => file.getName().includes('anonymous'));
                 },
             },
