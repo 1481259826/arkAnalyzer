@@ -45,7 +45,7 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Test');
  * during a method processing operation.
  */
 class MethodCounter extends MethodPass {
-    run(method: ArkMethod, ctx: MethodCtx): any {
+    run(method: ArkMethod, ctx: MethodCtx): void {
         let counter = ctx.root().get(Counter)!;
         counter.method++;
         logger.info(`method ${method.getName()}`);
@@ -58,7 +58,7 @@ class MethodCounter extends MethodPass {
  * during a class processing operation.
  */
 class ClassCounter extends ClassPass {
-    run(cls: ArkClass, ctx: ClassCtx) {
+    run(cls: ArkClass, ctx: ClassCtx): void {
         let counter = ctx.upper.upper.get(Counter)!;
         counter.klass++;
         logger.info(`class ${cls.getName()}`);
@@ -71,7 +71,7 @@ class ClassCounter extends ClassPass {
  * during a file processing operation.
  */
 class FileCounter extends FilePass {
-    run(file: ArkFile, ctx: FileCtx) {
+    run(file: ArkFile, ctx: FileCtx): void {
         let counter = ctx.upper.get(Counter)!;
         counter.file++;
         logger.info(`file ${file.getName()}`);

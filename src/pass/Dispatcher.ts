@@ -248,11 +248,9 @@ export class Dispatcher {
         const tys = this.dispatch.stmts;
         for (let ty of tys) {
             if (stmt instanceof ty) {
-                let pass = this.dispatch.smap.get(ty);
-                if (pass) {
-                    for (const p of pass) {
-                        p(stmt as any, this.ctx, mtd);
-                    }
+                let pass = this.dispatch.smap.get(ty) ?? [];
+                for (const p of pass) {
+                    p(stmt as any, this.ctx, mtd);
                 }
                 if (this.fallAction === FallAction.Break) {
                     break;
@@ -277,11 +275,9 @@ export class Dispatcher {
         const tys = this.dispatch.values;
         for (let ty of tys) {
             if (value instanceof ty) {
-                let pass = this.dispatch.vmap.get(ty);
-                if (pass) {
-                    for (const p of pass) {
-                        p(value as any, this.ctx, mtd);
-                    }
+                let pass = this.dispatch.vmap.get(ty) ?? [];
+                for (const p of pass) {
+                    p(value as any, this.ctx, mtd);
                 }
                 if (this.fallAction === FallAction.Break) {
                     break;
