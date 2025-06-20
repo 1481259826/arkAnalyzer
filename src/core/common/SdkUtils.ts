@@ -108,12 +108,18 @@ export class SdkUtils {
         return this.sdkImportMap.get(from);
     }
 
+    private static isGlobalPath(file: ArkFile): boolean {
+        return !!file.getScene().getOptions().sdkGlobalFolders?.find(x => {
+            if (path.isAbsolute(x)) {
+                return file.getFilePath().startsWith(x);
+            } else {
+                return file.getFilePath().includes(path.sep + x + path.sep)
+            }
+        });
+    }
+
     public static loadGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file
-            .getScene()
-            .getOptions()
-            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
-        if (!isGlobalPath) {
+        if (!this.isGlobalPath(file)) {
             return;
         }
         file.getClasses().forEach(cls => {
@@ -134,11 +140,7 @@ export class SdkUtils {
     }
 
     public static mergeGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file
-            .getScene()
-            .getOptions()
-            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
-        if (!isGlobalPath) {
+        if (!this.isGlobalPath(file)) {
             return;
         }
         file.getClasses().forEach(cls => {
@@ -161,11 +163,7 @@ export class SdkUtils {
     }
 
     public static postInferredSdk(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file
-            .getScene()
-            .getOptions()
-            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
-        if (!isGlobalPath) {
+        if (!this.isGlobalPath(file)) {
             return;
         }
         const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();

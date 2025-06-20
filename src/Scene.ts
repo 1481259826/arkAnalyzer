@@ -601,8 +601,13 @@ export class Scene {
     }
 
     private buildSdk(sdkName: string, sdkPath: string): void {
-        const allFiles = sdkName === SdkUtils.BUILT_IN_NAME ? SdkUtils.fetchBuiltInFiles(sdkPath) :
-            getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
+        let allFiles;
+        if (sdkName === SdkUtils.BUILT_IN_NAME) {
+            allFiles = SdkUtils.fetchBuiltInFiles(sdkPath);
+            this.getOptions().sdkGlobalFolders?.push(sdkPath || SdkUtils.BUILT_IN_SDK.path);
+        } else {
+            allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
+        }
         allFiles.forEach(file => {
             logger.trace('=== parse sdk file:', file);
             try {

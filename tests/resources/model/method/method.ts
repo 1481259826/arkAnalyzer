@@ -163,9 +163,9 @@ function paramInitializerWithSwitch(a = 3): void {
 }
 
 function returnFunc(): Function {
-    const nestedReturnFunc = () => {
+    const nestedReturnFunc = (): void => {
 
-    }
+    };
     return nestedReturnFunc;
 }
 
