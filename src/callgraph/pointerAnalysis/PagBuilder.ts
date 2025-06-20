@@ -32,8 +32,8 @@ import { Local } from '../../core/base/Local';
 import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { ClassSignature } from '../../core/model/ArkSignature';
 import { ArkClass } from '../../core/model/ArkClass';
-import { ArrayType, ClassType, FunctionType } from '../../core/base/Type';
-import { Constant, NullConstant } from '../../core/base/Constant';
+import { ClassType, FunctionType } from '../../core/base/Type';
+import { Constant } from '../../core/base/Constant';
 import { PAGStat } from '../common/Statistics';
 import {
     FuncPag,
@@ -52,7 +52,6 @@ import {
 } from './Pag';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { IPtsCollection } from './PtsDS';
-import { BuiltApiType, getBuiltInApiType } from './PTAUtils';
 import { ContextType, PointerAnalysisConfig, PtaAnalysisScale } from './PointerAnalysisConfig';
 import { ContextID, DUMMY_CID } from './context/Context';
 import { ContextSelector, emptyID, KCallSiteContextSelector, KFuncContextSelector, KObjContextSelector } from './context/ContextSelector';
@@ -384,11 +383,7 @@ export class PagBuilder {
                 this.addStaticPagCallReturnEdge(cs, cid, calleeCid);
             }
 
-            // process the Storage API(Static)
-            // if (!this.processStorage(cs, calleeCGNode, cid)) {
-            //     // If not Storage API, process normal edge
-            // }
-
+            // Storage Plugin
             const pluginResult = this.pluginManager.processCallSite(cs, cid, emptyID, this.cg);
             if (pluginResult.handled) {
                 logger.debug(`[buildFuncPag] plugin handled call site ${cs.callStmt.toString()}`);
@@ -571,24 +566,26 @@ export class PagBuilder {
         if (!(value instanceof ArkNewExpr || value instanceof ArkNewArrayExpr)) {
             return callee;
         }
-        let tempCallee;
 
         // try to get callee by MethodSignature
-        if (value instanceof ArkNewExpr) {
-            // get class signature
-            let clsSig = (value.getType() as ClassType).getClassSignature() as ClassSignature;
-            let cls;
-
-            cls = this.scene.getClass(clsSig) as ArkClass;
-
-            while (!tempCallee && cls) {
-                tempCallee = cls.getMethodWithName(calleeName);
-                cls = cls.getSuperClass();
+        const getClassSignature = (value: ArkNewExpr | ArkNewArrayExpr): ClassSignature => {
+            if (value instanceof ArkNewExpr) {
+                return (value.getType() as ClassType).getClassSignature() as ClassSignature;
             }
+            return this.scene.getSdkGlobal('Array')!.getSignature() as ClassSignature;
+        };
 
-            if (!tempCallee) {
-                tempCallee = this.scene.getMethod(ivkExpr!.getMethodSignature());
-            }
+        const clsSig = getClassSignature(value);
+        let cls: ArkClass | null = this.scene.getClass(clsSig) as ArkClass;
+        let tempCallee: ArkMethod | undefined;
+
+        while (!tempCallee && cls) {
+            tempCallee = cls.getMethodWithName(calleeName) ?? undefined;
+            cls = cls.getSuperClass();
+        }
+
+        if (!tempCallee) {
+            tempCallee = this.scene.getMethod(ivkExpr!.getMethodSignature()) ?? undefined;
         }
 
         if (!tempCallee && cs.args) {
@@ -638,68 +635,6 @@ export class PagBuilder {
                 return srcNodes;
             }
             this.addThisRefCallEdge((ptNode as PagFuncNode).getOriginCid(), thisValue, callee!, calleeCid, staticCS.callerFuncID);
-        }
-
-        return srcNodes;
-    }
-
-    /**
-     * include container API, Function API
-     */
-    public processBuiltInMethodPagCallEdge(staticCS: CallSite, cid: ContextID, calleeCid: ContextID, baseClassPTNode: NodeID): NodeID[] {
-        let srcNodes: NodeID[] = [];
-        let ivkExpr = staticCS.callStmt.getInvokeExpr()!;
-        let callee = this.scene.getMethod(ivkExpr.getMethodSignature());
-        let realCallee = this.cg.getArkMethodByFuncID(staticCS.calleeFuncID);
-        if (!callee) {
-            return srcNodes;
-        }
-
-        let builtInType = getBuiltInApiType(callee.getSignature());
-
-        if (builtInType === BuiltApiType.NotBuiltIn || !realCallee) {
-            return srcNodes;
-        }
-
-        switch (builtInType) {
-            case BuiltApiType.SetAdd:
-            case BuiltApiType.MapSet:
-                this.processContainerPagCallEdge(staticCS, cid, baseClassPTNode, builtInType);
-                break;
-            default:
-        }
-
-        return srcNodes;
-    }
-
-    private processContainerPagCallEdge(cs: CallSite, cid: ContextID, baseClassPTNode: NodeID, type: BuiltApiType): NodeID[] {
-        let srcNodes: NodeID[] = [];
-        let calleeNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
-        let calleeMethod: ArkMethod | null = this.scene.getMethod(calleeNode.getMethod());
-        let ptNode = this.pag.getNode(baseClassPTNode) as PagNode;
-
-        if (!calleeMethod || !(ptNode instanceof PagNewContainerExprNode)) {
-            return srcNodes;
-        }
-
-        let containerValue = (cs.callStmt.getInvokeExpr() as ArkInstanceInvokeExpr).getBase();
-
-        const containerValueProcess = (argIndex: number): void => {
-            let srcNode = this.pag.getOrNewNode(cid, cs.args![argIndex], cs.callStmt);
-            let realContainerFieldPagNode = this.pag.getOrClonePagContainerFieldNode(baseClassPTNode, undefined, containerValue);
-
-            if (realContainerFieldPagNode) {
-                // In some cases, the value of a variable of array type may not be an explicit array object,
-                // and the value of `realContainerFieldPagNode` will be undefined.
-                this.pag.addPagEdge(srcNode, realContainerFieldPagNode, PagEdgeKind.Copy, cs.callStmt);
-                srcNodes.push(srcNode.getID());
-            }
-        };
-
-        if (type === BuiltApiType.SetAdd) {
-            containerValueProcess(0);
-        } else if (type === BuiltApiType.MapSet) {
-            containerValueProcess(1);
         }
 
         return srcNodes;

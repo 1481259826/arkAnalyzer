@@ -23,12 +23,12 @@ import { Local } from '../../core/base/Local';
 import { GraphPrinter } from '../../save/GraphPrinter';
 import { PrinterBuilder } from '../../save/PrinterBuilder';
 import { Constant } from '../../core/base/Constant';
-import { FunctionType, UnclearReferenceType } from '../../core/base/Type';
-import { ClassSignature, FieldSignature, FileSignature, MethodSignature } from '../../core/model/ArkSignature';
+import { FunctionType } from '../../core/base/Type';
+import { MethodSignature } from '../../core/model/ArkSignature';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { GLOBAL_THIS_NAME } from '../../core/common/TSConst';
 import { ExportInfo } from '../../core/model/ArkExport';
-import { BuiltApiType, getBuiltInApiType, IsCollectionClass } from './PTAUtils';
+import { ARRAY_FIELD_SIGNATURE, BuiltApiType, getBuiltInApiType, IsCollectionClass, MAP_FIELD_SIGNATURE, SET_FIELD_SIGNATURE } from './PTAUtils';
 import { IPtsCollection } from './PtsDS';
 import { PointerAnalysisConfig } from './PointerAnalysisConfig';
 import { ContextID } from './context/Context';
@@ -696,30 +696,48 @@ export class Pag extends BaseExplicitGraph {
         }
     }
 
-    public getOrClonePagContainerFieldNode(basePt: NodeID, src?: PagArrayNode, base?: Local): PagInstanceFieldNode | undefined {
+    public getOrClonePagContainerFieldNode(basePt: NodeID, base: Local, className: string): PagInstanceFieldNode | undefined {
         let baseNode = this.getNode(basePt) as PagNode;
         if (baseNode instanceof PagNewContainerExprNode) {
             // check if Array Ref real node has been created or not, if not: create a real Array Ref node
             let existedNode = baseNode.getElementNode();
             let fieldNode!: PagNode;
+            let fieldRef!: ArkInstanceFieldRef;
             if (existedNode) {
                 return this.getNode(existedNode) as PagInstanceFieldNode;
             }
 
-            if (src) {
-                fieldNode = this.getOrClonePagNode(src, basePt);
-            } else if (base) {
-                const containerFieldSignature = new FieldSignature(
-                    'field',
-                    new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')),
-                    new UnclearReferenceType('')
-                );
-                fieldNode = this.getOrClonePagNode(
-                    // TODO: cid check
-                    this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)),
-                    basePt
-                );
+            switch (className) {
+                case 'Array':
+                    fieldRef = new ArkInstanceFieldRef(base, ARRAY_FIELD_SIGNATURE);
+                    break;
+                case 'Set':
+                    fieldRef = new ArkInstanceFieldRef(base, SET_FIELD_SIGNATURE);
+                    break;
+                case 'Map':
+                    fieldRef = new ArkInstanceFieldRef(base, MAP_FIELD_SIGNATURE);
+                    break;
+                default:
+                    logger.error(`Error clone array field node ${className}`);
+                    return undefined;
             }
+
+            fieldNode = this.getOrClonePagNode(this.addPagNode(0, fieldRef), basePt);
+
+            // if (src) {
+            //     fieldNode = this.getOrClonePagNode(src, basePt);
+            // } else if (base) {
+            //     const containerFieldSignature = new FieldSignature(
+            //         'field',
+            //         new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')),
+            //         new UnclearReferenceType('')
+            //     );
+            //     fieldNode = this.getOrClonePagNode(
+            //         // TODO: cid check
+            //         this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)),
+            //         basePt
+            //     );
+            // }
 
             baseNode.addElementNode(fieldNode.getID());
             fieldNode.setBasePt(basePt);

@@ -18,19 +18,21 @@ import { ICallSite } from "../../model/CallSite";
 import { Pag } from "../Pag";
 import { PagBuilder } from "../PagBuilder";
 import { IPagPlugin } from "./IPagPlugin";
-import { StoragePlugin } from "./StoragePlugin";
 import { NodeID } from '../../../core/graph/GraphTraits';
+import { ContainerPlugin } from "./ContainerPlugin";
 import { FunctionPlugin } from "./FunctionPlugin";
 import { SdkPlugin } from "./SdkPlugin";
+import { StoragePlugin } from "./StoragePlugin";
 
 // plugins/PluginManager.ts
 export class PluginManager {
     private plugins: IPagPlugin[] = [];
 
     public init(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
-        // this.registerPlugin(new StoragePlugin(pag, pagBuilder, cg));
-        // this.registerPlugin(new FunctionPlugin(pag, pagBuilder, cg));
+        this.registerPlugin(new StoragePlugin(pag, pagBuilder, cg));
+        this.registerPlugin(new FunctionPlugin(pag, pagBuilder, cg));
         this.registerPlugin(new SdkPlugin(pag, pagBuilder, cg));
+        this.registerPlugin(new ContainerPlugin(pag, pagBuilder, cg));
     }
 
     public registerPlugin(plugin: IPagPlugin): void {
