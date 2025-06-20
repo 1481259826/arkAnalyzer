@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,20 @@ import { SceneConfig } from '../../src/Config';
 import { Scene } from '../../src/Scene';
 import { ScenePassMgr } from '../../src/pass/ScenePassMgr';
 import ConsoleLogger, { LOG_MODULE_TYPE } from '../../src/utils/logger';
-import { ArkAssignStmt, ArkClass, ArkFile, ArkMethod, Local, LOG_LEVEL, Stmt } from '../../src';
+import {
+    AbstractExpr,
+    AbstractRef,
+    ArkAssignStmt,
+    ArkClass,
+    ArkFile,
+    ArkMethod, Constant,
+    Local,
+    LOG_LEVEL,
+    Stmt,
+} from '../../src';
 import { Dispatch, Dispatcher, StmtInit, ValueInit } from '../../src/pass/Dispatcher';
 import Logger from '../../src/utils/logger';
-import { ClassCtx, ClassPass, FallAction, FileCtx, FilePass, MethodCtx, MethodPass } from '../../src/pass/Pass';
+import { ClassCtx, ClassPass, FileCtx, FilePass, MethodCtx, MethodPass } from '../../src/pass/Pass';
 
 
 ConsoleLogger.configure('', LOG_LEVEL.INFO, LOG_LEVEL.INFO, true);
@@ -30,7 +40,11 @@ ConsoleLogger.configure('', LOG_LEVEL.INFO, LOG_LEVEL.INFO, true);
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Test');
 
 
-class MethodValidator extends MethodPass {
+/**
+ * The MethodCounter class extends the MethodPass class and is responsible for counting methods
+ * during a method processing operation.
+ */
+class MethodCounter extends MethodPass {
     run(method: ArkMethod, ctx: MethodCtx): any {
         let counter = ctx.root().get(Counter)!;
         counter.method++;
@@ -39,16 +53,24 @@ class MethodValidator extends MethodPass {
 }
 
 
-class ClassValidator extends ClassPass {
+/**
+ * The ClassCounter class extends the ClassPass class and is responsible for counting class
+ * during a class processing operation.
+ */
+class ClassCounter extends ClassPass {
     run(cls: ArkClass, ctx: ClassCtx) {
         let counter = ctx.upper.upper.get(Counter)!;
-        counter.cls++;
+        counter.klass++;
         logger.info(`class ${cls.getName()}`);
     }
 }
 
 
-class FileValidator extends FilePass {
+/**
+ * The FileCounter class extends the FilePass class and is responsible for counting files
+ * during a file processing operation.
+ */
+class FileCounter extends FilePass {
     run(file: ArkFile, ctx: FileCtx) {
         let counter = ctx.upper.get(Counter)!;
         counter.file++;
@@ -59,31 +81,53 @@ class FileValidator extends FilePass {
 class Counter {
     name = 'counter';
     file: number = 0;
-    cls: number = 0;
+    klass: number = 0;
     method: number = 0;
-    inst: number = 0;
+    stmt: number = 0;
+    expr: number = 0;
+    ref: number = 0;
+    constant: number = 0;
+    local: number = 0;
 }
 
-class TestDispatcher extends Dispatcher {
+/**
+ * The InstCounter class extends the Dispatcher class and is responsible for counting various types of statements, expressions,
+ * references, constants, and local variables encountered during processing.
+ */
+class InstCounter extends Dispatcher {
     constructor(ctx: MethodCtx) {
         const stmts: StmtInit[] = [
             [ArkAssignStmt, (v: ArkAssignStmt, ctx: MethodCtx) => {
                 logger.info(`asign ${v}`);
                 let counter = ctx.root().get(Counter)!;
-                counter.inst++;
+                counter.stmt++;
             }],
             [Stmt, [(v: Stmt, ctx: MethodCtx) => {
                 logger.info(`stmt ${v}`);
                 let counter = ctx.root().get(Counter)!;
-                counter.inst++;
+                counter.stmt++;
             }]],
         ];
         const values: ValueInit[] = [
+            [AbstractExpr, (v: AbstractExpr, ctx: MethodCtx) => {
+                logger.info(`expr ${v}`);
+                let counter = ctx.root().get(Counter)!;
+                counter.expr++;
+            }],
+            [AbstractRef, (v: AbstractRef, ctx: MethodCtx) => {
+                logger.info(`ref ${v}`);
+                let counter = ctx.root().get(Counter)!;
+                counter.ref++;
+            }],
+            [Constant, (v: Constant, ctx: MethodCtx) => {
+                logger.info(`constant ${v}`);
+                let counter = ctx.root().get(Counter)!;
+                counter.constant++;
+            }],
             [Local, (v: Local, ctx: MethodCtx) => {
                 logger.info(`local ${v}`);
                 let counter = ctx.root().get(Counter)!;
-                counter.inst++;
-                return FallAction.Break;
+                counter.local++;
             }],
         ];
         super(ctx, new Dispatch(stmts, values));
@@ -98,14 +142,14 @@ describe('Anonymous Test', () => {
     it('iter inst', () => {
         let mgr = new ScenePassMgr({
             passes: {
-                file: [FileValidator], klass: [ClassValidator], method: [MethodValidator],
+                file: [FileCounter], klass: [ClassCounter], method: [MethodCounter],
             },
             selectors: {
                 file: (scene: Scene) => {
                     return scene.getFiles().filter(file => file.getName().includes('anonymous'));
                 },
             },
-            dispatcher: TestDispatcher,
+            dispatcher: InstCounter,
         });
         let counter = new Counter();
         mgr.sceneContext().set(Counter, counter);
