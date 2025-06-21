@@ -20,7 +20,7 @@ import { ArrayType } from "../../../core/base/Type";
 import { Value } from "../../../core/base/Value";
 import { NodeID } from "../../../core/graph/GraphTraits";
 import { ArkMethod } from "../../../core/model/ArkMethod";
-import { CallGraphNode, CallGraph, FuncID } from "../../model/CallGraph";
+import { CallGraphNode, CallGraph } from "../../model/CallGraph";
 import { ICallSite, CallSite } from "../../model/CallSite";
 import { ContextID } from "../context/Context";
 import { Pag, PagEdgeKind, PagFuncNode } from "../Pag";
@@ -57,11 +57,10 @@ export class FunctionPlugin implements IPagPlugin {
     processCallSite(cs: CallSite, cid: ContextID, basePTNode: NodeID): NodeID[] {
         let srcNodes: NodeID[] = [];
         let calleeFuncID = cs.getCalleeFuncID();
-        if (!calleeFuncID)  {
+        if (!calleeFuncID) {
             return srcNodes;
         }
 
-        const calleeNode = this.cg.getNode(calleeFuncID) as CallGraphNode;
         const calleeMethod = this.cg.getArkMethodByFuncID(calleeFuncID);
 
         if (!calleeMethod) {

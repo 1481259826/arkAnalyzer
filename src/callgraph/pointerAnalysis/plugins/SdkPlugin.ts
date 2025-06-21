@@ -20,9 +20,8 @@ import { ClassType, FunctionType } from "../../../core/base/Type";
 import { Value } from "../../../core/base/Value";
 import { NodeID } from "../../../core/graph/GraphTraits";
 import { ArkMethod } from "../../../core/model/ArkMethod";
-import { CallGraph, CallGraphNode, CallSite, FuncID, ICallSite } from "../../model/CallGraph";
+import { CallGraph, CallGraphNode, FuncID, ICallSite } from "../../model/CallGraph";
 import { ContextID } from "../context/Context";
-import { emptyID } from "../context/ContextSelector";
 import { Pag, PagEdgeKind, PagLocalNode } from "../Pag";
 import { PagBuilder } from "../PagBuilder";
 import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
@@ -62,26 +61,25 @@ export class SdkPlugin implements IPagPlugin {
 
     processCallSite(cs: ICallSite, cid: ContextID, basePTNode: NodeID): NodeID[] {
         let srcNodes: NodeID[] = [];
-        srcNodes.push(...this.addSDKMethodPagCallEdge(cs, cid, 0));
+        this.addSDKMethodPagCallEdge(cs, cid, 0, srcNodes);
         return srcNodes;
     }
 
-    private addSDKMethodPagCallEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID): NodeID[] {
-        let srcNodes: NodeID[] = [];
+    private addSDKMethodPagCallEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, srcNodes: NodeID[]): void {
         let calleeFuncID = cs.getCalleeFuncID()!;
         let calleeNode = this.cg.getNode(calleeFuncID) as CallGraphNode;
         let calleeMethod: ArkMethod | null = this.cg.getArkMethodByFuncID(calleeFuncID);
         if (!calleeMethod) {
-            return srcNodes;
+            return;
         }
 
         if (!this.methodParamValueMap.has(calleeNode.getID())) {
             this.buildSDKFuncPag(calleeNode.getID(), calleeMethod);
         }
 
-        srcNodes.push(...this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod));
-        srcNodes.push(...this.addSDKMethodParamPagEdge(cs, callerCid, calleeCid, calleeNode.getID()));
-        return srcNodes;
+        this.addSDKMethodReturnPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
+        this.addSDKMethodParamPagEdge(cs, callerCid, calleeCid, calleeNode.getID(), srcNodes);
+        return;
     }
 
     /**
@@ -111,11 +109,10 @@ export class SdkPlugin implements IPagPlugin {
         return paramArr;
     }
 
-    private addSDKMethodReturnPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod): NodeID[] {
-        let srcNodes: NodeID[] = [];
+    private addSDKMethodReturnPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod, srcNodes: NodeID[]): void {
         let returnType = calleeMethod.getReturnType();
         if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
-            return srcNodes;
+            return;
         }
 
         // check fake heap object exists or not
@@ -137,18 +134,17 @@ export class SdkPlugin implements IPagPlugin {
 
         this.pag.addPagEdge(srcPagNode, dstPagNode, PagEdgeKind.Address, cs.callStmt);
         srcNodes.push(srcPagNode.getID());
-        return srcNodes;
+        return;
     }
 
     /**
      * process the anonymous method param, create a new CallSite for it and invoke it.
      */
-    private addSDKMethodParamPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, funcID: FuncID): NodeID[] {
+    private addSDKMethodParamPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, funcID: FuncID, srcNodes: NodeID[]): void {
         let argNum = cs.args?.length;
-        let srcNodes: NodeID[] = [];
 
         if (!argNum) {
-            return srcNodes;
+            return ;
         }
 
         // add args to parameters edges
@@ -195,6 +191,6 @@ export class SdkPlugin implements IPagPlugin {
             srcNodes.push(srcPagNode.getID());
         }
 
-        return srcNodes;
+        return;
     }
 }
