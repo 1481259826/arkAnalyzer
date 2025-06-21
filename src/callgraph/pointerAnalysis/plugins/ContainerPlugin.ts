@@ -23,7 +23,7 @@ import { PagBuilder } from "../PagBuilder";
 import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
 import { IPagPlugin } from "./IPagPlugin";
 import { Value } from '../../../core/base/Value';
-import { Stmt } from '../../../core/base/Stmt';
+import { ArkAssignStmt, Stmt } from '../../../core/base/Stmt';
 import { Local } from '../../../core/base/Local';
 import { UnclearReferenceType } from '../../../core/base/Type';
 import { FieldSignature, ClassSignature, FileSignature } from '../../../core/model/ArkSignature';
@@ -31,6 +31,7 @@ import { FieldSignature, ClassSignature, FileSignature } from '../../../core/mod
 const containerApiList = [
     BuiltApiType.ArrayPush,
     BuiltApiType.MapSet,
+    BuiltApiType.MapGet,
     BuiltApiType.SetAdd,
 ];
 
@@ -75,27 +76,30 @@ export class ContainerPlugin implements IPagPlugin {
         switch (methodType) {
             case BuiltApiType.ArrayPush:
                 // TODO: process push(...[])
-                srcNodes.push(...this.processContainerPagFieldEdge(cs, 0, cid, basePTNode, baseValue, 'Array'));
+                srcNodes.push(...this.processArrayPush(cs, cid, basePTNode, baseValue));
                 break;
             case BuiltApiType.SetAdd:
-                srcNodes.push(...this.processContainerPagFieldEdge(cs, 0, cid, basePTNode, baseValue, 'Set'));
+                srcNodes.push(...this.processSetAdd(cs, cid, basePTNode, baseValue));
                 break;
             case BuiltApiType.MapSet:
-                srcNodes.push(...this.processContainerPagFieldEdge(cs, 1, cid, basePTNode, baseValue, 'Map'));
+                srcNodes.push(...this.processMapSet(cs, cid, basePTNode, baseValue));
                 break;
+            case BuiltApiType.MapGet:
+                srcNodes.push(...this.processMapGet(cs, cid, basePTNode, baseValue));
             default:
         }
         return srcNodes;
     }
 
-    private processContainerPagFieldEdge(cs: ICallSite, argIndex: number, cid: ContextID, basePt: NodeID, baseValue: Local, className: string): NodeID[] {
+    private processArrayPush(cs: ICallSite, cid: ContextID, basePt: NodeID, baseValue: Local): NodeID[] {
+        const argIndex = 0;
         let argValue = cs.args![argIndex];
         if (!argValue) {
             return [];
         }
 
-        let argNode = this.pag.getOrNewNode(cid, argValue, cs.callStmt) as PagNode;
-        let containerFieldNode = this.pag.getOrClonePagContainerFieldNode(basePt, baseValue, className);
+        const argNode = this.pag.getOrNewNode(cid, argValue, cs.callStmt) as PagNode;
+        const containerFieldNode = this.pag.getOrClonePagContainerFieldNode(basePt, baseValue, 'Array');
 
         if (!containerFieldNode) {
             return [];
@@ -103,5 +107,59 @@ export class ContainerPlugin implements IPagPlugin {
 
         this.pag.addPagEdge(argNode, containerFieldNode, PagEdgeKind.Copy, cs.callStmt);
         return [argNode.getID()];
+    }
+
+    private processSetAdd(cs: ICallSite, cid: ContextID, basePt: NodeID, baseValue: Local): NodeID[] {
+        const argIndex = 0;
+        let argValue = cs.args![argIndex];
+        if (!argValue) {
+            return [];
+        }
+
+        const argNode = this.pag.getOrNewNode(cid, argValue, cs.callStmt) as PagNode;
+        const containerFieldNode = this.pag.getOrClonePagContainerFieldNode(basePt, baseValue, 'Set');
+
+        if (!containerFieldNode) {
+            return [];
+        }
+
+        this.pag.addPagEdge(argNode, containerFieldNode, PagEdgeKind.Copy, cs.callStmt);
+        return [argNode.getID()];
+    }
+
+    private processMapSet(cs: ICallSite, cid: ContextID, basePt: NodeID, baseValue: Local): NodeID[] {
+        const argIndex = 1;
+        let argValue = cs.args![argIndex];
+        if (!argValue) {
+            return [];
+        }
+
+        const argNode = this.pag.getOrNewNode(cid, argValue, cs.callStmt) as PagNode;
+        const containerFieldNode = this.pag.getOrClonePagContainerFieldNode(basePt, baseValue, 'Map');
+
+        if (!containerFieldNode) {
+            return [];
+        }
+
+        this.pag.addPagEdge(argNode, containerFieldNode, PagEdgeKind.Copy, cs.callStmt);
+        return [argNode.getID()];
+    }
+
+    private processMapGet(cs: ICallSite, cid: ContextID, basePt: NodeID, baseValue: Local): NodeID[] {
+        const ivkExpr = cs.callStmt.getInvokeExpr();
+        if (!ivkExpr || !(cs.callStmt instanceof ArkAssignStmt)) {
+            return [];
+        }
+        const leftValue = cs.callStmt.getLeftOp();
+
+        const leftValueNode = this.pag.getOrNewNode(cid, leftValue, cs.callStmt) as PagNode;
+        const containerFieldNode = this.pag.getOrClonePagContainerFieldNode(basePt, baseValue, 'Map');
+
+        if (!containerFieldNode) {
+            return [];
+        }
+
+        this.pag.addPagEdge(containerFieldNode, leftValueNode, PagEdgeKind.Copy, cs.callStmt);
+        return [containerFieldNode.getID()];
     }
 }

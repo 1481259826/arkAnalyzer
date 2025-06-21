@@ -26,6 +26,7 @@ export function IsCollectionClass(classSignature: ClassSignature): boolean {
 export enum BuiltApiType {
     SetAdd,
     MapSet,
+    MapGet,
     ArrayPush,
     FunctionCall,
     FunctionApply,
@@ -54,6 +55,7 @@ export const MAP_FIELD_SIGNATURE = new FieldSignature(
 const BUILTIN_API_BY_SUFFIX = new Map<string, BuiltApiType>([
     ['lib.es2015.collection.d.ts: Set.add(T)', BuiltApiType.SetAdd],
     ['lib.es2015.collection.d.ts: Map.set(K, V)', BuiltApiType.MapSet],
+    ['lib.es2015.collection.d.ts: Map.get(K)', BuiltApiType.MapGet],
     ['lib.es5.d.ts: Array.push(T[])', BuiltApiType.ArrayPush],
 ]);
 
