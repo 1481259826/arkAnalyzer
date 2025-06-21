@@ -41,7 +41,9 @@ export enum StorageLinkEdgeType {
     TwoWay,
 }
 
-// plugins/StoragePlugin.ts
+/**
+ * StoragePlugin processes AppStorage, LocalStorage, and SubscribedAbstractProperty APIs.
+ */
 export class StoragePlugin implements IPagPlugin {
     pag: Pag;
     pagBuilder: PagBuilder;

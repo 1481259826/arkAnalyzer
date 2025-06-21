@@ -383,7 +383,7 @@ export class PagBuilder {
                 this.addStaticPagCallReturnEdge(cs, cid, calleeCid);
             }
 
-            // Storage Plugin
+            // Storage Plugin, SDK Plugin
             const pluginResult = this.pluginManager.processCallSite(cs, cid, emptyID, this.cg);
             if (pluginResult.handled) {
                 logger.debug(`[buildFuncPag] plugin handled call site ${cs.callStmt.toString()}`);
@@ -530,6 +530,7 @@ export class PagBuilder {
                 continue;
             }
 
+            // Storage Plugin, SDK Plugin, Function Plugin, Container Plugin
             const pluginResult = this.pluginManager.processCallSite(staticCS, cid, baseClassPTNode, this.cg);
             if (pluginResult.handled) {
                 logger.debug(`[buildDynamicCallEdge] plugin handled call site ${cs.callStmt.toString()}`);

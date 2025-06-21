@@ -28,6 +28,7 @@ import { Local } from '../../../core/base/Local';
 import { UnclearReferenceType } from '../../../core/base/Type';
 import { FieldSignature, ClassSignature, FileSignature } from '../../../core/model/ArkSignature';
 
+// built-in container APIs
 const containerApiList = [
     BuiltApiType.ArrayPush,
     BuiltApiType.MapSet,
@@ -35,6 +36,9 @@ const containerApiList = [
     BuiltApiType.SetAdd,
 ];
 
+/**
+ * ContainerPlugin processes built-in container APIs like Array, Set, and Map.
+ */
 export class ContainerPlugin implements IPagPlugin {
     pag: Pag;
     pagBuilder: PagBuilder;

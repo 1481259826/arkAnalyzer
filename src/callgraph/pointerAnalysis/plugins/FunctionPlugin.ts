@@ -28,6 +28,9 @@ import { CSFuncID, PagBuilder } from "../PagBuilder";
 import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
 import { IPagPlugin } from "./IPagPlugin";
 
+/**
+ * FunctionPlugin processes Function.call, Function.apply, Function.bind.
+ */
 export class FunctionPlugin implements IPagPlugin {
     pag: Pag;
     pagBuilder: PagBuilder;

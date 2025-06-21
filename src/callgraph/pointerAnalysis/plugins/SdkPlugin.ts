@@ -28,6 +28,10 @@ import { PagBuilder } from "../PagBuilder";
 import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
 import { IPagPlugin } from "./IPagPlugin";
 
+/**
+ * SdkPlugin processes OpenHarmony and built-in SDK APIs.
+ * creates fake PAG nodes for SDK method return values and parameters.
+ */
 export class SdkPlugin implements IPagPlugin {
     pag: Pag;
     pagBuilder: PagBuilder;
