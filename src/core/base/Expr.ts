@@ -283,6 +283,16 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
         return this.funPtr;
     }
 
+    public inferType(arkMethod: ArkMethod): AbstractInvokeExpr {
+        this.getArgs().forEach(arg => TypeInference.inferValueType(arg, arkMethod));
+        const ptrType = this.funPtr.getType();
+        if (ptrType instanceof FunctionType) {
+            this.setMethodSignature(ptrType.getMethodSignature());
+        }
+        IRInference.inferArgs(this, arkMethod);
+        return IRInference.inferStaticInvokeExpr(this, arkMethod);
+    }
+
     public toString(): string {
         let strs: string[] = [];
         strs.push('ptrinvoke <');

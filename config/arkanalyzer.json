@@ -18,8 +18,7 @@
   ],
   "sdkGlobalFolders": [
     "component",
-    "@internal",
-    "ohos-typescript"
+    "@internal"
   ],
   "tsconfig": "tsconfig.json"
 }

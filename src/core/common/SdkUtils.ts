@@ -57,18 +57,20 @@ export class SdkUtils {
         }
     }
 
-    public static fetchBuiltInFiles(): string[] {
-        let builtInPath = this.BUILT_IN_PATH;
-        try {
-            // If arkanalyzer is used as dependency by other project, the base directory should be the module path.
-            const moduleRoot = path.dirname(path.dirname(require.resolve('arkanalyzer')));
-            builtInPath = path.join(moduleRoot, this.BUILT_IN_PATH);
-            logger.debug(`arkanalyzer is used as dependency, so using builtin sdk file in ${builtInPath}.`);
-        } catch {
-            logger.debug(`use builtin sdk file in ${builtInPath}.`);
+    public static fetchBuiltInFiles(builtInPath: string): string[] {
+        if (!builtInPath) {
+            try {
+                // If arkanalyzer is used as dependency by other project, the base directory should be the module path.
+                const moduleRoot = path.dirname(path.dirname(require.resolve('arkanalyzer')));
+                builtInPath = path.join(moduleRoot, this.BUILT_IN_PATH);
+                logger.debug(`arkanalyzer is used as dependency, so using builtin sdk file in ${builtInPath}.`);
+            } catch {
+                builtInPath = path.resolve(this.BUILT_IN_PATH);
+                logger.debug(`use builtin sdk file in ${builtInPath}.`);
+            }
+            this.BUILT_IN_SDK.path = builtInPath;
         }
         const filePath = path.resolve(builtInPath, this.esVersionMap.get(this.esVersion) ?? '');
-        this.BUILT_IN_SDK.path = path.resolve(builtInPath);
         if (!fs.existsSync(filePath)) {
             logger.error(`built in directory ${filePath} is not exist, please check!`);
             return [];
@@ -106,12 +108,18 @@ export class SdkUtils {
         return this.sdkImportMap.get(from);
     }
 
+    private static isGlobalPath(file: ArkFile): boolean {
+        return !!file.getScene().getOptions().sdkGlobalFolders?.find(x => {
+            if (path.isAbsolute(x)) {
+                return file.getFilePath().startsWith(x);
+            } else {
+                return file.getFilePath().includes(path.sep + x + path.sep);
+            }
+        });
+    }
+
     public static loadGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file
-            .getScene()
-            .getOptions()
-            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
-        if (!isGlobalPath) {
+        if (!this.isGlobalPath(file)) {
             return;
         }
         file.getClasses().forEach(cls => {
@@ -132,11 +140,7 @@ export class SdkUtils {
     }
 
     public static mergeGlobalAPI(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file
-            .getScene()
-            .getOptions()
-            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
-        if (!isGlobalPath) {
+        if (!this.isGlobalPath(file)) {
             return;
         }
         file.getClasses().forEach(cls => {
@@ -159,11 +163,7 @@ export class SdkUtils {
     }
 
     public static postInferredSdk(file: ArkFile, globalMap: Map<string, ArkExport>): void {
-        const isGlobalPath = file
-            .getScene()
-            .getOptions()
-            .sdkGlobalFolders?.find(x => file.getFilePath().includes(path.sep + x + path.sep));
-        if (!isGlobalPath) {
+        if (!this.isGlobalPath(file)) {
             return;
         }
         const defaultArkMethod = file.getDefaultClass().getDefaultArkMethod();

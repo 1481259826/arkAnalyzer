@@ -17,7 +17,7 @@ import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../../../src/Scene';
 import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
-import { Local, Stmt, Value } from '../../../../src';
+import { ArkReturnStmt, Local, Stmt, Value } from '../../../../src';
 import { ArkIRMethodPrinter } from "../../../../src/save/arkir/ArkIRMethodPrinter";
 
 let config: SceneConfig = new SceneConfig();
@@ -253,19 +253,19 @@ describe("ArkMethod Test", () => {
 
 describe('Nested Method with Function Declaration Statement', () => {
     it('test nested method', async () => {
-       const method = arkDefaultClass?.getMethodWithName('%innerFunction1$outerFunction1');
-       assert.isDefined(method);
-       assert.isNotNull(method);
+        const method = arkDefaultClass?.getMethodWithName('%innerFunction1$outerFunction1');
+        assert.isDefined(method);
+        assert.isNotNull(method);
 
-       const stmts = method?.getBody()?.getCfg().getStmts();
-       assert.isDefined(stmts);
-       expect((stmts as Stmt[])[1].toString()).toEqual('instanceinvoke console.<@%unk/%unk: .log()>(\'This is nested function with function declaration.\')');
-       expect((stmts as Stmt[])[2].toString()).toEqual('staticinvoke <@method/method.ts: %dflt.%innerInnerFunction1$%innerFunction1$outerFunction1()>()');
+        const stmts = method?.getBody()?.getCfg().getStmts();
+        assert.isDefined(stmts);
+        expect((stmts as Stmt[])[1].toString()).toEqual('instanceinvoke console.<@%unk/%unk: .log()>(\'This is nested function with function declaration.\')');
+        expect((stmts as Stmt[])[2].toString()).toEqual('staticinvoke <@method/method.ts: %dflt.%innerInnerFunction1$%innerFunction1$outerFunction1()>()');
 
-       const global = method!.getBody()?.getUsedGlobals()?.get('innerInnerFunction1');
-       assert.isDefined(global);
+        const global = method!.getBody()?.getUsedGlobals()?.get('innerInnerFunction1');
+        assert.isDefined(global);
 
-       expect(global!.getType().toString()).toEqual('@method/method.ts: %dflt.%innerInnerFunction1$%innerFunction1$outerFunction1()');
+        expect(global!.getType().toString()).toEqual('@method/method.ts: %dflt.%innerInnerFunction1$%innerFunction1$outerFunction1()');
     });
 
     it('test nested method in nested method', async () => {
@@ -284,7 +284,7 @@ describe('Nested Method with Function Declaration Statement', () => {
         expect(globals!.size).toEqual(1);
     });
 
-    it('test outer method', async() => {
+    it('test outer method', async () => {
         const method = arkDefaultClass?.getMethodWithName('outerFunction1');
         assert.isDefined(method);
         assert.isNotNull(method);
@@ -297,6 +297,15 @@ describe('Nested Method with Function Declaration Statement', () => {
         assert.isDefined(global);
 
         expect(global!.getType().toString()).toEqual('@method/method.ts: %dflt.%innerFunction1$outerFunction1()');
+    });
+
+    it('test local function type', async () => {
+        const method = arkDefaultClass?.getMethodWithName('func');
+        const stmts = method?.getBody()?.getCfg().getStmts();
+        const stmt = stmts?.[stmts?.length - 1];
+        assert.isTrue(stmt instanceof ArkReturnStmt);
+
+        assert.equal((stmt as ArkReturnStmt).getOp().getType().toString(), '@method/method.ts: %dflt.returnFunc()');
     });
 });
 
@@ -313,7 +322,7 @@ describe('Nested Method with Return Statement', () => {
         expect((local as Local).getType().toString()).toEqual('string');
     });
 
-    it('test outer method', async() => {
+    it('test outer method', async () => {
         const method = arkDefaultClass?.getMethodWithName('outerFunction2');
         assert.isDefined(method);
         assert.isNotNull(method);
@@ -342,7 +351,7 @@ describe('Nested Method with Function Expression', () => {
         expect(locals!.size).toEqual(1);
     });
 
-    it('test outer method', async() => {
+    it('test outer method', async () => {
         const method = arkDefaultClass?.getMethodWithName('outerFunction3');
         assert.isDefined(method);
         assert.isNotNull(method);
@@ -356,7 +365,7 @@ describe('Nested Method with Function Expression', () => {
         const rightOpLocal = method?.getBody()?.getLocals().get('%AM1$outerFunction3');
         assert.isDefined(rightOpLocal);
         expect((rightOpLocal as Local).getType().toString()).toEqual('@method/method.ts: %dflt.%AM1$outerFunction3()');
-        expect((stmts as Stmt[])[2].toString()).toEqual('ptrinvoke <@%unk/%unk: .innerFunction3()>()');
+        expect((stmts as Stmt[])[2].toString()).toEqual('ptrinvoke <@method/method.ts: %dflt.innerFunction3()>()');
     });
 });
 
@@ -373,7 +382,7 @@ describe('Nested Method with Arrow Function', () => {
         expect(locals!.size).toEqual(1);
     });
 
-    it('test outer method', async() => {
+    it('test outer method', async () => {
         const method = arkDefaultClass?.getMethodWithName('outerFunction4');
         assert.isDefined(method);
         assert.isNotNull(method);
@@ -387,7 +396,7 @@ describe('Nested Method with Arrow Function', () => {
         const rightOpLocal = method?.getBody()?.getLocals().get('%AM2$outerFunction4');
         assert.isDefined(rightOpLocal);
         expect((rightOpLocal as Local).getType().toString()).toEqual('@method/method.ts: %dflt.%AM2$outerFunction4()');
-        expect((stmts as Stmt[])[2].toString()).toEqual('ptrinvoke <@%unk/%unk: .innerFunction4()>()');
+        expect((stmts as Stmt[])[2].toString()).toEqual('ptrinvoke <@method/method.ts: %dflt.innerFunction4()>()');
     });
 })
 
@@ -406,7 +415,7 @@ describe('Recursive Method', () => {
         expect(method!.getReturnType().toString()).toEqual('number');
     });
 
-    it('test outer method', async() => {
+    it('test outer method', async () => {
         const method = arkDefaultClass?.getMethodWithName('outerFunction5');
         assert.isDefined(method);
         assert.isNotNull(method);
@@ -459,8 +468,8 @@ describe('Nested Method in Class', () => {
         const stmts = outerMethod?.getBody()?.getCfg().getStmts();
         assert.isDefined(stmts);
         expect((stmts as Stmt[])[1].toString()).toEqual('staticinvoke <@method/method.ts: %dflt.%innerFunction1$outerFunction1()>()');
-        expect((stmts as Stmt[])[4].toString()).toEqual('ptrinvoke <@%unk/%unk: .innerFunction2()>()');
-        expect((stmts as Stmt[])[5].toString()).toEqual('ptrinvoke <@%unk/%unk: .innerFunction3()>()');
+        expect((stmts as Stmt[])[4].toString()).toEqual('ptrinvoke <@method/method.ts: NestedTestClass.innerFunction2()>()');
+        expect((stmts as Stmt[])[5].toString()).toEqual('ptrinvoke <@method/method.ts: NestedTestClass.innerFunction3()>()');
 
         const locals = outerMethod?.getBody()?.getLocals();
         assert.isDefined(locals);
