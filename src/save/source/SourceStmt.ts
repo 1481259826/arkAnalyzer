@@ -518,10 +518,6 @@ export class SourceWhileStmt extends SourceStmt {
         }
 
         let temp2 = done.getBase();
-        if (!(temp2 instanceof Local)) {
-            return false;
-        }
-
         stmt = temp2.getDeclaringStmt();
         if (!(stmt instanceof ArkAssignStmt)) {
             return false;
@@ -537,10 +533,6 @@ export class SourceWhileStmt extends SourceStmt {
         }
 
         let temp1 = next.getBase();
-        if (!(temp1 instanceof Local)) {
-            return false;
-        }
-
         stmt = temp1.getDeclaringStmt();
         if (!(stmt instanceof ArkAssignStmt)) {
             return false;
@@ -555,6 +547,10 @@ export class SourceWhileStmt extends SourceStmt {
             return false;
         }
 
+        return this.getForOf2ts(temp3 as Local, temp1, iterator);
+    }
+
+    private getForOf2ts(temp3: Local, temp1: Local, iterator: ArkInstanceInvokeExpr): boolean {
         let successors = this.block.getSuccessors();
         if (successors.length !== 2) {
             return false;
@@ -565,7 +561,7 @@ export class SourceWhileStmt extends SourceStmt {
             return false;
         }
 
-        stmt = stmts[1];
+        let stmt = stmts[1];
         if (!(stmt instanceof ArkAssignStmt)) {
             return false;
         }

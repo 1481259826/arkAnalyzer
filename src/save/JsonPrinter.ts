@@ -206,21 +206,13 @@ export class JsonPrinter extends Printer {
         }
 
         if (type instanceof AnyType) {
-            return {
-                _: 'AnyType',
-            };
+            return { _: 'AnyType' };
         } else if (type instanceof UnknownType) {
-            return {
-                _: 'UnknownType',
-            };
+            return { _: 'UnknownType' };
         } else if (type instanceof VoidType) {
-            return {
-                _: 'VoidType',
-            };
+            return { _: 'VoidType' };
         } else if (type instanceof NeverType) {
-            return {
-                _: 'NeverType',
-            };
+            return { _: 'NeverType' };
         } else if (type instanceof UnionType) {
             return {
                 _: 'UnionType',
@@ -237,29 +229,17 @@ export class JsonPrinter extends Printer {
                 types: type.getTypes().map(type => this.serializeType(type)),
             };
         } else if (type instanceof BooleanType) {
-            return {
-                _: 'BooleanType',
-            };
+            return { _: 'BooleanType' };
         } else if (type instanceof NumberType) {
-            return {
-                _: 'NumberType',
-            };
+            return { _: 'NumberType' };
         } else if (type instanceof BigIntType) {
-            return {
-                _: 'BigIntType',
-            };
+            return { _: 'BigIntType' };
         } else if (type instanceof StringType) {
-            return {
-                _: 'StringType',
-            };
+            return { _: 'StringType' };
         } else if (type instanceof NullType) {
-            return {
-                _: 'NullType',
-            };
+            return { _: 'NullType' };
         } else if (type instanceof UndefinedType) {
-            return {
-                _: 'UndefinedType',
-            };
+            return { _: 'UndefinedType' };
         } else if (type instanceof LiteralType) {
             return {
                 _: 'LiteralType',
@@ -446,58 +426,25 @@ export class JsonPrinter extends Printer {
         }
 
         if (value instanceof Local) {
-            return {
-                _: 'Local',
-                ...this.serializeLocal(value),
-            };
+            return { _: 'Local', ...this.serializeLocal(value) };
         } else if (value instanceof Constant) {
-            return {
-                _: 'Constant',
-                ...this.serializeConstant(value),
-            };
+            return { _: 'Constant', ...this.serializeConstant(value) };
         } else if (value instanceof ArkNewExpr) {
-            return {
-                _: 'NewExpr',
-                classType: this.serializeType(value.getClassType()),
-            };
+            return { _: 'NewExpr', classType: this.serializeType(value.getClassType()) };
         } else if (value instanceof ArkNewArrayExpr) {
-            return {
-                _: 'NewArrayExpr',
-                elementType: this.serializeType(value.getBaseType()),
-                size: this.serializeValue(value.getSize()),
-            };
+            return { _: 'NewArrayExpr', elementType: this.serializeType(value.getBaseType()), size: this.serializeValue(value.getSize()) };
         } else if (value instanceof ArkDeleteExpr) {
-            return {
-                _: 'DeleteExpr',
-                arg: this.serializeValue(value.getField()),
-            };
+            return { _: 'DeleteExpr', arg: this.serializeValue(value.getField()) };
         } else if (value instanceof ArkAwaitExpr) {
-            return {
-                _: 'AwaitExpr',
-                arg: this.serializeValue(value.getPromise()),
-            };
+            return { _: 'AwaitExpr', arg: this.serializeValue(value.getPromise()) };
         } else if (value instanceof ArkYieldExpr) {
-            return {
-                _: 'YieldExpr',
-                arg: this.serializeValue(value.getYieldValue()),
-            };
+            return { _: 'YieldExpr', arg: this.serializeValue(value.getYieldValue()) };
         } else if (value instanceof ArkTypeOfExpr) {
-            return {
-                _: 'TypeOfExpr',
-                arg: this.serializeValue(value.getOp()),
-            };
+            return { _: 'TypeOfExpr', arg: this.serializeValue(value.getOp()) };
         } else if (value instanceof ArkInstanceOfExpr) {
-            return {
-                _: 'InstanceOfExpr',
-                arg: this.serializeValue(value.getOp()),
-                checkType: this.serializeType(value.getCheckType()),
-            };
+            return { _: 'InstanceOfExpr', arg: this.serializeValue(value.getOp()), checkType: this.serializeType(value.getCheckType()) };
         } else if (value instanceof ArkCastExpr) {
-            return {
-                _: 'CastExpr',
-                arg: this.serializeValue(value.getOp()),
-                type: this.serializeType(value.getType()),
-            };
+            return { _: 'CastExpr', arg: this.serializeValue(value.getOp()), type: this.serializeType(value.getType()) };
         } else if (value instanceof ArkPhiExpr) {
             const args = value.getArgs();
             const argToBlock = value.getArgToBlock();
@@ -523,11 +470,7 @@ export class JsonPrinter extends Printer {
                 right: this.serializeValue(value.getOp2()),
             };
         } else if (value instanceof ArkUnopExpr) {
-            return {
-                _: 'UnopExpr',
-                op: value.getOperator(),
-                arg: this.serializeValue(value.getOp()),
-            };
+            return { _: 'UnopExpr', op: value.getOperator(), arg: this.serializeValue(value.getOp()) };
         } else if (value instanceof ArkInstanceInvokeExpr) {
             return {
                 _: 'InstanceCallExpr',
@@ -549,16 +492,9 @@ export class JsonPrinter extends Printer {
                 args: value.getArgs().map(arg => this.serializeValue(arg)),
             };
         } else if (value instanceof ArkThisRef) {
-            return {
-                _: 'ThisRef',
-                type: this.serializeType(value.getType()),
-            };
+            return { _: 'ThisRef', type: this.serializeType(value.getType()) };
         } else if (value instanceof ArkParameterRef) {
-            return {
-                _: 'ParameterRef',
-                index: value.getIndex(),
-                type: this.serializeType(value.getType()),
-            };
+            return { _: 'ParameterRef', index: value.getIndex(), type: this.serializeType(value.getType()) };
         } else if (value instanceof ArkArrayRef) {
             return {
                 _: 'ArrayRef',
@@ -567,17 +503,10 @@ export class JsonPrinter extends Printer {
                 type: this.serializeType(value.getType()),
             };
         } else if (value instanceof ArkCaughtExceptionRef) {
-            return {
-                _: 'CaughtExceptionRef',
-                type: this.serializeType(value.getType()),
-            };
+            return { _: 'CaughtExceptionRef', type: this.serializeType(value.getType()) };
         } else if (value instanceof GlobalRef) {
             let ref = value.getRef();
-            return {
-                _: 'GlobalRef',
-                name: value.getName(),
-                ref: ref ? this.serializeValue(ref) : null,
-            };
+            return { _: 'GlobalRef', name: value.getName(), ref: ref ? this.serializeValue(ref) : null };
         } else if (value instanceof ClosureFieldRef) {
             return {
                 _: 'ClosureFieldRef',
@@ -586,23 +515,12 @@ export class JsonPrinter extends Printer {
                 type: this.serializeType(value.getType()),
             };
         } else if (value instanceof ArkInstanceFieldRef) {
-            return {
-                _: 'InstanceFieldRef',
-                instance: this.serializeValue(value.getBase()),
-                field: this.serializeFieldSignature(value.getFieldSignature()),
-            };
+            return { _: 'InstanceFieldRef', instance: this.serializeValue(value.getBase()), field: this.serializeFieldSignature(value.getFieldSignature()) };
         } else if (value instanceof ArkStaticFieldRef) {
-            return {
-                _: 'StaticFieldRef',
-                field: this.serializeFieldSignature(value.getFieldSignature()),
-            };
+            return { _: 'StaticFieldRef', field: this.serializeFieldSignature(value.getFieldSignature()) };
         } else {
             console.warn(`Unhandled Value: ${value.constructor.name} (${value.toString()})`);
-            return {
-                _: value.constructor.name,
-                text: value.toString(),
-                type: this.serializeType(value.getType()),
-            };
+            return { _: value.constructor.name, text: value.toString(), type: this.serializeType(value.getType()) };
         }
     }
 
