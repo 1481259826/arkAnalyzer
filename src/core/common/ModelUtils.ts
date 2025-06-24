@@ -541,7 +541,7 @@ export function getArkFile(im: FromInfo): ArkFile | null | undefined {
         const parentPath = /^\.{1,2}\//.test(from) ? path.dirname(im.getDeclaringArkFile().getFilePath()) : im.getDeclaringArkFile().getProjectDir();
         const originPath = path.resolve(parentPath, from);
         return getArkFileFromScene(im, originPath);
-    } else if (/^@[a-z|\-]+?\//.test(from)) {
+    } else if (moduleMap?.get(from) || /^@[a-z|\-]+?\//.test(from)) {
         //module path
         const arkFile = getArkFileFromOtherModule(im);
         if (arkFile) {
