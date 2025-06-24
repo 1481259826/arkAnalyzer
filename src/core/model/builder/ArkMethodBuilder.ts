@@ -433,8 +433,7 @@ export function addInitInConstructor(constructor: ArkMethod): void {
     if (cfg === undefined) {
         return;
     }
-    const blocks = cfg.getBlocks();
-    const firstBlockStmts = [...blocks][0].getStmts();
+    const firstBlockStmts = cfg.getStartingBlock()!.getStmts();
     let index = 0;
     for (let i = 0; i < firstBlockStmts.length; i++) {
         const stmt = firstBlockStmts[i];

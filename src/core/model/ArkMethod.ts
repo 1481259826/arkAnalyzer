@@ -467,11 +467,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
 
     public getParameterRefs(): ArkParameterRef[] | null {
         let paramRefs: ArkParameterRef[] = [];
-        const blocks = this.getBody()?.getCfg().getBlocks();
-        if (blocks === undefined) {
+        const stmts = this.getBody()?.getCfg().getStartingBlock()?.getStmts();
+        if (stmts === undefined) {
             return null;
         }
-        const stmts = Array.from(blocks)[0].getStmts();
         for (let stmt of stmts) {
             if (stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef) {
                 paramRefs.push((stmt as ArkAssignStmt).getRightOp() as ArkParameterRef);
