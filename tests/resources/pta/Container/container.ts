@@ -26,11 +26,11 @@ namespace Container {
     class ArrayTest {
         array: Element[][];
         public test() {
-            this.array = [[]];
-            this.array.push([new Element()]);
-            let a = [];
-            a.push();
-            let b = this.getArrayElement();
+            let ele = new Element();
+            let ele2 = new Element();
+            this.array = [[ele2]];
+            this.array.push([ele]);
+            let b: Element = this.getArrayElement();
         }
 
         public getArrayElement() {
@@ -55,10 +55,12 @@ namespace Container {
     }
 
     function main() {
-        let setTest: SetTest = new SetTest();
-        let mapTest: MapTest = new MapTest();
+        let arrayTest: ArrayTest = new ArrayTest();
+        // let setTest: SetTest = new SetTest();
+        // let mapTest: MapTest = new MapTest();
 
-        setTest.test();
-        mapTest.test();
+        arrayTest.test();
+        // setTest.test();
+        // mapTest.test();
     }
 }

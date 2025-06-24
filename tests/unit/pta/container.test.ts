@@ -49,11 +49,25 @@ describe('ContainerAddTest', () => {
     let mapMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'MapTest')
     .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
 
+    it('case1: Array.push(T[])', () => {
+        const eleLocal = setMethod[0]?.getBody()?.getLocals().get('ele')!;
+        const ele2Local = setMethod[0]?.getBody()?.getLocals().get('ele2')!;
+        let resultLocal = setMethod[0]?.getBody()?.getLocals().get('b')!;
+        let relatedNodes = pta.getRelatedNodes(resultLocal);
+        assert(
+            Array.from(relatedNodes).some(element => element === eleLocal)
+        );
+
+        assert(
+            Array.from(relatedNodes).some(element => element === ele2Local)
+        );
+    });
+
     it('case1: Set.add(<T>)', () => {
         let setLocal = setMethod[0]?.getBody()?.getLocals().get('ele')!;
         let relatedNodes = pta.getRelatedNodes(setLocal);
         assert(
-            Array.from(relatedNodes).some(element => element.toString() === 'set.<@container/lib.es2015.collection.d.ts: container.field>')
+            Array.from(relatedNodes).some(element => element.toString() === 'set.<@container/lib.es2015.collection.d.ts: Set.field>')
         );
     });
 
@@ -61,7 +75,7 @@ describe('ContainerAddTest', () => {
         let mapLocal = mapMethod[0]?.getBody()?.getLocals().get('ele')!;
         let relatedNodes = pta.getRelatedNodes(mapLocal);
         assert(
-            Array.from(relatedNodes).some(element => element.toString() === 'map.<@container/lib.es2015.collection.d.ts: container.field>')
+            Array.from(relatedNodes).some(element => element.toString() === 'map.<@container/lib.es2015.collection.d.ts: Map.field>')
         );
     });
 });
