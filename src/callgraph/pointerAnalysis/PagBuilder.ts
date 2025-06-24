@@ -398,9 +398,10 @@ export class PagBuilder {
     public addCallsEdgesFromFuncPag(funcPag: FuncPag, cid: ContextID): boolean {
         for (let cs of funcPag.getNormalCallSites()) {
             let ivkExpr = cs.callStmt.getInvokeExpr();
-            let calleeCid = this.ctxSelector.selectContext(cid, cs, emptyID, cs.calleeFuncID);
+            const calleeFuncID: FuncID = cs.getCalleeFuncID()!;
+            let calleeCid = this.ctxSelector.selectContext(cid, cs, emptyID, calleeFuncID);
 
-            let calleeCGNode = this.cg.getNode(cs.calleeFuncID) as CallGraphNode;
+            let calleeCGNode = this.cg.getNode(calleeFuncID) as CallGraphNode;
 
             if (this.scale === PtaAnalysisScale.MethodLevel) {
                 this.addStaticPagCallReturnEdge(cs, cid, calleeCid);
@@ -422,10 +423,16 @@ export class PagBuilder {
                 }
             }
 
+            const callerMethod = this.cg.getArkMethodByFuncID(cs.callerFuncID);
+            const calleeMethod = this.cg.getArkMethodByFuncID(calleeFuncID);
+
+            if (!callerMethod || !calleeMethod) {
+                logger.error(`can not find caller or callee method by funcID ${cs.callerFuncID} ${calleeFuncID}`);
+                return false;
+            }
+
             this.cg.addDirectOrSpecialCallEdge(
-                this.cg.getArkMethodByFuncID(cs.callerFuncID)?.getSignature()!,
-                this.cg.getArkMethodByFuncID(cs.calleeFuncID)?.getSignature()!,
-                cs.callStmt,
+                callerMethod.getSignature()!, calleeMethod.getSignature()!, cs.callStmt,
             );
         }
 
