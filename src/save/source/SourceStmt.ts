@@ -896,7 +896,7 @@ export class SourceCatchStmt extends SourceStmt {
 
     public transfer2ts(): void {
         if (this.block) {
-            let stmt = this.block!.getStmts()[0];
+            let stmt = this.block!.getHead()!;
             if (stmt instanceof ArkAssignStmt) {
                 if (stmt.getLeftOp() instanceof Local) {
                     let name = (stmt.getLeftOp() as Local).getName();
