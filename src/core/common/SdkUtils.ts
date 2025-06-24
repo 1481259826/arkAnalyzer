@@ -113,7 +113,7 @@ export class SdkUtils {
             if (path.isAbsolute(x)) {
                 return file.getFilePath().startsWith(x);
             } else {
-                return file.getFilePath().includes(path.sep + x + path.sep)
+                return file.getFilePath().includes(path.sep + x + path.sep);
             }
         });
     }
