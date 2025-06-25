@@ -47,8 +47,8 @@ export abstract class StmtValidator<S extends StmtTy> {
      */
     abstract validate(s: S, ctx: SummaryReporter): void;
 
-    run(s: S, ctx: MethodCtx, mtd: ArkMethod) {
-        let submit = (msg: SummaryMsg) => {
+    run(s: S, ctx: MethodCtx, mtd: ArkMethod): void {
+        let submit = (msg: SummaryMsg): void => {
             let summary = MethodSummary.getOrNew(ctx, mtd);
             summary.submitStmt(s, msg);
         };
@@ -59,7 +59,7 @@ export abstract class StmtValidator<S extends StmtTy> {
         });
     }
 
-    static register(init: StmtInit) {
+    static register(init: StmtInit): void {
         ArkValidatorRegistry.stmt(init);
     }
 }
@@ -79,8 +79,8 @@ export abstract class ValueValidator<S extends ValueTy> {
      */
     abstract validate(s: S, ctx: SummaryReporter): void;
 
-    run(s: S, ctx: MethodCtx, mtd: ArkMethod) {
-        let submit = (msg: SummaryMsg) => {
+    run(s: S, ctx: MethodCtx, mtd: ArkMethod): void {
+        let submit = (msg: SummaryMsg): void => {
             let summary = MethodSummary.getOrNew(ctx, mtd);
             summary.submitValue(s, msg);
         };
@@ -91,7 +91,7 @@ export abstract class ValueValidator<S extends ValueTy> {
         });
     }
 
-    static register(init: ValueInit) {
+    static register(init: ValueInit): void {
         ArkValidatorRegistry.value(init);
     }
 }
@@ -119,13 +119,13 @@ export class ArkValidatorRegistry extends Dispatcher {
         return ArkValidatorRegistry.dispatchHolder;
     }
 
-    static stmt(init: StmtInit) {
+    static stmt(init: StmtInit): void {
         this.stmtsHolder.push(init);
         // invalidate holder
         ArkValidatorRegistry.dispatchHolder = undefined;
     }
 
-    static value(init: ValueInit) {
+    static value(init: ValueInit): void {
         this.valuesHolder.push(init);
         // invalidate holder
         ArkValidatorRegistry.dispatchHolder = undefined;
@@ -165,7 +165,7 @@ export abstract class FileValidator extends FilePass {
     abstract validate(file: ArkFile, ctx: SummaryReporter): void;
 
     run(file: ArkFile, ctx: FileCtx): void {
-        let submit = (msg: SummaryMsg) => {
+        let submit = (msg: SummaryMsg): void => {
             let summary = FileSummary.getOrNew(ctx, file);
             summary.submit(msg);
         };
@@ -188,7 +188,7 @@ export abstract class ClassValidator extends ClassPass {
     abstract validate(cls: ArkClass, ctx: SummaryReporter): void;
 
     run(cls: ArkClass, ctx: ClassCtx): FallAction | void {
-        let submit = (msg: SummaryMsg) => {
+        let submit = (msg: SummaryMsg): void => {
             let summary = ClassSummary.getOrNew(ctx, cls);
             summary.submit(msg);
         };
@@ -211,7 +211,7 @@ export abstract class MethodValidator extends MethodPass {
     abstract validate(mtd: ArkMethod, ctx: SummaryReporter): void;
 
     run(mtd: ArkMethod, ctx: MethodCtx): FallAction | void {
-        let submit = (msg: SummaryMsg) => {
+        let submit = (msg: SummaryMsg): void => {
             let summary = MethodSummary.getOrNew(ctx, mtd);
             summary.submit(msg);
         };
@@ -248,7 +248,7 @@ export class FileSummary {
     constructor() {
     }
 
-    submit(msg: SummaryMsg) {
+    submit(msg: SummaryMsg): void {
         this.msgList.push(msg);
     }
 
@@ -287,7 +287,7 @@ export class ClassSummary {
     constructor() {
     }
 
-    submit(msg: SummaryMsg) {
+    submit(msg: SummaryMsg): void {
         this.msgList.push(msg);
     }
 
@@ -344,18 +344,18 @@ export class MethodSummary {
     constructor() {
     }
 
-    submit(msg: SummaryMsg) {
+    submit(msg: SummaryMsg): void {
         this.msgList.push(msg);
     }
 
-    submitValue(value: Value, msg: SummaryMsg) {
+    submitValue(value: Value, msg: SummaryMsg): void {
         if (!this.values.get(value)) {
             this.values.set(value, []);
         }
         this.values.get(value)!.push(msg);
     }
 
-    submitStmt(stmt: Stmt, msg: SummaryMsg) {
+    submitStmt(stmt: Stmt, msg: SummaryMsg): void {
         if (this.stmts.get(stmt) === undefined) {
             this.stmts.set(stmt, []);
         }

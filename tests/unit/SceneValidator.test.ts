@@ -39,7 +39,7 @@ export class ConstValidator extends ValueValidator<Constant> {
     }
 
     static {
-        ConstValidator.register([Constant, (v: Constant, ctx: MethodCtx, mtd: ArkMethod) => {
+        ConstValidator.register([Constant, (v: Constant, ctx: MethodCtx, mtd: ArkMethod): void => {
             ConstValidator.INSTANCE.run(v, ctx, mtd);
         }]);
     }
@@ -62,7 +62,7 @@ export class InvokeValidator extends StmtValidator<ArkInvokeStmt> {
 export class AssignValidator extends StmtValidator<ArkAssignStmt> {
     private static readonly INSTANCE = new AssignValidator();
 
-    validate(value: ArkAssignStmt, ctx: SummaryReporter) {
+    validate(value: ArkAssignStmt, ctx: SummaryReporter): void {
         let left = value.getLeftOp();
         if (!(left instanceof Local)) {
             ctx.error(`must assign to local`);
@@ -70,7 +70,7 @@ export class AssignValidator extends StmtValidator<ArkAssignStmt> {
     }
 
     static {
-        AssignValidator.register([ArkAssignStmt, (v: ArkAssignStmt, ctx: MethodCtx, mtd: ArkMethod) => {
+        AssignValidator.register([ArkAssignStmt, (v: ArkAssignStmt, ctx: MethodCtx, mtd: ArkMethod): void => {
             AssignValidator.INSTANCE.run(v, ctx, mtd);
         }]);
     }
