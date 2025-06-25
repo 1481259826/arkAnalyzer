@@ -45,7 +45,7 @@ export abstract class StmtValidator<S extends StmtTy> {
      * @param ctx The context used for validation, which includes reporting mechanisms.
      * @return The result of the validation process.
      */
-    abstract validate(s: S, ctx: SummaryReporter): any;
+    abstract validate(s: S, ctx: SummaryReporter): void;
 
     run(s: S, ctx: MethodCtx, mtd: ArkMethod) {
         let submit = (msg: SummaryMsg) => {
@@ -78,7 +78,7 @@ export abstract class ValueValidator<S extends ValueTy> {
      * @param ctx The context object used for reporting validation results or summaries.
      * @return The result of the validation process.
      */
-    abstract validate(s: S, ctx: SummaryReporter): any;
+    abstract validate(s: S, ctx: SummaryReporter): void;
 
     run(s: S, ctx: MethodCtx, mtd: ArkMethod) {
         let submit = (msg: SummaryMsg) => {
@@ -166,7 +166,7 @@ export abstract class FileValidator extends FilePass {
      * @param ctx The context used for reporting validation results, implemented as a SummaryReporter.
      * @return The result of the validation process.
      */
-    abstract validate(file: ArkFile, ctx: SummaryReporter): any;
+    abstract validate(file: ArkFile, ctx: SummaryReporter): void;
 
     run(file: ArkFile, ctx: FileCtx): void {
         let submit = (msg: SummaryMsg) => {
@@ -248,13 +248,13 @@ export class SceneSummary {
 export class FileSummary {
     name: string = 'file summary';
     classes: Map<ArkClass, ClassSummary> = new Map();
-    msgs: SummaryMsg[] = [];
+    msgList: SummaryMsg[] = [];
 
     constructor() {
     }
 
     submit(msg: SummaryMsg) {
-        this.msgs.push(msg);
+        this.msgList.push(msg);
     }
 
 
@@ -265,7 +265,7 @@ export class FileSummary {
      * @param file The ArkFile object for which the FileSummary is being retrieved or created.
      * @return The existing or newly created FileSummary instance associated with the provided file.
      */
-    static getOrNew(ctx: FileCtx, file: ArkFile) {
+    static getOrNew(ctx: FileCtx, file: ArkFile): FileSummary {
         if (ctx.get(FileSummary)) {
             return ctx.get(FileSummary)!;
         }
@@ -289,13 +289,13 @@ export class FileSummary {
 export class ClassSummary {
     name: string = 'class summary';
     methods: Map<ArkMethod, MethodSummary> = new Map();
-    msgs: SummaryMsg[] = [];
+    msgList: SummaryMsg[] = [];
 
     constructor() {
     }
 
     submit(msg: SummaryMsg) {
-        this.msgs.push(msg);
+        this.msgList.push(msg);
     }
 
 
@@ -308,7 +308,7 @@ export class ClassSummary {
      * @param cls The class for which the ClassSummary is being retrieved or created.
      * @return The existing or newly created ClassSummary instance associated with the provided class and context.
      */
-    static getOrNew(ctx: ClassCtx, cls: ArkClass) {
+    static getOrNew(ctx: ClassCtx, cls: ArkClass): ClassSummary {
         if (ctx.get(ClassSummary)) {
             return ctx.get(ClassSummary)!;
         }
@@ -349,13 +349,13 @@ export class MethodSummary {
     name: string = 'method summary';
     values: Map<Value, SummaryMsg[]> = new Map();
     stmts: Map<Stmt, SummaryMsg[]> = new Map();
-    msgs: SummaryMsg[] = [];
+    msgList: SummaryMsg[] = [];
 
     constructor() {
     }
 
     submit(msg: SummaryMsg) {
-        this.msgs.push(msg);
+        this.msgList.push(msg);
     }
 
     submitValue(value: Value, msg: SummaryMsg) {
