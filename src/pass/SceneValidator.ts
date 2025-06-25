@@ -64,7 +64,6 @@ export abstract class StmtValidator<S extends StmtTy> {
     }
 }
 
-
 /**
  * Abstract class representing a validator for values of a specific type.
  * Provides a mechanism to validate values and report the results through a summary reporter.
@@ -96,7 +95,6 @@ export abstract class ValueValidator<S extends ValueTy> {
         ArkValidatorRegistry.value(init);
     }
 }
-
 
 /**
  * The ArkValidatorRegistry class is responsible for managing and registering statement and value initializers
@@ -134,7 +132,6 @@ export class ArkValidatorRegistry extends Dispatcher {
     }
 }
 
-
 /**
  * Interface representing a summary reporter for logging messages with different severity levels.
  * Provides methods to log informational, warning, and error messages.
@@ -149,7 +146,6 @@ export interface SummaryReporter {
 
     error(msg: string): void;
 }
-
 
 /**
  * An abstract class that extends FilePass and provides a framework for validating files.
@@ -227,7 +223,6 @@ export abstract class MethodValidator extends MethodPass {
     }
 }
 
-
 /**
  * Represents a summary of a scene, containing metadata and associated file summaries.
  * The name property provides a default identifier for the scene summary.
@@ -257,7 +252,6 @@ export class FileSummary {
         this.msgList.push(msg);
     }
 
-
     /**
      * Retrieves an existing FileSummary instance from the given context or creates a new one if it does not exist.
      *
@@ -279,7 +273,6 @@ export class FileSummary {
     }
 }
 
-
 /**
  * Represents a summary of a class, containing its name, associated methods, and messages.
  * Provides functionality to submit messages and retrieve or create a ClassSummary instance.
@@ -297,7 +290,6 @@ export class ClassSummary {
     submit(msg: SummaryMsg) {
         this.msgList.push(msg);
     }
-
 
     /**
      * Retrieves an existing ClassSummary instance from the given context or creates a new one if it does not exist.
@@ -322,7 +314,6 @@ export class ClassSummary {
     }
 }
 
-
 /**
  * Represents a summary message with an associated level and content.
  * The SummaryMsg class is used to encapsulate messages that have a specific severity or importance level.
@@ -338,7 +329,6 @@ export class SummaryMsg {
         this.msg = msg;
     }
 }
-
 
 /**
  * Represents a summary of a method, capturing various messages and associations with values and statements.
@@ -373,7 +363,6 @@ export class MethodSummary {
         this.stmts.get(stmt)!.push(msg);
     }
 
-
     /**
      * Retrieves an existing MethodSummary from the context or creates a new one if it does not exist.
      *
@@ -394,7 +383,6 @@ export class MethodSummary {
         return summary;
     }
 }
-
 
 /**
  * The SceneValidator class is responsible for validating a given scene by leveraging the ScenePassMgr.
