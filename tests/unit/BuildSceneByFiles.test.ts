@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 import { assert, describe, it } from 'vitest';
 import { SceneConfig } from '../../src/Config';
 import { Scene } from '../../src/Scene';
+import { ArkClass } from '../../src';
 
 describe('build scene by files Test', () => {
 
@@ -47,6 +48,13 @@ describe('build scene by files Test', () => {
         assert.equal(scene.getOverRides().get('@model2'), 'file:./model2');
         assert.equal(JSON.stringify(scene.getGlobalModule2PathMapping()!), JSON.stringify(globalModule2PathMapping_expect_result));
         assert.equal(scene.getbaseUrl(), './');
+    });
+
+    it('check import', () => {
+        const arkFile = scene.getFiles().find(f => f.getName().endsWith('Libbase.ets'));
+        assert.isDefined(arkFile);
+        const arkExport = arkFile?.getImportInfoBy('Model2')?.getLazyExportInfo()?.getArkExport();
+        assert.isTrue(arkExport instanceof ArkClass);
     });
 
 });
