@@ -37,7 +37,7 @@ export class SdkPlugin implements IPagPlugin {
     cg: CallGraph;
     // record the SDK API param, and create fake Values
     private sdkMethodReturnValueMap: Map<ArkMethod, Map<ContextID, ArkNewExpr>>;
-    private methodParamValueMap: Map<FuncID, Map<number, Value>>;
+    private methodParamValueMap: Map<FuncID, Value[]>;
     private fakeSdkMethodParamDeclaringStmt: Stmt;
 
     constructor(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
@@ -54,8 +54,7 @@ export class SdkPlugin implements IPagPlugin {
     }
 
     canHandle(cs: ICallSite, cgNode: CallGraphNode): boolean {
-        let calleeFuncID = cs.getCalleeFuncID()!;
-        let methodType = getBuiltInApiType(this.cg.getArkMethodByFuncID(calleeFuncID)?.getSignature()!);
+        let methodType = getBuiltInApiType(cgNode.getMethod());
         return cgNode.isSdkMethod() && (methodType === BuiltApiType.NotBuiltIn);
     }
 
@@ -85,25 +84,24 @@ export class SdkPlugin implements IPagPlugin {
     /**
      * will not create real funcPag, only create param values
      */
-    private buildSDKFuncPag(funcID: FuncID, sdkMethod: ArkMethod): void {
-        let paramArr: Map<number, Value> = this.createDummyParamValue(sdkMethod);
+    public buildSDKFuncPag(funcID: FuncID, sdkMethod: ArkMethod): void {
+        let paramArr: Value[] = this.createDummyParamValue(sdkMethod);
 
         this.methodParamValueMap.set(funcID, paramArr);
     }
 
-    private createDummyParamValue(sdkMethod: ArkMethod): Map<number, Value> {
+    private createDummyParamValue(sdkMethod: ArkMethod): Value[] {
         let args = sdkMethod.getParameters();
+        let paramArr: Value[] = [];
         if (!args) {
-            return new Map();
+            return paramArr;
         }
 
-        let paramArr: Map<number, Value> = new Map();
-
         // Local
-        args.forEach((arg, index) => {
+        args.forEach((arg) => {
             let argInstance: Local = new Local(arg.getName(), arg.getType());
             argInstance.setDeclaringStmt(this.fakeSdkMethodParamDeclaringStmt);
-            paramArr.set(index, argInstance);
+            paramArr.push(argInstance);
         });
 
         return paramArr;
@@ -144,7 +142,7 @@ export class SdkPlugin implements IPagPlugin {
         let argNum = cs.args?.length;
 
         if (!argNum) {
-            return ;
+            return;
         }
 
         // add args to parameters edges
@@ -153,7 +151,7 @@ export class SdkPlugin implements IPagPlugin {
             let paramValue;
 
             if (arg instanceof Local && arg.getType() instanceof FunctionType) {
-                paramValue = this.methodParamValueMap.get(funcID)!.get(i);
+                paramValue = this.methodParamValueMap.get(funcID)![i];
             } else {
                 continue;
             }
@@ -192,5 +190,10 @@ export class SdkPlugin implements IPagPlugin {
         }
 
         return;
+    }
+
+    public getParamValues(method: ArkMethod): Value[] | undefined {
+        const funcID = this.cg.getCallGraphNodeByMethod(method.getSignature()).getID();
+        return this.methodParamValueMap.get(funcID);
     }
 }

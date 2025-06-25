@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { CallGraph, CallGraphNode } from "../../model/CallGraph";
+import { CallGraph, CallGraphNode, FuncID } from "../../model/CallGraph";
 import { ICallSite } from "../../model/CallSite";
 import { Pag } from "../Pag";
 import { PagBuilder } from "../PagBuilder";
@@ -23,6 +23,8 @@ import { ContainerPlugin } from "./ContainerPlugin";
 import { FunctionPlugin } from "./FunctionPlugin";
 import { SdkPlugin } from "./SdkPlugin";
 import { StoragePlugin } from "./StoragePlugin";
+import { ArkMethod } from "../../../core/model/ArkMethod";
+import { Value } from "../../../core/base/Value";
 
 // plugins/PluginManager.ts
 export class PluginManager {
@@ -58,5 +60,20 @@ export class PluginManager {
         }
 
         return { handled: false, srcNodes: srcNodes };
+    }
+
+    // sdk plugin interfaces
+    public processSDKFuncPag(funcID: FuncID, method: ArkMethod): { handled: boolean } {
+        const plugin: SdkPlugin = this.plugins.find(p => p.getName() === 'SdkPlugin') as SdkPlugin;
+        if (plugin) {
+            plugin.buildSDKFuncPag(funcID, method);
+            return { handled: true };
+        }
+
+        return { handled: false };
+    }
+
+    public getSDKParamValue(method: ArkMethod): Value[] | undefined {
+        return (this.plugins.find(p => p.getName() === 'SdkPlugin') as SdkPlugin).getParamValues(method);
     }
 }

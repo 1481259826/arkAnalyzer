@@ -192,8 +192,8 @@ export class PagBuilder {
 
         let cfg = arkMethod.getCfg();
         if (!cfg) {
-            // entry cannot be method with no cfg
-            throw new Error(`Can not find CFG for method: ${arkMethod.getSignature().toString()}`);
+            // build as sdk method
+            return this.pluginManager.processSDKFuncPag(funcID, arkMethod).handled;
         }
 
         logger.trace(`[build FuncPag] ${arkMethod.getSignature().toString()}`);
@@ -825,7 +825,7 @@ export class PagBuilder {
             callerCid = ptNode.getOriginCid() ?? callerCid;
         }
 
-        srcNodes.push(...this.addCallParamPagEdge(calleeMethod, realArgs, cs.callStmt, callerCid, calleeCid, argsOffset));
+        srcNodes.push(...this.addCallParamPagEdge(calleeMethod, realArgs, cs, callerCid, calleeCid, argsOffset));
         srcNodes.push(...this.addCallReturnPagEdge(calleeMethod, cs.callStmt, callerCid, calleeCid));
 
         return srcNodes;
@@ -834,12 +834,15 @@ export class PagBuilder {
     /**
      * only process the param PAG edge for invoke stmt
      */
-    public addCallParamPagEdge(calleeMethod: ArkMethod, args: Value[], callStmt: Stmt, callerCid: ContextID, calleeCid: ContextID, offset: number): NodeID[] {
-        let params = calleeMethod
-            .getCfg()!
-            .getStmts()
-            .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
-            .map(stmt => (stmt as ArkAssignStmt).getRightOp());
+    public addCallParamPagEdge(calleeMethod: ArkMethod, args: Value[], cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, offset: number): NodeID[] {
+        let callStmt = cs.callStmt;
+
+        const params = this.pluginManager.getSDKParamValue(calleeMethod) ??
+            calleeMethod
+                .getCfg()!
+                .getStmts()
+                .filter(stmt => stmt instanceof ArkAssignStmt && stmt.getRightOp() instanceof ArkParameterRef)
+                .map(stmt => (stmt as ArkAssignStmt).getRightOp());
 
         let srcNodes: NodeID[] = [];
 

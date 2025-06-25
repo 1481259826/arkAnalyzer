@@ -471,6 +471,12 @@ export class PagArrayNode extends PagNode {
     }
 }
 
+export class PagConstantNode extends PagNode {
+    constructor(id: NodeID, cid: ContextID | undefined = undefined, constant: Constant, stmt?: Stmt) {
+        super(id, cid, constant, PagNodeKind.LocalVar, stmt);
+    }
+}
+
 /**
  * below is heapObj like Node
  */
@@ -786,6 +792,8 @@ export class Pag extends BaseExplicitGraph {
             pagNode = new PagParamNode(id, cid, value, stmt);
         } else if (value instanceof ArkThisRef) {
             pagNode = new PagThisRefNode(id, cid, value);
+        } else if (value instanceof Constant) {
+            pagNode = new PagConstantNode(id, cid, value, stmt);
         } else {
             throw new Error('unsupported Value type ' + value.getType().toString());
         }
@@ -930,6 +938,7 @@ export class Pag extends BaseExplicitGraph {
 
         return ndId;
     }
+
     public getOrNewNode(cid: ContextID, v: PagNodeType, s?: Stmt): PagNode {
         let nodeId;
         // Value

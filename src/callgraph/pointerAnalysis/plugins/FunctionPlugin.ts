@@ -109,7 +109,7 @@ export class FunctionPlugin implements IPagPlugin {
         srcNodes: NodeID[],
     ): void {
         this.pagBuilder.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, staticCS.calleeFuncID));
-        srcNodes.push(...this.pagBuilder.addCallParamPagEdge(realCallee, staticCS.args!, staticCS.callStmt, cid, calleeCid, 1));
+        srcNodes.push(...this.pagBuilder.addCallParamPagEdge(realCallee, staticCS.args!, staticCS, cid, calleeCid, 1));
         this.addThisEdge(staticCS, cid, realCallee, srcNodes, calleeCid);
     }
 
@@ -126,7 +126,7 @@ export class FunctionPlugin implements IPagPlugin {
             throw new Error('Cannot get caller method');
         }
         let argsRealValues = this.transferArrayValues(staticCS.args![1]);
-        srcNodes.push(...this.pagBuilder.addCallParamPagEdge(realCallee, argsRealValues, staticCS.callStmt, cid, calleeCid, 0));
+        srcNodes.push(...this.pagBuilder.addCallParamPagEdge(realCallee, argsRealValues, staticCS, cid, calleeCid, 0));
         this.addThisEdge(staticCS, cid, realCallee, srcNodes, calleeCid);
     }
 
