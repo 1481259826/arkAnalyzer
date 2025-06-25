@@ -15,8 +15,8 @@
 
 import { assert, describe, it } from 'vitest';
 import path from 'path';
-import { SceneConfig } from '../../src/Config';
-import { Scene } from '../../src/Scene';
+import { SceneConfig } from '../../src';
+import { Scene } from '../../src';
 import ConsoleLogger, { LOG_MODULE_TYPE } from '../../src/utils/logger';
 import { ArkAssignStmt, ArkInvokeStmt, ArkMethod, Constant, Local, LOG_LEVEL } from '../../src';
 import Logger from '../../src/utils/logger';
@@ -53,7 +53,7 @@ export class InvokeValidator extends StmtValidator<ArkInvokeStmt> {
     }
 
     static {
-        InvokeValidator.register([ArkInvokeStmt, (v: ArkInvokeStmt, ctx: MethodCtx, mtd: ArkMethod) => {
+        InvokeValidator.register([ArkInvokeStmt, (v: ArkInvokeStmt, ctx: MethodCtx, mtd: ArkMethod): void => {
             InvokeValidator.INSTANCE.run(v, ctx, mtd);
         }]);
     }
