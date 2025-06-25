@@ -34,9 +34,8 @@ const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Test');
 export class ConstValidator extends ValueValidator<Constant> {
     private static readonly INSTANCE = new ConstValidator();
 
-    validate(value: Constant, ctx: SummaryReporter): boolean {
+    validate(value: Constant, ctx: SummaryReporter): void {
         ctx.info(`constant ${value}`);
-        return false;
     }
 
     static {
@@ -49,9 +48,8 @@ export class ConstValidator extends ValueValidator<Constant> {
 export class InvokeValidator extends StmtValidator<ArkInvokeStmt> {
     private static readonly INSTANCE = new InvokeValidator();
 
-    validate(value: ArkInvokeStmt, ctx: SummaryReporter): boolean {
+    validate(value: ArkInvokeStmt, ctx: SummaryReporter): void {
         ctx.info(`invoke ${value}`);
-        return false;
     }
 
     static {
@@ -67,7 +65,7 @@ export class AssignValidator extends StmtValidator<ArkAssignStmt> {
     validate(value: ArkAssignStmt, ctx: SummaryReporter) {
         let left = value.getLeftOp();
         if (!(left instanceof Local)) {
-            ctx.info(`must assign to local`);
+            ctx.error(`must assign to local`);
         }
     }
 
