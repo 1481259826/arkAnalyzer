@@ -135,7 +135,6 @@ const VALUES = [
     ArkNewExpr,
     ArkPtrInvokeExpr,
     ArkStaticInvokeExpr,
-    ArkStaticInvokeExpr,
     ArkInstanceInvokeExpr,
     AbstractInvokeExpr,
     AbstractExpr,
