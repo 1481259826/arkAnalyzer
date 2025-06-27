@@ -21,7 +21,7 @@ let myClass = class {
         this.name = name;
     }
 
-    sayHello() {
+    sayHello(): void {
         console.log(`Hello, ${this.name}!`);
         this.set.forEach(e => {
             for (let i = 0; i < 10; i++) {
@@ -30,7 +30,7 @@ let myClass = class {
         });
     }
 
-    assign() {
+    assign(): void {
         let a: unknown = 'string';
         (a as number) = 1;
         console.log(`number, ${a}!`);

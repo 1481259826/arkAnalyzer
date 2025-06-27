@@ -23,7 +23,7 @@ export class LocalValidator extends ValueValidator<Local> {
     private static readonly INSTANCE = new LocalValidator();
 
     validate(value: Local, ctx: SummaryReporter): void {
-        if (value.getName().startsWith(NAME_PREFIX) &&!value.getDeclaringStmt()) {
+        if (value.getName().startsWith(NAME_PREFIX) && !value.getDeclaringStmt()) {
             ctx.info(`should have declaring stmt`);
         }
     }

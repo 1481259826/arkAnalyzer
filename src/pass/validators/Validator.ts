@@ -375,25 +375,38 @@ export class SceneSummary {
     name: string = 'validate summary';
     files: Map<ArkFile, FileSummary> = new Map();
 
+    /**
+     * Checks if the current instance is in an acceptable state.
+     * @return {boolean} - Returns true if the files collection is empty, indicating an acceptable state; otherwise, false.
+     */
     isOk(): boolean {
         return this.files.size === 0;
     }
 
-    dump2log(level: SummaryLevel = SummaryLevel.info) {
+    /**
+     * Dumps the scene summary and details to the log based on the specified level.
+     * @param {SummaryLevel} [level=SummaryLevel.info] - The minimum level of messages to include in the log. Defaults to SummaryLevel.info.
+     * @return {void}
+     */
+    dump2log(level: SummaryLevel = SummaryLevel.info): void {
         logger.info(`scene summary`);
         for (const [file, fs] of this.files) {
             logger.info(`file ${file.getName()} msg ${JSON.stringify(fs.msgList.filter((v) => v.level >= level))}`);
             for (const [cls, cs] of fs.classes) {
-                logger.info(`class ${cls.getName()} msg ${JSON.stringify(cs.msgList.filter((v) => v.level >= level))}`);
-                for (const [mtd, ms] of cs.methods) {
-                    logger.info(`method ${mtd.getName()} msg ${JSON.stringify(ms.msgList.filter((v) => v.level >= level))}`);
-                    for (let [s, ss] of ms.stmts) {
-                        logger.info(`stmt ${s} ${JSON.stringify(ss.filter((v) => v.level >= level))}`);
-                    }
-                    for (let [v, vs] of ms.values) {
-                        logger.info(`value ${v} ${JSON.stringify(vs.filter((v) => v.level >= level))}`);
-                    }
-                }
+                this.classDump(cls, cs, level);
+            }
+        }
+    }
+
+    private classDump(cls: ArkClass, cs: ClassSummary, level: SummaryLevel = SummaryLevel.info): void {
+        logger.info(`class ${cls.getName()} msg ${JSON.stringify(cs.msgList.filter((v) => v.level >= level))}`);
+        for (const [mtd, ms] of cs.methods) {
+            logger.info(`method ${mtd.getName()} msg ${JSON.stringify(ms.msgList.filter((v) => v.level >= level))}`);
+            for (let [s, ss] of ms.stmts) {
+                logger.info(`stmt ${s} ${JSON.stringify(ss.filter((v) => v.level >= level))}`);
+            }
+            for (let [v, vs] of ms.values) {
+                logger.info(`value ${v} ${JSON.stringify(vs.filter((v) => v.level >= level))}`);
             }
         }
     }
