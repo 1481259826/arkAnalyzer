@@ -1745,8 +1745,8 @@ describe('Object Type Test', () => {
     const classA = arkFile?.getClassWithName('ClassA');
     const defaultClass = arkFile?.getDefaultClass();
     const objectTypeStr = '@ES2015/BuiltinClass: Object';
-    const objectConstructorTypeStr = '@built-in/node_modules/ohos-typescript/lib/lib.es2015.core.d.ts: ObjectConstructor';
-    const builtInObjectTypeStr = '@built-in/node_modules/ohos-typescript/lib/lib.es5.d.ts: Object';
+    const objectConstructorTypeStr = '@built-in/lib.es2015.core.d.ts: ObjectConstructor';
+    const builtInObjectTypeStr = '@built-in/lib.es5.d.ts: Object';
 
     it('case1: whole ir', () => {
         assert.isNotNull(arkFile);
@@ -1814,14 +1814,14 @@ describe('Object Type Test', () => {
         assert.equal(((stmtsDefault![6] as ArkAssignStmt).getRightOp() as ArkStaticFieldRef).getFieldSignature().toString(), `${objectTypeStr}.[static]prototype`);
         assert.isTrue(stmtsDefault![7] instanceof ArkAssignStmt);
         assert.isTrue((stmtsDefault![7] as ArkAssignStmt).getRightOp() instanceof ArkStaticInvokeExpr);
-        assert.equal(((stmtsDefault![7] as ArkAssignStmt).getRightOp() as ArkStaticInvokeExpr).getMethodSignature().toString(), `@built-in/node_modules/ohos-typescript/lib/lib.es5.d.ts: ObjectConstructor.create(any)`);
+        assert.equal(((stmtsDefault![7] as ArkAssignStmt).getRightOp() as ArkStaticInvokeExpr).getMethodSignature().toString(), `@built-in/lib.es5.d.ts: ObjectConstructor.create(any)`);
 
         const stmtsFoo = defaultClass?.getMethodWithName('foo')?.getBody()?.getCfg().getStmts();
         assert.isDefined(stmtsFoo);
         assert.isAtLeast(stmtsFoo!.length, 3);
         assert.isTrue(stmtsFoo![2] instanceof ArkInvokeStmt);
         assert.isTrue((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() instanceof ArkStaticInvokeExpr);
-        assert.equal(((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectConstructorTypeStr}.keys(@built-in/node_modules/ohos-typescript/lib/lib.es2015.core.d.ts: %AC3)`);
+        assert.equal(((stmtsFoo![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectConstructorTypeStr}.keys(@built-in/lib.es2015.core.d.ts: %AC3)`);
 
         assert.isTrue(stmtsFoo![3] instanceof ArkInvokeStmt);
         assert.isTrue((stmtsFoo![3] as ArkInvokeStmt).getInvokeExpr() instanceof ArkInstanceInvokeExpr);
@@ -1838,7 +1838,7 @@ describe('Object Type Test', () => {
         assert.equal(((stmtsKeys![1] as ArkAssignStmt).getRightOp() as ArkInstanceFieldRef).getFieldSignature().getType().toString(), objectTypeStr);
         assert.isTrue(stmtsKeys![2] instanceof ArkInvokeStmt);
         assert.isTrue((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() instanceof ArkStaticInvokeExpr);
-        assert.equal(((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectConstructorTypeStr}.keys(@built-in/node_modules/ohos-typescript/lib/lib.es2015.core.d.ts: %AC3)`);
+        assert.equal(((stmtsKeys![2] as ArkInvokeStmt).getInvokeExpr() as ArkStaticInvokeExpr).getMethodSignature().toString(), `${objectConstructorTypeStr}.keys(@built-in/lib.es2015.core.d.ts: %AC3)`);
 
         const stmtshasA = classA?.getMethodWithName('hasA')?.getBody()?.getCfg().getStmts();
         assert.isDefined(stmtshasA);

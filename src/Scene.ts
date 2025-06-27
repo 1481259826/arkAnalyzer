@@ -208,7 +208,7 @@ export class Scene {
 
         // handle sdks
         if (this.options.enableBuiltIn && !sceneConfig.getSdksObj().find(sdk => sdk.name === SdkUtils.BUILT_IN_NAME)) {
-            sceneConfig.getSdksObj().unshift(SdkUtils.BUILT_IN_SDK);
+            sceneConfig.getSdksObj().unshift(SdkUtils.getBuiltInSdk());
         }
         sceneConfig.getSdksObj()?.forEach(sdk => {
             if (!sdk.moduleName) {
@@ -604,7 +604,9 @@ export class Scene {
         let allFiles;
         if (sdkName === SdkUtils.BUILT_IN_NAME) {
             allFiles = SdkUtils.fetchBuiltInFiles(sdkPath);
-            this.getOptions().sdkGlobalFolders?.push(sdkPath || SdkUtils.BUILT_IN_SDK.path);
+            if (allFiles.length > 0) {
+                this.getOptions().sdkGlobalFolders?.push(sdkPath);
+            }
         } else {
             allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         }

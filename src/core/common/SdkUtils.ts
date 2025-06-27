@@ -43,11 +43,6 @@ export class SdkUtils {
     private static sdkImportMap: Map<string, ArkFile> = new Map<string, ArkFile>();
     public static BUILT_IN_NAME = 'built-in';
     private static BUILT_IN_PATH = 'node_modules/ohos-typescript/lib';
-    public static BUILT_IN_SDK: Sdk = {
-        moduleName: '',
-        name: `${SdkUtils.BUILT_IN_NAME}`,
-        path: ''
-    };
 
     public static setEsVersion(buildProfile: any): void {
         const accessChain = 'buildOption.arkOptions.tscConfig.targetESVersion';
@@ -57,19 +52,25 @@ export class SdkUtils {
         }
     }
 
-    public static fetchBuiltInFiles(builtInPath: string): string[] {
-        if (!builtInPath) {
-            try {
-                // If arkanalyzer is used as dependency by other project, the base directory should be the module path.
-                const moduleRoot = path.dirname(path.dirname(require.resolve('arkanalyzer')));
-                builtInPath = path.join(moduleRoot, this.BUILT_IN_PATH);
-                logger.debug(`arkanalyzer is used as dependency, so using builtin sdk file in ${builtInPath}.`);
-            } catch {
-                builtInPath = path.resolve(this.BUILT_IN_PATH);
-                logger.debug(`use builtin sdk file in ${builtInPath}.`);
-            }
-            this.BUILT_IN_SDK.path = builtInPath;
+    public static getBuiltInSdk(): Sdk {
+        let builtInPath;
+        try {
+            // If arkanalyzer is used as dependency by other project, the base directory should be the module path.
+            const moduleRoot = path.dirname(path.dirname(require.resolve('arkanalyzer')));
+            builtInPath = path.join(moduleRoot, this.BUILT_IN_PATH);
+            logger.debug(`arkanalyzer is used as dependency, so using builtin sdk file in ${builtInPath}.`);
+        } catch {
+            builtInPath = path.resolve(this.BUILT_IN_PATH);
+            logger.debug(`use builtin sdk file in ${builtInPath}.`);
         }
+        return {
+            moduleName: '',
+            name: this.BUILT_IN_NAME,
+            path: builtInPath
+        }
+    }
+
+    public static fetchBuiltInFiles(builtInPath: string): string[] {
         const filePath = path.resolve(builtInPath, this.esVersionMap.get(this.esVersion) ?? '');
         if (!fs.existsSync(filePath)) {
             logger.error(`built in directory ${filePath} is not exist, please check!`);
