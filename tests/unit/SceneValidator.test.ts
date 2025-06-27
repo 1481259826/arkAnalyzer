@@ -18,85 +18,26 @@ import path from 'path';
 import { SceneConfig } from '../../src';
 import { Scene } from '../../src';
 import ConsoleLogger, { LOG_MODULE_TYPE } from '../../src/utils/logger';
-import { ArkAssignStmt, ArkInvokeStmt, ArkMethod, Constant, Local, LOG_LEVEL } from '../../src';
+import { LOG_LEVEL } from '../../src';
 import Logger from '../../src/utils/logger';
 import {
     SceneValidator,
-    StmtValidator, SummaryReporter,
-    ValueValidator,
-} from '../../src/pass/SceneValidator';
-import { MethodCtx } from '../../src/pass/Pass';
+} from '../../src/pass/validators/SceneValidator';
 
 ConsoleLogger.configure('', LOG_LEVEL.INFO, LOG_LEVEL.INFO, true);
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Test');
 
-export class ConstValidator extends ValueValidator<Constant> {
-    private static readonly INSTANCE = new ConstValidator();
-
-    validate(value: Constant, ctx: SummaryReporter): void {
-        ctx.info(`constant ${value}`);
-    }
-
-    static {
-        ConstValidator.register([Constant, (v: Constant, ctx: MethodCtx, mtd: ArkMethod): void => {
-            ConstValidator.INSTANCE.run(v, ctx, mtd);
-        }]);
-    }
-}
-
-export class InvokeValidator extends StmtValidator<ArkInvokeStmt> {
-    private static readonly INSTANCE = new InvokeValidator();
-
-    validate(value: ArkInvokeStmt, ctx: SummaryReporter): void {
-        ctx.info(`invoke ${value}`);
-    }
-
-    static {
-        InvokeValidator.register([ArkInvokeStmt, (v: ArkInvokeStmt, ctx: MethodCtx, mtd: ArkMethod): void => {
-            InvokeValidator.INSTANCE.run(v, ctx, mtd);
-        }]);
-    }
-}
-
-export class AssignValidator extends StmtValidator<ArkAssignStmt> {
-    private static readonly INSTANCE = new AssignValidator();
-
-    validate(value: ArkAssignStmt, ctx: SummaryReporter): void {
-        let left = value.getLeftOp();
-        if (!(left instanceof Local)) {
-            ctx.error(`must assign to local`);
-        }
-    }
-
-    static {
-        AssignValidator.register([ArkAssignStmt, (v: ArkAssignStmt, ctx: MethodCtx, mtd: ArkMethod): void => {
-            AssignValidator.INSTANCE.run(v, ctx, mtd);
-        }]);
-    }
-}
-
 describe('Anonymous Test', () => {
     let config: SceneConfig = new SceneConfig();
-    config.buildFromProjectDir(path.join(__dirname, '../resources/anonymous'));
+    config.buildFromProjectDir(path.join(__dirname, '../resources/validator'));
     let projectScene: Scene = new Scene();
     projectScene.buildSceneFromProjectDir(config);
     it('iter inst', () => {
         let mgr = new SceneValidator();
         let summary = mgr.validate(projectScene);
-        logger.info(`validated ${JSON.stringify(summary)}`);
-        for (const [file, fs] of summary.files) {
-            logger.info(`validated file ${JSON.stringify(file.getName())}`);
-            for (const [cls, cs] of fs.classes) {
-                logger.info(`validated class ${JSON.stringify(cls.getName())}`);
-                for (const [mtd, ms] of cs.methods) {
-                    logger.info(`validated method ${JSON.stringify(mtd.getName())}`);
-                    logger.info(`validated stmt ${ms.stmts.size}`);
-                    logger.info(`validated value ${ms.values.size}`);
-                }
-            }
-        }
-        assert.equal(projectScene.getMethods().length, 6);
+        logger.info('summary', projectScene.getProjectName());
+        summary.dump2log();
+        assert.equal(projectScene.getMethods().length, 7);
     });
-
 });

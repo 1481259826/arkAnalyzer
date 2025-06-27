@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { ArkMethod } from '../core/model/ArkMethod';
 import { Context, CtxArg } from './Context';
 import { SceneCtx } from './ScenePassMgr';
-import { ArkFile } from '../core/model/ArkFile';
-import { ArkClass } from '../core/model/ArkClass';
+import type { ArkFile } from '../core/model/ArkFile';
+import type { ArkClass } from '../core/model/ArkClass';
+import type { ArkMethod } from '../core/model/ArkMethod';
 
 /**
     fallthrough actions

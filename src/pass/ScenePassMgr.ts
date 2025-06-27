@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-import { Scene } from '../Scene';
 import { AnyKey, Context, CtxArg, UpperRoot } from './Context';
 import Logger, { LOG_MODULE_TYPE } from '../utils/logger';
 import { Dispatcher } from './Dispatcher';
 import { ClassCtx, ClassPass, FallAction, FileCtx, FilePass, MethodCtx, MethodPass } from './Pass';
-import { ArkFile } from '../core/model/ArkFile';
-import { ArkClass } from '../core/model/ArkClass';
-import { ArkMethod } from '../core/model/ArkMethod';
+import type { Scene } from '../Scene';
+import type { ArkFile } from '../core/model/ArkFile';
+import type { ArkClass } from '../core/model/ArkClass';
+import type { ArkMethod } from '../core/model/ArkMethod';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SceneMgr');
 
@@ -39,7 +39,6 @@ export class SceneCtx extends Context<UpperRoot, CtxArg> {
         return this;
     }
 }
-
 
 /**
  * Represents the properties required for configuring various passes in a system.

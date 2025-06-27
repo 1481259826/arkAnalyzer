@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Value } from '../core/base/Value';
+import type { Value } from '../core/base/Value';
 import {
     ArkAliasTypeDefineStmt, ArkAssignStmt,
     ArkIfStmt,
@@ -41,7 +41,7 @@ import {
     StringConstant, UndefinedConstant,
 } from '../core/base/Constant';
 import Logger, { LOG_MODULE_TYPE } from '../utils/logger';
-import { ArkMethod } from '../core/model/ArkMethod';
+import type { ArkMethod } from '../core/model/ArkMethod';
 import { Local } from '../core/base/Local';
 import {
     AbstractFieldRef,
@@ -52,7 +52,6 @@ import {
 } from '../core/base/Ref';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Inst');
-
 
 /**
  * Represents a function type that processes a value and context, optionally returning a FallAction to control flow.
