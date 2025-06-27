@@ -59,3 +59,10 @@ class ClassWithParamProperty {
         console.log('this is constructor method');
     }
 }
+
+export class O {
+    o: string = 'o';
+
+    constructor() {
+    }
+}

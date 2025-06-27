@@ -606,7 +606,7 @@ class ExtendedAdder extends Adder {
     label0:
       a = parameter0: number
       this = this: @save/basic.ts: ExtendedAdder
-      staticinvoke <@save/basic.ts: ExtendedAdder.super(number)>(a)
+      instanceinvoke this.<@save/basic.ts: Adder.constructor(number)>(a)
       instanceinvoke this.<@save/basic.ts: ExtendedAdder.%instInit()>()
       return this
   }
@@ -704,7 +704,7 @@ export class SecurityDoor extends Door implements Alarm, Alarm2 {
       x = parameter0: number
       y = parameter1: string
       this = this: @save/basic.ts: SecurityDoor
-      staticinvoke <@save/basic.ts: Door.super()>()
+      instanceinvoke this.<@save/basic.ts: Door.constructor()>()
       instanceinvoke this.<@save/basic.ts: SecurityDoor.%instInit()>()
       this.<@save/basic.ts: SecurityDoor.x> = x
       this.<@save/basic.ts: SecurityDoor.y> = y

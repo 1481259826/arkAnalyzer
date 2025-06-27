@@ -255,6 +255,14 @@ export class TypeInference {
             ) {
                 stmt.replaceUse(expr, newExpr);
             }
+            // After infer the invoke method, it should replace the super.foo() to this.foo() while the foo is with super class as declaring class.
+            if (newExpr instanceof ArkInstanceInvokeExpr && newExpr.getBase().getName() === SUPER_NAME) {
+                const thisLocal = arkMethod.getBody()?.getLocals().get(THIS_NAME);
+                if (thisLocal) {
+                    newExpr.setBase(thisLocal);
+                    thisLocal.addUsedStmt(stmt);
+                }
+            }
         }
         if (stmt instanceof ArkAliasTypeDefineStmt && this.isUnclearType(stmt.getAliasType().getOriginalType())) {
             stmt.getAliasType().setOriginalType(stmt.getAliasTypeExpr().getType());

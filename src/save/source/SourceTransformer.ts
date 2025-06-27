@@ -34,7 +34,7 @@ import {
 import { Local } from '../../core/base/Local';
 import { ArkClass, ClassCategory } from '../../core/model/ArkClass';
 import { ArkMethod } from '../../core/model/ArkMethod';
-import { ClassSignature, MethodSignature } from '../../core/model/ArkSignature';
+import { ClassSignature, classSignatureCompare, MethodSignature } from '../../core/model/ArkSignature';
 import { ArkCodeBuffer } from '../ArkStream';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 import { PrinterUtils } from '../base/PrinterUtils';
@@ -60,12 +60,7 @@ import { SourceClass } from './SourceClass';
 import { Value } from '../../core/base/Value';
 import { AbstractRef, ArkArrayRef, ArkInstanceFieldRef, ArkStaticFieldRef, ArkThisRef } from '../../core/base/Ref';
 import { ArkFile } from '../../core/model/ArkFile';
-import {
-    COMPONENT_CREATE_FUNCTION,
-    COMPONENT_CUSTOMVIEW,
-    COMPONENT_IF,
-    COMPONENT_POP_FUNCTION
-} from '../../core/common/EtsConst';
+import { COMPONENT_CREATE_FUNCTION, COMPONENT_CUSTOMVIEW, COMPONENT_IF, COMPONENT_POP_FUNCTION } from '../../core/common/EtsConst';
 import { INSTANCE_INIT_METHOD_NAME } from '../../core/common/Const';
 import { ArkAssignStmt } from '../../core/base/Stmt';
 import { ArkNamespace } from '../../core/model/ArkNamespace';
@@ -74,7 +69,7 @@ import { ArkBaseModel } from '../../core/model/ArkBaseModel';
 import { ArkField } from '../../core/model/ArkField';
 import { ExportInfo } from '../../core/model/ArkExport';
 import { ImportInfo } from '../../core/model/ArkImport';
-import { BIGINT_KEYWORD, SUPER_NAME } from '../../core/common/TSConst';
+import { BIGINT_KEYWORD, CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../core/common/TSConst';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'SourceTransformer');
 
@@ -126,7 +121,21 @@ export class SourceTransformer {
             return `.${methodName}${genericCode}(${args.join(', ')})`;
         }
 
-        return `${this.valueToString(invokeExpr.getBase())}.${methodName}${genericCode}(${args.join(', ')})`;
+        const base = invokeExpr.getBase();
+        if (base.getName() === THIS_NAME) {
+            if (methodName === CONSTRUCTOR_NAME) {
+                return `super(${args.join(', ')})`;
+            }
+            // If base type is not match the method declaring class, here take it as super.foo() even though the source code may be this.foo().
+            // Because it can not distinguish exactly whether it's this.foo() or super.foo() when foo is only defined in super class.
+            const baseType = base.getType();
+            if (baseType instanceof ClassType) {
+                if (!classSignatureCompare(baseType.getClassSignature(), invokeExpr.getMethodSignature().getDeclaringClassSignature())) {
+                    return `super.${methodName}${genericCode}(${args.join(', ')})`;
+                }
+            }
+        }
+        return `${this.valueToString(base)}.${methodName}${genericCode}(${args.join(', ')})`;
     }
 
     private transBuilderMethod(className: string, methodName: string, args: string[], invokeExpr: ArkStaticInvokeExpr, genericCode: string): string | null {

@@ -73,7 +73,8 @@ import {
     DEFAULT_ARK_CLASS_NAME, LEXICAL_ENV_NAME_PREFIX,
     NAME_DELIMITER,
     NAME_PREFIX,
-    UNKNOWN_CLASS_NAME
+    UNKNOWN_CLASS_NAME,
+    UNKNOWN_FILE_NAME
 } from './Const';
 import { ValueUtil } from './ValueUtil';
 import { ArkFile } from '../model/ArkFile';
@@ -223,6 +224,10 @@ export class IRInference {
 
         const baseType: Type = TypeInference.replaceAliasType(expr.getBase().getType());
         let methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
+        if (methodName === CONSTRUCTOR_NAME &&
+            expr.getMethodSignature().getDeclaringClassSignature().getDeclaringFileSignature().getFileName() !== UNKNOWN_FILE_NAME) {
+            return expr;
+        }
         if (methodName.startsWith(NAME_PREFIX)) {
             const declaringStmt = arkMethod.getBody()?.getLocals().get(methodName)?.getDeclaringStmt();
             if (declaringStmt instanceof ArkAssignStmt && declaringStmt.getRightOp() instanceof ArkInstanceFieldRef) {

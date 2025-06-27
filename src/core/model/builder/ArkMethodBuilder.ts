@@ -32,7 +32,7 @@ import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
 import { ArkParameterRef, ArkThisRef, ClosureFieldRef } from '../../base/Ref';
 import { ArkBody } from '../ArkBody';
 import { Cfg } from '../../graph/Cfg';
-import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../base/Expr';
+import { ArkInstanceInvokeExpr } from '../../base/Expr';
 import { MethodSignature, MethodSubSignature } from '../ArkSignature';
 import { ArkAssignStmt, ArkInvokeStmt, ArkReturnStmt, ArkReturnVoidStmt, Stmt } from '../../base/Stmt';
 import { BasicBlock } from '../../graph/BasicBlock';
@@ -376,9 +376,7 @@ export function buildDefaultConstructor(arkClass: ArkClass): boolean {
     basicBlock.addStmt(new ArkAssignStmt(thisLocal, new ArkThisRef(new ClassType(arkClass.getSignature()))));
 
     if (superConstructor) {
-        const superMethodSubSignature = new MethodSubSignature(SUPER_NAME, parameters, superConstructor.getReturnType());
-        const superMethodSignature = new MethodSignature(arkClass.getSignature(), superMethodSubSignature);
-        const superInvokeExpr = new ArkStaticInvokeExpr(superMethodSignature, parameterArgs);
+        const superInvokeExpr = new ArkInstanceInvokeExpr(thisLocal, superConstructor.getSignature(), parameterArgs);
         basicBlock.addStmt(new ArkInvokeStmt(superInvokeExpr));
     }
 
@@ -437,7 +435,7 @@ export function addInitInConstructor(constructor: ArkMethod): void {
     let index = 0;
     for (let i = 0; i < firstBlockStmts.length; i++) {
         const stmt = firstBlockStmts[i];
-        if (stmt instanceof ArkInvokeStmt && stmt.getInvokeExpr().getMethodSignature().getMethodSubSignature().getMethodName() === SUPER_NAME) {
+        if (stmt instanceof ArkInvokeStmt && stmt.getInvokeExpr().getMethodSignature().getMethodSubSignature().getMethodName() === CONSTRUCTOR_NAME) {
             index++;
             continue;
         }
@@ -511,5 +509,42 @@ export function checkAndUpdateMethod(method: ArkMethod, cls: ArkClass): void {
             method.setLineCol(presentMethod.getLineCol() as number);
         }
         return;
+    }
+}
+
+export function replaceSuper2Constructor(constructor: ArkMethod): void {
+    if (constructor.getName() !== CONSTRUCTOR_NAME) {
+        return;
+    }
+    const superClass = constructor.getDeclaringArkClass().getSuperClass();
+    if (superClass === null) {
+        return;
+    }
+    const superConstructor = superClass.getMethodWithName(CONSTRUCTOR_NAME);
+    if (superConstructor === null) {
+        logger.error(`Can not find constructor method for class ${superClass.getSignature().toString()}`);
+        return;
+    }
+    const startingBlock = constructor.getBody()?.getCfg().getStartingBlock();
+    if (startingBlock === undefined) {
+        return;
+    }
+    for (const stmt of startingBlock.getStmts()) {
+        if (stmt instanceof ArkInvokeStmt) {
+            let invokeExpr = stmt.getInvokeExpr();
+            const methodSignature = invokeExpr.getMethodSignature();
+            if (methodSignature.getMethodSubSignature().getMethodName() !== SUPER_NAME) {
+                continue;
+            }
+            let base = constructor.getBody()?.getLocals().get(THIS_NAME);
+            if (base === undefined) {
+                logger.error(`Can not find local this in constructor method ${constructor.getSignature().toString()}`);
+                return;
+            }
+
+            const newInvokeExpr = new ArkInstanceInvokeExpr(base, superConstructor.getSignature(), invokeExpr.getArgs());
+            stmt.replaceInvokeExpr(newInvokeExpr);
+            return;
+        }
     }
 }
