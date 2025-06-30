@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
-import { ArkInstanceInvokeExpr } from "../../../core/base/Expr";
-import { NodeID } from "../../../core/graph/GraphTraits";
-import { ArkMethod } from "../../../core/model/ArkMethod";
-import { CallGraph, CallGraphNode, FuncID, ICallSite } from "../../model/CallGraph";
-import { ContextID } from "../context/Context";
-import { Pag, PagEdgeKind, PagNewContainerExprNode, PagNode } from "../Pag";
-import { CSFuncID, PagBuilder } from "../PagBuilder";
-import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
-import { IPagPlugin } from "./IPagPlugin";
+import { ArkInstanceInvokeExpr } from '../../../core/base/Expr';
+import { NodeID } from '../../../core/graph/GraphTraits';
+import { ArkMethod } from '../../../core/model/ArkMethod';
+import { CallGraph, CallGraphNode, FuncID, ICallSite } from '../../model/CallGraph';
+import { ContextID } from '../context/Context';
+import { Pag, PagEdgeKind, PagNewContainerExprNode, PagNode } from '../Pag';
+import { CSFuncID, PagBuilder } from '../PagBuilder';
+import { BuiltApiType, getBuiltInApiType } from '../PTAUtils';
+import { IPagPlugin } from './IPagPlugin';
 import { ArkAssignStmt } from '../../../core/base/Stmt';
 import { Local } from '../../../core/base/Local';
-import { FunctionType } from "../../../core/base/Type";
+import { FunctionType } from '../../../core/base/Type';
 
 // built-in container APIs
 const containerApiList = [
@@ -50,7 +50,7 @@ export class ContainerPlugin implements IPagPlugin {
     }
 
     getName(): string {
-        return "ContainerPlugin";
+        return 'ContainerPlugin';
     }
 
     canHandle(cs: ICallSite, cgNode: CallGraphNode): boolean {
@@ -188,7 +188,7 @@ export class ContainerPlugin implements IPagPlugin {
         let calleeCid = this.pagBuilder.getContextSelector().selectContext(cid, cs, basePt, callbackFuncID);
         const paramRefValues = callbackMethod?.getParameterRefs();
 
-        if (!paramRefValues || paramRefValues.length < 1)  {
+        if (!paramRefValues || paramRefValues.length < 1) {
             return;
         }
 

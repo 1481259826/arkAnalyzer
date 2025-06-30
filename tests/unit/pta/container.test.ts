@@ -45,11 +45,11 @@ describe('ContainerAddTest', () => {
     pta.start();
 
     let arrayMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'ArrayTest')
-    .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
+        .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
     let setMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'SetTest')
-    .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
+        .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
     let mapMethod = scene.getClasses().filter(arkClass => arkClass.getName() === 'MapTest')
-    .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
+        .flatMap(arkClass => arkClass.getMethodWithName('test'))!;
 
     it('case1: Array.push(T[])', () => {
         const eleLocal = arrayMethod[0]?.getBody()?.getLocals().get('ele')!;
@@ -67,7 +67,7 @@ describe('ContainerAddTest', () => {
 
         assert(
             Array.from(relatedNodes).some(element => element === resultLocal2)
-        )
+        );
     });
 
     it('case2: Set.add(<T>)', () => {
@@ -88,7 +88,7 @@ describe('ContainerAddTest', () => {
 
         assert(
             Array.from(relatedNodes).some(element => element === resultLocal)
-        )
+        );
     });
 });
 
@@ -115,7 +115,6 @@ describe('ContainerForeachTest', () => {
     const arrayMethod = scene.getMethods().filter(arkMethod => arkMethod.getName() === 'arrayForeach')!;
     const setMethod = scene.getMethods().filter(arkMethod => arkMethod.getName() === 'setForeach')!;
     const mapMethod = scene.getMethods().filter(arkMethod => arkMethod.getName() === 'mapForeach')!;
-    // console.log(setMethod);
 
     it('case1: Array.forEach', () => {
         const foreachMethod = scene.getMethods().filter(arkMethod => arkMethod.getName() === '%AM0$arrayForeach')!;

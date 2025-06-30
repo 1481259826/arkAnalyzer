@@ -22,7 +22,7 @@ namespace Foreach {
         }
     }
 
-    function arrayForeach() {
+    function arrayForeach(): void {
         let ele = new MyCustomSpan(0);
         let ele2 = new MyCustomSpan(1);
         let arr = [ele, ele2];
@@ -31,7 +31,7 @@ namespace Foreach {
         });
     }
 
-    function setForeach() {
+    function setForeach(): void {
         let s = new Set();
         let ele = new MyCustomSpan(0);
         s.add(ele);
@@ -40,13 +40,13 @@ namespace Foreach {
         });
     }
 
-    function mapForeach() {
+    function mapForeach(): void {
         let s = new Map();
         let ele = new MyCustomSpan(0);
         s.set(0, ele);
         s.forEach((value: MyCustomSpan, index: number) => {
             let temp = value;
-        })
+        });
     }
 
     function main(): void {

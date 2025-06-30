@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-import { Constant } from "../../../core/base/Constant";
-import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from "../../../core/base/Expr";
-import { Local } from "../../../core/base/Local";
-import { Stmt, ArkAssignStmt } from "../../../core/base/Stmt";
-import { ClassType, StringType } from "../../../core/base/Type";
-import { Value } from "../../../core/base/Value";
-import { NodeID } from "../../../core/graph/GraphTraits";
-import { CallGraph, CallGraphNode } from "../../model/CallGraph";
-import { ICallSite } from "../../model/CallSite";
-import { ContextID } from "../context/Context";
-import { Pag, PagEdgeKind, PagLocalNode, PagNode } from "../Pag";
-import { PagBuilder } from "../PagBuilder";
-import { IPagPlugin } from "./IPagPlugin";
+import { Constant } from '../../../core/base/Constant';
+import { AbstractInvokeExpr, ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../../core/base/Expr';
+import { Local } from '../../../core/base/Local';
+import { Stmt, ArkAssignStmt } from '../../../core/base/Stmt';
+import { ClassType, StringType } from '../../../core/base/Type';
+import { Value } from '../../../core/base/Value';
+import { NodeID } from '../../../core/graph/GraphTraits';
+import { CallGraph, CallGraphNode } from '../../model/CallGraph';
+import { ICallSite } from '../../model/CallSite';
+import { ContextID } from '../context/Context';
+import { Pag, PagEdgeKind, PagLocalNode, PagNode } from '../Pag';
+import { PagBuilder } from '../PagBuilder';
+import { IPagPlugin } from './IPagPlugin';
 
 export enum StorageType {
     APP_STORAGE,
@@ -144,7 +144,7 @@ export class StoragePlugin implements IPagPlugin {
         if (storageType === StorageType.APP_STORAGE) {
             let storageObj = cs.args![1];
 
-            return this.addPropertyLinkEdge(propertyNode, storageObj, cid, cs.callStmt, StorageLinkEdgeType.Local2Property, srcNodes);
+            this.addPropertyLinkEdge(propertyNode, storageObj, cid, cs.callStmt, StorageLinkEdgeType.Local2Property, srcNodes);
         } else if (storageType === StorageType.LOCAL_STORAGE) {
             // TODO: WIP
         }
@@ -166,10 +166,10 @@ export class StoragePlugin implements IPagPlugin {
         if (!propertyLocal) {
             switch (storage) {
                 case StorageType.APP_STORAGE:
-                    propertyLocal = new Local('AppStorage.'+propertyName);
+                    propertyLocal = new Local('AppStorage.' + propertyName);
                     break;
                 case StorageType.LOCAL_STORAGE:
-                    propertyLocal = new Local('LocalStorage.'+propertyName);
+                    propertyLocal = new Local('LocalStorage.' + propertyName);
                     break;
                 default:
                     propertyLocal = new Local(propertyName);
@@ -195,16 +195,16 @@ export class StoragePlugin implements IPagPlugin {
         if (edgeKind === StorageLinkEdgeType.Property2Local) {
             // propertyNode --> objNode
             this.pag.addPagEdge(propertyNode, objNode, PagEdgeKind.Copy, stmt);
-            srcNodes.push(propertyNode.getID())
+            srcNodes.push(propertyNode.getID());
         } else if (edgeKind === StorageLinkEdgeType.Local2Property) {
             // propertyNode <-- objNode
             this.pag.addPagEdge(objNode, propertyNode, PagEdgeKind.Copy, stmt);
-            srcNodes.push(objNode.getID())
+            srcNodes.push(objNode.getID());
         } else if (edgeKind === StorageLinkEdgeType.TwoWay) {
             // propertyNode <-> objNode
             this.pag.addPagEdge(propertyNode, objNode, PagEdgeKind.Copy, stmt);
             this.pag.addPagEdge(objNode, propertyNode, PagEdgeKind.Copy, stmt);
-            srcNodes.push(propertyNode.getID(), objNode.getID())
+            srcNodes.push(propertyNode.getID(), objNode.getID());
         }
         return;
     }
@@ -303,7 +303,7 @@ export class StoragePlugin implements IPagPlugin {
             srcNodes.push(propertyNode.getID());
         } else if (ivkExpr instanceof ArkInstanceInvokeExpr) {
             let baseNode = this.pag.getOrNewNode(cid, ivkExpr.getBase()) as PagLocalNode;
-            this.pag.addPagEdge(baseNode, leftOpNode, PagEdgeKind.Copy, cs.callStmt);  
+            this.pag.addPagEdge(baseNode, leftOpNode, PagEdgeKind.Copy, cs.callStmt);
             srcNodes.push(baseNode.getID());
         }
 

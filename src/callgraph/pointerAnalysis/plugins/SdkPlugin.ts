@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-import { ArkNewExpr, ArkPtrInvokeExpr } from "../../../core/base/Expr";
-import { Local } from "../../../core/base/Local";
-import { ArkAssignStmt, ArkInvokeStmt, Stmt } from "../../../core/base/Stmt";
-import { ClassType, FunctionType } from "../../../core/base/Type";
-import { Value } from "../../../core/base/Value";
-import { NodeID } from "../../../core/graph/GraphTraits";
-import { ArkMethod } from "../../../core/model/ArkMethod";
-import { CallGraph, CallGraphNode, FuncID, ICallSite } from "../../model/CallGraph";
-import { ContextID } from "../context/Context";
-import { Pag, PagEdgeKind, PagLocalNode } from "../Pag";
-import { PagBuilder } from "../PagBuilder";
-import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
-import { IPagPlugin } from "./IPagPlugin";
+import { ArkNewExpr, ArkPtrInvokeExpr } from '../../../core/base/Expr';
+import { Local } from '../../../core/base/Local';
+import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../../core/base/Stmt';
+import { ClassType, FunctionType } from '../../../core/base/Type';
+import { Value } from '../../../core/base/Value';
+import { NodeID } from '../../../core/graph/GraphTraits';
+import { ArkMethod } from '../../../core/model/ArkMethod';
+import { CallGraph, CallGraphNode, FuncID, ICallSite } from '../../model/CallGraph';
+import { ContextID } from '../context/Context';
+import { Pag, PagEdgeKind, PagLocalNode } from '../Pag';
+import { PagBuilder } from '../PagBuilder';
+import { BuiltApiType, getBuiltInApiType } from '../PTAUtils';
+import { IPagPlugin } from './IPagPlugin';
 
 /**
  * SdkPlugin processes OpenHarmony and built-in SDK APIs.
@@ -46,11 +46,11 @@ export class SdkPlugin implements IPagPlugin {
         this.cg = cg;
         this.sdkMethodReturnValueMap = new Map();
         this.methodParamValueMap = new Map();
-        this.fakeSdkMethodParamDeclaringStmt = new ArkAssignStmt(new Local(''), new Local(''))
+        this.fakeSdkMethodParamDeclaringStmt = new ArkAssignStmt(new Local(''), new Local(''));
     }
 
     getName(): string {
-        return "SdkPlugin";
+        return 'SdkPlugin';
     }
 
     canHandle(cs: ICallSite, cgNode: CallGraphNode): boolean {

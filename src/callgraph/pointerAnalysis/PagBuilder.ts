@@ -100,8 +100,7 @@ export class PagBuilder {
         this.funcPags = new Map<FuncID, FuncPag>();
         this.scene = s;
         this.pagStat = new PAGStat();
-        this.pluginManager = new PluginManager();
-        this.pluginManager.init(p, this, cg);
+        this.pluginManager = new PluginManager(p, this, cg);
         let kLimit = config.kLimit;
 
         switch (config.contextType) {
@@ -674,15 +673,6 @@ export class PagBuilder {
             if (!callerNode) {
                 throw new Error('Can not get caller method node');
             }
-
-            // TODO: check
-            // if (this.processStorage(cs, dstCGNode, cid)) {
-            //     if (ivkExpr.getArgs().length !== 0) {
-            //         // for AppStorage.set() instance invoke, add obj to reanalyze list
-            //         let argsNode = this.pag.getOrNewNode(cid, cs.args![0]);
-            //         srcNodes.push(argsNode.getID());
-            //     }
-            // }
 
             logger.warn(`\tAdd call edge of unknown call ${callee.getSignature().toString()}`);
             this.cg.addDynamicCallEdge(callerNode.getID(), dstCGNode.getID(), cs.callStmt);

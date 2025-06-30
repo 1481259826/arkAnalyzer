@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
-import { NullConstant } from "../../../core/base/Constant";
-import { Local } from "../../../core/base/Local";
-import { ArkAssignStmt } from "../../../core/base/Stmt";
-import { ArrayType } from "../../../core/base/Type";
-import { Value } from "../../../core/base/Value";
-import { NodeID } from "../../../core/graph/GraphTraits";
-import { ArkMethod } from "../../../core/model/ArkMethod";
-import { CallGraphNode, CallGraph } from "../../model/CallGraph";
-import { ICallSite, CallSite } from "../../model/CallSite";
-import { ContextID } from "../context/Context";
-import { Pag, PagEdgeKind, PagFuncNode } from "../Pag";
-import { CSFuncID, PagBuilder } from "../PagBuilder";
-import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
-import { IPagPlugin } from "./IPagPlugin";
+import { NullConstant } from '../../../core/base/Constant';
+import { Local } from '../../../core/base/Local';
+import { ArkAssignStmt } from '../../../core/base/Stmt';
+import { ArrayType } from '../../../core/base/Type';
+import { Value } from '../../../core/base/Value';
+import { NodeID } from '../../../core/graph/GraphTraits';
+import { ArkMethod } from '../../../core/model/ArkMethod';
+import { CallGraphNode, CallGraph } from '../../model/CallGraph';
+import { ICallSite, CallSite } from '../../model/CallSite';
+import { ContextID } from '../context/Context';
+import { Pag, PagEdgeKind, PagFuncNode } from '../Pag';
+import { CSFuncID, PagBuilder } from '../PagBuilder';
+import { BuiltApiType, getBuiltInApiType } from '../PTAUtils';
+import { IPagPlugin } from './IPagPlugin';
 
 /**
  * FunctionPlugin processes Function.call, Function.apply, Function.bind.
@@ -139,7 +139,6 @@ export class FunctionPlugin implements IPagPlugin {
 
         let dstNode = this.pagBuilder.getOrNewPagNode(cid, (staticCS.callStmt as ArkAssignStmt).getLeftOp() as Local);
         this.pag.addPagEdge(srcNode, dstNode, PagEdgeKind.Copy, staticCS.callStmt);
-        // srcNodes.push(srcNode.getID());
 
         srcNode.setCS(staticCS);
         srcNode.setArgsOffset(1);

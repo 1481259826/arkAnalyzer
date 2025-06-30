@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import { NodeID } from "../../../core/graph/GraphTraits";
-import { CallGraph, CallGraphNode } from "../../model/CallGraph";
-import { ICallSite } from "../../model/CallSite";
-import { ContextID } from "../context/Context";
-import { Pag } from "../Pag";
-import { PagBuilder } from "../PagBuilder";
+import { NodeID } from '../../../core/graph/GraphTraits';
+import { CallGraph, CallGraphNode } from '../../model/CallGraph';
+import { ICallSite } from '../../model/CallSite';
+import { ContextID } from '../context/Context';
+import { Pag } from '../Pag';
+import { PagBuilder } from '../PagBuilder';
 
 // plugins/IPagPlugin.ts
 export interface IPagPlugin {

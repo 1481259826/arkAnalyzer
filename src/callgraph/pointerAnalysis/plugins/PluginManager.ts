@@ -13,24 +13,28 @@
  * limitations under the License.
  */
 
-import { CallGraph, CallGraphNode, FuncID } from "../../model/CallGraph";
-import { ICallSite } from "../../model/CallSite";
-import { Pag } from "../Pag";
-import { PagBuilder } from "../PagBuilder";
-import { IPagPlugin } from "./IPagPlugin";
+import { CallGraph, CallGraphNode, FuncID } from '../../model/CallGraph';
+import { ICallSite } from '../../model/CallSite';
+import { Pag } from '../Pag';
+import { PagBuilder } from '../PagBuilder';
+import { IPagPlugin } from './IPagPlugin';
 import { NodeID } from '../../../core/graph/GraphTraits';
-import { ContainerPlugin } from "./ContainerPlugin";
-import { FunctionPlugin } from "./FunctionPlugin";
-import { SdkPlugin } from "./SdkPlugin";
-import { StoragePlugin } from "./StoragePlugin";
-import { ArkMethod } from "../../../core/model/ArkMethod";
-import { Value } from "../../../core/base/Value";
+import { ContainerPlugin } from './ContainerPlugin';
+import { FunctionPlugin } from './FunctionPlugin';
+import { SdkPlugin } from './SdkPlugin';
+import { StoragePlugin } from './StoragePlugin';
+import { ArkMethod } from '../../../core/model/ArkMethod';
+import { Value } from '../../../core/base/Value';
 
 // plugins/PluginManager.ts
 export class PluginManager {
     private plugins: IPagPlugin[] = [];
 
-    public init(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
+    constructor(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph) {
+        this.init(pag, pagBuilder, cg);
+    }
+
+    private init(pag: Pag, pagBuilder: PagBuilder, cg: CallGraph): void {
         this.registerPlugin(new StoragePlugin(pag, pagBuilder, cg));
         this.registerPlugin(new FunctionPlugin(pag, pagBuilder, cg));
         this.registerPlugin(new SdkPlugin(pag, pagBuilder, cg));
