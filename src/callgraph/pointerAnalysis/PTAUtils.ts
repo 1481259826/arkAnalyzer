@@ -28,6 +28,7 @@ export enum BuiltApiType {
     MapSet,
     MapGet,
     ArrayPush,
+    Foreach,
     FunctionCall,
     FunctionApply,
     FunctionBind,
@@ -52,11 +53,17 @@ export const MAP_FIELD_SIGNATURE = new FieldSignature(
     new UnclearReferenceType('')
 );
 
-const BUILTIN_API_BY_SUFFIX = new Map<string, BuiltApiType>([
+const BUILTIN_API_PATTERNS = new Map<string, BuiltApiType>([
+    // set
     ['lib.es2015.collection.d.ts: Set.add(T)', BuiltApiType.SetAdd],
+    ['lib.es2015.collection.d.ts: Set.forEach(', BuiltApiType.Foreach],
+    // map
     ['lib.es2015.collection.d.ts: Map.set(K, V)', BuiltApiType.MapSet],
     ['lib.es2015.collection.d.ts: Map.get(K)', BuiltApiType.MapGet],
+    ['lib.es2015.collection.d.ts: Map.forEach(', BuiltApiType.Foreach],
+    // array
     ['lib.es5.d.ts: Array.push(T[])', BuiltApiType.ArrayPush],
+    ['lib.es5.d.ts: Array.forEach(', BuiltApiType.Foreach],
 ]);
 
 const FUNCTION_METHOD_REGEX = /lib\.es5\.d\.ts: Function\.(call|apply|bind)\(/;
@@ -69,8 +76,10 @@ const FUNCTION_METHOD_MAP: { [key: string]: BuiltApiType } = {
 export function getBuiltInApiType(method: MethodSignature): BuiltApiType {
     let methodSigStr = method.toString();
 
-    for (const [suffix, apiType] of BUILTIN_API_BY_SUFFIX.entries()) {
-        if (methodSigStr.endsWith(suffix)) {
+    for (const [pattern, apiType] of BUILTIN_API_PATTERNS.entries()) {
+        const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedPattern);
+        if (regex.test(methodSigStr)) {
             return apiType;
         }
     }

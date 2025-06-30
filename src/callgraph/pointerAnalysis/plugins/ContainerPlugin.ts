@@ -19,11 +19,12 @@ import { ArkMethod } from "../../../core/model/ArkMethod";
 import { CallGraph, CallGraphNode, FuncID, ICallSite } from "../../model/CallGraph";
 import { ContextID } from "../context/Context";
 import { Pag, PagEdgeKind, PagNewContainerExprNode, PagNode } from "../Pag";
-import { PagBuilder } from "../PagBuilder";
+import { CSFuncID, PagBuilder } from "../PagBuilder";
 import { BuiltApiType, getBuiltInApiType } from "../PTAUtils";
 import { IPagPlugin } from "./IPagPlugin";
 import { ArkAssignStmt } from '../../../core/base/Stmt';
 import { Local } from '../../../core/base/Local';
+import { FunctionType } from "../../../core/base/Type";
 
 // built-in container APIs
 const containerApiList = [
@@ -31,6 +32,7 @@ const containerApiList = [
     BuiltApiType.MapSet,
     BuiltApiType.MapGet,
     BuiltApiType.SetAdd,
+    BuiltApiType.Foreach,
 ];
 
 /**
@@ -87,6 +89,9 @@ export class ContainerPlugin implements IPagPlugin {
                 break;
             case BuiltApiType.MapGet:
                 this.processMapGet(cs, cid, basePTNode, baseValue, srcNodes);
+            case BuiltApiType.Foreach:
+                this.processForeach(cs, cid, basePTNode, baseValue, srcNodes, calleeMethod);
+                break;
             default:
         };
         return srcNodes;
@@ -165,6 +170,33 @@ export class ContainerPlugin implements IPagPlugin {
 
         this.pag.addPagEdge(containerFieldNode, leftValueNode, PagEdgeKind.Copy, cs.callStmt);
         srcNodes.push(containerFieldNode.getID());
+        return;
+    }
+
+    private processForeach(cs: ICallSite, cid: ContextID, basePt: NodeID, baseValue: Local, srcNodes: NodeID[], calleeMethod: ArkMethod): void {
+        const containerName = calleeMethod.getDeclaringArkClass().getName();
+        const callbackLocalType = cs.args![0].getType();
+        if (!(callbackLocalType instanceof FunctionType)) {
+            return;
+        }
+
+        const callbackMethodSig = callbackLocalType.getMethodSignature();
+        const callbackNode = this.cg.getCallGraphNodeByMethod(callbackMethodSig);
+        const callbackFuncID = callbackNode.getID();
+        const callbackMethod = this.cg.getArkMethodByFuncID(callbackFuncID);
+        const containerFieldNode = this.pag.getOrClonePagContainerFieldNode(basePt, baseValue, containerName) as PagNewContainerExprNode;
+        let calleeCid = this.pagBuilder.getContextSelector().selectContext(cid, cs, basePt, callbackFuncID);
+        const paramRefValues = callbackMethod?.getParameterRefs();
+
+        if (!paramRefValues || paramRefValues.length < 1)  {
+            return;
+        }
+
+        const elementRef = paramRefValues[0];
+        const elementNode = this.pag.getOrNewNode(calleeCid, elementRef, cs.callStmt) as PagNode;
+        this.pag.addPagEdge(containerFieldNode, elementNode, PagEdgeKind.Copy, cs.callStmt);
+        srcNodes.push(containerFieldNode.getID());
+        this.pagBuilder.buildFuncPagAndAddToWorklist(new CSFuncID(calleeCid, callbackFuncID));
         return;
     }
 }

@@ -31,6 +31,7 @@ namespace Container {
             this.array = [[ele2]];
             this.array.push([ele]);
             let b: Element = this.getArrayElement();
+            let c = this.array[1][0];
         }
 
         public getArrayElement() {
@@ -51,16 +52,17 @@ namespace Container {
             let map = new Map();
             let ele = new Element();
             map.set(ele.getBase(), ele);
+            let v = map.get(ele.getBase());
         }
     }
 
     function main() {
         let arrayTest: ArrayTest = new ArrayTest();
-        // let setTest: SetTest = new SetTest();
-        // let mapTest: MapTest = new MapTest();
+        let setTest: SetTest = new SetTest();
+        let mapTest: MapTest = new MapTest();
 
         arrayTest.test();
-        // setTest.test();
-        // mapTest.test();
+        setTest.test();
+        mapTest.test();
     }
 }

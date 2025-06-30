@@ -728,22 +728,7 @@ export class Pag extends BaseExplicitGraph {
                     return undefined;
             }
 
-            fieldNode = this.getOrClonePagNode(this.addPagNode(0, fieldRef), basePt);
-
-            // if (src) {
-            //     fieldNode = this.getOrClonePagNode(src, basePt);
-            // } else if (base) {
-            //     const containerFieldSignature = new FieldSignature(
-            //         'field',
-            //         new ClassSignature('container', new FileSignature('container', 'lib.es2015.collection.d.ts')),
-            //         new UnclearReferenceType('')
-            //     );
-            //     fieldNode = this.getOrClonePagNode(
-            //         // TODO: cid check
-            //         this.addPagNode(0, new ArkInstanceFieldRef(base, containerFieldSignature)),
-            //         basePt
-            //     );
-            // }
+            fieldNode = this.addPagNode(0, fieldRef);
 
             baseNode.addElementNode(fieldNode.getID());
             fieldNode.setBasePt(basePt);
