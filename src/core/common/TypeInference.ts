@@ -78,7 +78,13 @@ import {
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { MethodSignature, MethodSubSignature, NamespaceSignature } from '../model/ArkSignature';
-import { INSTANCE_INIT_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX, UNKNOWN_FILE_NAME } from './Const';
+import {
+    INSTANCE_INIT_METHOD_NAME,
+    LEXICAL_ENV_NAME_PREFIX,
+    NAME_DELIMITER,
+    NAME_PREFIX,
+    UNKNOWN_FILE_NAME
+} from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { ImportInfo } from '../model/ArkImport';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
@@ -368,6 +374,14 @@ export class TypeInference {
                 leftType = newLeftType;
             }
         } else if (leftOp instanceof Local && leftOp.getName() === THIS_NAME) {
+            const thisLocal = IRInference.inferThisLocal(arkMethod);
+            if (thisLocal) {
+                stmt.setLeftOp(thisLocal);
+            } else {
+                leftType = rightType;
+            }
+        } else if (arkClass.getDeclaringArkFile().getScene().getOptions().isScanAbc && !this.isUnclearType(rightType) &&
+            leftOp instanceof Local && (leftOp.getName().startsWith(NAME_PREFIX) || leftOp.getName().startsWith(NAME_DELIMITER))) {
             const thisLocal = IRInference.inferThisLocal(arkMethod);
             if (thisLocal) {
                 stmt.setLeftOp(thisLocal);
@@ -774,6 +788,7 @@ export class TypeInference {
     public static inferTypeByName(typeName: string, arkClass: ArkClass): Type | null {
         let arkExport: ArkExport | null =
             ModelUtils.getClassWithName(typeName, arkClass) ??
+            ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(typeName) ??
             ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(typeName) ??
             ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
         if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
