@@ -228,7 +228,7 @@ export class ConditionBuilder {
     }
 
     private removeUnnecessaryBlocksInConditionalOperator(bottomBlock: BasicBlock, allBlocks: Set<BasicBlock>): BasicBlock[] {
-        const firstStmtInBottom = bottomBlock.getStmts()[0];
+        const firstStmtInBottom = bottomBlock.getHead()!;
         if (!(firstStmtInBottom instanceof ArkAssignStmt)) {
             return [bottomBlock];
         }

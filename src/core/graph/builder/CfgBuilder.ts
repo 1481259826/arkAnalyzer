@@ -1299,7 +1299,7 @@ export class CfgBuilder {
 
         const cfg = new Cfg();
         const startingBasicBlock = blockBuilderToCfgBlock.get(this.blocks[0])!;
-        cfg.setStartingStmt(startingBasicBlock.getStmts()[0]);
+        cfg.setStartingStmt(startingBasicBlock.getHead()!);
         currBlockId = 0;
         for (const basicBlock of basicBlockSet) {
             basicBlock.setId(currBlockId++);
