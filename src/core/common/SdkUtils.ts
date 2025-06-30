@@ -67,7 +67,7 @@ export class SdkUtils {
             moduleName: '',
             name: this.BUILT_IN_NAME,
             path: builtInPath
-        }
+        };
     }
 
     public static fetchBuiltInFiles(builtInPath: string): string[] {

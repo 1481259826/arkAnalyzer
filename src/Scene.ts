@@ -446,7 +446,7 @@ export class Scene {
     }
 
     private parseFrom(from: string, arkFile: ArkFile): void {
-        if (/^@[a-z|\-]+?\/?/.test(from)) {
+        if (/^@[a-z|\-]+?\/?/.test(from) || /^[a-z][a-z0-9._-]*[a-z0-9]$/.test(from)) {
             for (const [ohPkgContentPath, ohPkgContent] of this.ohPkgContentMap) {
                 this.findDependenciesByOhPkg(ohPkgContentPath, ohPkgContent, from, arkFile);
             }
