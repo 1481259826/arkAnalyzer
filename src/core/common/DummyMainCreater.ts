@@ -241,7 +241,7 @@ export class DummyMainCreater {
         const whileStmt = new ArkIfStmt(conditionTrue);
         firstBlock.addStmt(countAssignStmt);
         dummyCfg.addBlock(firstBlock);
-        dummyCfg.setStartingStmt(firstBlock.getStmts()[0]);
+        dummyCfg.setStartingStmt(firstBlock.getHead()!);
         const whileBlock = new BasicBlock();
         whileBlock.addStmt(whileStmt);
         dummyCfg.addBlock(whileBlock);

@@ -18,7 +18,7 @@ import { ArkFile } from '../ArkFile';
 import { ArkMethod } from '../ArkMethod';
 import { ArkNamespace } from '../ArkNamespace';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
-import ts, { ParameterDeclaration } from 'ohos-typescript';
+import ts, { ClassElement, EnumMember, ParameterDeclaration, TypeElement } from 'ohos-typescript';
 import { ArkClass, ClassCategory } from '../ArkClass';
 import { buildArkMethodFromArkClass, buildDefaultArkMethodFromArkClass, buildInitMethod, checkAndUpdateMethod } from './ArkMethodBuilder';
 import { buildDecorators, buildGenericType, buildHeritageClauses, buildModifiers, buildTypeParameters, tsNode2Type } from './builderUtils';
@@ -370,31 +370,28 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     const instanceInitStmts: Stmt[] = [];
     let staticBlockId = 0;
     clsNode.members.forEach(member => {
-        if (
-            ts.isMethodDeclaration(member) ||
-            ts.isConstructorDeclaration(member) ||
-            ts.isMethodSignature(member) ||
-            ts.isConstructSignatureDeclaration(member) ||
-            ts.isAccessor(member) ||
-            ts.isCallSignatureDeclaration(member)
-        ) {
+        if (isClassMethod(member)) {
             // these node types have been handled at the beginning of this function by calling buildMethodsForClass
             return;
-        } else if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
+        }
+        if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
-            if (ts.isClassDeclaration(clsNode) || ts.isClassExpression(clsNode) || ts.isStructDeclaration(clsNode)) {
-                if (arkField.isStatic()) {
-                    getInitStmts(staticIRTransformer, arkField, member.initializer);
-                    arkField.getInitializer().forEach(stmt => staticInitStmts.push(stmt));
-                } else {
-                    if (!instanceIRTransformer) {
-                        console.log(clsNode.getText(sourceFile));
-                    }
-                    getInitStmts(instanceIRTransformer, arkField, member.initializer);
-                    arkField.getInitializer().forEach(stmt => instanceInitStmts.push(stmt));
-                }
+            if (!ts.isClassDeclaration(clsNode) && !ts.isClassExpression(clsNode) && !ts.isStructDeclaration(clsNode)) {
+                return;
             }
-        } else if (ts.isEnumMember(member)) {
+            if (arkField.isStatic()) {
+                getInitStmts(staticIRTransformer, arkField, member.initializer);
+                arkField.getInitializer().forEach(stmt => staticInitStmts.push(stmt));
+                return;
+            }
+            if (!instanceIRTransformer) {
+                console.log(clsNode.getText(sourceFile));
+            }
+            getInitStmts(instanceIRTransformer, arkField, member.initializer);
+            arkField.getInitializer().forEach(stmt => instanceInitStmts.push(stmt));
+            return;
+        }
+        if (ts.isEnumMember(member)) {
             const arkField = buildProperty2ArkField(member, sourceFile, cls);
             getInitStmts(staticIRTransformer, arkField, member.initializer);
             arkField.getInitializer().forEach(stmt => staticInitStmts.push(stmt));
@@ -417,6 +414,15 @@ function buildArkClassMembers(clsNode: ClassLikeNode, cls: ArkClass, sourceFile:
     if (ts.isEnumDeclaration(clsNode)) {
         buildInitMethod(cls.getStaticInitMethod(), staticInitStmts, staticIRTransformer!.getThisLocal());
     }
+}
+
+function isClassMethod(member: ClassElement | TypeElement | EnumMember): boolean {
+    return (ts.isMethodDeclaration(member) ||
+        ts.isConstructorDeclaration(member) ||
+        ts.isMethodSignature(member) ||
+        ts.isConstructSignatureDeclaration(member) ||
+        ts.isAccessor(member) ||
+        ts.isCallSignatureDeclaration(member));
 }
 
 function buildMethodsForClass(clsNode: ClassLikeNodeWithMethod, cls: ArkClass, sourceFile: ts.SourceFile): void {

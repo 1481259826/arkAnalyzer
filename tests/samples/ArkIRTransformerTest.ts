@@ -27,7 +27,7 @@ import {
 import { ArkMetadataKind, CommentsMetadata } from '../../src/core/model/ArkMetadata';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.TOOL, 'ArkIRTransformerTest');
-Logger.configure('out/ArkIRTransformerTest.log', LOG_LEVEL.ERROR, LOG_LEVEL.INFO, false);
+Logger.configure('out/ArkIRTransformerTest.log', LOG_LEVEL.INFO, LOG_LEVEL.INFO, false);
 
 class ArkIRTransformerTest {
     public testStmtsOfSimpleProject() {
@@ -153,6 +153,7 @@ class ArkIRTransformerTest {
     }
 
     public printCfg() {
+        logger.info('printCfg start');
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
         const sceneConfig: SceneConfig = new SceneConfig();
         sceneConfig.buildFromProjectDir(projectDir);
@@ -163,6 +164,7 @@ class ArkIRTransformerTest {
         for (const arkFile of scene.getFiles()) {
             printerBuilder.dumpToDot(arkFile);
         }
+        logger.info('printCfg end');
     }
 
     public simpleTest() {
@@ -188,7 +190,5 @@ class ArkIRTransformerTest {
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
-arkIRTransformerTest.testStmtsOfSimpleProject();
-arkIRTransformerTest.testStmtsOfEtsProject();
-arkIRTransformerTest.testBuildSceneWithJsonFile();
+arkIRTransformerTest.printCfg();
 

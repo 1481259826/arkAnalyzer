@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-import { assert, describe, it } from 'vitest';
+import { assert, describe, expect, it, vi } from 'vitest';
 import { SceneConfig } from '../../src/Config';
 import { Scene } from '../../src/Scene';
 import { ArkClass } from '../../src';
+import * as fileBuilder from '../../src/core/model/builder/ArkFileBuilder';
 
 describe('build scene by files Test', () => {
 
@@ -56,10 +57,31 @@ describe('build scene by files Test', () => {
         const arkExport = arkFile?.getImportInfoBy('Model2')?.getLazyExportInfo()?.getArkExport();
         assert.isTrue(arkExport instanceof ArkClass);
     });
-
 });
 
+describe('build scene by files With Circular Dependency', () => {
+    const filesPath: string[] = ['./'];
+    const projectDir = './tests/resources/dependency/exampleProject/CircularDependency';
+    const projectName = 'CircularDependency';
+    const sceneConfig: SceneConfig = new SceneConfig();
+    sceneConfig.buildFromProjectFiles(projectName, projectDir, filesPath);
+    sceneConfig.getOptions().enableBuiltIn = false;
 
+    const scene: Scene = new Scene();
+    const spy = vi.spyOn(fileBuilder, 'buildArkFileFromFile');
+    scene.buildSceneFromFiles(sceneConfig);
+    scene.inferTypes();
+
+    it('check circular dependencies', () => {
+        const expectedFilesKey = ['file3.ts', 'file2.ts', 'file1.ts'];
+        const files = scene.getFiles();
+        assert.equal(files.length, expectedFilesKey.length);
+        files.forEach((file, index) => {
+            assert.equal(file.getName(), expectedFilesKey[index]);
+        });
+        expect(spy).toHaveBeenCalledTimes(3);
+    });
+});
 
 export const globalModule2PathMapping_expect_result = {
     '@DependencyTest/': [
