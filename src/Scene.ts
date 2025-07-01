@@ -208,7 +208,7 @@ export class Scene {
 
         // handle sdks
         if (this.options.enableBuiltIn && !sceneConfig.getSdksObj().find(sdk => sdk.name === SdkUtils.BUILT_IN_NAME)) {
-            sceneConfig.getSdksObj().unshift(SdkUtils.BUILT_IN_SDK);
+            sceneConfig.getSdksObj().unshift(SdkUtils.getBuiltInSdk());
         }
         sceneConfig.getSdksObj()?.forEach(sdk => {
             if (!sdk.moduleName) {
@@ -450,7 +450,7 @@ export class Scene {
     }
 
     private parseFrom(from: string, arkFile: ArkFile): void {
-        if (/^@[a-z|\-]+?\/?/.test(from)) {
+        if (/^@[a-z|\-]+?\/?/.test(from) || /^[a-z][a-z0-9._-]*[a-z0-9]$/.test(from)) {
             // TODO: if there are more than one modules with the same name e.g. @lib1, here may got the wrong dependency
             // It is better to loop all oh pkg with priority rather than the map key order. But it should be very complicated.
             // Currently it is ok because it's with low probability and order error only affects type accuracy but has no other impact.
@@ -609,7 +609,9 @@ export class Scene {
         let allFiles;
         if (sdkName === SdkUtils.BUILT_IN_NAME) {
             allFiles = SdkUtils.fetchBuiltInFiles(sdkPath);
-            this.getOptions().sdkGlobalFolders?.push(sdkPath || SdkUtils.BUILT_IN_SDK.path);
+            if (allFiles.length > 0) {
+                this.getOptions().sdkGlobalFolders?.push(sdkPath);
+            }
         } else {
             allFiles = getAllFiles(sdkPath, this.options.supportFileExts!, this.options.ignoreFileNames);
         }
