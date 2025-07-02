@@ -32,7 +32,7 @@ import { fetchDependenciesFromFile, parseJsonText } from './utils/json5parser';
 import { getAllFiles } from './utils/getAllFiles';
 import { FileUtils, getFileRecursively } from './utils/FileUtils';
 import { ArkExport, ExportInfo, ExportType } from './core/model/ArkExport';
-import { addInitInConstructor, buildDefaultConstructor } from './core/model/builder/ArkMethodBuilder';
+import { addInitInConstructor, buildDefaultConstructor, replaceSuper2Constructor } from './core/model/builder/ArkMethodBuilder';
 import { DEFAULT_ARK_CLASS_NAME, STATIC_INIT_METHOD_NAME } from './core/common/Const';
 import { CallGraph } from './callgraph/model/CallGraph';
 import { CallGraphBuilder } from './callgraph/model/builder/CallGraphBuilder';
@@ -307,12 +307,13 @@ export class Scene {
         }
     }
 
-    private addDefaultConstructors(): void {
+    private updateOrAddDefaultConstructors(): void {
         for (const file of this.getFiles()) {
             for (const cls of ModelUtils.getAllClassesInFile(file)) {
                 buildDefaultConstructor(cls);
                 const constructor = cls.getMethodWithName(CONSTRUCTOR_NAME);
                 if (constructor !== null) {
+                    replaceSuper2Constructor(constructor);
                     addInitInConstructor(constructor);
                 }
             }
@@ -366,7 +367,7 @@ export class Scene {
             }
         });
         this.buildAllMethodBody();
-        this.addDefaultConstructors();
+        this.updateOrAddDefaultConstructors();
     }
 
     private getFilesOrderByDependency(): void {
@@ -374,7 +375,7 @@ export class Scene {
             this.getDependencyFilesDeeply(projectFile);
         }
         this.buildAllMethodBody();
-        this.addDefaultConstructors();
+        this.updateOrAddDefaultConstructors();
     }
 
     private getDependencyFilesDeeply(projectFile: string): void {
@@ -655,7 +656,7 @@ export class Scene {
         });
         initModulePathMap(this.ohPkgContentMap);
         this.buildAllMethodBody();
-        this.addDefaultConstructors();
+        this.updateOrAddDefaultConstructors();
     }
 
     private buildOhPkgContentMap(): void {

@@ -4328,7 +4328,22 @@
                     {
                       "_": "CallStmt",
                       "expr": {
-                        "_": "StaticCallExpr",
+                        "_": "InstanceCallExpr",
+                        "instance": {
+                          "_": "Local",
+                          "name": "this",
+                          "type": {
+                            "_": "ClassType",
+                            "signature": {
+                              "name": "Circle",
+                              "declaringFile": {
+                                "projectName": "save",
+                                "fileName": "sample.ts"
+                              },
+                              "declaringNamespace": null
+                            }
+                          }
+                        },
                         "method": {
                           "declaringClass": {
                             "name": "Shape",
@@ -4338,10 +4353,18 @@
                             },
                             "declaringNamespace": null
                           },
-                          "name": "super",
+                          "name": "constructor",
                           "parameters": [],
                           "returnType": {
-                            "_": "UnknownType"
+                            "_": "ClassType",
+                            "signature":{
+                              "name": "Shape",
+                              "declaringFile": {
+                                "projectName": "save",
+                                "fileName": "sample.ts"
+                              },
+                              "declaringNamespace": null
+                            }
                           }
                         },
                         "args": []

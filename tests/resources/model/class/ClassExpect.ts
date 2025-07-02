@@ -246,7 +246,7 @@ export const ClassWithSuperConstructor = `class ClassWithSuperConstructor extend
       b = parameter0: string
       c = parameter1: boolean
       this = this: @class/ClassWithConstructor.ts: ClassWithSuperConstructor
-      staticinvoke <@class/ClassWithConstructor.ts: ClassWithParamsConstructor.super()>(b)
+      instanceinvoke this.<@class/ClassWithConstructor.ts: ClassWithParamsConstructor.constructor(string)>(b)
       instanceinvoke this.<@class/ClassWithConstructor.ts: ClassWithSuperConstructor.%instInit()>()
       this.<@class/ClassWithConstructor.ts: ClassWithSuperConstructor.c> = c
       return this
@@ -397,5 +397,84 @@ export const New_Class_In_Function = `test(): void {
     %1 = instanceinvoke testInstance.<@class/class.ts: TestClass.testMethod(string)>('abc')
     instanceinvoke console.<@%unk/%unk: .log()>(%1)
     return
+}
+`;
+
+export const ClassAConstructorIR = `constructor(): @class/ClassWithHeritage.ts: A {
+  label0:
+    this = this: @class/ClassWithHeritage.ts: A
+    instanceinvoke this.<@class/ClassWithHeritage.ts: A.%instInit()>()
+    return this
+}
+`;
+
+export const ClassBConstructorIR = `constructor(): @class/ClassWithHeritage.ts: B {
+  label0:
+    this = this: @class/ClassWithHeritage.ts: B
+    instanceinvoke this.<@class/ClassWithHeritage.ts: A.constructor()>()
+    instanceinvoke this.<@class/ClassWithHeritage.ts: B.%instInit()>()
+    return this
+}
+`;
+
+export const ClassCConstructorIR = `constructor(c: number): @class/ClassWithHeritage.ts: C {
+  label0:
+    c = parameter0: number
+    this = this: @class/ClassWithHeritage.ts: C
+    instanceinvoke this.<@class/ClassWithHeritage.ts: C.%instInit()>()
+    this.<@class/ClassWithHeritage.ts: C.c> = c
+    return this
+}
+`;
+
+export const ClassDConstructorIR = `constructor(c: number): @class/ClassWithHeritage.ts: D {
+  label0:
+    c = parameter0: number
+    this = this: @class/ClassWithHeritage.ts: D
+    instanceinvoke this.<@class/ClassWithHeritage.ts: C.constructor(number)>(c)
+    instanceinvoke this.<@class/ClassWithHeritage.ts: D.%instInit()>()
+    return this
+}
+`;
+
+export const ClassEConstructorIR = `constructor(c: number, e: string): @class/ClassWithHeritage.ts: E {
+  label0:
+    c = parameter0: number
+    e = parameter1: string
+    this = this: @class/ClassWithHeritage.ts: E
+    instanceinvoke this.<@class/ClassWithHeritage.ts: C.constructor(number)>(c)
+    instanceinvoke this.<@class/ClassWithHeritage.ts: E.%instInit()>()
+    this.<@class/ClassWithHeritage.ts: E.e> = e
+    return this
+}
+`;
+
+export const ClassFConstructorIR = `constructor(f: string): @class/ClassWithHeritage.ts: F {
+  label0:
+    f = parameter0: string
+    this = this: @class/ClassWithHeritage.ts: F
+    instanceinvoke this.<@class/ClassWithConstructor.ts: O.constructor()>()
+    instanceinvoke this.<@class/ClassWithHeritage.ts: F.%instInit()>()
+    this.<@class/ClassWithHeritage.ts: F.f> = f
+    return this
+}
+`;
+
+export const ClassGConstructorIR = `constructor(c: number): @class/ClassWithHeritage.ts: G {
+  label0:
+    c = parameter0: number
+    this = this: @class/ClassWithHeritage.ts: G
+    instanceinvoke this.<@class/ClassWithHeritage.ts: D.constructor(number)>(c)
+    instanceinvoke this.<@class/ClassWithHeritage.ts: G.%instInit()>()
+    return this
+}
+`;
+
+export const ClassHConstructorIR = `constructor(): @class/ClassWithHeritage.ts: H {
+  label0:
+    this = this: @class/ClassWithHeritage.ts: H
+    instanceinvoke this.<@class/ClassWithHeritage.ts: H.%instInit()>()
+    staticinvoke <@%unk/%unk: .super()>()
+    return this
 }
 `;
