@@ -94,7 +94,6 @@ export class Scene {
     private fileLanguages: Map<string, Language> = new Map();
 
     private options!: SceneOptions;
-    private indexPathArray = ['Index.ets', 'Index.ts', 'Index.d.ets', 'Index.d.ts', 'index.ets', 'index.ts', 'index.d.ets', 'index.d.ts'];
 
     private unhandledFilePaths: Set<string> = new Set<string>();
     private unhandledSdkFilePaths: string[] = [];
@@ -504,20 +503,25 @@ export class Scene {
 
     private findDependenciesByRule(originPath: string): void {
         if (
-            !this.findFilesByPathArray(originPath, this.indexPathArray) &&
+            !this.findFilesByPathArray(originPath) &&
             !this.findFilesByExtNameArray(originPath, this.options.supportFileExts!)
         ) {
             logger.trace(originPath + 'module mapperInfo is not found!');
         }
     }
 
-    private findFilesByPathArray(originPath: string, pathArray: string[]): boolean {
-        for (const pathInfo of pathArray) {
-            const curPath = path.join(originPath, pathInfo);
-            if (fs.existsSync(curPath) && !this.isRepeatBuildFile(curPath)) {
-                this.addFileNode2DependencyGrap(curPath);
-                return true;
-            }
+    private findFilesByPathArray(originPath: string): boolean {
+        if (!fs.existsSync(originPath)) {
+            return false;
+        }
+        const indexFileName = FileUtils.getIndexFileName(originPath);
+        if (!indexFileName) {
+            return false;
+        }
+        const curPath = path.join(originPath, indexFileName);
+        if (!this.isRepeatBuildFile(curPath)) {
+            this.addFileNode2DependencyGrap(curPath);
+            return true;
         }
         return false;
     }
@@ -576,7 +580,7 @@ export class Scene {
                 }
                 this.addFileNode2DependencyGrap(originPath);
             }
-            if (!this.findFilesByPathArray(originPath, this.indexPathArray)) {
+            if (!this.findFilesByPathArray(originPath)) {
                 logger.trace(originPath + 'module mapperInfo is not found!');
             }
         }
