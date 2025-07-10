@@ -16,13 +16,15 @@
 import {
     BasicBlock,
     DEFAULT_ARK_CLASS_NAME,
-    DEFAULT_ARK_METHOD_NAME, FullPosition,
+    DEFAULT_ARK_METHOD_NAME,
+    FullPosition,
     ModelUtils,
     Scene,
     SceneConfig,
     Stmt,
 } from '../../src';
 import { assert, expect } from 'vitest';
+import { ArkIRMethodPrinter } from '../../src/save/arkir/ArkIRMethodPrinter';
 
 export function buildScene(projectPath: string, needInferTypes: boolean = true) {
     const config: SceneConfig = new SceneConfig();
@@ -70,6 +72,16 @@ export function testMethodStmts(scene: Scene, fileName: string, expectStmts: any
         return;
     }
     assertStmtsEqual(stmts, expectStmts, assertPos);
+}
+
+export function testMethodIR(scene: Scene, fileName: string, className: string = DEFAULT_ARK_CLASS_NAME,
+                             methodName: string = DEFAULT_ARK_METHOD_NAME, expectMethodIR: string): void {
+    const arkFile = scene.getFiles().find((file) => file.getName().endsWith(fileName));
+    const arkMethod = arkFile?.getClassWithName(className)?.getMethods()
+        .find((method) => (method.getName() === methodName));
+    assert.isDefined(arkMethod);
+    const printer = new ArkIRMethodPrinter(arkMethod!);
+    expect(printer.dump()).toEqual(expectMethodIR);
 }
 
 export function testBlocks(scene: Scene, filePath: string, methodName: string, expectBlocks: any[]): void {

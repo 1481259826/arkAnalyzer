@@ -62,7 +62,7 @@ import {
     VoidType,
 } from '../base/Type';
 import { ArkSignatureBuilder } from '../model/builder/ArkSignatureBuilder';
-import { CONSTRUCTOR_NAME, THIS_NAME } from './TSConst';
+import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from './TSConst';
 import { ClassSignature, FieldSignature, MethodSignature } from '../model/ArkSignature';
 import { Value } from '../base/Value';
 import {
@@ -193,6 +193,8 @@ export class ArkValueTransformer {
             return this.objectLiteralExpresionToValueAndStmts(node);
         } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
             return this.thisExpressionToValueAndStmts(node as ts.ThisExpression);
+        } else if (node.kind === ts.SyntaxKind.SuperKeyword) {
+            return this.superExpressionToValueAndStmts(node as ts.SuperExpression);
         } else if (ts.isConditionalExpression(node)) {
             return this.conditionalExpressionToValueAndStmts(node);
         }
@@ -219,6 +221,14 @@ export class ArkValueTransformer {
         return {
             value: this.getThisLocal(),
             valueOriginalPositions: [FullPosition.buildFromNode(thisExpression, this.sourceFile)],
+            stmts: [],
+        };
+    }
+
+    private superExpressionToValueAndStmts(superExpression: ts.SuperExpression): ValueAndStmts {
+        return {
+            value: this.getOrCreateLocal(SUPER_NAME),
+            valueOriginalPositions: [FullPosition.buildFromNode(superExpression, this.sourceFile)],
             stmts: [],
         };
     }
@@ -604,7 +614,7 @@ export class ArkValueTransformer {
 
         const taggedFuncArgus = {
             realGenericTypes: undefined,
-            args: [templateObjectLocal, placeholdersLocal],
+            argValues: [templateObjectLocal, placeholdersLocal],
             argPositions: [templateObjectLocalPositions[0], placeholdersLocalPositions[0]],
         };
         return this.generateInvokeValueAndStmts(taggedTemplateExpression.tag, taggedFuncArgus, placeholdersStmts, taggedTemplateExpression);
@@ -788,70 +798,187 @@ export class ArkValueTransformer {
 
     private generateInvokeValueAndStmts(
         functionNameNode: ts.LeftHandSideExpression,
-        argus: {
+        args: {
             realGenericTypes: Type[] | undefined;
-            args: Value[];
+            argValues: Value[];
             argPositions: FullPosition[];
         },
         currStmts: Stmt[],
-        callExpression: ts.CallExpression | ts.TaggedTemplateExpression
+        callExpression: ts.CallExpression | ts.TaggedTemplateExpression,
     ): ValueAndStmts {
-        const stmts: Stmt[] = [...currStmts];
-        let { value: callerValue, valueOriginalPositions: callerPositions, stmts: callerStmts } = this.tsNodeToValueAndStmts(functionNameNode);
-        callerStmts.forEach(stmt => stmts.push(stmt));
+        const stmts = [...currStmts];
+        const { value: calleeValue, valueOriginalPositions: calleePositions, stmts: calleeStmts } =
+            this.tsNodeToValueAndStmts(functionNameNode);
+        stmts.push(...calleeStmts);
 
-        let invokeValue: Value;
-        let invokeValuePositions: FullPosition[] = [FullPosition.buildFromNode(callExpression, this.sourceFile)];
-        const { args, argPositions, realGenericTypes } = argus;
-        if (callerValue instanceof AbstractFieldRef) {
-            let methodSignature: MethodSignature;
-            const declareSignature = callerValue.getFieldSignature().getDeclaringSignature();
-            if (declareSignature instanceof ClassSignature) {
-                methodSignature = new MethodSignature(declareSignature, ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(callerValue.getFieldName()));
-            } else {
-                methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerValue.getFieldName());
-            }
-            if (callerValue instanceof ArkInstanceFieldRef) {
-                invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args, realGenericTypes);
-                invokeValuePositions.push(...callerPositions.slice(1));
-            } else {
-                invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
-            }
-        } else if (callerValue instanceof Local) {
-            const callerName = callerValue.getName();
-            let classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(callerName);
-            let cls = ModelUtils.getClass(this.declaringMethod, classSignature);
-            if (cls?.hasComponentDecorator() && ts.isCallExpression(callExpression)) {
-                return this.generateCustomViewStmt(callerName, args, argPositions, callExpression, stmts);
-            } else if ((callerName === COMPONENT_FOR_EACH || callerName === COMPONENT_LAZY_FOR_EACH) && ts.isCallExpression(callExpression)) {
-                // foreach/lazyforeach will be parsed as ts.callExpression
-                return this.generateSystemComponentStmt(callerName, args, argPositions, callExpression, stmts);
-            }
-            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(callerName);
-            if (callerValue.getType() instanceof FunctionType) {
-                invokeValue = new ArkPtrInvokeExpr(methodSignature, callerValue, args, realGenericTypes);
-            } else {
-                invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
-            }
-        } else if (callerValue instanceof ArkArrayRef && ts.isElementAccessExpression(functionNameNode)) {
-            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(functionNameNode.argumentExpression.getText());
-            invokeValue = new ArkInstanceInvokeExpr(callerValue.getBase(), methodSignature, args, realGenericTypes);
-            invokeValuePositions.push(...callerPositions.slice(1));
-            stmts.pop();
-        } else {
-            ({
-                value: callerValue,
-                valueOriginalPositions: callerPositions,
-                stmts: callerStmts,
-            } = this.arkIRTransformer.generateAssignStmtForValue(callerValue, callerPositions));
-            callerStmts.forEach(stmt => stmts.push(stmt));
-            const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName((callerValue as Local).getName());
-            invokeValue = new ArkStaticInvokeExpr(methodSignature, args, realGenericTypes);
+        const invokeExprPosition = FullPosition.buildFromNode(callExpression, this.sourceFile);
+
+        if (calleeValue instanceof AbstractFieldRef) {
+            return this.handleFieldRefInvoke(calleeValue, args, invokeExprPosition, calleePositions, stmts);
         }
-        invokeValuePositions.push(...argPositions);
+
+        if (calleeValue instanceof Local) {
+            return this.handleLocalInvoke(calleeValue, callExpression, args, invokeExprPosition, calleePositions, stmts);
+        }
+
+        if (calleeValue instanceof ArkArrayRef && ts.isElementAccessExpression(functionNameNode)) {
+            return this.handleArrayRefInvoke(calleeValue, functionNameNode as ts.ElementAccessExpression, args,
+                invokeExprPosition, calleePositions, stmts);
+        }
+
+        return this.handleDefaultInvoke(calleeValue, args, invokeExprPosition, calleePositions, stmts);
+    }
+
+    private handleFieldRefInvoke(
+        calleeValue: AbstractFieldRef,
+        args: {
+            realGenericTypes: Type[] | undefined;
+            argValues: Value[];
+            argPositions: FullPosition[];
+        },
+        invokeExprPosition: FullPosition,
+        calleePositions: FullPosition[],
+        currStmts: Stmt[],
+    ): ValueAndStmts {
+        let methodSignature: MethodSignature;
+        const declareSignature = calleeValue.getFieldSignature().getDeclaringSignature();
+        if (declareSignature instanceof ClassSignature) {
+            methodSignature =
+                new MethodSignature(declareSignature, ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(calleeValue.getFieldName()));
+        } else {
+            methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(calleeValue.getFieldName());
+        }
+
+        let invokeExpr: Value;
+        const invokeExprPositions: FullPosition[] = [invokeExprPosition];
+        if (calleeValue instanceof ArkInstanceFieldRef) {
+            invokeExpr =
+                new ArkInstanceInvokeExpr(calleeValue.getBase(), methodSignature, args.argValues, args.realGenericTypes);
+            invokeExprPositions.push(...calleePositions.slice(1));
+        } else {
+            invokeExpr = new ArkStaticInvokeExpr(methodSignature, args.argValues, args.realGenericTypes);
+        }
+        invokeExprPositions.push(...args.argPositions);
         return {
-            value: invokeValue,
-            valueOriginalPositions: invokeValuePositions,
+            value: invokeExpr,
+            valueOriginalPositions: invokeExprPositions,
+            stmts: currStmts,
+        };
+    }
+
+    private handleLocalInvoke(
+        calleeValue: Local,
+        callExpression: ts.CallExpression | ts.TaggedTemplateExpression,
+        args: {
+            realGenericTypes: Type[] | undefined;
+            argValues: Value[];
+            argPositions: FullPosition[];
+        },
+        invokeExprPosition: FullPosition,
+        calleePositions: FullPosition[],
+        currStmts: Stmt[],
+    ): ValueAndStmts {
+        let invokeExpr: Value;
+        const invokeExprPositions: FullPosition[] = [invokeExprPosition];
+        const calleeName = calleeValue.getName();
+
+        if (this.isCustomViewCall(calleeName, callExpression)) {
+            return this.generateCustomViewStmt(calleeName, args.argValues, args.argPositions, callExpression as ts.CallExpression, currStmts);
+        } else if (this.isSystemComponentCall(calleeName, callExpression)) {
+            return this.generateSystemComponentStmt(calleeName, args.argValues, args.argPositions, callExpression as ts.CallExpression, currStmts);
+        }
+
+        const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(calleeName);
+        if (!this.getGlobals()?.has(calleeName) || calleeValue.getType() instanceof FunctionType) {
+            // the call to the left value or a value of function type should be ptr invoke expr.
+            invokeExpr = new ArkPtrInvokeExpr(methodSignature, calleeValue, args.argValues, args.realGenericTypes);
+            invokeExprPositions.push(...calleePositions.slice(1));
+        } else {
+            invokeExpr = new ArkStaticInvokeExpr(
+                methodSignature,
+                args.argValues,
+                args.realGenericTypes,
+            );
+        }
+
+        invokeExprPositions.push(...args.argPositions);
+        return {
+            value: invokeExpr,
+            valueOriginalPositions: invokeExprPositions,
+            stmts: currStmts,
+        };
+    }
+
+    private isCustomViewCall(
+        callerName: string,
+        callExpression: ts.CallExpression | ts.TaggedTemplateExpression,
+    ): boolean {
+        if (!ts.isCallExpression(callExpression)) {
+            return false;
+        }
+        const classSignature = ArkSignatureBuilder.buildClassSignatureFromClassName(callerName);
+        const cls = ModelUtils.getClass(this.declaringMethod, classSignature);
+        return cls?.hasComponentDecorator() ?? false;
+    }
+
+    private isSystemComponentCall(
+        calleeName: string,
+        callExpression: ts.CallExpression | ts.TaggedTemplateExpression,
+    ): boolean {
+        return (calleeName === COMPONENT_FOR_EACH || calleeName === COMPONENT_LAZY_FOR_EACH) &&
+               ts.isCallExpression(callExpression);
+    }
+
+    private handleArrayRefInvoke(
+        calleeValue: ArkArrayRef,
+        functionNameNode: ts.ElementAccessExpression,
+        args: {
+            realGenericTypes: Type[] | undefined;
+            argValues: Value[];
+            argPositions: FullPosition[];
+        },
+        invokeExprPosition: FullPosition,
+        calleePositions: FullPosition[],
+        currStmts: Stmt[],
+    ): ValueAndStmts {
+        const stmts = [...currStmts];
+        const methodSignature = ArkSignatureBuilder.buildMethodSignatureFromMethodName(
+            functionNameNode.argumentExpression.getText(),
+        );
+        stmts.pop();
+        const invokeExpr = new ArkInstanceInvokeExpr(calleeValue.getBase(), methodSignature, args.argValues, args.realGenericTypes);
+        const invokeExprPositions: FullPosition[] = [invokeExprPosition, calleePositions.slice(1)[0],
+            ...args.argPositions];
+        return {
+            value: invokeExpr,
+            valueOriginalPositions: invokeExprPositions,
+            stmts: stmts,
+        };
+    }
+
+    private handleDefaultInvoke(
+        calleeValue: Value,
+        args: {
+            realGenericTypes: Type[] | undefined;
+            argValues: Value[];
+            argPositions: FullPosition[];
+        },
+        invokeExprPosition: FullPosition,
+        calleePositions: FullPosition[],
+        currStmts: Stmt[],
+    ): ValueAndStmts {
+        const stmts = [...currStmts];
+        const { value: newCalleeValue, stmts: newStmts } =
+            this.arkIRTransformer.generateAssignStmtForValue(calleeValue, calleePositions);
+        stmts.push(...newStmts);
+
+        const invokeExpr = new ArkPtrInvokeExpr(ArkSignatureBuilder.buildMethodSignatureFromMethodName((newCalleeValue as Local).getName()),
+            newCalleeValue as Local, args.argValues, args.realGenericTypes);
+        const invokeExprPositions: FullPosition[] = [invokeExprPosition, calleePositions.slice(1)[0],
+            ...args.argPositions];
+        return {
+            value: invokeExpr,
+            valueOriginalPositions: invokeExprPositions,
             stmts: stmts,
         };
     }
@@ -861,7 +988,7 @@ export class ArkValueTransformer {
         callExpression: ts.CallExpression
     ): {
         realGenericTypes: Type[] | undefined;
-        args: Value[];
+        argValues: Value[];
         argPositions: FullPosition[];
     } {
         let realGenericTypes: Type[] | undefined;
@@ -882,7 +1009,7 @@ export class ArkValueTransformer {
         const { args: args, argPositions: argPositions } = this.parseArguments(currStmts, callExpression.arguments, builderMethodIndexes);
         return {
             realGenericTypes: realGenericTypes,
-            args: args,
+            argValues: args,
             argPositions: argPositions,
         };
     }
