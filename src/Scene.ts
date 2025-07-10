@@ -98,7 +98,7 @@ export class Scene {
     private unhandledFilePaths: Set<string> = new Set<string>();
     private unhandledSdkFilePaths: string[] = [];
 
-    constructor() {}
+    constructor() { }
 
     /*
      * Set all static field to be null, then all related objects could be freed by GC.
@@ -515,11 +515,12 @@ export class Scene {
         if (!fs.existsSync(originPath)) {
             return false;
         }
-        const indexFileName = FileUtils.getIndexFileName(originPath);
-        if (!indexFileName) {
+        const dirname = path.dirname(originPath);
+        const indexFileName = FileUtils.getIndexFileName(dirname);
+        if (indexFileName === '') {
             return false;
         }
-        const curPath = path.join(originPath, indexFileName);
+        const curPath = path.join(dirname, indexFileName);
         if (!this.isRepeatBuildFile(curPath)) {
             this.addFileNode2DependencyGrap(curPath);
             return true;
@@ -1184,7 +1185,7 @@ export class Scene {
                     // 遗留问题：只统计了项目文件的namespace，没统计sdk文件内部的引入
                     const importNameSpaceClasses = classMap.get(importNameSpace.getNamespaceSignature())!;
                     importClasses.push(...importNameSpaceClasses.filter(c => !importClasses.includes(c) && c.getName() !== DEFAULT_ARK_CLASS_NAME));
-                } catch {}
+                } catch { }
             }
         }
         const fileClasses = classMap.get(file.getFileSignature())!;
@@ -1317,7 +1318,7 @@ export class Scene {
                     // 遗留问题：只统计了项目文件，没统计sdk文件内部的引入
                     const importNameSpaceClasses = globalVariableMap.get(importNameSpace.getNamespaceSignature())!;
                     importLocals.push(...importNameSpaceClasses.filter(c => !importLocals.includes(c) && c.getName() !== DEFAULT_ARK_CLASS_NAME));
-                } catch {}
+                } catch { }
             }
         }
         const fileLocals = globalVariableMap.get(file.getFileSignature())!;
