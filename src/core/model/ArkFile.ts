@@ -78,7 +78,7 @@ export class ArkFile {
 
     private anonymousClassNumber: number = 0;
 
-    private tsSourceFile: ts.SourceFile | null = null;
+    private ast: ts.SourceFile | null = null;
 
     constructor(language: Language) {
         this.language = language;
@@ -367,11 +367,11 @@ export class ArkFile {
         return this.anonymousClassNumber++;
     }
 
-    public getTsSourceFile(): ts.SourceFile | null {
-        return this.tsSourceFile;
+    public getAST(): ts.SourceFile | null {
+        return this.ast;
     }
 
-    public setTsSourceFile(value: ts.SourceFile | null) {
-        this.tsSourceFile = value;
+    public setAST(value: ts.SourceFile | null): void {
+        this.ast = value;
     }
 }

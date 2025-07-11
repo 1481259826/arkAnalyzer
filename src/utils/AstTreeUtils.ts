@@ -43,7 +43,7 @@ export class AstTreeUtils {
      * @returns ts.SourceFile
      */
     public static getSourceFileFromArkFile(arkFile: ArkFile): ts.SourceFile {
-        let sourceFile: ts.SourceFile | null | undefined = arkFile.getTsSourceFile();
+        let sourceFile: ts.SourceFile | null | undefined = arkFile.getAST();
         if (sourceFile) {
             return sourceFile;
         }
