@@ -2234,7 +2234,7 @@ export const MultipleAnonymousMethod2_Expect_IR = {
                 },
                 usedStmts: [
                     {
-                        text: '%1 = listener.<@%unk/%unk: .length>'
+                        text: '%1 = listener.<@built-in/lib.es5.d.ts: Array.length>'
                     }
                 ]
             },
