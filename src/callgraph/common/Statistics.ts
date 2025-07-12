@@ -98,7 +98,7 @@ export class PTAStat extends StatTraits {
         
         for (let [v] of dm) {
             if (v instanceof Local) {
-                if (v.getName() == 'this') {
+                if (v.getName() === 'this') {
                     continue;
                 }
 
@@ -110,14 +110,12 @@ export class PTAStat extends StatTraits {
                     continue;
                 }
 
-                // 统计推断的变量
                 if (v.getType() instanceof UnknownType) {
                     this.numInferedUnknownValue++;
                 } else {
                     this.numInferedDiffTypeValue++;
                 }
             } else {
-                // 处理非 Local 类型的变量
                 if (v.getType() instanceof UnknownType) {
                     this.numInferedUnknownValue++;
                 } else {
@@ -125,7 +123,7 @@ export class PTAStat extends StatTraits {
                 }
             }
         }
-        
+
         this.getNotInferredUnknownStat();
     }
 
