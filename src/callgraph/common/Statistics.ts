@@ -18,6 +18,8 @@ import { UnknownType } from '../../core/base/Type';
 import { CallGraphNode, CallGraphNodeKind } from '../model/CallGraph';
 import { PointerAnalysis } from '../pointerAnalysis/PointerAnalysis';
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+import { Local } from '../../core/base/Local';
+import { ArkThisRef } from '../../core/base/Ref';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'PTA');
 const LABEL_WIDTH = 55;
@@ -92,6 +94,45 @@ export class PTAStat extends StatTraits {
     }
 
     private getInferedStat(): void {
+        let dm = this.pta.getTypeDiffMap();
+        
+        for (let [v] of dm) {
+            if (v instanceof Local) {
+                if (v.getName() == 'this') {
+                    continue;
+                }
+
+                let s = v.getDeclaringStmt();
+                if (s instanceof ArkAssignStmt && 
+                    s.getLeftOp() instanceof Local && 
+                    (s.getLeftOp() as Local).getName() === 'this' && 
+                    s.getRightOp() instanceof ArkThisRef) {
+                    continue;
+                }
+
+                // 统计推断的变量
+                if (v.getType() instanceof UnknownType) {
+                    this.numInferedUnknownValue++;
+                } else {
+                    this.numInferedDiffTypeValue++;
+                }
+            } else {
+                // 处理非 Local 类型的变量
+                if (v.getType() instanceof UnknownType) {
+                    this.numInferedUnknownValue++;
+                } else {
+                    this.numInferedDiffTypeValue++;
+                }
+            }
+        }
+        
+        this.getNotInferredUnknownStat();
+    }
+
+    private getNotInferredUnknownStat(): void {
+        let inferred = new Set(this.pta.getTypeDiffMap().keys());
+        let visited = new Set();
+        
         let stmtStat = (s: Stmt): void => {
             if (!(s instanceof ArkAssignStmt)) {
                 return;
@@ -103,30 +144,16 @@ export class PTAStat extends StatTraits {
             }
             visited.add(lop);
 
-            if (inferred.includes(lop)) {
-                if (lop.getType() instanceof UnknownType) {
-                    this.numInferedUnknownValue++;
-                } else {
-                    this.numInferedDiffTypeValue++;
-                }
-            } else {
-                if (lop.getType() instanceof UnknownType) {
-                    this.numNotInferedUnknownValue++;
-                }
+            if (!inferred.has(lop) && lop.getType() instanceof UnknownType) {
+                this.numNotInferedUnknownValue++;
             }
             this.totalValuesInVisitedFunc++;
         };
 
-        let inferred = Array.from(this.pta.getTypeDiffMap().keys());
-        let visited = new Set();
-
         let cg = this.pta.getCallGraph();
         this.pta.getHandledFuncs().forEach(funcID => {
             let f = cg.getArkMethodByFuncID(funcID);
-            f
-                ?.getCfg()
-                ?.getStmts()
-                .forEach(s => stmtStat(s));
+            f?.getCfg()?.getStmts().forEach(s => stmtStat(s));
         });
     }
 
