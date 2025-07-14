@@ -22,7 +22,7 @@ import {
     PrinterBuilder,
     Scene,
     SceneConfig,
-    Stmt
+    Stmt,
 } from '../../src';
 import { ArkMetadataKind, CommentsMetadata } from '../../src/core/model/ArkMetadata';
 
@@ -167,6 +167,23 @@ class ArkIRTransformerTest {
         logger.info('printCfg end');
     }
 
+    public printIR(): void {
+        logger.info('printIR start');
+
+        const configJsonPath = 'tests/resources/arkIRTransformer/mainModule';
+        const sceneConfig: SceneConfig = new SceneConfig();
+        sceneConfig.buildFromProjectDir(configJsonPath);
+        const scene = new Scene();
+        scene.buildSceneFromProjectDir(sceneConfig);
+
+        const printerBuilder = new PrinterBuilder('out');
+        for (const arkFile of scene.getFiles()) {
+            printerBuilder.dumpToIR(arkFile);
+        }
+
+        logger.info('printIR end');
+    }
+
     public simpleTest() {
         logger.info('simpleTest start');
         const projectDir = 'tests/resources/arkIRTransformer/mainModule';
@@ -190,5 +207,5 @@ class ArkIRTransformerTest {
 }
 
 const arkIRTransformerTest = new ArkIRTransformerTest();
-arkIRTransformerTest.printCfg();
+arkIRTransformerTest.printIR();
 

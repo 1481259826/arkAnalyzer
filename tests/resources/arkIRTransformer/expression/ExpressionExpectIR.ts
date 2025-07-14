@@ -823,3 +823,31 @@ class LocalModification {
   }
 }
 `;
+
+export const PTR_INVOKE_EXPRESSION_RETURNFUNC1_EXPECT_IR = `returnFunc1(): @expression/CallExpressionTest.ts: %dflt.%AM0() {
+  label0:
+    this = this: @expression/CallExpressionTest.ts: %dflt
+    nestedReturnFunc = %AM4$returnFunc1
+    ptrinvoke <@expression/CallExpressionTest.ts: %dflt.nestedReturnFunc()>()
+    return nestedReturnFunc
+}
+`;
+
+export const PTR_INVOKE_EXPRESSION_CALLFUNCRETURNED_EXPECT_IR = `callFuncReturned(): void {
+  label0:
+    this = this: @expression/CallExpressionTest.ts: %dflt
+    %0 = staticinvoke <@expression/CallExpressionTest.ts: %dflt.returnFunc2()>()
+    %1 = ptrinvoke <@expression/CallExpressionTest.ts: %dflt.%0()>()
+    ptrinvoke <@expression/CallExpressionTest.ts: %dflt.%1()>()
+    return
+}
+`;
+
+export const PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR = `%AM5$promiseCall(resolve: unknown): void {
+  label0:
+    resolve = parameter0: unknown
+    this = this: @expression/CallExpressionTest.ts: %dflt
+    ptrinvoke <@%unk/%unk: .resolve()>(42)
+    return
+}
+`;

@@ -20,6 +20,7 @@ import {
     ArkFile,
     ArkMethod,
     ArkStaticFieldRef,
+    DEFAULT_ARK_CLASS_NAME,
     GlobalRef,
     Local,
     NAME_DELIMITER,
@@ -33,8 +34,12 @@ import {
     ExpressionStatements_Expect_IR,
     LiteralExpression_Expect_IR,
     NewExpression_Expect_IR,
-    Operator_Expect_IR, PostfixAndPrefixUnaryExpression_Expected_IR,
-    UnaryExpression_Expect_IR
+    Operator_Expect_IR,
+    PostfixAndPrefixUnaryExpression_Expected_IR,
+    PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR,
+    PTR_INVOKE_EXPRESSION_CALLFUNCRETURNED_EXPECT_IR,
+    PTR_INVOKE_EXPRESSION_RETURNFUNC1_EXPECT_IR,
+    UnaryExpression_Expect_IR,
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
     CompoundAssignment_Expect_IR,
@@ -88,7 +93,7 @@ import {
     UnClosureFunction_Expect_IR,
 } from '../resources/arkIRTransformer/function/FunctionExpectIR';
 import { MethodParameter } from '../../src/core/model/builder/ArkMethodBuilder';
-import { assertStmtsEqual, buildScene, testBlocks, testFileStmts, testMethodStmts } from './common';
+import { assertStmtsEqual, buildScene, testBlocks, testFileStmts, testMethodIR, testMethodStmts } from './common';
 import {
     FOR_STATEMENT_EXPECT_CASE1,
     FOR_STATEMENT_EXPECT_CASE2,
@@ -405,6 +410,12 @@ describe('expression Test', () => {
         const file = scene.getFiles().find((file) => file.getName().endsWith('PostfixAndPrefixUnaryExpression.ts'));
         assert.isDefined(file);
         assert.equal(printFileIR(file!), PostfixAndPrefixUnaryExpression_Expected_IR);
+    });
+
+    it('test ptr invoke expression', async () => {
+        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, 'returnFunc1', PTR_INVOKE_EXPRESSION_RETURNFUNC1_EXPECT_IR);
+        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, 'callFuncReturned', PTR_INVOKE_EXPRESSION_CALLFUNCRETURNED_EXPECT_IR);
+        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, '%AM5$promiseCall', PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR);
     });
 });
 
