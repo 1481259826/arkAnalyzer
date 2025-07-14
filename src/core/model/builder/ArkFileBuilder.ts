@@ -74,6 +74,10 @@ export function buildArkFileFromFile(absoluteFilePath: string, projectDir: strin
 
     arkFile.setCode(fs.readFileSync(arkFile.getFilePath(), 'utf8'));
     const sourceFile = ts.createSourceFile(arkFile.getName(), arkFile.getCode(), ts.ScriptTarget.Latest, true, undefined, ETS_COMPILER_OPTIONS);
+    // save ast source file, if enabled ast and file is from the project (not from sdk)
+    if (arkFile.getScene().getOptions().enableAST && arkFile.getScene().getProjectName() === arkFile.getProjectName()) {
+        arkFile.setAST(sourceFile);
+    }
     genDefaultArkClass(arkFile, sourceFile);
     buildArkFile(arkFile, sourceFile);
 }
