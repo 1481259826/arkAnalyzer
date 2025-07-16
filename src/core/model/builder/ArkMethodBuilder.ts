@@ -39,7 +39,14 @@ import { BasicBlock } from '../../graph/BasicBlock';
 import { Local } from '../../base/Local';
 import { Value } from '../../base/Value';
 import { CONSTRUCTOR_NAME, SUPER_NAME, THIS_NAME } from '../../common/TSConst';
-import { ANONYMOUS_METHOD_PREFIX, CALL_SIGNATURE_NAME, DEFAULT_ARK_CLASS_NAME, DEFAULT_ARK_METHOD_NAME, NAME_DELIMITER, NAME_PREFIX } from '../../common/Const';
+import {
+    ANONYMOUS_METHOD_PREFIX,
+    CALL_SIGNATURE_NAME,
+    DEFAULT_ARK_CLASS_NAME,
+    DEFAULT_ARK_METHOD_NAME,
+    NAME_DELIMITER,
+    NAME_PREFIX,
+} from '../../common/Const';
 import { ArkSignatureBuilder } from './ArkSignatureBuilder';
 import { IRUtils } from '../../common/IRUtils';
 import { ArkErrorCode } from '../../common/ArkError';
@@ -522,7 +529,9 @@ export function replaceSuper2Constructor(constructor: ArkMethod): void {
     }
     const superConstructor = superClass.getMethodWithName(CONSTRUCTOR_NAME);
     if (superConstructor === null) {
-        logger.error(`Can not find constructor method for class ${superClass.getSignature().toString()}`);
+        if (needDefaultConstructorInClass(superClass)) {
+            logger.error(`Can not find constructor method for class ${superClass.getSignature().toString()}`);
+        }
         return;
     }
     const startingBlock = constructor.getBody()?.getCfg().getStartingBlock();
