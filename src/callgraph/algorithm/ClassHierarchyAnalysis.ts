@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ArkStaticInvokeExpr } from '../../core/base/Expr';
+import { ArkInstanceInvokeExpr, ArkStaticInvokeExpr } from '../../core/base/Expr';
 import { Scene } from '../../Scene';
 import { Stmt } from '../../core/base/Stmt';
 import { ArkClass } from '../../core/model/ArkClass';
@@ -21,6 +21,7 @@ import { NodeID } from '../../core/graph/BaseExplicitGraph';
 import { CallGraph, CallSite } from '../model/CallGraph';
 import { AbstractAnalysis } from './AbstractAnalysis';
 import { CallGraphBuilder } from '../model/builder/CallGraphBuilder';
+import { ClassSignature } from '../../core/model/ArkSignature';
 
 export class ClassHierarchyAnalysis extends AbstractAnalysis {
     constructor(scene: Scene, cg: CallGraph, cb: CallGraphBuilder) {
@@ -30,6 +31,7 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
 
     public resolveCall(callerMethod: NodeID, invokeStmt: Stmt): CallSite[] {
         let invokeExpr = invokeStmt.getInvokeExpr();
+        const stmtDeclareClass: ClassSignature = invokeStmt.getCfg().getDeclaringMethod().getDeclaringArkClass().getSignature();
         let resolveResult: CallSite[] = [];
 
         if (!invokeExpr) {
@@ -57,12 +59,22 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
             );
         } else {
             let declareClass = calleeMethod.getDeclaringArkClass();
-            // TODO: super class method should be placed at the end
-            this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                if (arkClass.isAbstract()) {
-                    return;
+            
+            // block super invoke 
+            if (invokeExpr instanceof ArkInstanceInvokeExpr) {
+                const baseLocalName = invokeExpr.getBase().getName();
+                if (baseLocalName === 'this' && declareClass.getSignature() !== stmtDeclareClass) {
+                    resolveResult.push(
+                        this.cg.getCallSiteManager().newCallSite(
+                            invokeStmt, undefined,
+                            this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!
+                        )
+                    );
+                    return resolveResult;
                 }
+            }
 
+            this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
 
                 if (

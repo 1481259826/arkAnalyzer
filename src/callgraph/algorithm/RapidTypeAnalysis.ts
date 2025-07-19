@@ -67,10 +67,6 @@ export class RapidTypeAnalysis extends AbstractAnalysis {
             let declareClass = calleeMethod!.getDeclaringArkClass();
             // TODO: super class method should be placed at the end
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
-                if (arkClass.isAbstract()) {
-                    return;
-                }
-
                 let possibleCalleeMethod = arkClass.getMethodWithName(calleeMethod!.getName());
 
                 if (
