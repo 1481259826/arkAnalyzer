@@ -61,17 +61,10 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
             let declareClass = calleeMethod.getDeclaringArkClass();
             
             // block super invoke 
-            if (invokeExpr instanceof ArkInstanceInvokeExpr) {
-                const baseLocalName = invokeExpr.getBase().getName();
-                if (baseLocalName === 'this' && declareClass.getSignature() !== stmtDeclareClass) {
-                    resolveResult.push(
-                        this.cg.getCallSiteManager().newCallSite(
-                            invokeStmt, undefined,
-                            this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!
-                        )
-                    );
-                    return resolveResult;
-                }
+            if (this.checkSuperInvoke(invokeStmt, declareClass, stmtDeclareClass)) {
+                resolveResult.push(this.cg.getCallSiteManager().newCallSite(invokeStmt, undefined,
+                        this.cg.getCallGraphNodeByMethod(calleeMethod!.getSignature()).getID(), callerMethod!));
+                return resolveResult;
             }
 
             this.getClassHierarchy(declareClass).forEach((arkClass: ArkClass) => {
@@ -102,5 +95,16 @@ export class ClassHierarchyAnalysis extends AbstractAnalysis {
     protected preProcessMethod(): CallSite[] {
         // do nothing
         return [];
+    }
+
+    private checkSuperInvoke(invokeStmt: Stmt, declareClass: ArkClass, stmtDeclareClass: ClassSignature): boolean {
+        const invokeExpr = invokeStmt.getInvokeExpr();
+        if (invokeExpr instanceof ArkInstanceInvokeExpr) {
+            const baseLocalName = invokeExpr.getBase().getName();
+            if (baseLocalName === 'this' && declareClass.getSignature() !== stmtDeclareClass) {
+                return true;
+            }
+        }
+        return false;
     }
 }
