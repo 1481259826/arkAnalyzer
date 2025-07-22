@@ -169,7 +169,7 @@ export const ETS_COMPILER_OPTIONS = {
         ],
         render: {
             method: ['build', 'pageTransition'],
-            decorator: 'Builder',
+            decorator: ['LocalBuilder', 'Builder'],
         },
         components: [
             'AbilityComponent',
