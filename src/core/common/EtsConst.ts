@@ -169,7 +169,7 @@ export const ETS_COMPILER_OPTIONS = {
         ],
         render: {
             method: ['build', 'pageTransition'],
-            decorator: ['LocalBuilder', 'Builder'],
+            decorator: 'Builder',
         },
         components: [
             'AbilityComponent',
@@ -984,6 +984,8 @@ export const COMPONENT_DECORATOR: Set<string> = new Set(['Reusable', 'Component'
 export const ENTRY_DECORATOR: string = 'Entry';
 export const BUILDER_DECORATOR: string = 'Builder';
 export const BUILDER_PARAM_DECORATOR: string = 'BuilderParam';
+export const COMPONENT_TABBAR: string = 'TabBar';
+export const COMPONENT_PAGEMAP: string = 'PageMap';
 
 export function isEtsAtomicComponent(name: string): boolean {
     return BUILDIN_ATOMIC_COMPONENT.has(name);
