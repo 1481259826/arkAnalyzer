@@ -755,7 +755,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * 
      * Special Case:
      * - Not all builder nodes are part of a parent-child relationship in the view tree. For example:
-     *   - In cases like `bindContentCover`（https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-contentcover-page）, the builder's parent is the root node, representing a different type of relationship.
+     *   - In cases like `bindContentCover`.
      */
     private addBuilderNode(method: ArkMethod, shouldPush: boolean): ViewTreeNodeImpl {
         let builderViewTree = method.getViewTree();
@@ -1072,7 +1072,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         ['If.branch', this.ifBranchCreationParser.bind(this)],
         ['WaterFlow.create', this.waterFlowCreationParser.bind(this)],
     ]);
-    private COMPONENT_BEHAVIOR_PARSERS: Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined> = new Map([
+    private COMPONENT_BEHAVIOR_PARSERS: 
+    Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined
+    > = new Map([
         ['tabBar', this.tabBarComponentParser.bind(this)],
         ['navDestination', this.navDestinationComponentParser.bind(this)],
     ]);
@@ -1283,7 +1285,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             const local = arg as Local;
             if (local2Node.has(local)) {
                 const node = local2Node.get(local);
-                let tabs_node = this.getNodeByNameFromStack("Tabs");
+                let tabs_node = this.getNodeByNameFromStack('Tabs');
                 let tabBarNode;
                 if (tabs_node && node) {
                     // 创建虚拟父节点 TabBar
@@ -1302,39 +1304,53 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     private navDestinationComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const args = expr.getArgs();
         for (const arg of args) {
-            const local = arg as Local;;
-            let type = arg.getType();
-            if (local2Node.has(local)) {
-                const node = local2Node.get(local);
-                let navigation_node = this.getNodeByNameFromStack("Navigation");
-                if (navigation_node && node) {
-                    // 创建虚拟父节点 PageMap
-                    const navDestinationNode = ViewTreeNodeImpl.createPageMapNode();
-                    navDestinationNode.children.push(node);
-                    node.parent = navDestinationNode;
-                    // 挂到 Navigation 节点下
-                    navigation_node.children.push(navDestinationNode);
-                    navDestinationNode.parent = navigation_node;
+            const local = arg as Local;
+            const type = arg.getType();
+    
+            // 如果 local 不存在于 local2Node，直接跳过
+            if (!local2Node.has(local)) {
+                if (!(type instanceof FunctionType)) {
+                    continue;
                 }
-            } else if (type instanceof FunctionType) {
+    
                 const method = this.findMethod(type.getMethodSignature());
-                if (method && method.hasBuilderDecorator()) {
-                    const builder_node = this.addBuilderNode(method, false);
-                    local2Node.set(arg as Local, builder_node);
-                    const base = expr.getBase();
-                    if (base instanceof Local && local2Node.has(base)) {
-                        const nav_node = local2Node.get(base);
-                        if (nav_node) {
-                            const pagemap_node = ViewTreeNodeImpl.createPageMapNode();
-                            pagemap_node.children.push(builder_node);
-                            builder_node.parent = pagemap_node;
-                            // 挂到 Navigation 节点下
-                            nav_node.children.push(pagemap_node);
-                            pagemap_node.parent = nav_node;
-                        }
-                    }
+                if (!method || !method.hasBuilderDecorator()) {
+                    continue;
                 }
+    
+                const builderNode = this.addBuilderNode(method, false);
+                local2Node.set(arg as Local, builderNode);
+    
+                const base = expr.getBase();
+                if (!(base instanceof Local) || !local2Node.has(base)) {
+                    continue;
+                }
+    
+                const navNode = local2Node.get(base);
+                if (!navNode) {
+                    continue;
+                }
+    
+                const pageMapNode = ViewTreeNodeImpl.createPageMapNode();
+                pageMapNode.children.push(builderNode);
+                builderNode.parent = pageMapNode;
+                navNode.children.push(pageMapNode);
+                pageMapNode.parent = navNode;
+                continue;
             }
+    
+            // 如果 local 存在于 local2Node
+            const node = local2Node.get(local);
+            const navigationNode = this.getNodeByNameFromStack('Navigation');
+            if (!navigationNode || !node) {
+                continue;
+            }
+    
+            const pageMapNode = ViewTreeNodeImpl.createPageMapNode();
+            pageMapNode.children.push(node);
+            node.parent = pageMapNode;
+            navigationNode.children.push(pageMapNode);
+            pageMapNode.parent = navigationNode;
         }
         return undefined;
     }
