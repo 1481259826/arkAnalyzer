@@ -23,6 +23,8 @@ import {
     DEFAULT_ARK_CLASS_NAME,
     GlobalRef,
     Local,
+    LOG_LEVEL,
+    Logger,
     NAME_DELIMITER,
     NAME_PREFIX,
     Scene,
@@ -39,6 +41,16 @@ import {
     PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR,
     PTR_INVOKE_EXPRESSION_CALLFUNCRETURNED_EXPECT_IR,
     PTR_INVOKE_EXPRESSION_RETURNFUNC1_EXPECT_IR,
+    REST_ELEMENTS1_EXPECT_IR,
+    REST_ELEMENTS2_EXPECT_IR,
+    REST_PARAMETERS1_EXPECT_IR,
+    SPREAD_ARRAY1_EXPECT_IR,
+    SPREAD_ARRAY2_EXPECT_IR,
+    SPREAD_ARRAY3_EXPECT_IR,
+    SPREAD_ARRAY4_EXPECT_IR,
+    SPREAD_PARAMETERS1_EXPECT_IR,
+    SPREAD_PARAMETERS2_EXPECT_IR,
+    SPREAD_PARAMETERS3_EXPECT_IR,
     UnaryExpression_Expect_IR,
 } from '../resources/arkIRTransformer/expression/ExpressionExpectIR';
 import {
@@ -105,6 +117,7 @@ import {
 import { ArkIRFilePrinter } from '../../src/save/arkir/ArkIRFilePrinter';
 
 const BASE_DIR = path.join(__dirname, '../../tests/resources/arkIRTransformer');
+Logger.configure('out/ArkIRTransformerTest.test.log', LOG_LEVEL.INFO, LOG_LEVEL.INFO, false);
 
 function testMethodOverload(scene: Scene, filePath: string, methodName: string, expectMethod: any): void {
     const arkFile = scene.getFiles().find((file) => file.getName().endsWith(filePath));
@@ -413,9 +426,28 @@ describe('expression Test', () => {
     });
 
     it('test ptr invoke expression', async () => {
-        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, 'returnFunc1', PTR_INVOKE_EXPRESSION_RETURNFUNC1_EXPECT_IR);
-        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, 'callFuncReturned', PTR_INVOKE_EXPRESSION_CALLFUNCRETURNED_EXPECT_IR);
-        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, '%AM5$promiseCall', PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR);
+        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, 'returnFunc1',
+            PTR_INVOKE_EXPRESSION_RETURNFUNC1_EXPECT_IR);
+        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, 'callFuncReturned',
+            PTR_INVOKE_EXPRESSION_CALLFUNCRETURNED_EXPECT_IR);
+        testMethodIR(scene, 'CallExpressionTest.ts', DEFAULT_ARK_CLASS_NAME, '%AM5$promiseCall',
+            PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR);
+    });
+
+    it('test spread syntax', async () => {
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadArray1', SPREAD_ARRAY1_EXPECT_IR);
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadArray2', SPREAD_ARRAY2_EXPECT_IR);
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadArray3', SPREAD_ARRAY3_EXPECT_IR);
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadArray4', SPREAD_ARRAY4_EXPECT_IR);
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadParameters1', SPREAD_PARAMETERS1_EXPECT_IR);
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadParameters2', SPREAD_PARAMETERS2_EXPECT_IR);
+        testMethodIR(scene, 'Spread.ts', DEFAULT_ARK_CLASS_NAME, 'spreadParameters3', SPREAD_PARAMETERS3_EXPECT_IR);
+    });
+
+    it('test rest syntax', async () => {
+        testMethodIR(scene, 'Rest.ts', DEFAULT_ARK_CLASS_NAME, 'restElements1', REST_ELEMENTS1_EXPECT_IR);
+        testMethodIR(scene, 'Rest.ts', DEFAULT_ARK_CLASS_NAME, 'restElements2', REST_ELEMENTS2_EXPECT_IR);
+        testMethodIR(scene, 'Rest.ts', DEFAULT_ARK_CLASS_NAME, 'restParameter', REST_PARAMETERS1_EXPECT_IR);
     });
 });
 

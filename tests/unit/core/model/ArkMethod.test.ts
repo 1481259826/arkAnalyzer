@@ -18,7 +18,7 @@ import { Scene } from '../../../../src/Scene';
 import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
 import { ArkReturnStmt, Local, Stmt, Value } from '../../../../src';
-import { ArkIRMethodPrinter } from "../../../../src/save/arkir/ArkIRMethodPrinter";
+import { ArkIRMethodPrinter } from '../../../../src/save/arkir/ArkIRMethodPrinter';
 
 let config: SceneConfig = new SceneConfig();
 config.buildFromProjectDir(path.join(__dirname, "../../../resources/model/method"))
@@ -236,7 +236,7 @@ describe("ArkMethod Test", () => {
         let method = arkDefaultClass?.getMethodWithName('testDotDotDotToken');
         let parameter = method?.getParameters().find((param) => param.getName() == 'arr2');
         if (parameter) {
-            const hasDotDotDotToken = parameter.hasDotDotDotToken();
+            const hasDotDotDotToken = parameter.isRest();
             expect(hasDotDotDotToken).eq(true);
         }
     });

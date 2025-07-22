@@ -259,7 +259,7 @@ export class MethodParameter implements Value {
     private name: string = '';
     private type!: Type;
     private optional: boolean = false;
-    private dotDotDotToken: boolean = false;
+    private restFlag: boolean = false;
     private objElements: ObjectBindingPatternParameter[] = [];
     private arrayElements: ArrayBindingPatternParameter[] = [];
 
@@ -289,12 +289,12 @@ export class MethodParameter implements Value {
         this.optional = optional;
     }
 
-    public hasDotDotDotToken(): boolean {
-        return this.dotDotDotToken;
+    public isRest(): boolean {
+        return this.restFlag;
     }
 
-    public setDotDotDotToken(dotDotDotToken: boolean): void {
-        this.dotDotDotToken = dotDotDotToken;
+    public setRestFlag(restFlag: boolean): void {
+        this.restFlag = restFlag;
     }
 
     public addObjElement(element: ObjectBindingPatternParameter): void {
