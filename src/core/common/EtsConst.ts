@@ -986,7 +986,7 @@ export const BUILDER_DECORATOR: string = 'Builder';
 export const BUILDER_PARAM_DECORATOR: string = 'BuilderParam';
 export const COMPONENT_TABBAR: string = 'TabBar';
 export const COMPONENT_PAGEMAP: string = 'PageMap';
-
+export const COMPONENT_ROOT: string = 'root';
 export function isEtsAtomicComponent(name: string): boolean {
     return BUILDIN_ATOMIC_COMPONENT.has(name);
 }

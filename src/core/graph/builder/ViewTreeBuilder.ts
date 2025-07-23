@@ -42,6 +42,7 @@ import {
     COMPONENT_PAGEMAP,
     COMPONENT_POP_FUNCTION,
     COMPONENT_REPEAT,
+    COMPONENT_ROOT,
     COMPONENT_TABBAR,
     isEtsContainerComponent,
     SPECIAL_CONTAINER_COMPONENT,
@@ -328,6 +329,11 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         instance.type = ViewTreeNodeType.CustomComponent;
         return instance;
     }
+    public static createRootNode():ViewTreeNodeImpl{
+        let instance = new ViewTreeNodeImpl(COMPONENT_ROOT);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
     public changeBuilderParam2BuilderNode(builder: ArkMethod): void {
         this.name = BUILDER_DECORATOR;
         this.type = ViewTreeNodeType.Builder;
@@ -449,7 +455,8 @@ class TreeNodeStack {
     protected stack: ViewTreeNodeImpl[];
 
     constructor() {
-        this.stack = [];
+        this.root = ViewTreeNodeImpl.createRootNode();
+        this.stack = [this.root];
     }
 
     /**
@@ -528,7 +535,7 @@ class TreeNodeStack {
     }
 
     protected isContainer(name: string): boolean {
-        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name === BUILDER_DECORATOR;
+        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name === BUILDER_DECORATOR || name ==COMPONENT_ROOT;
     }
     public getNodeByNameFromStack(name: string): ViewTreeNodeImpl | undefined {
         for (let i = this.stack.length - 1; i >= 0; i--) {
@@ -616,7 +623,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @internal
      */
     private isInitialized(): boolean {
-        return this.root != null || this.buildViewStatus;
+        return this.buildViewStatus;
     }
 
     /**
@@ -1077,6 +1084,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     > = new Map([
         ['tabBar', this.tabBarComponentParser.bind(this)],
         ['navDestination', this.navDestinationComponentParser.bind(this)],
+        //['bindContentCover', this.bindContentCoverComponentParser.bind(this)],
     ]);
 
     private componentCreateParse(componentName: string, methodName: string, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNodeImpl | undefined {
@@ -1354,6 +1362,32 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         return undefined;
     }
+
+    // private bindContentCoverComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ArkUIViewTreeNodeImpl | undefined {
+
+    //     const args = expr.getArgs();
+    //     for (const arg of args) {
+    //         //const type = arg.getType();
+
+    //         const local = arg as Local;
+    //         if (local2Node.has(local)) {
+    //             const node = local2Node.get(local);
+    //             let root = this.virtualRoot;
+    //             if (root && node) {
+    //                 // 创建虚拟父节点 TabBar
+    //                 const bindContentNode = ArkUIViewTreeNodeImpl.createBindContentNode();
+    //                 bindContentNode.children.push(node);
+    //                 node.parent = bindContentNode;
+    //                 // 收集到全局 Overlay Tree
+    //                 GlobalOverlayTree.push(bindContentNode);
+    //             }
+    //             if (node && !root) {
+    //                 console.warn("bindContentCoverComponentParser: root is undefined, node: ", node.toString());
+    //             }
+    //         }
+    //     }
+    //     return undefined;
+    // }
 }
 
 export function buildViewTree(render: ArkMethod): ViewTree {
