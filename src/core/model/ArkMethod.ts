@@ -673,14 +673,10 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             return this.isMatched(parameters, args, true);
         } else if (paramType instanceof ClassType && paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
             return argType instanceof FunctionType;
-        } else if (paramType instanceof LiteralType && arg instanceof Constant) {
-            return (
-                arg.getValue().replace(/[\"|\']/g, '') ===
-                paramType
-                    .getLiteralName()
-                    .toString()
-                    .replace(/[\"|\']/g, '')
-            );
+        } else if (paramType instanceof LiteralType) {
+            const argStr = arg instanceof Constant ? arg.getValue() : argType.getTypeString();
+            return argStr.replace(/[\"|\']/g, '') ===
+                paramType.getTypeString().replace(/[\"|\']/g, '');
         } else if (paramType instanceof ClassType && argType instanceof EnumValueType) {
             return paramType.getClassSignature() === argType.getFieldSignature().getDeclaringSignature();
         } else if (paramType instanceof EnumValueType) {
