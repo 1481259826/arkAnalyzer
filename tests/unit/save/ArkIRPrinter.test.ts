@@ -56,7 +56,7 @@ const CASE1_EXPECT = `class %dflt {
       goto label1
 
     label1:
-      %1 = sampleData.<@%unk/%unk: .length>
+      %1 = sampleData.<@built-in/lib.es5.d.ts: Array.length>
       if i < %1 goto label2 label13
 
     label2:
