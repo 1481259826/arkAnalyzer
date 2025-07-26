@@ -64,13 +64,15 @@ export abstract class AbstractExpr implements Value {
 export abstract class AbstractInvokeExpr extends AbstractExpr {
     private methodSignature: MethodSignature;
     private args: Value[];
-    private realGenericTypes?: Type[]; //新增
+    private realGenericTypes?: Type[];
+    private spreadFlags?: boolean[]; // flags to indicate whether the argument is spread, which is undefined  when no spread argument exists.
 
-    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[], spreadFlags?: boolean[]) {
         super();
         this.methodSignature = methodSignature;
         this.args = args;
         this.realGenericTypes = realGenericTypes;
+        this.spreadFlags = spreadFlags;
     }
 
     /**
@@ -153,6 +155,10 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
         }
     }
 
+    public getSpreadFlags(): boolean[] | undefined {
+        return this.spreadFlags;
+    }
+
     public getUses(): Value[] {
         let uses: Value[] = [];
         uses.push(...this.args);
@@ -161,13 +167,30 @@ export abstract class AbstractInvokeExpr extends AbstractExpr {
         }
         return uses;
     }
+
+    protected argsToString(): string {
+        const strs: string[] = [];
+        strs.push('(');
+        if (this.getArgs().length > 0) {
+            for (let i = 0; i < this.getArgs().length; i++) {
+                if (this.spreadFlags && this.spreadFlags[i]) {
+                    strs.push('...');
+                }
+                strs.push(this.getArgs()[i].toString());
+                strs.push(', ');
+            }
+            strs.pop();
+        }
+        strs.push(')');
+        return strs.join('');
+    }
 }
 
 export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
     private base: Local;
 
-    constructor(base: Local, methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
-        super(methodSignature, args, realGenericTypes);
+    constructor(base: Local, methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[], spreadFlags?: boolean[]) {
+        super(methodSignature, args, realGenericTypes, spreadFlags);
         this.base = base;
     }
 
@@ -206,15 +229,8 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
         strs.push(this.base.toString());
         strs.push('.<');
         strs.push(this.getMethodSignature().toString());
-        strs.push('>(');
-        if (this.getArgs().length > 0) {
-            for (const arg of this.getArgs()) {
-                strs.push(arg.toString());
-                strs.push(', ');
-            }
-            strs.pop();
-        }
-        strs.push(')');
+        strs.push('>');
+        strs.push(super.argsToString());
         return strs.join('');
     }
 
@@ -224,23 +240,16 @@ export class ArkInstanceInvokeExpr extends AbstractInvokeExpr {
 }
 
 export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
-    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[]) {
-        super(methodSignature, args, realGenericTypes);
+    constructor(methodSignature: MethodSignature, args: Value[], realGenericTypes?: Type[], spreadFlags?: boolean[]) {
+        super(methodSignature, args, realGenericTypes, spreadFlags);
     }
 
     public toString(): string {
         let strs: string[] = [];
         strs.push('staticinvoke <');
         strs.push(this.getMethodSignature().toString());
-        strs.push('>(');
-        if (this.getArgs().length > 0) {
-            for (const arg of this.getArgs()) {
-                strs.push(arg.toString());
-                strs.push(', ');
-            }
-            strs.pop();
-        }
-        strs.push(')');
+        strs.push('>');
+        strs.push(super.argsToString());
         return strs.join('');
     }
 
@@ -270,8 +279,8 @@ export class ArkStaticInvokeExpr extends AbstractInvokeExpr {
 export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
     private funPtr: Local | AbstractFieldRef;
 
-    constructor(methodSignature: MethodSignature, ptr: Local | AbstractFieldRef, args: Value[], realGenericTypes?: Type[]) {
-        super(methodSignature, args, realGenericTypes);
+    constructor(methodSignature: MethodSignature, ptr: Local | AbstractFieldRef, args: Value[], realGenericTypes?: Type[], spreadFlags?: boolean[]) {
+        super(methodSignature, args, realGenericTypes, spreadFlags);
         this.funPtr = ptr;
     }
 
@@ -305,15 +314,8 @@ export class ArkPtrInvokeExpr extends AbstractInvokeExpr {
             ptrName = this.funPtr.getFieldName();
         }
         strs.push(this.getMethodSignature().toString(ptrName));
-        strs.push('>(');
-        if (this.getArgs().length > 0) {
-            for (const arg of this.getArgs()) {
-                strs.push(arg.toString());
-                strs.push(', ');
-            }
-            strs.pop();
-        }
-        strs.push(')');
+        strs.push('>');
+        strs.push(super.argsToString());
         return strs.join('');
     }
 

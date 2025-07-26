@@ -76,9 +76,25 @@ import { Constant } from '../core/base/Constant';
 import { MethodParameter } from '../core/model/builder/ArkMethodBuilder';
 import { ImportInfo } from '../core/model/ArkImport';
 import { ExportInfo } from '../core/model/ArkExport';
-import { AliasTypeSignature, ClassSignature, FieldSignature, FileSignature, MethodSignature, NamespaceSignature } from '../core/model/ArkSignature';
+import {
+    AliasTypeSignature,
+    ClassSignature,
+    FieldSignature,
+    FileSignature,
+    MethodSignature,
+    NamespaceSignature,
+} from '../core/model/ArkSignature';
 import { LineColPosition } from '../core/base/Position';
-import { ArkArrayRef, ArkCaughtExceptionRef, ArkInstanceFieldRef, ArkParameterRef, ArkStaticFieldRef, ArkThisRef, ClosureFieldRef, GlobalRef } from '../core/base/Ref';
+import {
+    ArkArrayRef,
+    ArkCaughtExceptionRef,
+    ArkInstanceFieldRef,
+    ArkParameterRef,
+    ArkStaticFieldRef,
+    ArkThisRef,
+    ClosureFieldRef,
+    GlobalRef,
+} from '../core/base/Ref';
 import { Local } from '../core/base/Local';
 import { Cfg } from '../core/graph/Cfg';
 import { BasicBlock } from '../core/graph/BasicBlock';
@@ -160,7 +176,7 @@ export class JsonPrinter extends Printer {
             name: parameter.getName(),
             type: this.serializeType(parameter.getType()),
             isOptional: parameter.isOptional(),
-            isRest: parameter.hasDotDotDotToken(),
+            isRest: parameter.isRest(),
         };
     }
 

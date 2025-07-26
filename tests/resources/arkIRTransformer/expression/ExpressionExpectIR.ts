@@ -851,3 +851,158 @@ export const PTR_INVOKE_EXPRESSION_AM4$PROMISECALL_EXPECT_IR = `%AM5$promiseCall
     return
 }
 `;
+
+
+export const SPREAD_ARRAY1_EXPECT_IR = `spreadArray1(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    %0 = newarray (number)[3]
+    %0[0] = 1
+    %0[1] = 2
+    %0[2] = 3
+    arr1 = %0
+    arr2 = instanceinvoke arr1.<@built-in/lib.es5.d.ts: Array.slice(number, number)>()
+    return
+}
+`;
+
+export const SPREAD_ARRAY2_EXPECT_IR = `spreadArray2(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    %0 = newarray (number)[3]
+    %0[0] = 1
+    %0[1] = 2
+    %0[2] = 3
+    arr1 = %0
+    %1 = newarray (number)[3]
+    %1[0] = 4
+    %1[1] = 5
+    %1[2] = 6
+    arr2 = %1
+    arr3 = instanceinvoke arr1.<@built-in/lib.es5.d.ts: Array.concat(@built-in/lib.es5.d.ts: ConcatArray<T>[])>(arr2)
+    return
+}
+`;
+
+export const SPREAD_ARRAY3_EXPECT_IR = `spreadArray3(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    %0 = newarray (number)[3]
+    %0[0] = 1
+    %0[1] = 2
+    %0[2] = 3
+    arr1 = %0
+    %1 = newarray (number)[1]
+    %1[0] = 1
+    arr2 = instanceinvoke %1.<@built-in/lib.es5.d.ts: Array.concat(@built-in/lib.es5.d.ts: ConcatArray<T>[])>(arr1)
+    return
+}
+`;
+
+export const SPREAD_ARRAY4_EXPECT_IR = `spreadArray4(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    %0 = newarray (number)[3]
+    %0[0] = 1
+    %0[1] = 2
+    %0[2] = 3
+    arr1 = %0
+    %1 = newarray (number)[3]
+    %1[0] = 4
+    %1[1] = 5
+    %1[2] = 6
+    arr2 = %1
+    arr3 = instanceinvoke arr1.<@built-in/lib.es5.d.ts: Array.concat(@built-in/lib.es5.d.ts: ConcatArray<T>[])>(4, 5, 6, arr2)
+    return
+}
+`;
+
+export const SPREAD_PARAMETERS1_EXPECT_IR = `spreadParameters1(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    %0 = newarray (number)[3]
+    %0[0] = 1
+    %0[1] = 2
+    %0[2] = 3
+    nums = %0
+    staticinvoke <@expression/Spread.ts: %dflt.sum(number, number, number)>(...nums)
+    return
+}
+`;
+
+export const SPREAD_PARAMETERS2_EXPECT_IR = `spreadParameters2(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    %0 = newarray (number)[1]
+    %0[0] = 1
+    nums1 = %0
+    %1 = newarray (number)[2]
+    %1[0] = 2
+    %1[1] = 3
+    nums2 = %1
+    staticinvoke <@expression/Spread.ts: %dflt.sum(number, number, number)>(...nums1, ...nums2)
+    return
+}
+`;
+
+export const SPREAD_PARAMETERS3_EXPECT_IR = `spreadParameters3(): void {
+  label0:
+    this = this: @expression/Spread.ts: %dflt
+    a = 1
+    b = 2
+    %0 = newarray (number)[1]
+    %0[0] = 3
+    nums3 = %0
+    staticinvoke <@expression/Spread.ts: %dflt.sum(number, number, number)>(a, b, ...nums3)
+    return
+}
+`;
+
+export const REST_ELEMENTS1_EXPECT_IR = `restElements1(): void {
+  label0:
+    this = this: @expression/Rest.ts: %dflt
+    %1 = newarray (number)[3]
+    %1[0] = 1
+    %1[1] = 2
+    %1[2] = 3
+    %0 = %1
+    a = %0[0]
+    b = instanceinvoke %0.<@built-in/lib.es5.d.ts: Array.slice(number, number)>(1)
+    %3 = newarray (number)[3]
+    %3[0] = 4
+    %3[1] = 5
+    %3[2] = 6
+    %2 = %3
+    a = %2[0]
+    b = instanceinvoke %2.<@built-in/lib.es5.d.ts: Array.slice(number, number)>(1)
+    return
+}
+`;
+
+export const REST_ELEMENTS2_EXPECT_IR = `restElements2(): void {
+  label0:
+    this = this: @expression/Rest.ts: %dflt
+    %1 = newarray (number)[3]
+    %1[0] = 1
+    %1[1] = 2
+    %1[2] = 3
+    %0 = %1
+    arr = instanceinvoke %0.<@built-in/lib.es5.d.ts: Array.slice(number, number)>(0)
+    %3 = newarray (number)[3]
+    %3[0] = 4
+    %3[1] = 5
+    %3[2] = 6
+    %2 = %3
+    arr = instanceinvoke %2.<@built-in/lib.es5.d.ts: Array.slice(number, number)>(0)
+    return
+}
+`;
+
+export const REST_PARAMETERS1_EXPECT_IR = `restParameter(...numbers: number[]): number {
+  label0:
+    numbers = parameter0: number[]
+    this = this: @expression/Rest.ts: %dflt
+    %0 = instanceinvoke numbers.<@built-in/lib.es5.d.ts: Array.reduce(@built-in/lib.es5.d.ts: Array.%AM9(T, T, number, T[]), T)>(%AM0$restParameter, 0)
+    return %0
+}
+`;

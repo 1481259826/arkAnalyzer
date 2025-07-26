@@ -61,6 +61,10 @@ export class Builtin {
         new MethodSubSignature(this.TO_STRING, [], StringType.getInstance(), false)
     );
 
+    // constants for array
+    public static SLICE = 'slice';
+    public static CONCAT = 'concat';
+
     private static buildBuiltInClasses(): Set<string> {
         const builtInClasses = new Set<string>();
         builtInClasses.add(this.OBJECT);
