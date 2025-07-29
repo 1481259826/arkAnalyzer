@@ -46,7 +46,11 @@ export class BodyBuilder {
             if (globals !== null) {
                 this.setGlobals(globals);
             }
-            cfg.buildDefUseStmt(locals);
+            if (globals === null) {
+                cfg.buildDefUseStmt(locals);
+            } else {
+                cfg.buildDefUseStmt(locals, globals);
+            }
 
             return new ArkBody(locals, cfg, aliasTypeMap, traps.length ? traps : undefined);
         }

@@ -17,7 +17,7 @@ import { assert, describe, expect, it } from 'vitest';
 import { Scene } from '../../../../src/Scene';
 import { SceneConfig } from '../../../../src/Config';
 import path from 'path';
-import { ArkReturnStmt, Local, Stmt, Value } from '../../../../src';
+import { ArkAssignStmt, ArkReturnStmt, Local, Stmt, Value } from '../../../../src';
 import { ArkIRMethodPrinter } from '../../../../src/save/arkir/ArkIRMethodPrinter';
 
 let config: SceneConfig = new SceneConfig();
@@ -644,5 +644,15 @@ describe('Method Param with Default Value', () => {
         const startingBlockID = method!.getBody()?.getCfg().getStartingBlock()?.getId();
         assert.isDefined(startingBlockID);
         assert.equal(startingBlockID, 3);
+    });
+});
+
+describe('Global Used in Method', () => {
+    it('test global with no declaring stmt', async () => {
+        const method = arkDefaultClass?.getMethodWithName('assign2Global');
+        const stmts = method?.getCfg()?.getStmts();
+        assert.isDefined(stmts);
+        assert.isAtLeast(stmts!.length, 2);
+        assert.isNull(((stmts![1] as ArkAssignStmt).getLeftOp() as Local).getDeclaringStmt());
     });
 });

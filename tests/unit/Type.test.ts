@@ -1851,3 +1851,15 @@ describe('Object Type Test', () => {
         assert.equal(((stmtshasA![2] as ArkAssignStmt).getRightOp() as ArkInstanceInvokeExpr).getMethodSignature().toString(), `${builtInObjectTypeStr}.toLocaleString()`);
     });
 });
+
+describe('Type of Binary Operator', () => {
+    const fileId = new FileSignature(projectScene.getProjectName(), 'numberType.ts');
+    const arkFile = projectScene.getFile(fileId);
+
+    it('case1: binary operator of Exponentiation', () => {
+        const stmts = arkFile?.getDefaultClass().getMethodWithName('testBinaryOperator')?.getCfg()?.getStmts();
+        assert.isDefined(stmts);
+        assert.isAtLeast(stmts!.length, 2);
+        assert.isTrue((stmts![1] as ArkAssignStmt).getLeftOp().getType() instanceof NumberType);
+    });
+});

@@ -172,3 +172,9 @@ function returnFunc(): Function {
 function func(): Function {
     return returnFunc;
 }
+
+let globalNumber = 2;
+
+function assign2Global(): void {
+    globalNumber = 3;
+}
