@@ -112,13 +112,16 @@ export class SdkPlugin implements IPagPlugin {
     private addSDKMethodReturnPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod, srcNodes: NodeID[]): void {
         let returnType = calleeMethod.getReturnType();
         if (returnType instanceof ArrayType && cs.callStmt instanceof ArkAssignStmt) {
-            return this.addSDKMethodReturnArrayPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
+            this.addSDKMethodReturnArrayPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
+            return;
         }
         if (returnType instanceof UnionType && cs.callStmt instanceof ArkAssignStmt) {
-            return this.addSDKMethodReturnUnionPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
+            this.addSDKMethodReturnUnionPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
+            return;
         }
         if (returnType instanceof GenericType && cs.callStmt instanceof ArkAssignStmt) {
-            return this.addSDKMethodReturnGenericPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes)
+            this.addSDKMethodReturnGenericPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
+            return;
         }
         if (!(returnType instanceof ClassType) || !(cs.callStmt instanceof ArkAssignStmt)) {
             return;
