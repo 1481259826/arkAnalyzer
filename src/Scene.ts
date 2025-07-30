@@ -43,6 +43,7 @@ import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
 import { SdkUtils } from './core/common/SdkUtils';
 import { PointerAnalysisConfig } from './callgraph/pointerAnalysis/PointerAnalysisConfig';
 import { ValueUtil } from './core/common/ValueUtil';
+import { ViewTree } from './core/graph/ViewTree';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
@@ -89,6 +90,8 @@ export class Scene {
     private overRideDependencyMap: Map<string, unknown> = new Map();
     private globalModule2PathMapping?: { [k: string]: string[] } | undefined;
     private baseUrl?: string | undefined;
+
+    private windowViewTree:ViewTree[] = [];
 
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
     private fileLanguages: Map<string, Language> = new Map();
@@ -141,6 +144,7 @@ export class Scene {
         this.sdkGlobalMap.clear();
         this.ohPkgContentMap.clear();
         this.ohPkgContent = {};
+        this.windowViewTree = [];
     }
 
     public getStage(): SceneBuildStage {
@@ -1419,6 +1423,14 @@ export class Scene {
     public getbaseUrl(): string | undefined {
         return this.baseUrl;
     }
+
+    public addWindowViewTree(viewTree: ViewTree): void {
+        this.windowViewTree.push(viewTree);
+    }
+    public getWindowViewTree(): ViewTree[] {
+        return this.windowViewTree;
+    }
+
 }
 
 export class ModuleScene {

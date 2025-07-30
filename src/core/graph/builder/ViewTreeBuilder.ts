@@ -32,6 +32,7 @@ import { Value } from '../../base/Value';
 import {
     BUILDER_DECORATOR,
     BUILDER_PARAM_DECORATOR,
+    COMPONENT_BINDCONTENT,
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
@@ -331,6 +332,11 @@ class ViewTreeNodeImpl implements ViewTreeNode {
     }
     public static createRootNode():ViewTreeNodeImpl{
         let instance = new ViewTreeNodeImpl(COMPONENT_ROOT);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createBindContentNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_BINDCONTENT);
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
@@ -1084,7 +1090,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     > = new Map([
         ['tabBar', this.tabBarComponentParser.bind(this)],
         ['navDestination', this.navDestinationComponentParser.bind(this)],
-        //['bindContentCover', this.bindContentCoverComponentParser.bind(this)],
+        ['bindContentCover', this.bindContentCoverComponentParser.bind(this)],
     ]);
 
     private componentCreateParse(componentName: string, methodName: string, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNodeImpl | undefined {
@@ -1363,33 +1369,33 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return undefined;
     }
 
-    // private bindContentCoverComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ArkUIViewTreeNodeImpl | undefined {
+    private bindContentCoverComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
 
-    //     const args = expr.getArgs();
-    //     for (const arg of args) {
-    //         //const type = arg.getType();
-
-    //         const local = arg as Local;
-    //         if (local2Node.has(local)) {
-    //             const node = local2Node.get(local);
-    //             let root = this.virtualRoot;
-    //             if (root && node) {
-    //                 // 创建虚拟父节点 TabBar
-    //                 const bindContentNode = ArkUIViewTreeNodeImpl.createBindContentNode();
-    //                 bindContentNode.children.push(node);
-    //                 node.parent = bindContentNode;
-    //                 // 收集到全局 Overlay Tree
-    //                 GlobalOverlayTree.push(bindContentNode);
-    //             }
-    //             if (node && !root) {
-    //                 console.warn("bindContentCoverComponentParser: root is undefined, node: ", node.toString());
-    //             }
-    //         }
-    //     }
-    //     return undefined;
-    // }
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const local = arg as Local;
+            if (local2Node.has(local)) {
+                const node = local2Node.get(local);
+                let root = this.root;
+                if (root && node) {
+                    // 创建虚拟父节点 BindContent
+                    const bindContentNode = ViewTreeNodeImpl.createBindContentNode();
+                    bindContentNode.children.push(node);
+                    node.parent = bindContentNode;
+                    // 收集到全局 WindowViewTree
+                    const windowViewTree = new ViewTreeImpl(this.render);
+                    windowViewTree.root?.children.push(bindContentNode);
+                    windowViewTree.buildViewStatus = true;
+                    this.render.getDeclaringArkFile().getScene().addWindowViewTree(windowViewTree);
+                }
+            }
+        }
+        return undefined;
+    }
 }
 
 export function buildViewTree(render: ArkMethod): ViewTree {
     return new ViewTreeImpl(render);
 }
+
+
