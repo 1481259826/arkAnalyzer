@@ -1779,24 +1779,14 @@ export class ArkValueTransformer {
             value: leftValue,
             valueOriginalPositions: leftPositions,
             stmts: leftStmts,
-        } = this.tsNodeToValueAndStmts(binaryExpression.left);
+        } = this.tsNodeToSingleAddressValueAndStmts(binaryExpression.left);
         leftStmts.forEach(stmt => stmts.push(stmt));
         let {
             value: rightValue,
             valueOriginalPositions: rightPositions,
             stmts: rightStmts,
-        } = this.tsNodeToValueAndStmts(binaryExpression.right);
+        } = this.tsNodeToSingleAddressValueAndStmts(binaryExpression.right);
         rightStmts.forEach(stmt => stmts.push(stmt));
-        if (IRUtils.moreThanOneAddress(leftValue) && IRUtils.moreThanOneAddress(rightValue)) {
-            const {
-                value: newRightValue,
-                valueOriginalPositions: newRightPositions,
-                stmts: rightStmts,
-            } = this.arkIRTransformer.generateAssignStmtForValue(rightValue, rightPositions);
-            rightValue = newRightValue;
-            rightPositions = newRightPositions;
-            rightStmts.forEach(stmt => stmts.push(stmt));
-        }
 
         let leftOpValue: Value;
         let leftOpPositions: FullPosition[];
