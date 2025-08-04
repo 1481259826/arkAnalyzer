@@ -27,3 +27,24 @@ let globalIndex = 2;
 function goo(): void {
     let item = A.a[globalIndex];
 }
+
+let arr = [1, 2, 3];
+class Assign2ArrayItem {
+    foo(): void {
+        const a = 1;
+        arr[a] = 2;
+        let b = 3;
+        arr[b++] = 4;
+        let c = 5;
+        arr[c + 1] = 6;
+    }
+}
+
+class IndexWithConstant {
+    foo(): void {
+        let item = arr[1.0];
+        arr[2.0] = 3;
+        arr[1.3];
+        arr[2.2] = 2;
+    }
+}
