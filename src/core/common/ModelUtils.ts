@@ -219,9 +219,9 @@ export class ModelUtils {
         let currNamespace: ArkNamespace | null | undefined = arkClass.getDeclaringArkNamespace();
         let result: ArkExport | null | undefined;
         while (currNamespace) {
-            result = currNamespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(symbolName) ??
-                currNamespace.getClassWithName(symbolName) ??
-                currNamespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(symbolName);
+            result = currNamespace.getClassWithName(symbolName) ??
+                currNamespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(symbolName) ??
+                currNamespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(symbolName);
             if (!result && !onlyType) {
                 result = currNamespace.getDefaultClass().getMethodWithName(symbolName) ??
                     (currNamespace.getName() === symbolName ? currNamespace : null) ??
@@ -233,9 +233,10 @@ export class ModelUtils {
             currNamespace = currNamespace.getDeclaringArkNamespace();
         }
         const file = arkClass.getDeclaringArkFile();
-        result = file.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals().get(symbolName) ??
+        result =
             file.getClassWithName(symbolName) ??
-            file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(symbolName);
+            file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(symbolName) ??
+            file.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals().get(symbolName);
         if (!result && !onlyType) {
             result = file.getDefaultClass().getMethodWithName(symbolName) ??
                 file.getNamespaceWithName(symbolName);

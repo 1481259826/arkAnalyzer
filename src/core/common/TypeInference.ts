@@ -403,7 +403,7 @@ export class TypeInference {
             } else {
                 leftType = rightType;
             }
-        } else if (leftOp instanceof FunctionType && this.isUnclearType(rightType) &&
+        } else if (leftOp instanceof FunctionType && !this.isUnclearType(rightType) &&
             leftOp.getMethodSignature().getMethodSubSignature().getMethodName().startsWith(ANONYMOUS_METHOD_PREFIX)) {
             leftType = rightType;
         }
