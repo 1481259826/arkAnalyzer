@@ -78,7 +78,12 @@ import {
 import { ModelUtils } from './ModelUtils';
 import { Builtin } from './Builtin';
 import { MethodSignature, MethodSubSignature, NamespaceSignature } from '../model/ArkSignature';
-import { INSTANCE_INIT_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX, UNKNOWN_FILE_NAME } from './Const';
+import {
+    ANONYMOUS_METHOD_PREFIX,
+    INSTANCE_INIT_METHOD_NAME,
+    LEXICAL_ENV_NAME_PREFIX,
+    UNKNOWN_FILE_NAME
+} from './Const';
 import { EMPTY_STRING } from './ValueUtil';
 import { ImportInfo } from '../model/ArkImport';
 import { MethodParameter } from '../model/builder/ArkMethodBuilder';
@@ -398,6 +403,9 @@ export class TypeInference {
             } else {
                 leftType = rightType;
             }
+        } else if (leftOp instanceof FunctionType && this.isUnclearType(rightType) &&
+            leftOp.getMethodSignature().getMethodSubSignature().getMethodName().startsWith(ANONYMOUS_METHOD_PREFIX)) {
+            leftType = rightType;
         }
         if (leftType && !this.isUnclearType(leftType)) {
             this.setValueType(leftOp, leftType);
@@ -793,15 +801,8 @@ export class TypeInference {
         } else if (DEFAULT === baseName) {
             return this.parseArkExport2Type(arkClass.getDeclaringArkFile().getExportInfoBy(DEFAULT)?.getArkExport());
         }
-        const field = ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(baseName);
-        if (field && !this.isUnclearType(field.getType())) {
-            return field.getType();
-        }
         let arkExport: ArkExport | null =
-            ModelUtils.getClassWithName(baseName, arkClass) ??
-            ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(baseName) ??
-            ModelUtils.getNamespaceWithName(baseName, arkClass) ??
-            ModelUtils.getDefaultClass(arkClass)?.getMethodWithName(baseName) ??
+            ModelUtils.findSymbolInFileWithName(baseName, arkClass) ??
             ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
         if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
@@ -811,9 +812,7 @@ export class TypeInference {
 
     public static inferTypeByName(typeName: string, arkClass: ArkClass): Type | null {
         let arkExport: ArkExport | null =
-            ModelUtils.getClassWithName(typeName, arkClass) ??
-            ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(typeName) ??
-            ModelUtils.getDefaultClass(arkClass)?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(typeName) ??
+            ModelUtils.findSymbolInFileWithName(typeName, arkClass, true) ??
             ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
         if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(typeName);

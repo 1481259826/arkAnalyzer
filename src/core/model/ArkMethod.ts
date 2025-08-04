@@ -659,6 +659,8 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         const argType = arg.getType();
         if (paramType instanceof AliasType && !(argType instanceof AliasType)) {
             paramType = TypeInference.replaceAliasType(paramType);
+        } else if (!(paramType instanceof AliasType) && argType instanceof AliasType) {
+            paramType = TypeInference.replaceAliasType(paramType);
         }
         if (paramType instanceof UnionType) {
             return !!paramType.getTypes().find(p => this.matchParam(p, arg));
