@@ -1,6 +1,6 @@
 {
   "name": "arkanalyzer",
-  "version": "1.0.8",
+  "version": "1.0.19",
   "files": [
     "docs",
     "lib",
@@ -15,7 +15,6 @@
     "coverage": "vitest run --coverage",
     "heapdump": "npm run build && node --expose-gc out/tests/HeapDumpTest.js",
     "gendoc": "npx typedoc",
-    "postinstall": "node script/npmInstall.js",
     "copyCollectionDefintion": "ts-node script/typescriptCollectionDefinitionCopy.ts"
   },
   "dependencies": {

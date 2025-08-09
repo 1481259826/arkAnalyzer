@@ -223,9 +223,9 @@ export class ModelUtils {
                 currNamespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getAliasTypeByName(symbolName) ??
                 currNamespace.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals()?.get(symbolName);
             if (!result && !onlyType) {
-                result = currNamespace.getDefaultClass().getMethodWithName(symbolName) ??
-                    (currNamespace.getName() === symbolName ? currNamespace : null) ??
-                    currNamespace.getNamespaceWithName(symbolName);
+                result = (currNamespace.getName() === symbolName ? currNamespace : null) ??
+                    currNamespace.getNamespaceWithName(symbolName) ??
+                    currNamespace.getDefaultClass().getMethodWithName(symbolName);
             }
             if (result) {
                 return result;
@@ -238,8 +238,9 @@ export class ModelUtils {
             file.getDefaultClass().getDefaultArkMethod()?.getBody()?.getAliasTypeByName(symbolName) ??
             file.getDefaultClass()?.getDefaultArkMethod()?.getBody()?.getLocals().get(symbolName);
         if (!result && !onlyType) {
-            result = file.getDefaultClass().getMethodWithName(symbolName) ??
-                file.getNamespaceWithName(symbolName);
+            result = file.getNamespaceWithName(symbolName) ??
+                file.getDefaultClass().getMethodWithName(symbolName);
+
         }
         return result || null;
     }

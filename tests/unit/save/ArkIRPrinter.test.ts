@@ -752,7 +752,7 @@ class %AC8$%dflt.%dflt<Type> {
       value = parameter0: Type
       this = this: @save/basic.ts: %AC8$%dflt.%dflt
       instanceinvoke this.<@save/basic.ts: %AC8$%dflt.%dflt.%instInit()>()
-      @save/basic.ts: %dflt.[static]content = value
+      this.<@save/basic.ts: %AC8$%dflt.%dflt.content> = value
       return this
   }
 }

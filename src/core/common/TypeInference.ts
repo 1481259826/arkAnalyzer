@@ -387,26 +387,8 @@ export class TypeInference {
     }
 
     private static resolveLeftOp(stmt: ArkAssignStmt, arkClass: ArkClass, rightType: Type | null | undefined, arkMethod: ArkMethod): void {
+        let leftType = this.inferLeftOpType(stmt, arkClass, rightType, arkMethod);
         const leftOp = stmt.getLeftOp();
-        let leftType: Type | null | undefined = leftOp.getType();
-        if (this.isUnclearType(leftType)) {
-            const newLeftType = this.inferUnclearedType(leftType, arkClass);
-            if (!newLeftType && !this.isUnclearType(rightType)) {
-                leftType = rightType;
-            } else if (newLeftType) {
-                leftType = newLeftType;
-            }
-        } else if (leftOp instanceof Local && leftOp.getName() === THIS_NAME) {
-            const thisLocal = IRInference.inferThisLocal(arkMethod);
-            if (thisLocal) {
-                stmt.setLeftOp(thisLocal);
-            } else {
-                leftType = rightType;
-            }
-        } else if (leftOp instanceof FunctionType && !this.isUnclearType(rightType) &&
-            leftOp.getMethodSignature().getMethodSubSignature().getMethodName().startsWith(ANONYMOUS_METHOD_PREFIX)) {
-            leftType = rightType;
-        }
         if (leftType && !this.isUnclearType(leftType)) {
             this.setValueType(leftOp, leftType);
             if (leftOp instanceof Local && stmt.getOriginalText()?.startsWith(leftOp.getName())) {
@@ -425,6 +407,30 @@ export class TypeInference {
                 }
             }
         }
+    }
+
+    private static inferLeftOpType(stmt: ArkAssignStmt, arkClass: ArkClass, rightType: Type | null | undefined, arkMethod: ArkMethod): Type | null {
+        const leftOp = stmt.getLeftOp();
+        let leftType: Type | null | undefined = leftOp.getType();
+        if (this.isUnclearType(leftType)) {
+            const newLeftType = this.inferUnclearedType(leftType, arkClass);
+            if (!newLeftType && !this.isUnclearType(rightType)) {
+                leftType = rightType;
+            } else if (newLeftType) {
+                leftType = newLeftType;
+            }
+        } else if (leftOp instanceof Local && leftOp.getName() === THIS_NAME) {
+            const thisLocal = IRInference.inferThisLocal(arkMethod);
+            if (thisLocal) {
+                stmt.setLeftOp(thisLocal);
+            } else {
+                leftType = rightType;
+            }
+        } else if (leftType instanceof FunctionType && !this.isUnclearType(rightType) &&
+            leftType.getMethodSignature().getMethodSubSignature().getMethodName().startsWith(ANONYMOUS_METHOD_PREFIX)) {
+            leftType = rightType;
+        }
+        return leftType || null;
     }
 
     private static setValueType(value: Value, type: Type): void {
