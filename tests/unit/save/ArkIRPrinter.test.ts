@@ -144,10 +144,10 @@ const CASE1_EXPECT = `class %dflt {
       %0 = instanceinvoke %0.<@save/basic.ts: Person.constructor(number)>(10)
       notPerson = %0
       %1 = new @built-in/lib.es2015.collection.d.ts: Map
-      %1 = instanceinvoke %1.<@built-in/lib.es2015.collection.d.ts: Map.constructor()>()
+      %1 = instanceinvoke %1.<@built-in/lib.es2015.collection.d.ts: MapConstructor.construct-signature()>()
       x = %1
       %2 = new @built-in/lib.es5.d.ts: Error
-      %2 = instanceinvoke %2.<@built-in/lib.es5.d.ts: Error.constructor()>()
+      %2 = instanceinvoke %2.<@built-in/lib.es5.d.ts: ErrorConstructor.construct-signature(string)>()
       z = %2
       y = staticinvoke <@save/basic.ts: %dflt.controlTest()>()
       a = notPerson.<@save/basic.ts: Person.age>
@@ -319,13 +319,13 @@ const CASE1_EXPECT = `class %dflt {
       text = parameter0: string
       this = this: @save/basic.ts: %dflt
       %0 = new @built-in/lib.es5.d.ts: RegExp
-      %0 = instanceinvoke %0.<@built-in/lib.es5.d.ts: RegExp.constructor()>('\\[\\d{2,}:\\d{2}((\\.|:)\\d{2,})\\]', 'g')
+      %0 = instanceinvoke %0.<@built-in/lib.es5.d.ts: RegExpConstructor.construct-signature(string, string)>('\\[\\d{2,}:\\d{2}((\\.|:)\\d{2,})\\]', 'g')
       lrcLineRegex = %0
       %1 = new @built-in/lib.es5.d.ts: RegExp
-      %1 = instanceinvoke %1.<@built-in/lib.es5.d.ts: RegExp.constructor()>('\\[\\d{2,}', 'i')
+      %1 = instanceinvoke %1.<@built-in/lib.es5.d.ts: RegExpConstructor.construct-signature(string, string)>('\\[\\d{2,}', 'i')
       lrcTimeRegex1 = %1
       %2 = new @built-in/lib.es5.d.ts: RegExp
-      %2 = instanceinvoke %2.<@built-in/lib.es5.d.ts: RegExp.constructor()>('\\d{2}\\.\\d{2,}', 'i')
+      %2 = instanceinvoke %2.<@built-in/lib.es5.d.ts: RegExpConstructor.construct-signature(string, string)>('\\d{2}\\.\\d{2,}', 'i')
       lrcTimeRegex2 = %2
       lyric = instanceinvoke text.<@%unk/%unk: .split()>('\n')
       return
@@ -752,7 +752,7 @@ class %AC8$%dflt.%dflt<Type> {
       value = parameter0: Type
       this = this: @save/basic.ts: %AC8$%dflt.%dflt
       instanceinvoke this.<@save/basic.ts: %AC8$%dflt.%dflt.%instInit()>()
-      @save/basic.ts: %dflt.[static]content = value
+      this.<@save/basic.ts: %AC8$%dflt.%dflt.content> = value
       return this
   }
 }

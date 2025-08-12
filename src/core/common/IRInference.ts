@@ -493,9 +493,6 @@ export class IRInference {
         methodName: string,
         scene: Scene
     ): AbstractInvokeExpr | null {
-        if (Builtin.isBuiltinClass(baseType.getClassSignature().getClassName())) {
-            expr.setMethodSignature(new MethodSignature(baseType.getClassSignature(), expr.getMethodSignature().getMethodSubSignature()));
-        }
         let declaredClass = scene.getClass(baseType.getClassSignature());
         if (!declaredClass) {
             const globalClass = scene.getSdkGlobal(baseType.getClassSignature().getClassName());
@@ -514,34 +511,46 @@ export class IRInference {
             }
             return expr;
         } else if (method instanceof ArkField) {
-            const type = method.getType();
-            let methodSignature;
-            if (type instanceof FunctionType) {
-                methodSignature = type.getMethodSignature();
-            } else if (type instanceof ClassType && type.getClassSignature().getClassName().endsWith(CALL_BACK)) {
-                const callback = scene.getClass(type.getClassSignature())?.getMethodWithName(CALL_SIGNATURE_NAME);
-                if (callback) {
-                    methodSignature = callback.getSignature();
-                }
-            }
-            if (methodSignature) {
-                const ptr =
-                    expr instanceof ArkInstanceInvokeExpr
-                        ? new ArkInstanceFieldRef(expr.getBase(), method.getSignature())
-                        : new ArkStaticFieldRef(method.getSignature());
-                expr = new ArkPtrInvokeExpr(methodSignature, ptr, expr.getArgs(), expr.getRealGenericTypes());
-            }
-            return expr;
+            return this.changePtrInvokeExpr(method, scene, expr) ?? expr;
         } else if (methodName === CONSTRUCTOR_NAME) {
-            //sdk隐式构造
-            const subSignature = new MethodSubSignature(methodName, [], new ClassType(baseType.getClassSignature()));
-            expr.setMethodSignature(new MethodSignature(baseType.getClassSignature(), subSignature));
+            const constructor = declaredClass?.getMethodWithName('construct-signature') ??
+                declaredClass?.getMethodWithName(CALL_SIGNATURE_NAME);
+            if (constructor) {
+                const methodSignature = constructor.matchMethodSignature(expr.getArgs());
+                TypeInference.inferSignatureReturnType(methodSignature, constructor);
+                expr.setMethodSignature(this.replaceMethodSignature(expr.getMethodSignature(), methodSignature));
+                expr.setRealGenericTypes(IRInference.getRealTypes(expr, declaredClass, baseType, constructor));
+            } else {
+                const subSignature = new MethodSubSignature(methodName, [], new ClassType(baseType.getClassSignature()));
+                expr.setMethodSignature(new MethodSignature(baseType.getClassSignature(), subSignature));
+            }
             return expr;
         } else if (methodName === Builtin.ITERATOR_NEXT &&
             baseType.getClassSignature().getDeclaringFileSignature().getProjectName() === Builtin.DUMMY_PROJECT_NAME) {
             expr.getMethodSignature().getMethodSubSignature().setReturnType(Builtin.ITERATOR_RESULT_CLASS_TYPE);
             expr.setRealGenericTypes(baseType.getRealGenericTypes());
             return expr;
+        }
+        return null;
+    }
+
+    private static changePtrInvokeExpr(method: ArkField, scene: Scene, expr: AbstractInvokeExpr | ArkInstanceInvokeExpr): ArkPtrInvokeExpr | null {
+        const type = method.getType();
+        let methodSignature;
+        if (type instanceof FunctionType) {
+            methodSignature = type.getMethodSignature();
+        } else if (type instanceof ClassType && type.getClassSignature().getClassName().endsWith(CALL_BACK)) {
+            const callback = scene.getClass(type.getClassSignature())?.getMethodWithName(CALL_SIGNATURE_NAME);
+            if (callback) {
+                methodSignature = callback.getSignature();
+            }
+        }
+        if (methodSignature) {
+            const ptr =
+                expr instanceof ArkInstanceInvokeExpr
+                    ? new ArkInstanceFieldRef(expr.getBase(), method.getSignature())
+                    : new ArkStaticFieldRef(method.getSignature());
+            return new ArkPtrInvokeExpr(methodSignature, ptr, expr.getArgs(), expr.getRealGenericTypes());
         }
         return null;
     }
