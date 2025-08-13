@@ -898,7 +898,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 this.addStateValue(field, node);
             });
         }
-        if(shouldPush == true){
+        if(shouldPush === true){
             this.push(node);
         }
         let componentViewTree = cls.getViewTree();
@@ -1591,7 +1591,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private handleBindMenuArray(local2Node: Map<Local, ViewTreeNodeImpl>, arg: Value): ViewTreeNodeImpl[] {
-        // console.log("执行handleBindMenuArray");
         const result: ViewTreeNodeImpl[] = [];
         const local = arg as Local;
         const stmt = local.getDeclaringStmt();
@@ -1610,7 +1609,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         for (const initStmt of inits) {
             if (initStmt instanceof ArkAssignStmt && initStmt.getRightOp() instanceof ArkNewExpr) {
-                ///console.log("满足： stmt: ", initStmt.toString());
                 const initValue = backtraceLocalInitValue(initStmt.getLeftOp() as Local);
                 if (initValue instanceof ArkNewExpr) {
                     const cls = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
@@ -1628,7 +1626,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let textNode: ViewTreeNodeImpl | null = null;
         let action: Value | null = null;
         for (const [field, value] of map) {
-            if (field.getName() === 'value' || field.getName() == 'title') {
+            if (field.getName() === 'value' || field.getName() === 'title') {
                 textNode = new ViewTreeNodeImpl('Text');
                 textNode.text_content = (value as StringConstant).getValue();
             } else if (field.getName() === 'action' && !(value instanceof Map)) {
@@ -1717,8 +1715,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const primary = clazz.getFieldWithName("primaryButton");
         const secondary = clazz.getFieldWithName("secondaryButton");
 
-        // @note(jxianxiao):一定同时存在么？
-        //if (!primary || !secondary) return result;
         if (builder) {
             const builder_node = this.parseObjectFromArkField(builder, scene, "bindPopup");
             if (builder_node) {
@@ -1745,7 +1741,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private parseObjectFromArkField(field: ArkField, scene: Scene, api_name: string): ViewTreeNodeImpl | null | undefined {
-        //console.log("field: ",field);
         const initStmts = field.getInitializer();
         const newLocals: Local[] = [];
 
@@ -1775,40 +1770,30 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                         return builder_node;
                     }
                 }
-                else {
-                    // console.log("type : ", rightOp);
-                }
             }
         }
         for (const local of newLocals) {
             const initValue = backtraceLocalInitValue(local);
-            //console.log("initValue: ", initValue);
             if (initValue instanceof ArkNewExpr) {
                 const arkClass = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
                 const fieldValueMap = parseObjectLiteral(arkClass, scene); // Map<ArkField, Value | ObjectLiteralMap>
 
-                //console.log("fieldValueMap: ", fieldValueMap);
                 let node;
                 let action;
                 for (let pair of fieldValueMap) {
                     let field_name = pair[0].getName();
                     let value = pair[1];
 
-                    if (field_name == 'value') {
+                    if (field_name === 'value') {
                         // @todo(jxianxiao):根据 action 回调函数 来实现与 node 的绑定（UI迁移行为）
-                        // if(api_name == "bindPopup"){
-                        //     node = new ViewTreeNodeImpl("Button");   
-                        // }else{
-                        //     node = new ViewTreeNodeImpl("Text"); 
-                        // }
+
                         node = new ViewTreeNodeImpl('Text');
                         if (value instanceof StringConstant) {
                             node.text_content = (value as StringConstant).getValue();
                         }
-                    } else if (field_name == 'action') {
+                    } else if (field_name === 'action') {
                         action = value
-                    } else if (field_name == 'builder') {
-                        // console.log("value: ", value);
+                    } else if (field_name === 'builder') {
                         if (value instanceof Local) {
                             const type = value.getType();
 
@@ -1828,7 +1813,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                         } else if (value instanceof ArkStaticInvokeExpr) {
                             const fakeStmt = new ArkInvokeStmt(value); // 或者用你已有的 stmt
                             const view_node = this.parseStaticInvokeExpr(new Map(), fakeStmt, value,false);
-                            //console.log("view_node: ", view_node);
                             if (view_node) {
                                 this.addToWindowViewTree(view_node);
                             }
@@ -1873,7 +1857,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 const expr = stmt.getInvokeExpr();
                 if (expr instanceof ArkInstanceInvokeExpr) {
                     const base = expr.getBase();
-                    //const methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
                     if (base.getName() === 'this') {
                         const subMethod = this.findMethod(expr.getMethodSignature());
                         if (subMethod && subMethod.hasBuilderDecorator()) {
@@ -1887,7 +1870,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 const rightOp = stmt.getRightOp();
                 if (rightOp instanceof ArkInstanceInvokeExpr) {
                     const base = rightOp.getBase();
-                    //const methodName = rightOp.getMethodSignature().getMethodSubSignature().getMethodName();
                     if (base.getName() === 'this') {
                         const subMethod = this.findMethod(rightOp.getMethodSignature());
                         if (subMethod && subMethod.hasBuilderDecorator()) {
@@ -1905,12 +1887,10 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     private handleDialogClass(local2Node: Map<Local, ViewTreeNodeImpl>, arg: Value, type: ClassType, stmt: Stmt, dialog_type: string): void {
 
         const calssSig = (arg.getType() as ClassType).getClassSignature();
-        // console.log("calssSig: ", calssSig);
         const clazz = this.findClass(calssSig);
         if (!clazz) return;
 
         const scene = this.render.getDeclaringArkFile().getScene();
-        // console.log("handleDialogClass clazz: ", clazz);
         const primary = clazz.getFieldWithName('primaryButton');
         const secondary = clazz.getFieldWithName('secondaryButton');
         const confirm = clazz.getFieldWithName('confirm');
@@ -1921,21 +1901,21 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         // @note(jxianxiao):一定同时存在么？
         //if (!primary || !secondary) return result;
         let dialog_node = ViewTreeNodeImpl.createAlertDialogNode();
-        if (dialog_type == "AlertDialog") {
+        if (dialog_type === 'AlertDialog') {
             dialog_node = ViewTreeNodeImpl.createAlertDialogNode();
-        } else if (dialog_type == "TipsDialog") {
+        } else if (dialog_type === 'TipsDialog') {
             dialog_node = ViewTreeNodeImpl.createTipsDialogNode();
-        } else if (dialog_type == "ConfirmDialog") {
+        } else if (dialog_type === 'ConfirmDialog') {
             dialog_node = ViewTreeNodeImpl.createConfirmDialogNode();
-        } else if (dialog_type == "LodaingDialog") {
+        } else if (dialog_type === 'LodaingDialog') {
             dialog_node = ViewTreeNodeImpl.createLodaingDialogNode();
-        } else if (dialog_type == "CustomContentDialog") {
+        } else if (dialog_type === 'CustomContentDialog') {
             dialog_node = ViewTreeNodeImpl.createCustomContentDialogNode();
-        } else if (dialog_type == "Toast") {
+        } else if (dialog_type === 'Toast') {
             dialog_node = ViewTreeNodeImpl.createToastNode();
-        } else if (dialog_type == "Dialog") {
+        } else if (dialog_type === 'Dialog') {
             dialog_node = ViewTreeNodeImpl.createDialogNode();
-        } else if (dialog_type == "ActionMenu") {
+        } else if (dialog_type === 'ActionMenu') {
             dialog_node = ViewTreeNodeImpl.createMenuNode();
         }
 
@@ -1984,7 +1964,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     }
                 }
             }
-            //parseObjectFromArkField(buttons, scene, "AlertDialog");
         }
 
         if (radioContent) {
@@ -2006,10 +1985,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     }
                 }
             }
-            //parseObjectFromArkField(buttons, scene, "AlertDialog");
         }
         this.addToWindowViewTree(dialog_node);
-        //return result;
     }
 
 
@@ -2128,7 +2105,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     }
                 }
             }
-            //parseObjectFromArkField(buttons, scene, "AlertDialog");
         }
         this.addToWindowViewTree(alter_dialog_node);
     }
@@ -2221,17 +2197,17 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
                 const base = expr.getBase();
                 const method_name = expr.getMethodSignature().getMethodSubSignature().getMethodName();
-                if (method_name == 'showAlertDialog') {
+                if (method_name === 'showAlertDialog') {
                     let parserFn = this.DIALOG_SHOW_PARSERS.get(method_name);
                     if (parserFn) {
                         parserFn(local2Node, stmt, expr);
                     }
-                } else if (method_name == 'showActionSheet') {
+                } else if (method_name === 'showActionSheet') {
                     let parserFn = this.DIALOG_SHOW_PARSERS.get(method_name);
                     if (parserFn) {
                         parserFn(local2Node, stmt, expr);
                     }
-                } else if (method_name == 'open') {
+                } else if (method_name === 'open') {
                     const base = expr.getBase();
                     const initValue = backtraceLocalInitValue(base as Local);
                     if (initValue instanceof ArkInstanceFieldRef) {
@@ -2245,12 +2221,12 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                             }
                         }
                     }
-                } else if (base.getName() == 'CalendarPickerDialog' && method_name == 'show') {
+                } else if (base.getName() === 'CalendarPickerDialog' && method_name === 'show') {
                     let parserFn = this.DIALOG_SHOW_PARSERS.get(base.getName());
                     if (parserFn) {
                         parserFn(local2Node, stmt, expr);
                     }
-                } else if (method_name == 'showDatePickerDialog' || method_name == 'showTimePickerDialog' || method_name == 'showTextPickerDialog') {
+                } else if (method_name === 'showDatePickerDialog' || method_name === 'showTimePickerDialog' || method_name === 'showTextPickerDialog') {
                     let parserFn = this.DIALOG_SHOW_PARSERS.get(method_name);
                     if (parserFn) {
                         parserFn(local2Node, stmt, expr);
