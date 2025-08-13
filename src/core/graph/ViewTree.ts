@@ -43,6 +43,9 @@ export interface ViewTreeNode {
     /** CustomComponent class signature or Builder method signature. */
     signature?: ClassSignature | MethodSignature;
 
+    
+    text_content?: string;
+
     /**
      * Custom component value transfer
      * - key: ArkField, child custom component class stateValue field.

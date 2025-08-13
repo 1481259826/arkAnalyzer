@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Constant } from '../../base/Constant';
+import { Constant, StringConstant } from '../../base/Constant';
 import { Decorator } from '../../base/Decorator';
 import {
     AbstractInvokeExpr,
@@ -27,21 +27,26 @@ import {
 import { Local } from '../../base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
-import { ClassType, FunctionType, Type } from '../../base/Type';
+import { ArrayType, ClassType, FunctionType, Type } from '../../base/Type';
 import { Value } from '../../base/Value';
 import {
     BUILDER_DECORATOR,
     BUILDER_PARAM_DECORATOR,
     COMPONENT_BINDCONTENT,
+    COMPONENT_BINDSHEET,
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
+    COMPONENT_DIALOG,
     COMPONENT_FOR_EACH,
     COMPONENT_IF,
     COMPONENT_IF_BRANCH,
     COMPONENT_LAZY_FOR_EACH,
+    COMPONENT_MENU,
+    COMPONENT_MENUWRAPPER,
     COMPONENT_PAGEMAP,
     COMPONENT_POP_FUNCTION,
+    COMPONENT_POPUP,
     COMPONENT_REPEAT,
     COMPONENT_ROOT,
     COMPONENT_TABBAR,
@@ -244,6 +249,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
     stateValuesTransfer?: Map<ArkField, ArkMethod | ArkField> | undefined;
     builderParam?: ArkField | undefined;
     builder?: MethodSignature | undefined;
+    text_content?: string;
     private type: ViewTreeNodeType;
 
     constructor(name: string) {
@@ -254,6 +260,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         this.parent = null;
         this.children = [];
         this.type = ViewTreeNodeType.SystemComponent;
+        this.text_content = '';
     }
 
     /**
@@ -330,13 +337,86 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         instance.type = ViewTreeNodeType.CustomComponent;
         return instance;
     }
-    public static createRootNode():ViewTreeNodeImpl{
+    public static createRootNode(): ViewTreeNodeImpl {
         let instance = new ViewTreeNodeImpl(COMPONENT_ROOT);
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
     public static createBindContentNode(): ViewTreeNodeImpl {
         let instance = new ViewTreeNodeImpl(COMPONENT_BINDCONTENT);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createAlertDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl("AlertDialog");
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+
+
+
+    public static createBindSheetNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_BINDSHEET);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createMenuNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_MENU);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createMenuWrapperNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_MENUWRAPPER);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createPopupNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_POPUP);
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createTipsDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl('TipsDialog');
+        instance.type =  ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createConfirmDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl('ConfirmDialog');
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createSelectDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl('SelectDialog');
+        instance.type =  ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createLodaingDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl("LoadingDialog");
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createCustomContentDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl("CustomContentDialog");
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createToastNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl("Toast");
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createPopoverDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl("PopoverDialog");
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createActionSheetNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl("ActionSheet");
+        instance.type = ViewTreeNodeType.SystemComponent;
+        return instance;
+    }
+    public static createDialogNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_DIALOG);
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
@@ -541,7 +621,7 @@ class TreeNodeStack {
     }
 
     protected isContainer(name: string): boolean {
-        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name === BUILDER_DECORATOR || name ==COMPONENT_ROOT;
+        return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name === BUILDER_DECORATOR || name == COMPONENT_ROOT;
     }
     public getNodeByNameFromStack(name: string): ViewTreeNodeImpl | undefined {
         for (let i = this.stack.length - 1; i >= 0; i--) {
@@ -623,6 +703,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (this.render.getCfg()) {
             this.buildViewTreeFromCfg(this.render.getCfg() as Cfg);
         }
+        this.analyzeDialog(this.render.getDeclaringArkFile().getScene());
     }
 
     /**
@@ -805,7 +886,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     /**
      * @internal
      */
-    private addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined): ViewTreeNodeImpl {
+    private addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined,shouldPush:boolean = true): ViewTreeNodeImpl {
         let node = ViewTreeNodeImpl.createCustomComponent();
         node.signature = cls.getSignature();
         node.classSignature = node.signature;
@@ -817,7 +898,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 this.addStateValue(field, node);
             });
         }
-        this.push(node);
+        if(shouldPush == true){
+            this.push(node);
+        }
         let componentViewTree = cls.getViewTree();
         if (!componentViewTree || !componentViewTree.getRoot()) {
             logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
@@ -962,7 +1045,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return transferMap;
     }
 
-    private viewComponentCreationParser(name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNodeImpl | undefined {
+    private viewComponentCreationParser(name: string, stmt: Stmt, expr: AbstractInvokeExpr,shouldPush:boolean = true): ViewTreeNodeImpl | undefined {
         let temp = expr.getArg(0) as Local;
         let arg: Value | undefined;
         temp.getUsedStmts().forEach(value => {
@@ -1003,7 +1086,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (clsSignature) {
             let cls = this.findClass(clsSignature);
             if (cls && cls.hasComponentDecorator()) {
-                return this.addCustomComponentNode(cls, arg, builderMethod);
+                return this.addCustomComponentNode(cls, arg, builderMethod,shouldPush);
             } else {
                 logger.error(`ViewTree->viewComponentCreationParser not found class ${clsSignature.toString()}. ${stmt.toString()}`);
             }
@@ -1077,7 +1160,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return this.addSystemComponentNode(COMPONENT_IF_BRANCH);
     }
 
-    private COMPONENT_CREATE_PARSERS: Map<string, (name: string, stmt: Stmt, expr: AbstractInvokeExpr) => ViewTreeNodeImpl | undefined> = new Map([
+    private COMPONENT_CREATE_PARSERS: Map<string, (name: string, stmt: Stmt, expr: AbstractInvokeExpr,shouldPush:boolean) => ViewTreeNodeImpl | undefined> = new Map([
         ['ForEach.create', this.forEachCreationParser.bind(this)],
         ['LazyForEach.create', this.forEachCreationParser.bind(this)],
         ['Repeat.create', this.repeatCreationParser.bind(this)],
@@ -1085,18 +1168,36 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         ['If.branch', this.ifBranchCreationParser.bind(this)],
         ['WaterFlow.create', this.waterFlowCreationParser.bind(this)],
     ]);
-    private COMPONENT_BEHAVIOR_PARSERS: 
-    Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined
-    > = new Map([
-        ['tabBar', this.tabBarComponentParser.bind(this)],
-        ['navDestination', this.navDestinationComponentParser.bind(this)],
-        ['bindContentCover', this.bindContentCoverComponentParser.bind(this)],
-    ]);
+    private COMPONENT_BEHAVIOR_PARSERS:
+        Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined
+        > = new Map([
+            ['tabBar', this.tabBarComponentParser.bind(this)],
+            ['navDestination', this.navDestinationComponentParser.bind(this)],
+            ['bindContentCover', this.bindContentCoverComponentParser.bind(this)],
+            ['bindSheet', this.bindSheetComponentParser.bind(this)],
+            ['bindContextMenu', this.bindContextMenuComponentParser.bind(this)],
+            ['bindMenu', this.bindMenuComponentParser.bind(this)],
+            ['bindPopup', this.bindPopupComponentParser.bind(this)],
+        ]);
+    
+    private DIALOG_SHOW_PARSERS: 
+        Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined
+        > = new Map([
+            ['showAlertDialog', this.AlertDialogShowParser.bind(this)],
+            ['showActionSheet', this.ActionSheetShowParser.bind(this)],
+            ['CalendarPickerDialog', this.CalendarPickerDialogShowParser.bind(this)],
+            ['showDatePickerDialog', this.DatePickerDialogShowParser.bind(this)],
+            ['showTimePickerDialog', this.TimePickerDialogShowParser.bind(this)],
+            ['showTextPickerDialog', this.TextPickerDialogShowParser.bind(this)],
+            ['showToast', this.ToastShowParser.bind(this)],
+            ['showDialog,', this.DialogShowParser.bind(this)],
+            ['showActionMenu', this.ActionMenuShowParser.bind(this)],
+        ]);
 
-    private componentCreateParse(componentName: string, methodName: string, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNodeImpl | undefined {
+    private componentCreateParse(componentName: string, methodName: string, stmt: Stmt, expr: ArkStaticInvokeExpr,shouldPush:boolean = true): ViewTreeNodeImpl | undefined {
         let parserFn = this.COMPONENT_CREATE_PARSERS.get(`${componentName}.${methodName}`);
         if (parserFn) {
-            let node = parserFn(componentName, stmt, expr);
+            let node = parserFn(componentName, stmt, expr,shouldPush);
             node?.addStmt(this, stmt);
             return node;
         }
@@ -1106,7 +1207,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return node;
     }
 
-    private parseStaticInvokeExpr(local2Node: Map<Local, ViewTreeNode>, stmt: Stmt, expr: ArkStaticInvokeExpr): ViewTreeNodeImpl | undefined {
+    private parseStaticInvokeExpr(local2Node: Map<Local, ViewTreeNode>, stmt: Stmt, expr: ArkStaticInvokeExpr,shouldPush:boolean = true): ViewTreeNodeImpl | undefined {
         let methodSignature = expr.getMethodSignature();
         let method = this.findMethod(methodSignature);
         if (method?.hasBuilderDecorator()) {
@@ -1119,7 +1220,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
 
         if (this.isCreateFunc(methodName)) {
-            return this.componentCreateParse(name, methodName, stmt, expr);
+            return this.componentCreateParse(name, methodName, stmt, expr,shouldPush);
         }
 
         let currentNode = this.top();
@@ -1320,31 +1421,31 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         for (const arg of args) {
             const local = arg as Local;
             const type = arg.getType();
-    
+
             // 如果 local 不存在于 local2Node，直接跳过
             if (!local2Node.has(local)) {
                 if (!(type instanceof FunctionType)) {
                     continue;
                 }
-    
+
                 const method = this.findMethod(type.getMethodSignature());
                 if (!method || !method.hasBuilderDecorator()) {
                     continue;
                 }
-    
+
                 const builderNode = this.addBuilderNode(method, false);
                 local2Node.set(arg as Local, builderNode);
-    
+
                 const base = expr.getBase();
                 if (!(base instanceof Local) || !local2Node.has(base)) {
                     continue;
                 }
-    
+
                 const navNode = local2Node.get(base);
                 if (!navNode) {
                     continue;
                 }
-    
+
                 const pageMapNode = ViewTreeNodeImpl.createPageMapNode();
                 pageMapNode.children.push(builderNode);
                 builderNode.parent = pageMapNode;
@@ -1352,14 +1453,14 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 pageMapNode.parent = navNode;
                 continue;
             }
-    
+
             // 如果 local 存在于 local2Node
             const node = local2Node.get(local);
             const navigationNode = this.getNodeByNameFromStack('Navigation');
             if (!navigationNode || !node) {
                 continue;
             }
-    
+
             const pageMapNode = ViewTreeNodeImpl.createPageMapNode();
             pageMapNode.children.push(node);
             node.parent = pageMapNode;
@@ -1370,7 +1471,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private bindContentCoverComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-
         const args = expr.getArgs();
         for (const arg of args) {
             const local = arg as Local;
@@ -1383,15 +1483,784 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     bindContentNode.children.push(node);
                     node.parent = bindContentNode;
                     // 收集到全局 WindowViewTree
-                    const windowViewTree = new ViewTreeImpl(this.render);
-                    windowViewTree.root?.children.push(bindContentNode);
-                    windowViewTree.buildViewStatus = true;
-                    this.render.getDeclaringArkFile().getScene().addWindowViewTree(windowViewTree);
+                    this.addToWindowViewTree(bindContentNode);
                 }
             }
         }
         return undefined;
     }
+
+    private bindSheetComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const local = arg as Local;
+            if (local2Node.has(local)) {
+                const node = local2Node.get(local);
+                let root = this.root;
+                if (root && node) {
+                    // 创建父节点 bindsheet
+                    const bindSheetNode = ViewTreeNodeImpl.createBindSheetNode();
+                    bindSheetNode.children.push(node);
+                    node.parent = bindSheetNode;
+                    // 收集到全局 WindowViewTree
+                    this.addToWindowViewTree(bindSheetNode);
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private bindContextMenuComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            const local = arg as Local;
+            if (local2Node.has(local)) {
+                const node = local2Node.get(local);
+                let root = this.root;
+                if (root && node) {
+                    // 创建虚拟父节点 TabBar
+                    const bindMenuNode = ViewTreeNodeImpl.createMenuNode();
+                    bindMenuNode.children.push(node);
+                    node.parent = bindMenuNode;
+                    // 收集到全局 WindowViewTree
+                    this.addToWindowViewTree(bindMenuNode);
+                }
+
+            } else if (type instanceof FunctionType) {
+                const method = this.findMethod(type.getMethodSignature());
+                if (method && method.hasBuilderDecorator()) {
+                    const builder_node = this.addBuilderNode(method, false);
+                    local2Node.set(arg as Local, builder_node);
+                    const MenuWrapperNode = ViewTreeNodeImpl.createMenuNode();
+                    MenuWrapperNode.children.push(builder_node);
+                    builder_node.parent = MenuWrapperNode;
+                    // 收集到全局 WindowViewTree
+                    this.addToWindowViewTree(MenuWrapperNode);
+                }
+            }
+        }
+        return undefined;
+    }
+
+    // bindMenu(isShow: boolean, content: Array<MenuElement> | CustomBuilder, options?: MenuOptions): T
+    private bindMenuComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            const local = arg as Local;
+            // 1. 如果参数是数组类型（常见于 bindMenu 场景）
+            if (type instanceof ArrayType) {
+                const menuNode = ViewTreeNodeImpl.createMenuNode();
+                const menuItems = this.handleBindMenuArray(local2Node, arg);
+                for (const item of menuItems) {
+                    menuNode.children.push(item);
+                    item.parent = menuNode;
+                }
+
+                this.addToWindowViewTree(menuNode);
+            }
+            // 2. 如果 local2Node 里有节点，直接挂到 Menu
+            else if (local2Node.has(local)) {
+                const node = local2Node.get(local);
+                if (node) {
+                    const menuNode = ViewTreeNodeImpl.createMenuNode();
+                    menuNode.children.push(node);
+                    node.parent = menuNode;
+
+                    this.addToWindowViewTree(menuNode);
+                }
+            }
+            // 3. 如果参数是 FunctionType，递归分析
+            else if (type instanceof FunctionType) {
+                const method = this.findMethod(type.getMethodSignature());
+                if (method && method.hasBuilderDecorator()) {
+                    const menuNode = ViewTreeNodeImpl.createMenuWrapperNode();
+                    this.stack.push(menuNode);
+                    const builderNode = this.addBuilderNode(method, false);
+                    this.pop();
+                    local2Node.set(arg as Local, builderNode);
+                    menuNode.children.push(builderNode);
+                    builderNode.parent = menuNode;
+
+                    this.addToWindowViewTree(menuNode);
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private handleBindMenuArray(local2Node: Map<Local, ViewTreeNodeImpl>, arg: Value): ViewTreeNodeImpl[] {
+        // console.log("执行handleBindMenuArray");
+        const result: ViewTreeNodeImpl[] = [];
+        const local = arg as Local;
+        const stmt = local.getDeclaringStmt();
+        if (!(stmt instanceof ArkAssignStmt)) return result;
+
+        const right = stmt.getRightOp();
+        if (!(right instanceof ArkInstanceFieldRef)) return result;
+
+        const fieldSig = right.getFieldSignature();
+        const scene = this.render.getDeclaringArkFile().getScene();
+        const clazz = this.findClass((fieldSig.getDeclaringSignature() as ClassSignature));
+        const field = clazz?.getField(fieldSig);
+        const inits = field?.getInitializer();
+
+        if (!inits) return result;
+
+        for (const initStmt of inits) {
+            if (initStmt instanceof ArkAssignStmt && initStmt.getRightOp() instanceof ArkNewExpr) {
+                ///console.log("满足： stmt: ", initStmt.toString());
+                const initValue = backtraceLocalInitValue(initStmt.getLeftOp() as Local);
+                if (initValue instanceof ArkNewExpr) {
+                    const cls = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
+                    const map = parseObjectLiteral(cls, scene);
+                    const node = this.buildNodeFromMenuLiteral(local2Node, map, initStmt);
+                    if (node) result.push(node);
+                }
+            }
+        }
+        return result;
+    }
+
+
+    private buildNodeFromMenuLiteral(local2Node: Map<Local, ViewTreeNodeImpl>, map: ObjectLiteralMap, stmt: Stmt): ViewTreeNodeImpl | null {
+        let textNode: ViewTreeNodeImpl | null = null;
+        let action: Value | null = null;
+        for (const [field, value] of map) {
+            if (field.getName() === 'value' || field.getName() == 'title') {
+                textNode = new ViewTreeNodeImpl('Text');
+                textNode.text_content = (value as StringConstant).getValue();
+            } else if (field.getName() === 'action' && !(value instanceof Map)) {
+                action = value;
+            }
+        }
+        if (action instanceof Local) {
+            const type = action.getType();
+            if (type instanceof FunctionType) {
+                const method = this.findMethod(type.getMethodSignature());
+                if (method && textNode) {
+                    local2Node.set(action, textNode);
+                }
+            }
+        }
+        if (textNode && stmt) {
+            textNode.addStmt(this, stmt);
+        }
+        return textNode;
+    }
+
+    public addToWindowViewTree(node: ViewTreeNodeImpl): void {
+        const windowViewTree = new ViewTreeImpl(this.render);
+        windowViewTree.root?.children.push(node);
+        windowViewTree.buildViewStatus = true;
+        this.render.getDeclaringArkFile().getScene().addWindowViewTree(windowViewTree);
+    }
+
+    private bindPopupComponentParser(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt,
+        expr: ArkInstanceInvokeExpr
+    ): ViewTreeNodeImpl | undefined {
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            const local = arg as Local;
+            // 1. 如果 local2Node 里有节点，直接挂到 Popup
+            if (local2Node.has(local)) {
+                const node = local2Node.get(local);
+                if (node) {
+                    const popupNode = ViewTreeNodeImpl.createPopupNode();
+                    popupNode.children.push(node);
+                    node.parent = popupNode;
+
+                    this.addToWindowViewTree(popupNode);
+                }
+            }
+            // 2. 如果参数是 ClassType，调用 handleBindPopupClass
+            else if (type instanceof ClassType) {
+                const popupNode = ViewTreeNodeImpl.createPopupNode(); // 或 createPopupNode()
+                const popupItems = this.handleBindPopupClass(local2Node, arg);
+                for (const item of popupItems) {
+                    popupNode.children.push(item);
+                    item.parent = popupNode;
+                }
+
+                this.addToWindowViewTree(popupNode);
+            }
+            // 3. 如果参数是 FunctionType，递归分析
+            else if (type instanceof FunctionType) {
+                const method = this.findMethod(type.getMethodSignature());
+                if (method && method.hasBuilderDecorator()) {
+                    const builderNode = this.addBuilderNode(method,false);
+                    local2Node.set(arg as Local, builderNode);
+                    const popupNode = ViewTreeNodeImpl.createPopupNode(); // 或 createPopupNode()
+                    popupNode.children.push(builderNode);
+                    builderNode.parent = popupNode;
+
+                    this.addToWindowViewTree(popupNode);
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private handleBindPopupClass(local2Node: Map<Local, ViewTreeNodeImpl>, arg: Value): ViewTreeNodeImpl[] {
+        
+        const result: ViewTreeNodeImpl[] = [];
+        const calssSig = (arg.getType() as ClassType).getClassSignature();
+        const clazz = this.findClass(calssSig);
+        if (!clazz) return [];
+
+        const scene = this.render.getDeclaringArkFile().getScene();
+        const builder = clazz.getFieldWithName("builder");
+        const primary = clazz.getFieldWithName("primaryButton");
+        const secondary = clazz.getFieldWithName("secondaryButton");
+
+        // @note(jxianxiao):一定同时存在么？
+        //if (!primary || !secondary) return result;
+        if (builder) {
+            const builder_node = this.parseObjectFromArkField(builder, scene, "bindPopup");
+            if (builder_node) {
+                local2Node.set(arg as Local, builder_node);
+                result.push(builder_node);
+            }
+        }
+        if (primary) {
+            const node = this.parseObjectFromArkField(primary, scene, "bindPopup");
+            if (node) {
+                local2Node.set(arg as Local, node);
+                result.push(node);
+            } // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+        }
+        if (secondary) {
+            const secNode = this.parseObjectFromArkField(secondary, scene, "bindPopup");
+            if (secNode) {
+                local2Node.set(arg as Local, secNode); // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+                result.push(secNode);
+            }
+        }
+
+        return result;
+    }
+
+    private parseObjectFromArkField(field: ArkField, scene: Scene, api_name: string): ViewTreeNodeImpl | null | undefined {
+        //console.log("field: ",field);
+        const initStmts = field.getInitializer();
+        const newLocals: Local[] = [];
+
+        // 提取所有 ArkNewExpr 左值
+        for (const stmt of initStmts) {
+
+            if (stmt instanceof ArkAssignStmt) {
+                let rightOp = stmt.getRightOp();
+                let leftOp = stmt.getLeftOp();
+                if (rightOp instanceof ArkNewExpr) {
+                    newLocals.push(stmt.getLeftOp() as Local);
+                } else if (rightOp instanceof ArkInstanceFieldRef) {
+                    if (field.getType() instanceof FunctionType) {
+                        const methodSignature = (field.getType() as FunctionType).getMethodSignature();
+                        const method = scene.getMethod(methodSignature);
+                        if (method?.hasBuilderDecorator()) {
+                            const builder_node = this.addBuilderNode(method,false);
+                            return builder_node;
+                        }
+                    }
+                } else if (rightOp instanceof Local && rightOp.getType() instanceof FunctionType && leftOp instanceof ArkInstanceFieldRef && leftOp.getFieldName() == "builder") {
+                    const methodSignature = (rightOp.getType() as FunctionType).getMethodSignature();
+                    const method = scene.getMethod(methodSignature);
+                    const builder_method = method ? this.findBuilderMethodDeep(method) : undefined;
+                    if (builder_method) {
+                        const builder_node = this.addBuilderNode(builder_method,false);
+                        return builder_node;
+                    }
+                }
+                else {
+                    // console.log("type : ", rightOp);
+                }
+            }
+        }
+        for (const local of newLocals) {
+            const initValue = backtraceLocalInitValue(local);
+            //console.log("initValue: ", initValue);
+            if (initValue instanceof ArkNewExpr) {
+                const arkClass = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
+                const fieldValueMap = parseObjectLiteral(arkClass, scene); // Map<ArkField, Value | ObjectLiteralMap>
+
+                //console.log("fieldValueMap: ", fieldValueMap);
+                let node;
+                let action;
+                for (let pair of fieldValueMap) {
+                    let field_name = pair[0].getName();
+                    let value = pair[1];
+
+                    if (field_name == 'value') {
+                        // @todo(jxianxiao):根据 action 回调函数 来实现与 node 的绑定（UI迁移行为）
+                        // if(api_name == "bindPopup"){
+                        //     node = new ViewTreeNodeImpl("Button");   
+                        // }else{
+                        //     node = new ViewTreeNodeImpl("Text"); 
+                        // }
+                        node = new ViewTreeNodeImpl('Text');
+                        if (value instanceof StringConstant) {
+                            node.text_content = (value as StringConstant).getValue();
+                        }
+                    } else if (field_name == 'action') {
+                        action = value
+                    } else if (field_name == 'builder') {
+                        // console.log("value: ", value);
+                        if (value instanceof Local) {
+                            const type = value.getType();
+
+                            if (type instanceof FunctionType) {
+                                const method = this.findMethod(type.getMethodSignature());
+                                if (method && method.hasBuilderDecorator()) {
+                                    // 分析 builder 方法，生成 Dialog 内容树
+                                    const builderNode = this.addBuilderNode(method,false);
+                                    // ...将 builderNode 挂到 Dialog 节点下...
+
+                                    this.addToWindowViewTree(builderNode);
+                                }
+                            } else if (type instanceof ClassType) {
+                                // 递归分析自定义组件
+                                // ...
+                            }
+                        } else if (value instanceof ArkStaticInvokeExpr) {
+                            const fakeStmt = new ArkInvokeStmt(value); // 或者用你已有的 stmt
+                            const view_node = this.parseStaticInvokeExpr(new Map(), fakeStmt, value,false);
+                            //console.log("view_node: ", view_node);
+                            if (view_node) {
+                                this.addToWindowViewTree(view_node);
+                            }
+                            const agrs = value.getArgs();
+                            for (const arg of agrs) {
+                                const type = arg.getType();
+                                if (type instanceof ClassType) {
+                                    // 递归分析自定义组件
+                                    // ...
+                                    this.handleDialogClass(new Map(), arg, type, fakeStmt, value.getMethodSignature().getMethodSubSignature().getMethodName());
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!action) {
+                    continue;
+                }
+                let type = (action as Local).getType();
+                if (type instanceof FunctionType) {
+                    const method_signature = type.getMethodSignature();
+                    let method = scene.getMethod(method_signature);
+                    if (method && method.getCfg()) {
+                        // @todo(jxianxiao):根据 action 回调函数 来实现与 node 的绑定（UI迁移行为）
+                    }
+                }
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private findBuilderMethodDeep(method: ArkMethod): ArkMethod | undefined {
+        if (method.hasBuilderDecorator()) {
+            return method;
+        }
+        const cfg = method.getCfg();
+        if (!cfg) return undefined;
+        for (const stmt of cfg.getStmts()) {
+            // 1. 直接 instanceinvoke 语句
+            if (stmt instanceof ArkInvokeStmt) {
+                const expr = stmt.getInvokeExpr();
+                if (expr instanceof ArkInstanceInvokeExpr) {
+                    const base = expr.getBase();
+                    //const methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
+                    if (base.getName() === 'this') {
+                        const subMethod = this.findMethod(expr.getMethodSignature());
+                        if (subMethod && subMethod.hasBuilderDecorator()) {
+                            return subMethod;
+                        }
+                    }
+                }
+            }
+            // 2. 赋值语句，右侧是 instanceinvoke
+            else if (stmt instanceof ArkAssignStmt) {
+                const rightOp = stmt.getRightOp();
+                if (rightOp instanceof ArkInstanceInvokeExpr) {
+                    const base = rightOp.getBase();
+                    //const methodName = rightOp.getMethodSignature().getMethodSubSignature().getMethodName();
+                    if (base.getName() === 'this') {
+                        const subMethod = this.findMethod(rightOp.getMethodSignature());
+                        if (subMethod && subMethod.hasBuilderDecorator()) {
+                            return subMethod;
+                        }
+                    }
+                }
+            }
+            // 3. 可以递归处理更深层的表达式（如右侧是 Lambda/Block/CallChain）
+            // 可根据实际IR结构扩展
+        }
+        return undefined;
+    }
+
+    private handleDialogClass(local2Node: Map<Local, ViewTreeNodeImpl>, arg: Value, type: ClassType, stmt: Stmt, dialog_type: string): void {
+
+        const calssSig = (arg.getType() as ClassType).getClassSignature();
+        // console.log("calssSig: ", calssSig);
+        const clazz = this.findClass(calssSig);
+        if (!clazz) return;
+
+        const scene = this.render.getDeclaringArkFile().getScene();
+        // console.log("handleDialogClass clazz: ", clazz);
+        const primary = clazz.getFieldWithName('primaryButton');
+        const secondary = clazz.getFieldWithName('secondaryButton');
+        const confirm = clazz.getFieldWithName('confirm');
+
+        const buttons = clazz.getFieldWithName('buttons');
+
+        const radioContent = clazz.getFieldWithName('radioContent');
+        // @note(jxianxiao):一定同时存在么？
+        //if (!primary || !secondary) return result;
+        let dialog_node = ViewTreeNodeImpl.createAlertDialogNode();
+        if (dialog_type == "AlertDialog") {
+            dialog_node = ViewTreeNodeImpl.createAlertDialogNode();
+        } else if (dialog_type == "TipsDialog") {
+            dialog_node = ViewTreeNodeImpl.createTipsDialogNode();
+        } else if (dialog_type == "ConfirmDialog") {
+            dialog_node = ViewTreeNodeImpl.createConfirmDialogNode();
+        } else if (dialog_type == "LodaingDialog") {
+            dialog_node = ViewTreeNodeImpl.createLodaingDialogNode();
+        } else if (dialog_type == "CustomContentDialog") {
+            dialog_node = ViewTreeNodeImpl.createCustomContentDialogNode();
+        } else if (dialog_type == "Toast") {
+            dialog_node = ViewTreeNodeImpl.createToastNode();
+        } else if (dialog_type == "Dialog") {
+            dialog_node = ViewTreeNodeImpl.createDialogNode();
+        } else if (dialog_type == "ActionMenu") {
+            dialog_node = ViewTreeNodeImpl.createMenuNode();
+        }
+
+        if (primary) {
+            const node = this.parseObjectFromArkField(primary, scene, 'AlertDialog');
+            if (node) {
+                local2Node.set(arg as Local, node);
+                dialog_node.children.push(node);
+                node.parent = dialog_node;
+            } // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+        }
+
+        if (secondary) {
+            const secNode = this.parseObjectFromArkField(secondary, scene,'AlertDialog');
+            if (secNode) {
+                local2Node.set(arg as Local, secNode); // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+                dialog_node.children.push(secNode);
+                secNode.parent = dialog_node;
+            }
+        }
+        if (confirm) {
+            const confirm_node = this.parseObjectFromArkField(confirm, scene, 'AlertDialog');
+            if (confirm_node) {
+                local2Node.set(arg as Local, confirm_node); // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+                dialog_node.children.push(confirm_node);
+                confirm_node.parent = dialog_node;
+            }
+        }
+
+        if (buttons) {
+            const type = buttons.getType();
+            if (type instanceof ArrayType) {
+                const inits = buttons.getInitializer();
+                for (const initStmt of inits) {
+                    if (initStmt instanceof ArkAssignStmt && initStmt.getRightOp() instanceof ArkNewExpr) {
+                        const initValue = backtraceLocalInitValue(initStmt.getLeftOp() as Local);
+                        if (initValue instanceof ArkNewExpr) {
+                            const cls = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
+                            const map = parseObjectLiteral(cls, scene);
+                            const node = this.buildNodeFromMenuLiteral(local2Node, map, initStmt);
+                            if (node) {
+                                dialog_node.children.push(node);
+                                node.parent = dialog_node;
+                            }
+                        }
+                    }
+                }
+            }
+            //parseObjectFromArkField(buttons, scene, "AlertDialog");
+        }
+
+        if (radioContent) {
+            const type = radioContent.getType();
+            if (type instanceof ArrayType) {
+                const inits = radioContent.getInitializer();
+                for (const initStmt of inits) {
+                    if (initStmt instanceof ArkAssignStmt && initStmt.getRightOp() instanceof ArkNewExpr) {
+                        const initValue = backtraceLocalInitValue(initStmt.getLeftOp() as Local);
+                        if (initValue instanceof ArkNewExpr) {
+                            const cls = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
+                            const map = parseObjectLiteral(cls, scene);
+                            const node = this.buildNodeFromMenuLiteral(local2Node, map, initStmt);
+                            if (node) {
+                                dialog_node.children.push(node);
+                                node.parent = dialog_node;
+                            }
+                        }
+                    }
+                }
+            }
+            //parseObjectFromArkField(buttons, scene, "AlertDialog");
+        }
+        this.addToWindowViewTree(dialog_node);
+        //return result;
+    }
+
+
+    private AlertDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            if (type instanceof ClassType) {
+                this.handleDialogClass(local2Node, arg, type, stmt, "AlterDialog");
+            }
+        }
+    }
+    private ToastShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            if (type instanceof ClassType) {
+                this.handleDialogClass(local2Node, arg, type, stmt, "Toast");
+            }
+        }
+    }
+    private DialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            if (type instanceof ClassType) {
+                this.handleDialogClass(local2Node, arg, type, stmt, "Dialog");
+            }
+        }
+    }
+    private ActionMenuShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            if (type instanceof ClassType) {
+                this.handleDialogClass(local2Node, arg, type, stmt, "ActionMenu");
+            }
+        }
+    }
+    private ActionSheetShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+
+        const args = expr.getArgs();
+        for (const arg of args) {
+            const type = arg.getType();
+            if (type instanceof ClassType) {
+                this.handleSheetClass(local2Node, arg, type, stmt);
+            }
+        }
+    }
+
+    private handleSheetClass(local2Node: Map<Local, ViewTreeNodeImpl>, arg: Value, type: ClassType, stmt: Stmt): void {
+
+        const calssSig = (arg.getType() as ClassType).getClassSignature();
+
+        const clazz = this.findClass(calssSig);
+        if (!clazz) return;
+
+        const scene = this.render.getDeclaringArkFile().getScene();
+        const primary = clazz.getFieldWithName("primaryButton");
+        const secondary = clazz.getFieldWithName("secondaryButton");
+        const confirm = clazz.getFieldWithName("confirm");
+
+        const sheets = clazz.getFieldWithName("sheets");
+        // @note(jxianxiao):一定同时存在么？
+        //if (!primary || !secondary) return result;
+
+        const alter_dialog_node = ViewTreeNodeImpl.createActionSheetNode();
+
+        if (primary) {
+            const node = this.parseObjectFromArkField(primary, scene, "ActionSheet");
+            if (node) {
+                local2Node.set(arg as Local, node);
+                alter_dialog_node.children.push(node);
+                node.parent = alter_dialog_node;
+            } // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+        }
+
+        if (secondary) {
+            const secNode = this.parseObjectFromArkField(secondary, scene, "ActionSheet");
+            if (secNode) {
+                local2Node.set(arg as Local, secNode); // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+                alter_dialog_node.children.push(secNode);
+                secNode.parent = alter_dialog_node;
+            }
+        }
+        if (confirm) {
+            const confirm_node = this.parseObjectFromArkField(confirm, scene, "ActionSheet");
+            if (confirm_node) {
+                local2Node.set(arg as Local, confirm_node); // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
+                alter_dialog_node.children.push(confirm_node);
+                confirm_node.parent = alter_dialog_node;
+            }
+        }
+
+        if (sheets) {
+            const type = sheets.getType();
+            if (type instanceof ArrayType) {
+                const inits = sheets.getInitializer();
+                for (const initStmt of inits) {
+                    if (initStmt instanceof ArkAssignStmt && initStmt.getRightOp() instanceof ArkNewExpr) {
+                        const initValue = backtraceLocalInitValue(initStmt.getLeftOp() as Local);
+                        if (initValue instanceof ArkNewExpr) {
+                            const cls = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
+                            const map = parseObjectLiteral(cls, scene);
+                            const node = this.buildNodeFromMenuLiteral(local2Node, map, initStmt);
+                            if (node) {
+                                alter_dialog_node.children.push(node);
+                                node.parent = alter_dialog_node;
+                            }
+                        }
+                    }
+                }
+            }
+            //parseObjectFromArkField(buttons, scene, "AlertDialog");
+        }
+        this.addToWindowViewTree(alter_dialog_node);
+    }
+
+    private CalendarPickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const Dialog = ViewTreeNodeImpl.createDialogNode();
+        const node1 = new ViewTreeNodeImpl("Text");
+        node1.text_content = "确定";
+
+        const node2 = new ViewTreeNodeImpl("Text");
+        node2.text_content = "取消";
+
+        const Calendar_node = new ViewTreeNodeImpl("Calendar");
+
+        Dialog.children.push(node1);
+        Dialog.children.push(node2);
+        Dialog.children.push(Calendar_node);
+
+        this.addToWindowViewTree(Dialog);
+        return Dialog;
+    }
+
+
+    private DatePickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const Dialog = ViewTreeNodeImpl.createDialogNode();
+        const node1 = new ViewTreeNodeImpl("Text");
+        node1.text_content = "确定";
+
+        const node2 = new ViewTreeNodeImpl("Text");
+        node2.text_content = "取消";
+
+        const DatePicker_node = new ViewTreeNodeImpl("DatePicker");
+
+        Dialog.children.push(node1);
+        Dialog.children.push(node2);
+        Dialog.children.push(DatePicker_node);
+
+        this.addToWindowViewTree(Dialog);
+    
+        return Dialog;
+    }
+    private TimePickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const Dialog = ViewTreeNodeImpl.createDialogNode();
+        const node1 = new ViewTreeNodeImpl("Text");
+        node1.text_content = "确定";
+
+        const node2 = new ViewTreeNodeImpl("Text");
+        node2.text_content = "取消";
+
+        const TimePicker_node = new ViewTreeNodeImpl("TimePicker");
+
+        Dialog.children.push(node1);
+        Dialog.children.push(node2);
+        Dialog.children.push(TimePicker_node);
+
+        this.addToWindowViewTree(Dialog);
+        return Dialog;
+    }
+    private TextPickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        const Dialog = ViewTreeNodeImpl.createDialogNode();
+        const node1 = new ViewTreeNodeImpl("Text");
+        node1.text_content = "确定";
+
+        const node2 = new ViewTreeNodeImpl("Text");
+        node2.text_content = "取消";
+
+        const TextPicker_node = new ViewTreeNodeImpl("TextPicker");
+
+        Dialog.children.push(node1);
+        Dialog.children.push(node2);
+        Dialog.children.push(TextPicker_node);
+
+        this.addToWindowViewTree(Dialog);
+        return Dialog;
+    }
+
+    private analyzeDialog(scene: Scene,local2Node: Map<Local, ViewTreeNodeImpl> = new Map()): void {
+        const cfg = this.render.getCfg();
+        const stmts = cfg?.getStmts() || [];
+        if(cfg){
+            for(const stmt of stmts){
+                this.analyzeDialogFromStmt(stmt,scene,local2Node);
+            }
+        }
+    }
+    private analyzeDialogFromStmt(stmt: Stmt, scene: Scene,local2Node: Map<Local, ViewTreeNodeImpl>): void {
+        if (stmt instanceof ArkInvokeStmt) {
+            const expr = stmt.getInvokeExpr();
+            if (expr instanceof ArkInstanceInvokeExpr) {
+
+                const base = expr.getBase();
+                const method_name = expr.getMethodSignature().getMethodSubSignature().getMethodName();
+                if (method_name == 'showAlertDialog') {
+                    let parserFn = this.DIALOG_SHOW_PARSERS.get(method_name);
+                    if (parserFn) {
+                        parserFn(local2Node, stmt, expr);
+                    }
+                } else if (method_name == 'showActionSheet') {
+                    let parserFn = this.DIALOG_SHOW_PARSERS.get(method_name);
+                    if (parserFn) {
+                        parserFn(local2Node, stmt, expr);
+                    }
+                } else if (method_name == 'open') {
+                    const base = expr.getBase();
+                    const initValue = backtraceLocalInitValue(base as Local);
+                    if (initValue instanceof ArkInstanceFieldRef) {
+                        const field_name = initValue.getFieldSignature().getFieldName();
+                        const declaring_sig = initValue.getFieldSignature().getDeclaringSignature();
+                        if (declaring_sig instanceof ClassSignature) {
+                            const clazz = this.findClass(declaring_sig);
+                            let field = clazz?.getFieldWithName(field_name);
+                            if (field instanceof ArkField) {
+                                this.parseObjectFromArkField(field, scene, 'open');
+                            }
+                        }
+                    }
+                } else if (base.getName() == 'CalendarPickerDialog' && method_name == 'show') {
+                    let parserFn = this.DIALOG_SHOW_PARSERS.get(base.getName());
+                    if (parserFn) {
+                        parserFn(local2Node, stmt, expr);
+                    }
+                } else if (method_name == 'showDatePickerDialog' || method_name == 'showTimePickerDialog' || method_name == 'showTextPickerDialog') {
+                    let parserFn = this.DIALOG_SHOW_PARSERS.get(method_name);
+                    if (parserFn) {
+                        parserFn(local2Node, stmt, expr);
+                    }
+                }
+            }
+        }
+    }
+
+
 }
 
 export function buildViewTree(render: ArkMethod): ViewTree {

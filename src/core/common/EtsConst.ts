@@ -169,7 +169,7 @@ export const ETS_COMPILER_OPTIONS = {
         ],
         render: {
             method: ['build', 'pageTransition'],
-            decorator: ['LocalBuilder', 'Builder'],
+            decorator: 'Builder',
         },
         components: [
             'AbilityComponent',
@@ -987,6 +987,13 @@ export const BUILDER_PARAM_DECORATOR: string = 'BuilderParam';
 export const COMPONENT_TABBAR: string = 'TabBar';
 export const COMPONENT_PAGEMAP: string = 'PageMap';
 export const COMPONENT_ROOT: string = 'root';
+export const COMPONENT_BINDCONTENT: string = 'BindContent';
+export const COMPONENT_BINDSHEET : string = 'BindSheet';
+export const COMPONENT_MENUWRAPPER: string = 'MenuWrapper';
+export const COMPONENT_POPUP: string = 'Popup';
+export const COMPONENT_DIALOG: string = 'Dialog';
+export const COMPONENT_MENU: string = 'Menu';
+
 export function isEtsAtomicComponent(name: string): boolean {
     return BUILDIN_ATOMIC_COMPONENT.has(name);
 }
