@@ -1826,7 +1826,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
     private handleNewLocal(local: Local, scene: Scene): ViewTreeNodeImpl | null | undefined {
         const initValue = backtraceLocalInitValue(local);
-        if (!(initValue instanceof ArkNewExpr)) return null;
+        if (!(initValue instanceof ArkNewExpr)) {
+            return null;
+        }
 
         const arkClass = ModelUtils.getArkClassInBuild(scene, initValue.getClassType());
         const fieldValueMap = parseObjectLiteral(arkClass, scene);
@@ -1895,7 +1897,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             return method;
         }
         const cfg = method.getCfg();
-        if (!cfg) return undefined;
+        if (!cfg) {
+            return undefined;
+        }
         for (const stmt of cfg.getStmts()) {
             const result = this.findBuilderMethodFromStmt(stmt);
             if (result) {
