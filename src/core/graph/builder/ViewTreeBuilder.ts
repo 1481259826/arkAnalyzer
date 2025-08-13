@@ -348,12 +348,10 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         return instance;
     }
     public static createAlertDialogNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl("AlertDialog");
+        let instance = new ViewTreeNodeImpl('AlertDialog');
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
-
-
 
     public static createBindSheetNode(): ViewTreeNodeImpl {
         let instance = new ViewTreeNodeImpl(COMPONENT_BINDSHEET);
@@ -1160,14 +1158,16 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return this.addSystemComponentNode(COMPONENT_IF_BRANCH);
     }
 
-    private COMPONENT_CREATE_PARSERS: Map<string, (name: string, stmt: Stmt, expr: AbstractInvokeExpr, shouldPush: boolean) => ViewTreeNodeImpl | undefined> = new Map([
-        ['ForEach.create', this.forEachCreationParser.bind(this)],
-        ['LazyForEach.create', this.forEachCreationParser.bind(this)],
-        ['Repeat.create', this.repeatCreationParser.bind(this)],
-        ['View.create', this.viewComponentCreationParser.bind(this)],
-        ['If.branch', this.ifBranchCreationParser.bind(this)],
-        ['WaterFlow.create', this.waterFlowCreationParser.bind(this)],
-    ]);
+    private COMPONENT_CREATE_PARSERS:
+        Map<string, (name: string, stmt: Stmt, expr: AbstractInvokeExpr, shouldPush: boolean) => ViewTreeNodeImpl | undefined
+        > = new Map([
+            ['ForEach.create', this.forEachCreationParser.bind(this)],
+            ['LazyForEach.create', this.forEachCreationParser.bind(this)],
+            ['Repeat.create', this.repeatCreationParser.bind(this)],
+            ['View.create', this.viewComponentCreationParser.bind(this)],
+            ['If.branch', this.ifBranchCreationParser.bind(this)],
+            ['WaterFlow.create', this.waterFlowCreationParser.bind(this)],
+        ]);
     private COMPONENT_BEHAVIOR_PARSERS:
         Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined
         > = new Map([
@@ -1213,7 +1213,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return node;
     }
 
-    private parseStaticInvokeExpr(local2Node: Map<Local, ViewTreeNode>, stmt: Stmt, expr: ArkStaticInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
+    private parseStaticInvokeExpr(
+        local2Node: Map<Local, ViewTreeNode>,
+        stmt: Stmt, expr: ArkStaticInvokeExpr,
+        shouldPush: boolean = true)
+        : ViewTreeNodeImpl | undefined {
         let methodSignature = expr.getMethodSignature();
         let method = this.findMethod(methodSignature);
         if (method?.hasBuilderDecorator()) {
@@ -1600,10 +1604,14 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const result: ViewTreeNodeImpl[] = [];
         const local = arg as Local;
         const stmt = local.getDeclaringStmt();
-        if (!(stmt instanceof ArkAssignStmt)) return result;
+        if (!(stmt instanceof ArkAssignStmt)) {
+            return result;
+        }
 
         const right = stmt.getRightOp();
-        if (!(right instanceof ArkInstanceFieldRef)) return result;
+        if (!(right instanceof ArkInstanceFieldRef)) {
+            return result;
+        }
 
         const fieldSig = right.getFieldSignature();
         const scene = this.render.getDeclaringArkFile().getScene();
@@ -1727,7 +1735,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const result: ViewTreeNodeImpl[] = [];
         const calssSig = (arg.getType() as ClassType).getClassSignature();
         const clazz = this.findClass(calssSig);
-        if (!clazz) return [];
+        if (!clazz) {
+            return [];
+        }
 
         const scene = this.render.getDeclaringArkFile().getScene();
         const builder = clazz.getFieldWithName('builder');
@@ -1764,7 +1774,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const newLocals: Local[] = [];
 
         for (const stmt of initStmts) {
-            if (!(stmt instanceof ArkAssignStmt)) continue;
+            if (!(stmt instanceof ArkAssignStmt)) {
+                continue;
+            }
             this.handleAssignStmt(stmt, field, scene, newLocals);
         }
 
@@ -1839,7 +1851,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             }
         }
 
-        if (!action) return null;
+        if (!action) {
+            return null;
+        }
         if (action instanceof Local) {
             const type = action.getType();
             if (type instanceof FunctionType) {
@@ -1884,7 +1898,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (!cfg) return undefined;
         for (const stmt of cfg.getStmts()) {
             const result = this.findBuilderMethodFromStmt(stmt);
-            if (result) return result;
+            if (result) {
+                return result;
+            }
         }
         return undefined;
     }
