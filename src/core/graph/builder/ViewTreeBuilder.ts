@@ -391,27 +391,27 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         return instance;
     }
     public static createLodaingDialogNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl("LoadingDialog");
+        let instance = new ViewTreeNodeImpl('LoadingDialog');
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
     public static createCustomContentDialogNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl("CustomContentDialog");
+        let instance = new ViewTreeNodeImpl('CustomContentDialog');
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
     public static createToastNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl("Toast");
+        let instance = new ViewTreeNodeImpl('Toast');
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
     public static createPopoverDialogNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl("PopoverDialog");
+        let instance = new ViewTreeNodeImpl('PopoverDialog');
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
     public static createActionSheetNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl("ActionSheet");
+        let instance = new ViewTreeNodeImpl('ActionSheet');
         instance.type = ViewTreeNodeType.SystemComponent;
         return instance;
     }
@@ -1194,7 +1194,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             ['showActionMenu', this.ActionMenuShowParser.bind(this)],
         ]);
 
-    private componentCreateParse(componentName: string, methodName: string, stmt: Stmt, expr: ArkStaticInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
+    private componentCreateParse(
+        componentName: string,
+        methodName: string,
+        stmt: Stmt,
+        expr: ArkStaticInvokeExpr,
+        shouldPush: boolean = true
+    ): ViewTreeNodeImpl | undefined {
         let parserFn = this.COMPONENT_CREATE_PARSERS.get(`${componentName}.${methodName}`);
         if (parserFn) {
             let node = parserFn(componentName, stmt, expr, shouldPush);
@@ -1605,11 +1611,15 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const field = clazz?.getField(fieldSig);
         const inits = field?.getInitializer();
 
-        if (!inits) return result;
+        if (!inits) {
+            return result;
+        }
 
         for (const initStmt of inits) {
             const node = this.buildMenuNodeFromInitStmt(local2Node, scene, initStmt);
-            if (node) result.push(node);
+            if (node) {
+                result.push(node);
+            }
         }
         return result;
     }
@@ -1720,26 +1730,26 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (!clazz) return [];
 
         const scene = this.render.getDeclaringArkFile().getScene();
-        const builder = clazz.getFieldWithName("builder");
-        const primary = clazz.getFieldWithName("primaryButton");
-        const secondary = clazz.getFieldWithName("secondaryButton");
+        const builder = clazz.getFieldWithName('builder');
+        const primary = clazz.getFieldWithName('primaryButton');
+        const secondary = clazz.getFieldWithName('secondaryButton');
 
         if (builder) {
-            const builder_node = this.parseObjectFromArkField(builder, scene, "bindPopup");
+            const builder_node = this.parseObjectFromArkField(builder, scene, 'bindPopup');
             if (builder_node) {
                 local2Node.set(arg as Local, builder_node);
                 result.push(builder_node);
             }
         }
         if (primary) {
-            const node = this.parseObjectFromArkField(primary, scene, "bindPopup");
+            const node = this.parseObjectFromArkField(primary, scene, 'bindPopup');
             if (node) {
                 local2Node.set(arg as Local, node);
                 result.push(node);
             } // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
         }
         if (secondary) {
-            const secNode = this.parseObjectFromArkField(secondary, scene, "bindPopup");
+            const secNode = this.parseObjectFromArkField(secondary, scene, 'bindPopup');
             if (secNode) {
                 local2Node.set(arg as Local, secNode); // @note(jxianxiao):这里可能会有问题，对应的arg是同一个，插入2个会导致覆盖
                 result.push(secNode);
@@ -1760,7 +1770,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         for (const local of newLocals) {
             const result = this.handleNewLocal(local, scene);
-            if (result) return result;
+            if (result) {
+                return result;
+            }
         }
         return null;
     }
@@ -1789,7 +1801,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             rightOp instanceof Local &&
             rightOp.getType() instanceof FunctionType &&
             leftOp instanceof ArkInstanceFieldRef &&
-            leftOp.getFieldName() === "builder"
+            leftOp.getFieldName() === 'builder'
         ) {
             const methodSignature = (rightOp.getType() as FunctionType).getMethodSignature();
             const method = scene.getMethod(methodSignature);
@@ -1923,7 +1935,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     ): void {
         const calssSig = (arg.getType() as ClassType).getClassSignature();
         const clazz = this.findClass(calssSig);
-        if (!clazz) return;
+        if (!clazz) {
+            return;
+        }
 
         const scene = this.render.getDeclaringArkFile().getScene();
         let dialog_node = this.createDialogNodeByType(dialog_type);
@@ -1973,7 +1987,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         scene: Scene,
         apiName: string
     ): void {
-        if (!field) return;
+        if (!field) {
+            return;
+        }
         const node = this.parseObjectFromArkField(field, scene, apiName);
         if (node) {
             local2Node.set(arg as Local, node);
@@ -1988,9 +2004,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         field: ArkField | undefined,
         scene: Scene
     ): void {
-        if (!field) return;
+        if (!field) {
+            return;
+        }
         const type = field.getType();
-        if (!(type instanceof ArrayType)) return;
+        if (!(type instanceof ArrayType)) {
+            return;
+        }
         const inits = field.getInitializer();
         for (const initStmt of inits) {
             const node = this.buildDialogArrayNode(local2Node, scene, initStmt);
@@ -2019,47 +2039,57 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
 
     private AlertDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        if (!(expr instanceof ArkInstanceInvokeExpr)) {
+            return;
+        }
         const args = expr.getArgs();
         for (const arg of args) {
             const type = arg.getType();
             if (type instanceof ClassType) {
-                this.handleDialogClass(local2Node, arg, type, stmt, "AlterDialog");
+                this.handleDialogClass(local2Node, arg, type, stmt, 'AlterDialog');
             }
         }
     }
     private ToastShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        if (!(expr instanceof ArkInstanceInvokeExpr)) {
+            return;
+        }
         const args = expr.getArgs();
         for (const arg of args) {
             const type = arg.getType();
             if (type instanceof ClassType) {
-                this.handleDialogClass(local2Node, arg, type, stmt, "Toast");
+                this.handleDialogClass(local2Node, arg, type, stmt, 'Toast');
             }
         }
     }
     private DialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        if (!(expr instanceof ArkInstanceInvokeExpr)) {
+            return;
+        }
         const args = expr.getArgs();
         for (const arg of args) {
             const type = arg.getType();
             if (type instanceof ClassType) {
-                this.handleDialogClass(local2Node, arg, type, stmt, "Dialog");
+                this.handleDialogClass(local2Node, arg, type, stmt, 'Dialog');
             }
         }
     }
     private ActionMenuShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        if (!(expr instanceof ArkInstanceInvokeExpr)) {
+            return;
+        }
         const args = expr.getArgs();
         for (const arg of args) {
             const type = arg.getType();
             if (type instanceof ClassType) {
-                this.handleDialogClass(local2Node, arg, type, stmt, "ActionMenu");
+                this.handleDialogClass(local2Node, arg, type, stmt, 'ActionMenu');
             }
         }
     }
     private ActionSheetShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        if (!(expr instanceof ArkInstanceInvokeExpr)) {
+            return;
+        }
 
         const args = expr.getArgs();
         for (const arg of args) {
@@ -2075,23 +2105,25 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const calssSig = (arg.getType() as ClassType).getClassSignature();
 
         const clazz = this.findClass(calssSig);
-        if (!clazz) return;
+        if (!clazz) {
+            return;
+        }
 
         const scene = this.render.getDeclaringArkFile().getScene();
         const alter_dialog_node = ViewTreeNodeImpl.createActionSheetNode();
-        const primary = clazz.getFieldWithName("primaryButton");
-        const secondary = clazz.getFieldWithName("secondaryButton");
-        const confirm = clazz.getFieldWithName("confirm");
-        const sheets = clazz.getFieldWithName("sheets");
+        const primary = clazz.getFieldWithName('primaryButton');
+        const secondary = clazz.getFieldWithName('secondaryButton');
+        const confirm = clazz.getFieldWithName('confirm');
+        const sheets = clazz.getFieldWithName('sheets');
 
         if (primary) {
-            this.attachSheetButton(alter_dialog_node, local2Node, arg, primary, scene, "ActionSheet");
+            this.attachSheetButton(alter_dialog_node, local2Node, arg, primary, scene, 'ActionSheet');
         }
         if (secondary) {
-            this.attachSheetButton(alter_dialog_node, local2Node, arg, secondary, scene, "ActionSheet");
+            this.attachSheetButton(alter_dialog_node, local2Node, arg, secondary, scene, 'ActionSheet');
         }
         if (confirm) {
-            this.attachSheetButton(alter_dialog_node, local2Node, arg, confirm, scene, "ActionSheet");
+            this.attachSheetButton(alter_dialog_node, local2Node, arg, confirm, scene, 'ActionSheet');
         }
         if (sheets) {
             this.attachSheetArray(alter_dialog_node, local2Node, sheets, scene);
@@ -2107,7 +2139,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         scene: Scene,
         apiName: string
     ): void {
-        if (!field) return;
+        if (!field) {
+            return;
+        }
         const node = this.parseObjectFromArkField(field, scene, apiName);
         if (node) {
             local2Node.set(arg as Local, node);
@@ -2121,9 +2155,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         sheets: ArkField | undefined,
         scene: Scene
     ): void {
-        if (!sheets) return;
+        if (!sheets) {
+            return;
+        }
         const type = sheets.getType();
-        if (!(type instanceof ArrayType)) return;
+        if (!(type instanceof ArrayType)) {
+            return;
+        }
         const inits = sheets.getInitializer();
         for (const initStmt of inits) {
             const node = this.buildSheetArrayNode(local2Node, scene, initStmt);
@@ -2152,13 +2190,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
     private CalendarPickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const Dialog = ViewTreeNodeImpl.createDialogNode();
-        const node1 = new ViewTreeNodeImpl("Text");
-        node1.text_content = "确定";
+        const node1 = new ViewTreeNodeImpl('Text');
+        node1.text_content = '确定';
 
-        const node2 = new ViewTreeNodeImpl("Text");
-        node2.text_content = "取消";
+        const node2 = new ViewTreeNodeImpl('Text');
+        node2.text_content = '取消';
 
-        const Calendar_node = new ViewTreeNodeImpl("Calendar");
+        const Calendar_node = new ViewTreeNodeImpl('Calendar');
 
         Dialog.children.push(node1);
         Dialog.children.push(node2);
@@ -2171,13 +2209,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
     private DatePickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const Dialog = ViewTreeNodeImpl.createDialogNode();
-        const node1 = new ViewTreeNodeImpl("Text");
-        node1.text_content = "确定";
+        const node1 = new ViewTreeNodeImpl('Text');
+        node1.text_content = '确定';
 
-        const node2 = new ViewTreeNodeImpl("Text");
-        node2.text_content = "取消";
+        const node2 = new ViewTreeNodeImpl('Text');
+        node2.text_content = '取消';
 
-        const DatePicker_node = new ViewTreeNodeImpl("DatePicker");
+        const DatePicker_node = new ViewTreeNodeImpl('DatePicker');
 
         Dialog.children.push(node1);
         Dialog.children.push(node2);
@@ -2189,13 +2227,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
     private TimePickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const Dialog = ViewTreeNodeImpl.createDialogNode();
-        const node1 = new ViewTreeNodeImpl("Text");
-        node1.text_content = "确定";
+        const node1 = new ViewTreeNodeImpl('Text');
+        node1.text_content = '确定';
 
-        const node2 = new ViewTreeNodeImpl("Text");
-        node2.text_content = "取消";
+        const node2 = new ViewTreeNodeImpl('Text');
+        node2.text_content = '取消';
 
-        const TimePicker_node = new ViewTreeNodeImpl("TimePicker");
+        const TimePicker_node = new ViewTreeNodeImpl('TimePicker');
 
         Dialog.children.push(node1);
         Dialog.children.push(node2);
@@ -2206,13 +2244,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
     private TextPickerDialogShowParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const Dialog = ViewTreeNodeImpl.createDialogNode();
-        const node1 = new ViewTreeNodeImpl("Text");
-        node1.text_content = "确定";
+        const node1 = new ViewTreeNodeImpl('Text');
+        node1.text_content = '确定';
 
-        const node2 = new ViewTreeNodeImpl("Text");
-        node2.text_content = "取消";
+        const node2 = new ViewTreeNodeImpl('Text');
+        node2.text_content = '取消';
 
-        const TextPicker_node = new ViewTreeNodeImpl("TextPicker");
+        const TextPicker_node = new ViewTreeNodeImpl('TextPicker');
 
         Dialog.children.push(node1);
         Dialog.children.push(node2);
@@ -2233,9 +2271,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private analyzeDialogFromStmt(stmt: Stmt, scene: Scene, local2Node: Map<Local, ViewTreeNodeImpl>): void {
-        if (!(stmt instanceof ArkInvokeStmt)) return;
+        if (!(stmt instanceof ArkInvokeStmt)) {
+            return;
+        }
         const expr = stmt.getInvokeExpr();
-        if (!(expr instanceof ArkInstanceInvokeExpr)) return;
+        if (!(expr instanceof ArkInstanceInvokeExpr)) {
+            return;
+        }
 
         const base = expr.getBase();
         const method_name = expr.getMethodSignature().getMethodSubSignature().getMethodName();
@@ -2270,11 +2312,15 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     private handleOpenDialog(expr: ArkInstanceInvokeExpr, scene: Scene): void {
         const base = expr.getBase();
         const initValue = backtraceLocalInitValue(base as Local);
-        if (!(initValue instanceof ArkInstanceFieldRef)) return;
+        if (!(initValue instanceof ArkInstanceFieldRef)) {
+            return;
+        }
 
         const field_name = initValue.getFieldSignature().getFieldName();
         const declaring_sig = initValue.getFieldSignature().getDeclaringSignature();
-        if (!(declaring_sig instanceof ClassSignature)) return;
+        if (!(declaring_sig instanceof ClassSignature)) {
+            return;
+        }
 
         const clazz = this.findClass(declaring_sig);
         const field = clazz?.getFieldWithName(field_name);
