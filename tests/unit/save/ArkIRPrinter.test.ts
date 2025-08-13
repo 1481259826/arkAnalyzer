@@ -71,13 +71,6 @@ const CASE1_EXPECT = `class %dflt {
       instanceinvoke logger.<@%unk/%unk: .info()>(%6)
       goto label5
 
-    label4:
-      %7 = sampleData[i]
-      %8 = instanceinvoke %7.<@%unk/%unk: .toString()>()
-      %9 = %8 + ' 是奇数'
-      instanceinvoke logger.<@%unk/%unk: .info()>(%9)
-      goto label5
-
     label5:
       count = 0
       goto label6
@@ -93,17 +86,29 @@ const CASE1_EXPECT = `class %dflt {
       count = count + 1
       goto label6
 
+    label15:
+      j = 0
+      goto label8
+
     label8:
       if j < 5 goto label9 label17
 
     label9:
       if j === 2 goto label16 label10
 
+    label16:
+      j = j + 1
+      goto label8
+
     label10:
       %13 = instanceinvoke j.<@%unk/%unk: .toString()>()
       %14 = '当前内层循环计数: ' + %13
       instanceinvoke logger.<@%unk/%unk: .info()>(%14)
       goto label16
+
+    label17:
+      k = 0
+      goto label11
 
     label11:
       if k < 3 goto label12 label14
@@ -117,24 +122,19 @@ const CASE1_EXPECT = `class %dflt {
       if k === 1 goto label14 label11
       k = k + 1
 
-    label13:
-      return
-
     label14:
       i = i + 1
       goto label1
 
-    label15:
-      j = 0
-      goto label8
+    label4:
+      %7 = sampleData[i]
+      %8 = instanceinvoke %7.<@%unk/%unk: .toString()>()
+      %9 = %8 + ' 是奇数'
+      instanceinvoke logger.<@%unk/%unk: .info()>(%9)
+      goto label5
 
-    label16:
-      j = j + 1
-      goto label8
-
-    label17:
-      k = 0
-      goto label11
+    label13:
+      return
   }
 
   export classMethodTest(): void {
@@ -299,6 +299,9 @@ const CASE1_EXPECT = `class %dflt {
       bHSB = 0.3
       goto label13
 
+    label13:
+      return
+
     label10:
       if bHSB >= 0.2 goto label11 label12
 
@@ -309,9 +312,6 @@ const CASE1_EXPECT = `class %dflt {
     label12:
       bHSB = bHSB + 0.2
       goto label13
-
-    label13:
-      return
   }
 
   specialString(text: string): void {
