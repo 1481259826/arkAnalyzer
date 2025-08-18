@@ -81,7 +81,7 @@ import { MethodSignature, MethodSubSignature, NamespaceSignature } from '../mode
 import {
     ANONYMOUS_METHOD_PREFIX,
     INSTANCE_INIT_METHOD_NAME,
-    LEXICAL_ENV_NAME_PREFIX,
+    LEXICAL_ENV_NAME_PREFIX, STATIC_INIT_METHOD_NAME,
     UNKNOWN_FILE_NAME
 } from './Const';
 import { EMPTY_STRING } from './ValueUtil';
@@ -98,7 +98,9 @@ export class TypeInference {
     public static inferTypeInArkField(arkField: ArkField): void {
         const arkClass = arkField.getDeclaringArkClass();
         const stmts = arkField.getInitializer();
-        const method = arkClass.getMethodWithName(INSTANCE_INIT_METHOD_NAME) ?? arkClass.getMethodWithName(CONSTRUCTOR_NAME);
+        const method = arkClass.getMethodWithName(INSTANCE_INIT_METHOD_NAME) ??
+            arkClass.getMethodWithName(STATIC_INIT_METHOD_NAME) ??
+            arkClass.getMethodWithName(CONSTRUCTOR_NAME);
         for (const stmt of stmts) {
             if (method) {
                 this.resolveStmt(stmt, method);
@@ -817,7 +819,7 @@ export class TypeInference {
         let arkExport: ArkExport | null =
             ModelUtils.findSymbolInFileWithName(baseName, arkClass) ??
             ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
-        if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
+        if ((!arkExport || arkExport instanceof Local) && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
         return this.parseArkExport2Type(arkExport);
@@ -827,7 +829,7 @@ export class TypeInference {
         let arkExport: ArkExport | null =
             ModelUtils.findSymbolInFileWithName(typeName, arkClass, true) ??
             ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
-        if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
+        if ((!arkExport || arkExport instanceof Local) && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(typeName);
         }
         const type = this.parseArkExport2Type(arkExport);
