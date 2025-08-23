@@ -116,6 +116,7 @@ export class IRInference {
         this.inferImportInfos(file);
         ModelUtils.getAllClassesInFile(file).forEach(arkClass => {
             TypeInference.inferGenericType(arkClass.getGenericsTypes(), arkClass);
+            arkClass.getAllHeritageClasses();
             arkClass.getFields().forEach(arkField => TypeInference.inferTypeInArkField(arkField));
             const methods = arkClass.getMethods().sort((a, b) => {
                 const name = a.getName().split(NAME_DELIMITER).reverse().join();
@@ -127,7 +128,6 @@ export class IRInference {
                 }
                 return 0;
             });
-            arkClass.getAllHeritageClasses();
             methods.forEach(arkMethod => TypeInference.inferTypeInMethod(arkMethod));
         });
         this.inferExportInfos(file);

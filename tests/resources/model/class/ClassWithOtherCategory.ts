@@ -40,7 +40,7 @@ let testObj = {
     }
 };
 
-const str = 'Test'
+const str = 'Test';
 
 enum TestEnum2 {
     A = a,
