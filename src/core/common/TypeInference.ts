@@ -819,18 +819,25 @@ export class TypeInference {
         let arkExport: ArkExport | null =
             ModelUtils.findSymbolInFileWithName(baseName, arkClass) ??
             ModelUtils.getArkExportInImportInfoWithName(baseName, arkClass.getDeclaringArkFile());
-        if ((!arkExport || arkExport instanceof Local) && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
+        if (!arkExport && !arkClass.getDeclaringArkFile().getImportInfoBy(baseName)) {
             arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(baseName);
         }
         return this.parseArkExport2Type(arkExport);
     }
 
     public static inferTypeByName(typeName: string, arkClass: ArkClass): Type | null {
+        //look up from declared file, if not found then from imports
+        const declaredArkFile = arkClass.getDeclaringArkFile();
         let arkExport: ArkExport | null =
             ModelUtils.findSymbolInFileWithName(typeName, arkClass, true) ??
-            ModelUtils.getArkExportInImportInfoWithName(typeName, arkClass.getDeclaringArkFile());
-        if ((!arkExport || arkExport instanceof Local) && !arkClass.getDeclaringArkFile().getImportInfoBy(typeName)) {
-            arkExport = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(typeName);
+            ModelUtils.getArkExportInImportInfoWithName(typeName, declaredArkFile);
+        //if not found or local in built-in then look up global in sdks
+        if ((!arkExport || (arkExport instanceof Local && declaredArkFile.getProjectName() === SdkUtils.BUILT_IN_NAME)) &&
+            !declaredArkFile.getImportInfoBy(typeName)) {
+            const globalVal = arkClass.getDeclaringArkFile().getScene().getSdkGlobal(typeName);
+            if (globalVal) {
+                arkExport = globalVal;
+            }
         }
         const type = this.parseArkExport2Type(arkExport);
         if (type instanceof ClassType || type instanceof AliasType) {
