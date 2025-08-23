@@ -14,7 +14,7 @@
  */
 
 import { Local } from '../base/Local';
-import { ArkClass } from '../model/ArkClass';
+import { ArkClass, ClassCategory } from '../model/ArkClass';
 import { ArkFile } from '../model/ArkFile';
 import { ArkMethod } from '../model/ArkMethod';
 import { ArkNamespace } from '../model/ArkNamespace';
@@ -216,6 +216,14 @@ export class ModelUtils {
     }
 
     public static findSymbolInFileWithName(symbolName: string, arkClass: ArkClass, onlyType: boolean = false): ArkExport | null {
+        // find symbol from enum value
+        if (arkClass.getCategory() === ClassCategory.ENUM) {
+            const field = arkClass.getStaticFieldWithName(symbolName);
+            if (field) {
+                return new Local(symbolName, field.getType());
+            }
+        }
+        // look up symbol from inner to outer
         let currNamespace: ArkNamespace | null | undefined = arkClass.getDeclaringArkNamespace();
         let result: ArkExport | null | undefined;
         while (currNamespace) {
