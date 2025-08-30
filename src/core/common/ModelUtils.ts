@@ -52,6 +52,7 @@ import { ArkBaseModel } from '../model/ArkBaseModel';
 import { ArkAssignStmt } from '../base/Stmt';
 import { ClosureFieldRef } from '../base/Ref';
 import { SdkUtils } from './SdkUtils';
+import { TypeInference } from './TypeInference';
 
 export class ModelUtils {
     public static implicitArkUIBuilderMethods: Set<ArkMethod> = new Set();
@@ -220,7 +221,7 @@ export class ModelUtils {
         if (arkClass.getCategory() === ClassCategory.ENUM) {
             const field = arkClass.getStaticFieldWithName(symbolName);
             if (field) {
-                return new Local(symbolName, field.getType());
+                return new Local(symbolName, TypeInference.getEnumValueType(field) ?? field.getType());
             }
         }
         // look up symbol from inner to outer
