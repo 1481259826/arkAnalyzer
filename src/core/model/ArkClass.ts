@@ -428,7 +428,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private updateMethodMap(newMethod: ArkMethod, methodName: string): void {
         const methodMap = newMethod.isStatic() ? this.staticMethods : this.methods;
         const methodsWithSameName = methodMap.get(methodName);
-        if (!methodsWithSameName) {
+        if (!methodsWithSameName || newMethod.getDeclaringArkFile().getLanguage() !== Language.CXX) {
             methodMap.set(methodName, [newMethod]);
             return;
         }
