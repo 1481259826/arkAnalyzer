@@ -1276,7 +1276,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const base = expr.getBase();
 
         // 收集 stateValues
-        const stateValues = this.collectStateValues(args);
+        const localArgs = args.filter(arg => arg instanceof Local) as Local[];
+        const stateValues = this.collectStateValues(localArgs);
 
         // 处理节点挂载
         for (const arg of args) {
@@ -1408,8 +1409,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     ): ViewTreeNodeImpl | undefined {
         const args = expr.getArgs();
         const base = expr.getBase();
-        const stateValues = this.collectStateValues(args);
-
+        const localArgs = args.filter(arg => arg instanceof Local) as Local[];
+        const stateValues = this.collectStateValues(localArgs);
         for (const arg of args) {
             const type = arg.getType();
             const local = arg as Local;

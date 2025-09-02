@@ -43,7 +43,6 @@ import { BUILD_PROFILE_JSON5, OH_PACKAGE_JSON5 } from './core/common/EtsConst';
 import { SdkUtils } from './core/common/SdkUtils';
 import { PointerAnalysisConfig } from './callgraph/pointerAnalysis/PointerAnalysisConfig';
 import { ValueUtil } from './core/common/ValueUtil';
-import { ViewTree } from './core/graph/ViewTree';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'Scene');
 
