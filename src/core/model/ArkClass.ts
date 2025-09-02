@@ -386,7 +386,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         }
         if (sameNameMethods.length > 1) {
             logger.warn("There are multiple non-static methods with the same name, and the interface 'getMethodWithName' only returns one of them. " +
-                "If you want to obtain all non-static methods with the same name, please use the interface 'getMethodsWithName'.")
+                "If you want to obtain all non-static methods with the same name, please use the interface 'getMethodsWithName'.");
         }
         return sameNameMethods[0];
     }
@@ -398,7 +398,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         }
         if (sameNameStaticMethods.length > 1) {
             logger.warn("There are multiple static methods with the same name, and the interface 'getStaticMethodWithName' only returns one of them. " +
-                "If you want to obtain all static methods with the same name, please use the interface 'getStaticMethodsWithName'.")
+                "If you want to obtain all static methods with the same name, please use the interface 'getStaticMethodsWithName'.");
         }
         return sameNameStaticMethods[0];
     }
@@ -449,12 +449,12 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
 
     // In the case of overloading, there are multiple non-static methods with the same name.
     public getMethodsWithName(methodName: string): ArkMethod[] {
-        return this.methods.get(methodName) ?? []
+        return this.methods.get(methodName) ?? [];
     }
 
     // In the case of overloading, there are multiple static methods with the same name.
     public getStaticMethodsWithName(methodName: string): ArkMethod[] {
-        return this.staticMethods.get(methodName) ?? []
+        return this.staticMethods.get(methodName) ?? [];
     }
 
     // In the case of overloading, there may be multiple static and non-static functions with the same name.
