@@ -27,6 +27,7 @@ import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME, NAME_DELIMITER, NAME_PR
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
+import { ModelUtils } from '../common/ModelUtils';
 
 import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClass');
@@ -428,7 +429,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private updateMethodMap(newMethod: ArkMethod, methodName: string): void {
         const methodMap = newMethod.isStatic() ? this.staticMethods : this.methods;
         const methodsWithSameName = methodMap.get(methodName);
-        if (!methodsWithSameName || newMethod.getDeclaringArkFile().getLanguage() !== Language.CXX) {
+        if (!methodsWithSameName || !ModelUtils.isLanguageOverloadSupport(this.getLanguage())) {
             methodMap.set(methodName, [newMethod]);
             return;
         }
