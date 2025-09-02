@@ -91,8 +91,6 @@ export class Scene {
     private globalModule2PathMapping?: { [k: string]: string[] } | undefined;
     private baseUrl?: string | undefined;
 
-    private windowViewTree:ViewTree[] = [];
-
     private buildStage: SceneBuildStage = SceneBuildStage.BUILD_INIT;
     private fileLanguages: Map<string, Language> = new Map();
 
@@ -144,7 +142,6 @@ export class Scene {
         this.sdkGlobalMap.clear();
         this.ohPkgContentMap.clear();
         this.ohPkgContent = {};
-        this.windowViewTree = [];
     }
 
     public getStage(): SceneBuildStage {
@@ -1423,14 +1420,6 @@ export class Scene {
     public getbaseUrl(): string | undefined {
         return this.baseUrl;
     }
-
-    public addWindowViewTree(viewTree: ViewTree): void {
-        this.windowViewTree.push(viewTree);
-    }
-    public getWindowViewTree(): ViewTree[] {
-        return this.windowViewTree;
-    }
-
 }
 
 export class ModuleScene {
