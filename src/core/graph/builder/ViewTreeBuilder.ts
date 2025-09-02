@@ -1292,7 +1292,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return undefined;
     }
 
-    private collectStateValues(args: (Local | any)[]): Set<ArkField> {
+    private collectStateValues(args: Local[]): Set<ArkField> {
         let stateValues: Set<ArkField> = new Set();
         for (const arg of args) {
             if (arg instanceof Local && arg.getType()) {
@@ -1306,7 +1306,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         node: ViewTreeNodeImpl,
         tabs_node: ViewTreeNodeImpl,
         stateValues: Set<ArkField>,
-        base: any,
+        base: Local | undefined,
         local2Node: Map<Local, ViewTreeNodeImpl>
     ): ViewTreeNodeImpl {
         // 创建虚拟父节点 TabBar
@@ -1437,7 +1437,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     private attachMenuNodeToIfNode(
         node: ViewTreeNodeImpl,
         stateValues: Set<ArkField>,
-        base: any,
+        base: Local | undefined,
         local2Node: Map<Local, ViewTreeNodeImpl>
     ): void {
         const menuNode = ViewTreeNodeImpl.createMenuNode();

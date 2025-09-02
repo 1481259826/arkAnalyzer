@@ -41,7 +41,7 @@ export const TabContent_Expect_ViewTree = {
         {
             name: 'Text',
             children: []
-        },TabBar_Expect_ViewTree,
+        }, TabBar_Expect_ViewTree,
     ]
 };
 export const TabbarTest_Expect_ViewTree = {

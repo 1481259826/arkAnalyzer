@@ -61,16 +61,16 @@ import {
 } from '../resources/viewtree/builderparam/ExpectView';
 import {
     TabbarTest_Expect_ViewTree
-} from '../resources/viewtree/tabbar/ExpectView'
+} from '../resources/viewtree/tabbar/ExpectView';
 import {
     bindContextMenuTest_Expect_ViewTree
-} from '../resources/viewtree/bindContextMenu/ExpectView'
+} from '../resources/viewtree/bindContextMenu/ExpectView';
 import {
     bindMenuTest_Expect_ViewTree
-} from '../resources/viewtree/bindMenu/ExpectView'
+} from '../resources/viewtree/bindMenu/ExpectView';
 import {
     navDestinationTest_Expect_ViewTree
-} from '../resources/viewtree/navDestination/ExpectView'
+} from '../resources/viewtree/navDestination/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 import { ViewTreePrinter } from '../../src';
 import { CryptoUtils } from '../../src/utils/crypto_utils';
