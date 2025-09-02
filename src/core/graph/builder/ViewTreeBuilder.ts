@@ -535,15 +535,6 @@ class TreeNodeStack {
     protected isContainer(name: string): boolean {
         return isEtsContainerComponent(name) || SPECIAL_CONTAINER_COMPONENT.has(name) || name === BUILDER_DECORATOR;
     }
-    public getNodeByNameFromStack(name: string): ViewTreeNodeImpl | undefined {
-        for (let i = this.stack.length - 1; i >= 0; i--) {
-            const node = this.stack[i];
-            if (node.name === name) {
-                return node;
-            }
-        }
-        return undefined;
-    }
 }
 
 export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
@@ -620,8 +611,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     /**
      * @internal
      */
-    private isInitialized(): boolean {
-        return this.buildViewStatus;
+    private isInitialized(): boolean {	
+        return this.root != null || this.buildViewStatus;	
     }
 
     /**
@@ -741,7 +732,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         return method;
     }
-
+    /**
+     * @internal
+     */
     private addBuilderNode(method: ArkMethod): ViewTreeNodeImpl {
         let builderViewTree = method.getViewTree();
         if (!builderViewTree || !builderViewTree.getRoot()) {
@@ -771,7 +764,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     /**
      * @internal
      */
-    private addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined, shouldPush: boolean = true): ViewTreeNodeImpl {
+    private addCustomComponentNode(cls: ArkClass, arg: Value | undefined, builder: ArkMethod | undefined): ViewTreeNodeImpl {
         let node = ViewTreeNodeImpl.createCustomComponent();
         node.signature = cls.getSignature();
         node.classSignature = node.signature;
@@ -783,9 +776,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 this.addStateValue(field, node);
             });
         }
-        if (shouldPush === true) {
-            this.push(node);
-        }
+        this.push(node);
         let componentViewTree = cls.getViewTree();
         if (!componentViewTree || !componentViewTree.getRoot()) {
             logger.error(`ViewTree->addCustomComponentNode ${cls.getSignature().toString()} build viewtree fail.`);
@@ -930,7 +921,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return transferMap;
     }
 
-    private viewComponentCreationParser(name: string, stmt: Stmt, expr: AbstractInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
+    private viewComponentCreationParser(name: string, stmt: Stmt, expr: AbstractInvokeExpr): ViewTreeNodeImpl | undefined {
         let temp = expr.getArg(0) as Local;
         let arg: Value | undefined;
         temp.getUsedStmts().forEach(value => {
@@ -971,7 +962,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         if (clsSignature) {
             let cls = this.findClass(clsSignature);
             if (cls && cls.hasComponentDecorator()) {
-                return this.addCustomComponentNode(cls, arg, builderMethod, shouldPush);
+                return this.addCustomComponentNode(cls, arg, builderMethod);
             } else {
                 logger.error(`ViewTree->viewComponentCreationParser not found class ${clsSignature.toString()}. ${stmt.toString()}`);
             }
@@ -1046,7 +1037,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private COMPONENT_CREATE_PARSERS:
-        Map<string, (name: string, stmt: Stmt, expr: AbstractInvokeExpr, shouldPush: boolean) => ViewTreeNodeImpl | undefined
+        Map<string, (name: string, stmt: Stmt, expr: AbstractInvokeExpr) => ViewTreeNodeImpl | undefined
         > = new Map([
             ['ForEach.create', this.forEachCreationParser.bind(this)],
             ['LazyForEach.create', this.forEachCreationParser.bind(this)],
@@ -1067,12 +1058,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         componentName: string,
         methodName: string,
         stmt: Stmt,
-        expr: ArkStaticInvokeExpr,
-        shouldPush: boolean = true
+        expr: ArkStaticInvokeExpr
     ): ViewTreeNodeImpl | undefined {
         let parserFn = this.COMPONENT_CREATE_PARSERS.get(`${componentName}.${methodName}`);
         if (parserFn) {
-            let node = parserFn(componentName, stmt, expr, shouldPush);
+            let node = parserFn(componentName, stmt, expr);
             node?.addStmt(this, stmt);
             return node;
         }
@@ -1084,8 +1074,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
     private parseStaticInvokeExpr(
         local2Node: Map<Local, ViewTreeNode>,
-        stmt: Stmt, expr: ArkStaticInvokeExpr,
-        shouldPush: boolean = true)
+        stmt: Stmt, expr: ArkStaticInvokeExpr
+    )
         : ViewTreeNodeImpl | undefined {
         let methodSignature = expr.getMethodSignature();
         let method = this.findMethod(methodSignature);
@@ -1099,7 +1089,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
 
         if (this.isCreateFunc(methodName)) {
-            return this.componentCreateParse(name, methodName, stmt, expr, shouldPush);
+            return this.componentCreateParse(name, methodName, stmt, expr);
         }
 
         let currentNode = this.top();
@@ -1282,9 +1272,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         // 处理节点挂载
         for (const arg of args) {
             const local = arg as Local;
-            if (local2Node.has(local)) {
+            if (local2Node.has(local) && local2Node.has(base as Local)) {
                 const node = local2Node.get(local);
-                const tabs_node = this.getNodeByNameFromStack('Tabs');
+                const tabs_node = local2Node.get(base as Local);
                 if (tabs_node && node) {
                     return this.attachTabBarNode(node, tabs_node, stateValues, base, local2Node);
                 }
