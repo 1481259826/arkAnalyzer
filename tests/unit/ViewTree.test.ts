@@ -59,18 +59,18 @@ import {
     Case2_BuilderParamTest_Expect_ViewTree,
     Case3_BuilderParamTest_Expect_ViewTree,
 } from '../resources/viewtree/builderparam/ExpectView';
-import{
+import {
     TabbarTest_Expect_ViewTree
-}from '../resources/viewtree/tabbar/ExpectView'
-import{
+} from '../resources/viewtree/tabbar/ExpectView'
+import {
     bindContextMenuTest_Expect_ViewTree
-}from '../resources/viewtree/bindContextMenu/ExpectView'
-import{
+} from '../resources/viewtree/bindContextMenu/ExpectView'
+import {
     bindMenuTest_Expect_ViewTree
-}from '../resources/viewtree/bindMenu/ExpectView'
-import{
+} from '../resources/viewtree/bindMenu/ExpectView'
+import {
     navDestinationTest_Expect_ViewTree
-}from '../resources/viewtree/navDestination/ExpectView'
+} from '../resources/viewtree/navDestination/ExpectView'
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 import { ViewTreePrinter } from '../../src';
 import { CryptoUtils } from '../../src/utils/crypto_utils';

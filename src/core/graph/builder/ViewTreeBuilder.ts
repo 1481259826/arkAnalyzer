@@ -1138,7 +1138,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 component?.addStmt(this, stmt);
             }
             let methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
-            console.log("parse methodName: ", methodName);
             let parseFn = this.COMPONENT_BEHAVIOR_PARSERS.get(methodName);
             if (parseFn) {
                 parseFn(local2Node, stmt, expr);
@@ -1273,11 +1272,27 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private tabBarComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        console.log("tab bar stmt: ", stmt.toString());
         const args = expr.getArgs();
         const base = expr.getBase();
 
-        // 先遍历所有 arg，收集 stateValues
+        // 收集 stateValues
+        const stateValues = this.collectStateValues(args);
+
+        // 处理节点挂载
+        for (const arg of args) {
+            const local = arg as Local;
+            if (local2Node.has(local)) {
+                const node = local2Node.get(local);
+                const tabs_node = this.getNodeByNameFromStack('Tabs');
+                if (tabs_node && node) {
+                    return this.attachTabBarNode(node, tabs_node, stateValues, base, local2Node);
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private collectStateValues(args: (Local | any)[]): Set<ArkField> {
         let stateValues: Set<ArkField> = new Set();
         for (const arg of args) {
             if (arg instanceof Local && arg.getType()) {
@@ -1285,39 +1300,36 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 sv.forEach(field => stateValues.add(field));
             }
         }
+        return stateValues;
+    }
+    private attachTabBarNode(
+        node: ViewTreeNodeImpl,
+        tabs_node: ViewTreeNodeImpl,
+        stateValues: Set<ArkField>,
+        base: any,
+        local2Node: Map<Local, ViewTreeNodeImpl>
+    ): ViewTreeNodeImpl {
+        // 创建虚拟父节点 TabBar
+        let tabBarNode = ViewTreeNodeImpl.createTabBarNode();
 
-        // 再处理节点挂载
-        for (const arg of args) {
-            const local = arg as Local;
-            if (local2Node.has(local)) {
-                const node = local2Node.get(local);
-                let tabs_node = this.getNodeByNameFromStack('Tabs');
+        // 统一设置 stateValues
+        stateValues.forEach(field => {
+            tabBarNode.stateValues.add(field);
+            this.addStateValue(field, tabBarNode);
+        });
 
-                if (tabs_node && node) {
-                    // 创建虚拟父节点 TabBar
-                    let tabBarNode = ViewTreeNodeImpl.createTabBarNode();
+        tabBarNode.children.push(node);
+        node.parent = tabBarNode;
 
-                    // 统一设置 stateValues
-                    stateValues.forEach(field => {
-                        tabBarNode.stateValues.add(field);
-                        this.addStateValue(field, tabBarNode);
-                    });
-
-                    tabBarNode.children.push(node);
-                    node.parent = tabBarNode;
-                    // 挂到 TabContent 节点下
-                    if (base instanceof Local && local2Node.has(base)) {
-                        const baseNode = local2Node.get(base);
-                        if (baseNode) {
-                            baseNode.children.push(tabBarNode);
-                            tabBarNode.parent = baseNode;
-                        }
-                    }
-                    return tabBarNode;
-                }
+        // 挂到 TabContent 节点下
+        if (base instanceof Local && local2Node.has(base)) {
+            const baseNode = local2Node.get(base);
+            if (baseNode) {
+                baseNode.children.push(tabBarNode);
+                tabBarNode.parent = baseNode;
             }
         }
-        return undefined;
+        return tabBarNode;
     }
 
     private navDestinationComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
@@ -1389,18 +1401,15 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         return root;
     }
-
-    private bindContextMenuComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+    private bindContextMenuComponentParser(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt,
+        expr: ArkInstanceInvokeExpr
+    ): ViewTreeNodeImpl | undefined {
         const args = expr.getArgs();
         const base = expr.getBase();
-        // 先遍历所有 arg，收集 stateValues
-        let stateValues: Set<ArkField> = new Set();
-        for (const arg of args) {
-            if (arg instanceof Local && arg.getType()) {
-                const sv = StateValuesUtils.getInstance(this.getDeclaringArkClass()).parseObjectUsedStateValues(arg.getType());
-                sv.forEach(field => stateValues.add(field));
-            }
-        }
+        const stateValues = this.collectStateValues(args);
+
         for (const arg of args) {
             const type = arg.getType();
             const local = arg as Local;
@@ -1408,24 +1417,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             if (local2Node.has(local)) {
                 const node = local2Node.get(local);
                 if (this.root && node) {
-                    const bindMenuNode = ViewTreeNodeImpl.createMenuNode();
-
-                    stateValues.forEach(field => {
-                        bindMenuNode.stateValues.add(field);
-                        this.addStateValue(field, bindMenuNode);
-                    });
-
-                    bindMenuNode.children.push(node);
-                    node.parent = bindMenuNode;
-
-                    const ifNode = ViewTreeNodeImpl.createIfNode();
-                    ifNode.children.push(bindMenuNode);
-                    bindMenuNode.parent = ifNode;
-
-                    if (base instanceof Local && local2Node.has(base)) {
-                        const baseNode = local2Node.get(base);
-                        baseNode?.children.push(ifNode);
-                    }
+                    this.attachMenuNodeToIfNode(node, stateValues, base, local2Node);
                 }
                 continue;
             }
@@ -1435,28 +1427,36 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 if (method && method.hasBuilderDecorator()) {
                     const builderNode = this.createBuilderNodeForAttach(method);
                     local2Node.set(arg as Local, builderNode);
-
-                    const menuNode = ViewTreeNodeImpl.createMenuNode();
-                    stateValues.forEach(field => {
-                        menuNode.stateValues.add(field);
-                        this.addStateValue(field, menuNode);
-                    });
-
-                    menuNode.children.push(builderNode);
-                    builderNode.parent = menuNode;
-
-                    const ifNode = ViewTreeNodeImpl.createIfNode();
-                    ifNode.children.push(menuNode);
-                    menuNode.parent = ifNode;
-
-                    if (base instanceof Local && local2Node.has(base)) {
-                        const baseNode = local2Node.get(base);
-                        baseNode?.children.push(ifNode);
-                    }
+                    this.attachMenuNodeToIfNode(builderNode, stateValues, base, local2Node);
                 }
             }
         }
         return undefined;
+    }
+
+    private attachMenuNodeToIfNode(
+        node: ViewTreeNodeImpl,
+        stateValues: Set<ArkField>,
+        base: any,
+        local2Node: Map<Local, ViewTreeNodeImpl>
+    ): void {
+        const menuNode = ViewTreeNodeImpl.createMenuNode();
+        stateValues.forEach(field => {
+            menuNode.stateValues.add(field);
+            this.addStateValue(field, menuNode);
+        });
+
+        menuNode.children.push(node);
+        node.parent = menuNode;
+
+        const ifNode = ViewTreeNodeImpl.createIfNode();
+        ifNode.children.push(menuNode);
+        menuNode.parent = ifNode;
+
+        if (base instanceof Local && local2Node.has(base)) {
+            const baseNode = local2Node.get(base);
+            baseNode?.children.push(ifNode);
+        }
     }
 }
 

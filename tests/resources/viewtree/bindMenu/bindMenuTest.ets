@@ -9,7 +9,7 @@ struct bindMenuTest {
       ForEach(this.listData, (item:number, index) => {
         Column() {
           Row() {
-            Image($r("app.media.icon")).width(20).height(20).margin({ right: 5 })
+            Image($r('app.media.icon')).width(20).height(20).margin({ right: 5 })
             Text(`Menu${index as number + 1}`).fontSize(20)
           }
           .width('100%')
