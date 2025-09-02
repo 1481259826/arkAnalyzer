@@ -83,9 +83,7 @@ function expectViewTree(root: ViewTreeNode | null, expectTree: any) {
     if (expectTree.skip) {
         return;
     }
-    console.log('实际name:', root.name, '期望name:', expectTree.name);
     expect(root.name).eq(expectTree.name);
-    console.log('实际children数量:', root.children.length, '期望children数量:', expectTree.children.length);
     expect(root.children.length).eq(expectTree.children.length);
     if (expectTree.attributes) {
         expect(root.attributes.size).eq(expectTree.attributes.length);
