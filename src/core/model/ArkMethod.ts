@@ -33,7 +33,12 @@ import { ArkClass, ClassCategory } from './ArkClass';
 import { MethodSignature, MethodSubSignature } from './ArkSignature';
 import { BodyBuilder } from './builder/BodyBuilder';
 import { ArkExport, ExportType } from './ArkExport';
-import { ANONYMOUS_METHOD_PREFIX, DEFAULT_ARK_METHOD_NAME, LEXICAL_ENV_NAME_PREFIX } from '../common/Const';
+import {
+    ANONYMOUS_CLASS_PREFIX,
+    ANONYMOUS_METHOD_PREFIX,
+    DEFAULT_ARK_METHOD_NAME,
+    LEXICAL_ENV_NAME_PREFIX
+} from '../common/Const';
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel, ModifierType } from './ArkBaseModel';
 import { ArkError, ArkErrorCode } from '../common/ArkError';
@@ -44,6 +49,7 @@ import { ArkFile, Language } from './ArkFile';
 import { CONSTRUCTOR_NAME } from '../common/TSConst';
 import { MethodParameter } from './builder/ArkMethodBuilder';
 import { TypeInference } from '../common/TypeInference';
+import { Builtin } from '../common/Builtin';
 
 export const arkMethodNodeKind = [
     'MethodDeclaration',
@@ -660,6 +666,7 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
         } else if (!(paramType instanceof AliasType) && argType instanceof AliasType) {
             paramType = TypeInference.replaceAliasType(paramType);
         }
+
         if (paramType instanceof UnionType) {
             return !!paramType.getTypes().find(p => this.matchParam(p, arg));
         } else if (argType instanceof FunctionType && paramType instanceof FunctionType) {
@@ -669,8 +676,6 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             const parameters = paramType.getMethodSignature().getMethodSubSignature().getParameters();
             const args = argType.getMethodSignature().getMethodSubSignature().getParameters().filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX));
             return this.isMatched(parameters, args, true);
-        } else if (paramType instanceof ClassType && paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
-            return argType instanceof FunctionType;
         } else if (paramType instanceof LiteralType) {
             const argStr = arg instanceof Constant ? arg.getValue() : argType.getTypeString();
             return argStr.replace(/[\"|\']/g, '') ===
@@ -683,8 +688,49 @@ export class ArkMethod extends ArkBaseModel implements ArkExport {
             } else if (argType.constructor === paramType.getConstant()?.getType().constructor && arg instanceof Constant) {
                 return paramType.getConstant()?.getValue() === arg.getValue();
             }
+        } else if (paramType instanceof ClassType && paramType.getClassSignature().getClassName().startsWith(ANONYMOUS_CLASS_PREFIX)) {
+            if (argType instanceof ClassType) {
+                const className = argType.getClassSignature().getClassName();
+                return className === Builtin.OBJECT || className.startsWith(ANONYMOUS_CLASS_PREFIX);
+            }
+            return false;
+        } else if (paramType instanceof ClassType && argType instanceof ClassType) {
+            return this.classTypeMatch(paramType, argType);
+        } else if (paramType instanceof ClassType && paramType.getClassSignature().getClassName().includes(CALL_BACK)) {
+            return argType instanceof FunctionType;
         }
         return argType.constructor === paramType.constructor;
+    }
+
+
+    private classTypeMatch(paramType: ClassType, argType: ClassType): boolean {
+        const scene = this.getDeclaringArkFile().getScene();
+        const paramClass = scene.getClass(paramType.getClassSignature());
+        const argClass = scene.getClass(argType.getClassSignature());
+        if (!paramClass || !argClass) {
+            return false;
+        }
+        const mustFields = paramClass.getFields().filter(f => !f.getQuestionToken());
+        const noMatchedField = mustFields.find(f => !argClass.getFieldWithName(f.getName()));
+        if (noMatchedField) {
+            return false;
+        }
+        const mustMethods = paramClass.getMethods().filter(f => !f.getQuestionToken());
+        const noMatchedMethod = mustMethods.find(f => !argClass.getMethodWithName(f.getName()));
+        if (noMatchedMethod) {
+            return false;
+        }
+        if (mustFields.length === 0 && mustMethods.length === 0) {
+            const excessField = argClass.getFields().find(f => !paramClass.getFieldWithName(f.getName()));
+            if (excessField) {
+                return false;
+            }
+            const excessMethod = argClass.getMethods().find(f => !paramClass.getMethodWithName(f.getName()));
+            if (excessMethod) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static parseArg(arg: Value, paramType: Type): Value {
