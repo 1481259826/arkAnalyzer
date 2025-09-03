@@ -27,6 +27,10 @@ import { ANONYMOUS_CLASS_PREFIX, DEFAULT_ARK_CLASS_NAME, NAME_DELIMITER, NAME_PR
 import { getColNo, getLineNo, LineCol, setCol, setLine } from '../base/Position';
 import { ArkBaseModel } from './ArkBaseModel';
 import { ArkError } from '../common/ArkError';
+import { ModelUtils } from '../common/ModelUtils';
+
+import Logger, { LOG_MODULE_TYPE } from '../../utils/logger';
+const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClass');
 
 export enum ClassCategory {
     CLASS = 0,
@@ -60,10 +64,10 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     private defaultMethod: ArkMethod | null = null;
 
     // name to model
-    private methods: Map<string, ArkMethod> = new Map<string, ArkMethod>();
+    private methods: Map<string, ArkMethod[]> = new Map<string, ArkMethod[]>();
     private fields: Map<string, ArkField> = new Map<string, ArkField>();
     private extendedClasses: Map<string, ArkClass> = new Map<string, ArkClass>();
-    private staticMethods: Map<string, ArkMethod> = new Map<string, ArkMethod>();
+    private staticMethods: Map<string, ArkMethod[]> = new Map<string, ArkMethod[]>();
     private staticFields: Map<string, ArkField> = new Map<string, ArkField>();
 
     private instanceInitMethod: ArkMethod = new ArkMethod();
@@ -348,8 +352,9 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      ```
      */
     public getMethods(generated?: boolean): ArkMethod[] {
-        const allMethods = Array.from(this.methods.values()).filter(f => (!generated && !f.isGenerated()) || generated);
-        allMethods.push(...this.staticMethods.values());
+        const flattenReducer = (acc: ArkMethod[], val: ArkMethod[]): ArkMethod[] => acc.concat(val);
+        const allMethods = Array.from(this.methods.values()).reduce(flattenReducer, []).filter(f => (!generated && !f.isGenerated()) || generated);
+        allMethods.push(...[...this.staticMethods.values()].reduce(flattenReducer, []));
         return [...new Set(allMethods)];
     }
 
@@ -375,11 +380,27 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
     }
 
     public getMethodWithName(methodName: string): ArkMethod | null {
-        return this.methods.get(methodName) || null;
+        const sameNameMethods = this.methods.get(methodName);
+        if (!sameNameMethods) {
+            return null;
+        }
+        if (sameNameMethods.length > 1) {
+            logger.warn("There are multiple non-static methods with the same name, and the interface 'getMethodWithName' only returns one of them. " +
+                "If you want to obtain all non-static methods with the same name, please use the interface 'getMethodsWithName'.");
+        }
+        return sameNameMethods[0];
     }
 
     public getStaticMethodWithName(methodName: string): ArkMethod | null {
-        return this.staticMethods.get(methodName) || null;
+        const sameNameStaticMethods = this.staticMethods.get(methodName);
+        if (!sameNameStaticMethods) {
+            return null;
+        }
+        if (sameNameStaticMethods.length > 1) {
+            logger.warn("There are multiple static methods with the same name, and the interface 'getStaticMethodWithName' only returns one of them. " +
+                "If you want to obtain all static methods with the same name, please use the interface 'getStaticMethodsWithName'.");
+        }
+        return sameNameStaticMethods[0];
     }
 
     /**
@@ -389,11 +410,7 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
      */
     public addMethod(method: ArkMethod, originName?: string): void {
         const name = originName ?? method.getName();
-        if (method.isStatic()) {
-            this.staticMethods.set(name, method);
-        } else {
-            this.methods.set(name, method);
-        }
+        this.updateMethodMap(method, name);
         if (!originName && !method.isAnonymousMethod() && name.startsWith(NAME_PREFIX)) {
             const index = name.indexOf(NAME_DELIMITER);
             if (index > 1) {
@@ -401,6 +418,64 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
                 this.addMethod(method, originName);
             }
         }
+    }
+
+    /**
+     * Update the new method to the corresponding Map.
+     *
+     * @param newMethod - the new method
+     * @param methodName - name of new method
+     */
+    private updateMethodMap(newMethod: ArkMethod, methodName: string): void {
+        const methodMap = newMethod.isStatic() ? this.staticMethods : this.methods;
+        const methodsWithSameName = methodMap.get(methodName);
+        if (!methodsWithSameName || !ModelUtils.isLanguageOverloadSupport(this.getLanguage())) {
+            methodMap.set(methodName, [newMethod]);
+            return;
+        }
+
+        const newMethodSignature = newMethod.getSignature();
+        const matchIndex = methodsWithSameName.findIndex(
+            // CXXTodo: After the subsequent abstraction of BodyBuilder, this conditions need to be refactored.
+            preMtd => preMtd.getSignature().isMatch(newMethodSignature)
+        );
+
+        if (matchIndex === -1) {
+            methodsWithSameName.push(newMethod);
+        } else {
+            methodsWithSameName[matchIndex] = newMethod;
+        }
+    }
+
+    /**
+     * Get all non-static methods with the same name.
+     *
+     * @param methodName - name of method
+     * @returns an **array** of methods in the class.
+     */
+    public getMethodsWithName(methodName: string): ArkMethod[] {
+        return this.methods.get(methodName) ?? [];
+    }
+
+    /**
+     * Get all static methods with the same name.
+     *
+     * @param methodName - name of method
+     * @returns an **array** of methods in the class.
+     */
+    public getStaticMethodsWithName(methodName: string): ArkMethod[] {
+        return this.staticMethods.get(methodName) ?? [];
+    }
+
+    /**
+     * Get all non-static and static methods with the same name.
+     *
+     * @param methodName - name of method
+     * @returns an **array** of methods in the class.
+     */
+    public getAllMethodsWithName(methodName: string): ArkMethod[] {
+        const allMethods = [...this.getMethodsWithName(methodName), ...this.getStaticMethodsWithName(methodName)];
+        return [...new Set(allMethods)];
     }
 
     public setDefaultArkMethod(defaultMethod: ArkMethod): void {
