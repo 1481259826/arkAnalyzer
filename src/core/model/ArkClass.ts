@@ -447,17 +447,32 @@ export class ArkClass extends ArkBaseModel implements ArkExport {
         }
     }
 
-    // In the case of overloading, there are multiple non-static methods with the same name.
+    /**
+     * Get all non-static methods with the same name.
+     *
+     * @param methodName - name of method
+     * @returns an **array** of methods in the class.
+     */
     public getMethodsWithName(methodName: string): ArkMethod[] {
         return this.methods.get(methodName) ?? [];
     }
 
-    // In the case of overloading, there are multiple static methods with the same name.
+    /**
+     * Get all static methods with the same name.
+     *
+     * @param methodName - name of method
+     * @returns an **array** of methods in the class.
+     */
     public getStaticMethodsWithName(methodName: string): ArkMethod[] {
         return this.staticMethods.get(methodName) ?? [];
     }
 
-    // In the case of overloading, there may be multiple static and non-static functions with the same name.
+    /**
+     * Get all non-static and static methods with the same name.
+     *
+     * @param methodName - name of method
+     * @returns an **array** of methods in the class.
+     */
     public getAllMethodsWithName(methodName: string): ArkMethod[] {
         const allMethods = [...this.getMethodsWithName(methodName), ...this.getStaticMethodsWithName(methodName)];
         return [...new Set(allMethods)];
