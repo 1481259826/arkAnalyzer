@@ -41,8 +41,6 @@ struct TabbarTest {
       .onSelected((index: number) => {
         this.selectIndex = index;
       })
-
-      tabBuilder('首页', this.selectIndex)
     }.width('100%')
   }
 }

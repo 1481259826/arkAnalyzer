@@ -71,6 +71,12 @@ import {
 import {
     navDestinationTest_Expect_ViewTree
 } from '../resources/viewtree/navDestination/ExpectView';
+import {
+    bindContentCoverTest_Expect_ViewTree
+}from '../resources/viewtree/bindContentCover/ExpectView';
+import{
+    bindPopupTest_Expect_ViewTree
+}from '../resources/viewtree/bindPopup/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 import { ViewTreePrinter } from '../../src';
 import { CryptoUtils } from '../../src/utils/crypto_utils';
@@ -477,5 +483,30 @@ describe('navDestion Test', () => {
 
     it('test navDestinationTest', async () => {
         testClassViewTree(scene, 'navDestinationTest', navDestinationTest_Expect_ViewTree);
+    });
+});
+describe('bindContentCover Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/bindContentCover'));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
+    it('test bindContentCover', async () => {
+        testClassViewTree(scene, 'bindContentCoverTest', bindContentCoverTest_Expect_ViewTree);
+    });
+});
+
+describe('bindPopup Test', () => {
+    let config: SceneConfig = new SceneConfig();
+    config.getSdksObj().push({ moduleName: '', name: 'etsSdk', path: path.join(__dirname, '../resources/Sdk') });
+    config.buildFromProjectDir(path.join(__dirname, '../../tests/resources/viewtree/bindPopup'));
+    let scene = new Scene();
+    scene.buildSceneFromProjectDir(config);
+    scene.inferTypes();
+
+    it('test bindContentCover', async () => {
+        testClassViewTree(scene, 'bindPopupTest', bindPopupTest_Expect_ViewTree);
     });
 });

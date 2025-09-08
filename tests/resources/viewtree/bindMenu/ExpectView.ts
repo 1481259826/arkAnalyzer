@@ -70,15 +70,13 @@ export const bindMenuTest_Expect_ViewTree = {
             stateValues: ['listData'],
             children: [
                 {
-                    name: 'If',
+
+                    name: 'Behavior',
+                    stateValues: ['listData'],
                     children: [
-                        {
-                            name: 'Menu',
-                            children: [
-                                MenuBuilder_Expect_ViewTree
-                            ]
-                        }
+                        MenuBuilder_Expect_ViewTree
                     ]
+
                 }
             ]
         }

@@ -74,7 +74,7 @@ export const bindMenuTest_Expect_ViewTree = {
                     name: 'If',
                     children: [
                         {
-                            name: 'Menu',
+                            name: 'Behavior',
                             children: [
                                 MenuBuilder_Expect_ViewTree
                             ]

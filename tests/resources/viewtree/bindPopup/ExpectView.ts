@@ -12,21 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export const MenuBuilder_Expect_ViewTree = {
+export const popupBuilder_Expect_ViewTree = {
     name: 'Builder',
     children: [
         {
-            name: 'Flex',
+            name: 'Row',
             children: [
-                {
-                    name: 'Text',
-                    children: []
-                },
-                {
-                    name: 'Divider',
-                    children: []
-                },
                 {
                     name: 'Text',
                     children: []
@@ -36,19 +27,26 @@ export const MenuBuilder_Expect_ViewTree = {
     ]
 };
 
-export const bindContextMenuTest_Expect_ViewTree = {
-    name: 'Column',
+export const bindPopupTest_Expect_ViewTree = {
+    name: 'Flex',
     children: [
         {
-            name: 'Text',
+            name: 'Button',
+            stateValues: ['handlePopup'],
             children: []
         },
         {
-            name: 'Behavior',
+            name: 'Button',
+            stateValues: ['customPopup'],
             children: [
-                MenuBuilder_Expect_ViewTree
+                {
+                    name: 'Behavior',
+                    stateValues: ['customPopup'],
+                    children: [
+                        popupBuilder_Expect_ViewTree
+                    ]
+                }
             ]
-
         }
     ]
 };

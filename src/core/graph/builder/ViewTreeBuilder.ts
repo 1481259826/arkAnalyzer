@@ -27,11 +27,12 @@ import {
 import { Local } from '../../base/Local';
 import { ArkArrayRef, ArkInstanceFieldRef, ArkThisRef } from '../../base/Ref';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../base/Stmt';
-import { ClassType, FunctionType, Type } from '../../base/Type';
+import { BooleanType, ClassType, FunctionType, Type } from '../../base/Type';
 import { Value } from '../../base/Value';
 import {
     BUILDER_DECORATOR,
     BUILDER_PARAM_DECORATOR,
+    COMPONENT_BEHAVIOR,
     COMPONENT_BRANCH_FUNCTION,
     COMPONENT_CREATE_FUNCTION,
     COMPONENT_CUSTOMVIEW,
@@ -39,10 +40,8 @@ import {
     COMPONENT_IF,
     COMPONENT_IF_BRANCH,
     COMPONENT_LAZY_FOR_EACH,
-    COMPONENT_MENU,
     COMPONENT_POP_FUNCTION,
     COMPONENT_REPEAT,
-    COMPONENT_TABBAR,
     isEtsContainerComponent,
     SPECIAL_CONTAINER_COMPONENT,
 } from '../../common/EtsConst';
@@ -233,7 +232,7 @@ enum ViewTreeNodeType {
 class ViewTreeNodeImpl implements ViewTreeNode {
     name: string;
     stmts: Map<string, [Stmt, (MethodSignature | ArkInstanceFieldRef | Constant)[]]>;
-    attributes: Map<string, [Stmt, (MethodSignature | ArkInstanceFieldRef | Constant)[]]>;
+    attributes: Map<string, [Stmt, (Constant | ArkInstanceFieldRef | MethodSignature)[]]>;
     stateValues: Set<ArkField>;
     parent: ViewTreeNode | null;
     children: ViewTreeNodeImpl[];
@@ -247,7 +246,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
     constructor(name: string) {
         this.name = name;
         this.attributes = new Map();
-        this.stmts = this.attributes;
+        this.stmts = new Map();
         this.stateValues = new Set();
         this.parent = null;
         this.children = [];
@@ -318,19 +317,9 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         instance.type = ViewTreeNodeType.BuilderParam;
         return instance;
     }
-    public static createTabBarNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl(COMPONENT_TABBAR);
-        instance.type = ViewTreeNodeType.SystemComponent;
-        return instance;
-    }
-    public static createMenuNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl(COMPONENT_MENU);
-        instance.type = ViewTreeNodeType.SystemComponent;
-        return instance;
-    }
-    public static createIfNode(): ViewTreeNodeImpl {
-        let instance = new ViewTreeNodeImpl(COMPONENT_IF);
-        instance.type = ViewTreeNodeType.SystemComponent;
+    public static createBehaviorNode(): ViewTreeNodeImpl {
+        let instance = new ViewTreeNodeImpl(COMPONENT_BEHAVIOR);
+        instance.type = ViewTreeNodeType.SystemComponent; // to check
         return instance;
     }
     public changeBuilderParam2BuilderNode(builder: ArkMethod): void {
@@ -357,7 +346,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
     public clone(parent: ViewTreeNodeImpl, map: Map<ViewTreeNodeImpl, ViewTreeNodeImpl> = new Map()): ViewTreeNodeImpl {
         let newNode = new ViewTreeNodeImpl(this.name);
         newNode.attributes = this.attributes;
-        newNode.stmts = newNode.attributes;
+        newNode.stmts = newNode.stmts;
         newNode.stateValues = this.stateValues;
         newNode.parent = parent;
         newNode.type = this.type;
@@ -378,14 +367,14 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         return newNode;
     }
 
-    public addStmt(tree: ViewTreeImpl, stmt: Stmt): void {
-        this.parseAttributes(stmt);
+    public addStmt(local2Node: Map<Local, ViewTreeNodeImpl>, tree: ViewTreeImpl, stmt: Stmt): void {
+        this.parseAttributes(local2Node, tree, stmt);
         if (this.name !== COMPONENT_FOR_EACH && this.name !== COMPONENT_LAZY_FOR_EACH) {
             this.parseStateValues(tree, stmt);
         }
     }
 
-    private parseAttributes(stmt: Stmt): void {
+    private parseAttributes(local2Node: Map<Local, ViewTreeNodeImpl>, tree: ViewTreeImpl, stmt: Stmt): void {
         let expr: AbstractInvokeExpr | undefined;
         if (stmt instanceof ArkAssignStmt) {
             let op = stmt.getRightOp();
@@ -412,6 +401,29 @@ class ViewTreeNodeImpl implements ViewTreeNode {
                     relationValues.push(arg);
                 }
             }
+            if (1) {
+                let builderNode: ViewTreeNodeImpl | undefined;
+                if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr) {
+                    let parseFn = tree.COMPONENT_BEHAVIOR_PARSERS.get(key);
+                    if (parseFn) {
+                        builderNode = parseFn(local2Node, stmt, expr);
+                    }
+                }
+                if (builderNode) {
+                    // create a virtual node name 'Behavior' to hold the behaviorNode
+                    let behaviorNode = ViewTreeNodeImpl.createBehaviorNode();
+
+                    behaviorNode.attributes.set(key, [stmt, relationValues]);
+                    behaviorNode.parseStateValues(tree, stmt);
+
+
+                    behaviorNode.children.push(builderNode);
+                    builderNode.parent = behaviorNode;
+                    this.children.push(behaviorNode);
+                    behaviorNode.parent = this;
+
+                }
+            }
             this.attributes.set(key, [stmt, relationValues]);
         }
     }
@@ -424,7 +436,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         const stmt = local.getDeclaringStmt();
         if (!stmt) {
             let type = local.getType();
-            if (type instanceof FunctionType) {
+            if (type instanceof FunctionType) { 
                 relationValues.push(type.getMethodSignature());
             }
             return;
@@ -611,8 +623,8 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     /**
      * @internal
      */
-    private isInitialized(): boolean {	
-        return this.root != null || this.buildViewStatus;	
+    private isInitialized(): boolean {
+        return this.root != null || this.buildViewStatus;
     }
 
     /**
@@ -735,7 +747,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     /**
      * @internal
      */
-    private addBuilderNode(method: ArkMethod): ViewTreeNodeImpl {
+    private addBuilderNode(method: ArkMethod, shouldPush: boolean = true): ViewTreeNodeImpl {
         let builderViewTree = method.getViewTree();
         if (!builderViewTree || !builderViewTree.getRoot()) {
             logger.error(`ViewTree->addBuilderNode ${method.getSignature().toString()} build viewtree fail.`);
@@ -743,13 +755,17 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             let node = ViewTreeNodeImpl.createBuilderNode();
             node.signature = method.getSignature();
             node.classSignature = node.signature;
-            this.push(node);
-            this.pop();
+            if (shouldPush) {
+                this.push(node);
+                this.pop();
+            }
             return node;
         }
 
         let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
-        this.push(root);
+        if (shouldPush) {
+            this.push(root);
+        }
         if (method.getDeclaringArkClass() === this.render.getDeclaringArkClass()) {
             for (const [field, nodes] of builderViewTree.getStateValues()) {
                 for (const node of nodes) {
@@ -757,7 +773,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
             }
         }
-        this.pop();
+        if (shouldPush) {
+            this.pop();
+        }
         return root;
     }
 
@@ -1046,15 +1064,19 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             ['If.branch', this.ifBranchCreationParser.bind(this)],
             ['WaterFlow.create', this.waterFlowCreationParser.bind(this)],
         ]);
-    private COMPONENT_BEHAVIOR_PARSERS:
+    public COMPONENT_BEHAVIOR_PARSERS:
         Map<string, (local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr) => ViewTreeNodeImpl | undefined
         > = new Map([
             ['tabBar', this.tabBarComponentParser.bind(this)],
             ['navDestination', this.navDestinationComponentParser.bind(this)],
             ['bindContextMenu', this.bindContextMenuComponentParser.bind(this)],
             ['bindMenu', this.bindContextMenuComponentParser.bind(this)],
+            ['bindContentCover', this.bindContentCoverComponentParser.bind(this)],
+            ['bindSheet', this.bindContentCoverComponentParser.bind(this)],
+            ['bindPopup', this.bindPopupComponentParser.bind(this)],
         ]);
     private componentCreateParse(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
         componentName: string,
         methodName: string,
         stmt: Stmt,
@@ -1063,24 +1085,25 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let parserFn = this.COMPONENT_CREATE_PARSERS.get(`${componentName}.${methodName}`);
         if (parserFn) {
             let node = parserFn(componentName, stmt, expr);
-            node?.addStmt(this, stmt);
+            node?.addStmt(local2Node, this, stmt);
             return node;
         }
         this.popAutomicComponent(componentName);
         let node = this.addSystemComponentNode(componentName);
-        node.addStmt(this, stmt);
+        node.addStmt(local2Node, this, stmt);
         return node;
     }
 
     private parseStaticInvokeExpr(
-        local2Node: Map<Local, ViewTreeNode>,
-        stmt: Stmt, expr: ArkStaticInvokeExpr
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt, expr: ArkStaticInvokeExpr,
+        shouldPush: boolean = true
     )
         : ViewTreeNodeImpl | undefined {
         let methodSignature = expr.getMethodSignature();
         let method = this.findMethod(methodSignature);
         if (method?.hasBuilderDecorator()) {
-            let node = this.addBuilderNode(method);
+            let node = this.addBuilderNode(method, shouldPush);
             node.parseStateValues(this, stmt);
             return node;
         }
@@ -1089,12 +1112,12 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         let methodName = methodSignature.getMethodSubSignature().getMethodName();
 
         if (this.isCreateFunc(methodName)) {
-            return this.componentCreateParse(name, methodName, stmt, expr);
+            return this.componentCreateParse(local2Node, name, methodName, stmt, expr);
         }
 
         let currentNode = this.top();
         if (name === currentNode?.name) {
-            currentNode.addStmt(this, stmt);
+            currentNode.addStmt(local2Node, this, stmt);
             if (methodName === COMPONENT_POP_FUNCTION) {
                 this.pop();
             }
@@ -1112,7 +1135,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @param local2Node
      * @param expr
      */
-    private parseInstanceInvokeExpr(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+    private parseInstanceInvokeExpr(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
         let temp = expr.getBase();
         if (local2Node.has(temp)) {
             let component = local2Node.get(temp);
@@ -1125,12 +1148,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
                 this.pop();
             } else {
-                component?.addStmt(this, stmt);
-            }
-            let methodName = expr.getMethodSignature().getMethodSubSignature().getMethodName();
-            let parseFn = this.COMPONENT_BEHAVIOR_PARSERS.get(methodName);
-            if (parseFn) {
-                parseFn(local2Node, stmt, expr);
+                component?.addStmt(local2Node, this, stmt);
             }
             return component;
         }
@@ -1151,13 +1169,12 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
         let method = this.findMethod(expr.getMethodSignature());
         if (name === 'this' && method?.hasBuilderDecorator()) {
-            return this.addBuilderNode(method);
+            return this.addBuilderNode(method, shouldPush);
         }
-
         return undefined;
     }
 
-    private parsePtrInvokeExpr(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkPtrInvokeExpr): ViewTreeNodeImpl | undefined {
+    private parsePtrInvokeExpr(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkPtrInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
         let temp = expr.getFuncPtrLocal();
         if (temp instanceof Local && local2Node.has(temp)) {
             let component = local2Node.get(temp);
@@ -1170,7 +1187,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
                 this.pop();
             } else {
-                component?.addStmt(this, stmt);
+                component?.addStmt(local2Node, this, stmt);
             }
 
             return component;
@@ -1191,7 +1208,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 
             let method = this.findMethod(expr.getMethodSignature());
             if (name === 'this' && method?.hasBuilderDecorator()) {
-                return this.addBuilderNode(method);
+                return this.addBuilderNode(method, shouldPush);
             }
         }
         return undefined;
@@ -1211,7 +1228,9 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @param stmt
      * @returns
      */
-    private parseAssignStmt(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: ArkAssignStmt): void {
+
+    //@todo : 注释
+    private parseAssignStmt(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: ArkAssignStmt, shouldPush: boolean = true): void {
         let left = stmt.getLeftOp();
         let right = stmt.getRightOp();
 
@@ -1220,11 +1239,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         let component: ViewTreeNodeImpl | undefined;
         if (right instanceof ArkStaticInvokeExpr) {
-            component = this.parseStaticInvokeExpr(local2Node, stmt, right);
+            component = this.parseStaticInvokeExpr(local2Node, stmt, right, shouldPush);
         } else if (right instanceof ArkInstanceInvokeExpr) {
-            component = this.parseInstanceInvokeExpr(local2Node, stmt, right);
+            component = this.parseInstanceInvokeExpr(local2Node, stmt, right, shouldPush);
         } else if (right instanceof ArkPtrInvokeExpr) {
-            component = this.parsePtrInvokeExpr(local2Node, stmt, right);
+            component = this.parsePtrInvokeExpr(local2Node, stmt, right, shouldPush);
         }
         if (component) {
             local2Node.set(left, component);
@@ -1253,7 +1272,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                     continue;
                 }
                 if (stmt instanceof ArkAssignStmt) {
-                    this.parseAssignStmt(local2Node, stmt);
+                    this.parseAssignStmt(local2Node, stmt, false);
                 } else if (stmt instanceof ArkInvokeStmt) {
                     this.parseInvokeStmt(local2Node, stmt);
                 }
@@ -1262,28 +1281,10 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
     }
 
     private tabBarComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        const args = expr.getArgs();
-        const base = expr.getBase();
-
-        // 收集 stateValues
-        const localArgs = args.filter(arg => arg instanceof Local) as Local[];
-        const stateValues = this.collectStateValues(localArgs);
-
-        // 处理节点挂载
-        for (const arg of args) {
-            const local = arg as Local;
-            if (local2Node.has(local) && local2Node.has(base as Local)) {
-                const node = local2Node.get(local);
-                const tabs_node = local2Node.get(base as Local);
-                if (tabs_node && node) {
-                    return this.attachTabBarNode(node, tabs_node, stateValues, base, local2Node);
-                }
-            }
-        }
-        return undefined;
+        return this.parseBehaviorComponent(local2Node, expr, 0);
     }
 
-    private collectStateValues(args: Local[]): Set<ArkField> {
+    public collectStateValues(args: Local[]): Set<ArkField> {
         let stateValues: Set<ArkField> = new Set();
         for (const arg of args) {
             if (arg instanceof Local && arg.getType()) {
@@ -1293,104 +1294,14 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         return stateValues;
     }
-    private attachTabBarNode(
-        node: ViewTreeNodeImpl,
-        tabs_node: ViewTreeNodeImpl,
-        stateValues: Set<ArkField>,
-        base: Local | undefined,
-        local2Node: Map<Local, ViewTreeNodeImpl>
-    ): ViewTreeNodeImpl {
-        // 创建虚拟父节点 TabBar
-        let tabBarNode = ViewTreeNodeImpl.createTabBarNode();
-
-        // 统一设置 stateValues
-        stateValues.forEach(field => {
-            tabBarNode.stateValues.add(field);
-            this.addStateValue(field, tabBarNode);
-        });
-
-        tabBarNode.children.push(node);
-        node.parent = tabBarNode;
-
-        // 挂到 TabContent 节点下
-        if (base instanceof Local && local2Node.has(base)) {
-            const baseNode = local2Node.get(base);
-            if (baseNode) {
-                baseNode.children.push(tabBarNode);
-                tabBarNode.parent = baseNode;
-            }
-        }
-        return tabBarNode;
-    }
-
     private navDestinationComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const args = expr.getArgs();
-        for (const arg of args) {
-            const local = arg as Local;
-            const type = arg.getType();
-
-            if (!local2Node.has(local)) {
-                if (!(type instanceof FunctionType)) {
-                    continue;
-                }
-
-                const method = this.findMethod(type.getMethodSignature());
-                if (!method || !method.hasBuilderDecorator()) {
-                    continue;
-                }
-
-                const builderNode = this.createBuilderNodeForAttach(method);
-                local2Node.set(arg as Local, builderNode);
-
-                const base = expr.getBase();
-                if (!(base instanceof Local) || !local2Node.has(base)) {
-                    continue;
-                }
-
-                const navNode = local2Node.get(base);
-                if (!navNode) {
-                    continue;
-                }
-
-                navNode.children.push(builderNode);
-                builderNode.parent = navNode;
-                continue;
-            } else {
-                const node = local2Node.get(local);
-                const base = expr.getBase();
-                if (!(base instanceof Local) || !local2Node.has(base)) {
-                    continue;
-                }
-                const navNode = local2Node.get(base);
-                if (!navNode || !node) {
-                    continue;
-                }
-                navNode.children.push(node);
-                node.parent = navNode;
-                continue;
-            }
+        const arg = args[0];
+        const type = arg.getType();
+        if (!(type instanceof FunctionType)) {
+            return undefined;
         }
-        return undefined;
-    }
-
-    private createBuilderNodeForAttach(method: ArkMethod): ViewTreeNodeImpl {
-        let builderViewTree = method.getViewTree();
-        if (!builderViewTree || !builderViewTree.getRoot()) {
-            logger.error(`ViewTree->createBuilderNodeForAttach ${method.getSignature().toString()} build viewtree fail.`);
-            let node = ViewTreeNodeImpl.createBuilderNode();
-            node.signature = method.getSignature();
-            node.classSignature = node.signature;
-            return node;
-        }
-        let root = builderViewTree.getRoot() as ViewTreeNodeImpl;
-        if (method.getDeclaringArkClass() === this.render.getDeclaringArkClass()) {
-            for (const [field, nodes] of builderViewTree.getStateValues()) {
-                for (const node of nodes) {
-                    this.addStateValue(field, node);
-                }
-            }
-        }
-        return root;
+        return this.parseBehaviorComponent(local2Node, expr, 0);
     }
     private bindContextMenuComponentParser(
         local2Node: Map<Local, ViewTreeNodeImpl>,
@@ -1398,56 +1309,89 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         expr: ArkInstanceInvokeExpr
     ): ViewTreeNodeImpl | undefined {
         const args = expr.getArgs();
-        const base = expr.getBase();
-        const localArgs = args.filter(arg => arg instanceof Local) as Local[];
-        const stateValues = this.collectStateValues(localArgs);
-        for (const arg of args) {
-            const type = arg.getType();
-            const local = arg as Local;
+        const firstType = args[0].getType();
+        const argIndex = firstType instanceof BooleanType ? 1 : 0;
+        return this.parseBehaviorComponent(local2Node, expr, argIndex);
+    }
 
-            if (local2Node.has(local)) {
-                const node = local2Node.get(local);
-                if (this.root && node) {
-                    this.attachMenuNodeToIfNode(node, stateValues, base, local2Node);
-                }
-                continue;
-            }
+    // bindContentCover(isShow: boolean, builder: CustomBuilder, options?: ContentCoverOptions): T
+    private bindContentCoverComponentParser(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt,
+        expr: ArkInstanceInvokeExpr
+    ): ViewTreeNodeImpl | undefined {
+        return this.parseBehaviorComponent(local2Node, expr, 1);       
+    }
 
+    // bindPopup(show: boolean, popup: PopupOptions | CustomPopupOptions): T
+    // 目前仅支持解析 CustomPopupOptions 类型的 builder 参数，（自定义气泡内容）
+    // 其他 PopupOptions 属性暂未支持。
+    private bindPopupComponentParser(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt,
+        expr: ArkInstanceInvokeExpr
+    ): ViewTreeNodeImpl | undefined {
+        return this.parseBehaviorComponent(local2Node, expr, 1, "builder");
+    }
+
+    private parseBehaviorComponent(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        expr: ArkInstanceInvokeExpr,
+        argIndex: number,
+        builderFieldName?: string
+    ): ViewTreeNodeImpl | undefined {
+        const args = expr.getArgs();
+        const arg = args[argIndex];
+        const local = arg as Local;
+        const type = arg.getType();
+    
+        // 优先返回已存在节点
+        if (local2Node.has(local)) {
+            const node = local2Node.get(local);
+            return node;
+        }
+    
+        // 普通 builder 解析
+        if (!builderFieldName) {
             if (type instanceof FunctionType) {
                 const method = this.findMethod(type.getMethodSignature());
                 if (method && method.hasBuilderDecorator()) {
-                    const builderNode = this.createBuilderNodeForAttach(method);
-                    local2Node.set(arg as Local, builderNode);
-                    this.attachMenuNodeToIfNode(builderNode, stateValues, base, local2Node);
+                    const builderNode = this.addBuilderNode(method, false);
+                    local2Node.set(local, builderNode);
+                    return builderNode;
                 }
+            }
+        } else {
+            // 复杂 builder 字段解析（如 bindPopup 的 builder 字段）
+            if (type instanceof ClassType && builderFieldName) {
+                return this.parseBuilderFieldNode(local, type, builderFieldName, local2Node);
             }
         }
         return undefined;
     }
 
-    private attachMenuNodeToIfNode(
-        node: ViewTreeNodeImpl,
-        stateValues: Set<ArkField>,
-        base: Local | undefined,
+    private parseBuilderFieldNode(
+        local: Local,
+        type: ClassType,
+        builderFieldName: string,
         local2Node: Map<Local, ViewTreeNodeImpl>
-    ): void {
-        const menuNode = ViewTreeNodeImpl.createMenuNode();
-        stateValues.forEach(field => {
-            menuNode.stateValues.add(field);
-            this.addStateValue(field, menuNode);
-        });
-
-        menuNode.children.push(node);
-        node.parent = menuNode;
-
-        const ifNode = ViewTreeNodeImpl.createIfNode();
-        ifNode.children.push(menuNode);
-        menuNode.parent = ifNode;
-
-        if (base instanceof Local && local2Node.has(base)) {
-            const baseNode = local2Node.get(base);
-            baseNode?.children.push(ifNode);
+    ): ViewTreeNodeImpl | undefined {
+        const cls = this.findClass(type.getClassSignature());
+        if (!cls) return undefined;
+        const field = cls.getFieldWithName(builderFieldName);
+        if (!field) return undefined;
+        const map = parseObjectLiteral(cls, this.getDeclaringArkClass().getDeclaringArkFile().getScene());
+        const builderValue = map.get(field);
+        if (!(builderValue instanceof ArkInstanceFieldRef)) return undefined;
+        const builder_type = builderValue.getType();
+        if (!(builder_type instanceof FunctionType)) return undefined;
+        const method = this.findMethod(builder_type.getMethodSignature());
+        if (method && method.hasBuilderDecorator()) {
+            const builderNode = this.addBuilderNode(method, false);
+            local2Node.set(local, builderNode);
+            return builderNode;
         }
+        return undefined;
     }
 }
 

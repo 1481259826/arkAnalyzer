@@ -15,7 +15,6 @@
 
 export const TabBuilder_Expect_ViewTree = {
     name: 'Builder',
-    stateValues: ['selectIndex'],
     children: [
         {
             name: 'Column',
@@ -30,7 +29,8 @@ export const TabBuilder_Expect_ViewTree = {
 };
 
 export const TabBar_Expect_ViewTree = {
-    name: 'TabBar',
+    name: 'Behavior',
+    stateValues: ['selectIndex'],
     children: [TabBuilder_Expect_ViewTree]
 };
 
@@ -52,20 +52,14 @@ export const TabbarTest_Expect_ViewTree = {
             stateValues: ['selectIndex'],
             children: [
                 // 首页
-                TabBuilder_Expect_ViewTree,
                 TabContent_Expect_ViewTree,
                 // 发现
-                TabBuilder_Expect_ViewTree,
                 TabContent_Expect_ViewTree,
                 // 推荐
-                TabBuilder_Expect_ViewTree,
                 TabContent_Expect_ViewTree,
                 // 我的
-                TabBuilder_Expect_ViewTree,
                 TabContent_Expect_ViewTree
             ]
         },
-        // 额外的 Builder（tabBuilder('首页', this.selectIndex)）
-        TabBuilder_Expect_ViewTree
     ]
 };

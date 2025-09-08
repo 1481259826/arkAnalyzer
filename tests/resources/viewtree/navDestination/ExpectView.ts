@@ -70,7 +70,12 @@ export const PageMap_Expect_ViewTree = {
 export const navDestinationTest_Expect_ViewTree = {
     name: 'Navigation',
     stateValues: ['stack'],
-    children: [
-        PageMap_Expect_ViewTree
+    children: [{
+        name: 'Behavior',
+        stateValues: ['stack'],
+        children: [
+            PageMap_Expect_ViewTree
+        ]
+    }
     ]
 };
