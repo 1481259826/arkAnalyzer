@@ -5,8 +5,8 @@ import { curves } from '@kit.ArkUI';
 @Entry
 @Component
 struct bindContentCoverTest {
-  @State @Watch("isShow1Change") isShow: boolean = false;
-  @State @Watch("isShow2Change") isShow2: boolean = false;
+  @State @Watch('isShow1Change') isShow: boolean = false;
+  @State @Watch('isShow2Change') isShow2: boolean = false;
   @State isScale1: number = 1;
   @State isScale2: number = 1;
 
@@ -24,7 +24,7 @@ struct bindContentCoverTest {
   @Builder
   myBuilder2() {
     Column() {
-      Button("close modal 2")
+      Button('close modal 2')
         .margin(10)
         .fontSize(20)
         .onClick(() => {
@@ -39,7 +39,7 @@ struct bindContentCoverTest {
   @Builder
   myBuilder() {
     Column() {
-      Button("transition modal 2")
+      Button('transition modal 2')
         .margin(10)
         .fontSize(20)
         .onClick(() => {
@@ -48,21 +48,21 @@ struct bindContentCoverTest {
         modalTransition: ModalTransition.NONE,
         backgroundColor: Color.Orange,
         onWillAppear: () => {
-          console.log("BindContentCover onWillAppear.");
+          console.log('BindContentCover onWillAppear.');
         },
         onAppear: () => {
-          console.log("BindContentCover onAppear.");
+          console.log('BindContentCover onAppear.');
         },
         onWillDisappear: () => {
-          console.log("BindContentCover onWillDisappear.");
+          console.log('BindContentCover onWillDisappear.');
         },
         onDisappear: () => {
-          console.log("BindContentCover onDisappear.");
+          console.log('BindContentCover onDisappear.');
         }
       })
 
 
-      Button("close modal 1")
+      Button('close modal 1')
         .margin(10)
         .fontSize(20)
         .onClick(() => {
@@ -79,7 +79,7 @@ struct bindContentCoverTest {
 
   build() {
     Column() {
-      Button("transition modal 1")
+      Button('transition modal 1')
         .onClick(() => {
           this.isShow = true;
         })
@@ -89,21 +89,21 @@ struct bindContentCoverTest {
           modalTransition: ModalTransition.NONE,
           backgroundColor: Color.Pink,
           onWillAppear: () => {
-            console.log("BindContentCover onWillAppear.");
+            console.log('BindContentCover onWillAppear.');
           },
           onAppear: () => {
-            console.log("BindContentCover onAppear.");
+            console.log('BindContentCover onAppear.');
           },
           onWillDisappear: () => {
-            console.log("BindContentCover onWillDisappear.");
+            console.log('BindContentCover onWillDisappear.');
           },
           onDisappear: () => {
-            console.log("BindContentCover onDisappear.");
+            console.log('BindContentCover onDisappear.');
           }
         })
     }
     .justifyContent(FlexAlign.Center)
-    .backgroundColor("#ff49c8ab")
+    .backgroundColor('#ff49c8ab')
     .width('100%')
     .height('100%')
     .scale({ x: this.isScale1, y: this.isScale1 })

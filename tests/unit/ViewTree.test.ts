@@ -73,10 +73,10 @@ import {
 } from '../resources/viewtree/navDestination/ExpectView';
 import {
     bindContentCoverTest_Expect_ViewTree
-}from '../resources/viewtree/bindContentCover/ExpectView';
-import{
+} from '../resources/viewtree/bindContentCover/ExpectView';
+import {
     bindPopupTest_Expect_ViewTree
-}from '../resources/viewtree/bindPopup/ExpectView';
+} from '../resources/viewtree/bindPopup/ExpectView';
 import { Project_Page_Expect_ViewTree } from '../resources/viewtree/project/ExpectView';
 import { ViewTreePrinter } from '../../src';
 import { CryptoUtils } from '../../src/utils/crypto_utils';

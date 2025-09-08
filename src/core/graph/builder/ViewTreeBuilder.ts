@@ -401,28 +401,27 @@ class ViewTreeNodeImpl implements ViewTreeNode {
                     relationValues.push(arg);
                 }
             }
-            if (1) {
-                let builderNode: ViewTreeNodeImpl | undefined;
-                if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr) {
-                    let parseFn = tree.COMPONENT_BEHAVIOR_PARSERS.get(key);
-                    if (parseFn) {
-                        builderNode = parseFn(local2Node, stmt, expr);
-                    }
+
+            let builderNode: ViewTreeNodeImpl | undefined;
+            if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr) {
+                let parseFn = tree.COMPONENT_BEHAVIOR_PARSERS.get(key);
+                if (parseFn) {
+                    builderNode = parseFn(local2Node, stmt, expr);
                 }
-                if (builderNode) {
-                    // create a virtual node name 'Behavior' to hold the behaviorNode
-                    let behaviorNode = ViewTreeNodeImpl.createBehaviorNode();
+            }
+            if (builderNode) {
+                // create a virtual node name 'Behavior' to hold the behaviorNode
+                let behaviorNode = ViewTreeNodeImpl.createBehaviorNode();
 
-                    behaviorNode.attributes.set(key, [stmt, relationValues]);
-                    behaviorNode.parseStateValues(tree, stmt);
+                behaviorNode.attributes.set(key, [stmt, relationValues]);
+                behaviorNode.parseStateValues(tree, stmt);
 
 
-                    behaviorNode.children.push(builderNode);
-                    builderNode.parent = behaviorNode;
-                    this.children.push(behaviorNode);
-                    behaviorNode.parent = this;
+                behaviorNode.children.push(builderNode);
+                builderNode.parent = behaviorNode;
+                this.children.push(behaviorNode);
+                behaviorNode.parent = this;
 
-                }
             }
             this.attributes.set(key, [stmt, relationValues]);
         }
@@ -436,7 +435,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
         const stmt = local.getDeclaringStmt();
         if (!stmt) {
             let type = local.getType();
-            if (type instanceof FunctionType) { 
+            if (type instanceof FunctionType) {
                 relationValues.push(type.getMethodSignature());
             }
             return;
@@ -1135,7 +1134,11 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @param local2Node
      * @param expr
      */
-    private parseInstanceInvokeExpr(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
+    private parseInstanceInvokeExpr(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt, expr: ArkInstanceInvokeExpr,
+        shouldPush: boolean = true
+    ): ViewTreeNodeImpl | undefined {
         let temp = expr.getBase();
         if (local2Node.has(temp)) {
             let component = local2Node.get(temp);
@@ -1174,7 +1177,12 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return undefined;
     }
 
-    private parsePtrInvokeExpr(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkPtrInvokeExpr, shouldPush: boolean = true): ViewTreeNodeImpl | undefined {
+    private parsePtrInvokeExpr(
+        local2Node: Map<Local, ViewTreeNodeImpl>,
+        stmt: Stmt,
+        expr: ArkPtrInvokeExpr,
+        shouldPush: boolean = true
+    ): ViewTreeNodeImpl | undefined {
         let temp = expr.getFuncPtrLocal();
         if (temp instanceof Local && local2Node.has(temp)) {
             let component = local2Node.get(temp);
@@ -1320,7 +1328,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         stmt: Stmt,
         expr: ArkInstanceInvokeExpr
     ): ViewTreeNodeImpl | undefined {
-        return this.parseBehaviorComponent(local2Node, expr, 1);       
+        return this.parseBehaviorComponent(local2Node, expr, 1);
     }
 
     // bindPopup(show: boolean, popup: PopupOptions | CustomPopupOptions): T
@@ -1331,7 +1339,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         stmt: Stmt,
         expr: ArkInstanceInvokeExpr
     ): ViewTreeNodeImpl | undefined {
-        return this.parseBehaviorComponent(local2Node, expr, 1, "builder");
+        return this.parseBehaviorComponent(local2Node, expr, 1, 'builder');
     }
 
     private parseBehaviorComponent(
@@ -1344,13 +1352,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const arg = args[argIndex];
         const local = arg as Local;
         const type = arg.getType();
-    
+
         // 优先返回已存在节点
         if (local2Node.has(local)) {
             const node = local2Node.get(local);
             return node;
         }
-    
+
         // 普通 builder 解析
         if (!builderFieldName) {
             if (type instanceof FunctionType) {
@@ -1377,14 +1385,22 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         local2Node: Map<Local, ViewTreeNodeImpl>
     ): ViewTreeNodeImpl | undefined {
         const cls = this.findClass(type.getClassSignature());
-        if (!cls) return undefined;
+        if (!cls) {
+            return undefined;
+        }
         const field = cls.getFieldWithName(builderFieldName);
-        if (!field) return undefined;
+        if (!field) {
+            return undefined;
+        }
         const map = parseObjectLiteral(cls, this.getDeclaringArkClass().getDeclaringArkFile().getScene());
         const builderValue = map.get(field);
-        if (!(builderValue instanceof ArkInstanceFieldRef)) return undefined;
+        if (!(builderValue instanceof ArkInstanceFieldRef)) {
+            return undefined;
+        }
         const builder_type = builderValue.getType();
-        if (!(builder_type instanceof FunctionType)) return undefined;
+        if (!(builder_type instanceof FunctionType)) {
+            return undefined;
+        }
         const method = this.findMethod(builder_type.getMethodSignature());
         if (method && method.hasBuilderDecorator()) {
             const builderNode = this.addBuilderNode(method, false);

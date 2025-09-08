@@ -63,11 +63,11 @@ export const bindContentCoverTest_Expect_ViewTree = {
     children: [
         {
             name: 'Button',
-            stateValues: ['isShow','isScale2','isShow2'],
+            stateValues: ['isShow', 'isScale2', 'isShow2'],
             children: [
                 {
                     name: 'Behavior',
-                    stateValues: ['isShow','isScale2','isShow2'],
+                    stateValues: ['isShow', 'isScale2', 'isShow2'],
                     children: [
                         myBuilder_Expect_ViewTree
                     ]
