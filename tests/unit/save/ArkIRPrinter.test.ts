@@ -119,12 +119,15 @@ const CASE1_EXPECT = `class %dflt {
       instanceinvoke logger.<@%unk/%unk: .info()>(%16)
       %17 = 'Department name: ' + k
       instanceinvoke logger.<@%unk/%unk: .info()>(%17)
-      if k === 1 goto label14 label11
-      k = k + 1
+      if k === 1 goto label14 label18
 
     label14:
       i = i + 1
       goto label1
+
+    label18:
+      k = k + 1
+      goto label11
 
     label4:
       %7 = sampleData[i]
