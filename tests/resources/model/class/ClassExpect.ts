@@ -150,17 +150,17 @@ export const ClassWithGeneratedConstructor = `class ClassWithNoConstructor {
       return
   }
 
-  %statInit(): void {
-    label0:
-      this = this: @class/ClassWithConstructor.ts: ClassWithNoConstructor
-      return
-  }
-
   constructor(): @class/ClassWithConstructor.ts: ClassWithNoConstructor {
     label0:
       this = this: @class/ClassWithConstructor.ts: ClassWithNoConstructor
       instanceinvoke this.<@class/ClassWithConstructor.ts: ClassWithNoConstructor.%instInit()>()
       return this
+  }
+
+  static %statInit(): void {
+    label0:
+      this = this: @class/ClassWithConstructor.ts: ClassWithNoConstructor
+      return
   }
 
   test(a: string): void {
@@ -182,7 +182,7 @@ export const ClassWithFieldAndConstructor = `class ClassWithNoParamConstructor {
       return
   }
 
-  %statInit(): void {
+  static %statInit(): void {
     label0:
       this = this: @class/ClassWithConstructor.ts: ClassWithNoParamConstructor
       return
@@ -208,7 +208,7 @@ export const ClassWithFieldAndParamConstructor = `class ClassWithParamsConstruct
       return
   }
 
-  %statInit(): void {
+  static %statInit(): void {
     label0:
       this = this: @class/ClassWithConstructor.ts: ClassWithParamsConstructor
       @class/ClassWithConstructor.ts: ClassWithParamsConstructor.[static]a = 123
@@ -235,7 +235,7 @@ export const ClassWithSuperConstructor = `class ClassWithSuperConstructor extend
       return
   }
 
-  %statInit(): void {
+  static %statInit(): void {
     label0:
       this = this: @class/ClassWithConstructor.ts: ClassWithSuperConstructor
       return
@@ -262,7 +262,7 @@ export const ClassWithParamProperty = `class ClassWithParamProperty {
   protected c: boolean
   public d?: string
 
-  %statInit(): void {
+  static %statInit(): void {
     label0:
       this = this: @class/ClassWithConstructor.ts: ClassWithParamProperty
       @class/ClassWithConstructor.ts: ClassWithParamProperty.[static]x = 456
@@ -313,7 +313,7 @@ export const EnumClass = `enum TestEnum {
   A,
   B,
 
-  %statInit(): void {
+  static %statInit(): void {
     label0:
       this = this: @class/ClassWithOtherCategory.ts: TestEnum
       @class/ClassWithOtherCategory.ts: TestEnum.[static]A = 123
@@ -329,7 +329,7 @@ export const EnumClass2 = `enum TestEnum2 {
   C,
   D,
 
-  %statInit(): void {
+  static %statInit(): void {
     label0:
       this = this: @class/ClassWithOtherCategory.ts: TestEnum2
       @class/ClassWithOtherCategory.ts: TestEnum2.[static]A = a

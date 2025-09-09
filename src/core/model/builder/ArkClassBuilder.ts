@@ -41,6 +41,7 @@ import { FullPosition, LineColPosition } from '../../base/Position';
 import { Type, UnknownType, VoidType } from '../../base/Type';
 import { BodyBuilder } from './BodyBuilder';
 import { ArkStaticInvokeExpr } from '../../base/Expr';
+import { ModifierType } from '../ArkBaseModel';
 
 const logger = Logger.getLogger(LOG_MODULE_TYPE.ARKANALYZER, 'ArkClassBuilder');
 
@@ -186,6 +187,9 @@ function init4StaticInitMethod(cls: ArkClass): void {
     const staticInit = new ArkMethod();
     staticInit.setDeclaringArkClass(cls);
     staticInit.setIsGeneratedFlag(true);
+
+    staticInit.setModifiers(ModifierType.STATIC);
+
     const methodSubSignature = ArkSignatureBuilder.buildMethodSubSignatureFromMethodName(STATIC_INIT_METHOD_NAME);
     methodSubSignature.setReturnType(VoidType.getInstance());
     const methodSignature = new MethodSignature(staticInit.getDeclaringArkClass().getSignature(), methodSubSignature);
