@@ -64,7 +64,7 @@ import {
 } from '../../../resources/cfg/mixOfStatements/MixOfStatementsExpect';
 import {
     TRY_CATCH_EXPECT_CASE1
-} from '../../../resources/cfg/tryCatch/TryCatchExpect'
+} from '../../../resources/cfg/tryCatch/TryCatchExpect';
 
 describe('CfgTest', () => {
     it('case1: patching interface', () => {
