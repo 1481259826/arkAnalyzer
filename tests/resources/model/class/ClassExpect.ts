@@ -344,6 +344,51 @@ export const EnumClass2 = `enum TestEnum2 {
 }
 `;
 
+export const EnumClass3 = `enum TestEnum3 {
+  A,
+  B,
+  C,
+  D,
+  E,
+  F,
+
+  static %statInit(): void {
+    label0:
+      this = this: @class/ClassWithOtherCategory.ts: TestEnum3
+      @class/ClassWithOtherCategory.ts: TestEnum3.[static]A = 0
+      %0 = -1
+      @class/ClassWithOtherCategory.ts: TestEnum3.[static]B = %0
+      @class/ClassWithOtherCategory.ts: TestEnum3.[static]C = B + 1
+      @class/ClassWithOtherCategory.ts: TestEnum3.[static]D = 0.5
+      @class/ClassWithOtherCategory.ts: TestEnum3.[static]E = 1.5
+      @class/ClassWithOtherCategory.ts: TestEnum3.[static]F = 2.5
+      return
+  }
+}
+`;
+
+export const EnumClass4 = `enum TestEnum4 {
+  A,
+  B,
+  C,
+  D,
+  E,
+
+  static %statInit(): void {
+    label0:
+      this = this: @class/ClassWithOtherCategory.ts: TestEnum4
+      %0 = 1 << 2
+      @class/ClassWithOtherCategory.ts: TestEnum4.[static]A = %0
+      @class/ClassWithOtherCategory.ts: TestEnum4.[static]B = A + 1
+      @class/ClassWithOtherCategory.ts: TestEnum4.[static]C = B + 1
+      %1 = A + B
+      @class/ClassWithOtherCategory.ts: TestEnum4.[static]D = %1
+      @class/ClassWithOtherCategory.ts: TestEnum4.[static]E = D + 1
+      return
+  }
+}
+`;
+
 export const TypeLiteralClass = `typeliteral %AC0 {
   a: string
   b: @class/ClassWithOtherCategory.ts: %AC1
