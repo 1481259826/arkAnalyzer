@@ -403,7 +403,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
             }
 
             let builderNode: ViewTreeNodeImpl | undefined;
-            if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr && 0) {
+            if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr) {
                 let parseFn = tree.COMPONENT_BEHAVIOR_PARSERS.get(key);
                 if (parseFn) {
                     builderNode = parseFn(local2Node, stmt, expr);
