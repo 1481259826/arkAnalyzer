@@ -232,7 +232,7 @@ enum ViewTreeNodeType {
 class ViewTreeNodeImpl implements ViewTreeNode {
     name: string;
     stmts: Map<string, [Stmt, (MethodSignature | ArkInstanceFieldRef | Constant)[]]>;
-    attributes: Map<string, [Stmt, (Constant | ArkInstanceFieldRef | MethodSignature)[]]>;
+    attributes: Map<string, [Stmt, (MethodSignature | ArkInstanceFieldRef | Constant)[]]>;
     stateValues: Set<ArkField>;
     parent: ViewTreeNode | null;
     children: ViewTreeNodeImpl[];
@@ -246,7 +246,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
     constructor(name: string) {
         this.name = name;
         this.attributes = new Map();
-        this.stmts = new Map();
+        this.stmts = this.attributes;
         this.stateValues = new Set();
         this.parent = null;
         this.children = [];
@@ -346,7 +346,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
     public clone(parent: ViewTreeNodeImpl, map: Map<ViewTreeNodeImpl, ViewTreeNodeImpl> = new Map()): ViewTreeNodeImpl {
         let newNode = new ViewTreeNodeImpl(this.name);
         newNode.attributes = this.attributes;
-        newNode.stmts = newNode.stmts;
+        newNode.stmts = newNode.attributes;
         newNode.stateValues = this.stateValues;
         newNode.parent = parent;
         newNode.type = this.type;
@@ -403,7 +403,7 @@ class ViewTreeNodeImpl implements ViewTreeNode {
             }
 
             let builderNode: ViewTreeNodeImpl | undefined;
-            if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr) {
+            if (tree.COMPONENT_BEHAVIOR_PARSERS.has(key) && expr instanceof ArkInstanceInvokeExpr && 0) {
                 let parseFn = tree.COMPONENT_BEHAVIOR_PARSERS.get(key);
                 if (parseFn) {
                     builderNode = parseFn(local2Node, stmt, expr);
@@ -1236,8 +1236,6 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      * @param stmt
      * @returns
      */
-
-    //@todo : 注释
     private parseAssignStmt(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: ArkAssignStmt, shouldPush: boolean = true): void {
         let left = stmt.getLeftOp();
         let right = stmt.getRightOp();
@@ -1287,21 +1285,26 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
             }
         }
     }
-
+    /**
+     * Parses the 'tabBar' behavior binding.
+     * Only supports extracting the argument when it is of type CustomBuilder.
+     * Other argument types (e.g. string, Resource, TabBarOptions, SubTabBarStyle, BottomTabBarStyle, ComponentContent) are not handled.
+     *
+     * Supported signatures:
+     *   - tabBar(options: string | Resource | CustomBuilder | TabBarOptions)
+     *   - tabBar(value: SubTabBarStyle | BottomTabBarStyle) // API 9+
+     *   - tabBar(content: ComponentContent | SubTabBarStyle | BottomTabBarStyle | string | Resource | CustomBuilder | TabBarOptions) // API 18+
+     */
     private tabBarComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         return this.parseBehaviorComponent(local2Node, expr, 0);
     }
 
-    public collectStateValues(args: Local[]): Set<ArkField> {
-        let stateValues: Set<ArkField> = new Set();
-        for (const arg of args) {
-            if (arg instanceof Local && arg.getType()) {
-                const sv = StateValuesUtils.getInstance(this.getDeclaringArkClass()).parseObjectUsedStateValues(arg.getType());
-                sv.forEach(field => stateValues.add(field));
-            }
-        }
-        return stateValues;
-    }
+    /**
+     * Parses the 'navDestination' behavior binding.
+     * Supports extracting the 'builder' argument when it is of FunctionType.
+     *
+     * navDestination(builder: (name: string, param: unknown) => void)
+     */
     private navDestinationComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
         const args = expr.getArgs();
         const arg = args[0];
@@ -1311,6 +1314,15 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         }
         return this.parseBehaviorComponent(local2Node, expr, 0);
     }
+    /**
+     * Parses the 'bindContextMenu' behavior binding for API 8 and API 12.
+     * Only supports extracting the 'content' argument when it is of type CustomBuilder.
+     * Other argument types (e.g. ResponseType, ContextMenuOptions) are not handled.
+     *
+     * Supported signatures:
+     *   - bindContextMenu(content: CustomBuilder, responseType: ResponseType, options?: ContextMenuOptions): T   // API 8
+     *   - bindContextMenu(isShown: boolean, content: CustomBuilder, options?: ContextMenuOptions): T             // API 12
+     */
     private bindContextMenuComponentParser(
         local2Node: Map<Local, ViewTreeNodeImpl>,
         stmt: Stmt,
@@ -1321,8 +1333,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const argIndex = firstType instanceof BooleanType ? 1 : 0;
         return this.parseBehaviorComponent(local2Node, expr, argIndex);
     }
-
-    // bindContentCover(isShow: boolean, builder: CustomBuilder, options?: ContentCoverOptions): T
+    /**
+     * Parses the 'bindContentCover' behavior binding.
+     * Only supports extracting the CustomBuilder argument from the second parameter.
+     * Other ContentCoverOptions properties are not handled.
+     * 
+     * bindContentCover(isShow: boolean, builder: CustomBuilder, options?: ContentCoverOptions): T
+     */
     private bindContentCoverComponentParser(
         local2Node: Map<Local, ViewTreeNodeImpl>,
         stmt: Stmt,
@@ -1331,9 +1348,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         return this.parseBehaviorComponent(local2Node, expr, 1);
     }
 
-    // bindPopup(show: boolean, popup: PopupOptions | CustomPopupOptions): T
-    // 目前仅支持解析 CustomPopupOptions 类型的 builder 参数，（自定义气泡内容）
-    // 其他 PopupOptions 属性暂未支持。
+    /**
+     * Parses the 'bindPopup' behavior binding.
+     * Only supports extracting the 'builder' field from CustomPopupOptions (custom popup content).
+     * Other PopupOptions properties are not supported yet.
+     *
+     * bindPopup(show: boolean, popup: PopupOptions | CustomPopupOptions): T
+     */
     private bindPopupComponentParser(
         local2Node: Map<Local, ViewTreeNodeImpl>,
         stmt: Stmt,
@@ -1353,13 +1374,13 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
         const local = arg as Local;
         const type = arg.getType();
 
-        // 优先返回已存在节点
+        // Prefer to return existing node
         if (local2Node.has(local)) {
             const node = local2Node.get(local);
             return node;
         }
 
-        // 普通 builder 解析
+        // Normal ‘Builder’ parsing
         if (!builderFieldName) {
             if (type instanceof FunctionType) {
                 const method = this.findMethod(type.getMethodSignature());
@@ -1370,7 +1391,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
                 }
             }
         } else {
-            // 复杂 builder 字段解析（如 bindPopup 的 builder 字段）
+            // Complex builder field parsing (e.g. 'builder' field in ‘bindPopup’)
             if (type instanceof ClassType && builderFieldName) {
                 return this.parseBuilderFieldNode(local, type, builderFieldName, local2Node);
             }
