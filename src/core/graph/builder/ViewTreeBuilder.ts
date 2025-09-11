@@ -412,16 +412,12 @@ class ViewTreeNodeImpl implements ViewTreeNode {
             if (builderNode) {
                 // create a virtual node name 'Behavior' to hold the behaviorNode
                 let behaviorNode = ViewTreeNodeImpl.createBehaviorNode();
-
                 behaviorNode.attributes.set(key, [stmt, relationValues]);
                 behaviorNode.parseStateValues(tree, stmt);
-
-
                 behaviorNode.children.push(builderNode);
                 builderNode.parent = behaviorNode;
                 this.children.push(behaviorNode);
                 behaviorNode.parent = this;
-
             }
             this.attributes.set(key, [stmt, relationValues]);
         }
@@ -1296,6 +1292,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      *   - tabBar(content: ComponentContent | SubTabBarStyle | BottomTabBarStyle | string | Resource | CustomBuilder | TabBarOptions) // API 18+
      */
     private tabBarComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
+        // Only the first argument (index 0) is analyzed for CustomBuilder type.
         return this.parseBehaviorComponent(local2Node, expr, 0);
     }
 
@@ -1435,5 +1432,3 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
 export function buildViewTree(render: ArkMethod): ViewTree {
     return new ViewTreeImpl(render);
 }
-
-
