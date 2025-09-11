@@ -1292,7 +1292,7 @@ export class ViewTreeImpl extends TreeNodeStack implements ViewTree {
      *   - tabBar(content: ComponentContent | SubTabBarStyle | BottomTabBarStyle | string | Resource | CustomBuilder | TabBarOptions) // API 18+
      */
     private tabBarComponentParser(local2Node: Map<Local, ViewTreeNodeImpl>, stmt: Stmt, expr: ArkInstanceInvokeExpr): ViewTreeNodeImpl | undefined {
-        // Only the first argument (index 0) is analyzed for CustomBuilder type.
+        // Only the first argument (index 0) is analyzed for CustomBuilder type
         return this.parseBehaviorComponent(local2Node, expr, 0);
     }
 
