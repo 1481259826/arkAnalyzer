@@ -18,6 +18,7 @@ import { Local } from '../../../core/base/Local';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../../core/base/Stmt';
 import { AliasType, ArrayType, ClassType, FunctionType, GenericType, UnionType } from '../../../core/base/Type';
 import { Value } from '../../../core/base/Value';
+import { MAKEOBSERVED } from '../../../core/common/Const';
 import { NodeID } from '../../../core/graph/GraphTraits';
 import { ArkMethod } from '../../../core/model/ArkMethod';
 import { CallGraph, CallGraphNode, FuncID, ICallSite } from '../../model/CallGraph';
@@ -112,14 +113,19 @@ export class SdkPlugin implements IPagPlugin {
     private addSDKMethodReturnPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod, srcNodes: NodeID[]): void {
         let returnType = calleeMethod.getReturnType();
         if (returnType instanceof ArrayType && cs.callStmt instanceof ArkAssignStmt) {
+            // Handling the return value of collections.Array.creat, return type is ArrayType
             this.addSDKMethodReturnArrayPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
             return;
         }
         if (returnType instanceof UnionType && cs.callStmt instanceof ArkAssignStmt) {
+            // Handling the return value of ArkTSUtils.ASON.parse, return type is UnionType
+            // find real type in UnionType
             this.addSDKMethodReturnUnionPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
             return;
         }
         if (returnType instanceof GenericType && cs.callStmt instanceof ArkAssignStmt) {
+            // Handling the return value of UIUtils.makeObserved, return type is GenericType
+            // find real type in callsite realGenericTypes
             this.addSDKMethodReturnGenericPagEdge(cs, callerCid, calleeCid, calleeMethod, srcNodes);
             return;
         }
@@ -197,13 +203,13 @@ export class SdkPlugin implements IPagPlugin {
         let newExpr = cidMap.get(calleeCid);
         if (!newExpr) {
             let types = returnType.getTypes();
-            for (let type of types) {
-                if (type instanceof AliasType && type.getOriginalType() instanceof ClassType) {
-                    let classtype = type.getOriginalType() as ClassType;
+            for (let uniontype of types) {
+                if (uniontype instanceof AliasType && uniontype.getOriginalType() instanceof ClassType) {
+                    let classtype = uniontype.getOriginalType() as ClassType;
                     newExpr = new ArkNewExpr(classtype);
                 }
-                if (type instanceof ClassType) {
-                    newExpr = new ArkNewExpr(type);
+                if (uniontype instanceof ClassType) {
+                    newExpr = new ArkNewExpr(uniontype);
                 }
             }
         }
@@ -222,7 +228,7 @@ export class SdkPlugin implements IPagPlugin {
     }
 
     private addSDKMethodReturnGenericPagEdge(cs: ICallSite, callerCid: ContextID, calleeCid: ContextID, calleeMethod: ArkMethod, srcNodes: NodeID[]): void {
-        if (calleeMethod.getName() === 'makeObserved') {
+        if (calleeMethod.getName() === MAKEOBSERVED) {
             let callstmt = cs.callStmt as ArkAssignStmt;
             let cidMap = this.sdkMethodReturnValueMap.get(calleeMethod);
             if (!cidMap) {
