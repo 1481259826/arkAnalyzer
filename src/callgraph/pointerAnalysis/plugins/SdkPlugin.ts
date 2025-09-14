@@ -14,8 +14,10 @@
  */
 
 import { ArkNewArrayExpr, ArkNewExpr, ArkPtrInvokeExpr, ArkStaticInvokeExpr } from '../../../core/base/Expr';
+import { ArkNewArrayExpr, ArkNewExpr, ArkPtrInvokeExpr, ArkStaticInvokeExpr } from '../../../core/base/Expr';
 import { Local } from '../../../core/base/Local';
 import { ArkAssignStmt, ArkInvokeStmt, Stmt } from '../../../core/base/Stmt';
+import { AliasType, ArrayType, ClassType, FunctionType, GenericType, UnionType } from '../../../core/base/Type';
 import { AliasType, ArrayType, ClassType, FunctionType, GenericType, UnionType } from '../../../core/base/Type';
 import { Value } from '../../../core/base/Value';
 import { MAKEOBSERVED } from '../../../core/common/Const';
@@ -47,6 +49,7 @@ export class SdkPlugin implements IPagPlugin {
         this.pagBuilder = pagBuilder;
         this.cg = cg;
         this.sdkMethodReturnValueMap = new Map();
+        this.sdkMethodReturnArrayMap = new Map();
         this.sdkMethodReturnArrayMap = new Map();
         this.methodParamValueMap = new Map();
         this.fakeSdkMethodParamDeclaringStmt = new ArkAssignStmt(new Local(''), new Local(''));
