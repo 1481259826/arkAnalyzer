@@ -49,3 +49,7 @@ export const ARKTS_STATIC_MARK = 'use static';
 
 // Concurrent const
 export const MAKEOBSERVED = 'makeObserved';
+export const CONSTRUCTORFUCNNAME = 'constructor';
+export const POSTMESSAGEFUNCNAME = 'postMessage';
+export const POSTMESSAGEWITHSHAREDSENDABLEFUNCNAME = 'postMessageWithSharedSendable';
+export const ONMESSAGEFUNCNAME = 'onmessage';
