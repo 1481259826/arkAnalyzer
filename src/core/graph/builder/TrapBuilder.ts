@@ -27,6 +27,7 @@ import {
     ArkReturnVoidStmt,
     ArkThrowStmt,
     Stmt,
+    ArkAliasTypeDefineStmt
 } from '../../base/Stmt';
 import { BlockBuilder, TryStatementBuilder } from './CfgBuilder';
 import Logger, { LOG_MODULE_TYPE } from '../../../utils/logger';
@@ -479,6 +480,8 @@ export class TrapBuilder {
             return new ArkReturnVoidStmt();
         } else if (sourceStmt instanceof ArkThrowStmt) {
             return new ArkThrowStmt(sourceStmt.getOp());
+        } else if (sourceStmt instanceof ArkAliasTypeDefineStmt) {
+            return new ArkAliasTypeDefineStmt(sourceStmt.getAliasType(), sourceStmt.getAliasTypeExpr());
         }
         return null;
     }
