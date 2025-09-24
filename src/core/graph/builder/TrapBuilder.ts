@@ -482,7 +482,9 @@ export class TrapBuilder {
             return new ArkThrowStmt(sourceStmt.getOp());
         } else if (sourceStmt instanceof ArkAliasTypeDefineStmt) {
             return new ArkAliasTypeDefineStmt(sourceStmt.getAliasType(), sourceStmt.getAliasTypeExpr());
+        } else {
+            logger.error(`unsupported statement type`);
+            return null;
         }
-        return null;
     }
 }
