@@ -621,7 +621,12 @@ export class ModelUtils {
             const parameters = paramType.getMethodSignature().getMethodSubSignature().getParameters();
             const args = argType.getMethodSignature().getMethodSubSignature().getParameters().filter(p => !p.getName().startsWith(LEXICAL_ENV_NAME_PREFIX));
             return ModelUtils.isMatched(parameters, args, scene, true);
-        } else if (paramType instanceof LiteralType) {
+        }
+        return ModelUtils.matchType(paramType, argType, arg, scene);
+    }
+
+    private static matchType(paramType: Type, argType: Type, arg: Value, scene: Scene): boolean {
+        if (paramType instanceof LiteralType) {
             const argStr = arg instanceof Constant ? arg.getValue() : argType.getTypeString();
             return argStr.replace(/[\"|\']/g, '') ===
                 paramType.getTypeString().replace(/[\"|\']/g, '');
