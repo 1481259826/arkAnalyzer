@@ -65,32 +65,118 @@ Checking OpenHarmony Apps for Potential Code-level Defects
 
 *** 
 # ArkAnalyzer: Static Program Analysis Framework for the ArkTS Language
-## Develope environment setup
-1. [Download Visual Studio Code](https://code.visualstudio.com/download) or other IDEA;
-2. [Download Node.js](https://nodejs.org/en/download/current) and install it. Node.js is a runtime environment for JavaScript, which comes with its own package manager, npm. 
-3. Install Typescript via npm: 
+
+## Quick Start
+
+### Environment Setup
+1. [Download Visual Studio Code](https://code.visualstudio.com/download) or other IDE.
+2. [Download Node.js](https://nodejs.org/en/download/current) and install it. Node.js is a runtime environment for JavaScript with its own package manager, npm.
+3. Install TypeScript via npm:
 ```shell
 npm install -g typescript
 ```
-4. Install dependency libraries
+4. Clone the repository and install dependencies:
 ```shell
+git clone <repository-url>
 cd arkanalyzer
 npm install
 ```
-5. [Optional] Generate the latest API documentation, which will be created at docs/api_docs.
+
+### Run Demo
+
+**Experience ArkAnalyzer features immediately:**
+
+```shell
+npm run demo
+```
+
+This will run a comprehensive demo showcasing:
+- Basic features (files, classes, methods, CFG analysis)
+- Call graph generation (CHA, RTA algorithms)
+- Data flow analysis (Def-Use Chain, basic block analysis)
+
+### Run Tests
+
+```shell
+npm test              # Watch mode
+npm run testonce      # Run once
+npm run coverage      # Generate coverage report
+```
+
+### Build Project
+
+```shell
+npm run build         # Development build → out/ directory
+npm run prepack       # Production build → lib/ directory
+```
+
+## Project Structure
+
+```
+arkanalyzer/
+├── src/                    # Source code
+│   ├── callgraph/          # Call graph (CHA, RTA, PTA)
+│   ├── core/               # Core IR and models
+│   ├── save/               # Output and serialization
+│   └── Scene.ts            # Main entry point
+├── tests/                  # Tests and demos
+│   ├── ex01-03/            # QuickStart demo
+│   ├── ex01-advanced/      # Advanced usage demo
+│   ├── ex04/               # ViewTree analysis demo
+│   ├── resources/          # Test resources (35 subdirectories)
+│   ├── unit/               # Unit tests (67 tests)
+│   └── README.md           # Detailed test directory guide
+├── out/                    # Development build output
+├── docs/                   # Documentation
+└── config/                 # Configuration files
+```
+
+For more details, see [tests/README.md](tests/README.md)
+
+## Documentation
+
+1. **Quick Start Guide**: [QuickStart.md](docs/QuickStart.md)
+2. **API Documentation**: [API Reference](docs/api_docs/globals.md)
+3. **Test Directory Guide**: [tests/README.md](tests/README.md)
+4. **Demo Tutorial**: [tests/ex01-03/README.md](tests/ex01-03/README.md)
+
+## Development Guide
+
+### Generate API Documentation
+
 ```shell
 npm run gendoc
 ```
 
-## Docmentations
+Documentation will be generated in the `docs/api_docs` directory.
 
-1. ArkAnalyzer API docmentations，refer to the [link](docs/api_docs/globals.md).
+### Debug
 
-## Commit codes
-Follow the code repository standards of Openharmony-Sig, refer to the [link](docs/HowToCreatePR.md#english)
+Modify the `args` parameter array in the debug configuration file `.vscode/launch.json` to the path of the test file you want to debug, then start the debugging process.
 
-## Debug
-Modify the `args` parameter array in the debug configuration file `.vscode/launch.json` to the path of the test file you want to debug, and then start the debugging process.
+### Add Test Cases
 
-## Add test cases
-Place all new test codes in the `tests` directory. Corresponding sample code and other resource files should be placed in the ``tests\resources` directory, and create different folders for each testing scenario.
+Place all new test code in the `tests/unit/` directory. Corresponding sample code and resource files should be placed in `tests/resources/`, creating different folders for each testing scenario.
+
+For detailed instructions, see: [tests/README.md](tests/README.md)
+
+## Contributing
+
+Follow the OpenHarmony-SIG code repository standards. For instructions, refer to: [HowToCreatePR.md](docs/HowToCreatePR.md#english)
+
+## Issue Reporting
+
+For submitting issues, refer to: [HowToHandleIssues.md](docs/HowToHandleIssues.md)
+
+## Core Features
+
+ArkAnalyzer is a static program analysis framework for ArkTS (HarmonyOS native applications), supporting:
+
+- ✅ **AST Parsing**: Analyze ArkTS source files (.ets) and generate Abstract Syntax Trees
+- ✅ **Scene Building**: Build Scene data structure for code abstraction
+- ✅ **CFG Generation**: Create Control Flow Graphs for each function
+- ✅ **Call Graph Analysis**: Support for CHA, RTA, and PTA algorithms
+- ✅ **Data Flow Analysis**: Def-Use Chain, reaching definitions, undefined variable detection
+- ✅ **ViewTree Analysis**: HarmonyOS UI component analysis
+- ✅ **Type Inference**: Complete type inference system
+- ✅ **Code Generation**: CFG visualization, IR format output

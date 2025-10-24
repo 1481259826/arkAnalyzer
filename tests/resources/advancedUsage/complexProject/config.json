@@ -1,0 +1,8 @@
+{
+  "targetProjectName": "ComplexProject",
+  "targetProjectDirectory": "tests/resources/advancedUsage/complexProject",
+  "ohosSdkPath": "",
+  "kitSdkPath": "",
+  "systemSdkPath": "",
+  "otherSdks": []
+}

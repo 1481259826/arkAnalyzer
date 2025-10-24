@@ -1,0 +1,8 @@
+{
+  "targetProjectName": "QuickStartDemo",
+  "targetProjectDirectory": "tests/ex01-03/src",
+  "ohosSdkPath": "",
+  "kitSdkPath": "",
+  "systemSdkPath": "",
+  "otherSdks": []
+}

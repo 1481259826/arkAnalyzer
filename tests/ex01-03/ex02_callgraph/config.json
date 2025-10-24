@@ -1,0 +1,8 @@
+{
+  "targetProjectName": "CallGraphDemo",
+  "targetProjectDirectory": "tests/ex01-03/ex02_callgraph/src",
+  "ohosSdkPath": "",
+  "kitSdkPath": "",
+  "systemSdkPath": "",
+  "otherSdks": []
+}

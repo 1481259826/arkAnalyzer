@@ -1,0 +1,8 @@
+{
+  "targetProjectName": "CountDownDemo",
+  "targetProjectDirectory": "tests/resources/CountDown/src",
+  "ohosSdkPath": "",
+  "kitSdkPath": "",
+  "systemSdkPath": "",
+  "otherSdks": []
+}
