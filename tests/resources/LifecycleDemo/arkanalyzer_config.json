@@ -1,0 +1,8 @@
+{
+  "targetProjectName": "LifecycleDemo",
+  "targetProjectDirectory": "tests/resources/LifecycleDemo/src",
+  "ohosSdkPath": "",
+  "kitSdkPath": "",
+  "systemSdkPath": "",
+  "otherSdks": []
+}

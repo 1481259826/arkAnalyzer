@@ -17,7 +17,9 @@
     "gendoc": "npx typedoc",
     "postinstall": "node script/npmInstall.js",
     "copyCollectionDefintion": "ts-node script/typescriptCollectionDefinitionCopy.ts",
-    "demo": "ts-node --transpileOnly tests/ex01-03/quickstart.ts"
+    "demo": "ts-node --transpileOnly tests/ex01-03/quickstart.ts",
+    "demo:simple": "ts-node --transpileOnly tests/ex04/testSimpleDemo.ts",
+    "demo:countdown": "ts-node --transpileOnly tests/ex04/testCountDown.ts"
   },
   "dependencies": {
     "commander": "13.1.0",
